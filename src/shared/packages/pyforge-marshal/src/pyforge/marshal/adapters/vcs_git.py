@@ -37,11 +37,36 @@ Story 4.1's own review-fix pass adds one more, ``path_has_uncommitted_changes``
 (``git status --porcelain -- <path>``, read-only) -- the per-path
 counterpart ``cli/deploy.py``'s "already promoted" check needs, closing a
 partial-batch-failure gap the on-disk-existence-only version of that check
-had (see ``ports/vcs.py``'s own docstring for the full incident)."""
+had (see ``ports/vcs.py``'s own docstring for the full incident).
+
+Story 4.3 (review-cap landing, FR-27/AD-24) adds ``merge_base``
+(``git merge-base a b``, read-only), ``resolve_ref`` (``git rev-parse
+--verify refs/heads/<ref>``, read-only), and ``merge_branch`` --
+``cli/deploy.py``'s (``marshal deploy land-story``) own primitives. See
+``ports/vcs.py``'s own docstring for the full rationale.
+
+Code review (2026-08-06, P1, Blind Hunter + Edge Case Hunter, both
+independently) redesigned ``merge_branch``: the ORIGINAL implementation ran
+``git checkout into`` directly against ``repo_root`` -- this project's ONE
+shared, currently-active working directory, not an isolated worktree, with
+no dirty-tree precondition and no restoration of whatever was checked out
+before. A ``land-story`` invocation could silently switch the operator's own
+currently-checked-out branch, lose uncommitted context, or race with
+concurrent work in that same checkout. ``merge_branch`` now NEVER checks out
+or otherwise mutates ``repo_root``'s own active working tree: it performs
+the merge in a throwaway DETACHED worktree instead (``git worktree add
+--detach``), then advances the real ``into`` branch ref via a three-arg
+``git update-ref refs/heads/<into> <new> <old>`` compare-and-swap -- which
+also closes the P4 TOCTOU gap a blind ref update would leave (``into``
+moving between when this method reads its tip and when it advances it) --
+and finally removes the temp worktree in a ``finally`` block, on every exit
+path, conflict or CAS failure included."""
 
 from __future__ import annotations
 
+import shutil
 import subprocess
+import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -737,3 +762,187 @@ class GitVcs:
                 f"git status --porcelain -- {path} failed: {result.stderr.strip()}"
             )
         return bool(result.stdout.strip())
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        """Story 4.3: ``git merge-base a b``, read-only. Shares its shape
+        with ``is_branch_merged``'s own internal merge-base call above but
+        is exposed as a standalone primitive here -- ``cli/deploy.py``'s
+        ``land-story`` action needs the VALUE itself (its ``--since``
+        default), not just a boolean derived from it."""
+        result = _run(["git", "-C", str(repo_root), "merge-base", a, b])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot find a merge base for {a} and {b}: {result.stderr.strip()}"
+            )
+        return result.stdout.strip()
+
+    def resolve_ref(self, repo_root: Path, ref: str) -> str:
+        """Story 4.3 (code review, 2026-08-06, P4): ``git rev-parse --verify
+        refs/heads/<ref>``, read-only -- resolves a local branch name to its
+        current tip commit sha. ``land-story`` uses this to pin a branch's
+        tip immediately after the gate evaluates it and to re-verify,
+        immediately before merging, that the branch has not moved in the
+        meantime (closing the window where a commit landing on the branch
+        mid-gate-run would otherwise be merged as if the now-stale gate
+        result still applied to it). Raises ``VcsCommandError`` if ``ref``
+        does not resolve to a local branch."""
+        result = _run(
+            ["git", "-C", str(repo_root), "rev-parse", "--verify", f"refs/heads/{ref}"]
+        )
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot resolve refs/heads/{ref} to a commit: {result.stderr.strip()}"
+            )
+        return result.stdout.strip()
+
+    def merge_branch(self, repo_root: Path, branch: str, *, into: str, subject: str) -> str:
+        """Story 4.3 (FR-27, AD-24). Redesigned by code review (2026-08-06,
+        P1, Blind Hunter + Edge Case Hunter, both independently): the
+        ORIGINAL implementation ran ``git checkout into`` directly against
+        ``repo_root`` -- this project's ONE shared, currently-active working
+        directory, not an isolated worktree -- with no dirty-tree
+        precondition and no restoration of whatever was checked out before.
+        A ``land-story`` invocation could therefore silently switch the
+        operator's own currently-checked-out branch, lose uncommitted
+        context, or race with concurrent work in that same checkout.
+
+        This method now NEVER checks out or otherwise mutates ``repo_root``'s
+        own active working tree. It instead:
+
+        1. Resolves ``into``'s CURRENT tip sha (``old_sha``) via
+           ``resolve_ref``.
+        2. ``git worktree add --detach <tmp> <old_sha>`` -- an isolated
+           checkout at a throwaway path, pinned to the exact sha rather than
+           the branch name (a bare branch name would collide with
+           ``repo_root``'s own already-checked-out ``into``, since git
+           refuses to check out the same branch into two worktrees at once;
+           a detached sha checkout has no such restriction).
+        3. ``git -C <tmp> merge --no-ff -m subject branch`` -- read-only
+           against ``branch`` itself (never checked out, never modified);
+           the only write is the merge commit created INSIDE ``<tmp>``.
+        4. ``git -C repo_root update-ref refs/heads/<into> <new_sha>
+           <old_sha>`` -- the THREE-ARG compare-and-swap form: atomically
+           verifies ``into`` has not moved since step 1 before advancing it.
+           This closes the P4 TOCTOU gap a blind two-arg ``update-ref``
+           would leave open (``into`` moving concurrently between this
+           method's own read and write of it). A CAS failure raises
+           ``VcsCommandError`` naming the race, never silently overwriting
+           a concurrent change.
+        5. Removes ``<tmp>`` in a ``finally`` block -- on EVERY exit path,
+           including a merge conflict or a failed CAS -- so no worktree
+           registration or directory is ever leaked. The removal itself is
+           best-effort and NEVER raises (a cleanup failure must not mask the
+           real outcome above it): ``git worktree remove --force`` first,
+           falling back to a raw ``shutil.rmtree`` plus ``git worktree
+           prune`` if that fails.
+
+        Uses ``_GIT_CHECKOUT_TIMEOUT_S`` for the worktree add and the merge
+        itself (review precedent: both are tree-proportional work on this
+        repo's own large tree, not a bounded metadata query). A merge
+        conflict is a hard stop (``VcsCommandError``), never auto-aborted or
+        auto-resolved -- the CONFLICT happens inside the throwaway ``<tmp>``
+        worktree, which is then removed; ``repo_root``'s own working tree is
+        never touched, so there are no conflict markers left behind for the
+        operator to find there (they would have existed in ``<tmp>``, which
+        no longer exists by the time this raises).
+
+        Returns the new merge commit's sha. Raises ``VcsCommandError`` on
+        any conflict, CAS failure, or other git failure -- a caller treats
+        that as a hard stop: never retried, never auto-resolved."""
+        old_sha = self.resolve_ref(repo_root, into)
+
+        tmp_path = Path(tempfile.mkdtemp(prefix="marshal-land-"))
+        # `git worktree add` refuses to reuse a directory it did not create
+        # itself -- remove the empty dir `mkdtemp` already made so `add` can
+        # create it fresh.
+        tmp_path.rmdir()
+        try:
+            add_result = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "worktree",
+                    "add",
+                    "--detach",
+                    str(tmp_path),
+                    old_sha,
+                ],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+            )
+            if add_result.returncode != 0:
+                raise VcsCommandError(
+                    f"git worktree add --detach {tmp_path} {old_sha} failed: "
+                    f"{add_result.stderr.strip()}"
+                )
+
+            merge_result = _run(
+                ["git", "-C", str(tmp_path), "merge", "--no-ff", "-m", subject, branch],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+            )
+            if merge_result.returncode != 0:
+                raise VcsCommandError(
+                    f"git merge --no-ff -m {subject!r} {branch} into {into} "
+                    f"(isolated detached worktree) failed: {merge_result.stderr.strip()}"
+                )
+
+            new_sha_result = _run(["git", "-C", str(tmp_path), "rev-parse", "HEAD"])
+            if new_sha_result.returncode != 0:
+                # The merge commit exists in <tmp> at this point, but
+                # nothing has landed on `into` yet -- the CAS below is what
+                # makes it durable -- so this is correctly a hard stop, not
+                # a "succeeded but unlogged" landing (unlike a failure
+                # AFTER a successful CAS, which this method's own `finally`
+                # cleanup is deliberately built to never produce).
+                raise VcsCommandError(
+                    f"git rev-parse HEAD failed in the detached merge "
+                    f"worktree after merging {branch} into {into}: "
+                    f"{new_sha_result.stderr.strip()}"
+                )
+            new_sha = new_sha_result.stdout.strip()
+
+            cas_result = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "update-ref",
+                    f"refs/heads/{into}",
+                    new_sha,
+                    old_sha,
+                ]
+            )
+            if cas_result.returncode != 0:
+                raise VcsCommandError(
+                    f"refs/heads/{into} moved (or could not be updated) while "
+                    f"landing {branch} -- expected it at {old_sha}, refusing "
+                    f"to overwrite a concurrent change: {cas_result.stderr.strip()}"
+                )
+            return new_sha
+        finally:
+            # Best-effort, and this ENTIRE block is guarded, not just the
+            # non-zero-returncode branch below: `_run` itself can raise
+            # `VcsCommandError` (a launch failure, a timeout) rather than
+            # merely returning a non-zero exit -- letting that escape this
+            # `finally` would mask an already-successful merge+CAS above
+            # (P5: a cosmetic cleanup failure must never be reported as an
+            # unremarked failure of a landing that in fact already happened).
+            try:
+                remove_result = _run(
+                    ["git", "-C", str(repo_root), "worktree", "remove", "--force", str(tmp_path)],
+                    timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+                )
+                removed = remove_result.returncode == 0
+            except VcsCommandError:
+                removed = False
+            if not removed:
+                # Fallback (e.g. `add` above never completed, so there was
+                # nothing registered to `remove`): a raw filesystem removal
+                # plus `worktree prune`, both swallowing any failure of
+                # their own -- nothing from this fallback path may raise
+                # either.
+                shutil.rmtree(tmp_path, ignore_errors=True)
+                try:
+                    _run(["git", "-C", str(repo_root), "worktree", "prune"])
+                except VcsCommandError:
+                    pass

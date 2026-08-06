@@ -44,6 +44,18 @@ def vcs() -> GitVcs:
     return GitVcs()
 
 
+def _worktree_paths(repo: Path) -> list[str]:
+    """Every path ``git worktree list --porcelain`` currently registers for
+    ``repo`` -- used to prove ``merge_branch``'s own temp detached worktree
+    never leaks (code review, 2026-08-06, P1)."""
+    result = _git(repo, "worktree", "list", "--porcelain")
+    return [
+        line.removeprefix("worktree ")
+        for line in result.stdout.splitlines()
+        if line.startswith("worktree ")
+    ]
+
+
 # --- repo_common_root ---------------------------------------------------------
 
 
@@ -1206,3 +1218,256 @@ def test_path_has_uncommitted_changes_scoped_to_only_the_named_path(vcs, repo):
 def test_path_has_uncommitted_changes_raises_outside_a_repo(vcs, tmp_path):
     with pytest.raises(VcsCommandError):
         vcs.path_has_uncommitted_changes(tmp_path, tmp_path / "nope.txt")
+
+
+# --- merge_base/merge_branch (Story 4.3, FR-27/AD-24) ----------------------
+
+
+def test_merge_base_returns_the_common_ancestor_sha(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    base_sha = _git(repo, "rev-parse", "main").stdout.strip()
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+
+    assert vcs.merge_base(repo, "loop/x", "main") == base_sha
+
+
+def test_merge_base_raises_when_no_common_history(vcs, repo, tmp_path):
+    _git(repo, "checkout", "--orphan", "orphan-branch")
+    _git(repo, "commit", "--allow-empty", "-m", "orphan root")
+    _git(repo, "checkout", "main")
+
+    with pytest.raises(VcsCommandError):
+        vcs.merge_base(repo, "orphan-branch", "main")
+
+
+def test_merge_base_raises_on_an_unresolvable_ref(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.merge_base(repo, "no-such-ref", "main")
+
+
+def test_resolve_ref_returns_the_branch_tip_sha(vcs, repo):
+    expected = _git(repo, "rev-parse", "main").stdout.strip()
+    assert vcs.resolve_ref(repo, "main") == expected
+
+
+def test_resolve_ref_raises_on_an_unresolvable_branch(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.resolve_ref(repo, "no-such-branch")
+
+
+def test_merge_branch_merges_cleanly_and_returns_the_new_commit_sha(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+
+    sha = vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    # `refs/heads/main` was advanced via `update-ref` -- `rev-parse HEAD`
+    # dereferences repo_root's symbolic HEAD -> refs/heads/main, so it
+    # reflects the new tip even though repo_root's own working tree/index
+    # was never touched by this call (P1: no checkout in repo_root, ever).
+    assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
+    # The new commit's CONTENT is reachable via the ref, even though
+    # repo_root's own checked-out files were never refreshed to match it.
+    show = _git(repo, "show", f"{sha}:feature.txt")
+    assert show.stdout.strip() == "feature"
+    log = _git(repo, "log", "-1", "--format=%s", "refs/heads/main")
+    assert log.stdout.strip() == "Merge 1.2 into main"
+    # --no-ff: a real merge commit, with two parents, even though this was
+    # a fast-forward-eligible branch.
+    parents = (
+        _git(repo, "log", "-1", "--format=%P", "refs/heads/main").stdout.strip().split()
+    )
+    assert len(parents) == 2
+
+
+def test_merge_branch_never_touches_repo_roots_own_active_checkout(vcs, repo, tmp_path):
+    """P1's own single most severe finding: repo_root is this project's ONE
+    shared, currently-active checkout -- merge_branch must never run `git
+    checkout` against it, whatever branch it currently has checked out."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+    _git(repo, "checkout", "-b", "some-other-branch")
+    head_before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    symbolic_before = _git(repo, "symbolic-ref", "HEAD").stdout.strip()
+
+    vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    # repo_root's own checked-out branch, and its HEAD commit, are exactly
+    # what they were before the call -- `main` was advanced by ref alone.
+    assert _git(repo, "symbolic-ref", "HEAD").stdout.strip() == symbolic_before
+    assert _git(repo, "branch", "--show-current").stdout.strip() == "some-other-branch"
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == head_before
+    # `main` itself DID advance -- that is the one intended write.
+    assert _git(repo, "log", "-1", "--format=%s", "refs/heads/main").stdout.strip() == (
+        "Merge 1.2 into main"
+    )
+
+
+def test_merge_branch_never_checks_out_branch_itself(vcs, repo, tmp_path):
+    """Read-only against `branch` -- a linked worktree already has it
+    checked out throughout, and merge_branch must not disturb that."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+
+    vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    # The linked worktree is untouched: still on loop/x, still has its own
+    # feature commit as HEAD (never rewritten/rebased by the merge).
+    branch_result = _git(home, "branch", "--show-current")
+    assert branch_result.stdout.strip() == "loop/x"
+
+
+def test_merge_branch_leaves_no_temp_worktree_behind_on_success(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+
+    vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    assert not any("marshal-land-" in path for path in _worktree_paths(repo))
+
+
+def test_merge_branch_raises_vcs_command_error_on_conflict(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "README.md").write_text("conflicting change\n", encoding="utf-8")
+    _git(home, "add", "README.md")
+    _git(home, "commit", "-m", "conflicting commit")
+    (repo / "README.md").write_text("a different change\n", encoding="utf-8")
+    _git(repo, "add", "README.md")
+    _git(repo, "commit", "-m", "main's own change")
+
+    with pytest.raises(VcsCommandError):
+        vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    # The temp worktree the conflict happened inside is still cleaned up --
+    # no leak, and no conflict-marker state left behind in repo_root itself
+    # (the conflict lived only in the now-removed temp worktree).
+    assert not any("marshal-land-" in path for path in _worktree_paths(repo))
+    status = _git(repo, "status", "--porcelain")
+    assert status.stdout.strip() == ""
+
+
+def test_merge_branch_raises_on_an_unresolvable_branch(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.merge_branch(repo, "no-such-branch", into="main", subject="Merge 1.2 into main")
+
+
+def test_merge_branch_refuses_when_into_moves_concurrently(vcs, repo, tmp_path, monkeypatch):
+    """P4: `into` moving between merge_branch's own read of its tip and the
+    write that advances it must never be silently overwritten -- the
+    three-arg `update-ref` compare-and-swap must refuse instead."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+
+    from pyforge.marshal.adapters import vcs_git as vcs_git_module
+
+    real_run = vcs_git_module._run
+    moved = {"done": False}
+
+    def _racy_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
+        result = real_run(args, timeout_s=timeout_s)
+        if not moved["done"] and "worktree" in args and "--detach" in args:
+            # A commit lands directly on `main` in repo_root -- simulating
+            # a concurrent write -- right after merge_branch has already
+            # pinned its detached worktree to `main`'s OLD tip.
+            (repo / "concurrent.txt").write_text("concurrent\n", encoding="utf-8")
+            _git(repo, "add", "concurrent.txt")
+            _git(repo, "commit", "-m", "a concurrent commit lands on main")
+            moved["done"] = True
+        return result
+
+    monkeypatch.setattr(vcs_git_module, "_run", _racy_run)
+
+    with pytest.raises(VcsCommandError):
+        vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    # The concurrent commit survives untouched -- the CAS refused to
+    # overwrite it with the stale merge.
+    log = _git(repo, "log", "-1", "--format=%s", "refs/heads/main")
+    assert log.stdout.strip() == "a concurrent commit lands on main"
+    # ...and the temp worktree is still cleaned up despite the CAS failure.
+    assert not any("marshal-land-" in path for path in _worktree_paths(repo))
+
+
+def test_merge_branch_still_returns_the_sha_if_temp_worktree_cleanup_fails(
+    vcs, repo, tmp_path, monkeypatch
+):
+    """P5: a cosmetic post-merge-success failure (here, the temp worktree's
+    own removal) must never mask an already-durable merge -- cleanup is
+    best-effort and swallows this class of failure internally, so a
+    successfully-landed merge is always reported back to the caller."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+
+    from pyforge.marshal.adapters import vcs_git as vcs_git_module
+
+    real_run = vcs_git_module._run
+
+    def _flaky_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
+        if "worktree" in args and "remove" in args:
+            return subprocess.CompletedProcess(
+                args, 1, stdout="", stderr="simulated cleanup failure"
+            )
+        return real_run(args, timeout_s=timeout_s)
+
+    monkeypatch.setattr(vcs_git_module, "_run", _flaky_run)
+
+    sha = vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
+    # The fallback cleanup path (raw rmtree + prune) still ran -- no
+    # dangling registration survives even though `worktree remove` itself
+    # was made to fail.
+    assert not any("marshal-land-" in path for path in _worktree_paths(repo))
+
+
+def test_merge_branch_still_returns_the_sha_if_cleanup_raises_outright(
+    vcs, repo, tmp_path, monkeypatch
+):
+    """P5, the stronger case: `_run` itself can RAISE `VcsCommandError`
+    (a launch failure, a timeout) rather than merely returning a non-zero
+    exit code -- the `finally` block's own cleanup must swallow that too,
+    never letting a cosmetic post-success failure escape and mask an
+    already-durable merge."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+
+    from pyforge.marshal.adapters import vcs_git as vcs_git_module
+
+    real_run = vcs_git_module._run
+
+    def _raising_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
+        if "worktree" in args and "remove" in args:
+            raise VcsCommandError("simulated: git executable vanished mid-cleanup")
+        return real_run(args, timeout_s=timeout_s)
+
+    monkeypatch.setattr(vcs_git_module, "_run", _raising_run)
+
+    sha = vcs.merge_branch(repo, "loop/x", into="main", subject="Merge 1.2 into main")
+
+    assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert not any("marshal-land-" in path for path in _worktree_paths(repo))

@@ -446,6 +446,46 @@ non-empty unreachable set, and ``--force`` alone must never silently carry
 past it (see ``run_teardown``'s own comment for the ``--abandon
 UNDETERMINED`` sentinel override it requires instead).
 
+Story 4.3 (merge-subject conformance and review-cap landing, FR-27/AD-24)
+adds four more codes, joining the ``MRS-DEPLOY-*`` area with
+``cli/deploy.py``'s ``marshal deploy land-story`` action. ``MRS-DEPLOY-006``
+(``--justification`` missing or empty -- the cheap precondition checked
+FIRST, before any gate re-run) and ``MRS-DEPLOY-007`` (the named story's
+loop-home/station branch could not be resolved: no provisioned loop home,
+the branch does not exist, or the ``--since`` merge-base read failed)
+classify ``Verdict.UNEVALUABLE`` -- both mean Marshal cannot determine what
+to land, the same tier as ``MRS-INIT-001``/``MRS-GATE-009``'s own precondition
+codes. ``MRS-DEPLOY-008`` (``VcsPort.merge_branch`` raised -- a real
+conflict or other git failure) classifies ``Verdict.ERROR``, the same tier
+as ``MRS-INIT-003``/``MRS-TEARDOWN-002``: a real write was attempted against
+a gate that had already passed, and did not converge. ``MRS-DEPLOY-009``
+(the post-merge conformance audit's own ``VcsPort.commit_subjects`` read
+failed) classifies ``Verdict.WARN``, the same tier as ``MRS-DEPLOY-001``/
+``002``/``004``/``005``: the landing itself already succeeded by this point
+(a merge failure is ``MRS-DEPLOY-008``, reported before any journal entry
+is written), so an audit that cannot enumerate its own window is a
+reporting gap, never grounds to undo or block a landing that has already
+happened (the story's own "the conformance audit never blocks the landing"
+Never bullet).
+
+Code review (2026-08-06) adds three more ``MRS-DEPLOY-*`` codes for
+``land-story``. ``MRS-DEPLOY-010`` (P2: the full gate's verdict was not
+EXACTLY ``clean`` -- e.g. ``warn``, real non-blocking findings exist)
+classifies ``Verdict.GATE_FAILED``, the same tier as ``MRS-GATE-001``: FR-27
+requires a fully clean gate before a deliberate manual landing, so anything
+short of ``clean`` (even the ordinarily-exit-0 ``warn`` rung) is refused
+here, same as a real gate failure. ``MRS-DEPLOY-011`` (P4: the loop-home
+station branch's tip could not be reconfirmed immediately before merging,
+or had moved since the gate evaluated it) classifies ``Verdict.ERROR``, the
+same tier as ``MRS-TEARDOWN-003``/``004``: a real safety refusal after an
+already-attempted operation, not "could not determine" -- the gate DID run;
+this is a stronger, race-condition-specific stop. ``MRS-DEPLOY-012`` (P7: a
+redaction failure at journal-capture time swallowed the operator's
+``--justification`` text) classifies ``Verdict.WARN``, the same tier as
+``MRS-DEPLOY-001``/``002``/``004``/``005``/``009``: the landing itself
+already succeeded, so a lost justification is a paper-trail visibility gap,
+never grounds to undo it.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -526,6 +566,16 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # unparseable Success signal binding; a declared command narrowed or
 # removed from policy since tracking) -- both SCOPE_VIOLATION, the same
 # rung as MRS-GATE-007/008.
+# Story 4.3's cli/deploy.py adds four more MRS-DEPLOY-* codes for
+# `marshal deploy land-story`: MRS-DEPLOY-006 (missing/empty
+# --justification), MRS-DEPLOY-007 (the station branch could not be
+# resolved), MRS-DEPLOY-008 (the merge itself failed), and MRS-DEPLOY-009
+# (the post-merge conformance audit could not enumerate its own window).
+# Code review (2026-08-06) adds three more MRS-DEPLOY-* codes:
+# MRS-DEPLOY-010 (P2: the gate's verdict was not exactly clean),
+# MRS-DEPLOY-011 (P4: the station branch's tip moved or could not be
+# reconfirmed before merging), and MRS-DEPLOY-012 (P7: --justification
+# redaction failed at journal-capture time).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -598,6 +648,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-004",
         "MRS-TEARDOWN-005",
         "MRS-DEPLOY-005",
+        "MRS-DEPLOY-006",
+        "MRS-DEPLOY-007",
+        "MRS-DEPLOY-008",
+        "MRS-DEPLOY-009",
+        "MRS-DEPLOY-010",
+        "MRS-DEPLOY-011",
+        "MRS-DEPLOY-012",
     }
 )
 

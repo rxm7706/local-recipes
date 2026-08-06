@@ -85,6 +85,92 @@ overwriting an existing file at either the snapshot paths -- read-only --
 or its own ``spec-<key>-recovered.md`` target). A story with neither a
 snapshot nor an ``epics.md`` section is reported as a genuinely orphaned key
 (``MRS-DEPLOY-004``), never fabricated.
+
+Story 4.3 (merge-subject conformance and review-cap landing, FR-27, AD-4/
+AD-24/AD-34) adds ``marshal deploy land-story <slug> <key> --justification
+TEXT`` -- the governed manual-landing path FR-27's own motivating evidence
+names (two real stories landed by hand with no re-run gate, no guaranteed
+merge-subject form, and no journal record of the manual decision).
+
+**The full gate is re-run IN-PROCESS, never shelled out.** ``cli/gate.py``'s
+``run_evaluate`` was a single function that gathered inputs, ran every
+check, AND printed -- this story splits it into ``evaluate_gate`` (the pure
+envelope-building core) and a thin ``run_evaluate`` wrapper (see that
+module's own docstring for the split's full rationale). ``land-story``
+calls ``evaluate_gate`` directly with ``--scope-check`` forced on, so both
+halves of the full gate (verify commands AND the scope check) must be
+green before anything else runs.
+
+**The subject is always rendered, never hand-typed (AD-24).** ``land-story``
+resolves the project's ``merge_subject_template`` policy field and calls
+``core.identity.render_merge_subject(key, template)`` -- the SAME
+render/parse pair the conformance audit below uses in its parse direction.
+No f-string/format literal in this module's own new code ever assembles a
+merge subject.
+
+**The branch landed is the loop-home's own STATION branch
+(``f"loop/{slug}"``), not a per-story branch.** This repo's own convention
+(``cli/init.py``'s ``add_worktree``/``run_teardown``, ``supervisor/
+__main__.py``'s durability watcher) develops every story of a project on
+that one station branch; a per-story branch (when one exists at all) is
+minted by the harness itself with no name Marshal can derive from a bare
+story key alone. ``land-story``'s own "wave" -- the Design Notes' own term
+for what the conformance audit inspects -- is that station branch's own
+commit history since it forked from ``main``.
+
+**Conformance audit is folded into the same command, never a separate
+action or a second parser (AD-24).** After a successful merge,
+``VcsPort.commit_subjects`` is called with a git REVISION RANGE
+(``f"{since}..{merge_sha}"``) rather than the full ``"main"`` history
+sliced by subject-string position -- the literal Code Map wording names
+the latter, but position-slicing a subject list is fragile the moment two
+commits anywhere in history share an identical subject line (not a rare
+shape: this repo's own bare "initial" or "wip" commits), while a git range
+expression is git's own, unambiguous answer to "every commit reachable
+from ``merge_sha`` but not from ``since``" and needs no second read. Every
+subject in that range is handed to ``core.identity.parse_merge_subject`` --
+the SAME function ``render_merge_subject`` above used, never a second
+regex -- and a subject that fails to parse is named in
+``data.non_conforming_merges``, reported only, never blocking the landing
+that already happened (a `MergeSubjectConformanceError`'s own ``.finding``
+attribute is deliberately NOT added to this command's own findings list:
+doing so would reclassify an already-successful landing's verdict away
+from ``clean``, exactly the blocking behavior the story's own Never bullet
+forbids).
+
+**The manual landing is journaled the same way Story 4.2's own abandonment
+record is:** a fresh, dedicated Tier-3 run directory
+(``implementation-artifacts/runs/<run_id>/journal.jsonl``) minted for this
+one event (there is no pre-existing run this landing belongs to -- landing
+is not itself a story run), one ``observation`` entry, ``fsync=True``
+(this entry authorizes a real, durable git write, the same class Story
+4.2's own abandonment entry and Story 3.1's ``intent``-phase entries
+already earned ``fsync=True`` for). ``--justification`` is redacted at
+capture (AD-34) via the SAME ``to_redacted({"k": text});
+json.loads(...)["k"]`` idiom ``adapters/harness_bmadloop.py``'s
+``_redact_text`` already uses for ``paused_reason``/``defer_reason`` --
+free text from an operator can carry anything pane-derived text can.
+
+**Code review (2026-08-06) hardened ``run_land_story`` in seven ways,**
+most severe first: **P1** -- ``VcsPort.merge_branch`` no longer checks out
+``into`` in ``repo_root`` (this project's ONE shared, active checkout);
+it now merges inside a throwaway detached worktree and advances ``into``
+via a compare-and-swap ref update (see ``adapters/vcs_git.py``). **P2** --
+the gate must evaluate EXACTLY ``Verdict.CLEAN``, not merely
+``status_for(...)  is Status.OK`` (which also admits ``warn``). **P3** --
+a ``PolicyIOError`` resolving the merge-subject template is now a hard
+stop, never a silently-defaulted-template fall-through. **P4** --
+``branch``'s own tip is pinned via the new ``VcsPort.resolve_ref``
+immediately after the gate runs and re-verified immediately before
+merging; the merge uses the CAPTURED sha, refusing if the branch moved in
+between. **P5** -- ``merge_branch``'s own redesign structurally closes the
+"merge succeeded but the sha readback failed" gap (its cleanup step is
+best-effort and never raises after a successful landing). **P6** -- an
+already-merged story key (reusing Story 4.1's own ``core.promotion.
+merged_story_keys`` durability detection) short-circuits to a clean no-op
+before the gate ever runs. **P7** -- a ``--justification`` redaction
+failure now registers a WARN finding naming the gap, rather than silently
+writing ``null`` into the permanent journal record.
 """
 
 from __future__ import annotations
@@ -93,18 +179,23 @@ import argparse
 import json
 import os
 import re
+import secrets
 from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.process_posix import PosixProcess
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion
+from ..core.egress import to_redacted
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
-from ..core.model import Finding, Severity, build_envelope
+from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
+from ..core.model import Finding, Severity, Status, Verdict, build_envelope, status_for
 from ..core.promotion import PromotionPlan, SpecCandidate
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
+from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
@@ -126,6 +217,18 @@ _PUSH_REF = "origin/main"
 _MRS_DEPLOY_003 = "MRS-DEPLOY-003"
 _MRS_DEPLOY_004 = "MRS-DEPLOY-004"
 _MRS_DEPLOY_005 = "MRS-DEPLOY-005"
+_MRS_DEPLOY_006 = "MRS-DEPLOY-006"
+_MRS_DEPLOY_007 = "MRS-DEPLOY-007"
+_MRS_DEPLOY_008 = "MRS-DEPLOY-008"
+_MRS_DEPLOY_009 = "MRS-DEPLOY-009"
+_MRS_DEPLOY_010 = "MRS-DEPLOY-010"
+_MRS_DEPLOY_011 = "MRS-DEPLOY-011"
+_MRS_DEPLOY_012 = "MRS-DEPLOY-012"
+
+# Story 4.3's own journal kind (mirrors cli/init.py's `_ABANDON_KIND`
+# convention) -- one `observation` entry per manual landing.
+_LAND_JOURNAL_FILENAME = "journal.jsonl"
+_LAND_KIND = "manual-landing"
 
 
 def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -188,6 +291,44 @@ def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     recover_parser.set_defaults(handler=run_recover_spec)
+
+    land_parser = deploy_subparsers.add_parser(
+        "land-story",
+        help="Manually land a sound-but-not-converged story, under the full gate (FR-27).",
+        description=(
+            "Re-runs the full gate (verify commands + --scope-check) for "
+            "<key>; on green, merges <slug>'s loop-home station branch into "
+            "main using the policy-rendered merge subject, journals the "
+            "manual landing, and reports merge-subject conformance for "
+            "every commit in the wave since the branch's own merge-base "
+            "with main."
+        ),
+    )
+    land_parser.add_argument("slug", help="The BMAD project slug.")
+    land_parser.add_argument("key", help="The story key being landed, e.g. 4.3.")
+    land_parser.add_argument(
+        "--justification",
+        default=None,
+        metavar="TEXT",
+        help="Required, non-empty: why this story is landed manually rather than by review.",
+    )
+    land_parser.add_argument(
+        "--since",
+        default=None,
+        metavar="REF",
+        help=(
+            "The conformance audit's window start. Defaults to the "
+            "merge-base of the station branch and main, computed before "
+            "the merge."
+        ),
+    )
+    land_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    land_parser.set_defaults(handler=run_land_story)
 
 
 def _discover_candidates(fs: FsPort, tier3_dir: Path) -> tuple[SpecCandidate, ...]:
@@ -866,6 +1007,506 @@ def _render_text_recover_spec(data: Mapping[str, object], findings: tuple[Findin
             lines.append("already present -- not overwritten")
         elif data.get("recovered"):
             lines.append("recovered: epics-derived contract-only spec written")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+# =====================================================================
+# ``marshal deploy land-story`` (Story 4.3, FR-27/AD-4/AD-24/AD-34).
+# =====================================================================
+
+
+def _land_writer_id() -> str:
+    """A fresh, process-scoped, filesystem-safe writer id -- mirrors
+    ``cli/init.py::_abandon_writer_id``'s identical rationale, scoped to
+    this module's own caller."""
+    return f"land-story-{os.getpid()}"
+
+
+def _land_random_token() -> str:
+    return secrets.token_hex(4)
+
+
+def _land_format_utc_compact(moment: datetime) -> str:
+    return moment.strftime("%Y%m%dT%H%M%S") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _land_format_entry_ts(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _land_redact_text(text: str) -> str | None:
+    """AD-34's own redaction-at-capture idiom
+    (``adapters/harness_bmadloop.py::_redact_text``'s identical round-trip,
+    reused verbatim): ``--justification`` is operator-supplied free text,
+    which can carry anything pane-derived text can. Narrowly guarded so a
+    redaction failure degrades only this one field, never the whole
+    journal entry."""
+    try:
+        redacted = to_redacted({"text": text})
+        return json.loads(redacted.text)["text"]
+    except (ValueError, LookupError, TypeError):
+        return None
+
+
+def _journal_manual_landing(
+    fs: FsPort,
+    root: Path,
+    slug: str,
+    *,
+    story_key: str,
+    justification: str,
+    merge_sha: str,
+    gate_verdict: str,
+    findings: list[Finding],
+) -> Finding | None:
+    """One journal ``observation`` entry recording a manual landing
+    (Story 4.3's own Always bullet), mirroring ``cli/init.py::
+    _journal_abandonments``'s mint-a-fresh-run-then-append shape exactly: a
+    dedicated Tier-3 run directory is minted for this ONE event (there is
+    no pre-existing run a manual landing belongs to), and the entry is
+    written ``fsync=True`` (this entry authorizes a real, durable git
+    write -- the same class Story 4.2's own abandonment entry and Story
+    3.1's ``intent``-phase entries already earned ``fsync=True`` for).
+    Returns a ``Finding`` (never raises) on any I/O failure -- the caller
+    treats a non-``None`` result as informational only: by the time this
+    is called the merge has ALREADY landed, so a journal-write failure is
+    reported, never grounds to undo the merge.
+
+    Code review (2026-08-06, P7, both reviewers independently): if
+    redacting ``justification`` fails, a WARN finding naming the gap is
+    APPENDED DIRECTLY to the caller's own ``findings`` list -- the landing
+    still proceeds (this is a visibility fix, not a safety-critical
+    precondition), but the operator's stated justification silently going
+    missing from the permanent journal record must be visible in the run's
+    own report, not only discoverable later by someone reading the raw
+    journal."""
+    moment = datetime.now(timezone.utc)
+    run_id = mint_run_id(slug, _land_format_utc_compact(moment), _land_random_token())
+    run_dir = (
+        root
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
+    )
+    try:
+        fs.ensure_dir(run_dir.parent)
+        fs.create_dir_exclusive(run_dir)
+    except FsError as exc:
+        return Finding(
+            code=_MRS_DEPLOY_003,
+            severity=Severity.ERROR,
+            message=f"cannot create journal directory for the manual landing of {story_key}: {exc}",
+        )
+
+    redacted_justification = _land_redact_text(justification)
+    if redacted_justification is None:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_012,
+                severity=Severity.WARN,
+                message=(
+                    f"could not redact --justification for {story_key}'s "
+                    "manual landing -- the journal entry's justification "
+                    "field is empty; the operator's stated justification "
+                    "text was not captured"
+                ),
+            )
+        )
+    entry = build_entry(
+        id=JournalEntryId(_land_writer_id(), 0),
+        ts=_land_format_entry_ts(datetime.now(timezone.utc)),
+        run_id=run_id,
+        kind=_LAND_KIND,
+        phase=Phase.OBSERVATION,
+        payload={
+            "story_key": story_key,
+            "justification": redacted_justification,
+            "merge_sha": merge_sha,
+            "gate_verdict": gate_verdict,
+        },
+    )
+    try:
+        prepared = prepare_for_write(entry)
+        if prepared.sidecar_relative_path is not None:
+            fs.write_text_atomic(
+                run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
+            )
+        fs.append_line(run_dir / _LAND_JOURNAL_FILENAME, prepared.line, fsync=True)
+    except FsError as exc:
+        return Finding(
+            code=_MRS_DEPLOY_003,
+            severity=Severity.ERROR,
+            message=f"cannot journal the manual landing of {story_key}: {exc}",
+        )
+    return None
+
+
+def run_land_story(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+    process: ProcessPort | None = None,
+) -> int:
+    # Local imports (never module-level): `cli/init.py` imports THIS module
+    # (`from . import deploy`), and `cli/gate.py` imports `cli/init.py`
+    # (`from .init import _home_path`) -- a module-level `from .init import
+    # ...`/`from .gate import ...` here would create a load-order-fragile
+    # cli.deploy <-> cli.init / cli.deploy -> cli.gate -> cli.init cycle.
+    # `main.py` already imports every CLI submodule before any handler
+    # runs, so by the time this function is ever CALLED both modules are
+    # fully loaded and this import is a cheap `sys.modules` lookup.
+    from .gate import evaluate_gate
+    from .init import _home_path
+
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    process = process if process is not None else PosixProcess()
+
+    slug = args.slug
+    raw_key = args.key
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug, "key": raw_key}
+
+    # 1. --justification: the cheap precondition, checked FIRST, before any
+    # I/O -- the story's own Always bullet.
+    justification = args.justification
+    if not justification or not justification.strip():
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_006,
+                severity=Severity.ERROR,
+                message=(
+                    "--justification is required and must be non-empty to "
+                    "land a story manually"
+                ),
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-POLICY-006",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+    try:
+        story_key = identity.normalize(raw_key)
+    except MalformedStoryKeyError as exc:
+        findings.append(Finding(code="MRS-IDENT-001", severity=Severity.ERROR, message=str(exc)))
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+    data["key"] = str(story_key)
+
+    root = repo_root()
+    home = _home_path(slug)
+    branch = f"loop/{slug}"
+    data["branch"] = branch
+
+    # 2. The station branch must resolve to a real, existing branch --
+    # refused BEFORE the gate runs (the story's own I/O matrix).
+    try:
+        git_repo_root = vcs.repo_common_root(home)
+        branch_ok = vcs.branch_exists(git_repo_root, branch)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot resolve the loop-home station branch {branch!r} "
+                    f"to land {story_key}: {exc}"
+                ),
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+    if not branch_ok:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=(
+                    f"{branch!r} does not exist -- nothing to land for {story_key}"
+                ),
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+    # 3. --since defaults to the merge-base of branch/main, computed BEFORE
+    # the merge (Design Notes: the one boundary this story can compute
+    # without inventing new state).
+    since_ref = args.since
+    if since_ref is None:
+        try:
+            since_ref = vcs.merge_base(git_repo_root, branch, _MERGE_BASE_BRANCH)
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code=_MRS_DEPLOY_007,
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot compute the merge base of {branch!r} and "
+                        f"{_MERGE_BASE_BRANCH!r}: {exc}"
+                    ),
+                )
+            )
+            return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+    data["since"] = since_ref
+
+    # 4. Resolve the merge-subject template from policy (AD-24) -- moved
+    # ahead of the gate re-run (code review, 2026-08-06, P3/P6): the
+    # already-merged short-circuit below (step 5) needs the template to
+    # classify `main`'s own history, and a `PolicyIOError` here must be a
+    # HARD STOP, exactly like every other precondition failure in this
+    # function -- never a silently-defaulted template that could defeat
+    # AD-24's "policy governs the subject, never a code literal" promise
+    # (code review, 2026-08-06, P3, both reviewers independently: the
+    # original version appended the finding but fell through and merged
+    # anyway).
+    project_data: Mapping[str, object] = {}
+    if policy._is_valid_project_slug(slug):
+        candidate = conventional_project_policy_path(slug)
+        try:
+            present = candidate.is_file()
+        except OSError:
+            present = True
+        if present:
+            try:
+                project_data = _read_project_policy(candidate)
+            except PolicyIOError as exc:
+                findings.append(exc.finding)
+                return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+    effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
+    findings.extend(policy_findings)
+    template = effective.merge_subject_template.value
+
+    # 5. Already-merged short-circuit (code review, 2026-08-06, P6): reuses
+    # the SAME durability-detection machinery Story 4.1's `deploy promote`
+    # already established (`VcsPort.commit_subjects` + `core.promotion.
+    # merged_story_keys`), never a reimplementation. Re-running `land-story`
+    # on an already-durably-merged key must be a clean no-op -- no gate run,
+    # no merge attempt, no spurious empty merge commit, no duplicate journal
+    # entry. Best-effort: a read failure here does not block the real
+    # attempt below (the safety-critical checks -- the gate, and P1/P4's own
+    # merge-time guards -- still protect the merge itself).
+    try:
+        main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE_BRANCH)
+    except VcsCommandError:
+        main_subjects = ()
+    if story_key in promotion.merged_story_keys(main_subjects, template, slug):
+        data["already_merged"] = True
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+    # 6. Re-run the FULL gate in-process (verify commands + --scope-check).
+    # Both halves must be green -- reuses cli/gate.py::evaluate_gate's own
+    # logic as a function call (Story 4.3's own Always bullet), never a
+    # shelled-out re-invocation of the `marshal` CLI and never a second,
+    # independently-drifting gate implementation.
+    gate_args = argparse.Namespace(
+        project=slug, run_id=None, scope_check=True, story=str(story_key)
+    )
+    gate_envelope = evaluate_gate(gate_args, process=process, vcs=vcs, fs=fs)
+    data["gate_verdict"] = gate_envelope.verdict.value
+    findings.extend(gate_envelope.findings)
+    if gate_envelope.verdict is not Verdict.CLEAN:
+        # Code review (2026-08-06, P2, Blind Hunter): `status_for` treats
+        # `warn` as "ok", but a warn-tier gate result (real findings exist,
+        # just not blocking ones) is NOT "green" in the strict sense FR-27
+        # requires for a manual, deliberate landing decision -- refuse on
+        # anything short of the lattice's own strictest clean rung, not
+        # merely `status_for`'s coarser ok/error partition.
+        if status_for(gate_envelope.verdict) is Status.OK:
+            findings.append(
+                Finding(
+                    code=_MRS_DEPLOY_010,
+                    severity=Severity.ERROR,
+                    message=(
+                        f"the full gate re-run for {story_key} evaluated "
+                        f"{gate_envelope.verdict.value!r}, not exactly "
+                        "'clean' -- a manual landing requires a fully clean "
+                        "gate, not merely a non-blocking warn-tier result"
+                    ),
+                )
+            )
+        # Refused before any merge attempt -- no journal entry, no merge.
+        # The gate's own findings (already appended above) name which half
+        # failed.
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+    # 7. Render the merge subject (AD-24) -- never hand-typed.
+    subject = identity.render_merge_subject(story_key, template)
+    data["subject"] = subject
+
+    # 8. Pin `branch`'s own tip immediately after the gate evaluated it
+    # (code review, 2026-08-06, P4): the gate is evaluated against the
+    # branch's tip at one point in time, but nothing previously pinned that
+    # sha before the (potentially slow) gate run completes -- a commit
+    # landing on `branch` in that window would otherwise get merged as if
+    # the now-stale gate result still applied to it.
+    try:
+        branch_tip_after_gate = vcs.resolve_ref(git_repo_root, branch)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_011,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot pin {branch!r}'s own tip immediately after the "
+                    f"gate evaluated it, refusing to land {story_key}: {exc}"
+                ),
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+    # 9. Re-verify, immediately before merging, that `branch` still points
+    # at the pinned tip -- if it moved, refuse rather than silently merge
+    # whatever it now points to. `merge_branch` below is then handed the
+    # CAPTURED SHA (not the bare branch name), so even a change landing
+    # between this check and the actual `git merge` invocation inside
+    # `merge_branch` still merges the pinned commit, not a newer one.
+    try:
+        branch_tip_now = vcs.resolve_ref(git_repo_root, branch)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_011,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot reconfirm {branch!r}'s own tip immediately "
+                    f"before merging, refusing to land {story_key}: {exc}"
+                ),
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+    if branch_tip_now != branch_tip_after_gate:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_011,
+                severity=Severity.ERROR,
+                message=(
+                    f"{branch!r} moved (from {branch_tip_after_gate!r} to "
+                    f"{branch_tip_now!r}) during the gate evaluation window "
+                    f"-- refusing to land {story_key} against a commit the "
+                    "gate never evaluated"
+                ),
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+    # 10. Merge -- the CAPTURED sha, not the bare branch name (see step 9).
+    # A conflict/failure here is a hard stop -- never retried, never
+    # auto-resolved, and no journal entry (journal only on confirmed
+    # success). `merge_branch` itself never touches repo_root's own active
+    # checkout (code review, 2026-08-06, P1) and protects `into` with its
+    # own compare-and-swap ref update.
+    try:
+        merge_sha = vcs.merge_branch(
+            git_repo_root, branch_tip_after_gate, into=_MERGE_BASE_BRANCH, subject=subject
+        )
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_008,
+                severity=Severity.ERROR,
+                message=f"merge of {branch!r} into {_MERGE_BASE_BRANCH!r} failed: {exc}",
+            )
+        )
+        return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+    data["merge_sha"] = merge_sha
+
+    # 11. Journal the manual landing -- one observation entry, fsync=True,
+    # --justification redacted at capture (AD-34). A redaction failure
+    # (code review, 2026-08-06, P7) is surfaced as a registered WARN finding
+    # (appended to `findings` by `_journal_manual_landing` itself) rather
+    # than silently writing `null` with no visible trace of the gap -- the
+    # landing still proceeds; this is a visibility fix, not a new
+    # safety-critical precondition.
+    journal_finding = _journal_manual_landing(
+        fs,
+        root,
+        slug,
+        story_key=str(story_key),
+        justification=justification,
+        merge_sha=merge_sha,
+        gate_verdict=gate_envelope.verdict.value,
+        findings=findings,
+    )
+    if journal_finding is not None:
+        findings.append(journal_finding)
+
+    # 12. Conformance audit -- reported, never blocking (the story's own
+    # Never bullet). A read failure here is a reporting gap, not grounds to
+    # undo an already-successful landing -- WARN, not ERROR/UNEVALUABLE.
+    try:
+        window_subjects = vcs.commit_subjects(git_repo_root, f"{since_ref}..{merge_sha}")
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_009,
+                severity=Severity.WARN,
+                message=(
+                    f"conformance audit could not enumerate commits between "
+                    f"{since_ref!r} and {merge_sha!r}: {exc}"
+                ),
+            )
+        )
+        data["non_conforming_merges"] = None
+    else:
+        non_conforming: list[str] = []
+        for window_subject in window_subjects:
+            try:
+                identity.parse_merge_subject(window_subject, template)
+            except identity.MergeSubjectConformanceError:
+                # Reported only -- never fed into `findings`: doing so
+                # would reclassify this already-successful landing's own
+                # verdict away from `clean`, exactly the blocking behavior
+                # the story's own Never bullet forbids.
+                non_conforming.append(window_subject)
+        data["non_conforming_merges"] = non_conforming
+
+    return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+
+
+def _render_text_land_story(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_recover_spec`` convention."""
+    slug = data.get("slug") or "(no active project)"
+    key = data.get("key", "")
+    lines = [f"deploy land-story: {slug!r} {key!r}"]
+    if "branch" in data:
+        lines.append(f"branch: {data['branch']!r}")
+    if data.get("already_merged"):
+        lines.append("already merged -- no-op (no gate run, no merge attempted)")
+    if "gate_verdict" in data:
+        lines.append(f"gate verdict: {data['gate_verdict']}")
+    if "merge_sha" in data:
+        lines.append(f"merge sha: {data['merge_sha']}")
+        lines.append(f"subject: {data['subject']!r}")
+    non_conforming = data.get("non_conforming_merges")
+    if non_conforming is None and "merge_sha" in data:
+        lines.append("conformance audit: could not enumerate (see findings)")
+    elif non_conforming is not None:
+        lines.append(
+            f"conformance audit: {len(non_conforming)} non-conforming merge(s) "
+            f"since {data.get('since')!r}"
+        )
+        for subject_line in non_conforming:
+            lines.append(f"  {subject_line!r}")
     if findings:
         lines.append("findings:")
         for finding in findings:
