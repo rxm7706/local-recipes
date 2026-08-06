@@ -311,6 +311,35 @@ network conditions, never a new refusal gate" -- a failed push never
 invalidates the run's own supervision, and the tick loop continues
 regardless.
 
+Story 2.3 (frozen-surface scope check, narrowing only, AD-4/AD-26/AD-27)
+adds THREE more codes to ``cli/gate.py``/``core/gate.py``'s own area, the
+first real classifications into ``Verdict.SCOPE_VIOLATION`` (reserved
+since Story 1.1, never used until now): ``MRS-GATE-007`` (a changed path
+matches no glob in the computed effective surface,
+``policy_surface ∩ spec_surface``), ``MRS-GATE-008`` (a changed path
+matches a glob in the live frozen set -- names the offending path and the
+freezing story, or "policy" for a policy-seeded freeze), and
+``MRS-GATE-009`` (``--scope-check`` was requested but could not be
+evaluated at all -- no active/resolvable project, no ``--story``, an
+unresolvable story key, or a ``VcsPort`` failure resolving the worktree's
+changed files). ``MRS-GATE-007``/``008`` classify ``Verdict.
+SCOPE_VIOLATION``: a real change was evaluated and found outside the
+allowlist it is judged against, or touching a file its own or another
+story froze -- a distinct rung from ``GATE_FAILED`` (a configured check
+that ran and failed) and from ``UNEVALUABLE`` (Marshal could not determine
+an answer at all). ``MRS-GATE-009`` classifies ``Verdict.UNEVALUABLE``,
+the same tier as ``MRS-GATE-002``/``003``/``005``: Marshal could not run
+the scope check at all. The SAME story also generalizes ``MRS-GATE-005``'s
+own meaning: since ``core/journal.fold`` now has a real caller here (Story
+3.2's own fold gains its second real caller), ``--run <id>`` no longer
+means "no run-journal fold exists yet" -- it now means "the requested
+run-scoped fold could not be PRODUCED" (no loop home resolvable for the
+active project, the run directory does not exist, or its journal could
+not be read/folded), a strictly broader reading of the SAME code rather
+than a new one, since both describe the identical caller-facing shape
+("a run-scoped answer was requested and Marshal could not honor it") and
+the identical ``Verdict.UNEVALUABLE`` classification.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -367,6 +396,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 3.8's supervisor/__main__.py adds an EIGHTH MRS-SUPV-* code,
 # MRS-SUPV-008 (a durability push -- stage-boundary or interval-watcher --
 # failed).
+# Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008/009 -- the
+# table's first SCOPE_VIOLATION classifications (007/008) plus a new
+# UNEVALUABLE code for a --scope-check that could not be evaluated at all
+# (009). MRS-GATE-005 is REUSED, not replaced, with a broadened meaning
+# (see the prose above).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -427,6 +461,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-011",
         "MRS-SPIN-012",
         "MRS-SUPV-008",
+        "MRS-GATE-007",
+        "MRS-GATE-008",
+        "MRS-GATE-009",
     }
 )
 

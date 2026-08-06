@@ -529,3 +529,58 @@ class GitVcs:
         result = _run(args, timeout_s=_GIT_PUSH_TIMEOUT_S)
         if result.returncode != 0:
             raise VcsCommandError(f"git push failed for {branch}: {result.stderr.strip()}")
+
+    def changed_files(
+        self, repo_root: Path, worktree_path: Path, *, base: str
+    ) -> tuple[str, ...]:
+        """Story 2.3 (AD-27): the union of a committed diff and the
+        working-tree's own dirty/untracked state, both run against
+        ``worktree_path`` -- see the port's own docstring for why ``HEAD``
+        must resolve from ``worktree_path``, never ``repo_root``.
+        ``repo_root`` is accepted for interface parity with every other
+        ``VcsPort`` method (and for a future caller that wants it echoed
+        for provenance) but is not itself used to run either git
+        invocation below."""
+        diff_result = _run(
+            ["git", "-C", str(worktree_path), "diff", "--name-only", f"{base}...HEAD"]
+        )
+        if diff_result.returncode != 0:
+            raise VcsCommandError(
+                f"git diff --name-only {base}...HEAD failed in {worktree_path}: "
+                f"{diff_result.stderr.strip()}"
+            )
+        committed = {line for line in diff_result.stdout.splitlines() if line.strip()}
+
+        # -c status.showUntrackedFiles=normal: same explicit-config-pin
+        # discipline as has_uncommitted_changes above -- an operator's own
+        # config setting it to "no" must not silently hide an untracked
+        # change from this scope check.
+        status_result = _run(
+            [
+                "git",
+                "-C",
+                str(worktree_path),
+                "-c",
+                "status.showUntrackedFiles=normal",
+                "status",
+                "--porcelain",
+            ]
+        )
+        if status_result.returncode != 0:
+            raise VcsCommandError(
+                f"git status --porcelain failed in {worktree_path}: "
+                f"{status_result.stderr.strip()}"
+            )
+        dirty: set[str] = set()
+        for line in status_result.stdout.splitlines():
+            if not line.strip():
+                continue
+            # Porcelain v1 short format: a fixed 2-char status code, one
+            # space, then the path -- a rename/copy carries
+            # "OLD -> NEW", of which only NEW is a currently-live path.
+            entry = line[3:]
+            if " -> " in entry:
+                entry = entry.split(" -> ", 1)[1]
+            dirty.add(entry)
+
+        return tuple(sorted(committed | dirty))

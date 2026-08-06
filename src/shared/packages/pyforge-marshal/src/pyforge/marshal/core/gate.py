@@ -62,12 +62,29 @@ by looking up ``core/policy.py``'s ``GATE_MODE_AUTONOMY_LABELS``, and raises
 3-mode vocabulary ``core/policy.compose()`` already restricts at
 composition time: the same precedent ``core/verdict.py::classify()`` sets
 for a registered-but-unclassified code.
+
+Story 2.3's ``compute_effective_surface``/``check_scope`` (AD-4/AD-26/AD-27)
+add two more real codes, this table's first classifications into the
+``Verdict.SCOPE_VIOLATION`` rung (reserved since Story 1.1, never used
+until now): ``MRS-GATE-007`` (a changed path matches no glob in the
+effective surface -- ``policy_surface ∩ spec_surface``, AD-27's own
+intersection-only combinator) and ``MRS-GATE-008`` (a changed path matches
+a glob in the live frozen set -- ``core/journal.py::FoldResult.
+live_frozen_surfaces``, AD-26's fold-is-the-only-producer rule -- naming
+both the path and the freezing story, or "policy" for a policy-seeded
+freeze). Both pure, both driven entirely by already-resolved inputs
+(``core/journal``'s ``FrozenPath`` and a caller-supplied ``changed_files``
+tuple -- this module still performs no VCS I/O itself, matching
+``classify_outcome``'s own already-obtained-``ProcessResult`` shape).
 """
 
 from __future__ import annotations
 
+import fnmatch
+
 from ..ports.process import ProcessResult
 from . import policy
+from .journal import FrozenPath
 from .model import Finding, Severity, Status, status_for
 from .verdict import classify
 
@@ -279,3 +296,110 @@ def describe_gate_mode(gate_mode: str) -> dict[str, object]:
             f"labeled modes {sorted(policy.GATE_MODE_AUTONOMY_LABELS)}"
         ) from exc
     return {"gate_mode": gate_mode, "autonomy_label": dict(label)}
+
+
+# --- Story 2.3: frozen-surface scope check, narrowing only (AD-4/AD-26/AD-27) -
+
+
+def _valid_glob_tuple(value: object, *, name: str) -> None:
+    if not isinstance(value, tuple) or not all(isinstance(item, str) for item in value):
+        raise TypeError(f"{name} must be a tuple of str, got {value!r}")
+
+
+def compute_effective_surface(
+    policy_surface: tuple[str, ...], spec_surface: tuple[str, ...] | None
+) -> tuple[str, ...]:
+    """The AD-27 combinator: ``policy_surface`` narrowed by
+    ``spec_surface``, and ONLY narrowed -- never widened, never any other
+    combinator. Pure, no I/O.
+
+    ``spec_surface is None`` (no story spec, or no ``surface:`` field) means
+    there is nothing to narrow against, so the effective surface is
+    ``policy_surface`` unchanged. Otherwise the effective surface is the
+    INTERSECTION of the two glob tuples, literally ``set(a) & set(b)`` --
+    never ``spec_surface`` alone, never a union. A glob the spec declares
+    that ``policy_surface`` does not already carry is silently excluded
+    here (never a widening, never itself a finding) -- a change that later
+    lands only on a path matching that excluded glob is what turns into a
+    real, named finding, in ``check_scope`` below.
+
+    The result is sorted for a deterministic, reproducible return value
+    (set iteration order is not otherwise guaranteed) -- callers that care
+    about declaration order have ``spec_surface``/``policy_surface``
+    themselves to consult."""
+    _valid_glob_tuple(policy_surface, name="policy_surface")
+    if spec_surface is None:
+        return policy_surface
+    _valid_glob_tuple(spec_surface, name="spec_surface")
+    return tuple(sorted(set(policy_surface) & set(spec_surface)))
+
+
+def _matches_any(path: str, globs: tuple[str, ...]) -> bool:
+    return any(fnmatch.fnmatch(path, glob) for glob in globs)
+
+
+def check_scope(
+    effective_surface: tuple[str, ...],
+    frozen_paths: tuple[FrozenPath, ...],
+    changed_files: tuple[str, ...],
+) -> tuple[Finding, ...]:
+    """The pure scope-check core (Story 2.3, epics.md's own ACs): classify
+    every path in ``changed_files`` against ``frozen_paths`` (checked
+    FIRST -- a frozen path is a hard failure regardless of whether it also
+    sits inside the effective surface) and ``effective_surface``. Pure, no
+    I/O.
+
+    Two independent finding classes, both possible across one call (one
+    ``Finding`` per offending path, never one finding naming several):
+
+    - ``MRS-GATE-008`` -- ``path`` matches a glob in some ``FrozenPath``'s
+      own ``path`` -- names both the offending path AND the story that
+      froze it (``story_key``), or that it was policy-seeded when
+      ``story_key`` is ``None``.
+    - ``MRS-GATE-007`` -- ``path`` is not frozen, but matches no glob in
+      ``effective_surface`` -- names the offending path.
+
+    A path matched by neither carries no finding at all: it is squarely
+    inside the effective surface and untouched by any freeze."""
+    if not isinstance(frozen_paths, tuple) or not all(
+        isinstance(item, FrozenPath) for item in frozen_paths
+    ):
+        raise TypeError(f"frozen_paths must be a tuple of FrozenPath, got {frozen_paths!r}")
+    if not isinstance(changed_files, tuple) or not all(
+        isinstance(item, str) for item in changed_files
+    ):
+        raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
+    _valid_glob_tuple(effective_surface, name="effective_surface")
+
+    result: list[Finding] = []
+    for path in changed_files:
+        frozen = next(
+            (fp for fp in frozen_paths if fnmatch.fnmatch(path, fp.path)), None
+        )
+        if frozen is not None:
+            owner = f"story {frozen.story_key}" if frozen.story_key is not None else "policy"
+            result.append(
+                Finding(
+                    code="MRS-GATE-008",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"changed path {path!r} touches a frozen surface "
+                        f"(frozen by {owner})"
+                    ),
+                    path=path,
+                )
+            )
+            continue
+        if not _matches_any(path, effective_surface):
+            result.append(
+                Finding(
+                    code="MRS-GATE-007",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"changed path {path!r} is outside the effective "
+                        f"surface {effective_surface!r}"
+                    ),
+                    path=path,
+                )
+            )
+    return tuple(result)

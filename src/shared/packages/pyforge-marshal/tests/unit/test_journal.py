@@ -19,7 +19,11 @@ import pytest
 
 from pyforge.marshal.core.identity import StoryKey
 from pyforge.marshal.core.journal import (
+    KIND_FREEZE_DECLARED,
+    KIND_FREEZE_REMOVED,
     SIDECAR_THRESHOLD_BYTES,
+    FoldResult,
+    FrozenPath,
     JournalEntry,
     JournalEntryId,
     Phase,
@@ -654,3 +658,173 @@ def test_schema_rejects_a_document_missing_a_required_field():
     del document["run_id"]
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(instance=document, schema=_schema())
+
+
+# --- FrozenPath (Story 2.3, AD-26/AD-27) --------------------------------------
+
+
+def test_frozen_path_rejects_empty_path():
+    with pytest.raises(ValueError):
+        FrozenPath(path="", story_key=None)
+
+
+def test_frozen_path_rejects_non_str_story_key():
+    with pytest.raises(ValueError):
+        FrozenPath(path="recipes/x/recipe.yaml", story_key=123)  # type: ignore[arg-type]
+
+
+def test_frozen_path_accepts_none_story_key():
+    fp = FrozenPath(path="recipes/x/recipe.yaml", story_key=None)
+    assert fp.story_key is None
+
+
+def test_frozen_path_accepts_str_story_key():
+    fp = FrozenPath(path="recipes/x/recipe.yaml", story_key="2.3")
+    assert fp.story_key == "2.3"
+
+
+# --- FoldResult.live_frozen_surfaces (Story 2.3, AD-26/AD-27) ----------------
+
+
+def _observation(
+    *, kind: str, payload: dict[str, object], counter: int, ts_offset: int = 0
+) -> JournalEntry:
+    return build_entry(
+        id=_valid_id(counter=counter),
+        ts=_ts_frozen(ts_offset),
+        run_id="run-1",
+        kind=kind,
+        phase=Phase.OBSERVATION,
+        payload=payload,
+    )
+
+
+def _ts_frozen(n: int) -> str:
+    return f"2026-08-06T05:45:{12 + n:02d}.123Z"
+
+
+def _fold_of(*entries: JournalEntry) -> FoldResult:
+    return FoldResult(entries=tuple(entries), open_intents=(), orphaned_outcomes=(), quarantined=())
+
+
+def test_live_frozen_surfaces_empty_fold_returns_the_seed_alone_as_policy_owned():
+    """AD-26/F-3's own standalone-evaluation case: an EMPTY synthetic
+    FoldResult still routes the seed through this one accessor, never a
+    direct read."""
+    empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+    result = empty.live_frozen_surfaces(("a.yaml", "b.yaml"))
+    assert set(result) == {
+        FrozenPath(path="a.yaml", story_key=None),
+        FrozenPath(path="b.yaml", story_key=None),
+    }
+
+
+def test_live_frozen_surfaces_rejects_a_non_tuple_seed():
+    empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+    with pytest.raises(TypeError):
+        empty.live_frozen_surfaces(["a.yaml"])  # type: ignore[arg-type]
+
+
+def test_live_frozen_surfaces_freeze_declared_adds_a_story_owned_entry():
+    entry = _observation(
+        kind=KIND_FREEZE_DECLARED,
+        payload={"path": "a.yaml", "story_key": "6.1"},
+        counter=0,
+    )
+    result = _fold_of(entry).live_frozen_surfaces(())
+    assert result == (FrozenPath(path="a.yaml", story_key="6.1"),)
+
+
+def test_live_frozen_surfaces_freeze_declared_narrows_alongside_the_seed():
+    entry = _observation(
+        kind=KIND_FREEZE_DECLARED,
+        payload={"path": "b.yaml", "story_key": "6.1"},
+        counter=0,
+    )
+    result = _fold_of(entry).live_frozen_surfaces(("a.yaml",))
+    assert set(result) == {
+        FrozenPath(path="a.yaml", story_key=None),
+        FrozenPath(path="b.yaml", story_key="6.1"),
+    }
+
+
+def test_live_frozen_surfaces_freeze_removed_lifts_a_seeded_freeze():
+    entry = _observation(
+        kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=0
+    )
+    result = _fold_of(entry).live_frozen_surfaces(("a.yaml", "b.yaml"))
+    assert result == (FrozenPath(path="b.yaml", story_key=None),)
+
+
+def test_live_frozen_surfaces_freeze_removed_lifts_a_declared_freeze():
+    declared = _observation(
+        kind=KIND_FREEZE_DECLARED,
+        payload={"path": "a.yaml", "story_key": "6.1"},
+        counter=0,
+        ts_offset=0,
+    )
+    removed = _observation(
+        kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=1, ts_offset=1
+    )
+    result = _fold_of(declared, removed).live_frozen_surfaces(())
+    assert result == ()
+
+
+def test_live_frozen_surfaces_processes_entries_in_chronological_order():
+    """Declared, removed, then re-declared by a DIFFERENT story: the final
+    live entry must reflect the LAST event, not an unordered batch
+    application (declared-then-removed, batched by kind, would wrongly
+    drop the re-declaration)."""
+    declared_1 = _observation(
+        kind=KIND_FREEZE_DECLARED,
+        payload={"path": "a.yaml", "story_key": "6.1"},
+        counter=0,
+        ts_offset=0,
+    )
+    removed = _observation(
+        kind=KIND_FREEZE_REMOVED, payload={"path": "a.yaml"}, counter=1, ts_offset=1
+    )
+    declared_2 = _observation(
+        kind=KIND_FREEZE_DECLARED,
+        payload={"path": "a.yaml", "story_key": "6.2"},
+        counter=2,
+        ts_offset=2,
+    )
+    result = _fold_of(declared_1, removed, declared_2).live_frozen_surfaces(())
+    assert result == (FrozenPath(path="a.yaml", story_key="6.2"),)
+
+
+def test_live_frozen_surfaces_skips_a_freeze_declared_entry_missing_story_key():
+    """A malformed domain-specific payload for THIS kind is skipped, never
+    raised -- the generic fold already validated the entry's own shape;
+    this method's own additional shape requirement (story_key present, a
+    str) is its own concern."""
+    entry = _observation(
+        kind=KIND_FREEZE_DECLARED, payload={"path": "a.yaml"}, counter=0
+    )
+    result = _fold_of(entry).live_frozen_surfaces(())
+    assert result == ()
+
+
+def test_live_frozen_surfaces_ignores_unrelated_kinds():
+    entry = _observation(kind="gate-verdict", payload={"path": "a.yaml"}, counter=0)
+    result = _fold_of(entry).live_frozen_surfaces(("seed.yaml",))
+    assert result == (FrozenPath(path="seed.yaml", story_key=None),)
+
+
+def test_live_frozen_surfaces_meta_never_reads_effective_policy_seed_directly():
+    """AD-26: a live/run-scoped answer must be produced SOLELY by this
+    method, never by reading `EffectivePolicy.seed_view()["frozen_surfaces"]`
+    and treating it as the live value outside this fold. This is a
+    behavioral proof (the accessor is the ONLY way this test ever reaches a
+    live frozen set), complementing the static AD-26 seed-field-access
+    guard in tests/meta/test_ad26_seed_field_access_guard.py."""
+    from pyforge.marshal.core.policy import compose
+
+    effective, _ = compose(
+        project_slug="acme", project={"frozen_surfaces": ["a.yaml"]}, flags={}
+    )
+    seed_value = effective.seed_view()["frozen_surfaces"].value
+    empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+    live = empty.live_frozen_surfaces(seed_value)
+    assert live == (FrozenPath(path="a.yaml", story_key=None),)
