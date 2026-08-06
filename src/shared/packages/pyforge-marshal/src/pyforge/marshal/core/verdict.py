@@ -249,6 +249,24 @@ Code review (2026-08-06, P5) adds ``MRS-DEPLOY-005`` (``deploy
 recover-spec``'s epics-derived fallback wrote a recovered spec whose Intent
 and/or Acceptance Criteria section came back empty) at ``Verdict.WARN``,
 the same tier as ``MRS-DEPLOY-001``/``002``/``004``.
+Story 4.3 (merge-subject conformance and review-cap landing, FR-27/AD-24)
+adds four more ``MRS-DEPLOY-*`` codes for ``marshal deploy land-story``.
+``MRS-DEPLOY-006`` (``--justification`` missing or empty, the cheap
+precondition checked before any gate re-run) and ``MRS-DEPLOY-007`` (the
+named story's loop-home station branch could not be resolved -- no
+provisioned loop home, the branch does not exist, or the ``--since``
+merge-base read failed) classify ``Verdict.UNEVALUABLE``, the same tier as
+``MRS-INIT-001``/``MRS-GATE-009``: Marshal cannot determine what to land,
+not that a real operation failed. ``MRS-DEPLOY-008`` (``VcsPort.
+merge_branch`` raised -- a real conflict or other git failure, always AFTER
+the full gate already passed) classifies ``Verdict.ERROR``, the same tier
+as ``MRS-INIT-003``/``MRS-TEARDOWN-002``: a real write was attempted and
+did not converge. ``MRS-DEPLOY-009`` (the post-merge conformance audit's
+own ``VcsPort.commit_subjects`` read failed) classifies ``Verdict.WARN``,
+the same tier as ``MRS-DEPLOY-001``/``002``/``004``/``005`` -- the landing
+already succeeded by the time this check runs, so an audit that cannot
+enumerate its own window is a reporting gap, never grounds to undo or
+block a landing that has already happened.
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -361,6 +379,27 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Story 2.7's cli/gate.py/core/gate.py add MRS-GATE-010/011 (missing/
 # unparseable spec-binding Success signal; a declared command narrowed or
 # removed from policy) at SCOPE_VIOLATION, alongside MRS-GATE-007/008.
+# Story 4.3's cli/deploy.py::run_land_story adds four more MRS-DEPLOY-*
+# codes: 006 (missing/empty --justification) and 007 (the station branch
+# could not be resolved) at UNEVALUABLE -- both mean Marshal cannot
+# determine what to land, never that a real operation failed; 008 (the
+# merge itself failed) at ERROR -- a real write was attempted against an
+# already-green gate and did not converge; 009 (the post-merge conformance
+# audit could not enumerate its own window) at WARN -- the landing already
+# succeeded by this point, so an audit gap is a reporting caveat, never
+# grounds to undo it.
+# Code review (2026-08-06) adds three more MRS-DEPLOY-* codes: 010 (P2, the
+# gate's own verdict was not EXACTLY clean) at GATE_FAILED, alongside
+# MRS-GATE-001 -- FR-27 requires a fully clean gate before a manual
+# landing, so a warn-tier result is refused here exactly like a real gate
+# failure, stricter than status_for's ordinarily-permissive ok/error
+# partition; 011 (P4, the station branch's tip could not be reconfirmed
+# before merging, or had moved since the gate ran) at ERROR, alongside
+# MRS-TEARDOWN-003/004/MRS-DEPLOY-008 -- a real safety refusal after an
+# already-attempted operation, not "could not evaluate"; 012 (P7,
+# --justification redaction failed at journal-capture time) at WARN,
+# alongside MRS-DEPLOY-001/002/004/005/009 -- the landing already
+# succeeded, so a lost justification is a paper-trail visibility gap.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -432,6 +471,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-004": Verdict.WARN,
     "MRS-TEARDOWN-005": Verdict.ERROR,
     "MRS-DEPLOY-005": Verdict.WARN,
+    "MRS-DEPLOY-006": Verdict.UNEVALUABLE,
+    "MRS-DEPLOY-007": Verdict.UNEVALUABLE,
+    "MRS-DEPLOY-008": Verdict.ERROR,
+    "MRS-DEPLOY-009": Verdict.WARN,
+    "MRS-DEPLOY-010": Verdict.GATE_FAILED,
+    "MRS-DEPLOY-011": Verdict.ERROR,
+    "MRS-DEPLOY-012": Verdict.WARN,
 }
 
 

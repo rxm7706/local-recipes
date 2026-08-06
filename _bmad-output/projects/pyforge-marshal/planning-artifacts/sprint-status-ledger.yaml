@@ -61,7 +61,7 @@ development_status:
   4-1-story-spec-promotion-with-a-durability-predicate: review
   4-10-fleet-wide-branch-retirement: backlog
   4-2-teardown-reachability-and-spec-recovery-assistance: review
-  4-3-merge-subject-conformance-and-review-cap-landing: backlog
+  4-3-merge-subject-conformance-and-review-cap-landing: review
   4-4-batch-pull-request-with-hygiene-preflight: backlog
   4-5-feed-refresh-with-truth-partitioned-by-domain: backlog
   4-6-deploy-idempotence-and-reconciliation-of-open-intents: backlog
