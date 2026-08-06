@@ -19,18 +19,22 @@ fold, and frozen-surface accumulation, none of which this story's
 promotion concern touches.
 
 ``merged_story_keys`` (AD-24, AD-33): the reachability predicate -- tries
-TWO merge-subject shapes per subject, in order:
+THREE merge-subject shapes per subject, in order:
 
 1. ``core.identity.parse_merge_subject(subject, template)`` -- the AD-24
    templated form (``"Merge {key} into main"``), for a future
    ``marshal land``-driven landing path. No landing path in THIS repo
    writes this form today.
-2. ``extract_story_key_from_github_merge_subject`` (below) -- the shape
-   every real merge commit in this repo's own history actually has:
-   GitHub's own PR-merge subject, ``"Merge pull request #N from
-   <owner>/<branch>"``. Verified live against this repo's ``git log
-   --merges`` at spec-amendment time: zero commits conform to pattern 1,
-   every real merge conforms to pattern 2.
+2. ``extract_story_key_from_github_merge_subject`` (below) -- GitHub's own
+   PR-merge subject, ``"Merge pull request #N from <owner>/<branch>"``,
+   the shape every manually-branched story landing in this repo carries.
+3. ``extract_story_key_from_bmadloop_merge_subject`` (below) -- bmad-loop's
+   own native merge-commit shape, ``"Merge bmad-loop/<run-id>/<key>-<desc>
+   into <branch> (bmad-loop)"``. Added as a post-merge finding while
+   closing out Epic 2: five of its seven stories landed this way, via the
+   shared ``loop/pyforge-marshal`` branch, and matched neither pattern 1
+   nor 2 -- this repo (and every project in this factory) uses BOTH
+   landing paths, not just one.
 
 A subject that conforms to NEITHER pattern is skipped, never a hard
 failure for the whole scan -- most commit subjects in any real repository
@@ -76,6 +80,37 @@ _INVALID_SPEC_CODE = "MRS-DEPLOY-002"
 # real branch name carries.
 _GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+/(?P<branch>\S+)$")
 
+# bmad-loop's own native merge-commit shape -- "Merge bmad-loop/<run-id>/
+# <key>-<description> into <branch> (bmad-loop)" -- the shape every
+# bmad-loop-driven story landing in this repo's history actually carries
+# (verified live, post-merge finding while closing out Epic 2: 2.1/2.2/
+# 2.4/2.5/2.6 all landed this way, via the shared `loop/pyforge-marshal`
+# branch, and matched NEITHER of the two patterns above -- this repo uses
+# both landing paths, manual `marshal/<key>-<desc>` branches AND bmad-loop
+# runs, not just one). This is bmad-loop's own convention across every
+# project in this factory (warden, herald, scribe, atlas all carry the
+# identical shape in their own history), not something local to marshal.
+_BMADLOOP_MERGE_SUBJECT_RE = re.compile(
+    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into \S+ \(bmad-loop\)$"
+)
+
+
+def extract_story_key_from_bmadloop_merge_subject(subject: str) -> StoryKey | None:
+    """The third merge-subject pattern ``merged_story_keys`` tries: matches
+    bmad-loop's own native merge-commit shape and parses the story key from
+    the middle ``<key>-<description>`` segment (between the run-id and
+    ``into``). Same failure-tolerant shape as
+    ``extract_story_key_from_github_merge_subject``: returns ``None``,
+    never raises, for either a non-matching subject or a segment whose
+    leading token isn't a parseable story key."""
+    match = _BMADLOOP_MERGE_SUBJECT_RE.match(subject)
+    if match is None:
+        return None
+    try:
+        return normalize(match.group("key_slug"))
+    except MalformedStoryKeyError:
+        return None
+
 
 def extract_story_key_from_github_merge_subject(subject: str) -> StoryKey | None:
     """The second merge-subject pattern ``merged_story_keys`` tries (Story
@@ -105,16 +140,19 @@ def extract_story_key_from_github_merge_subject(subject: str) -> StoryKey | None
 
 
 def _classify_merge_subject(subject: str, template: str) -> StoryKey | None:
-    """Try both merge-subject patterns ``merged_story_keys`` recognizes, in
-    order, returning the first match or ``None`` if neither conforms.
+    """Try all three merge-subject patterns ``merged_story_keys`` recognizes,
+    in order, returning the first match or ``None`` if none conform.
     Factored out so ``merged_story_keys`` (deduplicated by key) and
     ``count_conforming_subjects`` (a raw per-subject diagnostic count) share
-    one classification, never two copies that could silently diverge."""
+    one classification, never copies that could silently diverge."""
     try:
         return parse_merge_subject(subject, template)
     except MergeSubjectConformanceError:
         pass
-    return extract_story_key_from_github_merge_subject(subject)
+    key = extract_story_key_from_github_merge_subject(subject)
+    if key is not None:
+        return key
+    return extract_story_key_from_bmadloop_merge_subject(subject)
 
 
 def merged_story_keys(subjects: tuple[str, ...], template: str) -> frozenset[StoryKey]:

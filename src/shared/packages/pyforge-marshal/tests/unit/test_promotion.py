@@ -10,6 +10,7 @@ from pyforge.marshal.core.promotion import (
     SpecCandidate,
     classify_promotion_candidates,
     count_conforming_subjects,
+    extract_story_key_from_bmadloop_merge_subject,
     extract_story_key_from_github_merge_subject,
     is_valid_spec_text,
     merged_story_keys,
@@ -70,6 +71,43 @@ def test_non_merge_subject_returns_none():
     assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_2) is None
 
 
+# --- extract_story_key_from_bmadloop_merge_subject ---------------------------
+#
+# Post-merge finding (2026-08-06): closing out Epic 2 with a real
+# `marshal deploy promote` run found five of its seven stories (2.1/2.2/
+# 2.4/2.5/2.6) landed via bmad-loop's own shared `loop/pyforge-marshal`
+# branch, not a per-story branch -- matching NEITHER of the two patterns
+# above. These fixtures are real subjects pulled verbatim from this repo's
+# own `git log --merges --format=%s`, the same discipline the original
+# GitHub-pattern fixtures above already follow.
+
+
+def test_extract_story_key_from_bmadloop_merge_subject_parses_a_real_one():
+    subject = (
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
+        "into loop/pyforge-marshal (bmad-loop)"
+    )
+    assert extract_story_key_from_bmadloop_merge_subject(subject) == StoryKey(2, 4)
+
+
+def test_extract_story_key_from_bmadloop_merge_subject_parses_a_different_project():
+    """Not marshal-specific -- every project in this factory uses the same
+    bmad-loop merge shape (verified against pyforge-warden's own history)."""
+    subject = (
+        "Merge bmad-loop/20260724-042801-7c01/6-7-epss-feed-the-min-epss-gate "
+        "into loop/pyforge-warden (bmad-loop)"
+    )
+    assert extract_story_key_from_bmadloop_merge_subject(subject) == StoryKey(6, 7)
+
+
+def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_github_shape():
+    assert extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_2_3) is None
+
+
+def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_non_merge():
+    assert extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1) is None
+
+
 # --- merged_story_keys -------------------------------------------------------
 
 
@@ -107,6 +145,19 @@ def test_merged_story_keys_recognizes_real_github_merge_subjects_too():
     must be recognized by the SAME `merged_story_keys` call."""
     subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8, _REAL_SUBJECT_AMBIGUOUS)
     assert merged_story_keys(subjects, _TEMPLATE) == frozenset({StoryKey(2, 3), StoryKey(3, 8)})
+
+
+def test_merged_story_keys_recognizes_real_bmadloop_merge_subjects_too():
+    """The post-merge finding's own regression: a repo that lands stories
+    via BOTH manual GitHub PRs and bmad-loop runs must recognize both
+    shapes in the same `merged_story_keys` call, alongside a genuine
+    non-story merge (an epic-retro PR) that matches neither."""
+    bmadloop_subject = (
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
+        "into loop/pyforge-marshal (bmad-loop)"
+    )
+    subjects = (_REAL_SUBJECT_2_3, bmadloop_subject, _REAL_SUBJECT_NON_STORY_1)
+    assert merged_story_keys(subjects, _TEMPLATE) == frozenset({StoryKey(2, 3), StoryKey(2, 4)})
 
 
 def test_merged_story_keys_tries_templated_pattern_before_github_pattern():
