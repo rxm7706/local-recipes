@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-marshal:policy.v1",
   "title": "MarshalEffectivePolicy",
-  "description": "The composed EffectivePolicy's wire shape (AD-10, AD-16, AD-26, AD-27, AD-35, AD-40): the closed 19-key policy vocabulary, each key a {value, layer, raw_source} PolicyField. additionalProperties is false at both the document and the PolicyField level -- an unrecognized/typo'd key is a schema violation, matching envelope.v1.json's own discipline. This is the exact shape cli/config.py's materialize() writes to <target_dir>/policy-<content_hash>.json (core/policy.py stays pure and never touches a file); `marshal config --format json` nests one of these documents under its envelope's data.policy key alongside data.content_hash.",
+  "description": "The composed EffectivePolicy's wire shape (AD-10, AD-16, AD-26, AD-27, AD-35, AD-40): the closed 20-key policy vocabulary, each key a {value, layer, raw_source} PolicyField. additionalProperties is false at both the document and the PolicyField level -- an unrecognized/typo'd key is a schema violation, matching envelope.v1.json's own discipline. This is the exact shape cli/config.py's materialize() writes to <target_dir>/policy-<content_hash>.json (core/policy.py stays pure and never touches a file); `marshal config --format json` nests one of these documents under its envelope's data.policy key alongside data.content_hash.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -15,6 +15,7 @@
     "landing_merge_strategy",
     "landing_branch_retirement",
     "landing_resync",
+    "landing_base_branch",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -62,6 +63,10 @@
     "landing_resync": {
       "$ref": "#/$defs/policyField",
       "description": "STATIC (Story 4.7, AD-40). A bool; default true. Declared and validated here -- Stories 4.5/4.9 read and act on it."
+    },
+    "landing_base_branch": {
+      "$ref": "#/$defs/policyField",
+      "description": "STATIC (Story 4.4, AD-40). A non-empty str; default 'main'. The target base branch for `marshal deploy batch-pr` -- never the forge's own 'default branch' concept, which for a fork defaults to the upstream's default, not this repo's own main."
     },
     "gate_mode": {
       "$ref": "#/$defs/policyField",

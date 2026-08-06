@@ -486,6 +486,20 @@ redaction failure at journal-capture time swallowed the operator's
 already succeeded, so a lost justification is a paper-trail visibility gap,
 never grounds to undo it.
 
+Story 4.4 (batch pull request with hygiene preflight, FR-29/NFR-2, AD-34)
+adds two more ``MRS-DEPLOY-*`` codes for ``marshal deploy batch-pr``.
+``MRS-DEPLOY-013`` (a fired ``landing_rules`` entry with ``required_check``
+set is NOT satisfied -- its named check is missing or did not conclude
+``"success"`` on the wave's own head commit) classifies
+``Verdict.SCOPE_VIOLATION``, the same rung ``MRS-GATE-007``-``011`` already
+use: a real, project-declared gate evaluated the change set and found it
+non-conforming, blocking before any PR write is attempted -- never a mere
+internal-operation failure. ``MRS-DEPLOY-014`` (``ForgePort``'s own ``gh``
+invocation failed -- listing, creating, updating a PR, or applying labels)
+classifies ``Verdict.ERROR``, the same tier as ``MRS-DEPLOY-008``
+(``VcsPort.merge_branch`` failing): a real outbound write was attempted and
+did not complete.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -576,6 +590,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # MRS-DEPLOY-011 (P4: the station branch's tip moved or could not be
 # reconfirmed before merging), and MRS-DEPLOY-012 (P7: --justification
 # redaction failed at journal-capture time).
+# Story 4.4's cli/deploy.py adds two more MRS-DEPLOY-* codes for
+# `marshal deploy batch-pr`: MRS-DEPLOY-013 (an unsatisfied blocking
+# hygiene rule) and MRS-DEPLOY-014 (a ForgePort/gh command failure).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -655,6 +672,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-010",
         "MRS-DEPLOY-011",
         "MRS-DEPLOY-012",
+        "MRS-DEPLOY-013",
+        "MRS-DEPLOY-014",
     }
 )
 

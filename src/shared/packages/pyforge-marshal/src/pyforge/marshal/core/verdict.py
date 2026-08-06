@@ -400,6 +400,15 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # --justification redaction failed at journal-capture time) at WARN,
 # alongside MRS-DEPLOY-001/002/004/005/009 -- the landing already
 # succeeded, so a lost justification is a paper-trail visibility gap.
+# Story 4.4 (batch pull request with hygiene preflight, FR-29/NFR-2, AD-34)
+# adds two more MRS-DEPLOY-* codes for `marshal deploy batch-pr`:
+# MRS-DEPLOY-013 (a fired `required_check` landing rule was not satisfied)
+# at SCOPE_VIOLATION, alongside MRS-GATE-007/008/010/011 -- a real,
+# project-declared gate evaluated the change set and blocked it, before any
+# PR write is attempted; MRS-DEPLOY-014 (a ForgePort/`gh` command failed --
+# listing, creating, updating a PR, or applying labels) at ERROR, the same
+# tier as MRS-DEPLOY-008 -- a real outbound write was attempted and did not
+# complete.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -478,6 +487,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-010": Verdict.GATE_FAILED,
     "MRS-DEPLOY-011": Verdict.ERROR,
     "MRS-DEPLOY-012": Verdict.WARN,
+    "MRS-DEPLOY-013": Verdict.SCOPE_VIOLATION,
+    "MRS-DEPLOY-014": Verdict.ERROR,
 }
 
 

@@ -1212,6 +1212,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             landing_merge_strategy=PolicyField(value="merge", layer="default", raw_source="merge"),
             landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
+            landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             _seed=seed,
         )
 
@@ -1228,6 +1229,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             landing_merge_strategy=PolicyField(value="merge", layer="default", raw_source="merge"),
             landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
+            landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -1244,6 +1246,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             landing_merge_strategy=PolicyField(value="merge", layer="default", raw_source="merge"),
             landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
+            landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             _seed={
                 # All 10 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -1283,7 +1286,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_nineteen_keys():
+def test_schema_file_declares_the_twenty_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -1299,6 +1302,7 @@ def test_schema_file_declares_the_nineteen_keys():
         "landing_merge_strategy",
         "landing_branch_retirement",
         "landing_resync",
+        "landing_base_branch",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",

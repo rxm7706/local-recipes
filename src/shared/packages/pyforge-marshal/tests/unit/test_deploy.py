@@ -50,6 +50,8 @@ class _FakeVcs:
         resolve_ref_sha: str = "branch-tip-sha",
         resolve_ref_raises: bool = False,
         resolve_ref_sequence: list[str] | None = None,
+        changed_paths: tuple[str, ...] = (),
+        changed_files_raises: bool = False,
     ) -> None:
         self.main_subjects = main_subjects
         self.origin_subjects = origin_subjects
@@ -79,6 +81,13 @@ class _FakeVcs:
             list(resolve_ref_sequence) if resolve_ref_sequence is not None else None
         )
         self.resolve_ref_calls: list[str] = []
+        self.changed_paths = changed_paths
+        self.changed_files_raises = changed_files_raises
+
+    def changed_files(self, repo_root, worktree_path, *, base):
+        if self.changed_files_raises:
+            raise VcsCommandError("git diff --name-status failed")
+        return self.changed_paths
 
     def commit_subjects(self, repo_root, ref):
         if ref == "origin/main":
@@ -1197,3 +1206,361 @@ def test_land_story_redaction_failure_warns_but_still_lands(tmp_path, capsys, mo
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
     assert len(journal_lines) == 1
     assert journal_lines[0]["payload"]["justification"] is None
+
+
+# =====================================================================
+# ``marshal deploy batch-pr`` (Story 4.4, FR-29/NFR-2, AD-34).
+# =====================================================================
+
+from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo  # noqa: E402
+
+_BMADLOOP_WAVE_SUBJECT = "Merge bmad-loop/run-1/4-4-batch into loop/acme (bmad-loop)"
+
+
+class _FakeForge:
+    """A minimal ``ForgePort`` stand-in -- records every call for
+    assertion, mirrors ``_FakeVcs``'s own configurable-raise shape."""
+
+    def __init__(
+        self,
+        *,
+        existing: PrInfo | None = None,
+        create_result: PrInfo | None = None,
+        update_result: PrInfo | None = None,
+        find_raises: bool = False,
+        create_raises: bool = False,
+        update_raises: bool = False,
+        add_labels_raises: bool = False,
+        check_status_map: dict[str, str | None] | None = None,
+        check_status_raises: bool = False,
+    ) -> None:
+        self.existing = existing
+        self.create_result = create_result or PrInfo(
+            number=1, url="https://example/pr/1", state="open"
+        )
+        self.update_result = update_result or PrInfo(
+            number=2, url="https://example/pr/2", state="open"
+        )
+        self.find_raises = find_raises
+        self.create_raises = create_raises
+        self.update_raises = update_raises
+        self.add_labels_raises = add_labels_raises
+        self.check_status_map = check_status_map or {}
+        self.check_status_raises = check_status_raises
+        self.find_calls: list = []
+        self.create_calls: list = []
+        self.update_calls: list = []
+        self.add_labels_calls: list = []
+        self.check_calls: list = []
+
+    def find_open_pr(self, repo, head_branch):
+        self.find_calls.append((repo, head_branch))
+        if self.find_raises:
+            raise ForgeCommandError("gh pr list failed")
+        return self.existing
+
+    def create_pr(self, repo, base, head, title, body):
+        if self.create_raises:
+            raise ForgeCommandError("gh pr create failed")
+        self.create_calls.append((repo, base, head, title, body))
+        return self.create_result
+
+    def update_pr(self, repo, number, title, body):
+        if self.update_raises:
+            raise ForgeCommandError("gh pr edit failed")
+        self.update_calls.append((repo, number, title, body))
+        return self.update_result
+
+    def add_labels(self, repo, number, labels):
+        self.add_labels_calls.append((repo, number, labels))
+        if self.add_labels_raises:
+            raise ForgeCommandError("gh pr edit --add-label failed")
+
+    def check_run_status(self, repo, ref, check_name):
+        self.check_calls.append((repo.value, ref.value, check_name.value))
+        if self.check_status_raises:
+            raise ForgeCommandError("gh api check-runs failed")
+        return self.check_status_map.get(check_name.value)
+
+
+def _batch_pr_args(*, slug: str = "acme", format: str = "json") -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, format=format)
+
+
+def _write_batch_pr_project_policy(tmp_path: Path, text: str) -> Path:
+    path = tmp_path / "batch-pr-marshal-policy.toml"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_batch_pr_refuses_when_the_station_branch_does_not_exist(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(existing_branches=frozenset())
+    forge = _FakeForge()
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-007" in codes
+    assert exit_code != 0
+    assert forge.find_calls == []
+    assert forge.create_calls == []
+
+
+def test_batch_pr_empty_wave_is_a_clean_noop(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=("an ordinary commit, not a story merge",),
+    )
+    forge = _FakeForge()
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["wave"] == []
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert forge.find_calls == []
+    assert forge.create_calls == []
+
+
+def test_batch_pr_opens_a_new_pr_when_none_exists(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["wave"] == ["4.4"]
+    assert payload["data"]["opened"] is True
+    assert payload["data"]["updated"] is False
+    assert payload["data"]["pr_number"] == 1
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert len(forge.create_calls) == 1
+    assert forge.update_calls == []
+    repo, base, head, title, body = forge.create_calls[0]
+    assert repo.value == "rxm7706/local-recipes"
+    assert base.value == "main"
+    assert head.value == "loop/acme"
+    assert "4.4" in title.text
+    assert "4.4" in body.text
+    # FR-35: no AI-attribution or courtesy preamble anywhere Marshal emits.
+    for forbidden in ("Generated with", "Co-Authored-By", "🤖"):
+        assert forbidden not in title.text
+        assert forbidden not in body.text
+
+
+def test_batch_pr_updates_an_existing_pr_instead_of_duplicating(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    existing_pr = PrInfo(number=99, url="https://example/pr/99", state="open")
+    forge = _FakeForge(existing=existing_pr, update_result=existing_pr)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is True
+    assert payload["data"]["pr_number"] == 99
+    assert exit_code == 0
+    assert forge.create_calls == []
+    assert len(forge.update_calls) == 1
+    assert forge.update_calls[0][1] == 99
+
+
+def test_batch_pr_blocks_on_an_unsatisfied_required_check_and_writes_no_pr(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+[[landing_rules]]
+name = "environment-yaml-sync"
+trigger_path_glob = "pixi.toml"
+trigger_mode = "include"
+required_check = "environment-yaml-sync"
+ungated = true
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("pixi.toml",),
+    )
+    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "failure"})
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-013" in codes
+    assert any("remediation" in finding["message"] for finding in payload["findings"])
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert exit_code != 0
+    assert forge.create_calls == []
+    assert forge.update_calls == []
+
+
+def test_batch_pr_a_satisfied_required_check_does_not_block(tmp_path, capsys, monkeypatch):
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+[[landing_rules]]
+name = "environment-yaml-sync"
+trigger_path_glob = "pixi.toml"
+trigger_mode = "include"
+required_check = "environment-yaml-sync"
+ungated = true
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("pixi.toml",),
+    )
+    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "success"})
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert len(forge.create_calls) == 1
+    rule_report = payload["data"]["hygiene_rules"][0]
+    assert rule_report["applies"] is True
+    assert rule_report["satisfied"] is True
+
+
+def test_batch_pr_applies_a_fired_label_after_opening_never_blocking(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+[[landing_rules]]
+name = "maintenance-label"
+trigger_path_glob = "recipes/**"
+trigger_mode = "exclude"
+label = "maintenance"
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["data"]["opened"] is True
+    assert payload["data"]["labels_applied"] == ["maintenance"]
+    assert len(forge.add_labels_calls) == 1
+    _repo, number, labels = forge.add_labels_calls[0]
+    assert number == 1
+    assert labels == ("maintenance",)
+
+
+def test_batch_pr_reports_mrs_deploy_014_on_a_forge_command_failure(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None, create_raises=True)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-014" in codes
+    assert exit_code != 0
+
+
+def test_batch_pr_body_lists_the_wave_with_gate_verdicts_from_the_journal(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    run_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "implementation-artifacts"
+        / "runs"
+        / "acme-run-1"
+    )
+    run_dir.mkdir(parents=True)
+    entry = {
+        "id": {"writer_id": "land-story-1", "counter": 0},
+        "ts": "2026-08-06T00:00:00.000Z",
+        "run_id": "acme-run-1",
+        "kind": "manual-landing",
+        "phase": "observation",
+        "payload": {
+            "story_key": "4.4",
+            "justification": "landed manually",
+            "merge_sha": "deadbeef",
+            "gate_verdict": "clean",
+        },
+    }
+    (run_dir / "journal.jsonl").write_text(json.dumps(entry) + "\n", encoding="utf-8")
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    assert exit_code == 0
+    _repo, _base, _head, _title, body = forge.create_calls[0]
+    assert "4.4" in body.text
+    assert "clean" in body.text

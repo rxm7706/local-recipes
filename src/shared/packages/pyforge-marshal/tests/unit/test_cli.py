@@ -259,13 +259,13 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_nineteen_keys(capsys, monkeypatch):
-    """AC: 'every one of the (now 19, Story 4.7's 4 landing keys added)
-    keys prints its effective value and winning layer' -- checked
-    exhaustively, not just a couple of spot-checked fields. The layer half
-    is counted, not merely detected: exactly one `(layer=...)` suffix per
-    key line, so a regression that drops the suffix from all but one line
-    cannot ship green."""
+def test_config_prints_all_twenty_keys(capsys, monkeypatch):
+    """AC: 'every one of the (now 20, Story 4.4's `landing_base_branch`
+    joining Story 4.7's 4 landing keys) keys prints its effective value and
+    winning layer' -- checked exhaustively, not just a couple of
+    spot-checked fields. The layer half is counted, not merely detected:
+    exactly one `(layer=...)` suffix per key line, so a regression that
+    drops the suffix from all but one line cannot ship green."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -280,6 +280,7 @@ def test_config_prints_all_nineteen_keys(capsys, monkeypatch):
         "landing_merge_strategy",
         "landing_branch_retirement",
         "landing_resync",
+        "landing_base_branch",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -292,7 +293,7 @@ def test_config_prints_all_nineteen_keys(capsys, monkeypatch):
         "max_wall_clock_minutes_per_run",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 19
+    assert captured.out.count("(layer=") == 20
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -633,7 +634,7 @@ def test_config_non_utf8_project_policy_reports_finding_not_crash(tmp_path, caps
 
 
 def test_field_order_matches_the_closed_policy_vocabulary():
-    """The 19-key vocabulary is declared in three places (_FIELD_ORDER, the
+    """The 20-key vocabulary is declared in three places (_FIELD_ORDER, the
     _STATIC_KEYS/_SEED_KEYS sets, schemas/policy.json). This is the derive-
     don't-declare tie: adding a 20th key to core/policy.py without updating
     the render order or the schema fails HERE, instead of silently vanishing

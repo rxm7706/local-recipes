@@ -184,16 +184,19 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.process_posix import PosixProcess
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion
-from ..core.egress import to_redacted
+from ..core.egress import Redacted, to_redacted
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
-from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
+from ..core.journal import JournalEntryId, Phase, build_entry, fold, mint_run_id, prepare_for_write
+from ..core.landing import LandingRule, rule_applies
 from ..core.model import Finding, Severity, Status, Verdict, build_envelope, status_for
 from ..core.promotion import PromotionPlan, SpecCandidate
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
 from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
@@ -224,11 +227,22 @@ _MRS_DEPLOY_009 = "MRS-DEPLOY-009"
 _MRS_DEPLOY_010 = "MRS-DEPLOY-010"
 _MRS_DEPLOY_011 = "MRS-DEPLOY-011"
 _MRS_DEPLOY_012 = "MRS-DEPLOY-012"
+_MRS_DEPLOY_013 = "MRS-DEPLOY-013"
+_MRS_DEPLOY_014 = "MRS-DEPLOY-014"
 
 # Story 4.3's own journal kind (mirrors cli/init.py's `_ABANDON_KIND`
 # convention) -- one `observation` entry per manual landing.
 _LAND_JOURNAL_FILENAME = "journal.jsonl"
 _LAND_KIND = "manual-landing"
+
+# Story 4.4's own repo constant: every Marshal station lives inside this ONE
+# physical repo (this repo's own `local-recipes` fork, per the team's own
+# reference note "gh pr create needs --repo rxm7706/local-recipes" -- this
+# repo is a staged-recipes fork, so the forge's own repo-inference from cwd
+# is never trustworthy here). No policy field names this -- it is not a
+# per-project decision the way `landing_base_branch` is; it is a fact about
+# which physical repo Marshal itself runs inside.
+_FORGE_REPO = "rxm7706/local-recipes"
 
 
 def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -329,6 +343,29 @@ def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     land_parser.set_defaults(handler=run_land_story)
+
+    batch_pr_parser = deploy_subparsers.add_parser(
+        "batch-pr",
+        help="Open/update the batch PR for a wave of landed stories, under a hygiene preflight (FR-29/NFR-2).",
+        description=(
+            "Discovers the wave of durable story keys on <slug>'s loop-home "
+            "station branch since its own merge-base with the configured "
+            "landing base branch, evaluates every effective landing_rules "
+            "entry against the wave's changed files (a fired required_check "
+            "rule blocks unless its named forge check concluded 'success'; "
+            "a fired label rule is applied, never blocking), then opens or "
+            "updates the batch PR with a title/body derived from the wave "
+            "and the journal's own gate-verdict records."
+        ),
+    )
+    batch_pr_parser.add_argument("slug", help="The BMAD project slug.")
+    batch_pr_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    batch_pr_parser.set_defaults(handler=run_batch_pr)
 
 
 def _discover_candidates(fs: FsPort, tier3_dir: Path) -> tuple[SpecCandidate, ...]:
@@ -1507,6 +1544,466 @@ def _render_text_land_story(data: Mapping[str, object], findings: tuple[Finding,
         )
         for subject_line in non_conforming:
             lines.append(f"  {subject_line!r}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+# =====================================================================
+# ``marshal deploy batch-pr`` (Story 4.4, FR-29/NFR-2, AD-34).
+# =====================================================================
+
+
+def _batch_pr_redact(text: str) -> Redacted | None:
+    """Mirrors ``_land_redact_text``'s established ``to_redacted({"k":
+    text}); json.loads(...)["k"]`` round-trip idiom (AD-34's own
+    redact-at-capture pattern) -- but returns a fresh ``Redacted`` wrapping
+    the already-redacted plain text directly, rather than unwrapping all the
+    way back to a bare ``str``: ``ForgePort.create_pr``/``update_pr`` need a
+    ``Redacted`` INPUT, never a bare string reaching the port boundary.
+    Returns ``None`` on any redaction failure, the same tolerant shape
+    ``_land_redact_text`` uses -- the caller decides how to report it."""
+    try:
+        redacted = to_redacted({"text": text})
+        plain = json.loads(redacted.text)["text"]
+    except (ValueError, LookupError, TypeError):
+        return None
+    return Redacted(text=plain)
+
+
+def _batch_pr_title(slug: str, wave_keys: list[StoryKey]) -> str:
+    """No AI-attribution or courtesy preamble (FR-35) -- a plain, factual
+    title naming the wave."""
+    if not wave_keys:
+        return f"marshal: batch PR for {slug}"
+    keys_text = ", ".join(str(key) for key in wave_keys)
+    noun = "story" if len(wave_keys) == 1 else "stories"
+    return f"marshal: land {len(wave_keys)} {slug} {noun} ({keys_text})"
+
+
+def _batch_pr_body(wave_keys: list[StoryKey], gate_verdicts: Mapping[str, str]) -> str:
+    """Lists every wave story with its journal-derived gate verdict
+    (``"unknown"`` when no ``manual-landing`` journal record names it --
+    e.g. a story that landed through the ordinary dev/review flow rather
+    than ``marshal deploy land-story``). No AI-attribution or courtesy
+    preamble anywhere (FR-35, default-off)."""
+    lines = ["Batch PR opened by `marshal deploy batch-pr`.", "", "Stories in this wave:"]
+    for key in wave_keys:
+        verdict = gate_verdicts.get(str(key), "unknown")
+        lines.append(f"- {key}: gate verdict `{verdict}`")
+    return "\n".join(lines)
+
+
+def _gather_gate_verdicts(fs: FsPort, root: Path, slug: str) -> dict[str, str]:
+    """Every story key's own most-recently-journaled gate verdict, reusing
+    Story 3.2's ``core.journal.fold`` (the story's own Always bullet: "the
+    journal fold's own gate-verdict records for each key") over every
+    ``manual-landing`` observation (Story 4.3's own ``_LAND_KIND``) any of
+    this project's Tier-3 run directories carries -- the one real source of
+    a per-story gate verdict this codebase journals today. A story landed
+    through the ordinary dev/review flow (never through ``land-story``)
+    simply has no entry here; ``_batch_pr_body`` reports that as
+    ``"unknown"``, never fabricated. Best-effort: an unreadable runs
+    directory, journal file, or sidecar blob is silently skipped (mirrors
+    ``fold``'s own "one bad line never aborts the fold" posture, one level
+    up -- one bad run directory never aborts gathering every other run's
+    verdicts)."""
+    runs_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    verdicts: dict[str, str] = {}
+    try:
+        run_dirs = sorted(path for path in runs_dir.iterdir() if path.is_dir())
+    except OSError:
+        return verdicts
+    for run_dir in run_dirs:
+        try:
+            text = fs.read_text(run_dir / _LAND_JOURNAL_FILENAME)
+        except FsError:
+            continue
+        sidecars: dict[str, str | None] = {}
+        try:
+            blob_paths = sorted((run_dir / "blobs").glob("*.json"))
+        except OSError:
+            blob_paths = []
+        for blob_path in blob_paths:
+            try:
+                sidecars[f"blobs/{blob_path.name}"] = fs.read_text(blob_path)
+            except FsError:
+                sidecars[f"blobs/{blob_path.name}"] = None
+        try:
+            fold_result = fold(text.split("\n"), sidecars=sidecars)
+        except TypeError:
+            continue
+        for entry in fold_result.entries:
+            if entry.kind != _LAND_KIND:
+                continue
+            story_key = entry.payload.get("story_key")
+            gate_verdict = entry.payload.get("gate_verdict")
+            if isinstance(story_key, str) and isinstance(gate_verdict, str):
+                verdicts[story_key] = gate_verdict
+    return verdicts
+
+
+def _evaluate_hygiene(
+    landing_rules: tuple[LandingRule, ...],
+    changed_paths: tuple[str, ...],
+    forge: ForgePort,
+    repo_ref: ForgeRef,
+    head_sha: str,
+) -> tuple[list[dict[str, object]], list[Finding], tuple[str, ...]]:
+    """The hygiene preflight (FR-29): every ``landing_rules`` entry is
+    evaluated generically via ``core.landing.rule_applies`` (reused, never
+    reimplemented) against ``changed_paths``. A fired ``required_check``
+    rule queries ``ForgePort.check_run_status`` against the wave's head
+    commit -- ``"success"`` is satisfied, anything else (including a
+    ``ForgeCommandError``) is UNSATISFIED and BLOCKING, named in a
+    remediation-bearing ``MRS-DEPLOY-013``/``MRS-DEPLOY-014`` finding. A
+    fired ``label`` rule is collected as an ACTION, never blocking -- it is
+    added to the returned label tuple regardless of whether the SAME rule's
+    own ``required_check`` (if also set) was satisfied, since the two
+    consequences are independent per the spec's own Always bullet.
+
+    Returns ``(report, blocking_findings, fired_labels)``: ``report`` is
+    one entry per DECLARED rule (not only the fired ones), each carrying
+    ``name``/``applies``/``satisfied`` (``None`` when the rule did not
+    fire) -- the AC's own "reports which project-configured rules apply to
+    the change set and whether each is satisfied", not merely the fired
+    subset."""
+    report: list[dict[str, object]] = []
+    blocking: list[Finding] = []
+    fired_labels: list[str] = []
+    for rule in landing_rules:
+        applies = rule_applies(rule, changed_paths)
+        entry: dict[str, object] = {"name": rule.name, "applies": applies}
+        if not applies:
+            entry["satisfied"] = None
+            report.append(entry)
+            continue
+        if rule.required_check is not None:
+            try:
+                status = forge.check_run_status(
+                    repo_ref, ForgeRef(head_sha), ForgeRef(rule.required_check)
+                )
+            except ForgeCommandError as exc:
+                entry["satisfied"] = False
+                entry["required_check_status"] = None
+                blocking.append(
+                    Finding(
+                        code=_MRS_DEPLOY_014,
+                        severity=Severity.ERROR,
+                        message=(
+                            f"cannot evaluate hygiene rule {rule.name!r}'s "
+                            f"required_check {rule.required_check!r} on "
+                            f"{head_sha!r}: {exc}"
+                        ),
+                    )
+                )
+                report.append(entry)
+                continue
+            satisfied = status == "success"
+            entry["satisfied"] = satisfied
+            entry["required_check_status"] = status
+            if not satisfied:
+                blocking.append(
+                    Finding(
+                        code=_MRS_DEPLOY_013,
+                        severity=Severity.ERROR,
+                        message=(
+                            f"hygiene rule {rule.name!r} is unsatisfied: "
+                            f"required_check {rule.required_check!r} is "
+                            f"{status!r} (not 'success') on {head_sha!r} -- "
+                            f"remediation: push a commit that makes "
+                            f"{rule.required_check!r} succeed on this branch "
+                            "and re-run batch-pr"
+                        ),
+                    )
+                )
+        else:
+            entry["satisfied"] = True
+        if rule.label is not None:
+            fired_labels.append(rule.label)
+        report.append(entry)
+    return report, blocking, tuple(fired_labels)
+
+
+def run_batch_pr(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+    forge: ForgePort | None = None,
+) -> int:
+    # Local import -- see run_land_story's own comment for why cli/init.py
+    # is never imported at module level here.
+    from .init import _home_path
+
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    forge = forge if forge is not None else GhForge()
+
+    slug = args.slug
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-POLICY-006",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    root = repo_root()
+    home = _home_path(slug)
+    head_branch = f"loop/{slug}"
+    data["branch"] = head_branch
+
+    try:
+        git_repo_root = vcs.repo_common_root(home)
+        branch_ok = vcs.branch_exists(git_repo_root, head_branch)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot resolve the loop-home station branch {head_branch!r} "
+                    f"for {slug!r}'s batch PR: {exc}"
+                ),
+            )
+        )
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+    if not branch_ok:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=f"{head_branch!r} does not exist -- nothing to batch for {slug!r}",
+            )
+        )
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    project_data: Mapping[str, object] = {}
+    if policy._is_valid_project_slug(slug):
+        candidate = conventional_project_policy_path(slug)
+        try:
+            present = candidate.is_file()
+        except OSError:
+            present = True
+        if present:
+            try:
+                project_data = _read_project_policy(candidate)
+            except PolicyIOError as exc:
+                findings.append(exc.finding)
+                return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+    effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
+    findings.extend(policy_findings)
+    base = effective.landing_base_branch.value
+    template = effective.merge_subject_template.value
+    landing_rules = effective.landing_rules.value
+    data["base"] = base
+
+    # Wave discovery (reuses Story 4.1's own merged_story_keys/durability
+    # machinery, per the story's own Always bullet): every story key
+    # reachable in the station branch's own commits since its merge-base
+    # with the configured base branch.
+    try:
+        merge_base_sha = vcs.merge_base(git_repo_root, head_branch, base)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot compute the merge base of {head_branch!r} and "
+                    f"{base!r}: {exc}"
+                ),
+            )
+        )
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+    try:
+        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_branch}")
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot enumerate commits between {merge_base_sha!r} and "
+                    f"{head_branch!r}: {exc}"
+                ),
+            )
+        )
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+    wave_keys = sorted(promotion.merged_story_keys(wave_subjects, template, slug))
+    data["wave"] = [str(key) for key in wave_keys]
+
+    if not wave_keys:
+        # Clean no-op (the story's own I/O matrix: "Empty wave -- nothing
+        # merged since last batch-pr" -> "Clean no-op, data.opened: false,
+        # data.updated: false").
+        data["opened"] = False
+        data["updated"] = False
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    # Changed-path gathering (reuses Story 2.3's own changed_files pattern,
+    # per the story's own Always bullet) -- the hygiene preflight's own
+    # change set.
+    try:
+        changed_paths = vcs.changed_files(git_repo_root, home, base=base)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=f"cannot gather {head_branch!r}'s changed files against {base!r}: {exc}",
+            )
+        )
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    try:
+        head_sha = vcs.resolve_ref(git_repo_root, head_branch)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_007,
+                severity=Severity.ERROR,
+                message=f"cannot resolve {head_branch!r}'s own tip: {exc}",
+            )
+        )
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    repo_ref = ForgeRef(_FORGE_REPO)
+    head_branch_ref = ForgeRef(head_branch)
+
+    # Hygiene preflight, BEFORE any PR write (the story's own Always
+    # bullet): a blocking finding exits non-zero with no create/update
+    # attempted at all.
+    hygiene_report, blocking_findings, fired_labels = _evaluate_hygiene(
+        landing_rules, changed_paths, forge, repo_ref, head_sha
+    )
+    data["hygiene_rules"] = hygiene_report
+    if blocking_findings:
+        findings.extend(blocking_findings)
+        data["opened"] = False
+        data["updated"] = False
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    gate_verdicts = _gather_gate_verdicts(fs, root, slug)
+    title_redacted = _batch_pr_redact(_batch_pr_title(slug, wave_keys))
+    body_redacted = _batch_pr_redact(_batch_pr_body(wave_keys, gate_verdicts))
+    if title_redacted is None or body_redacted is None:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_014,
+                severity=Severity.ERROR,
+                message=(
+                    "cannot redact the batch PR title/body -- refusing to "
+                    "write unredacted text through ForgePort"
+                ),
+            )
+        )
+        data["opened"] = False
+        data["updated"] = False
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    try:
+        existing = forge.find_open_pr(repo_ref, head_branch_ref)
+    except ForgeCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_014,
+                severity=Severity.ERROR,
+                message=f"cannot look up an existing PR for {head_branch!r}: {exc}",
+            )
+        )
+        data["opened"] = False
+        data["updated"] = False
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    try:
+        if existing is None:
+            pr = forge.create_pr(
+                repo_ref, ForgeRef(base), head_branch_ref, title_redacted, body_redacted
+            )
+            data["opened"] = True
+            data["updated"] = False
+        else:
+            pr = forge.update_pr(repo_ref, existing.number, title_redacted, body_redacted)
+            data["opened"] = False
+            data["updated"] = True
+    except ForgeCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_014,
+                severity=Severity.ERROR,
+                message=f"cannot open/update the batch PR for {head_branch!r}: {exc}",
+            )
+        )
+        data["opened"] = False
+        data["updated"] = False
+        return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+    data["pr_number"] = pr.number
+    data["pr_url"] = pr.url
+
+    # Label application -- an ACTION, never a blocking gate (already
+    # evaluated above); applied only once the PR exists.
+    deduped_labels = tuple(sorted(set(fired_labels)))
+    data["labels_applied"] = list(deduped_labels)
+    if deduped_labels:
+        try:
+            forge.add_labels(repo_ref, pr.number, deduped_labels)
+        except ForgeCommandError as exc:
+            findings.append(
+                Finding(
+                    code=_MRS_DEPLOY_014,
+                    severity=Severity.ERROR,
+                    message=(
+                        f"batch PR #{pr.number} opened/updated, but applying "
+                        f"label(s) {list(deduped_labels)} failed: {exc}"
+                    ),
+                )
+            )
+
+    return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
+
+
+def _render_text_batch_pr(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_recover_spec``/``_render_text_land_story``
+    convention."""
+    slug = data.get("slug") or "(no active project)"
+    lines = [f"deploy batch-pr: {slug!r}"]
+    if "branch" in data:
+        lines.append(f"branch: {data['branch']!r}")
+    wave = data.get("wave")
+    if wave is not None:
+        lines.append(f"wave: {len(wave)} stor{'y' if len(wave) == 1 else 'ies'} ({', '.join(wave)})")
+    hygiene_rules = data.get("hygiene_rules")
+    if hygiene_rules:
+        lines.append("hygiene rules:")
+        for entry in hygiene_rules:
+            lines.append(
+                f"  {entry['name']!r} applies={entry['applies']} satisfied={entry['satisfied']}"
+            )
+    if data.get("opened"):
+        lines.append(f"opened: PR #{data.get('pr_number')} ({data.get('pr_url')})")
+    elif data.get("updated"):
+        lines.append(f"updated: PR #{data.get('pr_number')} ({data.get('pr_url')})")
+    else:
+        lines.append("opened: false, updated: false")
+    labels_applied = data.get("labels_applied")
+    if labels_applied:
+        lines.append(f"labels applied: {', '.join(labels_applied)}")
     if findings:
         lines.append("findings:")
         for finding in findings:
