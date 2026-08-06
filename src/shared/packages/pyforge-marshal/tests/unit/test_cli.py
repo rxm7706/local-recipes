@@ -259,12 +259,13 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_fifteen_keys(capsys, monkeypatch):
-    """AC: 'every one of the (now 15) keys prints its effective value and
-    winning layer' -- checked exhaustively, not just a couple of
-    spot-checked fields. The layer half is counted, not merely detected:
-    exactly one `(layer=...)` suffix per key line, so a regression that
-    drops the suffix from all but one line cannot ship green."""
+def test_config_prints_all_nineteen_keys(capsys, monkeypatch):
+    """AC: 'every one of the (now 19, Story 4.7's 4 landing keys added)
+    keys prints its effective value and winning layer' -- checked
+    exhaustively, not just a couple of spot-checked fields. The layer half
+    is counted, not merely detected: exactly one `(layer=...)` suffix per
+    key line, so a regression that drops the suffix from all but one line
+    cannot ship green."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -275,6 +276,10 @@ def test_config_prints_all_fifteen_keys(capsys, monkeypatch):
         "merge_subject_template",
         "model_tier_map",
         "epic_surfaces",
+        "landing_rules",
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -287,7 +292,7 @@ def test_config_prints_all_fifteen_keys(capsys, monkeypatch):
         "max_wall_clock_minutes_per_run",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 15
+    assert captured.out.count("(layer=") == 19
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -400,6 +405,46 @@ def test_config_format_json_with_findings_has_error_status(capsys, monkeypatch):
     assert payload["verdict"] == "unevaluable"
     assert len(payload["findings"]) == 1
     assert payload["findings"][0]["code"] == "MRS-POLICY-003"
+
+
+def test_config_format_json_renders_a_nonempty_landing_rule(tmp_path, capsys, monkeypatch):
+    """Review finding P5: no existing test exercised `--format json` with a
+    NON-EMPTY `landing_rules` -- the prior test changes only bumped
+    generic key-count assertions against the empty-tuple default, so
+    `_json_safe`'s `LandingRule` branch never actually executed in the
+    test suite. Composes a real project-policy layer with one rule
+    (including the new `trigger_mode` field) and asserts the JSON output
+    renders it correctly."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    toml_path = tmp_path / "project-policy.toml"
+    toml_path.write_text(
+        """
+        [[landing_rules]]
+        name = "environment-yaml-sync"
+        trigger_path_glob = "pixi.toml"
+        trigger_mode = "include"
+        required_check = "environment-yaml-sync"
+        ungated = true
+        """,
+        encoding="utf-8",
+    )
+    exit_code = main(
+        ["config", "--project-policy", str(toml_path), "--format", "json"]
+    )
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    rules = payload["data"]["policy"]["landing_rules"]["value"]
+    assert rules == [
+        {
+            "name": "environment-yaml-sync",
+            "trigger_path_glob": "pixi.toml",
+            "trigger_mode": "include",
+            "label": None,
+            "required_check": "environment-yaml-sync",
+            "ungated": True,
+        }
+    ]
+    assert payload["data"]["policy"]["landing_rules"]["layer"] == "project"
 
 
 def test_config_materialize_writes_once_and_second_call_is_a_true_noop(tmp_path, capsys):
@@ -588,9 +633,9 @@ def test_config_non_utf8_project_policy_reports_finding_not_crash(tmp_path, caps
 
 
 def test_field_order_matches_the_closed_policy_vocabulary():
-    """The 14-key vocabulary is declared in three places (_FIELD_ORDER, the
+    """The 19-key vocabulary is declared in three places (_FIELD_ORDER, the
     _STATIC_KEYS/_SEED_KEYS sets, schemas/policy.json). This is the derive-
-    don't-declare tie: adding a 15th key to core/policy.py without updating
+    don't-declare tie: adding a 20th key to core/policy.py without updating
     the render order or the schema fails HERE, instead of silently vanishing
     from `marshal config` output and the materialized artifact while still
     being hashed."""

@@ -2,11 +2,11 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 15-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 19-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
-FR-13's 4 budget ceilings (Story 3.6), and AD-27's ``epic_surfaces``
-(Story 2.3)) -- not a mirror of the harness's much larger
-``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
+FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
+and AD-40's 4 landing keys (Story 4.7)) -- not a mirror of the harness's much
+larger ``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
 rendering concern). Every field is wrapped in a ``PolicyField{value, layer,
 raw_source}`` so an operator can always answer "why is this value what it
 is?" (AD-16).
@@ -19,12 +19,16 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 5 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 9 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
 allowlist, STATIC because it is project/policy-declared and never narrowed
-at runtime by a journal entry, unlike ``frozen_surfaces`` below. 10
+at runtime by a journal entry, unlike ``frozen_surfaces`` below -- and
+(Story 4.7) the 4 landing keys ``landing_rules``, ``landing_merge_strategy``,
+``landing_branch_retirement``, ``landing_resync`` (AD-40), STATIC for the
+same reason: declared and validated here, consumed and acted on by later
+stories (4.8, 4.10), never narrowed by a journal entry. 10
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -104,7 +108,8 @@ unattended one. ``worktree_seed_paths`` carries no ``DEFAULT_POLICY`` entry
 
 This module is pure data: no I/O, no subprocess, no clock, no
 ``pyforge.marshal.adapters`` (AD-4) -- only ``copy``, ``hashlib``, ``json``,
-``dataclasses``, ``enum``, ``types``, ``collections.abc``, and ``.model``.
+``dataclasses``, ``enum``, ``types``, ``collections.abc``, ``.landing``, and
+``.model``.
 """
 
 from __future__ import annotations
@@ -118,9 +123,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
 
+from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 15-key vocabulary -------------------------------------------
+# --- the closed 19-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -134,6 +140,14 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # `frozen_surfaces` (which DOES accumulate live, via the journal
         # fold). See `_valid_epic_surfaces`'s own docstring for the shape.
         "epic_surfaces",
+        # Story 4.7's 4 landing keys (AD-40): declared and validated here,
+        # consumed by later stories (4.8's `marshal land`, 4.10's fleet-wide
+        # branch retirement). STATIC, not SEED -- like `epic_surfaces`, none
+        # of the four is ever narrowed at runtime by a journal entry.
+        "landing_rules",
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -162,6 +176,14 @@ _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
 
 _STAGE_NAMES: frozenset[str] = frozenset({"dev", "review", "triage"})
 _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-approval"})
+# Story 4.7's closed vocabulary for `landing_merge_strategy` -- "merge" is
+# the default because it matches this repo's own observed real practice
+# (`git log --merges` shows real, non-squash merge commits throughout).
+_MERGE_STRATEGIES: frozenset[str] = frozenset({"merge", "squash", "rebase"})
+# `LandingRule.trigger_mode`'s closed vocabulary (**corrected in review,
+# 2026-08-06**): no default -- every rule states its own match direction
+# explicitly. Same closed-vocabulary shape as `_MERGE_STRATEGIES`.
+_TRIGGER_MODES: frozenset[str] = frozenset({"exclude", "include"})
 
 # FR-24's gate-mode ladder: each of _GATE_MODES's 3 values IS an autonomy
 # declaration, keyed by exactly those 3 values -- DATA, never an
@@ -272,6 +294,18 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # same "nothing declared yet" posture `model_tier_map`'s own empty-dict
     # default already carries for the identical STATIC/mapping shape.
     "epic_surfaces": {},
+    # Story 4.7's 4 landing keys (AD-40). No rule fires until a project
+    # declares one -- the same "nothing declared yet" posture `epic_surfaces`
+    # already carries for the identical STATIC/empty-collection shape.
+    "landing_rules": (),
+    # "merge", not "squash"/"rebase": matches this repo's own observed real
+    # practice (see `_MERGE_STRATEGIES`'s own comment).
+    "landing_merge_strategy": "merge",
+    # True: retirement/resync are the safe, expected default -- an operator
+    # who wants a story's branch left behind or its surfaces left unsynced
+    # opts OUT explicitly via their own project policy layer.
+    "landing_branch_retirement": True,
+    "landing_resync": True,
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -309,6 +343,9 @@ def _freeze_raw(value: object) -> object:
         return MappingProxyType({key: _freeze_raw(item) for key, item in value.items()})
     if isinstance(value, (list, tuple)):
         return tuple(_freeze_raw(item) for item in value)
+    # A `LandingRule` is already immutable (a frozen dataclass over plain
+    # str/bool/None fields) -- nothing further to snapshot, unlike a
+    # Mapping/list/tuple a caller could still hold a mutable alias to.
     return value
 
 
@@ -447,6 +484,151 @@ def _valid_epic_surfaces(value: object) -> dict[str, tuple[str, ...]] | None:
     return result
 
 
+def _valid_bool(value: object) -> bool | None:
+    """``landing_branch_retirement``/``landing_resync``: a plain ``bool``
+    only. ``isinstance(value, bool)`` alone is enough (unlike
+    ``_valid_attempt_count``'s explicit ``not isinstance(value, bool)``
+    exclusion) because THIS validator's whole job is accepting exactly that
+    type."""
+    if isinstance(value, bool):
+        return value
+    return None
+
+
+def _valid_merge_strategy(value: object) -> str | None:
+    if isinstance(value, str) and value in _MERGE_STRATEGIES:
+        return value
+    return None
+
+
+def _valid_landing_rule(value: object) -> LandingRule | None:
+    """One ``LandingRule`` entry: a ``Mapping`` with non-empty str ``name``/
+    ``trigger_path_glob``, a required ``trigger_mode`` drawn from the closed
+    ``_TRIGGER_MODES`` vocabulary (**corrected in review, 2026-08-06** --
+    same closed-vocabulary validation shape as ``landing_merge_strategy``'s
+    own ``_valid_merge_strategy``; a missing or invalid ``trigger_mode`` is a
+    malformed rule, rejected exactly like every other bad landing-rule
+    case), an optional str-or-``None`` ``label``/``required_check`` (at
+    least one of the two set), and an optional ``bool`` ``ungated``
+    (defaults ``False``). Unknown keys inside the mapping are rejected too
+    -- the same closed-shape discipline ``_valid_model_tier_map``'s
+    stage-name check already applies, so a typo'd field name never silently
+    vanishes into a rule nobody notices is missing what the operator
+    actually meant to set. ``ungated=True`` requires ``required_check`` to
+    be set (review finding P3): "ungated" describes a check that can't be
+    suppressed by a label, which is meaningless on a label-only rule."""
+    if not isinstance(value, Mapping):
+        return None
+    allowed_keys = {
+        "name",
+        "trigger_path_glob",
+        "trigger_mode",
+        "label",
+        "required_check",
+        "ungated",
+    }
+    if not set(value.keys()) <= allowed_keys:
+        return None
+    name = value.get("name")
+    trigger = value.get("trigger_path_glob")
+    if not isinstance(name, str) or name == "":
+        return None
+    if not isinstance(trigger, str) or trigger == "":
+        return None
+    trigger_mode = value.get("trigger_mode")
+    if not isinstance(trigger_mode, str) or trigger_mode not in _TRIGGER_MODES:
+        return None
+    label = value.get("label")
+    if label is not None and (not isinstance(label, str) or label == ""):
+        return None
+    required_check = value.get("required_check")
+    if required_check is not None and (
+        not isinstance(required_check, str) or required_check == ""
+    ):
+        return None
+    if label is None and required_check is None:
+        return None
+    ungated = value.get("ungated", False)
+    if not isinstance(ungated, bool):
+        return None
+    if ungated and required_check is None:
+        return None
+    return LandingRule(
+        name=name,
+        trigger_path_glob=trigger,
+        trigger_mode=trigger_mode,
+        label=label,
+        required_check=required_check,
+        ungated=ungated,
+    )
+
+
+def _valid_landing_rules(value: object) -> tuple[LandingRule, ...] | None:
+    """``landing_rules``: a list/tuple of ``LandingRule``-shaped mappings
+    (mirrors ``_valid_epic_surfaces``'s own shape-checking pattern -- reject
+    a non-list/tuple, reject any single malformed entry, the whole field is
+    excluded for THAT layer on any one bad entry). A duplicate ``name``
+    within the same tuple is rejected too -- two rules sharing a name is a
+    collision no consumer could resolve unambiguously."""
+    if isinstance(value, str) or not isinstance(value, (list, tuple)):
+        return None
+    rules: list[LandingRule] = []
+    seen_names: set[str] = set()
+    for entry in value:
+        rule = _valid_landing_rule(entry)
+        if rule is None or rule.name in seen_names:
+            return None
+        seen_names.add(rule.name)
+        rules.append(rule)
+    return tuple(rules)
+
+
+def _identify_bad_landing_rule(value: object) -> str:
+    """Best-effort identification of the FIRST ``landing_rules`` entry that
+    fails validation (review finding P6): the generic
+    ``_malformed_finding``'s message dumps the ENTIRE raw layer value, which
+    buries the one bad entry among any number of valid siblings once a
+    project declares more than a couple of rules. Returns a fragment naming
+    the offending rule by its own ``name`` when that field is itself usable,
+    else its position -- always giving the operator something to search
+    for. Never raises: mirrors every validator in this module in never
+    trusting the shape of ``value``."""
+    if isinstance(value, str) or not isinstance(value, (list, tuple)):
+        return f"the value is not a list of rules: {value!r}"
+    seen_names: set[str] = set()
+    for index, entry in enumerate(value):
+        rule = _valid_landing_rule(entry)
+        if rule is None:
+            name = entry.get("name") if isinstance(entry, Mapping) else None
+            if isinstance(name, str) and name != "":
+                return f"rule {name!r} (index {index}) is malformed"
+            return f"the rule at index {index} is malformed"
+        if rule.name in seen_names:
+            return f"rule {rule.name!r} (index {index}) duplicates an earlier rule's name"
+        seen_names.add(rule.name)
+    return "an unidentified entry is malformed"
+
+
+def _malformed_landing_rules_finding(layer_name: str, raw_value: object) -> Finding:
+    """``landing_rules``'s own malformed-value finding (review finding P6):
+    same code/severity/path shape as ``_malformed_finding``, but names the
+    SPECIFIC offending rule via ``_identify_bad_landing_rule`` instead of
+    dumping the whole raw layer value -- the AC's own "an invalid landing
+    policy is a preflight finding naming the layer that introduced each bad
+    key" extends, per the spec's I/O matrix, to naming the bad rule itself
+    when the bad key is one entry in a list of several."""
+    return Finding(
+        code="MRS-POLICY-002",
+        severity=Severity.ERROR,
+        message=(
+            f"malformed value for policy key 'landing_rules' in the "
+            f"{layer_name} layer: {_identify_bad_landing_rule(raw_value)} "
+            "-- this layer's value is ignored"
+        ),
+        path=layer_name,
+    )
+
+
 def _to_plain(value: object) -> object:
     """Recursively convert any ``Mapping`` (incl. ``MappingProxyType``) to
     ``dict`` and any ``tuple`` to ``list``, for ``json.dumps``. A small,
@@ -457,6 +639,11 @@ def _to_plain(value: object) -> object:
         return {key: _to_plain(item) for key, item in value.items()}
     if isinstance(value, tuple):
         return [_to_plain(item) for item in value]
+    if isinstance(value, LandingRule):
+        # Shared with `cli/config.py`'s `_json_safe` via
+        # `core/landing.py::landing_rule_to_dict` (review finding P4) --
+        # never hand-roll this field list a second time.
+        return landing_rule_to_dict(value)
     return value
 
 
@@ -673,6 +860,35 @@ def _merge_field(
     return PolicyField(value=value, layer=layer, raw_source=raw_source)
 
 
+def _merge_landing_rules(
+    project: Mapping[str, object],
+    flags: Mapping[str, object],
+    findings: list[Finding],
+) -> PolicyField:
+    """Same ``defaults -> project -> flags`` precedence as ``_merge_field``
+    (AD-16), specialized for ``landing_rules`` so a malformed layer's
+    finding names the SPECIFIC offending rule (review finding P6) via
+    ``_malformed_landing_rules_finding`` instead of the generic
+    ``_malformed_finding``'s whole-raw-value dump."""
+    key = "landing_rules"
+    value = copy.deepcopy(DEFAULT_POLICY[key])
+    layer = PolicyLayer.DEFAULT
+    raw_source = value
+    for layer_name, mapping, layer_enum in (
+        ("project", project, PolicyLayer.PROJECT),
+        ("flag", flags, PolicyLayer.FLAG),
+    ):
+        if key not in mapping:
+            continue
+        raw = mapping[key]
+        coerced = _valid_landing_rules(raw)
+        if coerced is None:
+            findings.append(_malformed_landing_rules_finding(layer_name, raw))
+        else:
+            value, layer, raw_source = coerced, layer_enum, raw
+    return PolicyField(value=value, layer=layer, raw_source=raw_source)
+
+
 def _base_worktree_seed_paths(project_slug: str | None) -> tuple[str, ...]:
     """FR-50: the base paths every project gets, GENERATED from
     ``project_slug`` -- never a hardcoded project name. ``None`` means the
@@ -745,6 +961,10 @@ class EffectivePolicy:
     merge_subject_template: PolicyField
     model_tier_map: PolicyField
     epic_surfaces: PolicyField
+    landing_rules: PolicyField
+    landing_merge_strategy: PolicyField
+    landing_branch_retirement: PolicyField
+    landing_resync: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -754,6 +974,10 @@ class EffectivePolicy:
             "merge_subject_template",
             "model_tier_map",
             "epic_surfaces",
+            "landing_rules",
+            "landing_merge_strategy",
+            "landing_branch_retirement",
+            "landing_resync",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -795,6 +1019,10 @@ class EffectivePolicy:
                 "merge_subject_template",
                 "model_tier_map",
                 "epic_surfaces",
+                "landing_rules",
+                "landing_merge_strategy",
+                "landing_branch_retirement",
+                "landing_resync",
             )
         )
         seed = ", ".join(
@@ -840,6 +1068,10 @@ class EffectivePolicy:
             "merge_subject_template": _field_payload(self.merge_subject_template),
             "model_tier_map": _field_payload(self.model_tier_map),
             "epic_surfaces": _field_payload(self.epic_surfaces),
+            "landing_rules": _field_payload(self.landing_rules),
+            "landing_merge_strategy": _field_payload(self.landing_merge_strategy),
+            "landing_branch_retirement": _field_payload(self.landing_branch_retirement),
+            "landing_resync": _field_payload(self.landing_resync),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -852,7 +1084,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 15-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 19-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -923,6 +1155,34 @@ def compose(
         "epic_surfaces",
         _valid_epic_surfaces,
         DEFAULT_POLICY["epic_surfaces"],
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    landing_rules = _merge_landing_rules(project, flags, findings)
+    landing_merge_strategy = _merge_field(
+        "landing_merge_strategy",
+        _valid_merge_strategy,
+        DEFAULT_POLICY["landing_merge_strategy"],
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    landing_branch_retirement = _merge_field(
+        "landing_branch_retirement",
+        _valid_bool,
+        DEFAULT_POLICY["landing_branch_retirement"],
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    landing_resync = _merge_field(
+        "landing_resync",
+        _valid_bool,
+        DEFAULT_POLICY["landing_resync"],
         project,
         flags,
         findings,
@@ -1027,6 +1287,10 @@ def compose(
         merge_subject_template=merge_subject_template,
         model_tier_map=model_tier_map,
         epic_surfaces=epic_surfaces,
+        landing_rules=landing_rules,
+        landing_merge_strategy=landing_merge_strategy,
+        landing_branch_retirement=landing_branch_retirement,
+        landing_resync=landing_resync,
         _seed=seed,
     )
     return effective, tuple(findings)
