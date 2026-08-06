@@ -349,3 +349,18 @@ class VcsPort(Protocol):
         auto-resolved. The temp worktree used internally is always removed
         before this returns or raises, on every exit path."""
         ...
+
+    def worktree_head_sha(self, worktree_path: Path) -> str:
+        """Story 4.4 (code review, 2026-08-06, P5): ``git rev-parse HEAD``
+        run inside ``worktree_path``, read-only -- the commit a specific
+        worktree is ACTUALLY checked out at right now, as opposed to
+        ``resolve_ref``'s ``refs/heads/<branch>`` read (a shared, repo-wide
+        ref, not a per-worktree fact). ``marshal deploy batch-pr`` uses this
+        to confirm the loop-home worktree it is about to run
+        ``changed_files`` against is genuinely at the SAME commit the
+        hygiene preflight already pinned as the wave's head, before trusting
+        that diff -- a detached or otherwise stale worktree would otherwise
+        let ``changed_files`` silently under-report the real change set.
+        Raises ``VcsCommandError`` if ``worktree_path`` is not inside a git
+        repository or has no commits checked out at all."""
+        ...

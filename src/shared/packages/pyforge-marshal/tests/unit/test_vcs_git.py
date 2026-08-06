@@ -1471,3 +1471,30 @@ def test_merge_branch_still_returns_the_sha_if_cleanup_raises_outright(
 
     assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
     assert not any("marshal-land-" in path for path in _worktree_paths(repo))
+
+
+# --- worktree_head_sha (Story 4.4, code review, 2026-08-06, P5) ------------
+
+
+def test_worktree_head_sha_returns_the_checked_out_commit(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    expected = _git(home, "rev-parse", "HEAD").stdout.strip()
+    assert vcs.worktree_head_sha(home) == expected
+
+
+def test_worktree_head_sha_reflects_a_new_commit_in_that_worktree(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "feature.txt").write_text("feature\n", encoding="utf-8")
+    _git(home, "add", "feature.txt")
+    _git(home, "commit", "-m", "feature commit")
+    expected = _git(home, "rev-parse", "HEAD").stdout.strip()
+    assert vcs.worktree_head_sha(home) == expected
+
+
+def test_worktree_head_sha_raises_when_not_a_git_repository(vcs, tmp_path):
+    not_a_repo = tmp_path / "not-a-repo"
+    not_a_repo.mkdir()
+    with pytest.raises(VcsCommandError):
+        vcs.worktree_head_sha(not_a_repo)

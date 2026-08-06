@@ -946,3 +946,17 @@ class GitVcs:
                     _run(["git", "-C", str(repo_root), "worktree", "prune"])
                 except VcsCommandError:
                     pass
+
+    def worktree_head_sha(self, worktree_path: Path) -> str:
+        """Story 4.4 (code review, 2026-08-06, P5): ``git rev-parse HEAD``,
+        read-only, run inside ``worktree_path`` -- the commit that specific
+        worktree is actually checked out at right now (as opposed to
+        ``resolve_ref``'s ``refs/heads/<branch>`` read, a repo-wide ref, not
+        a per-worktree fact -- see ``changed_files``'s own docstring for why
+        the two can legitimately differ, e.g. a detached HEAD)."""
+        result = _run(["git", "-C", str(worktree_path), "rev-parse", "HEAD"])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git rev-parse HEAD failed in {worktree_path}: {result.stderr.strip()}"
+            )
+        return result.stdout.strip()

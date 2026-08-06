@@ -605,6 +605,7 @@ def test_egress_ports_registry_contents():
         "ClockPort": False,
         "SessionObserverPort": False,
         "NotifyPort": True,
+        "ForgePort": True,
     }
 
 
