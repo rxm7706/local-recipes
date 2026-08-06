@@ -154,6 +154,16 @@ different bmad-loop-owned artifact:
   raises: an unimportable ``bmad_loop`` or any failure resolving/probing
   the path degrades to ``None``, the same "no marker recorded" shape a
   genuinely absent one produces.
+
+Story 3.8 (stage-bound durability, AD-46/FR-61) widens ``run_status_
+snapshot`` rather than adding a new method: ``RunStatusSnapshot`` gains a
+``tasks`` field -- EVERY task's ``TaskPhaseSnapshot`` (phase, ``commit_sha``),
+not only the ``Phase.DEFERRED`` ones ``deferred`` already carries -- read
+from the SAME ``state.json`` this method already loads, in the same guarded
+block. This satisfies the story's own Never clause ("no new ``HarnessPort``
+method ... extend ``RunStatusSnapshot``'s return value if the current shape
+doesn't expose per-task ``phase``/``commit_sha``, rather than adding a
+second, overlapping bmad-loop-state-reading method").
 """
 
 from __future__ import annotations
@@ -248,6 +258,37 @@ class DeferredStory:
 
 
 @dataclass(frozen=True)
+class TaskPhaseSnapshot:
+    """One task's phase/commit identity, as read off bmad-loop's own
+    ``state.json`` (Story 3.8, AD-46/FR-61) -- a plain, frozen value type
+    mirroring ``DeferredStory``'s own "facts the caller could not have known
+    in advance" convention, but for EVERY task in ``RunState.tasks``, not
+    only the deferred ones: ``supervisor/durability.py::classify_push_
+    triggers`` needs two consecutive full readings to detect a story's phase
+    crossing ``Phase.REVIEW_VERIFY``/``Phase.DONE`` or its ``commit_sha``
+    turning non-``None``, none of which ``DeferredStory`` alone (scoped to
+    ``Phase.DEFERRED`` tasks) can supply. ``story_key`` is the task's own
+    ``StoryTask.story_key`` (bmad-loop's native slug spelling, exactly
+    ``DeferredStory.story_key``'s own convention -- callers that journal it
+    render it via ``core.identity``). ``phase`` is ``StoryTask.phase.value``
+    (a plain string, never the ``bmad_loop.model.Phase`` enum itself -- AD-3
+    reserves that import for ``adapters/harness_bmadloop.py`` alone).
+    ``commit_sha`` is ``StoryTask.commit_sha`` verbatim -- a commit hash,
+    never session-derived free text, so no redaction applies (unlike
+    ``paused_reason``/``defer_reason``). ``branch`` is ``StoryTask.branch``
+    verbatim (``""`` when the task never ran worktree-isolated) -- added
+    beyond the story's own Code Map literal 3-field enumeration (see the
+    spec's own Spec Change Log): a stage-boundary push must also push "that
+    story's own per-story branch too" when the triggering story ran
+    worktree-isolated, and no other field on this type names it."""
+
+    story_key: str
+    phase: str
+    commit_sha: str | None
+    branch: str = ""
+
+
+@dataclass(frozen=True, kw_only=True)
 class RunStatusSnapshot:
     """One tick's worth of bmad-loop's own run-level pause state plus every
     currently-deferred story (Story 3.7, FR-15/16/17) --
@@ -269,8 +310,20 @@ class RunStatusSnapshot:
     review finding: a detached launch never surfaces the child's exit code,
     so without reading this flag up front ``marshal factory resume``
     reported a successful resume for a run ``bmad-loop resume`` had already
-    rejected). Trailing and defaulted so a caller constructing this value
-    for a pause-only concern need not supply it."""
+    rejected). ``tasks`` is EVERY task's ``TaskPhaseSnapshot`` (Story 3.8,
+    AD-46/FR-61), in ``state.json``'s own ``tasks`` iteration order -- the
+    full population ``supervisor/durability.py::classify_push_triggers``
+    diffs two consecutive readings of, a strict superset of ``deferred``'s
+    own ``Phase.DEFERRED``-only scope. ``kw_only=True`` (review finding,
+    Story 3.8): adding ``tasks`` as a trailing defaulted field forced
+    ``deferred`` -- previously required, with no default, at every call
+    site -- to also gain a default (``= ()``) purely to satisfy dataclass
+    field-ordering rules, silently weakening its fail-fast construction
+    contract for any caller that forgot to pass it. Keyword-only fields have
+    no positional ordering constraint, so ``deferred`` is restored to no
+    default while ``tasks`` (and ``finished``, already-defaulted before this
+    story) keep theirs -- every existing call site already constructs this
+    type by keyword, so this is a pure narrowing, not a break."""
 
     paused_stage: str | None
     paused_story_key: str | None
@@ -279,6 +332,7 @@ class RunStatusSnapshot:
     escalated_task_phase: str | None
     deferred: tuple[DeferredStory, ...]
     finished: bool = False
+    tasks: tuple[TaskPhaseSnapshot, ...] = ()
 
 
 class HarnessPort(Protocol):
@@ -450,7 +504,11 @@ class HarnessPort(Protocol):
         session-derived free text this method reads (``paused_reason``, each
         deferred task's ``defer_reason``) is redacted at capture, before it
         is ever returned (AD-34) -- everything downstream only ever sees the
-        already-scrubbed plain ``str``."""
+        already-scrubbed plain ``str``. Story 3.8 (AD-46/FR-61) also
+        populates ``RunStatusSnapshot.tasks`` -- EVERY task's phase/
+        ``commit_sha`` (never only the deferred ones), which
+        ``supervisor/durability.py::classify_push_triggers`` needs to detect
+        a story crossing a stage boundary between two consecutive reads."""
         ...
 
     def resolution_reference(

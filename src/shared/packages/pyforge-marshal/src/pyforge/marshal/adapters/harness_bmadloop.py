@@ -170,6 +170,16 @@ spec's own intent-contract literally names a direct import site in
 ``cli/spin.py`` -- a genuine inaccuracy about this package's own AD-3
 import-linter contract, recorded in the spec's Spec Change Log and
 corrected here).
+
+Story 3.8 (stage-bound durability, AD-46/FR-61) widens
+``run_status_snapshot`` rather than adding a new method: the SAME per-task
+loop that already builds ``deferred`` also builds ``tasks`` --
+``TaskPhaseSnapshot(story_key, phase, commit_sha)`` for EVERY task in
+``state.tasks``, not only the ``Phase.DEFERRED`` ones. No new import, no new
+guard: this reuses the identical widened exception tuple and the identical
+lazy ``bmad_loop.journal.load_state`` seam Story 3.7 already established.
+``commit_sha`` carries no redaction (a commit hash is never session-derived
+free text).
 """
 
 from __future__ import annotations
@@ -187,7 +197,13 @@ import tomlkit
 
 from ..core import policy
 from ..core.egress import to_redacted
-from ..ports.harness import DeferredStory, RunStatusSnapshot, SpinResult, UsageSnapshot
+from ..ports.harness import (
+    DeferredStory,
+    RunStatusSnapshot,
+    SpinResult,
+    TaskPhaseSnapshot,
+    UsageSnapshot,
+)
 
 # --- the vendored, project-agnostic harness policy template ----------------
 #
@@ -1116,7 +1132,23 @@ class BmadLoopHarness:
                     escalated_spec_file = paused_task.spec_file
                     escalated_task_phase = paused_task.phase.value
             deferred: list[DeferredStory] = []
+            # Story 3.8 (AD-46/FR-61): EVERY task's phase/commit_sha, not
+            # only the deferred ones -- `supervisor/durability.py::
+            # classify_push_triggers` needs the full population to detect a
+            # story crossing `Phase.REVIEW_VERIFY`/`Phase.DONE` or its
+            # `commit_sha` turning non-`None` between two consecutive reads.
+            # Built in the SAME loop as `deferred` below rather than a
+            # second pass over `state.tasks`.
+            tasks: list[TaskPhaseSnapshot] = []
             for task in state.tasks.values():
+                tasks.append(
+                    TaskPhaseSnapshot(
+                        story_key=task.story_key,
+                        phase=task.phase.value,
+                        commit_sha=task.commit_sha,
+                        branch=task.branch,
+                    )
+                )
                 # `StrEnum` members compare equal to their own value, but a
                 # plain string comparison against the literal is used here
                 # (rather than importing `bmad_loop.model.Phase`) -- AD-3
@@ -1157,6 +1189,7 @@ class BmadLoopHarness:
             escalated_task_phase=escalated_task_phase,
             deferred=tuple(deferred),
             finished=finished,
+            tasks=tuple(tasks),
         )
 
     def resolution_reference(

@@ -764,3 +764,172 @@ def test_add_worktree_timeout_names_the_cleanup_commands(vcs, repo, tmp_path, mo
     home = tmp_path / "home"
     with pytest.raises(VcsCommandError, match="worktree remove --force"):
         vcs.add_worktree(repo, home, "loop/hung", base="main")
+
+
+# --- push (Story 3.8, AD-46) ----------------------------------------------------
+
+
+@pytest.fixture
+def remote(tmp_path: Path) -> Path:
+    """A bare repo -- ``git push`` needs a real remote target, unlike every
+    other ``VcsPort`` method this file exercises against a single local
+    repo."""
+    bare = tmp_path / "remote.git"
+    bare.mkdir()
+    _git(bare, "init", "--bare", "-b", "main")
+    return bare
+
+
+@pytest.fixture
+def cloned_repo(remote: Path, tmp_path: Path) -> Path:
+    """``repo`` (the module-level fixture) is a fresh ``git init`` with no
+    remote at all -- push tests need one already configured with an
+    ``origin`` pointing at ``remote``, cloned rather than hand-assembled so
+    ``main``'s own upstream is set up exactly the way a real clone does
+    it."""
+    clone = tmp_path / "clone"
+    subprocess.run(
+        ["git", "clone", str(remote), str(clone)], capture_output=True, text=True, check=True
+    )
+    _git(clone, "config", "user.email", "test@example.com")
+    _git(clone, "config", "user.name", "Test")
+    (clone / "README.md").write_text("hello\n", encoding="utf-8")
+    _git(clone, "add", "README.md")
+    _git(clone, "commit", "-m", "initial")
+    _git(clone, "push", "origin", "main")
+    return clone
+
+
+def test_push_first_push_of_a_brand_new_branch_uses_origin_branch(vcs, cloned_repo, remote):
+    """No upstream configured yet (the ordinary shape for a fresh
+    station/per-story branch) -- falls back to `git push origin <branch>`,
+    the branch's first push."""
+    _git(cloned_repo, "checkout", "-b", "loop/newbranch")
+    (cloned_repo / "n.txt").write_text("n\n", encoding="utf-8")
+    _git(cloned_repo, "add", "n.txt")
+    _git(cloned_repo, "commit", "-m", "new branch content")
+
+    vcs.push(cloned_repo, "loop/newbranch")
+
+    remote_branches = _git(remote, "branch", "--list", "loop/newbranch")
+    assert "loop/newbranch" in remote_branches.stdout
+
+
+def test_push_with_configured_upstream_pushes_new_commits(vcs, cloned_repo, remote):
+    """An upstream already exists (`main`, set by the clone/first push
+    above) -- a further commit is pushed via the resolved
+    `<remote> <branch>:<remote_branch>` refspec."""
+    (cloned_repo / "second.txt").write_text("second\n", encoding="utf-8")
+    _git(cloned_repo, "add", "second.txt")
+    _git(cloned_repo, "commit", "-m", "second commit")
+    local_head = _git(cloned_repo, "rev-parse", "HEAD").stdout.strip()
+
+    vcs.push(cloned_repo, "main")
+
+    remote_head = _git(remote, "rev-parse", "main").stdout.strip()
+    assert remote_head == local_head
+
+
+def test_push_never_passes_force(vcs, cloned_repo, remote, monkeypatch):
+    """Structural proof the port's own contract holds: no invocation this
+    method makes ever carries `--force`/`--force-with-lease`, on either the
+    upstream-configured or the first-push branch."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    real_run = subprocess.run
+    seen_argv: list[list[str]] = []
+
+    def _capture(args, **kwargs):
+        seen_argv.append(list(args))
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _capture)
+
+    vcs.push(cloned_repo, "main")
+    _git(cloned_repo, "checkout", "-b", "loop/noforce")
+    (cloned_repo / "nf.txt").write_text("nf\n", encoding="utf-8")
+    _git(cloned_repo, "add", "nf.txt")
+    _git(cloned_repo, "commit", "-m", "no-force branch content")
+    vcs.push(cloned_repo, "loop/noforce")
+
+    push_invocations = [args for args in seen_argv if "push" in args]
+    assert push_invocations, "expected at least one git push invocation to be captured"
+    for args in push_invocations:
+        assert "--force" not in args
+        assert "--force-with-lease" not in args
+        assert "-u" not in args
+        assert "--set-upstream" not in args
+
+
+def test_push_does_not_depend_on_repo_root_having_the_branch_checked_out(
+    vcs, cloned_repo, remote
+):
+    """`repo_root` need not have `branch` checked out as HEAD -- refs are
+    shared across the repo, and this method names `branch` EXPLICITLY as
+    the source refspec rather than relying on a bare `git push`."""
+    _git(cloned_repo, "checkout", "-b", "loop/otherbranch")
+    (cloned_repo / "ob.txt").write_text("ob\n", encoding="utf-8")
+    _git(cloned_repo, "add", "ob.txt")
+    _git(cloned_repo, "commit", "-m", "other branch content")
+    _git(cloned_repo, "checkout", "main")  # HEAD is now `main`, not `loop/otherbranch`
+
+    vcs.push(cloned_repo, "loop/otherbranch")
+
+    remote_branches = _git(remote, "branch", "--list", "loop/otherbranch")
+    assert "loop/otherbranch" in remote_branches.stdout
+
+
+def test_push_raises_on_no_configured_remote(vcs, repo):
+    """`repo` (the module-level fixture) has no remote at all -- the
+    "no upstream configured" branch falls back to `git push origin
+    <branch>`, which fails because `origin` does not exist."""
+    with pytest.raises(VcsCommandError):
+        vcs.push(repo, "main")
+
+
+def test_push_raises_rather_than_falls_back_on_a_non_missing_upstream_rev_parse_failure(
+    vcs, repo, monkeypatch
+):
+    """Review finding (P3, Blind Hunter + Edge Case Hunter): the earlier
+    implementation treated ANY non-zero `git rev-parse --abbrev-ref
+    <branch>@{upstream}` exit as "no upstream configured" and silently fell
+    back to `git push origin <branch>` -- conflating the genuine no-upstream
+    case with an ambiguous/corrupted rev-parse failure, which could push to
+    a remote/branch the caller never intended. `branch` here does not exist
+    locally at all, so `rev-parse` fails with git's own "no such branch"
+    wording, NOT "no upstream configured for branch" -- this must raise
+    rather than fall back to a first-push attempt."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    real_run = subprocess.run
+    push_argv: list[list[str]] = []
+
+    def _capture(args, **kwargs):
+        if "push" in args:
+            push_argv.append(list(args))
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _capture)
+
+    with pytest.raises(VcsCommandError, match="not the ordinary no-upstream case"):
+        vcs.push(repo, "no-such-local-branch")
+
+    # The malformed rev-parse failure must never fall through to an actual
+    # push attempt.
+    assert push_argv == []
+
+
+def test_push_raises_on_a_malformed_upstream_with_no_remote_slash(vcs, repo):
+    """P6 (Story 3.8 review): the pre-existing "refuse to guess" guard --
+    `@{upstream}` resolving to a value with no `<remote>/<remote_branch>`
+    shape, e.g. a local branch tracking another LOCAL branch rather than a
+    remote-tracking ref -- had no test exercising it before this story's
+    review pass. `git branch --set-upstream-to` accepts a local branch as a
+    target without complaint; `--abbrev-ref ...@{upstream}` then resolves to
+    a bare branch name with no `/` at all, which this method must refuse to
+    push against rather than guess a remote."""
+    _git(repo, "branch", "other")
+    _git(repo, "branch", "--set-upstream-to=other", "main")
+
+    with pytest.raises(VcsCommandError, match="cannot parse upstream"):
+        vcs.push(repo, "main")

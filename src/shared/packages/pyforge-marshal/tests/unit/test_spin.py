@@ -1448,6 +1448,29 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
     assert call["log_path"] != harness.spin_calls[0]["log_path"]
 
 
+def test_spin_introduces_no_new_argv_surface_for_durability(home):
+    """Story 3.8's own Never clause, made testable rather than only
+    documented (the exact precedent Story 3.7's own review pass set for its
+    own argv-shape claims): the durability watcher (station-branch push,
+    interval-watcher fallback) is wired entirely inside
+    ``run_supervisor``'s own defaults (station branch derives from the
+    already-passed ``slug`` positional; the interval cadence reuses the
+    already-passed ``idle_threshold_minutes`` positional) -- the argv this
+    command spawns the supervisor with stays EXACTLY 10 positionals, the
+    same shape Story 3.6 last grew it to."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    # 3 fixed tokens (python, -m, module) + 10 positionals.
+    assert len(call["argv"]) == 13
+
+
 def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(
     home, tmp_path, monkeypatch, capsys
 ):
