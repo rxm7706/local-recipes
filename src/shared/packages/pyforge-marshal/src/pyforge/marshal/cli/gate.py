@@ -126,6 +126,19 @@ parse_success_signal`` extracts the spec's declared commands (pure);
 verify_commands`` (pure) -- the commands this invocation's own policy
 declares, independent of whether this particular run actually executed
 them.
+
+**``evaluate_gate``/``run_evaluate`` split (Story 4.3, FR-27).** The
+original single ``run_evaluate`` body is now two functions: ``evaluate_gate``
+(the pure-envelope core -- gathers every impure input, runs every check,
+returns the built ``Envelope``, never prints) and ``run_evaluate`` (the CLI
+entry point -- resolves default adapters, calls ``evaluate_gate``, renders
+``--format text``/``json``, prints, returns the exit code). ``cli/deploy.py``'s
+``marshal deploy land-story`` action (FR-27's review-cap landing path)
+calls ``evaluate_gate`` directly, IN-PROCESS, to re-run the full gate
+before a manual merge -- the story's own Always bullet requires reusing
+this function's logic as a function call, never shelling out to the
+``marshal`` CLI a second time from inside the same process, and never a
+second, independently-drifting gate implementation.
 """
 
 from __future__ import annotations
@@ -142,7 +155,7 @@ from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import gate, identity, journal, policy, spec_binding
 from ..core.identity import StoryKey, render_filename_slug
-from ..core.model import Finding, Severity, Status, build_envelope, status_for
+from ..core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
@@ -626,17 +639,26 @@ def _run_scope_check(
     return data, scope_findings
 
 
-def run_evaluate(
+def evaluate_gate(
     args: argparse.Namespace,
     *,
-    process: ProcessPort | None = None,
-    vcs: VcsPort | None = None,
-    fs: FsPort | None = None,
-) -> int:
-    process = process if process is not None else PosixProcess()
-    vcs = vcs if vcs is not None else GitVcs()
-    fs = fs if fs is not None else LocalFs()
-
+    process: ProcessPort,
+    vcs: VcsPort,
+    fs: FsPort,
+) -> Envelope:
+    """The pure-envelope core of ``marshal gate evaluate`` -- everything
+    ``run_evaluate`` below does EXCEPT rendering/printing (Story 4.3, FR-27:
+    ``cli/deploy.py``'s ``land-story`` action re-runs the full gate
+    IN-PROCESS, reusing this exact function, rather than shelling out to the
+    ``marshal`` CLI a second time or reimplementing gate evaluation). Takes
+    the SAME ``args`` shape ``run_evaluate`` does (``.project``, ``.run_id``,
+    ``.scope_check``, ``.story`` -- ``.format`` is irrelevant here, since
+    this function never renders); a caller that only wants the full gate,
+    not the ``--format text``/``--format json`` presentation layer,
+    constructs a bare ``argparse.Namespace`` with those four fields. This
+    split is a minimal refactor of the original inline body -- no behavior
+    change for ``run_evaluate``'s own existing callers/tests, which still
+    see the identical envelope, identical stdout, identical exit code."""
     # Same is-not-None precedence as cli/config.py::run_config -- an
     # explicit `--project ""` must win over BMAD_ACTIVE_PROJECT (Python
     # truthiness would otherwise treat an empty flag value as "omitted" and
@@ -971,9 +993,23 @@ def run_evaluate(
     findings = [*findings, *command_findings]
 
     verdict_value = compute_verdict(findings)
-    envelope = build_envelope(
+    return build_envelope(
         command="gate evaluate", verdict=verdict_value, data=data, findings=tuple(findings)
     )
+
+
+def run_evaluate(
+    args: argparse.Namespace,
+    *,
+    process: ProcessPort | None = None,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+) -> int:
+    process = process if process is not None else PosixProcess()
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+
+    envelope = evaluate_gate(args, process=process, vcs=vcs, fs=fs)
 
     if args.format == "json":
         rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)

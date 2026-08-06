@@ -41,7 +41,8 @@ def test_registered_codes_contains_the_real_codes():
     Story 2.7's cli/gate.py/core/gate.py add MRS-GATE-010/011. Story 4.2's
     cli/init.py/cli/deploy.py add MRS-TEARDOWN-004/MRS-DEPLOY-004. Code
     review (2026-08-06) adds MRS-TEARDOWN-005 (P1) and MRS-DEPLOY-005 (P5).
-    This asserts the registry's exact real contents."""
+    Story 4.3's cli/deploy.py::run_land_story adds MRS-DEPLOY-006/007/008/
+    009. This asserts the registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -114,6 +115,13 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DEPLOY-004",
             "MRS-TEARDOWN-005",
             "MRS-DEPLOY-005",
+            "MRS-DEPLOY-006",
+            "MRS-DEPLOY-007",
+            "MRS-DEPLOY-008",
+            "MRS-DEPLOY-009",
+            "MRS-DEPLOY-010",
+            "MRS-DEPLOY-011",
+            "MRS-DEPLOY-012",
         }
     )
 

@@ -39,6 +39,17 @@ class _FakeVcs:
         commit_raises: bool = False,
         dirty_paths: frozenset = frozenset(),
         path_status_raises: bool = False,
+        existing_branches: frozenset = frozenset(),
+        branch_exists_raises: bool = False,
+        merge_base_sha: str = "base-sha",
+        merge_base_raises: bool = False,
+        merge_branch_sha: str = "merge-sha",
+        merge_branch_raises: bool = False,
+        window_subjects: tuple[str, ...] = (),
+        window_subjects_raises: bool = False,
+        resolve_ref_sha: str = "branch-tip-sha",
+        resolve_ref_raises: bool = False,
+        resolve_ref_sequence: list[str] | None = None,
     ) -> None:
         self.main_subjects = main_subjects
         self.origin_subjects = origin_subjects
@@ -53,6 +64,21 @@ class _FakeVcs:
         self.dirty_paths = dirty_paths
         self.path_status_raises = path_status_raises
         self.path_status_calls: list = []
+        self.existing_branches = existing_branches
+        self.branch_exists_raises = branch_exists_raises
+        self.merge_base_sha = merge_base_sha
+        self.merge_base_raises = merge_base_raises
+        self.merge_branch_sha = merge_branch_sha
+        self.merge_branch_raises = merge_branch_raises
+        self.merge_branch_calls: list[tuple[str, str, str]] = []
+        self.window_subjects = window_subjects
+        self.window_subjects_raises = window_subjects_raises
+        self.resolve_ref_sha = resolve_ref_sha
+        self.resolve_ref_raises = resolve_ref_raises
+        self.resolve_ref_sequence = (
+            list(resolve_ref_sequence) if resolve_ref_sequence is not None else None
+        )
+        self.resolve_ref_calls: list[str] = []
 
     def commit_subjects(self, repo_root, ref):
         if ref == "origin/main":
@@ -63,7 +89,12 @@ class _FakeVcs:
             if self.main_raises:
                 raise VcsCommandError("corrupted repo, no main")
             return self.main_subjects
-        raise VcsCommandError(f"unexpected ref {ref!r}")
+        # Story 4.3's own land-story conformance audit calls with a git
+        # revision-range ref ("<since>..<merge_sha>") -- any other ref
+        # shape is this fixture's window-subjects case.
+        if self.window_subjects_raises:
+            raise VcsCommandError("cannot enumerate the conformance window")
+        return self.window_subjects
 
     def commit_paths(self, repo_root, paths, message):
         if self.commit_raises:
@@ -76,6 +107,38 @@ class _FakeVcs:
         if self.path_status_raises:
             raise VcsCommandError("git status --porcelain failed")
         return path in self.dirty_paths
+
+    # --- Story 4.3 (`marshal deploy land-story`) additions -----------------
+
+    def repo_common_root(self, start):
+        return Path("/fake-repo-root")
+
+    def branch_exists(self, repo_root, branch):
+        if self.branch_exists_raises:
+            raise VcsCommandError("git rev-parse --verify failed")
+        return branch in self.existing_branches
+
+    def merge_base(self, repo_root, a, b):
+        if self.merge_base_raises:
+            raise VcsCommandError("cannot find a merge base")
+        return self.merge_base_sha
+
+    def merge_branch(self, repo_root, branch, *, into, subject):
+        self.merge_branch_calls.append((branch, into, subject))
+        if self.merge_branch_raises:
+            raise VcsCommandError("merge conflict")
+        return self.merge_branch_sha
+
+    def resolve_ref(self, repo_root, ref):
+        self.resolve_ref_calls.append(ref)
+        if self.resolve_ref_raises:
+            raise VcsCommandError("git rev-parse --verify failed")
+        if self.resolve_ref_sequence is not None:
+            index = len(self.resolve_ref_calls) - 1
+            if index < len(self.resolve_ref_sequence):
+                return self.resolve_ref_sequence[index]
+            return self.resolve_ref_sequence[-1]
+        return self.resolve_ref_sha
 
 
 def _args(*, project: str = "acme", format: str = "json") -> argparse.Namespace:
@@ -728,3 +791,409 @@ def test_recover_spec_warns_when_acceptance_criteria_comes_back_empty(
     assert exit_code == 0
     dest = Path(payload["data"]["recovered_path"])
     assert dest.exists()
+
+
+# =====================================================================
+# ``marshal deploy land-story`` (Story 4.3, FR-27/AD-24/AD-34).
+# =====================================================================
+
+from pyforge.marshal.cli import gate as gate_module  # noqa: E402
+from pyforge.marshal.core.identity import normalize, render_merge_subject  # noqa: E402
+from pyforge.marshal.core.model import Verdict, build_envelope  # noqa: E402
+
+
+def _land_args(
+    *,
+    slug: str = "acme",
+    key: str = "4.3",
+    justification: str | None = "landed manually, review did not converge",
+    since: str | None = None,
+    format: str = "json",
+) -> argparse.Namespace:
+    return argparse.Namespace(
+        slug=slug, key=key, justification=justification, since=since, format=format
+    )
+
+
+def _fake_evaluate_gate(*, verdict: Verdict, findings: tuple = ()):
+    def _evaluate(args, *, process, vcs, fs):
+        return build_envelope(
+            command="gate evaluate",
+            verdict=verdict,
+            data={"scope": "policy-seed-only"},
+            findings=findings,
+        )
+
+    return _evaluate
+
+
+def _must_not_be_called(*_args, **_kwargs):
+    raise AssertionError("evaluate_gate must not be called")
+
+
+def _find_land_journal_lines(tmp_path: Path, slug: str) -> list[dict]:
+    runs_dir = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    lines: list[dict] = []
+    for journal_path in sorted(runs_dir.glob("*/journal.jsonl")):
+        for raw in journal_path.read_text(encoding="utf-8").splitlines():
+            if raw.strip():
+                lines.append(json.loads(raw))
+    return lines
+
+
+def test_land_story_refuses_missing_justification_before_any_gate_run(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
+    vcs = _FakeVcs()
+
+    exit_code = deploy_module.run_land_story(
+        _land_args(justification=None), vcs=vcs, fs=LocalFs()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-006" in codes
+    assert payload["verdict"] == "unevaluable"
+    assert exit_code != 0
+    assert vcs.merge_branch_calls == []
+
+
+def test_land_story_refuses_empty_justification(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
+    vcs = _FakeVcs()
+
+    exit_code = deploy_module.run_land_story(
+        _land_args(justification="   "), vcs=vcs, fs=LocalFs()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-006" in codes
+    assert exit_code != 0
+
+
+def test_land_story_refuses_when_the_station_branch_does_not_exist(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
+    vcs = _FakeVcs(existing_branches=frozenset())
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-007" in codes
+    assert exit_code != 0
+    assert vcs.merge_branch_calls == []
+
+
+def test_land_story_refuses_when_gate_is_not_green(tmp_path, capsys, monkeypatch):
+    """A gate-failed verdict must refuse the landing before any merge --
+    no journal entry, no merge -- and the gate's own finding (naming which
+    half failed) must be visible in this command's own report."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    gate_finding = {
+        "code": "MRS-GATE-001",
+        "severity": "error",
+        "message": "verify command 'pytest -q' failed",
+    }
+    from pyforge.marshal.core.model import Finding, Severity
+
+    monkeypatch.setattr(
+        gate_module,
+        "evaluate_gate",
+        _fake_evaluate_gate(
+            verdict=Verdict.GATE_FAILED,
+            findings=(
+                Finding(code="MRS-GATE-001", severity=Severity.ERROR, message=gate_finding["message"]),
+            ),
+        ),
+    )
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-001" in codes
+    assert payload["data"]["gate_verdict"] == "gate-failed"
+    assert "merge_sha" not in payload["data"]
+    assert exit_code != 0
+    assert vcs.merge_branch_calls == []
+    assert _find_land_journal_lines(tmp_path, "acme") == []
+
+
+def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha-123",
+        merge_branch_sha="merge-sha-456",
+        window_subjects=("Merge 4.3 into main",),
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    expected_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    assert payload["data"]["subject"] == expected_subject
+    assert payload["data"]["merge_sha"] == "merge-sha-456"
+    assert payload["data"]["non_conforming_merges"] == []
+    # merge_branch is handed branch's CAPTURED tip sha (P4), not the bare
+    # branch name -- see `resolve_ref`'s default return above.
+    assert vcs.merge_branch_calls == [("branch-tip-sha", "main", expected_subject)]
+
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    assert len(journal_lines) == 1
+    payload_entry = journal_lines[0]["payload"]
+    assert payload_entry["story_key"] == "4.3"
+    assert payload_entry["merge_sha"] == "merge-sha-456"
+    assert payload_entry["gate_verdict"] == "clean"
+    assert "landed manually" in payload_entry["justification"]
+    assert journal_lines[0]["kind"] == "manual-landing"
+    assert journal_lines[0]["phase"] == "observation"
+
+
+def test_land_story_reports_non_conforming_merges_without_blocking(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        window_subjects=("Merge 4.3 into main", "Merge pull request #42 from acme/feature"),
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["non_conforming_merges"] == [
+        "Merge pull request #42 from acme/feature"
+    ]
+    assert payload["findings"] == []
+
+
+def test_land_story_conformance_audit_read_failure_warns_but_does_not_block(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        window_subjects_raises=True,
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-009" in codes
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+    assert payload["data"]["non_conforming_merges"] is None
+    # The merge and its journal entry already happened -- an audit gap must
+    # never undo it.
+    assert vcs.merge_branch_calls != []
+    assert _find_land_journal_lines(tmp_path, "acme") != []
+
+
+def test_land_story_merge_failure_is_a_hard_stop_with_no_journal_entry(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}), merge_branch_raises=True)
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-008" in codes
+    assert exit_code != 0
+    assert "merge_sha" not in payload["data"]
+    assert _find_land_journal_lines(tmp_path, "acme") == []
+
+
+def test_land_story_uses_an_explicit_since_ref_over_the_computed_merge_base(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+
+    class _RecordingVcs(_FakeVcs):
+        def commit_subjects(self, repo_root, ref):
+            self.last_ref = ref
+            return super().commit_subjects(repo_root, ref)
+
+    vcs = _RecordingVcs(existing_branches=frozenset({"loop/acme"}))
+
+    exit_code = deploy_module.run_land_story(
+        _land_args(since="explicit-ref"), vcs=vcs, fs=LocalFs()
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["since"] == "explicit-ref"
+    assert vcs.last_ref == f"explicit-ref..{vcs.merge_branch_sha}"
+
+
+# --- Code review (2026-08-06): P2/P3/P4/P6/P7 --------------------------
+
+
+def test_land_story_refuses_a_warn_tier_gate_not_exactly_clean(tmp_path, capsys, monkeypatch):
+    """P2 (Blind Hunter): `status_for` treats `warn` as 'ok', but FR-27
+    requires a fully clean gate before a manual landing -- a warn-tier
+    result (real findings exist, just non-blocking) must refuse, not merge."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    from pyforge.marshal.core.model import Finding, Severity
+
+    monkeypatch.setattr(
+        gate_module,
+        "evaluate_gate",
+        _fake_evaluate_gate(
+            verdict=Verdict.WARN,
+            findings=(
+                Finding(
+                    code="MRS-GATE-004",
+                    severity=Severity.WARN,
+                    message="no verify commands configured",
+                ),
+            ),
+        ),
+    )
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-010" in codes
+    assert payload["verdict"] != "clean"
+    assert exit_code != 0
+    assert vcs.merge_branch_calls == []
+    assert _find_land_journal_lines(tmp_path, "acme") == []
+
+
+def test_land_story_policy_read_failure_is_a_hard_stop_no_merge_attempted(
+    tmp_path, capsys, monkeypatch
+):
+    """P3 (both reviewers independently): a `PolicyIOError` resolving the
+    merge-subject template must refuse the landing outright -- never fall
+    through and merge with a silently-defaulted template (AD-24)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
+    fake_policy_path = tmp_path / "fake-marshal-policy.toml"
+    fake_policy_path.write_text("not used -- _read_project_policy is patched", encoding="utf-8")
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: fake_policy_path
+    )
+
+    def _raise_policy_io_error(path):
+        raise deploy_module.PolicyIOError(f"malformed policy TOML at {path}")
+
+    monkeypatch.setattr(deploy_module, "_read_project_policy", _raise_policy_io_error)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-POLICY-004" in codes
+    assert exit_code != 0
+    assert vcs.merge_branch_calls == []
+    assert _find_land_journal_lines(tmp_path, "acme") == []
+
+
+def test_land_story_already_merged_is_a_clean_noop(tmp_path, capsys, monkeypatch):
+    """P6: reuses Story 4.1's own durability-detection machinery
+    (`core.promotion.merged_story_keys`) -- re-running `land-story` on an
+    already-durably-merged key must be a clean no-op: no gate run, no
+    merge attempt, no spurious empty merge commit, no duplicate journal
+    entry."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
+    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        main_subjects=(already_landed_subject,),
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["already_merged"] is True
+    assert vcs.merge_branch_calls == []
+    assert _find_land_journal_lines(tmp_path, "acme") == []
+
+
+def test_land_story_refuses_when_branch_moves_during_the_gate_window(
+    tmp_path, capsys, monkeypatch
+):
+    """P4: the gate evaluates `branch` at one point in time; a commit
+    landing on `branch` before the merge actually runs must not be merged
+    as if the (now-stale) gate result still applied to it."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        resolve_ref_sequence=["tip-at-gate-time", "tip-after-a-new-commit"],
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-011" in codes
+    assert exit_code != 0
+    assert vcs.merge_branch_calls == []
+    assert _find_land_journal_lines(tmp_path, "acme") == []
+
+
+def test_land_story_redaction_failure_warns_but_still_lands(tmp_path, capsys, monkeypatch):
+    """P7 (both reviewers independently): a `--justification` redaction
+    failure must register a visible WARN finding, not silently write
+    `null` into the permanent journal record with no trace of the gap.
+    The landing itself still proceeds -- this is a visibility fix only."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    monkeypatch.setattr(deploy_module, "_land_redact_text", lambda text: None)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-012" in codes
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+    assert "merge_sha" in payload["data"]
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    assert len(journal_lines) == 1
+    assert journal_lines[0]["payload"]["justification"] is None

@@ -98,6 +98,52 @@ so a retried run silently treated that orphaned, uncommitted file as
 already-durable and never re-attempted its commit. Scoping the check to one
 path (``git status --porcelain -- <path>``) fixes this without a new
 whole-worktree scan.
+
+Story 4.3 (review-cap landing, FR-27/AD-24) adds three more methods,
+``cli/deploy.py``'s (``marshal deploy land-story``) own primitives:
+
+- ``merge_base`` -- ``git merge-base a b``, read-only: the one merge-base
+  read both ``land-story``'s ``--since`` default (the story's own Design
+  Notes: "the merge-base of the branch being landed against ``main`` is the
+  one boundary this story can compute without inventing new state") and its
+  own precondition of confirming ``branch``/``into`` share real history
+  need -- exposed as a standalone primitive rather than folded silently
+  inside ``merge_branch`` so a caller needing the value itself (for
+  ``--since``) never has to re-derive it a second way. Raises
+  ``VcsCommandError`` if no common ancestor exists or either ref is
+  unresolvable.
+- ``resolve_ref`` -- ``git rev-parse --verify refs/heads/<ref>``,
+  read-only: a local branch's current tip sha. Added by code review
+  (2026-08-06, P4) so ``land-story`` can pin a branch's tip immediately
+  after the gate evaluates it and re-verify, immediately before merging,
+  that the branch has not moved since -- closing the window where a commit
+  landing on the branch mid-gate-run would otherwise be merged as if the
+  now-stale gate result still applied to it.
+- ``merge_branch`` -- the one write. Read-only against ``branch`` itself
+  (never checked out, never modified); the only write is the merge commit
+  landed on ``into``. Returns the new merge commit's sha. Raises
+  ``VcsCommandError`` on any conflict, compare-and-swap failure, or other
+  git failure -- a caller treats that as a hard stop, never a
+  partial/silent state (never retried, never auto-resolved).
+
+  Redesigned by code review (2026-08-06, P1, Blind Hunter + Edge Case
+  Hunter, both independently, the single most severe finding against this
+  story): the ORIGINAL implementation ran ``git checkout into`` directly
+  against ``repo_root`` -- this project's ONE shared, currently-active
+  working directory, not an isolated worktree, with no dirty-tree
+  precondition and no restoration of whatever was checked out before. A
+  ``land-story`` invocation -- a command whose entire purpose is a
+  governed, SAFE manual merge -- could therefore silently switch the
+  operator's own currently-checked-out branch, lose uncommitted context, or
+  race with concurrent work in that same checkout. ``merge_branch`` now
+  NEVER checks out or otherwise mutates ``repo_root``'s own active working
+  tree: it performs the merge inside a throwaway DETACHED worktree instead
+  (pinned to ``into``'s tip sha at the moment of entry), then advances the
+  real ``into`` branch ref via a three-arg ``git update-ref`` compare-and-
+  swap (also closing the ``resolve_ref``/P4 TOCTOU gap above -- a blind ref
+  update would leave ``into`` itself racy the same way), and removes the
+  temp worktree in a ``finally`` block on every exit path. See
+  ``adapters/vcs_git.py``'s own docstring for the full step-by-step.
 """
 
 from __future__ import annotations
@@ -269,4 +315,37 @@ class VcsPort(Protocol):
         "already promoted" check, which must not trust a file's mere
         on-disk EXISTENCE as proof it survived a real commit. Raises
         ``VcsCommandError`` on any git failure."""
+        ...
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        """Story 4.3: ``git merge-base a b`` -- the common ancestor commit's
+        sha, read-only. Raises ``VcsCommandError`` if ``a``/``b`` share no
+        common history, either does not resolve, or on any other git
+        failure."""
+        ...
+
+    def resolve_ref(self, repo_root: Path, ref: str) -> str:
+        """Story 4.3 (code review, 2026-08-06, P4): ``git rev-parse
+        --verify refs/heads/<ref>`` -- a local branch's current tip commit
+        sha, read-only. Raises ``VcsCommandError`` if ``ref`` does not
+        resolve to a local branch."""
+        ...
+
+    def merge_branch(self, repo_root: Path, branch: str, *, into: str, subject: str) -> str:
+        """Story 4.3 (FR-27, AD-24), redesigned by code review (2026-08-06,
+        P1): merges ``branch`` into ``into`` WITHOUT ever checking out or
+        otherwise mutating ``repo_root``'s own active working tree --
+        performed inside a throwaway detached worktree, with ``into``
+        itself advanced via a compare-and-swap ``git update-ref`` rather
+        than a direct checkout+merge in the shared checkout. ``subject`` is
+        ALWAYS the caller's own ``core.identity.render_merge_subject``
+        output, never hand-typed (this method has no opinion on where
+        ``subject`` came from; it merely passes it to ``-m`` verbatim).
+        Read-only against ``branch`` itself; the only write is the merge
+        commit landed on ``into``. Returns the new merge commit's sha.
+        Raises ``VcsCommandError`` on any conflict, compare-and-swap
+        failure (``into`` moved concurrently), or other git failure -- a
+        caller treats that as a hard stop: never retried, never
+        auto-resolved. The temp worktree used internally is always removed
+        before this returns or raises, on every exit path."""
         ...
