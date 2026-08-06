@@ -201,6 +201,24 @@ configured check that ran and failed) and from ``UNEVALUABLE`` (Marshal
 could not determine an answer at all). The same story adds
 ``MRS-GATE-009`` (``--scope-check`` could not be evaluated at all) at
 ``Verdict.UNEVALUABLE``, the same tier as ``MRS-GATE-002``/``003``/``005``.
+Story 4.1 (story-spec promotion, AD-13/AD-24/AD-29/AD-33) adds a NEW area,
+``MRS-DEPLOY-*``: ``MRS-DEPLOY-001`` (a durable story has no Tier-3 spec to
+promote) and ``MRS-DEPLOY-002`` (a durable story's Tier-3 spec fails the
+minimal parse, so it is not promoted over a possibly-good existing copy)
+classify ``Verdict.WARN`` -- the same tier as every other paper-trail gap
+this codebase already treats as reported-but-non-blocking
+(``MRS-POLICY-005``, ``MRS-PREFLIGHT-011``, ``MRS-GATE-004``, AD-21's own
+F-17 unclosed-``intent`` precedent): named so it is never passed over
+silently, but never itself failing the whole run when other candidates
+promote cleanly. ``MRS-DEPLOY-003`` (``VcsPort.commit_subjects`` could not
+read local ``main``'s commit history, or the promotion write path --
+copying a spec's bytes or ``VcsPort.commit_paths``'s stage-and-commit --
+failed) classifies ``Verdict.UNEVALUABLE``: Marshal could not positively
+confirm this run's promotion, the same "could not determine" tier as
+``MRS-GATE-002``/``003``/``005``/``009`` -- AD-31 forbids classifying the
+SAME code two different ways depending on which of its two emit sites
+fired, so both fold into this one rung rather than splitting into an
+untested ERROR-tier sibling for the write-path case.
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -307,6 +325,9 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008 at
 # SCOPE_VIOLATION (this table's first use of that rung) and MRS-GATE-009
 # at UNEVALUABLE, alongside MRS-GATE-002/003/005.
+# Story 4.1's cli/deploy.py/core/promotion.py add a NEW area, MRS-DEPLOY-*:
+# 001/002 (missing/invalid Tier-3 spec for a durable story) at WARN,
+# 003 (commit-history-read or promotion-write failure) at UNEVALUABLE.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -369,6 +390,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-009": Verdict.UNEVALUABLE,
+    "MRS-DEPLOY-001": Verdict.WARN,
+    "MRS-DEPLOY-002": Verdict.WARN,
+    "MRS-DEPLOY-003": Verdict.UNEVALUABLE,
 }
 
 
