@@ -240,10 +240,33 @@ class PromotionPlan:
     ``to_promote`` -- every ``SpecCandidate`` that is durable, not yet
     promoted, and carries valid content -- plus ``gaps``, one registered
     ``Finding`` per problem (a merged story with no Tier-3 spec at all, or
-    one whose Tier-3 spec fails the minimal parse)."""
+    one whose Tier-3 spec fails the minimal parse).
+
+    ``missing_spec_keys`` (Story 4.2): the subset of ``gaps`` that are
+    specifically "durable, no Tier-3 spec at all" (``MRS-DEPLOY-001``), as a
+    structured ``frozenset[StoryKey]`` rather than something a caller would
+    need to regex out of a ``Finding``'s human ``message``. Added for
+    ``cli/deploy.py::unreachable_promotions_for_slug`` (Story 4.2's own
+    "exactly one implementation of is this slug's story durable" reuse
+    requirement, AD-24/AD-33): teardown's reachability check needs this
+    same durable-with-no-spec-at-all set as a first-class value, not text to
+    parse back out of a paper-trail message meant for humans.
+
+    ``invalid_spec_keys`` (code review, 2026-08-06, P3): the subset of
+    ``gaps`` that are specifically "durable, Tier-3 spec present but
+    zero-byte/truncated" (``MRS-DEPLOY-002``). A corrupt or truncated
+    paper trail is at least as concerning as a missing one -- a missing
+    spec is unambiguous, a truncated one might carry partial, misleading
+    content -- so ``unreachable_promotions_for_slug`` folds this set into
+    the unreachable set alongside ``missing_spec_keys`` too (this
+    DELIBERATELY widens Story 4.2's original Always bullet, which named
+    only the missing-spec case; see this story's own Spec Change Log for
+    the review finding that corrected it)."""
 
     to_promote: tuple[SpecCandidate, ...]
     gaps: tuple[Finding, ...]
+    missing_spec_keys: frozenset[StoryKey] = frozenset()
+    invalid_spec_keys: frozenset[StoryKey] = frozenset()
 
 
 # A `status:` key at the LINE START of the frontmatter block, after
@@ -309,6 +332,8 @@ def classify_promotion_candidates(
 
     to_promote: list[SpecCandidate] = []
     gaps: list[Finding] = []
+    missing_spec_keys: set[StoryKey] = set()
+    invalid_spec_keys: set[StoryKey] = set()
     for key in sorted(merged_keys):
         if key in already_promoted:
             continue
@@ -325,6 +350,7 @@ def classify_promotion_candidates(
                     path=None,
                 )
             )
+            missing_spec_keys.add(key)
             continue
         if not is_valid_spec_text(candidate.text):
             gaps.append(
@@ -339,7 +365,13 @@ def classify_promotion_candidates(
                     path=candidate.path,
                 )
             )
+            invalid_spec_keys.add(key)
             continue
         to_promote.append(candidate)
 
-    return PromotionPlan(to_promote=tuple(to_promote), gaps=tuple(gaps))
+    return PromotionPlan(
+        to_promote=tuple(to_promote),
+        gaps=tuple(gaps),
+        missing_spec_keys=frozenset(missing_spec_keys),
+        invalid_spec_keys=frozenset(invalid_spec_keys),
+    )
