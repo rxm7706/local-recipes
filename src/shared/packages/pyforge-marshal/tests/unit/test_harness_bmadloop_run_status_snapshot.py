@@ -59,6 +59,7 @@ def _task(
     branch: str = "",
     worktree_path: str = "",
     spec_file: str | None = None,
+    commit_sha: str | None = None,
 ) -> dict[str, object]:
     return {
         "story_key": story_key,
@@ -69,6 +70,7 @@ def _task(
         "branch": branch,
         "worktree_path": worktree_path,
         "spec_file": spec_file,
+        "commit_sha": commit_sha,
     }
 
 
@@ -91,6 +93,11 @@ def test_no_pause_and_no_deferred_stories_reports_a_clean_snapshot(harness, tmp_
     assert snapshot.escalated_spec_file is None
     assert snapshot.escalated_task_phase is None
     assert snapshot.finished is False
+    # Story 3.8 (AD-46/FR-61): EVERY task, not only the deferred ones.
+    assert {t.story_key: t.phase for t in snapshot.tasks} == {
+        "3.5": "done",
+        "3.6": "dev-running",
+    }
 
 
 def test_a_finished_run_reports_finished(harness, tmp_path):
@@ -425,3 +432,57 @@ def test_resolution_reference_never_raises_for_a_path_traversal_shaped_key(harne
     # other absent marker, never raising.
     result = harness.resolution_reference(tmp_path, "acme-run-1", "weird/../key")
     assert result is None
+
+
+# --- Story 3.8: tasks (stage-bound durability, AD-46/FR-61) ---------------------
+
+
+def test_tasks_carries_commit_sha_and_branch_for_every_task(harness, tmp_path):
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "3.8": _task(
+                "3.8", "committing", commit_sha="abc123", branch="loop/3.8"
+            ),
+            "3.7": _task("3.7", "deferred", defer_reason="verify exhausted"),
+        },
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    by_key = {t.story_key: t for t in snapshot.tasks}
+    assert by_key["3.8"].phase == "committing"
+    assert by_key["3.8"].commit_sha == "abc123"
+    assert by_key["3.8"].branch == "loop/3.8"
+    assert by_key["3.7"].phase == "deferred"
+    assert by_key["3.7"].commit_sha is None
+    assert by_key["3.7"].branch == ""
+    # `tasks` is the full population, a strict superset of `deferred`.
+    assert len(snapshot.tasks) == 2
+    assert len(snapshot.deferred) == 1
+
+
+def test_tasks_commit_sha_carries_no_redaction_sentinel(harness, tmp_path):
+    """A commit hash is not session-derived free text (unlike
+    ``paused_reason``/``defer_reason``) -- no redaction applies."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={"3.8": _task("3.8", "done", commit_sha="deadbeef")},
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.tasks[0].commit_sha == "deadbeef"
+    assert REDACTED_SENTINEL not in (snapshot.tasks[0].commit_sha or "")
+
+
+def test_a_malformed_state_json_degrades_tasks_to_none_snapshot(harness, tmp_path):
+    run_dir = tmp_path / ".bmad-loop" / "runs" / "acme-run-1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "state.json").write_text("{not valid json", encoding="utf-8")
+
+    assert harness.run_status_snapshot(tmp_path, "acme-run-1") is None
