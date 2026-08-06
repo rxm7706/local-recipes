@@ -48,6 +48,7 @@ from pathlib import Path
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
 from ..core import policy
+from ..core.landing import LandingRule, landing_rule_to_dict
 from ..core.model import Finding, Severity, Status, build_envelope, status_for
 from ..core.verdict import compute_verdict, exit_code_for
 
@@ -70,6 +71,15 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        # Story 4.7's 3 scalar-typed landing keys (AD-40) -- same reason as
+        # the 5 above: no AC asks for a CLI override surface for any of
+        # them, so `--project-policy` is the only way to set them.
+        # `landing_rules` is excluded from THIS set (it is list/mapping-
+        # typed, joining `_UNSETTABLE_KEYS`'s other 5 for that reason
+        # instead -- see the frozenset below).
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
     }
 )
 
@@ -100,22 +110,37 @@ _UNSETTABLE_KEYS = frozenset(
         # `Mapping[str, tuple[str, ...]]` shape either, the same reason the
         # other 4 list/mapping-typed keys above are excluded.
         "epic_surfaces",
+        # Story 4.7's `landing_rules` (AD-40) -- a tuple of LandingRule
+        # objects, the same "no string value could ever satisfy this
+        # validator" reason. `landing_merge_strategy`/`landing_branch_
+        # retirement`/`landing_resync` are plain scalars excluded for the
+        # OTHER reason instead (`_PROJECT_POLICY_ONLY_KEYS`, above).
+        "landing_rules",
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
     }
 )
 
-# Field render order: the 5 static keys, then the 10 seed keys -- matches
+# Field render order: the 9 static keys, then the 10 seed keys -- matches
 # the spec's own enumeration order (Boundaries & Constraints, second
 # bullet). `idle_threshold_minutes` (Story 3.5) and Story 3.6's 4 budget
 # ceilings are deliberately NOT `--set` targets (unlike the other 5 scalar
 # seed keys) -- no AC asks for a CLI override surface for any of them, and
 # `marshal-policy.toml`'s project layer already covers "configurable"
-# (FR-12/FR-13's own AC wording).
+# (FR-12/FR-13's own AC wording). Story 4.7's 4 landing keys (AD-40) follow
+# `epic_surfaces` -- the spec's own Code Map enumeration order -- for the
+# same reason: no `--set` surface, `marshal-policy.toml` only.
 _FIELD_ORDER: tuple[str, ...] = (
     "verify_commands",
     "worktree_seed_paths",
     "merge_subject_template",
     "model_tier_map",
     "epic_surfaces",
+    "landing_rules",
+    "landing_merge_strategy",
+    "landing_branch_retirement",
+    "landing_resync",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -262,11 +287,19 @@ def _json_safe(value: object) -> object:
         return [_json_safe(item) for item in value]
     if isinstance(value, Mapping):
         return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, LandingRule):
+        # Story 4.7 (AD-40): a LandingRule is a frozen dataclass, not a
+        # Mapping/tuple -- render it explicitly rather than let json.dumps
+        # crash on an unserializable object. Shared with `core/policy.py`'s
+        # own `_to_plain` via `core/landing.py::landing_rule_to_dict`
+        # (review finding P4) -- never hand-roll this field list a second
+        # time.
+        return landing_rule_to_dict(value)
     return value
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 14-key document matching ``schemas/policy.json`` exactly:
+    """The flat 19-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

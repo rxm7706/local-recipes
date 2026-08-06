@@ -58,3 +58,31 @@ verify_commands = [
   "pixi run --frozen -e pyforge-marshal pyforge-marshal-test",
   "pixi run --frozen -e pyforge-ci pyforge-deps-test",
 ]
+
+# landing_rules (Story 4.7, AD-40): this REPO's own two real landing rules,
+# verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
+# readable policy instead of a paragraph a human has to remember.
+#
+# maintenance-label: any change outside `recipes/**` needs the `maintenance`
+# label at PR open/update time (gated -- suppressed for a recipe-only PR).
+# trigger_mode = "exclude": fires when at least one changed path is OUTSIDE
+# `recipes/**` (corrected in review, 2026-08-06 -- see core/landing.py).
+[[landing_rules]]
+name = "maintenance-label"
+trigger_path_glob = "recipes/**"
+trigger_mode = "exclude"
+label = "maintenance"
+ungated = false
+
+# environment-yaml-sync: a `pixi.toml` change must regenerate `environment.yaml`.
+# UNGATED -- this check applies regardless of the `maintenance` label.
+# trigger_mode = "include": fires when `pixi.toml` itself is among the
+# changed paths (corrected in review, 2026-08-06 -- the shipped code had
+# this backwards, firing on almost every PR EXCEPT the one it exists to
+# catch; see core/landing.py).
+[[landing_rules]]
+name = "environment-yaml-sync"
+trigger_path_glob = "pixi.toml"
+trigger_mode = "include"
+required_check = "environment-yaml-sync"
+ungated = true
