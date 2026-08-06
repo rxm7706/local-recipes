@@ -25,7 +25,19 @@ reproducing this repo's own squash-merge convention), and the two writes
 config) -- the resulting object is never referenced by any ref and is
 eligible for garbage collection the moment this process exits; its identity
 has no lasting effect beyond this one comparison.
-"""
+
+Story 4.1 (story-spec promotion, AD-13/AD-24/AD-29/AD-33) adds
+``commit_subjects`` (``git log <ref> --format=%s``, read-only) and
+``commit_paths`` (the one real, PERSISTENT write this module adds since
+``push``: an individual ``git add -- <path>`` per entry, then ``git commit
+-m <message> -- <path> ...``, unlike ``is_branch_merged``'s own throwaway
+``commit-tree`` object -- this commit is meant to survive, so it uses the
+operator's own git identity/signing config, never a pinned fake one).
+Story 4.1's own review-fix pass adds one more, ``path_has_uncommitted_changes``
+(``git status --porcelain -- <path>``, read-only) -- the per-path
+counterpart ``cli/deploy.py``'s "already promoted" check needs, closing a
+partial-batch-failure gap the on-disk-existence-only version of that check
+had (see ``ports/vcs.py``'s own docstring for the full incident)."""
 
 from __future__ import annotations
 
@@ -638,3 +650,90 @@ class GitVcs:
             dirty.add(entry)
 
         return tuple(sorted(committed | dirty))
+
+    def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
+        """Story 4.1 (AD-33): ``git log <ref> --format=%s``, read-only.
+        ``ref`` is never resolved/validated ahead of time -- an unresolvable
+        ref (no ``origin`` remote for ``"origin/main"``, a corrupted repo
+        missing ``"main"``) surfaces as an ordinary ``VcsCommandError``,
+        which the caller (``cli/deploy.py``) treats differently per route:
+        best-effort for the push route, a hard failure for the merge
+        route -- a distinction this method itself has no opinion about."""
+        result = _run(["git", "-C", str(repo_root), "log", ref, "--format=%s"])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git log {ref} --format=%s failed: {result.stderr.strip()}"
+            )
+        return tuple(result.stdout.splitlines())
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+        """Story 4.1 (AD-29): stages exactly ``paths`` (one ``git add --
+        <path>`` per entry, never ``git add -A``) then commits ONLY those
+        paths (``git commit -m <message> -- <path> ...``, never a bare
+        ``git commit`` that would sweep in a pre-existing index), returning
+        ``git rev-parse HEAD``'s output. Refuses (``VcsCommandError``,
+        before any git invocation) an empty ``paths`` -- a caller with
+        nothing to promote must never reach this method; without the guard,
+        ``git commit -m <message> --`` with no pathspec after ``--`` would
+        either fail ambiguously or, worse, fall back to committing whatever
+        happened to already be staged, exactly the "commits a pre-existing
+        index" failure AD-29 forbids."""
+        if not paths:
+            raise VcsCommandError("commit_paths requires at least one path, got none")
+        for path in paths:
+            add_result = _run(["git", "-C", str(repo_root), "add", "--", str(path)])
+            if add_result.returncode != 0:
+                raise VcsCommandError(
+                    f"git add -- {path} failed: {add_result.stderr.strip()}"
+                )
+        commit_args = [
+            "git",
+            "-C",
+            str(repo_root),
+            "commit",
+            "-m",
+            message,
+            "--",
+            *(str(path) for path in paths),
+        ]
+        commit_result = _run(commit_args)
+        if commit_result.returncode != 0:
+            raise VcsCommandError(
+                f"git commit -- {' '.join(str(p) for p in paths)} failed: "
+                f"{commit_result.stderr.strip()}"
+            )
+        rev_result = _run(["git", "-C", str(repo_root), "rev-parse", "HEAD"])
+        if rev_result.returncode != 0:
+            raise VcsCommandError(
+                f"git rev-parse HEAD failed after committing {paths}: "
+                f"{rev_result.stderr.strip()}"
+            )
+        return rev_result.stdout.strip()
+
+    def path_has_uncommitted_changes(self, repo_root: Path, path: Path) -> bool:
+        """Story 4.1's own review-fix pass: ``has_uncommitted_changes``'s
+        per-path counterpart -- ``git status --porcelain -- <path>``, same
+        explicit ``status.showUntrackedFiles=normal`` config pin (an
+        operator's own config setting it to ``no`` must not silently hide
+        an untracked file from this check either). Any output line at all
+        means ``path`` carries staged, unstaged, or untracked state; no
+        output means ``path`` is tracked and matches ``HEAD`` exactly (or
+        does not exist -- git reports nothing for either)."""
+        result = _run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "-c",
+                "status.showUntrackedFiles=normal",
+                "status",
+                "--porcelain",
+                "--",
+                str(path),
+            ]
+        )
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git status --porcelain -- {path} failed: {result.stderr.strip()}"
+            )
+        return bool(result.stdout.strip())

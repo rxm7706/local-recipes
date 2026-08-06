@@ -334,6 +334,45 @@ this docstring, and of ``cli/gate.py``'s own, both claimed
 ``MRS-GATE-009`` here, which the code has never actually emitted for this
 case -- pinned by
 ``tests/unit/test_cli.py::test_gate_evaluate_scope_check_unresolved_story_reports_mrs_ident_001``).
+
+Story 4.1 (story-spec promotion, AD-13/AD-24/AD-29/AD-33) adds the
+registry's eleventh real caller, ``cli/deploy.py``/``core/promotion.py``
+(``marshal deploy promote``), and a NEW area, ``MRS-DEPLOY-*``, its own
+three codes: ``MRS-DEPLOY-001`` (a story is durable per
+``core.promotion.merged_story_keys`` -- reachable from ``origin/main`` or
+local ``main`` -- but no Tier-3 ``spec-<key>*.md`` file exists to promote
+for it at all), ``MRS-DEPLOY-002`` (a durable story's Tier-3 spec exists but
+fails ``core.promotion.is_valid_spec_text``'s minimal parse -- zero-byte or
+missing frontmatter/``status:`` -- and is therefore NOT promoted, never
+overwriting a good existing tracked copy, per AD-13), and
+``MRS-DEPLOY-003`` (``VcsPort.commit_subjects`` could not read local
+``main``'s own commit history at all -- the run cannot determine ANY
+story's durability, so nothing is promoted -- OR the promotion write path
+itself -- copying a spec's bytes into the tracked archive, or
+``VcsPort.commit_paths``'s stage-and-commit -- failed, leaving that run
+unable to positively confirm its own promotion completed). ``MRS-DEPLOY-001``/
+``002`` classify ``Verdict.WARN``, the same tier as this codebase's every
+other "reported, never blocks progression" paper-trail-gap code
+(``MRS-POLICY-005``, ``MRS-PREFLIGHT-011``, ``MRS-GATE-004``, AD-21's own
+F-17 unclosed-``intent`` precedent): a gap is named so it is never passed
+over silently, but promotion continues for every OTHER candidate in the
+same run -- the same reasoning this codebase already applies system-wide to
+a paper-trail gap that does not itself invalidate the surrounding
+operation. ``MRS-DEPLOY-003`` classifies ``Verdict.UNEVALUABLE`` (the
+story's own edge-case matrix names this explicitly for the ``commit_subjects``
+failure; the write-path failure is folded into the SAME code and tier per
+AD-31's "one code, one classification" rule -- AD-31 forbids the same code
+classifying two different rungs depending on context, so a git-history read
+failure and a promotion-write failure are reported as the SAME "Marshal
+could not confirm this run's promotion truthfully" condition rather than
+inventing an asymmetric ERROR-tier sibling for an untested edge no
+acceptance criterion names). The push route (``commit_subjects(repo_root,
+"origin/main")``) is deliberately EXEMPT from ``MRS-DEPLOY-003``: a missing
+``origin`` remote (or an unfetched ``origin/main``) is the ordinary,
+non-error "no push route available" case (the story's own I/O matrix: "No
+error, no ``VcsCommandError``") and falls back to the local-``main`` route
+silently, per AD-29's own "durability must not require the network"
+amendment (F-14).
 ``MRS-GATE-007``/``008`` classify ``Verdict.
 SCOPE_VIOLATION``: a real change was evaluated and found outside the
 allowlist it is judged against, or touching a file its own or another
@@ -413,6 +452,10 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # UNEVALUABLE code for a --scope-check that could not be evaluated at all
 # (009). MRS-GATE-005 is REUSED, not replaced, with a broadened meaning
 # (see the prose above).
+# Story 4.1's cli/deploy.py/core/promotion.py add the eleventh real
+# caller's own NEW area, MRS-DEPLOY-* (three codes: missing spec for a
+# merged story, invalid/truncated spec, and a commit-history-read or
+# promotion-write failure).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -476,6 +519,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-GATE-007",
         "MRS-GATE-008",
         "MRS-GATE-009",
+        "MRS-DEPLOY-001",
+        "MRS-DEPLOY-002",
+        "MRS-DEPLOY-003",
     }
 )
 
