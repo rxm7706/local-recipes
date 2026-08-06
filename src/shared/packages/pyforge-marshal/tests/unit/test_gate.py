@@ -356,3 +356,98 @@ def test_describe_gate_mode_rejects_out_of_vocabulary_mode():
     `core/verdict.py::classify()`'s own precedent)."""
     with pytest.raises(ValueError, match="bogus"):
         gate.describe_gate_mode("bogus")
+
+
+# --- Story 2.7: check_spec_binding (AD-4/AD-31/AD-49) -----------------------
+
+
+def test_check_spec_binding_declared_commands_none_reports_mrs_gate_010():
+    findings = gate.check_spec_binding(None, ("pytest",))
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-GATE-010"
+    assert findings[0].severity is Severity.ERROR
+    assert classify(findings[0].code) is Verdict.SCOPE_VIOLATION
+
+
+def test_check_spec_binding_none_ignores_policy_commands_entirely():
+    # Whatever policy_commands says, a None declared_commands ALWAYS reports
+    # the single missing-binding finding -- never zero, never more than one.
+    findings = gate.check_spec_binding(None, ())
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-GATE-010"
+
+
+def test_check_spec_binding_declared_subset_of_policy_no_findings():
+    findings = gate.check_spec_binding(("pytest", "lint"), ("pytest", "lint", "extra"))
+    assert findings == ()
+
+
+def test_check_spec_binding_declared_equal_to_policy_no_findings():
+    findings = gate.check_spec_binding(("pytest", "lint"), ("pytest", "lint"))
+    assert findings == ()
+
+
+def test_check_spec_binding_missing_declared_command_reports_mrs_gate_011():
+    findings = gate.check_spec_binding(("pytest", "lint"), ("pytest",))
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-GATE-011"
+    assert findings[0].severity is Severity.ERROR
+    assert "lint" in findings[0].message
+    assert classify(findings[0].code) is Verdict.SCOPE_VIOLATION
+
+
+def test_check_spec_binding_one_finding_per_missing_command():
+    findings = gate.check_spec_binding(("a", "b", "c"), ())
+    assert {finding.code for finding in findings} == {"MRS-GATE-011"}
+    assert len(findings) == 3
+    messages = " ".join(finding.message for finding in findings)
+    assert "'a'" in messages
+    assert "'b'" in messages
+    assert "'c'" in messages
+
+
+def test_check_spec_binding_is_one_directional_extra_policy_commands_are_not_a_finding():
+    # policy_commands running MORE than declared_commands named is NOT
+    # itself a finding -- the spec's promise is a floor, not a ceiling.
+    findings = gate.check_spec_binding(("pytest",), ("pytest", "lint", "extra-check"))
+    assert findings == ()
+
+
+def test_check_spec_binding_empty_declared_commands_reports_nothing():
+    # A spec whose own Success signal declares zero commands (its
+    # `## Verification` section exists but has no `**Commands:**` bullets)
+    # has nothing to miss.
+    findings = gate.check_spec_binding((), ("pytest",))
+    assert findings == ()
+
+
+def test_check_spec_binding_repeated_declared_command_reports_one_finding():
+    # Review finding (P2): a spec that accidentally repeats the same
+    # missing command in two bullets must report exactly ONE MRS-GATE-011
+    # for it, not one per repetition -- the same missing command is one
+    # fact, not several.
+    findings = gate.check_spec_binding(("missing", "missing"), ("pytest",))
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-GATE-011"
+    assert "missing" in findings[0].message
+
+
+def test_check_spec_binding_incidental_whitespace_difference_is_not_a_finding():
+    # Review finding (P6): a declared command and a policy command that
+    # differ only by incidental whitespace (a double space here) are the
+    # same command in effect and must not be reported as narrowed/removed.
+    findings = gate.check_spec_binding(
+        ("pixi run  --frozen -e pyforge-marshal pyforge-marshal-test",),
+        ("pixi run --frozen -e pyforge-marshal pyforge-marshal-test",),
+    )
+    assert findings == ()
+
+
+def test_check_spec_binding_never_classifies_warn():
+    """AD-49/AD-31: a binding mismatch must affect the verdict, never a
+    warning folded into an otherwise-green result."""
+    missing_binding = gate.check_spec_binding(None, ())
+    narrowed = gate.check_spec_binding(("x",), ())
+    for finding in (*missing_binding, *narrowed):
+        assert classify(finding.code) is not Verdict.WARN
+        assert classify(finding.code) is not Verdict.CLEAN

@@ -218,7 +218,16 @@ confirm this run's promotion, the same "could not determine" tier as
 ``MRS-GATE-002``/``003``/``005``/``009`` -- AD-31 forbids classifying the
 SAME code two different ways depending on which of its two emit sites
 fired, so both fold into this one rung rather than splitting into an
-untested ERROR-tier sibling for the write-path case.
+untested ERROR-tier sibling for the write-path case. Story 2.7 (a gate
+binds to the spec's Success signal, AD-4/AD-31/AD-49) adds ``MRS-GATE-010``
+(``core.gate.check_spec_binding`` was given ``declared_commands is None``
+-- no tracked spec, or its Success signal could not be parsed) and
+``MRS-GATE-011`` (a spec-declared verify command is no longer among the
+policy's own ``verify_commands``) -- both classify ``Verdict.
+SCOPE_VIOLATION``, the SAME rung as ``MRS-GATE-007``/``008``: AD-49 states
+plainly that "an untraceable or mismatched binding cannot itself be waived
+to green", the identical closed-lattice reasoning already governing this
+codebase's other ``SCOPE_VIOLATION`` codes.
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -328,6 +337,9 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Story 4.1's cli/deploy.py/core/promotion.py add a NEW area, MRS-DEPLOY-*:
 # 001/002 (missing/invalid Tier-3 spec for a durable story) at WARN,
 # 003 (commit-history-read or promotion-write failure) at UNEVALUABLE.
+# Story 2.7's cli/gate.py/core/gate.py add MRS-GATE-010/011 (missing/
+# unparseable spec-binding Success signal; a declared command narrowed or
+# removed from policy) at SCOPE_VIOLATION, alongside MRS-GATE-007/008.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -393,6 +405,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-001": Verdict.WARN,
     "MRS-DEPLOY-002": Verdict.WARN,
     "MRS-DEPLOY-003": Verdict.UNEVALUABLE,
+    "MRS-GATE-010": Verdict.SCOPE_VIOLATION,
+    "MRS-GATE-011": Verdict.SCOPE_VIOLATION,
 }
 
 
