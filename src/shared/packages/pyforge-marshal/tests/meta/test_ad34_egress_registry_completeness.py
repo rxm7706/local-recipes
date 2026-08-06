@@ -728,7 +728,7 @@ def test_real_record_port_is_classified_egress_true():
     assert EGRESS_PORTS["RecordPort"] is True
 
 
-def test_egress_ports_registry_has_exactly_the_eight_known_ports():
+def test_egress_ports_registry_has_exactly_the_nine_known_ports():
     assert set(EGRESS_PORTS.keys()) == {
         "ProcessPort",
         "FsPort",
@@ -738,11 +738,16 @@ def test_egress_ports_registry_has_exactly_the_eight_known_ports():
         "ClockPort",
         "SessionObserverPort",
         "NotifyPort",
+        "ForgePort",
     }
 
 
 def test_notify_port_is_classified_egress_true():
     assert EGRESS_PORTS["NotifyPort"] is True
+
+
+def test_forge_port_is_classified_egress_true():
+    assert EGRESS_PORTS["ForgePort"] is True
 
 
 def test_guard_does_not_fire_on_the_real_notify_port():
@@ -755,5 +760,19 @@ def test_guard_does_not_fire_on_the_real_notify_port():
     from pyforge.marshal.ports import notify as notify_module
 
     module_path = Path(notify_module.__file__)
+    cls = _protocol_classes(_parse(module_path))[0]
+    assert _bare_str_param_violations(cls) == []
+
+
+def test_guard_does_not_fire_on_the_real_forge_port():
+    """The real, shipped ``ForgePort`` -- every non-``Redacted`` identifier
+    parameter (``repo``/``head_branch``/``base``/``head``/``ref``/
+    ``check_name``) wrapped in ``ForgeRef``, ``number`` an ``int``,
+    ``labels`` a ``tuple[str, ...]`` -- must produce zero violations (Story
+    4.4's own reason for NOT literally mirroring the intent-contract's bare
+    ``str`` wording -- see that port's own module docstring)."""
+    from pyforge.marshal.ports import forge as forge_module
+
+    module_path = Path(forge_module.__file__)
     cls = _protocol_classes(_parse(module_path))[0]
     assert _bare_str_param_violations(cls) == []
