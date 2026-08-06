@@ -165,12 +165,17 @@ path at all. (``is_branch_merged``'s fallback does create one internal git
 object via ``VcsPort`` -- a detached, unreferenced commit, garbage-collected
 in the ordinary course -- which is a write in the general sense but outside
 AD-11's FsPort/tracked-artifact meaning of the term; see that method's own
-docstring.) Its three codes: ``MRS-TEARDOWN-001`` (a malformed slug,
+docstring.) Its codes: ``MRS-TEARDOWN-001`` (a malformed slug,
 checked before any I/O, mirroring ``MRS-INIT-001``/``MRS-PREFLIGHT-010``'s
 identical shape gate) classifies ``Verdict.UNEVALUABLE``;
-``MRS-TEARDOWN-002`` (a git operation failed) and ``MRS-TEARDOWN-003``
-(refused: work would be lost) classify ``Verdict.ERROR`` -- see
-``core/findings.py``'s own docstring for the exact per-code mapping.
+``MRS-TEARDOWN-002`` (a git operation failed), ``MRS-TEARDOWN-003``
+(refused: work would be lost), ``MRS-TEARDOWN-004`` (Story 4.2: an
+unreachable-promotion refusal met with ``--force`` but no/mismatched
+``--abandon``), and ``MRS-TEARDOWN-005`` (code review, 2026-08-06, P1: the
+AD-29 reachability check itself could not run -- an UNDETERMINED result,
+refused at least as strictly as a confirmed non-empty one) all classify
+``Verdict.ERROR`` -- see ``core/findings.py``'s own docstring for the exact
+per-code mapping.
 """
 
 from __future__ import annotations
@@ -178,10 +183,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import secrets
 import shlex
-import tomllib
 from collections.abc import Mapping
+from datetime import datetime, timezone
 from pathlib import Path
+
+import tomllib
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
@@ -194,12 +202,21 @@ from ..adapters.harness_bmadloop import (
     render_policy_toml,
 )
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import policy, status
+from ..core import identity, policy, status
+from ..core.identity import MalformedStoryKeyError
+from ..core.journal import (
+    JournalEntryId,
+    Phase,
+    build_entry,
+    mint_run_id,
+    prepare_for_write,
+)
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort, WorktreeEntry
+from . import deploy
 from .config import (
     PolicyIOError,
     _read_project_policy,
@@ -1520,7 +1537,23 @@ def add_teardown_subparser(subparsers: argparse._SubParsersAction) -> None:
             "Override refusal: remove the worktree/branch even when the "
             "home is dirty, the branch is genuinely unmerged, or the "
             "AD-29 promotion-reachability check names something "
-            "unreachable."
+            "unreachable (the latter ALSO requires --abandon naming "
+            "exactly the unreachable story keys)."
+        ),
+    )
+    parser.add_argument(
+        "--abandon",
+        nargs="+",
+        metavar="KEY",
+        default=None,
+        help=(
+            "Name every unreachable-promotion story key being abandoned -- "
+            "must EXACTLY match the set the AD-29 reachability check "
+            "reports (no more, no fewer); required together with --force "
+            "to proceed past that specific refusal. If the check itself "
+            "could not run (reachability UNDETERMINED, MRS-TEARDOWN-005), "
+            "pass the literal token 'UNDETERMINED' instead -- no real "
+            "story keys can be named in that state."
         ),
     )
     parser.add_argument(
@@ -1532,22 +1565,169 @@ def add_teardown_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(handler=run_teardown)
 
 
-def _unreachable_promotions(repo_root: Path, branch: str) -> tuple[str, ...]:
-    """AD-29's promotion-reachability extension point -- NOT Epic 4's real
-    predicate, which will name every promotion route (pushed / merged /
-    durable-local-ref) ``branch``'s content would become unreachable from if
-    its loop home were torn down now. Hardcoded to "nothing unreachable"
-    today, matching the spec's own instruction: a repo-wide grep at
-    planning time found zero existing promotion/reachability machinery, and
-    this story's declared surface is ``cli/init.py`` + ``adapters/
-    vcs_git.py`` only. ``run_teardown``'s call site and contract (called
-    before the refusal decision; a non-empty result is one more refusal
-    reason) are permanent -- Epic 4 replaces only this function's BODY."""
-    return ()
+def _unreachable_promotions(
+    repo_root: Path,
+    branch: str,
+    project_slug: str,
+    *,
+    vcs: VcsPort,
+    fs: FsPort,
+) -> tuple[str, ...] | None:
+    """AD-29's promotion-reachability extension point (Story 4.2: this
+    function's real body, replacing Story 1.8's hardcoded-empty stub --
+    "the call site and contract... are permanent, Epic 4 replaces only this
+    function's BODY", exactly as that stub's own docstring promised).
+    Delegates to ``cli.deploy.unreachable_promotions_for_slug`` (the SAME
+    candidate-discovery + classification pipeline ``deploy promote``
+    itself uses, per Story 4.2's own "one implementation of is this slug's
+    story durable" requirement, AD-24/AD-33) -- computed fresh on every
+    call, never cached (AD-29: "reachability computed at teardown time,
+    never a journal flag").
+
+    Signature grows ``project_slug`` (the story's own promise) AND threads
+    the SAME ``vcs``/``fs`` DI seam ``run_teardown`` already takes (a
+    deviation from the spec's literal signature, recorded in this story's
+    own Spec Change Log -- needed so tests can exercise this path through
+    the same fakes ``run_teardown``'s own test suite already uses, rather
+    than a fresh ``GitVcs()``/``LocalFs()`` neither test doubles can
+    intercept). ``branch`` is accepted but unused by the delegate (the
+    real predicate is keyed by ``project_slug``, not the branch name) --
+    kept for call-site compatibility, per the stub's own "call site...
+    permanent" promise.
+
+    Returns ``None`` -- rather than ``()`` -- when the delegate itself
+    returns ``None`` (code review, 2026-08-06, P1): reachability is
+    UNDETERMINED (the REQUIRED local-``main`` read failed), never
+    CONFIRMED-empty. ``run_teardown`` treats the two differently -- see its
+    own comment at the call site for the override discipline an
+    UNDETERMINED result now requires."""
+    keys = deploy.unreachable_promotions_for_slug(repo_root, project_slug, vcs=vcs, fs=fs)
+    if keys is None:
+        return None
+    return tuple(str(key) for key in keys)
 
 
 def _teardown_op_failed_finding(message: str) -> Finding:
     return Finding(code="MRS-TEARDOWN-002", severity=Severity.ERROR, message=message)
+
+
+# --- abandonment journaling (Story 4.2, AD-27) -------------------------------
+# `--force --abandon` authorizes teardown to proceed over an AD-29
+# unreachable-promotion refusal; AD-27's trust model requires every such
+# WIDENING to be a recorded event ("a widening that left no entry is itself
+# a hard finding at fold time"). One `observation` entry per abandoned key,
+# written to the CANONICAL Tier-3 store (never the home's own local
+# backlink, which is about to be removed by this same invocation) so it
+# survives teardown -- mirrors cli/spin.py's own mint-then-append protocol
+# (AD-25/AD-28/AD-30), scoped to a single fresh "run" representing this
+# teardown's own abandonment event (there is no pre-existing run this event
+# belongs to -- teardown is not itself a story run).
+_ABANDON_JOURNAL_FILENAME = "journal.jsonl"
+_ABANDON_KIND = "promotion-abandoned"
+
+# The literal token an operator must pass to `--abandon` to force past an
+# UNDETERMINED reachability result (code review, 2026-08-06, P1) -- no real
+# story keys can be named in that state (the check never ran), so naming
+# THIS sentinel is the "operator actually read the refusal" proof the
+# ordinary --abandon exact-match discipline provides for the confirmed-
+# unreachable case. Never a valid story-key shape (core.identity.normalize
+# would reject it), so it can never collide with a real key.
+_UNDETERMINED_ABANDON_TOKEN = "UNDETERMINED"
+
+
+def _abandon_writer_id() -> str:
+    """A fresh, process-scoped, filesystem-safe writer id -- mirrors
+    ``cli/spin.py::_writer_id``'s identical rationale, scoped to this
+    module's own caller."""
+    return f"teardown-{os.getpid()}"
+
+
+def _abandon_random_token() -> str:
+    return secrets.token_hex(4)
+
+
+def _abandon_format_utc_compact(moment: datetime) -> str:
+    return moment.strftime("%Y%m%dT%H%M%S") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _abandon_format_entry_ts(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _append_abandonment_journal_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
+    """Mirrors ``cli/spin.py::_append_entry``'s own write path exactly
+    (AD-30: sidecar-if-any BEFORE the line that references it, then the
+    line itself)."""
+    prepared = prepare_for_write(entry)
+    if prepared.sidecar_relative_path is not None:
+        fs.write_text_atomic(
+            run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
+        )
+    fs.append_line(run_dir / _ABANDON_JOURNAL_FILENAME, prepared.line, fsync=fsync)
+
+
+def _journal_abandonments(
+    fs: FsPort, repo_root: Path, slug: str, story_keys: tuple[str, ...]
+) -> Finding | None:
+    """One journal ``observation`` entry per abandoned story key (AD-27:
+    operator-attributed, attributable not authenticated -- see that AD's
+    own trust-model text). Returns a ``Finding`` (never raises) on any I/O
+    failure -- ``run_teardown`` treats a non-``None`` result as blocking:
+    an unrecorded widening must not proceed (AD-27's own "a widening that
+    left no entry is itself a hard finding" -- here enforced at write time
+    rather than deferred to a later fold)."""
+    moment = datetime.now(timezone.utc)
+    run_id = mint_run_id(slug, _abandon_format_utc_compact(moment), _abandon_random_token())
+    run_dir = (
+        repo_root
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
+    )
+    try:
+        fs.ensure_dir(run_dir.parent)
+        fs.create_dir_exclusive(run_dir)
+    except FsError as exc:
+        return Finding(
+            code="MRS-TEARDOWN-002",
+            severity=Severity.ERROR,
+            message=f"cannot create journal directory for abandonment record {run_dir}: {exc}",
+        )
+
+    writer_id = _abandon_writer_id()
+    for counter, story_key in enumerate(sorted(story_keys)):
+        entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_abandon_format_entry_ts(datetime.now(timezone.utc)),
+            run_id=run_id,
+            kind=_ABANDON_KIND,
+            phase=Phase.OBSERVATION,
+            payload={
+                "story_key": story_key,
+                "reason": (
+                    f"teardown of loop/{slug} forced past an unreachable "
+                    f"promotion for {story_key}, named via --abandon"
+                ),
+            },
+        )
+        try:
+            # fsync=True (code review, 2026-08-06, P6): AD-27's own
+            # guarantee ("every widening is a recorded event... append-only,
+            # never rewritten") and this entry's own role -- authorizing
+            # proceeding with a DESTRUCTIVE removal -- put it in the same
+            # durable-at-authorization-time class Story 3.1's `intent`-phase
+            # entries already earned fsync for (AD-30). Was fsync=False.
+            _append_abandonment_journal_entry(fs, run_dir, entry, fsync=True)
+        except FsError as exc:
+            return Finding(
+                code="MRS-TEARDOWN-002",
+                severity=Severity.ERROR,
+                message=f"cannot journal abandonment of {story_key}: {exc}",
+            )
+    return None
 
 
 def run_teardown(
@@ -1752,13 +1932,118 @@ def run_teardown(
                     f"branch {branch}'s content is not yet safely captured on main"
                 )
 
-    unreachable = _unreachable_promotions(repo_root, branch)
-    if unreachable:
-        reasons.append(
-            f"branch {branch} would become unreachable from: {', '.join(unreachable)}"
-        )
+    # --- AD-29 unreachable-promotion check: --force ALONE is never enough. --
+    # Unlike the dirty/unmerged reasons above, this refusal survives a bare
+    # --force -- the operator must ALSO name, via --abandon, EXACTLY the set
+    # of story keys the check reports (no more, no fewer: a superset would
+    # let a habitual, unread flag rubber-stamp past this gate, a subset
+    # would silently abandon keys never named -- the story's own Design
+    # Notes rationale). `unreachable_authorized` tracks whether that exact
+    # match was met; only then does force carry past THIS reason.
+    #
+    # This check is PROJECT-slug-wide, not scoped to `branch` specifically
+    # (code review, 2026-08-06, P2, Blind Hunter): the reported keys may
+    # belong to ANY story in this project, not necessarily one that ever
+    # touched this branch/worktree -- the refusal message below says so
+    # explicitly rather than implying a causal link that doesn't exist (an
+    # operator who read "teardown of branch X is blocked because keys Y, Z
+    # are unreachable" would reasonably, and wrongly, assume Y/Z came from
+    # branch X specifically).
+    unreachable = _unreachable_promotions(repo_root, branch, slug, vcs=vcs, fs=fs)
+    undetermined_reachability = unreachable is None
+    unreachable_authorized = False
+    abandoned_keys: tuple[str, ...] = ()
+    raw_abandon = getattr(args, "abandon", None) or ()
 
-    if reasons and not force:
+    if undetermined_reachability:
+        # P1 (CRITICAL, code review 2026-08-06, both reviewers' independent
+        # top finding): an UNDETERMINED reachability state (the AD-29 check
+        # itself could not run -- e.g. local main's commit history could
+        # not be read, MRS-DEPLOY-003) must NEVER be treated the same as a
+        # CONFIRMED-empty one. This used to degrade silently to "nothing
+        # unreachable" here, so a plain --force (no --abandon at all) would
+        # proceed with zero visible signal that the safety check never ran,
+        # for a command that destroys a git worktree and branch.
+        #
+        # Refused AT LEAST as strictly as a real non-empty unreachable set:
+        # the SAME --force + --abandon discipline applies, but since no
+        # real story keys can be named (the check never ran to produce
+        # any), the operator must instead name the literal sentinel token
+        # `_UNDETERMINED_ABANDON_TOKEN` -- proof they read and understood
+        # this specific finding, not a guess that happens to satisfy it.
+        reasons.append(
+            f"promotion reachability for project {slug!r} could not be "
+            "determined -- the AD-29 unreachable-promotion check itself "
+            "failed to run (e.g. local main's commit history could not be "
+            "read)"
+        )
+        if force and frozenset(raw_abandon) == frozenset({_UNDETERMINED_ABANDON_TOKEN}):
+            unreachable_authorized = True
+            abandoned_keys = (_UNDETERMINED_ABANDON_TOKEN,)
+        else:
+            # Registered whenever this refusal is NOT successfully
+            # authorized (mirrors MRS-TEARDOWN-004's own "only when the
+            # refusal actually stands" shape below) -- covers both the
+            # unforced ordinary refusal AND a --force attempt that named
+            # the wrong (or no) --abandon value, so the finding is visible
+            # in the envelope for every case that actually refuses, never
+            # left dangling on a run that genuinely proceeded.
+            findings.append(
+                Finding(
+                    code="MRS-TEARDOWN-005",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"promotion reachability for project {slug!r} could "
+                        "not be determined -- an undetermined safety-check "
+                        "result is never treated as confirmed-clean; pass "
+                        "--force together with --abandon "
+                        f"{_UNDETERMINED_ABANDON_TOKEN} to explicitly "
+                        "acknowledge proceeding without that check"
+                    ),
+                )
+            )
+    elif unreachable:
+        unreachable_set = frozenset(unreachable)
+        reasons.append(
+            f"project {slug!r} has {len(unreachable_set)} unreachable "
+            "promotion(s) (not necessarily originating from this "
+            f"branch/worktree): {', '.join(sorted(unreachable_set))}"
+        )
+        try:
+            abandon_set = frozenset(str(identity.normalize(key)) for key in raw_abandon)
+        except MalformedStoryKeyError:
+            # A malformed --abandon value can never equal a real (already
+            # normalized) unreachable key -- falls through to the mismatch
+            # branch below exactly like any other non-matching set, never a
+            # separate crash.
+            abandon_set = frozenset(raw_abandon)
+        if force and abandon_set == unreachable_set:
+            unreachable_authorized = True
+            abandoned_keys = tuple(sorted(unreachable_set))
+        elif force:
+            # Only when the operator actually attempted --force does the
+            # mismatch itself earn its own finding (the story's own I/O
+            # matrix: a bare, unforced refusal is "No error, refusal is the
+            # correct behavior" -- MRS-TEARDOWN-003 alone; MRS-TEARDOWN-004
+            # is specifically "you tried to force past this and didn't name
+            # it right").
+            findings.append(
+                Finding(
+                    code="MRS-TEARDOWN-004",
+                    severity=Severity.ERROR,
+                    message=(
+                        "an unreachable-promotion refusal requires --force "
+                        "together with --abandon naming EXACTLY the "
+                        f"unreachable set {sorted(unreachable_set)} -- got "
+                        f"--abandon {sorted(abandon_set) if raw_abandon else '(not given)'}"
+                    ),
+                )
+            )
+
+    if reasons and (
+        not force
+        or ((unreachable or undetermined_reachability) and not unreachable_authorized)
+    ):
         # Name the path the checks and the removal actually operate on --
         # git's registered location when one exists (follow-up review
         # finding: the headline previously named the merely COMPUTED
@@ -1776,6 +2061,17 @@ def run_teardown(
             )
         )
         return _emit_teardown(args, data, findings)
+
+    if unreachable_authorized:
+        # AD-27: every widening (forcing past an unreachable promotion) is a
+        # recorded event -- write BEFORE removal proceeds. A failure here
+        # blocks teardown (fail closed): an unrecorded abandonment must
+        # never be allowed to proceed.
+        journal_failure = _journal_abandonments(fs, repo_root, slug, abandoned_keys)
+        if journal_failure is not None:
+            findings.append(journal_failure)
+            return _emit_teardown(args, data, findings)
+        data["abandoned"] = sorted(abandoned_keys)
 
     # --- removal: authorized either because every check passed, or because -
     # the operator's own --force overrode a real refusal. Worktree removal
@@ -1836,6 +2132,8 @@ def _render_text_teardown(data: Mapping[str, object], findings: tuple[Finding, .
         lines.append(f"removed: {data['removed']}")
     if "forced" in data:
         lines.append(f"forced: {data['forced']}")
+    if "abandoned" in data:
+        lines.append(f"abandoned: {data['abandoned']}")
     if findings:
         lines.append("findings:")
         for finding in findings:

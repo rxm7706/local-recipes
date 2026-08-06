@@ -227,7 +227,28 @@ policy's own ``verify_commands``) -- both classify ``Verdict.
 SCOPE_VIOLATION``, the SAME rung as ``MRS-GATE-007``/``008``: AD-49 states
 plainly that "an untraceable or mismatched binding cannot itself be waived
 to green", the identical closed-lattice reasoning already governing this
-codebase's other ``SCOPE_VIOLATION`` codes.
+codebase's other ``SCOPE_VIOLATION`` codes. Story 4.2 (teardown
+reachability and spec-recovery assistance, AD-27/AD-29) adds
+``MRS-TEARDOWN-004`` (an unreachable-promotion refusal met with ``--force``
+but no, or a mismatched, ``--abandon`` set) at ``Verdict.ERROR`` -- the
+same tier as ``MRS-TEARDOWN-003``: a real refusal gate ran and the
+operator's own override attempt did not satisfy it, never "could not
+evaluate". ``MRS-DEPLOY-004`` (``deploy recover-spec`` found a genuinely
+orphaned key -- no Tier-3 snapshot, no ``epics.md`` section) classifies
+``Verdict.WARN``, the same tier as ``MRS-DEPLOY-001``/``002``: a
+paper-trail gap reported for the operator's attention, never itself a
+failed operation.
+Code review (2026-08-06, P1) adds ``MRS-TEARDOWN-005`` (the AD-29
+reachability check itself could not run -- local ``main``'s commit history
+was unreadable, ``MRS-DEPLOY-003``) at ``Verdict.ERROR``, the SAME tier as
+``MRS-TEARDOWN-003``/``004`` -- deliberately NOT ``UNEVALUABLE`` (the tier
+``MRS-DEPLOY-003`` itself uses): an UNDETERMINED reachability answer must
+refuse teardown AT LEAST as strictly as a real non-empty unreachable set,
+never more loosely.
+Code review (2026-08-06, P5) adds ``MRS-DEPLOY-005`` (``deploy
+recover-spec``'s epics-derived fallback wrote a recovered spec whose Intent
+and/or Acceptance Criteria section came back empty) at ``Verdict.WARN``,
+the same tier as ``MRS-DEPLOY-001``/``002``/``004``.
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -407,6 +428,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-003": Verdict.UNEVALUABLE,
     "MRS-GATE-010": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-011": Verdict.SCOPE_VIOLATION,
+    "MRS-TEARDOWN-004": Verdict.ERROR,
+    "MRS-DEPLOY-004": Verdict.WARN,
+    "MRS-TEARDOWN-005": Verdict.ERROR,
+    "MRS-DEPLOY-005": Verdict.WARN,
 }
 
 

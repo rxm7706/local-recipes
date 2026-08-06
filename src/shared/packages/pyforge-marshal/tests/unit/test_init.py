@@ -153,6 +153,24 @@ class FakeVcs:
             raise self.fail_delete_branch
         self.branches.discard(branch)
 
+    # Story 4.2: `_unreachable_promotions` now delegates to
+    # `deploy.unreachable_promotions_for_slug`, which needs these three
+    # `VcsPort` methods (mirrors `test_deploy.py::_FakeVcs`'s own shape).
+    # Empty/clean by default -- every pre-existing teardown test that never
+    # exercised the AD-29 predicate keeps describing the same "nothing
+    # unreachable" world the old hardcoded stub always returned.
+    def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
+        self.calls.append("commit_subjects")
+        return ()
+
+    def commit_paths(self, repo_root: Path, paths: tuple, message: str) -> str:
+        self.calls.append("commit_paths")
+        return "deadbeef"
+
+    def path_has_uncommitted_changes(self, repo_root: Path, path: Path) -> bool:
+        self.calls.append("path_has_uncommitted_changes")
+        return False
+
 
 class FakeFs:
     def __init__(self, *, project_dirs: set[Path] | None = None) -> None:
@@ -183,6 +201,10 @@ class FakeFs:
         self.fail_remove_empty_dir: Exception | None = None
         self.fail_resolve_path: Exception | None = None
         self.fail_copy_file: Exception | None = None
+        # Story 4.2: teardown's abandonment-journaling path.
+        self.fail_create_dir_exclusive: Exception | None = None
+        self.fail_append_line: Exception | None = None
+        self.appended_lines: list[tuple[Path, str, bool]] = []
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
@@ -275,6 +297,23 @@ class FakeFs:
         if self.fail_copy_file:
             raise self.fail_copy_file
         self.files.add(dst)
+
+    def create_dir_exclusive(self, path: Path) -> None:
+        """Story 4.2's teardown abandonment-journaling path -- mirrors
+        ``test_spin.py::FakeFs``'s own identical method exactly (the same
+        run-directory creation primitive, reused here for a teardown-minted
+        "run")."""
+        self.calls.append("create_dir_exclusive")
+        if self.fail_create_dir_exclusive:
+            raise self.fail_create_dir_exclusive
+        self.dirs.add(path)
+
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        """Mirrors ``test_spin.py::FakeFs``'s own identical method."""
+        self.calls.append("append_line")
+        if self.fail_append_line:
+            raise self.fail_append_line
+        self.appended_lines.append((path, line, fsync))
 
 
 class FakeHarness:
@@ -2304,8 +2343,14 @@ def test_preflight_finding_codes_classify_as_documented():
 # =====================================================================
 
 
-def _teardown_namespace(slug: str, *, force: bool = False, fmt: str = "text") -> argparse.Namespace:
-    return argparse.Namespace(slug=slug, force=force, format=fmt)
+def _teardown_namespace(
+    slug: str,
+    *,
+    force: bool = False,
+    fmt: str = "text",
+    abandon: list[str] | None = None,
+) -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, force=force, format=fmt, abandon=abandon)
 
 
 def _provisioned_teardown_vcs(repo_root: Path, home: Path, slug: str) -> FakeVcs:
@@ -2801,33 +2846,145 @@ def test_teardown_refusal_message_names_the_git_registered_path(
     assert str(registered_path) in out
 
 
+def _patch_unreachable_promotions(monkeypatch, keys: tuple[str, ...]) -> None:
+    """Story 4.2: ``_unreachable_promotions`` now delegates to
+    ``deploy.unreachable_promotions_for_slug`` and takes ``project_slug``/
+    ``vcs``/``fs`` too -- this fixture patches the SAME stub every one of
+    these tests already did, just matching the grown signature."""
+    monkeypatch.setattr(
+        "pyforge.marshal.cli.init._unreachable_promotions",
+        lambda repo_root, branch, project_slug, *, vcs, fs: keys,
+    )
+
+
 def test_teardown_ad29_unreachable_promotion_blocks_without_force(
     repo_root, tmp_path, capsys, monkeypatch
 ):
-    """The AD-29 promotion-reachability extension point is a hardcoded
-    no-op today (``_unreachable_promotions`` always returns ``()``), so
-    this path has no real caller yet -- covered here by monkeypatching the
-    stub, proving the refusal-message wiring works before Epic 4 ever
-    makes the predicate real (review finding: this branch was previously
-    unexercised by any test)."""
+    """The AD-29 promotion-reachability check is real as of Story 4.2 --
+    covered here by monkeypatching ``_unreachable_promotions`` itself
+    (proving the refusal-message wiring, independent of
+    ``deploy.unreachable_promotions_for_slug``'s own unit tests)."""
     home = tmp_path / "loop-homes" / "acme"
     vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
     fs = FakeFs(project_dirs={home})
-    monkeypatch.setattr(
-        "pyforge.marshal.cli.init._unreachable_promotions",
-        lambda repo_root, branch: ("story-1.2", "story-1.3"),
-    )
+    _patch_unreachable_promotions(monkeypatch, ("1.2", "1.3"))
+
     exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-TEARDOWN-003" in out
-    assert "story-1.2" in out and "story-1.3" in out
+    assert "1.2" in out and "1.3" in out
     assert vcs.remove_worktree_calls == []
 
-    # --force still overrides it, exactly like the other two conditions.
+    # --force ALONE is no longer sufficient (Story 4.2's own Never bullet):
+    # no --abandon means the refusal still holds, now WITH a distinct
+    # MRS-TEARDOWN-004 naming exactly what --abandon must list.
     exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "MRS-TEARDOWN-004" in out
+    assert vcs.remove_worktree_calls == []
+
+    # --force --abandon naming a DIFFERENT key than the real unreachable
+    # set is refused too -- no vacuous/partial abandonment.
+    exit_code = run_teardown(
+        _teardown_namespace("acme", force=True, abandon=["1.2"]), vcs=vcs, fs=fs
+    )
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-004" in out
+    assert vcs.remove_worktree_calls == []
+
+    # --force --abandon naming EXACTLY the unreachable set proceeds, and
+    # journals one abandonment entry per key.
+    exit_code = run_teardown(
+        _teardown_namespace("acme", force=True, abandon=["1.2", "1.3"]), vcs=vcs, fs=fs
+    )
     assert exit_code == EXIT_OK
     assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert len(fs.appended_lines) == 2
+    payloads = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert {p["payload"]["story_key"] for p in payloads} == {"1.2", "1.3"}
+    assert all(p["kind"] == "promotion-abandoned" for p in payloads)
+    assert all(p["phase"] == "observation" for p in payloads)
+    # P6 (code review, 2026-08-06, Edge Case Hunter): AD-27's own durability
+    # guarantee for an operator-attributed widening -- fsync=True, not
+    # the False this entry used to be written with.
+    assert all(fsync is True for _, _, fsync in fs.appended_lines)
+
+
+def test_teardown_ad29_unreachable_message_does_not_imply_branch_causation(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """P2 (HIGH, Blind Hunter, code review 2026-08-06): the check is
+    project-slug-wide, not scoped to the branch being torn down -- the
+    refusal message must not imply a causal link between `branch` and the
+    named keys that doesn't exist."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs(project_dirs={home})
+    _patch_unreachable_promotions(monkeypatch, ("1.2", "1.3"))
+
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "not necessarily originating from this branch" in out
+    assert "2 unreachable" in out
+
+
+def test_teardown_ad29_undetermined_reachability_blocks_even_with_plain_force(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """P1 (CRITICAL, code review 2026-08-06, both reviewers' independent
+    top finding): when the AD-29 reachability check itself could not run
+    (``_unreachable_promotions`` returns ``None``, mirroring
+    ``deploy.unreachable_promotions_for_slug``'s own local-main-unreadable
+    degrade), teardown must refuse -- even with plain ``--force`` and no
+    ``--abandon`` at all -- and the refusal must be visible as a registered
+    ``MRS-TEARDOWN-005`` finding in the envelope, never a silent
+    pass-through."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs(project_dirs={home})
+    _patch_unreachable_promotions(monkeypatch, None)
+
+    # No --force at all: ordinary refusal.
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "MRS-TEARDOWN-005" in out
+    assert "could not be determined" in out
+    assert vcs.remove_worktree_calls == []
+
+    # --force ALONE (no --abandon) must NOT proceed -- this is the exact
+    # silent-pass-through both reviewers flagged as the top finding.
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-005" in out
+    assert vcs.remove_worktree_calls == []
+
+    # --force together with a REAL story key (not the sentinel) still
+    # refuses -- a guess must never satisfy this gate.
+    exit_code = run_teardown(
+        _teardown_namespace("acme", force=True, abandon=["1.2"]), vcs=vcs, fs=fs
+    )
+    assert exit_code != EXIT_OK
+    assert vcs.remove_worktree_calls == []
+
+    # --force together with the literal UNDETERMINED sentinel proceeds, and
+    # journals one abandonment entry recording it.
+    exit_code = run_teardown(
+        _teardown_namespace("acme", force=True, abandon=["UNDETERMINED"]), vcs=vcs, fs=fs
+    )
+    assert exit_code == EXIT_OK
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert len(fs.appended_lines) == 1
+    payload = json.loads(fs.appended_lines[0][1])
+    assert payload["payload"]["story_key"] == "UNDETERMINED"
+    assert fs.appended_lines[0][2] is True  # fsync=True, P6
 
 
 def test_teardown_deleted_cwd_reports_mrs_teardown_002(repo_root, capsys, monkeypatch):
@@ -2871,3 +3028,5 @@ def test_teardown_finding_codes_classify_as_documented():
     assert classify("MRS-TEARDOWN-001") == Verdict.UNEVALUABLE
     assert classify("MRS-TEARDOWN-002") == Verdict.ERROR
     assert classify("MRS-TEARDOWN-003") == Verdict.ERROR
+    assert classify("MRS-TEARDOWN-004") == Verdict.ERROR
+    assert classify("MRS-TEARDOWN-005") == Verdict.ERROR

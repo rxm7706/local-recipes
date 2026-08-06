@@ -372,3 +372,56 @@ def test_plan_order_is_deterministic_by_sorted_story_key():
     )
 
     assert plan.to_promote == (candidate_a, candidate_b)
+
+
+def test_missing_spec_keys_names_only_the_no_spec_at_all_case():
+    """Story 4.2's own extension: ``missing_spec_keys`` carries ONLY the
+    durable-with-no-Tier-3-spec-at-all subset of ``gaps`` (MRS-DEPLOY-001)
+    as a structured set -- the invalid-spec case (MRS-DEPLOY-002, a
+    zero-byte/truncated spec that DOES exist) lands in the SEPARATE
+    ``invalid_spec_keys`` field (code review, 2026-08-06, P3) instead, never
+    mixed into this one."""
+    missing_key = StoryKey(1, 3)
+    invalid_key = StoryKey(1, 4)
+    promoted_key = StoryKey(1, 5)
+    invalid = SpecCandidate(story_key=invalid_key, path="spec-1-4.md", text=None)
+    promoted = SpecCandidate(story_key=promoted_key, path="spec-1-5.md", text=_VALID_SPEC)
+
+    plan = classify_promotion_candidates(
+        candidates=(invalid, promoted),
+        merged_keys=frozenset({missing_key, invalid_key, promoted_key}),
+        already_promoted=frozenset(),
+    )
+
+    assert plan.missing_spec_keys == frozenset({missing_key})
+    assert plan.invalid_spec_keys == frozenset({invalid_key})
+    assert plan.to_promote == (promoted,)
+
+
+def test_missing_spec_keys_defaults_to_empty_for_a_clean_plan():
+    plan = classify_promotion_candidates(
+        candidates=(), merged_keys=frozenset(), already_promoted=frozenset()
+    )
+    assert plan.missing_spec_keys == frozenset()
+    assert plan.invalid_spec_keys == frozenset()
+
+
+def test_invalid_spec_keys_names_the_zero_byte_or_truncated_case():
+    """Code review, 2026-08-06, P3 (Blind Hunter): a durable story whose
+    Tier-3 spec exists but is zero-byte/truncated (MRS-DEPLOY-002) is now
+    named in its own structured ``invalid_spec_keys`` set -- a corrupt
+    paper trail is at least as concerning as a missing one, so teardown's
+    reachability check (``cli/deploy.py::unreachable_promotions_for_slug``)
+    can fold it into the unreachable set too."""
+    invalid_key = StoryKey(2, 9)
+    invalid = SpecCandidate(story_key=invalid_key, path="spec-2-9.md", text="")
+
+    plan = classify_promotion_candidates(
+        candidates=(invalid,),
+        merged_keys=frozenset({invalid_key}),
+        already_promoted=frozenset(),
+    )
+
+    assert plan.invalid_spec_keys == frozenset({invalid_key})
+    assert plan.missing_spec_keys == frozenset()
+    assert plan.to_promote == ()
