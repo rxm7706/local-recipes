@@ -57,7 +57,7 @@ development_status:
   3-5-idle-strand-detection: done
   3-6-budget-ceilings-and-the-heaviest-story-advisory: done
   3-7-escalation-deferral-and-resume: done
-  3-8-stage-bound-durability-and-fleet-launch-wiring: review
+  3-8-stage-bound-durability-and-fleet-launch-wiring: done
   4-1-story-spec-promotion-with-a-durability-predicate: backlog
   4-10-fleet-wide-branch-retirement: backlog
   4-2-teardown-reachability-and-spec-recovery-assistance: backlog
@@ -110,7 +110,7 @@ development_status:
   epic-12-retrospective: optional
   epic-2: backlog
   epic-2-retrospective: optional
-  epic-3: in-progress
+  epic-3: done
   epic-3-retrospective: optional
   epic-4: backlog
   epic-4-retrospective: optional
