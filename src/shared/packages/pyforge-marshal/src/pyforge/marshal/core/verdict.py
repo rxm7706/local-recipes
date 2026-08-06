@@ -190,8 +190,18 @@ two siblings above use. Story 3.8 (stage-bound durability and fleet-launch
 wiring, AD-46) adds ``MRS-SUPV-008`` (a durability push failed) to the same
 ``Verdict.WARN`` tier as this area's own 001-007: AD-46's own "best-effort
 against transient network conditions, never a new refusal gate" -- a
-failed push never invalidates the run's own supervision. Later stories
-populate the table further as they add real codes. The mechanism (a total, fail-loud
+failed push never invalidates the run's own supervision. Story 2.3
+(frozen-surface scope check, narrowing only, AD-4/AD-26/AD-27) adds
+``MRS-GATE-007``/``008``, this table's FIRST classifications into
+``Verdict.SCOPE_VIOLATION`` -- reserved in the lattice since Story 1.1 but
+never actually produced by any real code until now: a changed path outside
+the computed effective surface, or one touching the live frozen set, is a
+real, determinable scope violation, distinct from ``GATE_FAILED`` (a
+configured check that ran and failed) and from ``UNEVALUABLE`` (Marshal
+could not determine an answer at all). The same story adds
+``MRS-GATE-009`` (``--scope-check`` could not be evaluated at all) at
+``Verdict.UNEVALUABLE``, the same tier as ``MRS-GATE-002``/``003``/``005``.
+Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
 
@@ -294,6 +304,9 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # unreliable.
 # Story 3.8's supervisor/__main__.py adds MRS-SUPV-008 (a durability push
 # failed), WARN, alongside this area's own 001-007.
+# Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008 at
+# SCOPE_VIOLATION (this table's first use of that rung) and MRS-GATE-009
+# at UNEVALUABLE, alongside MRS-GATE-002/003/005.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -353,6 +366,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-011": Verdict.ERROR,
     "MRS-SPIN-012": Verdict.WARN,
     "MRS-SUPV-008": Verdict.WARN,
+    "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
+    "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
+    "MRS-GATE-009": Verdict.UNEVALUABLE,
 }
 
 

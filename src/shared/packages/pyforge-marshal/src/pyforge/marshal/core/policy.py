@@ -2,10 +2,11 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 14-key policy vocabulary
-(FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5) and
-FR-13's 4 budget ceilings (Story 3.6)) -- not a mirror of the harness's much
-larger ``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
+last wins`` (AD-16) over Marshal's own CLOSED 15-key policy vocabulary
+(FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
+FR-13's 4 budget ceilings (Story 3.6), and AD-27's ``epic_surfaces``
+(Story 2.3)) -- not a mirror of the harness's much larger
+``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
 rendering concern). Every field is wrapped in a ``PolicyField{value, layer,
 raw_source}`` so an operator can always answer "why is this value what it
 is?" (AD-16).
@@ -18,9 +19,12 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 4 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 5 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
-``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``. 10
+``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
+(Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
+allowlist, STATIC because it is project/policy-declared and never narrowed
+at runtime by a journal entry, unlike ``frozen_surfaces`` below. 10
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -82,12 +86,12 @@ check for ``verify_commands`` (FR-53 assigns that to preflight, Story 1.7).
 No modeling of the harness's full ``.bmad-loop/policy.toml`` key surface. No
 ``policy_surface ∩ spec_surface`` allowlist (Story 2.3's concern). No
 resolution of a story's difficulty class against ``model_tier_map``. No
-support for ``--set`` on the four list/mapping-typed fields
+support for ``--set`` on the five list/mapping-typed fields
 (``verify_commands``, ``worktree_seed_paths``, ``model_tier_map``,
-``frozen_surfaces``) -- that is a ``cli/config.py`` UX restriction on which
-flags it exposes, not a restriction this module enforces (``compose()``
-itself layers all 14 keys uniformly across all 3 layers, matching AD-16's
-"no per-key reordering").
+``frozen_surfaces``, ``epic_surfaces``) -- that is a ``cli/config.py`` UX
+restriction on which flags it exposes, not a restriction this module
+enforces (``compose()`` itself layers all 15 keys uniformly across all 3
+layers, matching AD-16's "no per-key reordering").
 
 **Marshal's own built-in defaults** (``DEFAULT_POLICY``) are a DIFFERENT
 thing from any one project's ``.bmad-loop/policy.toml`` -- that file
@@ -116,10 +120,21 @@ from types import MappingProxyType
 
 from .model import Finding, Severity
 
-# --- the closed 14-key vocabulary -------------------------------------------
+# --- the closed 15-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
-    {"verify_commands", "worktree_seed_paths", "merge_subject_template", "model_tier_map"}
+    {
+        "verify_commands",
+        "worktree_seed_paths",
+        "merge_subject_template",
+        "model_tier_map",
+        # Story 2.3's 15th key (AD-27): a per-epic writable-surface
+        # allowlist. STATIC, not SEED -- it is project/policy-declared and
+        # never narrowed at runtime by a journal entry, unlike
+        # `frozen_surfaces` (which DOES accumulate live, via the journal
+        # fold). See `_valid_epic_surfaces`'s own docstring for the shape.
+        "epic_surfaces",
+    }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
     {
@@ -252,6 +267,11 @@ DEFAULT_POLICY: Mapping[str, object] = {
     "max_tokens_per_run": 500_000_000,
     "max_wall_clock_minutes_per_story": 1_440,
     "max_wall_clock_minutes_per_run": 2_880,
+    # Story 2.3's `epic_surfaces` (AD-27): no epic has a declared allowlist
+    # until a project's own policy says otherwise -- an empty mapping, the
+    # same "nothing declared yet" posture `model_tier_map`'s own empty-dict
+    # default already carries for the identical STATIC/mapping shape.
+    "epic_surfaces": {},
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -391,6 +411,39 @@ def _valid_model_tier_map(value: object) -> dict[str, dict[str, str]] | None:
                 return None
             stage_map[stage] = model
         result[difficulty] = stage_map
+    return result
+
+
+def _valid_epic_surfaces(value: object) -> dict[str, tuple[str, ...]] | None:
+    """``epic_surfaces``: ``Mapping[str, tuple[str, ...]]`` keyed by epic
+    number AS A STRING (``"2"``, ``"3"`` -- matching AD-23's own
+    ``<epic>.<seq>`` story-key numeric-epic identity), each value a
+    non-empty tuple of non-empty glob strings (reuses ``_valid_str_tuple``'s
+    own per-entry shape rather than inventing a second one). Mirrors
+    ``_valid_model_tier_map``'s shape-checking pattern exactly: reject a
+    non-mapping, reject a non-string key, reject a value that is not a
+    valid string tuple -- the whole field is excluded for THAT layer on any
+    single malformed entry (the same "one bad entry poisons the layer, not
+    the whole field" semantics every other mapping-typed validator in this
+    module already applies).
+
+    A key must also be a plain digit string (``key.isdigit()``, review
+    finding: Blind Hunter) -- matching how ``str(story_key.epic)`` is
+    always rendered elsewhere in this codebase (``AD-23``'s numeric-epic
+    identity). Without this check a typo'd key like ``"epic-2"`` or ``"2 "``
+    composed successfully with no diagnostic and could never match any real
+    epic -- a permanently dead, silently-inert allowlist entry with no
+    signal to the operator that it will never take effect."""
+    if not isinstance(value, Mapping):
+        return None
+    result: dict[str, tuple[str, ...]] = {}
+    for epic, surface in value.items():
+        if not isinstance(epic, str) or epic == "" or not epic.isdigit():
+            return None
+        globs = _valid_str_tuple(surface)
+        if globs is None:
+            return None
+        result[epic] = globs
     return result
 
 
@@ -691,6 +744,7 @@ class EffectivePolicy:
     worktree_seed_paths: PolicyField
     merge_subject_template: PolicyField
     model_tier_map: PolicyField
+    epic_surfaces: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -699,6 +753,7 @@ class EffectivePolicy:
             "worktree_seed_paths",
             "merge_subject_template",
             "model_tier_map",
+            "epic_surfaces",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -739,6 +794,7 @@ class EffectivePolicy:
                 "worktree_seed_paths",
                 "merge_subject_template",
                 "model_tier_map",
+                "epic_surfaces",
             )
         )
         seed = ", ".join(
@@ -759,7 +815,7 @@ class EffectivePolicy:
     def content_hash(self) -> str:
         """``sha256`` hex digest over a canonical sorted-key JSON
         serialization of every field's FULL ``{value, layer, raw_source}``
-        (4 static + 6 seed) -- AD-35's naming primitive. Hashing only
+        (5 static + 10 seed) -- AD-35's naming primitive. Hashing only
         ``value`` would let two compositions with identical values but
         DIFFERENT winning layers collide on the same hash, so
         ``materialize()``'s write-once check would silently keep stale
@@ -783,6 +839,7 @@ class EffectivePolicy:
             "worktree_seed_paths": _field_payload(self.worktree_seed_paths),
             "merge_subject_template": _field_payload(self.merge_subject_template),
             "model_tier_map": _field_payload(self.model_tier_map),
+            "epic_surfaces": _field_payload(self.epic_surfaces),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -795,7 +852,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 14-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 15-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -857,6 +914,15 @@ def compose(
         "model_tier_map",
         _valid_model_tier_map,
         DEFAULT_POLICY["model_tier_map"],
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    epic_surfaces = _merge_field(
+        "epic_surfaces",
+        _valid_epic_surfaces,
+        DEFAULT_POLICY["epic_surfaces"],
         project,
         flags,
         findings,
@@ -960,6 +1026,7 @@ def compose(
         worktree_seed_paths=worktree_seed_paths,
         merge_subject_template=merge_subject_template,
         model_tier_map=model_tier_map,
+        epic_surfaces=epic_surfaces,
         _seed=seed,
     )
     return effective, tuple(findings)

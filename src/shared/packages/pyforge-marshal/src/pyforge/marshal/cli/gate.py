@@ -37,34 +37,64 @@ copy of that logic.
 policy-seed-only evaluation: ``data["scope"] == "policy-seed-only"`` plus a
 ``mid-run freezes not visible`` note -- AD-26's own resolution text calls
 this "a complete, legitimate answer" on its own, since a live run's
-mid-flight seed-field overrides (``core/journal``'s eventual fold) are not
-visible to a standalone invocation. ``--run <id>`` is accepted as a CLI flag
-for interface shape (matching the story's own eventual-behavior AC), but
-since no journal-fold exists yet (``core/journal`` is Story 3.1/3.2, both
-``backlog``), supplying it reports an explicit ``MRS-GATE-005``
-``unevaluable`` finding naming the gap -- never a fabricated run-scoped
-answer, never a crash -- and ``data["scope"]`` reflects that the request
-could not be honored instead of claiming the ordinary policy-seed scope. A
-future story swaps this stub branch for a real ``core.journal.fold`` call.
+mid-flight seed-field overrides (``core/journal``'s fold) are not visible
+to a standalone invocation. ``--run <id>`` folds that run's real journal
+(Story 2.3 -- ``core/journal.fold`` now has a real caller here, swapping
+the ``MRS-GATE-005`` stub Story 2.1 left for the actual fold call): the
+run's directory is located via ``--project``'s active project's loop home
+(``cli/init.py::_home_path``) and ``cli/spin.py::_run_dir``; if no loop
+home resolves for the project, or the run's ``journal.jsonl`` does not
+exist or cannot be read, this reports the SAME ``MRS-GATE-005`` finding --
+broadened, per that code's own registered meaning, to cover "the requested
+run-scoped fold could not be produced" generally, never a fabricated
+run-scoped answer and never a crash -- and ``data["scope"]`` reflects that
+the request could not be honored. Verify-command execution is unaffected
+by this fold either way (see ``run_evaluate``'s own ``--run`` branch): a
+``--run``-scoped evaluation still reports ``data["commands"] = []``,
+matching Story 2.1's original shape -- re-running commands live under
+``--run`` is a separate concern this story does not open.
 
 **The pure/impure split.** All ``shlex.split`` + ``ProcessPort.run`` I/O
 happens HERE, at the CLI boundary; the per-command classification (pass,
 fail, unresolvable, malformed) is delegated to ``core.gate.classify_outcome``
 (AD-4: ``core/**`` may hold no ``subprocess``/``os``/``time``/``adapters``
 import) -- mirrors ``cli/init.py::run_homes``'s own gather-here/
-classify-in-core split against ``core/status.py``.
+classify-in-core split against ``core/status.py``. The SAME split governs
+``--scope-check`` below: this module reads the story's own tracked spec
+file's bytes and gathers ``VcsPort.changed_files`` (the impure edges),
+then calls ``core.gate.compute_effective_surface``/``check_scope`` (pure)
+to classify the result.
 
-Not implemented here (see the spec's own Boundaries & Constraints/Never):
-``--scope-check`` and any frozen-surface scope check (Story 2.3, itself
-blocked on Story 3.2), and any further verdict-lattice/never-false-green
-property test beyond correct use of the existing ``compute_verdict``/
-``classify`` machinery (Story 2.2's scope). Redaction through
-AD-34's planned ``core/egress.py`` redaction (a module the architecture
-describes but which does not exist in the tree yet) does not apply here
-either -- ``ports/process.py`` is explicitly carved out of AD-34's
-egress-port set (argv/environment to a child process, and this CLI's own
-stdout, are inside Marshal's trust boundary, not a durable/third-party
-sink).
+**``--scope-check`` (Story 2.3, AD-4/AD-26/AD-27).** Requires ``--story``
+(the story whose epic's ``epic_surfaces`` policy entry, and whose own
+tracked spec file's ``surface:`` frontmatter field, bound the check) --
+reports ``MRS-GATE-009`` (``unevaluable``) and skips the check entirely
+when ``--story`` is missing, the active project cannot be resolved,
+``VcsPort.changed_files`` fails against the project's loop home, or the
+story's own tracked spec declares a ``surface:`` key in a form
+``core.spec_surface.parse_declared_surface`` does not support
+(``SurfaceParseError`` -- a multi-line YAML block, AD-27: never silently
+treated as "no declared surface"). An unresolvable ``--story`` value
+(fails ``core.identity.resolve_feed``) is a DIFFERENT code -- it skips the
+check the same way but surfaces via the EXISTING ``MRS-IDENT-001``
+(review finding, Blind Hunter: an earlier draft of this docstring claimed
+``MRS-GATE-009`` here, which the code has never actually emitted for this
+case). The frozen set comes from ``core.journal.FoldResult.
+live_frozen_surfaces`` either way (AD-26): folded against an EMPTY
+synthetic ``FoldResult`` when no ``--run`` fold is available (the
+seed-only case), or against the real ``--run`` fold when one succeeded --
+never a direct read of the policy seed as a live value. When ``--run`` was
+supplied but its own fold failed, ``--scope-check``'s own result is
+omitted entirely (``MRS-GATE-005`` already reports the underlying cause in
+the SAME envelope; a second finding here would be a redundant symptom of
+the one root cause).
+
+Redaction through AD-34's planned ``core/egress.py`` redaction (a module
+the architecture describes but which does not exist in the tree yet) does
+not apply here either -- ``ports/process.py`` is explicitly carved out of
+AD-34's egress-port set (argv/environment to a child process, and this
+CLI's own stdout, are inside Marshal's trust boundary, not a
+durable/third-party sink).
 """
 
 from __future__ import annotations
@@ -76,11 +106,17 @@ import shlex
 from collections.abc import Mapping
 from pathlib import Path
 
+from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.process_posix import PosixProcess, ProcessError
-from ..core import gate, policy
+from ..adapters.vcs_git import GitVcs, VcsCommandError
+from ..core import gate, identity, journal, policy
+from ..core.identity import StoryKey, render_filename_slug
 from ..core.model import Finding, Severity, Status, build_envelope, status_for
+from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.fs import FsPort
 from ..ports.process import ProcessPort
+from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
     PolicyIOError,
@@ -89,15 +125,29 @@ from .config import (
     conventional_project_policy_path,
     repo_root,
 )
+from .init import _home_path
+from .spin import _run_dir
+
+# The run journal's own filename, under the run directory -- duplicated
+# verbatim from cli/spin.py/supervisor/__main__.py's own identical constant
+# (this package's established cross-module precedent: `cli/spin.py` itself
+# duplicates several of `cli/init.py`'s helpers rather than reaching across
+# for a private symbol every module needs).
+_JOURNAL_FILENAME = "journal.jsonl"
+
+# The base branch a scope check's `VcsPort.changed_files` diffs against --
+# this repo's own landing convention (every story branch merges to `main`,
+# the same `into="main"` this package's own `is_branch_merged`/teardown
+# callers already hardcode).
+_SCOPE_CHECK_BASE_BRANCH = "main"
 
 
 def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register the ``gate`` subcommand on ``main.py``'s subparser tree, with
     a nested ``evaluate`` action (matches the epics/architecture's literal
     ``marshal gate evaluate`` invocation shape and the PRD's ``marshal gate
-    evaluate --scope-check`` example -- ``--scope-check`` itself is Story
-    2.3, not implemented here; the nesting leaves room for it as a future
-    flag on this same ``evaluate`` action rather than a new top-level
+    evaluate --scope-check`` example -- Story 2.3 implements ``--scope-check``
+    as a flag on this same ``evaluate`` action rather than a new top-level
     command). ``required=True`` on the nested subparsers: a bare ``marshal
     gate`` with no action is a clean argparse usage error, not a silent
     no-op."""
@@ -133,10 +183,30 @@ def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
         metavar="RUN_ID",
         help=(
             "Fold a specific run's journal instead of a bare policy-seed "
-            "evaluation. Not yet implemented (core/journal is a later story) "
-            "-- reports MRS-GATE-005 naming the gap rather than ignoring "
-            "this flag or crashing."
+            "evaluation. Reports MRS-GATE-005 naming the gap if the run's "
+            "own journal cannot be located/read for the active project, "
+            "rather than ignoring this flag or crashing."
         ),
+    )
+    evaluate_parser.add_argument(
+        "--scope-check",
+        dest="scope_check",
+        action="store_true",
+        default=False,
+        help=(
+            "Story 2.3 (AD-27): compute the effective writable surface "
+            "(policy_surface ∩ spec_surface) for --story's epic and "
+            "report any changed/frozen path outside it. Requires --story. "
+            "With no --run, the frozen set folds the policy seed alone "
+            "(AD-26/F-3); with --run, it folds that run's real journal."
+        ),
+    )
+    evaluate_parser.add_argument(
+        "--story",
+        dest="story",
+        default=None,
+        metavar="KEY",
+        help="The story whose epic's policy surface --scope-check checks against.",
     )
     evaluate_parser.add_argument(
         "--format",
@@ -301,8 +371,227 @@ def _resolve_policy_source(
     ).finding
 
 
-def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None) -> int:
+def _sidecar_refs_for_fold(lines: list[str]) -> tuple[str, ...]:
+    """Every ``{"sidecar_ref": <str>}`` payload placeholder named by
+    ``lines`` -- a trimmed duplicate of ``supervisor/__main__.py``'s own
+    ``_sidecar_refs`` (this package's established cross-module precedent
+    for a small, self-contained helper; see that module's own docstring
+    for the full "why duplicate" rationale). Deliberately tolerant: a line
+    this scan cannot parse is skipped, never raised on -- ``fold`` is the
+    one place a malformed line is judged."""
+    refs: list[str] = []
+    seen: set[str] = set()
+    for line in lines:
+        if '"sidecar_ref"' not in line:
+            continue
+        try:
+            document = json.loads(line)
+        except (ValueError, TypeError, RecursionError):
+            continue
+        if not isinstance(document, Mapping):
+            continue
+        payload = document.get("payload")
+        if not isinstance(payload, Mapping) or len(payload) != 1:
+            continue
+        ref = payload.get("sidecar_ref")
+        if not isinstance(ref, str) or not ref.startswith("blobs/"):
+            continue
+        name = ref[len("blobs/") :]
+        if not name or "/" in name or "\\" in name or name in (".", ".."):
+            continue
+        if ref not in seen:
+            seen.add(ref)
+            refs.append(ref)
+    return tuple(refs)
+
+
+def _load_run_fold(fs: FsPort, run_dir: Path) -> journal.FoldResult | None:
+    """Read and fold ``run_dir``'s own ``journal.jsonl`` (Story 2.3):
+    ``None`` if the file does not exist or cannot be read (``FsPort.
+    read_text`` already returns ``None`` for an absent path; ``FsError``/
+    ``ValueError`` -- the latter for an embedded-NUL path, the same
+    CPython split this package's other ``read_text`` callers guard --
+    degrade the same way rather than escaping). A successful read is
+    always folded, sidecar blobs included, mirroring ``supervisor/
+    __main__.py``'s own read-once-fold-once shape."""
+    try:
+        text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    except (FsError, ValueError):
+        return None
+    if text is None:
+        return None
+    lines = text.split("\n")
+    sidecars: dict[str, str | None] = {}
+    for ref in _sidecar_refs_for_fold(lines):
+        try:
+            sidecars[ref] = fs.read_text(run_dir / ref)
+        except (FsError, ValueError):
+            sidecars[ref] = None
+    return journal.fold(lines, sidecars=sidecars)
+
+
+def _find_spec_text(root: Path, project_slug: str, story_key: StoryKey) -> str | None:
+    """Best-effort read of ``story_key``'s own TRACKED spec file text --
+    ``_bmad-output/projects/<slug>/planning-artifacts/specs/spec-<key>-*.md``,
+    or the bare ``spec-<key>.md`` form -- mirrors ``cli/spin.py::
+    _large_spec_bytes``'s own glob shape, applied to the DURABLE tracked
+    specs directory (this repo's own "story specs are durable (tracked)"
+    convention, ``.claude/memory``'s own promotion workflow) rather than
+    that helper's Tier-3 scratch location.
+
+    ``None`` for "no spec file, or it could not be read" -- a legitimate,
+    non-error "nothing to narrow against" per this story's own I/O matrix,
+    never a ``Finding``. When more than one titled match exists (a rerun
+    suffix), the lexicographically first is used -- deterministic, though
+    an operator relying on a specific one among several should not rely on
+    this tie-break."""
+    specs_dir = (
+        root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
+    )
+    stem = f"spec-{render_filename_slug(story_key)}"
+    try:
+        titled = sorted(specs_dir.glob(f"{stem}-*.md"))
+    except OSError:
+        titled = []
+    for candidate in (specs_dir / f"{stem}.md", *titled):
+        try:
+            return candidate.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            # UnicodeDecodeError (review finding): a non-UTF-8 spec file
+            # must degrade the same "nothing to narrow against" way every
+            # other best-effort read in this module does, not crash
+            # `--scope-check` with a raw traceback.
+            continue
+    return None
+
+
+def _run_scope_check(
+    *,
+    root: Path,
+    project_slug: str,
+    story_arg: str | None,
+    effective: policy.EffectivePolicy,
+    run_requested: bool,
+    fold_result: journal.FoldResult | None,
+    vcs: VcsPort,
+) -> tuple[dict[str, object] | None, tuple[Finding, ...]]:
+    """The impure edge for ``--scope-check`` (Story 2.3): gathers the story
+    key, the story's own spec text, and the worktree's changed files, then
+    delegates classification entirely to ``core.gate.compute_effective_
+    surface``/``check_scope`` (pure). Returns ``(data, findings)`` --
+    ``data`` is ``None`` when a run-scoped fold was requested but
+    unavailable (``MRS-GATE-005`` already covers that in the caller's own
+    findings; nothing further is reported here)."""
+    if run_requested and fold_result is None:
+        return None, ()
+
+    if not project_slug or not policy._is_valid_project_slug(project_slug):
+        return (
+            {"checked": False, "reason": "no resolvable active project"},
+            (
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message="--scope-check requires a resolvable --project/active project",
+                ),
+            ),
+        )
+    if story_arg is None:
+        return (
+            {"checked": False, "reason": "--story not supplied"},
+            (
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        "--scope-check requires --story naming the story "
+                        "whose epic surface to check"
+                    ),
+                ),
+            ),
+        )
+
+    resolution = identity.resolve_feed([story_arg])
+    if resolution.unresolved:
+        return {"checked": False, "reason": "--story is not a valid story key"}, resolution.findings
+    story_key = resolution.resolved[0]
+
+    home = _home_path(project_slug)
+    try:
+        git_repo_root = vcs.repo_common_root(home)
+        changed = vcs.changed_files(git_repo_root, home, base=_SCOPE_CHECK_BASE_BRANCH)
+    except VcsCommandError as exc:
+        return (
+            {"checked": False, "reason": f"cannot resolve changed files: {exc}"},
+            (
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"--scope-check could not resolve changed files for "
+                        f"{story_key}: {exc}"
+                    ),
+                ),
+            ),
+        )
+
+    policy_surface = effective.epic_surfaces.value.get(str(story_key.epic), ())
+    spec_text = _find_spec_text(root, project_slug, story_key)
+    try:
+        spec_surface = parse_declared_surface(spec_text) if spec_text is not None else None
+    except SurfaceParseError as exc:
+        # AD-27 (review finding, Edge Case Hunter): a multi-line YAML
+        # `surface:` block is a form this parser does not support -- NOT
+        # the same fact as no `surface:` key at all. Silently proceeding
+        # with `spec_surface = None` here would WIDEN the effective
+        # surface back to the policy surface alone, exactly the expansion
+        # AD-27 forbids. Reported and skipped, never silently unnarrowed.
+        return (
+            {"checked": False, "reason": f"malformed surface declaration: {exc}"},
+            (
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"--scope-check could not evaluate {story_key}: its "
+                        f"tracked spec's surface: field is malformed: {exc}"
+                    ),
+                ),
+            ),
+        )
+    effective_surface = gate.compute_effective_surface(policy_surface, spec_surface)
+
+    seed_frozen = effective.seed_view()["frozen_surfaces"].value
+    fold_for_frozen = (
+        fold_result
+        if fold_result is not None
+        else journal.FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+    )
+    frozen_paths = fold_for_frozen.live_frozen_surfaces(seed_frozen)
+
+    scope_findings = gate.check_scope(effective_surface, frozen_paths, changed)
+    data: dict[str, object] = {
+        "checked": True,
+        "story": str(story_key),
+        "policy_surface": list(policy_surface),
+        "spec_surface": list(spec_surface) if spec_surface is not None else None,
+        "effective_surface": list(effective_surface),
+        "changed_files": list(changed),
+        "violations": len(scope_findings),
+    }
+    return data, scope_findings
+
+
+def run_evaluate(
+    args: argparse.Namespace,
+    *,
+    process: ProcessPort | None = None,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+) -> int:
     process = process if process is not None else PosixProcess()
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
 
     # Same is-not-None precedence as cli/config.py::run_config -- an
     # explicit `--project ""` must win over BMAD_ACTIVE_PROJECT (Python
@@ -408,29 +697,41 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
         "policy_source": str(policy_source) if policy_source is not None else None,
     }
     command_findings: list[Finding] = []
+    fold_result: journal.FoldResult | None = None
 
     if args.run_id is not None:
-        # Stubbed, not implemented (spec Boundaries & Constraints/Never):
-        # core/journal (Story 3.1/3.2) does not exist yet, so a run-scoped
-        # answer cannot honestly be produced. Named explicitly rather than
-        # silently ignoring --run or crashing; scope reflects the request
-        # could not be honored (I/O matrix's own wording), distinct from the
-        # ordinary policy-seed-only scope below.
-        data["scope"] = "run-scope-unavailable"
-        data["scope_note"] = (
-            f"--run {args.run_id!r} was requested, but no run-journal fold "
-            "exists yet (core/journal is Story 3.1/3.2, both backlog)"
-        )
-        command_findings.append(
-            Finding(
-                code="MRS-GATE-005",
-                severity=Severity.ERROR,
-                message=(
-                    f"cannot honor --run {args.run_id!r}: no run-journal fold "
-                    "exists yet -- see core/journal (Story 3.1/3.2, backlog)"
-                ),
+        # Story 2.3: a real fold, not a stub. Locating the run needs the
+        # active project's own loop home (`_home_path`) -- a bare `--run
+        # <id>` with no resolvable project (or no provisioned loop home, or
+        # no such run directory, or an unreadable journal) cannot honestly
+        # produce a run-scoped answer, so MRS-GATE-005 covers all of those
+        # the same way the old stub covered "no fold exists yet" -- see the
+        # module docstring for the broadened meaning.
+        if project_slug and policy._is_valid_project_slug(project_slug):
+            run_dir = _run_dir(_home_path(project_slug), project_slug, args.run_id)
+            fold_result = _load_run_fold(fs, run_dir)
+        if fold_result is None:
+            data["scope"] = "run-scope-unavailable"
+            data["scope_note"] = (
+                f"--run {args.run_id!r} was requested, but its journal could "
+                "not be located/read for the active project"
             )
-        )
+            command_findings.append(
+                Finding(
+                    code="MRS-GATE-005",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot honor --run {args.run_id!r}: its journal "
+                        "could not be located/read for the active project"
+                    ),
+                )
+            )
+        else:
+            data["scope"] = "run"
+            data["scope_note"] = f"folded run {args.run_id!r}'s journal"
+            command_findings.extend(
+                record.finding for record in fold_result.quarantined
+            )
         data["commands"] = []
     else:
         # AD-26/F-3: the story's own preamble flags this note as the clause
@@ -536,6 +837,20 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
                 if finding is not None:
                     command_findings.append(finding)
             data["commands"] = reports
+
+    if args.scope_check:
+        scope_data, scope_findings = _run_scope_check(
+            root=root,
+            project_slug=project_slug,
+            story_arg=args.story,
+            effective=effective,
+            run_requested=args.run_id is not None,
+            fold_result=fold_result,
+            vcs=vcs,
+        )
+        if scope_data is not None:
+            data["scope_check"] = scope_data
+        command_findings.extend(scope_findings)
 
     # Same "io/policy findings before per-command findings" ordering
     # rationale as above, one level up: the operator should meet policy-level
@@ -649,6 +964,16 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
                     lines.append(f"    stderr: {entry['stderr']!r}")
             else:
                 lines.append(f"  {entry['command']!r}: unresolvable")
+    if "scope_check" in data:
+        scope_check = data["scope_check"]
+        if scope_check["checked"]:
+            lines.append(
+                f"scope check: {scope_check['story']} -- "
+                f"{scope_check['violations']} violation(s) over "
+                f"{len(scope_check['changed_files'])} changed file(s)"
+            )
+        else:
+            lines.append(f"scope check: not evaluated ({scope_check['reason']})")
     if findings:
         lines.append("findings:")
         for finding in findings:

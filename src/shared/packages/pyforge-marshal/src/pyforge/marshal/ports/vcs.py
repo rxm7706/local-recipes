@@ -172,3 +172,23 @@ class VcsPort(Protocol):
         caller treats that as a registered ``WARN``, never a run-halting
         condition."""
         ...
+
+    def changed_files(
+        self, repo_root: Path, worktree_path: Path, *, base: str
+    ) -> tuple[str, ...]:
+        """Story 2.3's frozen-surface scope check (AD-27): every repo-
+        relative POSIX path ``worktree_path`` has touched relative to
+        ``base`` -- the UNION of (a) ``git diff --name-only
+        <base>...HEAD`` run against ``worktree_path`` (committed changes
+        since the merge-base, three-dot per this port's own
+        ``is_branch_merged`` merge-base convention -- run against
+        ``worktree_path``, not ``repo_root``, since ``HEAD`` is per-
+        worktree and ``base``/refs are shared across every worktree of one
+        repo) and (b) ``git status --porcelain`` in ``worktree_path``
+        (uncommitted/untracked -- a story's changes are not necessarily
+        committed yet at gate-evaluation time). Deduplicated, sorted.
+
+        Read-only. Raises ``VcsCommandError`` on any git failure (an
+        unresolvable ``base``, ``worktree_path`` not inside a git
+        repository, a corrupted repo)."""
+        ...
