@@ -50,6 +50,10 @@ class _FakeVcs:
         resolve_ref_sha: str = "branch-tip-sha",
         resolve_ref_raises: bool = False,
         resolve_ref_sequence: list[str] | None = None,
+        changed_paths: tuple[str, ...] = (),
+        changed_files_raises: bool = False,
+        worktree_head_sha: str | None = None,
+        worktree_head_sha_raises: bool = False,
     ) -> None:
         self.main_subjects = main_subjects
         self.origin_subjects = origin_subjects
@@ -79,6 +83,27 @@ class _FakeVcs:
             list(resolve_ref_sequence) if resolve_ref_sequence is not None else None
         )
         self.resolve_ref_calls: list[str] = []
+        self.changed_paths = changed_paths
+        self.changed_files_raises = changed_files_raises
+        # `None` (the default) mirrors `resolve_ref_sha` -- most batch-pr
+        # tests don't care about this new P5 precondition, so the fake
+        # answers "the worktree IS at the branch tip" by matching whatever
+        # `resolve_ref` itself returns, unless a test explicitly wants a
+        # mismatch.
+        self._worktree_head_sha = worktree_head_sha
+        self.worktree_head_sha_raises = worktree_head_sha_raises
+
+    def worktree_head_sha(self, worktree_path):
+        if self.worktree_head_sha_raises:
+            raise VcsCommandError("git rev-parse HEAD failed")
+        if self._worktree_head_sha is not None:
+            return self._worktree_head_sha
+        return self.resolve_ref_sha
+
+    def changed_files(self, repo_root, worktree_path, *, base):
+        if self.changed_files_raises:
+            raise VcsCommandError("git diff --name-status failed")
+        return self.changed_paths
 
     def commit_subjects(self, repo_root, ref):
         if ref == "origin/main":
@@ -1197,3 +1222,741 @@ def test_land_story_redaction_failure_warns_but_still_lands(tmp_path, capsys, mo
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
     assert len(journal_lines) == 1
     assert journal_lines[0]["payload"]["justification"] is None
+
+
+# =====================================================================
+# ``marshal deploy batch-pr`` (Story 4.4, FR-29/NFR-2, AD-34).
+# =====================================================================
+
+from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo  # noqa: E402
+
+_BMADLOOP_WAVE_SUBJECT = "Merge bmad-loop/run-1/4-4-batch into loop/acme (bmad-loop)"
+
+
+class _FakeForge:
+    """A minimal ``ForgePort`` stand-in -- records every call for
+    assertion, mirrors ``_FakeVcs``'s own configurable-raise shape."""
+
+    def __init__(
+        self,
+        *,
+        existing: PrInfo | None = None,
+        create_result: PrInfo | None = None,
+        update_result: PrInfo | None = None,
+        find_raises: bool = False,
+        create_raises: bool = False,
+        update_raises: bool = False,
+        add_labels_raises: bool = False,
+        check_status_map: dict[str, str | None] | None = None,
+        check_status_raises: bool = False,
+    ) -> None:
+        self.existing = existing
+        self.create_result = create_result or PrInfo(
+            number=1, url="https://example/pr/1", state="open", base="main"
+        )
+        self.update_result = update_result or PrInfo(
+            number=2, url="https://example/pr/2", state="open", base="main"
+        )
+        self.find_raises = find_raises
+        self.create_raises = create_raises
+        self.update_raises = update_raises
+        self.add_labels_raises = add_labels_raises
+        self.check_status_map = check_status_map or {}
+        self.check_status_raises = check_status_raises
+        self.find_calls: list = []
+        self.create_calls: list = []
+        self.update_calls: list = []
+        self.add_labels_calls: list = []
+        self.check_calls: list = []
+
+    def find_open_pr(self, repo, head_branch):
+        self.find_calls.append((repo, head_branch))
+        if self.find_raises:
+            raise ForgeCommandError("gh pr list failed")
+        return self.existing
+
+    def create_pr(self, repo, base, head, title, body):
+        if self.create_raises:
+            raise ForgeCommandError("gh pr create failed")
+        self.create_calls.append((repo, base, head, title, body))
+        return self.create_result
+
+    def update_pr(self, repo, number, title, body):
+        if self.update_raises:
+            raise ForgeCommandError("gh pr edit failed")
+        self.update_calls.append((repo, number, title, body))
+        return self.update_result
+
+    def add_labels(self, repo, number, labels):
+        self.add_labels_calls.append((repo, number, labels))
+        if self.add_labels_raises:
+            raise ForgeCommandError("gh pr edit --add-label failed")
+
+    def check_run_status(self, repo, ref, check_name):
+        self.check_calls.append((repo.value, ref.value, check_name.value))
+        if self.check_status_raises:
+            raise ForgeCommandError("gh api check-runs failed")
+        return self.check_status_map.get(check_name.value)
+
+
+def _batch_pr_args(*, slug: str = "acme", format: str = "json") -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, format=format)
+
+
+def _write_batch_pr_project_policy(tmp_path: Path, text: str) -> Path:
+    path = tmp_path / "batch-pr-marshal-policy.toml"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_batch_pr_refuses_when_the_station_branch_does_not_exist(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(existing_branches=frozenset())
+    forge = _FakeForge()
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-007" in codes
+    assert exit_code != 0
+    assert forge.find_calls == []
+    assert forge.create_calls == []
+
+
+def test_batch_pr_empty_wave_is_a_clean_noop(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=("an ordinary commit, not a story merge",),
+    )
+    forge = _FakeForge()
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["wave"] == []
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert forge.find_calls == []
+    assert forge.create_calls == []
+
+
+def test_batch_pr_opens_a_new_pr_when_none_exists(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["wave"] == ["4.4"]
+    assert payload["data"]["opened"] is True
+    assert payload["data"]["updated"] is False
+    assert payload["data"]["pr_number"] == 1
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert len(forge.create_calls) == 1
+    assert forge.update_calls == []
+    repo, base, head, title, body = forge.create_calls[0]
+    assert repo.value == "rxm7706/local-recipes"
+    assert base.value == "main"
+    assert head.value == "loop/acme"
+    assert "4.4" in title.text
+    assert "4.4" in body.text
+    # FR-35: no AI-attribution or courtesy preamble anywhere Marshal emits.
+    for forbidden in ("Generated with", "Co-Authored-By", "🤖"):
+        assert forbidden not in title.text
+        assert forbidden not in body.text
+
+
+def test_batch_pr_updates_an_existing_pr_instead_of_duplicating(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    existing_pr = PrInfo(number=99, url="https://example/pr/99", state="open", base="main")
+    forge = _FakeForge(existing=existing_pr, update_result=existing_pr)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is True
+    assert payload["data"]["pr_number"] == 99
+    assert exit_code == 0
+    assert forge.create_calls == []
+    assert len(forge.update_calls) == 1
+    assert forge.update_calls[0][1] == 99
+
+
+def test_batch_pr_blocks_on_an_unsatisfied_required_check_and_writes_no_pr(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+[[landing_rules]]
+name = "environment-yaml-sync"
+trigger_path_glob = "pixi.toml"
+trigger_mode = "include"
+required_check = "environment-yaml-sync"
+ungated = true
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("pixi.toml",),
+    )
+    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "failure"})
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-013" in codes
+    assert any("remediation" in finding["message"] for finding in payload["findings"])
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert exit_code != 0
+    assert forge.create_calls == []
+    assert forge.update_calls == []
+
+
+def test_batch_pr_a_satisfied_required_check_does_not_block(tmp_path, capsys, monkeypatch):
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+[[landing_rules]]
+name = "environment-yaml-sync"
+trigger_path_glob = "pixi.toml"
+trigger_mode = "include"
+required_check = "environment-yaml-sync"
+ungated = true
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("pixi.toml",),
+    )
+    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "success"})
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert len(forge.create_calls) == 1
+    rule_report = payload["data"]["hygiene_rules"][0]
+    assert rule_report["applies"] is True
+    assert rule_report["satisfied"] is True
+
+
+def test_batch_pr_applies_a_fired_label_after_opening_never_blocking(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+[[landing_rules]]
+name = "maintenance-label"
+trigger_path_glob = "recipes/**"
+trigger_mode = "exclude"
+label = "maintenance"
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["data"]["opened"] is True
+    assert payload["data"]["labels_applied"] == ["maintenance"]
+    assert len(forge.add_labels_calls) == 1
+    _repo, number, labels = forge.add_labels_calls[0]
+    assert number == 1
+    assert labels == ("maintenance",)
+
+
+def test_batch_pr_reports_mrs_deploy_014_on_a_forge_command_failure(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None, create_raises=True)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-014" in codes
+    assert exit_code != 0
+
+
+def test_batch_pr_body_lists_the_wave_with_gate_verdicts_from_the_journal(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    run_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "implementation-artifacts"
+        / "runs"
+        / "acme-run-1"
+    )
+    run_dir.mkdir(parents=True)
+    entry = {
+        "id": {"writer_id": "land-story-1", "counter": 0},
+        "ts": "2026-08-06T00:00:00.000Z",
+        "run_id": "acme-run-1",
+        "kind": "manual-landing",
+        "phase": "observation",
+        "payload": {
+            "story_key": "4.4",
+            "justification": "landed manually",
+            "merge_sha": "deadbeef",
+            "gate_verdict": "clean",
+        },
+    }
+    (run_dir / "journal.jsonl").write_text(json.dumps(entry) + "\n", encoding="utf-8")
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    assert exit_code == 0
+    _repo, _base, _head, _title, body = forge.create_calls[0]
+    assert "4.4" in body.text
+    assert "clean" in body.text
+
+
+# =====================================================================
+# Code review (2026-08-06) fixes for `marshal deploy batch-pr`.
+# =====================================================================
+
+
+def test_batch_pr_p1_refuses_on_malformed_landing_rules_policy(tmp_path, capsys, monkeypatch):
+    """P1 (HIGH, both reviewers' top finding): a malformed `landing_rules`
+    policy layer must HARD REFUSE the whole invocation, never silently
+    proceed with an empty rule set (which would silently disable the
+    entire hygiene preflight over a config typo)."""
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+landing_rules = "not-a-list-of-rules"
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+    forge = _FakeForge()
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-POLICY-002" in codes
+    assert "MRS-DEPLOY-015" in codes
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert exit_code != 0
+    # Never even reached wave discovery/the forge -- refused before either.
+    assert forge.find_calls == []
+    assert forge.create_calls == []
+
+
+def test_batch_pr_p2_add_labels_failure_does_not_claim_labels_applied(
+    tmp_path, capsys, monkeypatch
+):
+    """P2 (HIGH, Edge Case Hunter, CONFIRMED): `data["labels_applied"]` must
+    never claim a label was applied when `add_labels` itself raised."""
+    policy_path = _write_batch_pr_project_policy(
+        tmp_path,
+        """
+[[landing_rules]]
+name = "maintenance-label"
+trigger_path_glob = "recipes/**"
+trigger_mode = "exclude"
+label = "maintenance"
+""",
+    )
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None, add_labels_raises=True)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["opened"] is True
+    assert payload["data"]["labels_applied"] == []
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-014" in codes
+    assert exit_code != 0
+
+
+def test_batch_pr_p4_branch_moved_before_pr_write_refuses(tmp_path, capsys, monkeypatch):
+    """P4 (HIGH, both reviewers): the hygiene preflight vets `head_sha`, a
+    pinned SHA -- if `head_branch` advances before the PR write, the write
+    must refuse rather than open/update a PR for unvetted content."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+        # Two `resolve_ref` calls happen for `head_branch`: once to pin
+        # `head_sha` before the hygiene preflight, once to reconfirm it
+        # immediately before the PR write -- the branch "moves" between
+        # them. `worktree_head_sha` is pinned to match the FIRST value so
+        # the P5 precondition (checked first) passes cleanly.
+        resolve_ref_sequence=["head-sha-abc", "moved-sha"],
+        worktree_head_sha="head-sha-abc",
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-016" in codes
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert exit_code != 0
+    assert forge.create_calls == []
+    assert forge.update_calls == []
+
+
+def test_batch_pr_p5_stale_worktree_refuses_before_changed_files(tmp_path, capsys, monkeypatch):
+    """P5 (HIGH, Blind Hunter): `changed_files` diffs the LOCAL worktree --
+    if it is not checked out at the same commit the hygiene preflight
+    pins as the wave's head, the run must refuse rather than trust a
+    possibly stale/under-reporting diff."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+        worktree_head_sha="stale-sha",
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-017" in codes
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert exit_code != 0
+    assert forge.find_calls == []
+    assert forge.create_calls == []
+
+
+def test_batch_pr_p5_worktree_head_sha_read_failure_refuses(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+        worktree_head_sha_raises=True,
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-017" in codes
+    assert exit_code != 0
+
+
+def test_batch_pr_p8_existing_pr_with_a_different_base_refuses(tmp_path, capsys, monkeypatch):
+    """P8 (MEDIUM, Edge Case Hunter): an open PR for this head branch that
+    targets a DIFFERENT base than policy declares must never be silently
+    updated."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    existing_pr = PrInfo(number=77, url="https://example/pr/77", state="open", base="release")
+    forge = _FakeForge(existing=existing_pr)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-018" in codes
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert exit_code != 0
+    assert forge.update_calls == []
+    assert forge.create_calls == []
+
+
+def test_batch_pr_p10_already_landed_wave_is_a_noop(tmp_path, capsys, monkeypatch):
+    """P10 (MEDIUM, Edge Case Hunter): `existing is None` must not be
+    conflated with "already merged and closed" -- a wave whose every story
+    key is already durably reachable from `base` must short-circuit to a
+    clean no-op, never a fresh `create_pr`."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        main_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["opened"] is False
+    assert payload["data"]["updated"] is False
+    assert payload["data"]["already_landed"] is True
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert forge.find_calls == []
+    assert forge.create_calls == []
+
+
+def test_evaluate_hygiene_p9_label_does_not_fire_when_check_raises():
+    """P9 (MEDIUM, Edge Case Hunter): a rule's label must not fire when its
+    own required_check could not be determined (raised)."""
+    from pyforge.marshal.core.landing import LandingRule
+    from pyforge.marshal.ports.forge import ForgeRef
+
+    rule = LandingRule(
+        name="gated-label",
+        trigger_path_glob="**",
+        trigger_mode="include",
+        required_check="ci",
+        label="urgent",
+    )
+    forge = _FakeForge(check_status_raises=True)
+
+    report, blocking, fired_labels = deploy_module._evaluate_hygiene(
+        (rule,), ("a.txt",), forge, ForgeRef("acme/widgets"), "sha"
+    )
+
+    assert fired_labels == ()
+    assert blocking  # still blocks, unaffected by the label fix
+
+
+def test_evaluate_hygiene_p9_label_does_not_fire_when_check_resolves_failure():
+    """P9, the other half: a check that resolved to a real non-success
+    conclusion must suppress the label identically to a raised check."""
+    from pyforge.marshal.core.landing import LandingRule
+    from pyforge.marshal.ports.forge import ForgeRef
+
+    rule = LandingRule(
+        name="gated-label",
+        trigger_path_glob="**",
+        trigger_mode="include",
+        required_check="ci",
+        label="urgent",
+    )
+    forge = _FakeForge(check_status_map={"ci": "failure"})
+
+    report, blocking, fired_labels = deploy_module._evaluate_hygiene(
+        (rule,), ("a.txt",), forge, ForgeRef("acme/widgets"), "sha"
+    )
+
+    assert fired_labels == ()
+    assert blocking
+
+
+def test_evaluate_hygiene_p9_label_still_fires_when_check_succeeds():
+    """P9 regression guard: a satisfied required_check must still let the
+    SAME rule's label fire (the pre-existing, correct half of this
+    behavior)."""
+    from pyforge.marshal.core.landing import LandingRule
+    from pyforge.marshal.ports.forge import ForgeRef
+
+    rule = LandingRule(
+        name="gated-label",
+        trigger_path_glob="**",
+        trigger_mode="include",
+        required_check="ci",
+        label="urgent",
+    )
+    forge = _FakeForge(check_status_map={"ci": "success"})
+
+    report, blocking, fired_labels = deploy_module._evaluate_hygiene(
+        (rule,), ("a.txt",), forge, ForgeRef("acme/widgets"), "sha"
+    )
+
+    assert fired_labels == ("urgent",)
+    assert blocking == []
+
+
+def test_gather_gate_verdicts_p6_skips_a_run_dir_whose_fold_raises_non_typeerror(
+    tmp_path, monkeypatch
+):
+    """P6 (MEDIUM, both reviewers): a run directory whose journal content
+    makes `fold` raise something other than TypeError (e.g. ValueError)
+    must be skipped, never crash the whole gather."""
+    good_dir = (
+        tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs" / "good"
+    )
+    bad_dir = (
+        tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs" / "bad"
+    )
+    good_dir.mkdir(parents=True)
+    bad_dir.mkdir(parents=True)
+
+    class _StubFoldResult:
+        def __init__(self, entries):
+            self.entries = entries
+
+    class _StubEntry:
+        def __init__(self, kind, payload):
+            self.kind = kind
+            self.payload = payload
+
+    def _stub_fold(lines, *, sidecars=None):
+        text = "\n".join(lines)
+        if "bad-marker" in text:
+            raise ValueError("simulated malformed journal content")
+        if "good-marker" in text:
+            return _StubFoldResult(
+                [_StubEntry("manual-landing", {"story_key": "4.4", "gate_verdict": "clean"})]
+            )
+        return _StubFoldResult([])
+
+    (good_dir / "journal.jsonl").write_text("good-marker\n", encoding="utf-8")
+    (bad_dir / "journal.jsonl").write_text("bad-marker\n", encoding="utf-8")
+
+    monkeypatch.setattr(deploy_module, "fold", _stub_fold)
+
+    verdicts = deploy_module._gather_gate_verdicts(LocalFs(), tmp_path, "acme")
+
+    assert verdicts == {"4.4": "clean"}
+
+
+def test_gather_gate_verdicts_p7_orders_by_mtime_not_directory_name(tmp_path, monkeypatch):
+    """P7 (MEDIUM, both reviewers): run directory NAMES are not reliably
+    chronologically sortable ("run-10" sorts before "run-2" lexically) --
+    the most recently-landed verdict (by mtime) must win, regardless of
+    directory-name order."""
+    import os
+    import time
+
+    runs_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs"
+    older_dir = runs_dir / "acme-run-10"  # lexicographically FIRST
+    newer_dir = runs_dir / "acme-run-2"  # lexicographically LAST
+    older_dir.mkdir(parents=True)
+    newer_dir.mkdir(parents=True)
+
+    def _entry(verdict: str) -> str:
+        return json.dumps(
+            {
+                "id": {"writer_id": "land-story-1", "counter": 0},
+                "ts": "2026-08-06T00:00:00.000Z",
+                "run_id": "run",
+                "kind": "manual-landing",
+                "phase": "observation",
+                "payload": {
+                    "story_key": "4.4",
+                    "justification": None,
+                    "merge_sha": "deadbeef",
+                    "gate_verdict": verdict,
+                },
+            }
+        ) + "\n"
+
+    (older_dir / "journal.jsonl").write_text(_entry("gate-failed"), encoding="utf-8")
+    (newer_dir / "journal.jsonl").write_text(_entry("clean"), encoding="utf-8")
+
+    # `older_dir` really is older by mtime, despite sorting lexicographically
+    # BEFORE `newer_dir` by name.
+    now = time.time()
+    os.utime(older_dir, (now - 100, now - 100))
+    os.utime(newer_dir, (now, now))
+
+    verdicts = deploy_module._gather_gate_verdicts(LocalFs(), tmp_path, "acme")
+
+    assert verdicts == {"4.4": "clean"}
+
+
+def test_batch_pr_redact_p11_returns_none_on_any_redaction_failure(monkeypatch):
+    """P11 (LOW, Blind Hunter): the redaction net must fail closed on ANY
+    exception `to_redacted`/its callees raise, not only the hardcoded
+    ValueError/LookupError/TypeError allowlist it used to catch."""
+
+    def _raising_to_redacted(payload):
+        raise RecursionError("simulated: an exception type outside the old allowlist")
+
+    monkeypatch.setattr(deploy_module, "to_redacted", _raising_to_redacted)
+
+    assert deploy_module._batch_pr_redact("some text") is None

@@ -486,6 +486,48 @@ redaction failure at journal-capture time swallowed the operator's
 already succeeded, so a lost justification is a paper-trail visibility gap,
 never grounds to undo it.
 
+Story 4.4 (batch pull request with hygiene preflight, FR-29/NFR-2, AD-34)
+adds two more ``MRS-DEPLOY-*`` codes for ``marshal deploy batch-pr``.
+``MRS-DEPLOY-013`` (a fired ``landing_rules`` entry with ``required_check``
+set is NOT satisfied -- its named check is missing or did not conclude
+``"success"`` on the wave's own head commit) classifies
+``Verdict.SCOPE_VIOLATION``, the same rung ``MRS-GATE-007``-``011`` already
+use: a real, project-declared gate evaluated the change set and found it
+non-conforming, blocking before any PR write is attempted -- never a mere
+internal-operation failure. ``MRS-DEPLOY-014`` (``ForgePort``'s own ``gh``
+invocation failed -- listing, creating, updating a PR, or applying labels)
+classifies ``Verdict.ERROR``, the same tier as ``MRS-DEPLOY-008``
+(``VcsPort.merge_branch`` failing): a real outbound write was attempted and
+did not complete.
+
+Code review (2026-08-06) adds three more ``MRS-DEPLOY-*`` codes for
+``marshal deploy batch-pr``, most severe first. ``MRS-DEPLOY-015`` (P1: policy
+composition reported an ERROR-severity finding naming the ``landing_rules``
+key -- a malformed layer that ``core/policy.py`` silently excludes, falling
+back to ``DEFAULT_POLICY``'s empty rule set) HARD REFUSES the entire
+``batch-pr`` invocation before the hygiene preflight ever runs and before the
+forge is ever touched: proceeding on a malformed ``landing_rules`` layer
+would silently evaluate against ZERO rules instead of the project's declared
+ones, letting a config typo -- not a deliberate decision -- bypass the
+hygiene gate entirely. Classifies ``Verdict.ERROR``, the same tier as
+``MRS-TEARDOWN-005``'s identical "this refusal must be at least as strict as
+a real violation, never a softer UNEVALUABLE" reasoning. ``MRS-DEPLOY-016``
+(P4: the head branch moved between the hygiene preflight's own read of its
+tip and the PR write that was about to follow) classifies ``Verdict.ERROR``,
+the same tier as ``MRS-DEPLOY-011``'s identical TOCTOU shape for
+``land-story``'s own branch-tip pinning: content the hygiene preflight never
+vetted must never reach ``create_pr``/``update_pr``. ``MRS-DEPLOY-017`` (P5:
+the loop-home worktree's own checked-out commit does not match the head
+branch's resolved tip immediately before ``changed_files`` is trusted)
+classifies ``Verdict.ERROR``, the same tier: a stale or detached local
+worktree must never silently under-report the hygiene preflight's own
+change set. ``MRS-DEPLOY-018`` (P8, Edge Case Hunter: ``find_open_pr``
+returned an existing PR whose own ``base`` does not equal the
+policy-declared ``landing_base_branch``) classifies ``Verdict.ERROR``, the
+same tier: ``update_pr`` must never be called against a PR targeting a
+different base than policy declares -- that PR belongs to some other,
+unrelated intent this command must not silently rewrite.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -576,6 +618,17 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # MRS-DEPLOY-011 (P4: the station branch's tip moved or could not be
 # reconfirmed before merging), and MRS-DEPLOY-012 (P7: --justification
 # redaction failed at journal-capture time).
+# Story 4.4's cli/deploy.py adds two more MRS-DEPLOY-* codes for
+# `marshal deploy batch-pr`: MRS-DEPLOY-013 (an unsatisfied blocking
+# hygiene rule) and MRS-DEPLOY-014 (a ForgePort/gh command failure).
+# Code review (2026-08-06) adds four more MRS-DEPLOY-* codes for
+# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules
+# policy layer hard-refuses the whole invocation), MRS-DEPLOY-016 (P4: the
+# head branch moved between hygiene evaluation and the PR write),
+# MRS-DEPLOY-017 (P5: the loop-home worktree's checkout does not match the
+# head branch's resolved tip before changed_files is trusted), and
+# MRS-DEPLOY-018 (P8: an existing PR's own base branch does not match the
+# policy-declared landing_base_branch).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -655,6 +708,12 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-010",
         "MRS-DEPLOY-011",
         "MRS-DEPLOY-012",
+        "MRS-DEPLOY-013",
+        "MRS-DEPLOY-014",
+        "MRS-DEPLOY-015",
+        "MRS-DEPLOY-016",
+        "MRS-DEPLOY-017",
+        "MRS-DEPLOY-018",
     }
 )
 

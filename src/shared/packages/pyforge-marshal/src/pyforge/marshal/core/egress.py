@@ -185,7 +185,11 @@ _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
 # process-spawn carve-out). Story 3.7 adds `NotifyPort` (a durable file
 # marker plus a desktop notification -- both a durable and a third-party
 # sink, AD-34's own criterion): classified `True`, joining `RecordPort` as
-# the second real egress port.
+# the second real egress port. Story 4.4 adds `ForgePort` (Marshal's first
+# and only outbound-network port, NFR-2 -- opening/updating a GitHub PR and
+# applying labels via the `gh` CLI): classified `True`, the third real
+# egress port, mirroring `NotifyPort`'s own shape exactly (every text field
+# accepts only `Redacted`, never a bare `str`).
 EGRESS_PORTS: Mapping[str, bool] = {
     "ProcessPort": False,
     "FsPort": False,
@@ -195,6 +199,7 @@ EGRESS_PORTS: Mapping[str, bool] = {
     "ClockPort": False,
     "SessionObserverPort": False,
     "NotifyPort": True,
+    "ForgePort": True,
 }
 
 

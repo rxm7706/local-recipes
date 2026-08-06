@@ -80,6 +80,9 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         "landing_merge_strategy",
         "landing_branch_retirement",
         "landing_resync",
+        # Story 4.4's `landing_base_branch` (AD-40) -- same reason as the 3
+        # above: no AC asks for a CLI override surface for it.
+        "landing_base_branch",
     }
 )
 
@@ -119,6 +122,7 @@ _UNSETTABLE_KEYS = frozenset(
         "landing_merge_strategy",
         "landing_branch_retirement",
         "landing_resync",
+        "landing_base_branch",
     }
 )
 
@@ -141,6 +145,7 @@ _FIELD_ORDER: tuple[str, ...] = (
     "landing_merge_strategy",
     "landing_branch_retirement",
     "landing_resync",
+    "landing_base_branch",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -299,7 +304,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 19-key document matching ``schemas/policy.json`` exactly:
+    """The flat 20-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

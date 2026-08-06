@@ -400,6 +400,28 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # --justification redaction failed at journal-capture time) at WARN,
 # alongside MRS-DEPLOY-001/002/004/005/009 -- the landing already
 # succeeded, so a lost justification is a paper-trail visibility gap.
+# Story 4.4 (batch pull request with hygiene preflight, FR-29/NFR-2, AD-34)
+# adds two more MRS-DEPLOY-* codes for `marshal deploy batch-pr`:
+# MRS-DEPLOY-013 (a fired `required_check` landing rule was not satisfied)
+# at SCOPE_VIOLATION, alongside MRS-GATE-007/008/010/011 -- a real,
+# project-declared gate evaluated the change set and blocked it, before any
+# PR write is attempted; MRS-DEPLOY-014 (a ForgePort/`gh` command failed --
+# listing, creating, updating a PR, or applying labels) at ERROR, the same
+# tier as MRS-DEPLOY-008 -- a real outbound write was attempted and did not
+# complete.
+# Code review (2026-08-06) adds three more MRS-DEPLOY-* codes: 015 (P1, a
+# malformed landing_rules policy layer hard-refuses the whole batch-pr
+# invocation before hygiene evaluation or any forge write) at ERROR,
+# alongside MRS-TEARDOWN-005 -- this refusal must be at least as strict as a
+# real blocking violation, never a softer UNEVALUABLE; 016 (P4, the head
+# branch moved between hygiene evaluation and the PR write) at ERROR,
+# alongside MRS-DEPLOY-011's identical TOCTOU shape; 017 (P5, the loop-home
+# worktree's checkout does not match the head branch's resolved tip before
+# changed_files is trusted) at ERROR, the same tier -- a stale/detached
+# local worktree must never silently under-report the change set; 018 (P8,
+# an existing PR's own base branch does not match the policy-declared
+# landing_base_branch) at ERROR, the same tier -- update_pr must never be
+# called against a PR targeting a different base than policy declares.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -478,6 +500,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-010": Verdict.GATE_FAILED,
     "MRS-DEPLOY-011": Verdict.ERROR,
     "MRS-DEPLOY-012": Verdict.WARN,
+    "MRS-DEPLOY-013": Verdict.SCOPE_VIOLATION,
+    "MRS-DEPLOY-014": Verdict.ERROR,
+    "MRS-DEPLOY-015": Verdict.ERROR,
+    "MRS-DEPLOY-016": Verdict.ERROR,
+    "MRS-DEPLOY-017": Verdict.ERROR,
+    "MRS-DEPLOY-018": Verdict.ERROR,
 }
 
 
