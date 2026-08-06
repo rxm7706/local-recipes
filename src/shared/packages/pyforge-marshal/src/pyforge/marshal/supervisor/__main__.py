@@ -219,6 +219,49 @@ classifies the read; on ``UNRESOLVED`` this sidecar journals one
 ``detach_reason = "escalation-paused"`` before the ordinary
 ``detach_payload`` construction below.
 
+**Stage-bound durability (Story 3.8, AD-46/FR-61).** Two more mechanisms
+close the gap named in this story's own Intent: durability today scaled
+only with an arbitrary wall-clock interval an operator might forget to
+configure, and no watcher started unless invoked by hand. Both are wired
+into every ``run_supervisor`` invocation automatically -- no new argv, no
+new CLI flag (``cli/spin.py`` needs no changes: the station branch derives
+from ``slug`` alone, and the interval watcher reuses the already-configured
+``threshold_s``).
+
+- **Per-tick stage-boundary pushes.** Shares the SAME ``run_status_
+  snapshot`` read the deferral-capture block above already makes each tick
+  (one read, two consumers). ``supervisor/durability.py::
+  classify_push_triggers`` diffs this tick's full ``RunStatusSnapshot.tasks``
+  against the previous tick's own reading (kept as a local ``dict[str,
+  TaskPhaseSnapshot]``, mirroring the deferral block's own ``set[str]``
+  bookkeeping) and returns one ``PushTrigger`` per crossed boundary --
+  ``review-verdict-recorded``, ``dev-commit-landed``, ``story-merged``. Each
+  trigger pushes the run's own station branch (``f"loop/{slug}"``) via
+  ``VcsPort.push``, PLUS that story's own per-story branch when it ran
+  worktree-isolated (``TaskPhaseSnapshot.branch`` non-empty) -- and journals
+  one ``"stage-push"`` observation per push ATTEMPT (kind, never an
+  intent/outcome pair: a push is an observed side effect of bmad-loop's own
+  progress, not a decision this sidecar itself made). A push failure
+  (``VcsCommandError`` -- rejected non-fast-forward, no network, no
+  configured remote -- or an ``OSError``/``subprocess.SubprocessError``
+  escaping a non-``GitVcs`` ``VcsPort`` implementation, review finding)
+  registers ``MRS-SUPV-008`` (WARN) and never halts the
+  tick loop (AD-46: "best-effort against transient network conditions,
+  never a new refusal gate"). A ONE-TIME post-loop flush (mirroring the
+  deferral block's own post-loop flush, and the identical Story 3.7 review
+  finding it fixes) covers a boundary crossed in the instant BETWEEN this
+  supervisor's last live tick and the watched process exiting.
+- **Interval-watcher fallback.** The floor for whatever the three named
+  boundaries miss (a long ``DEV_RUNNING`` stretch with no phase crossing
+  yet, a run that pauses before any story reaches ``DONE``): every tick
+  while ``watched_alive``, if ``threshold_s`` (the idle ladder's own already
+  -configured cadence -- no new policy key) has elapsed since this run's
+  last durability push of ANY kind, the station branch is pushed
+  unconditionally and journaled with ``boundary: "interval"``. Needs no
+  ``harness_run_id`` at all -- the station branch push targets ``slug``
+  alone, so this watcher runs even for a run whose harness id never
+  resolved.
+
 Every append here is a ``Phase.OBSERVATION`` entry EXCEPT the ladder/budget
 actions above, which are ``Phase.INTENT`` then ``Phase.OUTCOME`` pairs
 (AD-6's write-before-act: the intent is fsynced BEFORE the action is
@@ -283,6 +326,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import subprocess
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -295,6 +339,7 @@ from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.process_posix import PosixProcess
+from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.egress import to_redacted
 from ..core.identity import normalize, render_feed_key
@@ -320,10 +365,12 @@ from ..core.supervise import (
 )
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
-from ..ports.harness import HarnessPort, RunStatusSnapshot
+from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot
 from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
 from ..ports.process import ProcessPort
+from ..ports.vcs import VcsPort
+from .durability import PushTrigger, classify_push_triggers
 
 # Matches cli/spin.py's own _JOURNAL_FILENAME/_LAUNCH_KIND/_RESUME_KIND/
 # _LOG_FILENAME -- duplicated, not imported, per this module's own docstring
@@ -372,6 +419,19 @@ _ESCALATION_DETECTED_KIND = "escalation-detected"
 # The durable escalation file marker's own filename, under the run
 # directory (the spec's own Always bullet: "writes <run_dir>/ESCALATION").
 _ESCALATION_MARKER_FILENAME = "ESCALATION"
+
+# Story 3.8's own journal kind (stage-bound durability, AD-46/FR-61): a
+# single Phase.OBSERVATION entry per push ATTEMPT (never an intent/outcome
+# pair -- a push is a best-effort side effect of an observed boundary, not
+# an action this sidecar decided to take the way the idle ladder/budget
+# ceilings do), success or failure alike, so "how many pushes did this run
+# attempt, and did they land" is answerable from the journal alone.
+_STAGE_PUSH_KIND = "stage-push"
+
+# The interval-watcher fallback's own boundary name (distinct from the three
+# named stage boundaries `supervisor/durability.py::PushTrigger` classifies)
+# -- AD-46's own "floor for whatever the stage hooks miss".
+_INTERVAL_PUSH_BOUNDARY = "interval"
 
 
 def _feed_key_form(raw: str) -> str:
@@ -574,6 +634,7 @@ def run_supervisor(
     observer: SessionObserverPort | None = None,
     harness: HarnessPort | None = None,
     notify: NotifyPort | None = None,
+    vcs: VcsPort | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
     """The sidecar's own testable core -- everything ``__main__``'s own
@@ -589,13 +650,20 @@ def run_supervisor(
     fake ``ProcessPort``/``ClockPort``. ``notify`` is Story 3.7's own
     escalation-notification seam -- no new argv positional (mirrors
     ``harness``'s own default-construction convention, never a caller-
-    supplied value read off ``sys.argv``)."""
+    supplied value read off ``sys.argv``). ``vcs`` is Story 3.8's own
+    durability-push seam (AD-46) -- no new argv positional either: the
+    station branch this sidecar pushes is derived from ``slug`` alone
+    (``f"loop/{slug}"``, this package's own established convention -- see
+    ``cli/init.py``), and the interval watcher's own cadence reuses
+    ``idle_threshold_minutes``'s already-configured ``threshold_s``, so no
+    caller-supplied durability-specific value is needed at all."""
     fs = fs if fs is not None else LocalFs()
     process = process if process is not None else PosixProcess()
     clock = clock if clock is not None else SystemClock()
     observer = observer if observer is not None else MultiplexerObserver()
     harness = harness if harness is not None else BmadLoopHarness()
     notify = notify if notify is not None else FileDesktopNotifier()
+    vcs = vcs if vcs is not None else GitVcs()
 
     # Validated on the DERIVED seconds value, at THIS entry point, before
     # anything is journaled (follow-up review finding -- two defects, one
@@ -899,6 +967,125 @@ def run_supervisor(
                     },
                 )
 
+        # --- Story 3.8's own durability bookkeeping (AD-46/FR-61) ----------
+        # The station branch this run pushes at every stage boundary AND on
+        # interval-watcher expiry -- derived from `slug` alone (this
+        # package's own established `f"loop/{slug}"` convention, see
+        # `cli/init.py`), never a caller-supplied value.
+        station_branch = f"loop/{slug}"
+        # The previous tick's full per-task reading (`TaskPhaseSnapshot`,
+        # keyed by `story_key`) -- `classify_push_triggers` diffs THIS
+        # against the current tick's own reading. Empty at attach: the
+        # story's own module docstring (`supervisor/durability.py`)
+        # documents why a story missing from this mapping is read as "not
+        # previously in that boundary state", not an error.
+        previous_task_phases: dict[str, TaskPhaseSnapshot] = {}
+        # The monotonic reading of this run's last durability push attempt
+        # (stage-boundary OR interval), seeded to attach time so the FIRST
+        # interval-watcher expiry is measured from attach, not from an
+        # unset/zero reading. Reset on every attempt (success or failure)
+        # -- the interval watcher is a coarse timer, not a retry-until-
+        # success loop (AD-46's own "best-effort against transient network
+        # conditions").
+        last_durability_push_monotonic = clock.monotonic()
+
+        def _push_branch(branch: str, boundary: str, story_key: str | None) -> None:
+            """One durability push attempt (Story 3.8, AD-46/FR-61), success
+            or failure alike -- journals exactly one ``"stage-push"``
+            observation, never silently skipped (the spec's own Always
+            bullet). ``repo_root`` is resolved fresh on every call via
+            ``VcsPort.repo_common_root(home)`` (cheap; ``home`` is always
+            inside the shared repo by construction, since it is the loop
+            home this very sidecar was spawned to supervise) rather than
+            cached once, mirroring this loop's own "read the target fresh
+            each tick" discipline elsewhere (``usage_snapshot``,
+            ``run_status_snapshot``). A failure -- either resolving
+            ``repo_root`` or the push itself -- registers ``MRS-SUPV-008``
+            (WARN) and NEVER halts the tick loop (AD-46: "never a new
+            refusal gate"). Catches ``OSError``/``subprocess.SubprocessError``
+            alongside ``VcsCommandError`` (review finding): ``VcsPort`` is an
+            interface, and while ``GitVcs`` itself wraps every subprocess
+            failure into ``VcsCommandError``, a future or alternate
+            ``VcsPort`` implementation could raise a launch-level
+            ``OSError`` (``FileNotFoundError``, ``PermissionError``) or a
+            ``subprocess.SubprocessError`` (``CalledProcessError``,
+            ``TimeoutExpired`` -- NOT ``OSError`` subclasses despite the
+            similar naming) directly -- letting any of those escape here
+            would crash the whole tick loop, directly contradicting this
+            story's own "never a run-halting condition" invariant."""
+            outcome = "pushed"
+            push_finding: dict[str, object] | None = None
+            try:
+                repo_root = vcs.repo_common_root(home)
+                vcs.push(repo_root, branch)
+            except (VcsCommandError, OSError, subprocess.SubprocessError) as exc:
+                outcome = "push-failed"
+                # Push failure text originates from git's own stderr (a
+                # subprocess we do not control) and can carry pane/host-like
+                # content -- redacted at capture before it enters the
+                # journal payload, matching AD-34 and this package's own
+                # established `to_redacted({"k": text}); json.loads(
+                # redacted.text)["k"]` round-trip (see
+                # `adapters/observer_mux.py`/`adapters/harness_bmadloop.py`
+                # for the precedent -- review finding: the raw exception
+                # text was previously interpolated directly).
+                redacted = to_redacted({"text": str(exc)})
+                redacted_text = json.loads(redacted.text)["text"]
+                finding = Finding(
+                    code="MRS-SUPV-008",
+                    severity=Severity.WARN,
+                    message=(
+                        f"durability push failed for branch {branch!r} "
+                        f"({boundary}): {redacted_text}"
+                    ),
+                )
+                push_finding = finding.to_json_dict()
+            push_payload: dict[str, object] = {"boundary": boundary, "branch": branch}
+            if story_key is not None:
+                push_payload["story_key"] = story_key
+            push_payload["outcome"] = outcome
+            if push_finding is not None:
+                push_payload["finding"] = push_finding
+            _append(_STAGE_PUSH_KIND, push_payload)
+
+        def _process_stage_pushes(status_snapshot: RunStatusSnapshot | None) -> None:
+            """Diffs ``status_snapshot.tasks`` against the previous tick's
+            own reading (``previous_task_phases``) via the pure
+            ``classify_push_triggers``, and pushes the station branch --
+            plus that story's own per-story branch, when the triggering
+            story ran worktree-isolated (``task.branch`` non-empty) -- for
+            EVERY crossed boundary (the spec's own edge-case matrix: a story
+            can cross more than one boundary in a single diff, and each
+            gets its own push + its own ``"stage-push"`` observation).
+            Shared verbatim by the per-tick site inside the loop and the
+            single post-loop flush after it (mirrors ``_capture_deferrals``'s
+            own "one body, so the two sites cannot drift" shape -- Story
+            3.7's own review finding that a story's LAST observable
+            transition, immediately followed by the watched process exiting,
+            is otherwise silently dropped applies here identically). A
+            ``None`` ``status_snapshot`` carries no new information at all,
+            so ``previous_task_phases`` is left untouched, matching
+            ``_capture_deferrals``'s own "nothing to observe" no-op --
+            otherwise it is unconditionally advanced to the current
+            reading, even on a tick with zero triggers, so the NEXT diff is
+            always against the truly most-recent observation."""
+            nonlocal previous_task_phases, last_durability_push_monotonic
+            if status_snapshot is None:
+                return
+            current_task_phases = {task.story_key: task for task in status_snapshot.tasks}
+            triggers: tuple[PushTrigger, ...] = classify_push_triggers(
+                previous_task_phases, current_task_phases
+            )
+            for trigger in triggers:
+                feed_key = _feed_key_form(trigger.story_key)
+                _push_branch(station_branch, trigger.boundary, feed_key)
+                last_durability_push_monotonic = clock.monotonic()
+                task = current_task_phases.get(trigger.story_key)
+                if task is not None and task.branch:
+                    _push_branch(task.branch, trigger.boundary, feed_key)
+                    last_durability_push_monotonic = clock.monotonic()
+            previous_task_phases = current_task_phases
+
         samples: list[Sample] = []
         last_acted_rung = LadderRung.NONE
         deferred = False
@@ -1173,8 +1360,31 @@ def run_supervisor(
             # `not deferred` check, unlike the budget block below): this is
             # an OBSERVATION, never an action, so it has nothing to skip
             # even if a budget/idle decision already ended this same tick.
+            #
+            # Story 3.8 shares this SAME read (one `run_status_snapshot`
+            # call, not two) for its own stage-boundary push detection --
+            # `_process_stage_pushes` needs the identical `RunStatusSnapshot`
+            # `_capture_deferrals` already reads this tick.
             if watched_alive and harness_run_id is not None:
-                _capture_deferrals(harness.run_status_snapshot(home, harness_run_id))
+                tick_status_snapshot = harness.run_status_snapshot(home, harness_run_id)
+                _capture_deferrals(tick_status_snapshot)
+                _process_stage_pushes(tick_status_snapshot)
+
+            # --- Story 3.8: interval-push watcher fallback (AD-46/FR-61) ----
+            # The floor for whatever the three named stage boundaries miss
+            # (a long DEV_RUNNING stretch with no phase crossing yet, a run
+            # that pauses before any story reaches DONE): reuses
+            # `threshold_s` (the idle ladder's own already-configured
+            # cadence -- no new policy key, per the spec's own Never
+            # clause), fires unconditionally, and needs no `harness_run_id`
+            # at all (the station branch push targets `slug` alone). Gated
+            # on `watched_alive` only, mirroring the deferral capture block
+            # above -- this is a best-effort side effect, not an action that
+            # competes with the idle ladder/budget ceilings for "did this
+            # tick already decide to end the run".
+            if watched_alive and (monotonic_now - last_durability_push_monotonic) >= threshold_s:
+                _push_branch(station_branch, _INTERVAL_PUSH_BOUNDARY, None)
+                last_durability_push_monotonic = monotonic_now
 
             # --- Story 3.6: budget ceilings (AD-20/AD-32) -------------------
             # Gated on `watched_alive` alone -- NEVER on `session_name`/
@@ -1950,7 +2160,15 @@ def run_supervisor(
         # the identical shape, and the identical rationale, as the
         # `budget-usage` flush directly below.
         if harness_run_id is not None:
-            _capture_deferrals(harness.run_status_snapshot(home, harness_run_id))
+            final_status_snapshot = harness.run_status_snapshot(home, harness_run_id)
+            _capture_deferrals(final_status_snapshot)
+            # Story 3.8's own identical flush, for the identical reason
+            # (AD-46/FR-61): a story that crosses a stage boundary AFTER
+            # this supervisor's last live tick -- e.g. its commit lands and
+            # it reaches `Phase.DONE` in the same instant the watched
+            # process exits -- is otherwise never pushed at all, the exact
+            # gap Story 3.7's own review pass closed for deferrals.
+            _process_stage_pushes(final_status_snapshot)
 
         # Story 3.6 review finding: the ONLY existing `budget-usage` append
         # site fires on an OBSERVED story-key transition, so a run's FINAL

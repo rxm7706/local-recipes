@@ -46,6 +46,20 @@ git-truthful primitives ``run_teardown`` composes its refusal decision from:
 - ``remove_worktree``/``delete_branch`` -- the two writes, gated by
   ``run_teardown``'s own refusal decision rather than attempted
   unconditionally.
+
+Story 3.8 (stage-bound durability, AD-46) adds one more write, ``push`` --
+a plain ``git push`` against a branch's already-configured upstream (or
+``origin <branch>`` for a brand-new branch's first push), never ``--force``
+and never a ``push -u`` that would silently rewrite a remote branch's
+tracking config. This is the durability watcher's one write primitive:
+``supervisor/__main__.py`` calls it at the three named stage boundaries
+(after the dev commit, after the review verdict, after the merge) plus an
+interval-watcher fallback, never against ``main``/the repo's primary
+branch -- only the loop-home's own station branch and per-story branches,
+the same scope ``remove_worktree``/``delete_branch`` already confine
+themselves to. Still not an egress port (``core/egress.py``): the payload
+is git objects a story's own dev/review process already produced, never
+session-derived free text this port itself forwards.
 """
 
 from __future__ import annotations
@@ -139,4 +153,22 @@ class VcsPort(Protocol):
         that trusts its own merged-check passes ``force=True`` rather than
         relying on git's weaker heuristic. Raises ``VcsCommandError`` on any
         git failure."""
+        ...
+
+    def push(self, repo_root: Path, branch: str) -> None:
+        """A plain ``git push`` of ``branch`` (Story 3.8, AD-46), naming
+        ``branch`` explicitly rather than relying on ``repo_root``'s own
+        checked-out HEAD: if ``branch`` already has a configured upstream,
+        ``git push <remote> <branch>:<remote_branch>``; otherwise
+        ``git push origin <branch>`` (the branch's first push, no ``-u`` --
+        this never rewrites the caller's own tracking config). ``repo_root``
+        need not have ``branch`` checked out (refs are shared across every
+        worktree of one repo). Never ``--force``/``--force-with-lease``,
+        never a rewrite -- the durability watcher's push is read-only
+        against the working tree and additive against the remote by
+        construction (the only write is the remote-tracking ref update a
+        push performs). Raises ``VcsCommandError`` on any git failure
+        (rejected non-fast-forward, no network, no configured remote) -- the
+        caller treats that as a registered ``WARN``, never a run-halting
+        condition."""
         ...

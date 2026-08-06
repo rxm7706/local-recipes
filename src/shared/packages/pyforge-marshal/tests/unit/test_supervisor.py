@@ -26,6 +26,7 @@ from pathlib import Path
 import jsonschema
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.journal import (
     JournalEntryId,
     Phase,
@@ -33,7 +34,12 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
 )
 from pyforge.marshal.core.supervise import CeilingStatus
-from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot, UsageSnapshot
+from pyforge.marshal.ports.harness import (
+    DeferredStory,
+    RunStatusSnapshot,
+    TaskPhaseSnapshot,
+    UsageSnapshot,
+)
 from pyforge.marshal.supervisor import __main__ as supervisor_main
 from pyforge.marshal.supervisor.__main__ import main, run_supervisor
 
@@ -347,6 +353,33 @@ class FakeNotify:
         if self.fail_notify_desktop:
             raise self.fail_notify_desktop
         return self.notify_desktop_result
+
+
+class FakeVcs:
+    """Fakes ``ports.VcsPort`` (Story 3.8) -- only the two methods
+    ``run_supervisor``'s own durability wiring reaches: ``repo_common_root``
+    (a no-op passthrough) and ``push`` (recorded, succeeds by default). A
+    test injects ``fail_push`` to exercise the ``VcsCommandError`` path, or
+    ``fail_repo_common_root`` for the (structurally identical, since both
+    live inside the SAME try/except in ``_push_branch``) repo-resolution
+    failure."""
+
+    def __init__(self) -> None:
+        self.repo_common_root_calls: list[Path] = []
+        self.push_calls: list[tuple[Path, str]] = []
+        self.fail_push: Exception | None = None
+        self.fail_repo_common_root: Exception | None = None
+
+    def repo_common_root(self, start: Path) -> Path:
+        self.repo_common_root_calls.append(start)
+        if self.fail_repo_common_root:
+            raise self.fail_repo_common_root
+        return start
+
+    def push(self, repo_root: Path, branch: str) -> None:
+        self.push_calls.append((repo_root, branch))
+        if self.fail_push:
+            raise self.fail_push
 
 
 def _no_sleep(seconds: float) -> None:
@@ -1071,16 +1104,24 @@ def test_first_threshold_crossing_fires_a_nudge_intent_then_outcome():
     # (both floor to the same rung here, which is why this test stayed
     # correct despite the comment's wrong reasoning). Ticks 1-3 stay under
     # one threshold; tick 5 stays at the SAME rung (no re-fire).
+    #
+    # Story 3.8: the SAME `threshold_s` (2.5min = 150s) is reused as the
+    # interval-push watcher's own cadence (the spec's own "no new policy
+    # key"), so it fires once too, at tick 3 (elapsed 180s >= 150s) --
+    # `vcs=FakeVcs()` is injected so that fire is deterministic (success,
+    # never a real `git` subprocess against this test's own fake `_HOME`).
+    vcs = FakeVcs()
     rc = run_supervisor(
         _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
-        sleep=clock.sleep,
+        vcs=vcs, sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     kinds = [entry["kind"] for entry in entries]
     assert kinds.count("idle-nudge") == 2  # one intent, one outcome
+    assert kinds.count("stage-push") == 1  # the interval watcher's own single fire
     # `harness=` is unset, so `usage_snapshot` falls through to the real
     # `BmadLoopHarness()` default (no real `state.json` on disk), firing
     # Story 3.6's `budget-usage-stale` once on the first tick -- same as
@@ -1090,6 +1131,7 @@ def test_first_threshold_crossing_fires_a_nudge_intent_then_outcome():
         "budget-usage-stale",
         "supervisor-heartbeat",
         "supervisor-heartbeat",
+        "stage-push",
         "supervisor-heartbeat",
         "idle-nudge",
         "idle-nudge",
@@ -2864,6 +2906,7 @@ def _snapshot(
     escalated_spec_file: str | None = None,
     escalated_task_phase: str | None = None,
     deferred: tuple[DeferredStory, ...] = (),
+    tasks: tuple[TaskPhaseSnapshot, ...] = (),
 ) -> RunStatusSnapshot:
     return RunStatusSnapshot(
         paused_stage=paused_stage,
@@ -2872,6 +2915,19 @@ def _snapshot(
         escalated_spec_file=escalated_spec_file,
         escalated_task_phase=escalated_task_phase,
         deferred=deferred,
+        tasks=tasks,
+    )
+
+
+def _task_phase(
+    story_key: str,
+    phase: str,
+    *,
+    commit_sha: str | None = None,
+    branch: str = "",
+) -> TaskPhaseSnapshot:
+    return TaskPhaseSnapshot(
+        story_key=story_key, phase=phase, commit_sha=commit_sha, branch=branch
     )
 
 
@@ -3977,3 +4033,411 @@ def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
     err = capsys.readouterr().err
     assert "unevaluable" in err.lower()
     assert "1 journal line" in err.lower()
+
+
+# --- Story 3.8: stage-bound durability, and fleet-launch wiring (AD-46/FR-61) ----
+
+
+def test_a_review_verify_boundary_pushes_the_station_branch():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "dev-running"),)),
+        _snapshot(tasks=(_task_phase("3.8", "review-verify"),)),
+    ]
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert (_HOME, "loop/acme") in vcs.push_calls
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stage_pushes = [e for e in entries if e["kind"] == "stage-push"]
+    assert any(
+        e["payload"]["boundary"] == "review-verdict-recorded"
+        and e["payload"]["branch"] == "loop/acme"
+        and e["payload"]["story_key"] == "3.8"
+        and e["payload"]["outcome"] == "pushed"
+        for e in stage_pushes
+    )
+
+
+def test_a_dev_commit_landing_pushes_both_the_station_and_per_story_branch():
+    """The Always bullet's own "plus that story's own per-story branch too"
+    -- when the triggering story ran worktree-isolated (``branch``
+    non-empty)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "committing", commit_sha=None, branch="loop/3.8"),)),
+        _snapshot(
+            tasks=(_task_phase("3.8", "committing", commit_sha="abc123", branch="loop/3.8"),)
+        ),
+    ]
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert (_HOME, "loop/acme") in vcs.push_calls
+    assert (_HOME, "loop/3.8") in vcs.push_calls
+
+
+def test_a_non_isolated_story_pushes_only_the_station_branch():
+    """``branch == ""`` (never worktree-isolated) -- no second push."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "committing"),)),
+        _snapshot(tasks=(_task_phase("3.8", "done"),)),
+    ]
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert set(vcs.push_calls) == {(_HOME, "loop/acme")}
+
+
+def test_two_boundaries_in_one_tick_fire_two_stage_push_observations():
+    """Commit landing and story merging in the SAME diff -- the spec's own
+    edge-case matrix."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "committing", commit_sha=None),)),
+        _snapshot(tasks=(_task_phase("3.8", "done", commit_sha="abc123"),)),
+    ]
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    boundaries = {
+        e["payload"]["boundary"] for e in entries if e["kind"] == "stage-push"
+    }
+    assert boundaries == {"dev-commit-landed", "story-merged"}
+    assert vcs.push_calls.count((_HOME, "loop/acme")) == 2
+
+
+def test_no_run_status_snapshot_attempts_no_stage_boundary_push():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    # `run_status_snapshot_result` defaults to `None`.
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert vcs.push_calls == []
+
+
+def test_a_push_failure_registers_a_warn_and_the_tick_loop_continues():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "dev-running"),)),
+        _snapshot(tasks=(_task_phase("3.8", "review-verify"),)),
+    ]
+    vcs = FakeVcs()
+    vcs.fail_push = VcsCommandError("no network")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stage_pushes = [e for e in entries if e["kind"] == "stage-push"]
+    assert stage_pushes, "expected at least one stage-push observation"
+    failed = [e for e in stage_pushes if e["payload"]["outcome"] == "push-failed"]
+    assert failed
+    assert failed[0]["payload"]["finding"]["code"] == "MRS-SUPV-008"
+    assert failed[0]["payload"]["finding"]["severity"] == "warn"
+    # A failed push never halts the run -- the heartbeat/detach cadence is
+    # unaffected.
+    assert entries[-1]["kind"] == "supervisor-detach"
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_repo_common_root_failure_also_registers_a_warn():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "dev-running"),)),
+        _snapshot(tasks=(_task_phase("3.8", "review-verify"),)),
+    ]
+    vcs = FakeVcs()
+    vcs.fail_repo_common_root = VcsCommandError("not inside a git repository")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stage_pushes = [e for e in entries if e["kind"] == "stage-push"]
+    assert any(e["payload"]["outcome"] == "push-failed" for e in stage_pushes)
+
+
+def test_an_unexpected_exception_type_from_vcs_push_does_not_crash_the_tick():
+    """Review finding (P1, both Blind Hunter and Edge Case Hunter): the
+    previous ``_push_branch`` caught only ``VcsCommandError``. ``VcsPort``
+    is an interface -- a conforming implementation other than ``GitVcs``
+    could raise a plain ``OSError`` directly (e.g. a permission error on a
+    non-``git`` implementation), and that must degrade to the SAME
+    ``MRS-SUPV-008`` WARN + continued tick loop as a ``VcsCommandError``,
+    never propagate and crash the sidecar."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "dev-running"),)),
+        _snapshot(tasks=(_task_phase("3.8", "review-verify"),)),
+    ]
+    vcs = FakeVcs()
+    vcs.fail_push = OSError("permission denied")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stage_pushes = [e for e in entries if e["kind"] == "stage-push"]
+    failed = [e for e in stage_pushes if e["payload"]["outcome"] == "push-failed"]
+    assert failed
+    assert failed[0]["payload"]["finding"]["code"] == "MRS-SUPV-008"
+    assert failed[0]["payload"]["finding"]["severity"] == "warn"
+    # The unexpected exception type never halted the run.
+    assert entries[-1]["kind"] == "supervisor-detach"
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_story_missing_from_previous_still_fires_on_the_first_observed_tick():
+    """A story already sitting in `review-verify` the FIRST tick this run's
+    state is observed still pushes exactly once -- see
+    ``supervisor/durability.py``'s own docstring."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        tasks=(_task_phase("3.8", "review-verify"),)
+    )
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stage_pushes = [e for e in entries if e["kind"] == "stage-push"]
+    # Exactly ONE trigger for the story (never re-fired every subsequent
+    # tick, since the SAME phase persists across the whole constant
+    # snapshot).
+    review_pushes = [
+        e for e in stage_pushes if e["payload"].get("boundary") == "review-verdict-recorded"
+    ]
+    assert len(review_pushes) == 1
+
+
+def test_a_boundary_crossed_after_the_last_live_tick_is_still_pushed():
+    """Mirrors Story 3.7's own post-loop deferral flush: a story that
+    crosses a boundary AFTER this supervisor's last live tick (the run's
+    last story reaching `done` in the same instant the watched process
+    exits) is still pushed, via the post-loop flush."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    # Every LIVE tick (while `watched_alive`) sees the story still
+    # `dev-running`; only the POST-LOOP flush (called unconditionally after
+    # the loop, regardless of `watched_alive`) observes `done`.
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "dev-running"),)),
+        _snapshot(tasks=(_task_phase("3.8", "dev-running"),)),
+        _snapshot(tasks=(_task_phase("3.8", "done", commit_sha="abc123"),)),
+    ]
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stage_pushes = [e for e in entries if e["kind"] == "stage-push"]
+    boundaries = {e["payload"]["boundary"] for e in stage_pushes}
+    assert "story-merged" in boundaries
+    assert "dev-commit-landed" in boundaries
+
+
+def test_the_interval_watcher_fires_independent_of_any_stage_boundary():
+    """No stage-boundary triggers at all (``run_status_snapshot_result``
+    defaults to ``None``) -- the interval watcher is the FLOOR, wired in
+    regardless. A small ``idle_threshold_minutes`` (reused as the interval
+    cadence, per the spec's own "no new policy key") makes it fire every
+    tick against the fixed 60s ``_TICK_SECONDS`` an ``AdvancingClock``
+    advances by."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        0.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    interval_pushes = [
+        e
+        for e in entries
+        if e["kind"] == "stage-push" and e["payload"]["boundary"] == "interval"
+    ]
+    assert len(interval_pushes) == 1
+    assert all("story_key" not in e["payload"] for e in interval_pushes)
+    assert vcs.push_calls.count((_HOME, "loop/acme")) == 1
+
+
+def test_the_interval_watcher_needs_no_harness_run_id():
+    """The station-branch push targets `slug` alone -- runs even when
+    `harness_run_id` never resolved (``MRS-SUPV-003``'s own scenario)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        0.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert vcs.push_calls, "the interval watcher must not depend on harness_run_id"
+
+
+def test_the_durability_watcher_never_pushes_after_the_tick_loop_ends():
+    """The watcher's lifetime is bound to the tick loop's own: no push call
+    happens beyond what the bounded number of live ticks (plus the one
+    post-loop flush) would produce."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    vcs = FakeVcs()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        0.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    # Exactly 2 truly-alive ticks (the final `is_alive` reading that ends
+    # the loop reports False, so its own tick never re-enters the
+    # `watched_alive`-gated interval block), each past the tiny 30s
+    # threshold -- never a 3rd, unbounded, or ongoing push after this
+    # process's own return.
+    assert len(vcs.push_calls) == 2
+
+
+def test_default_vcs_construction_never_crashes_when_no_boundary_or_interval_fires():
+    """The default ``vcs: VcsPort | None = None`` -> ``GitVcs()``
+    construction is cheap and never reached for a short-lived, non-durable
+    run (the interval threshold is the default 25 minutes, far longer than
+    this test's own 2 ticks) -- every pre-existing test in this file (none
+    of which passes ``vcs=``) must stay unaffected."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer, harness=harness, sleep=_no_sleep,
+    )
+
+    assert rc == 0
