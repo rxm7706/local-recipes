@@ -127,6 +127,20 @@ class _RecordingVcs:
         # and the module docstring's "real git worktree add" paragraph).
         pass
 
+    # Story 4.2: run_teardown's AD-29 check now really calls
+    # deploy.unreachable_promotions_for_slug, which reads these three
+    # VcsPort methods -- all reads, never recorded, so nothing durable is
+    # merged and the "nothing unreachable" world this guard's clean-home
+    # scenario describes stays unaffected.
+    def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
+        return ()
+
+    def commit_paths(self, repo_root: Path, paths: tuple, message: str) -> str:  # pragma: no cover
+        return "deadbeef"
+
+    def path_has_uncommitted_changes(self, repo_root: Path, path: Path) -> bool:
+        return False
+
 
 class _RecordingFs:
     """Fakes ``FsPort`` in full (incl. ``remove_empty_dir``, unreached by

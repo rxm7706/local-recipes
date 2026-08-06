@@ -38,7 +38,9 @@ def test_registered_codes_contains_the_real_codes():
     supervisor/__main__.py adds MRS-SUPV-008 to the same area. Story 2.3's
     cli/gate.py/core/gate.py add MRS-GATE-007/008/009. Story 4.1's
     cli/deploy.py/core/promotion.py add a NEW area, MRS-DEPLOY-001/002/003.
-    Story 2.7's cli/gate.py/core/gate.py add MRS-GATE-010/011.
+    Story 2.7's cli/gate.py/core/gate.py add MRS-GATE-010/011. Story 4.2's
+    cli/init.py/cli/deploy.py add MRS-TEARDOWN-004/MRS-DEPLOY-004. Code
+    review (2026-08-06) adds MRS-TEARDOWN-005 (P1) and MRS-DEPLOY-005 (P5).
     This asserts the registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -108,6 +110,10 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DEPLOY-003",
             "MRS-GATE-010",
             "MRS-GATE-011",
+            "MRS-TEARDOWN-004",
+            "MRS-DEPLOY-004",
+            "MRS-TEARDOWN-005",
+            "MRS-DEPLOY-005",
         }
     )
 
