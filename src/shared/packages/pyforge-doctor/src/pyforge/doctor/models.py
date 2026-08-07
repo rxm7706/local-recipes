@@ -42,9 +42,10 @@ class DoctorStatus(StrEnum):
 
 
 class Source(StrEnum):
-    """The 7 wrapped instruments (closed) — one member per gather filter the
+    """The wrapped instruments (closed) — one member per gather filter the
     architecture spine names (AD-1 warden-doctor; AD-6 the five atlas Watch
-    axes; AD-3/FR-3 env-hygiene)."""
+    axes; AD-3/FR-3 env-hygiene; AD-9/FR-12 adoption, Story 4.3 — the closed
+    taxonomy EXTENDED, never opened)."""
 
     WARDEN_DOCTOR = "warden-doctor"
     STALENESS_REPORT = "staleness-report"
@@ -53,6 +54,7 @@ class Source(StrEnum):
     FEEDSTOCK_HEALTH = "feedstock-health"
     RELEASE_CADENCE = "release-cadence"
     ENV_HYGIENE = "env-hygiene"
+    ADOPTION = "adoption"
 
 
 class Partition(StrEnum):

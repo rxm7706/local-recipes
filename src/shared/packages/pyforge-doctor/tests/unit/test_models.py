@@ -119,7 +119,10 @@ def test_finding_evidence_is_defensively_copied():
     assert finding.evidence == {"k": "v"}
 
 
-def test_source_has_exactly_seven_members():
+def test_source_has_exactly_eight_members():
+    # Story 4.3 (FR-12, AD-9) extends the closed taxonomy with ADOPTION --
+    # a deliberate, reviewed addition, never an open/stringly-typed
+    # escape hatch (still a fixed, enumerable set).
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -128,6 +131,7 @@ def test_source_has_exactly_seven_members():
         "feedstock-health",
         "release-cadence",
         "env-hygiene",
+        "adoption",
     }
 
 

@@ -385,6 +385,161 @@ def test_abandonment_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
     assert "non-object row" in fails[0].message
 
 
+# --- adoption axis: composite of adoption_stage + version_downloads -------
+
+_ADOPTION_STAGE_ROWS = [
+    {
+        "conda_name": "silent-package",
+        "latest_conda_version": "0.1.0",
+        "age_days": 900,
+        "releases_30d": 0,
+        "total_downloads": 5,
+        "stage": "silent",
+    },
+    {
+        "conda_name": "declining-package",
+        "latest_conda_version": "1.0.0",
+        "age_days": 500,
+        "releases_30d": 0,
+        "total_downloads": 200,
+        "stage": "declining",
+    },
+    {
+        "conda_name": "stable-package",
+        "latest_conda_version": "2.0.0",
+        "age_days": 10,
+        "releases_30d": 2,
+        "total_downloads": 90000,
+        "stage": "stable",
+    },
+]
+
+_VERSION_DOWNLOADS_ROWS = [
+    {"version": "2.0.0", "file_count": 3, "total_downloads": 500, "upload_unix": 1},
+    {"version": "1.9.0", "file_count": 3, "total_downloads": 400, "upload_unix": 2},
+]
+
+
+def _adoption_mcp_caller(*, stage=None, version_downloads=None, raise_for=None):
+    stage = stage if stage is not None else _ADOPTION_STAGE_ROWS
+    version_downloads = (
+        version_downloads if version_downloads is not None else _VERSION_DOWNLOADS_ROWS
+    )
+    raise_for = raise_for or frozenset()
+
+    def caller(tool: str, arguments: dict) -> str:
+        if tool in raise_for:
+            raise ConnectionError(f"simulated failure: {tool}")
+        if tool == "adoption_stage":
+            return json.dumps(stage)
+        if tool == "version_downloads":
+            return json.dumps(version_downloads)
+        raise AssertionError(f"unexpected tool: {tool}")
+
+    return caller
+
+
+def test_adoption_stage_only_when_no_target_given():
+    findings = gather("adoption", mcp_caller=_adoption_mcp_caller())
+    assert all(f.source is Source.ADOPTION for f in findings)
+    # version_downloads has no fleet-wide mode -- without a target, only
+    # adoption_stage's rows are gathered.
+    assert len(findings) == len(_ADOPTION_STAGE_ROWS)
+    checks = {f.check for f in findings}
+    assert checks == {"silent-package", "declining-package", "stable-package"}
+
+
+def test_adoption_silent_stage_is_fail_declining_is_warn_other_is_ok():
+    findings = gather("adoption", mcp_caller=_adoption_mcp_caller())
+    by_check = {f.check: f for f in findings}
+    assert by_check["silent-package"].status is DoctorStatus.FAIL
+    assert by_check["declining-package"].status is DoctorStatus.WARN
+    assert by_check["stable-package"].status is DoctorStatus.OK
+
+
+def test_adoption_version_downloads_sub_call_only_runs_with_a_target():
+    findings = gather(
+        "adoption", target="stable-package", mcp_caller=_adoption_mcp_caller()
+    )
+    version_download_findings = [
+        f for f in findings if f.evidence.get("conda_name") == "stable-package"
+        and "version" in f.evidence
+    ]
+    assert len(version_download_findings) == len(_VERSION_DOWNLOADS_ROWS)
+    assert all(f.source is Source.ADOPTION for f in version_download_findings)
+    assert all(f.status is DoctorStatus.OK for f in version_download_findings)
+    assert all(f.check == "stable-package" for f in version_download_findings)
+
+
+def test_adoption_target_threads_maintainer_to_adoption_stage():
+    seen = {}
+
+    def caller(tool, arguments):
+        if tool == "adoption_stage":
+            seen["arguments"] = arguments
+        return json.dumps([])
+
+    gather("adoption", target="somemaintainer", mcp_caller=caller)
+    assert seen["arguments"]["maintainer"] == "somemaintainer"
+
+
+def test_adoption_target_threads_name_to_version_downloads():
+    seen = {}
+
+    def caller(tool, arguments):
+        if tool == "version_downloads":
+            seen["arguments"] = arguments
+        return json.dumps([])
+
+    gather("adoption", target="some-package", mcp_caller=caller)
+    assert seen["arguments"] == {"name": "some-package"}
+
+
+def test_adoption_one_sub_call_failing_does_not_hide_the_other():
+    findings = gather(
+        "adoption",
+        target="stable-package",
+        mcp_caller=_adoption_mcp_caller(raise_for=frozenset({"version_downloads"})),
+    )
+    by_source_check = {(f.source, f.check) for f in findings}
+    assert (Source.ADOPTION, "silent-package") in by_source_check
+    fail_sentinels = [f for f in findings if f.check == "doctor.sources.atlas"]
+    assert len(fail_sentinels) == 1
+    assert fail_sentinels[0].status is DoctorStatus.FAIL
+
+
+def test_adoption_cli_fallback_for_both_sub_calls():
+    def cli_runner(script_path: Path, args: list[str]):
+        if script_path.name == "adoption_stage.py":
+            return _ADOPTION_STAGE_ROWS
+        if script_path.name == "version_downloads.py":
+            return _VERSION_DOWNLOADS_ROWS
+        raise AssertionError(f"unexpected script: {script_path}")
+
+    findings = gather(
+        "adoption",
+        target="stable-package",
+        mcp_caller=_mcp_raises(ConnectionError("forced failure")),
+        cli_runner=cli_runner,
+    )
+    assert len(findings) == len(_ADOPTION_STAGE_ROWS) + len(_VERSION_DOWNLOADS_ROWS)
+
+
+def test_adoption_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
+    findings = gather(
+        "adoption", mcp_caller=_adoption_mcp_caller(stage=["not-a-dict"])
+    )
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].source is Source.ADOPTION
+
+
+def test_adoption_is_a_member_of_valid_watch_axes():
+    from pyforge.doctor.sources.atlas import VALID_WATCH_AXES
+
+    assert "adoption" in VALID_WATCH_AXES
+
+
 # --- multi-axis composition is a CLI-layer concern (Story 2.3), not this --
 
 
