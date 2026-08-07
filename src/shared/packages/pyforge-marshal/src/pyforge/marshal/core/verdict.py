@@ -455,6 +455,26 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # fold itself failed -- reconciliation could not be attempted this
 # invocation) at WARN, the same tier as MRS-DEPLOY-021: the underlying
 # action still proceeds, but the gap is reported, never silently absorbed.
+# Story 4.8 (`marshal land`, FR-60/AD-40) adds a new area, MRS-LAND-*, seven
+# codes. MRS-LAND-001 (the station branch could not be resolved/does not
+# exist) and MRS-LAND-002 (a malformed landing_rules policy layer) classify
+# ERROR, the same tier as MRS-DEPLOY-015 -- a precondition failure, refused
+# before any forge call. MRS-LAND-003 (an already-landed wave's own branch
+# retirement could not be confirmed through ForgePort) classifies WARN --
+# reported, never blocking: the landing itself already happened.
+# MRS-LAND-004 (a fired required_check resolved to a real failure, or could
+# not be read at all) classifies GATE_FAILED, the same tier as
+# MRS-GATE-001/MRS-DEPLOY-010/020 -- a real, negative CI signal.
+# MRS-LAND-005 (a fired required_check has not concluded yet) classifies
+# WARN, per AD-8's "an unevaluable/pending signal is NOT-YET-SAFE-TO-ACT,
+# never silently treated as passing" -- this run refuses to merge, but a
+# still-pending check is not itself a failure. MRS-LAND-006 (this run's own
+# hygiene/required-check evaluation surfaced a WARN-tier finding whose code
+# is not already acknowledged via cli/init.py's shared acknowledgement
+# store) classifies ERROR -- escalated, and blocks the merge: no silent
+# force. MRS-LAND-007 (ForgePort.merge_pr itself failed) classifies ERROR,
+# the same tier as MRS-DEPLOY-008/014 -- a real, irreversible-step write was
+# attempted and did not converge.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -544,6 +564,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-STATUS-001": Verdict.WARN,
     "MRS-DEPLOY-021": Verdict.WARN,
     "MRS-DEPLOY-022": Verdict.WARN,
+    "MRS-LAND-001": Verdict.ERROR,
+    "MRS-LAND-002": Verdict.ERROR,
+    "MRS-LAND-003": Verdict.WARN,
+    "MRS-LAND-004": Verdict.GATE_FAILED,
+    "MRS-LAND-005": Verdict.WARN,
+    "MRS-LAND-006": Verdict.ERROR,
+    "MRS-LAND-007": Verdict.ERROR,
 }
 
 

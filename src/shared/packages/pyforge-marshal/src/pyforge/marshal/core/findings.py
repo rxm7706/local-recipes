@@ -576,6 +576,42 @@ action still proceeds normally (this story's own architecture-wide "never
 blocking" posture for a paper-trail gap), but the gap itself is reported,
 never silently absorbed.
 
+Story 4.8's ``cli/land.py::run_land`` adds the twelfth real caller's own NEW
+area, ``MRS-LAND-*`` (FR-60/AD-40, "marshal land -- the last mile lands
+itself"): seven codes. ``MRS-LAND-001`` (the loop-home station branch
+``loop/<slug>`` could not be resolved or does not exist -- refused before
+any forge call) and ``MRS-LAND-002`` (a malformed ``landing_rules`` policy
+layer -- the SAME hard-refuse-before-any-forge-call precondition
+``MRS-DEPLOY-015`` already established for ``batch-pr``, copied verbatim
+for ``land``) both classify ``Verdict.ERROR`` -- a precondition failure,
+never "ran and found nothing". ``MRS-LAND-003`` (this wave is already
+durably merged into the base branch, but ``ForgePort`` reports the PR's own
+head branch is still open on the forge -- ``ForgePort`` has no standalone
+"delete this branch" primitive, deliberately, per this story's own Design
+Notes, so this run has no forge-side action left to retire it through)
+classifies ``Verdict.WARN`` -- reported, never blocking: the landing itself
+already happened, only its own retirement bookkeeping is unconfirmed.
+``MRS-LAND-004`` (a fired ``required_check`` landing rule resolved to a
+real, non-``"success"`` conclusion -- e.g. ``"failure"``/``"cancelled"`` --
+or could not be read at all) classifies ``Verdict.GATE_FAILED``, the same
+tier as ``MRS-GATE-001``/``MRS-DEPLOY-010``/``020``: a real, negative CI
+signal, never treated the same as "still running". ``MRS-LAND-005`` (a
+fired ``required_check`` has not concluded yet -- ``ForgePort.
+check_run_status`` returned ``None``) classifies ``Verdict.WARN``: this run
+refuses to merge, but a still-pending check is not itself a failure --
+AD-8's own "an unevaluable/pending signal is treated as NOT-YET-SAFE-TO-ACT,
+never silently treated as passing" amendment, re-run ``marshal land`` once
+the check concludes. ``MRS-LAND-006`` (this run's own hygiene/required-check
+evaluation surfaced a WARN-tier finding whose code is NOT already present
+in ``cli/init.py``'s shared, machine-scoped acknowledgement store, Story
+1.7's ``_ack_state_path``/``_read_acknowledged``) classifies
+``Verdict.ERROR`` -- escalated, and blocks the merge: an unacknowledged
+advisory is never a silent force, mirroring ``land-story``'s own "no partial
+force" precedent. ``MRS-LAND-007`` (``ForgePort.merge_pr`` itself failed --
+network/auth/conflict) classifies ``Verdict.ERROR``, the same tier as
+``MRS-DEPLOY-008``/``014``: a real, irreversible-step write was attempted
+and did not converge; the intent stays open, no outcome is journaled.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -690,6 +726,15 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # MRS-DEPLOY-022 (the cross-run journal fold itself failed, so
 # reconciliation could not be attempted this invocation -- WARN, never a
 # silent empty FoldResult).
+# Story 4.8's cli/land.py adds the twelfth real caller's own NEW area,
+# MRS-LAND-* (seven codes): MRS-LAND-001 (the station branch could not be
+# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules policy
+# layer), MRS-LAND-003 (an already-landed wave's own branch retirement
+# could not be confirmed), MRS-LAND-004 (a fired required_check resolved to
+# a real failure or could not be read), MRS-LAND-005 (a fired
+# required_check has not concluded yet), MRS-LAND-006 (an unacknowledged
+# WARN-tier finding from this run's own evaluation, escalated), and
+# MRS-LAND-007 (ForgePort.merge_pr itself failed).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -780,6 +825,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-STATUS-001",
         "MRS-DEPLOY-021",
         "MRS-DEPLOY-022",
+        "MRS-LAND-001",
+        "MRS-LAND-002",
+        "MRS-LAND-003",
+        "MRS-LAND-004",
+        "MRS-LAND-005",
+        "MRS-LAND-006",
+        "MRS-LAND-007",
     }
 )
 

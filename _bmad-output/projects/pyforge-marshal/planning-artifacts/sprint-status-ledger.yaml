@@ -66,7 +66,7 @@ development_status:
   4-5-feed-refresh-with-truth-partitioned-by-domain: review
   4-6-deploy-idempotence-and-reconciliation-of-open-intents: review
   4-7-landing-rules-as-declared-policy: review
-  4-8-marshal-land-the-last-mile-lands-itself: backlog
+  4-8-marshal-land-the-last-mile-lands-itself: done
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: backlog
   5-1-fleet-view: backlog
   5-2-per-run-detail: backlog

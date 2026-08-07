@@ -3044,13 +3044,34 @@ def run_refresh_feed(
     process: ProcessPort | None = None,
     harness: HarnessPort | None = None,
 ) -> int:
-    # Local import -- see `_gather_claimed_commits`'s own comment.
-    from .init import _home_path
-
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
     process = process if process is not None else PosixProcess()
     harness = harness if harness is not None else BmadLoopHarness()
+    data, findings = reconcile_feed(args, vcs=vcs, fs=fs, process=process, harness=harness)
+    return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+
+
+def reconcile_feed(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort,
+    fs: FsPort,
+    process: ProcessPort,
+    harness: HarnessPort,
+) -> tuple[dict[str, object], list[Finding]]:
+    """The non-printing core of ``run_refresh_feed`` -- extracted (Story
+    4.8) so ``cli/land.py``'s own resync step can reuse this SAME
+    reconciliation in-process without ``run_refresh_feed``'s own ``_emit``
+    call printing a second, spurious envelope after ``land``'s own (mirrors
+    ``cli/gate.py``'s ``evaluate_gate``/``run_evaluate`` split, the
+    established precedent for exactly this "a value-returning core, plus a
+    thin emit-and-print wrapper" shape). Ports are REQUIRED here (no
+    default-construction) -- default-port resolution stays
+    ``run_refresh_feed``'s own responsibility, the one caller that needs
+    it."""
+    # Local import -- see `_gather_claimed_commits`'s own comment.
+    from .init import _home_path
 
     project_slug = (
         args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
@@ -3081,7 +3102,7 @@ def run_refresh_feed(
             except PolicyIOError as exc:
                 findings.append(exc.finding)
                 data["stories"] = []
-                return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+                return data, findings
     effective, policy_findings = policy.compose(
         project_slug=project_slug, project=project_data, flags={}
     )
@@ -3091,7 +3112,7 @@ def run_refresh_feed(
         # Already reported via MRS-POLICY-005/006 above -- nothing further
         # to reconcile without a real project to look in.
         data["stories"] = []
-        return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+        return data, findings
 
     template = effective.merge_subject_template.value
 
@@ -3119,7 +3140,7 @@ def run_refresh_feed(
             )
         )
         data["stories"] = []
-        return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+        return data, findings
 
     combined_subjects = tuple(origin_subjects) + tuple(main_subjects)
     merged_keys = promotion.merged_story_keys(combined_subjects, template, project_slug)
@@ -3161,7 +3182,7 @@ def run_refresh_feed(
         data["resync_skipped"] = True
         data["resync_commands"] = []
 
-    return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+    return data, findings
 
 
 def _render_text_refresh_feed(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:

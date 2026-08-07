@@ -38,6 +38,10 @@ story's own Spec Change Log for the full record.
   declared name" -- the one mechanism that works for ANY future
   project-declared rule without Marshal ever knowing what the check
   actually verifies (see the story's own Design Notes).
+- ``merge_pr`` (Story 4.8, FR-60/AD-40) -- merges a PR and, in the SAME
+  forge-side write, optionally retires its head branch: ``marshal land``'s
+  one merge+retire primitive, never a separate ``delete_branch``-only call
+  (see this story's own Design Notes for why).
 """
 
 from __future__ import annotations
@@ -145,4 +149,44 @@ class ForgePort(Protocol):
         or branch) on ``repo`` -- e.g. ``"success"``/``"failure"`` -- or
         ``None`` if no such check has run at all against ``ref``. Raises
         ``ForgeCommandError`` on any ``gh`` failure."""
+        ...
+
+    def merge_pr(
+        self,
+        repo: ForgeRef,
+        number: int,
+        strategy: ForgeRef,
+        *,
+        expected_head_sha: ForgeRef,
+        delete_branch: bool,
+    ) -> None:
+        """Merges PR ``number`` on ``repo`` using ``strategy`` (one of
+        ``"merge"``/``"squash"``/``"rebase"`` -- the closed vocabulary
+        ``landing_merge_strategy`` already validates; this method trusts its
+        caller and does not re-validate), optionally deleting the PR's own
+        head branch as PART OF THE SAME forge-side write when
+        ``delete_branch`` is ``True`` (Story 4.8, AD-40's landing primitive:
+        merge and branch retirement are ONE atomic call, never two racing
+        round-trips). ``strategy``/``expected_head_sha`` are wrapped in
+        ``ForgeRef`` -- not typed bare ``str`` -- for the SAME reason
+        ``repo``/``head_branch``/etc. already are (see this module's own
+        docstring): AD-34's egress-registry-completeness guard flags any
+        bare-``str`` parameter on an egress-classified port regardless of
+        role, and neither is any more secret-shaped than those.
+
+        ``expected_head_sha`` is REQUIRED (code review, 2026-08-06, both
+        reviewers independently, the single most severe finding against
+        this story): every OTHER write in this package's landing family
+        (``land-story``'s ``merge_branch``, ``batch-pr``'s PR write) pins a
+        captured sha and re-verifies it has not moved immediately before
+        the write -- this method's FIRST version merged by PR NUMBER ALONE,
+        with no equivalent guard, so a commit landing on the branch between
+        this run's required-check poll and the merge call would be merged
+        UNVETTED. Passed through to ``gh pr merge --match-head-commit``,
+        which GitHub itself refuses atomically (a real, native primitive
+        for exactly this TOCTOU, not a caller-side re-check racing the same
+        window it is trying to close) if the PR's current head no longer
+        matches. Raises ``ForgeCommandError`` on any ``gh`` failure,
+        INCLUDING a head-commit mismatch -- a caller treats that as a hard
+        stop, never a retried or silently-corrected merge."""
         ...
