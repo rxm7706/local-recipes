@@ -199,7 +199,11 @@ def _is_kev(finding: Finding) -> bool:
         return True
     if finding.source is Source.CVE_WATCHER and evidence.get("severity") == "K":
         now_v = evidence.get("now_v")
-        return isinstance(now_v, (int, float)) and now_v > 0
+        # `not isinstance(now_v, bool)` mirrors `_epss_score`'s own guard --
+        # `bool` is an `int` subclass, so `True > 0` would otherwise count
+        # as a spurious positive KEV signal (review finding, low-probability
+        # but cheap to close given the sibling function already does this).
+        return isinstance(now_v, (int, float)) and not isinstance(now_v, bool) and now_v > 0
     return False
 
 
@@ -246,13 +250,22 @@ def rank(partitioned: Iterable[PartitionedFinding]) -> tuple[RankedPrescription,
 
     Every ranked ``RankedPrescription`` carries a ``rank_factors`` object
     naming which signals fired -- never a bare integer (AC4). Non-actionable
-    partitions (``BLOCKED``/``ACCEPTED_RISK``) are excluded from the
-    returned ranking entirely -- ranking is meaningless for a Finding
-    that isn't actionable today; Story 3.4's CLI layer is responsible for
-    still reporting them (unranked) per Story 3.1's own "never a silent
-    drop" rule."""
+    partitions (``BLOCKED``/``ACCEPTED_RISK``), AND any ``ACTIONABLE``
+    Finding that is actually clean (``DoctorStatus.OK`` -- see
+    ``_partition_one``'s "clean -- no remediation needed" case), are
+    excluded from the returned ranking entirely -- ranking is meaningless
+    for a Finding that isn't actionable today, or that has nothing left to
+    act on; Story 3.4's CLI layer is responsible for still reporting them
+    (unranked) per Story 3.1's own "never a silent drop" rule."""
+    # A clean (`DoctorStatus.OK`) Finding lands in `ACTIONABLE` too
+    # (`_partition_one`'s "every Finding lands somewhere" rule), but ranking
+    # is as meaningless for it as for BLOCKED/ACCEPTED_RISK -- there is no
+    # problem to prioritize (review finding: an earlier draft ranked clean
+    # Findings right alongside real problems).
     actionable = [
-        pf.finding for pf in partitioned if pf.partition is Partition.ACTIONABLE
+        pf.finding
+        for pf in partitioned
+        if pf.partition is Partition.ACTIONABLE and pf.finding.status is not DoctorStatus.OK
     ]
     # `key=` extracts the sort key ONCE per item and never compares the
     # `Finding`s themselves (frozen dataclasses have no `__lt__`) -- a tie
@@ -274,6 +287,16 @@ def rank(partitioned: Iterable[PartitionedFinding]) -> tuple[RankedPrescription,
 # --- Story 3.3: root-cause naming ------------------------------------------
 
 
+#: Mirrors ``sources/atlas.py::_row_check_name``'s own placeholder verbatim
+#: -- a row missing every name field normalizes to this literal, which is
+#: NOT a real feedstock identity and must never be treated as a match key
+#: (review finding: two unrelated rows both missing a name field used to
+#: correlate as if they were the same package). ``prescribe.py``'s AD-4
+#: import-surface guard forbids importing ``sources.atlas`` directly, so
+#: this is a deliberate duplicated literal, not a shared import.
+_UNKNOWN_FEEDSTOCK_CHECK = "<unknown feedstock>"
+
+
 def _find_correlated_staleness(
     finding: Finding, all_findings: Sequence[Finding]
 ) -> Finding | None:
@@ -283,7 +306,11 @@ def _find_correlated_staleness(
     Never the SAME Finding object (a Finding is never "correlated" with
     itself); ``status`` is not filtered here -- any staleness signal for
     the same package is evidence of a lag, regardless of its own
-    WARN/FAIL tier."""
+    WARN/FAIL tier. A ``check`` of ``_UNKNOWN_FEEDSTOCK_CHECK`` never
+    matches, even against another Finding sharing that same placeholder --
+    "both unidentified" is not evidence of correlation."""
+    if finding.check == _UNKNOWN_FEEDSTOCK_CHECK:
+        return None
     for other in all_findings:
         if (
             other is not finding

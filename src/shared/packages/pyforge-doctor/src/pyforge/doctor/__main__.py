@@ -489,8 +489,16 @@ def _run_monitor(args: argparse.Namespace) -> int:
 
 def _action_text(pf: prescribe.PartitionedFinding) -> str:
     """Story 3.4's WHAT-TO-DO text, distinct from ``root_cause``'s WHY --
-    derived from the partition, never duplicating the root-cause string."""
+    derived from the partition, never duplicating the root-cause string.
+
+    A clean (``DoctorStatus.OK``) ``Finding`` lands in ``ACTIONABLE`` too
+    (``prescribe._partition_one``'s "every Finding lands somewhere" rule),
+    but with ``reason="clean -- no remediation needed"`` -- review finding:
+    this branch used to render that case as ``"address X"`` regardless,
+    telling the operator to remediate something that already passed."""
     if pf.partition is Partition.ACTIONABLE:
+        if pf.finding.status is DoctorStatus.OK:
+            return pf.reason
         return f"address {pf.finding.check} ({pf.finding.source.value})"
     if pf.partition is Partition.BLOCKED:
         return f"blocked -- {pf.reason}"
@@ -548,8 +556,13 @@ def _run_diagnose(args: argparse.Namespace) -> int:
     for axis in _DEFAULT_DIAGNOSE_AXES:
         findings += atlas.gather(axis, target=args.target)
 
-    target_path = Path(args.target)
-    if target_path.is_dir():
+    # `Path("").is_dir()` resolves to the CWD and returns True (review
+    # finding) -- `--target ""` would otherwise silently scope the local
+    # engine/env checks to wherever `doctor` happens to be invoked from,
+    # rather than the AC's own "when TARGET is ALSO an existing local
+    # directory" intent for a genuinely-given target.
+    target_path = Path(args.target) if args.target.strip() else None
+    if target_path is not None and target_path.is_dir():
         findings += warden_source.gather(target_path)
         findings += env_hygiene.gather(target_path)
 

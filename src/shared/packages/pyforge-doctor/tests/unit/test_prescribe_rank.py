@@ -110,6 +110,16 @@ def test_severity_k_with_zero_now_v_is_not_kev():
     assert result[0].rank_factors["kev"] is False
 
 
+def test_severity_k_with_boolean_now_v_is_not_kev():
+    """Review finding: `bool` is an `int` subclass, so `now_v=True` (never
+    expected from real `cve_watcher` rows, but reachable from a malformed
+    or synthetic row) must not count as a positive KEV signal purely
+    because `True > 0` -- mirrors `_epss_score`'s own existing bool guard."""
+    finding = _pf(evidence={"severity": "K", "now_v": True})
+    result = rank([finding])
+    assert result[0].rank_factors["kev"] is False
+
+
 def test_1_based_rank_and_dense_sequential():
     findings = [_pf(check=f"pkg-{i}") for i in range(4)]
     result = rank(findings)
@@ -128,6 +138,20 @@ def test_only_actionable_partition_is_ranked():
 def test_empty_actionable_partition_returns_empty_tuple():
     blocked = _pf(partition=Partition.BLOCKED)
     assert rank([blocked]) == ()
+
+
+def test_clean_ok_finding_is_excluded_from_ranking_even_though_actionable():
+    """Review finding: `_partition_one` classifies a clean (`DoctorStatus.
+    OK`) Finding as `ACTIONABLE` ("nothing to do" is trivially actionable),
+    but ranking it alongside real problems is meaningless -- there is
+    nothing to prioritize."""
+    clean = _pf(status=DoctorStatus.OK, partition=Partition.ACTIONABLE, check="clean-pkg")
+    real_problem = _pf(
+        status=DoctorStatus.FAIL, partition=Partition.ACTIONABLE, check="broken-pkg"
+    )
+    result = rank([clean, real_problem])
+    assert len(result) == 1
+    assert result[0].finding.check == "broken-pkg"
 
 
 def test_ties_do_not_raise_a_type_error_comparing_findings():

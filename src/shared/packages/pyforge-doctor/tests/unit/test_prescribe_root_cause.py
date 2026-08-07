@@ -92,6 +92,29 @@ def test_root_cause_is_never_empty():
         assert name_root_cause(finding, [finding])
 
 
+def test_does_not_correlate_two_unrelated_findings_both_missing_a_feedstock_name():
+    """Review finding: `sources/atlas.py::_row_check_name` normalizes ANY
+    row missing every name field to the same placeholder,
+    `"<unknown feedstock>"`. Before this fix, two rows from DIFFERENT,
+    unrelated packages that both hit that fallback would match on
+    `check == check` and be reported as correlated -- a confidently wrong
+    root cause, not an honest "no correlated staleness signal"."""
+    cve = _finding(
+        Source.CVE_WATCHER,
+        "<unknown feedstock>",
+        status=DoctorStatus.FAIL,
+        evidence={"severity": "C", "delta": 1, "now_v": 1},
+    )
+    unrelated_staleness = _finding(
+        Source.STALENESS_REPORT,
+        "<unknown feedstock>",
+        evidence={"age_days": 999, "latest_conda_version": "9.9.9"},
+    )
+    root_cause = name_root_cause(cve, [cve, unrelated_staleness])
+    assert "999" not in root_cause
+    assert "no correlated staleness" in root_cause.lower()
+
+
 def test_does_not_correlate_a_finding_with_itself():
     # A CVE Finding is never treated as "correlated" with itself even if it
     # happened to also carry Source.STALENESS_REPORT-shaped evidence keys.

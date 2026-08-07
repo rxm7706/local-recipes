@@ -167,6 +167,28 @@ def test_diagnose_prescribe_blocked_and_accepted_risk_only_still_lists_them(
     assert all(p["rank"] is None for p in document["prescriptions"])
 
 
+def test_diagnose_prescribe_clean_finding_action_is_not_a_remediation_instruction(
+    monkeypatch, capsys
+):
+    """Review finding: a clean (`DoctorStatus.OK`) Finding is classified
+    `ACTIONABLE` ("nothing to do" is trivially actionable), but the
+    prescription's `action` text used to render `"address X (source)"`
+    regardless -- telling the operator to remediate something that already
+    passed. It must reflect the underlying `reason` instead, and must not
+    receive a rank (ranking a clean Finding is meaningless)."""
+    _stub_atlas(
+        monkeypatch,
+        {"staleness": (_finding(Source.STALENESS_REPORT, "clean-pkg", status=DoctorStatus.OK),)},
+    )
+    _stub_no_directory_checks(monkeypatch)
+    main(["diagnose", "--target", "xyz", "--prescribe", "--json"])
+    document = json.loads(capsys.readouterr().out)
+    prescription = document["prescriptions"][0]
+    assert prescription["partition"] == "actionable"
+    assert "address" not in prescription["action"]
+    assert prescription["rank"] is None
+
+
 def test_diagnose_prescribe_human_output_shows_prescription_section(monkeypatch, capsys):
     _stub_atlas(
         monkeypatch,
@@ -204,6 +226,18 @@ def test_diagnose_target_that_is_not_a_directory_skips_engine_env_checks(
     _stub_atlas(monkeypatch, {})
     _stub_no_directory_checks(monkeypatch)  # would raise if called
     main(["diagnose", "--target", "rxm7706", "--json"])
+    document = json.loads(capsys.readouterr().out)
+    assert document["findings"] == []
+
+
+def test_diagnose_blank_target_does_not_scope_engine_env_checks_to_cwd(monkeypatch, capsys):
+    """Review finding: `Path("").is_dir()` resolves to the CWD and returns
+    True -- an empty (but present) `--target ""` used to silently scope the
+    local engine/env checks to wherever `doctor` happens to be invoked
+    from, rather than refusing like any other non-directory target."""
+    _stub_atlas(monkeypatch, {})
+    _stub_no_directory_checks(monkeypatch)  # would raise if called
+    main(["diagnose", "--target", "", "--json"])
     document = json.loads(capsys.readouterr().out)
     assert document["findings"] == []
 
