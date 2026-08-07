@@ -221,6 +221,25 @@ def seed(
             f"sync further edits"
         )
 
+    # Review finding: `registry.register` (called at the end of a
+    # successful run) refuses outright against a missing `readme_path` --
+    # "this module never fabricates a whole README from nothing" -- but
+    # nothing checked for that UNTIL after the remote project was already
+    # created and `state.write` had already recorded it. The result: the
+    # CLI reported a hard failure, yet a real project existed and state.py
+    # called the slug seeded, with no way to complete registration short of
+    # a manual `registry.register` call or hand-authoring the README. Moved
+    # here, before ANY transport call, so a missing README refuses cleanly
+    # up front -- consistent with this function's own "writes nothing
+    # before every precondition it can check without I/O is satisfied"
+    # design.
+    if not readme_path.is_file():
+        raise errors.HeraldError(
+            f"cannot seed {slug!r}: no README.md at {readme_path} -- "
+            f"registry.register requires an existing README to add its "
+            f"§ Design project section to; create one before seeding"
+        )
+
     persona = _persona_from_slug(slug)
     prototype_filename = f"PyForge {persona}.dc.html"
     prototype_path = deck_dir / "project" / prototype_filename
@@ -248,6 +267,24 @@ def seed(
 
     project = transport.create_project(
         name=f"PyForge {persona} deck", design_system_id=MODERNIST_DESIGN_SYSTEM_ID
+    )
+    # Review finding: recording the new project used to happen only AFTER
+    # every subsequent transport call succeeded. A failure anywhere in
+    # finalize_plan/create_support_js/copy_files/write_files (an etag
+    # conflict, a network error, a malformed plan response -- all real
+    # TransportCallError/TransportUnreachableError paths) left the
+    # already-created remote project untracked by state.py's own conflict
+    # gate, so a retry's `existing_state is not None` check passed cleanly
+    # and `create_project` ran AGAIN -- a second, orphaned duplicate
+    # project for the same slug. `state.write` is moved here, immediately
+    # after the one truly stateful call this pipeline makes, so ANY later
+    # failure still leaves the record `seed()`'s own FIRST conflict check
+    # reads -- a retry now refuses loudly (naming the already-created
+    # project) instead of silently duplicating it.
+    state.write(
+        resolved_state_path,
+        slug,
+        state.DeckState(project_id=project.project_id, etags={}, last_pull=None),
     )
     plan = transport.finalize_plan(
         project_id=project.project_id,
@@ -283,11 +320,6 @@ def seed(
         plan_token=plan.plan_token,
     )
 
-    state.write(
-        resolved_state_path,
-        slug,
-        state.DeckState(project_id=project.project_id, etags={}, last_pull=None),
-    )
     registry.register(
         readme_path=readme_path,
         project_name=f"PyForge {persona} deck",

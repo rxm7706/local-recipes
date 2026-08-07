@@ -222,13 +222,32 @@ def _relay_prompt(tool: str, arguments: Mapping[str, Any]) -> str:
     )
 
 
-def _parse_relay(tool: str, output: str) -> ToolResult:
+def _parse_relay(tool: str, output: str, *, prompt: str) -> ToolResult:
     """The relay contract's own wire format: exactly one sentinel-wrapped
     block, result or error, in ``output``. Neither match, both matching, or
     an empty capture inside a match are each a protocol failure -- the
     nested agent did not honour the mechanical instruction, and guessing at
     intent here would silently launder a broken relay into a plausible
-    answer."""
+    answer.
+
+    Review finding: ``_relay_prompt``'s own instructional text necessarily
+    contains a COMPLETE, self-matching sentinel pair for both the result
+    and the error marker (it has to, to tell the nested agent what to
+    print) -- if the nested agent ever echoes any part of that prompt back
+    to stdout before its real answer (a plausible headless-CLI behaviour
+    this module never previously ruled out), the sentinel regexes would
+    happily match the ECHOED INSTRUCTIONS instead of the genuine wrapped
+    answer, for ``_call_text`` callers (``get_design_prompt``) silently
+    returning garbled prose as if it were the real result. Since the exact
+    prompt text sent for THIS call is known here, a leading echo of it is
+    stripped before searching -- the nested agent's real answer, if it
+    echoes anything at all, always follows what it echoed, never precedes
+    it. A partial/reformatted echo (wrapped, reflowed, missing a trailing
+    newline) will not match this exact prefix check and falls through to
+    searching the whole output, same as this function's behaviour before
+    this fix -- a best-effort narrowing of the KNOWN, demonstrated
+    collision, not a claim of eliminating every conceivable echo shape."""
+    output = output.removeprefix(prompt)
     result_match = _RESULT_RE.search(output)
     error_match = _ERROR_RE.search(output)
     if result_match and error_match:
@@ -435,8 +454,9 @@ class AgentSdkTransport:
         if launcher is None:
             launcher = SubprocessAgentLauncher()
             self._launcher = launcher
+        prompt = _relay_prompt(tool, arguments)
         result = launcher.run(
-            prompt=_relay_prompt(tool, arguments),
+            prompt=prompt,
             allowed_tools=[ALLOWED_TOOL_PREFIX + tool],
         )
         if result.failed:
@@ -451,7 +471,7 @@ class AgentSdkTransport:
                 f"could not run the nested agent relay for claude-design "
                 f"{tool}: {detail}"
             )
-        tool_result = _parse_relay(tool, result.stdout)
+        tool_result = _parse_relay(tool, result.stdout, prompt=prompt)
         text = (
             sanitize_payload(tool_result.text)
             if tool_result.is_error

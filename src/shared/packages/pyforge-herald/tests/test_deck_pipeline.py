@@ -32,7 +32,9 @@ class FakeTransport:
     """A hand-written ``DesignTransport`` double recording every call, in
     order, as ``(method, kwargs)``."""
 
-    def __init__(self, *, prompt="PROMPT", project=None, plan=None):
+    def __init__(
+        self, *, prompt="PROMPT", project=None, plan=None, fails: dict | None = None
+    ):
         self.calls: list[tuple[str, dict]] = []
         self._prompt = prompt
         self._project = project or ProjectRef(
@@ -41,17 +43,26 @@ class FakeTransport:
         self._plan = plan or PlanHandle(
             plan_token="tok", base_etags={"support.js": "0", "deck-stage.js": "0"}
         )
+        # Keyed by method name -- raises that exception INSTEAD OF the
+        # normal canned return, after still recording the call.
+        self._fails: dict = dict(fails or {})
 
     def get_design_prompt(self, **kwargs):
         self.calls.append(("get_design_prompt", kwargs))
+        if "get_design_prompt" in self._fails:
+            raise self._fails["get_design_prompt"]
         return self._prompt
 
     def create_project(self, **kwargs):
         self.calls.append(("create_project", kwargs))
+        if "create_project" in self._fails:
+            raise self._fails["create_project"]
         return self._project
 
     def finalize_plan(self, **kwargs):
         self.calls.append(("finalize_plan", kwargs))
+        if "finalize_plan" in self._fails:
+            raise self._fails["finalize_plan"]
         return self._plan
 
     def create_support_js(self, **kwargs):
@@ -233,6 +244,72 @@ def test_seed_registers_the_readme_design_project_section(tmp_path: Path):
     assert registered.file_url == "https://claude.ai/design/p/p-new"
 
 
+def test_seed_records_state_immediately_so_a_mid_pipeline_failure_never_duplicates_the_project(
+    tmp_path: Path,
+):
+    """Review finding (Blind Hunter): `state.write` used to happen only
+    after EVERY transport call succeeded. A failure anywhere between
+    `create_project` and the final `state.write`/`registry.register` left
+    the already-created remote project untracked by state.py's own
+    conflict gate -- a retry's `existing_state is not None` check passed
+    cleanly and `create_project` ran AGAIN, producing a second, orphaned
+    duplicate project for the same slug. `state.write` now happens
+    immediately after `create_project` succeeds, so this exact retry
+    refuses instead."""
+    _make_deck(tmp_path, "pyforge-warden")
+    failing_transport = FakeTransport(
+        fails={"finalize_plan": RuntimeError("simulated: etag conflict")}
+    )
+    with pytest.raises(RuntimeError, match="etag conflict"):
+        seed(
+            failing_transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+        )
+    # The project WAS created (that call succeeded) and state.py already
+    # knows about it, even though the overall seed() call raised.
+    assert "create_project" in failing_transport.names()
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded == state.DeckState(project_id="p-new", etags={}, last_pull=None)
+
+    # A retry must refuse -- never call create_project a second time.
+    retry_transport = FakeTransport()
+    with pytest.raises(SeedConflictError, match="already seeded"):
+        seed(
+            retry_transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+        )
+    assert retry_transport.calls == []
+
+
+def test_seed_refuses_a_missing_readme_before_any_transport_call(tmp_path: Path):
+    """Review finding (Edge Case Hunter): `registry.register` (called at
+    the very end of a successful run) refuses against a missing
+    `readme_path` -- "this module never fabricates a whole README from
+    nothing" -- but nothing checked for that up front. The old sequence let
+    a real project get created and `state.write` succeed, then failed on
+    `registry.register`, leaving a slug permanently marked seeded in
+    state.py with no way to complete registration short of manual
+    intervention. Now refuses before touching the local prover or any
+    transport call at all."""
+    deck_dir = tmp_path / "presentations" / "pyforge-warden"
+    (deck_dir / "project").mkdir(parents=True)
+    (deck_dir / "project" / "PyForge Warden.dc.html").write_text(
+        "<html>proto</html>", encoding="utf-8"
+    )
+    # Deliberately NO README.md.
+    transport = FakeTransport()
+    prover = FakeProver()
+    with pytest.raises(HeraldError, match="no README.md"):
+        seed(transport, slug="pyforge-warden", repo_root=tmp_path, prover=prover)
+    assert prover.calls == []
+    assert transport.calls == []
+    assert state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden") is None
+
+
 # --- refusals and their "writes nothing" guarantee ---------------------------
 
 
@@ -308,6 +385,7 @@ def test_seed_refuses_a_malformed_registry_section_rather_than_treating_it_as_un
 def test_seed_refuses_a_missing_local_prototype_before_proving(tmp_path: Path):
     deck_dir = tmp_path / "presentations" / "pyforge-warden"
     (deck_dir / "project").mkdir(parents=True)
+    (deck_dir / "README.md").write_text("# pyforge-warden\n", encoding="utf-8")
     transport = FakeTransport()
     prover = FakeProver()
     with pytest.raises(HeraldError, match="no local prototype"):

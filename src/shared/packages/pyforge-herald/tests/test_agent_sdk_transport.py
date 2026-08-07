@@ -312,6 +312,28 @@ def test_missing_marker_raises_transport_unreachable(fake_launcher):
         transport.get_design_prompt()
 
 
+def test_echoed_prompt_before_the_real_answer_is_not_mistaken_for_it(fake_launcher):
+    """Review finding: `_relay_prompt`'s own instructional text contains a
+    complete, self-matching sentinel pair for BOTH the result and error
+    marker (it has to, to tell the nested agent what to print) -- if the
+    nested agent ever echoes the prompt back before its real answer, the
+    OLD code's `.search()` (first match wins) would extract the echoed
+    INSTRUCTIONAL FILLER text as if it were the genuine tool result. The
+    exact prompt sent for this call is known, so a leading echo of it is
+    stripped before searching."""
+    echoed_prompt = _relay_prompt(GET_DESIGN_PROMPT_TOOL, {})
+    stdout = (
+        echoed_prompt
+        + "\n"
+        + "<<<HERALD_TOOL_RESULT>>>the real design prompt<<<END_HERALD_TOOL_RESULT>>>"
+    )
+    transport, _ = _transport(
+        fake_launcher,
+        {GET_DESIGN_PROMPT_TOOL: AgentLaunchResult(stdout=stdout, failed=False)},
+    )
+    assert transport.get_design_prompt() == "the real design prompt"
+
+
 def test_both_markers_present_raises_transport_unreachable(fake_launcher):
     garbled = "<<<HERALD_TOOL_RESULT>>>x<<<END_HERALD_TOOL_RESULT>>><<<HERALD_TOOL_ERROR>>>y<<<END_HERALD_TOOL_ERROR>>>"
     transport, _ = _transport(

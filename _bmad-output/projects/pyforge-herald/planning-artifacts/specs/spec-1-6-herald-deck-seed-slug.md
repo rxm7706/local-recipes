@@ -3,8 +3,8 @@ title: 'herald deck seed <slug>'
 type: 'feature'
 created: '2026-08-07'
 status: 'done'
-review_loop_iteration: 0
-followup_review_recommended: true
+review_loop_iteration: 1
+followup_review_recommended: false
 context: []
 warnings: []
 ---
@@ -244,3 +244,56 @@ mismatches.
 
 All three patches applied; full suite re-verified green after patching: **346 passed, 2 skipped**;
 `ruff format --check` and `ruff check` clean on every file this story touches.
+
+### 2026-08-07 -- Epic 1 close-out adversarial review (Blind Hunter + Edge Case Hunter, parallel, no shared context) -- the genuine independent review pass this spec's own `followup_review_recommended: true` called for
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2 (high 1, medium 1)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[high]` `[patch]` (Blind Hunter) **A mid-pipeline transport failure orphaned a duplicate
+    Design project on retry.** `state.write`/`registry.register` only ran after ALL of
+    `finalize_plan`/`create_support_js`/`copy_files`/`write_files` succeeded. Any of those four
+    (an etag conflict, a network error, a malformed plan response -- all realistic
+    `TransportCallError`/`TransportUnreachableError` paths) raising left the already-created remote
+    project completely untracked by state.py's own conflict gate (`seed`'s FIRST check). A retry
+    passed both `state.read`/`registry.read` cleanly and called `create_project` AGAIN -- exactly
+    the double-project-creation failure mode the earlier self-review pass (above) believed it had
+    closed via the registry-fallback fix, which only protects the "hand-seeded before state.py
+    existed" bootstrap case, not any failure between `create_project` and the final state/registry
+    writes. Fixed: `state.write` now runs immediately after `create_project` succeeds, before
+    `finalize_plan` -- the SAME unconditional `etags={}`/`last_pull=None` payload this call always
+    wrote, just earlier, so a retry's own first conflict check now sees it regardless of where a
+    later step fails. New test:
+    `test_seed_records_state_immediately_so_a_mid_pipeline_failure_never_duplicates_the_project`
+    (injects a `finalize_plan` failure via a new `FakeTransport(fails={...})` seam, asserts the
+    project was created + recorded, then asserts a fresh `seed()` call refuses rather than calling
+    `create_project` a second time).
+  - `[medium]` `[patch]` (Edge Case Hunter) **A missing `README.md` let the pipeline run all the
+    way to a real project creation before failing.** `registry.read(readme_path)` (the pre-flight
+    conflict check) tolerates a missing README (`FileNotFoundError` -> "nothing registered yet"),
+    but `registry.register` (called at the very end) refuses outright against one -- "this module
+    never fabricates a whole README from nothing." The old sequence: create the project, populate
+    it, `state.write` succeeds (recording it seeded), THEN `registry.register` raises. The CLI
+    reported a hard failure while a real, populated project existed and state.py called the slug
+    permanently seeded, with no way to complete registration short of a manual `registry.register`
+    call or hand-authoring the README -- and (compounding with the finding above, now fixed) a
+    retry would have hit `SeedConflictError` rather than ever getting a chance to finish. Fixed: a
+    pre-flight `readme_path.is_file()` check now runs before ANY transport call (before even the
+    local prover), consistent with this function's own "writes nothing before every precondition it
+    can check without I/O" design. New test:
+    `test_seed_refuses_a_missing_readme_before_any_transport_call`. One existing test
+    (`test_seed_refuses_a_missing_local_prototype_before_proving`) needed a README added to its
+    fixture, since it was deliberately testing prototype-absence and the new, earlier README check
+    would otherwise mask that scenario.
+
+**Follow-up review recommendation: false** -- both findings are isolated to the seed pipeline's own
+write-ordering and pre-flight-check sequencing, each covered by a dedicated new test proving the
+fix; this pass is the independent review the prior self-review pass explicitly asked for, and it
+surfaced exactly the class of gap (partial-failure state consistency) that a same-agent self-review
+is structurally least likely to catch on its own.
+
+**Re-verification (2026-08-07, after both patches):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- **349 passed, 2 skipped** (whole-package total, incl. Story 1.3's own
+close-out patch landed in the same pass); `ruff format --check`/`ruff check` clean.

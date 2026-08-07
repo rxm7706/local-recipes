@@ -3,7 +3,7 @@ title: 'Fallback transport adapter (AgentSdkTransport)'
 type: 'feature'
 created: '2026-08-07'
 status: 'done'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 warnings: []
@@ -218,3 +218,41 @@ docstring/behavior mismatches.
 
 All three patches applied; full suite re-verified green after patching: **311 passed, 2 skipped**;
 `ruff format --check` and `ruff check` clean on every file this story touches.
+
+### 2026-08-07 -- Epic 1 close-out adversarial review (Blind Hunter + Edge Case Hunter, parallel, no shared context)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1 (high 1)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[high]` `[patch]` (Blind Hunter) **The relay prompt's own instructional text contains a
+    complete, self-matching sentinel pair for BOTH the result and error marker** (it has to, to
+    tell the nested agent what to print). Concrete demonstration: `_relay_prompt(...)`'s own return
+    value, fed straight back into `_parse_relay`, is itself a valid match for `_RESULT_RE` --
+    `<<<HERALD_TOOL_RESULT>>>` followed eventually by `<<<END_HERALD_TOOL_RESULT>>>` with ordinary
+    instructional prose between them. If the nested `claude -p` process ever echoes any part of its
+    own prompt back to stdout before its real answer (a plausible headless-CLI behaviour this
+    module never previously ruled out), `.search()` (first match wins) would extract that echoed
+    filler as if it were the genuine tool result -- for `_call_text` callers (`get_design_prompt`)
+    this silently returns garbled prose as the "real" design-system prompt, passing `deck_pipeline.
+    seed`'s `if not prompt:` guard cleanly since the garbage is non-empty. Fixed: the exact prompt
+    sent for a given call is now known at the parse site (`_parse_relay(tool, output, *, prompt)`),
+    and a leading echo of it is stripped before searching -- the nested agent's real answer, if it
+    echoes anything at all, always follows what it echoed, never precedes it. A
+    partial/reformatted echo would not match this exact prefix check and falls through to the
+    original whole-output search, an explicitly documented residual limitation (best-effort
+    narrowing of the KNOWN, demonstrated collision, not a claim of eliminating every conceivable
+    echo shape). New test: `test_echoed_prompt_before_the_real_answer_is_not_mistaken_for_it`,
+    using the real `_relay_prompt` output as the synthetic echo.
+  - `[none]` (Edge Case Hunter) No genuine target/maintainer-scoping divergence or marshalling
+    round-trip issue found across the 8 port methods (nested objects, non-ASCII, long file
+    contents) -- confirmed, no fix needed.
+
+**Follow-up review recommendation: false** -- the one patch is isolated to the relay's parse
+boundary, covered by a dedicated new test proving the fix against the exact demonstrated
+collision; no new design questions opened.
+
+**Re-verification (2026-08-07, after the patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- **349 passed, 2 skipped** (whole-package total, incl. Story 1.6's own
+tests landed in the same close-out pass); `ruff format --check`/`ruff check` clean.
