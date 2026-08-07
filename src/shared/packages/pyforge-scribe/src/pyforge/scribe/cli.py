@@ -2,10 +2,10 @@
 
 The CLI is the sole public contract: `capture` (direct write, Wave 1, or
 `--promote` scan-classify-propose-confirm, Story 1.3), `graph compile
-[--nightly]` and `recall <query>` (harmless stub subcommands so the
-top-level shape never changes between epics — Epic 2 owns their real
-implementation). Other components integrate with Scribe via this CLI, never
-by importing internal modules directly (AD-7).
+[--nightly]` (Story 2.2/2.3 -- rebuilds the compiled graph, unattended) and
+`recall <query>` (Story 2.4 -- grounded, cited retrieval over that compiled
+graph). Other components integrate with Scribe via this CLI, never by
+importing internal modules directly (AD-7).
 """
 
 from __future__ import annotations
