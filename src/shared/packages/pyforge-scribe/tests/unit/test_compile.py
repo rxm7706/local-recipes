@@ -134,6 +134,84 @@ def test_malformed_memory_entry_is_skipped_with_warning_not_aborted(
     assert any("broken.md" in w for w in result.warnings)
 
 
+def test_non_utf8_commit_message_is_replaced_not_a_crash(tmp_path: Path, memory_root: Path) -> None:
+    """Review finding: `text=True` with no `encoding=`/`errors=` decodes
+    `git log`'s output with the locale's preferred encoding and
+    `errors="strict"` -- a commit authored with non-UTF-8 content used to
+    raise an uncaught `UnicodeDecodeError` (a `ValueError` subclass NOT
+    caught by the surrounding `except (OSError, subprocess.TimeoutExpired)`),
+    crashing the whole compile instead of degrading like every other
+    surface."""
+    capture(memory_root, "feedback", "content")
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "test@example.com")
+    _git(tmp_path, "config", "user.name", "Test")
+    (tmp_path / "file.txt").write_text("content\n", encoding="utf-8")
+    _git(tmp_path, "add", "-A")
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "commit \xff\xfe not valid utf-8".encode("latin-1")],
+        cwd=str(tmp_path),
+        check=True,
+        capture_output=True,
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+
+    commit_ids = [n.id for n in store.iter_nodes() if n.id.startswith("commit:")]
+    assert len(commit_ids) == 1
+
+
+def test_memory_file_removed_between_the_two_read_passes_is_skipped_not_a_crash(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: `.claude/memory/<type>/*.md` is globbed and parsed
+    TWICE -- once in `_read_memory_surface`, again in
+    `_apply_supersession`. The second pass's `parse_capture_file` call
+    only caught `ValueError`, so a file that existed during the first scan
+    but was removed before the second (a real race an unattended nightly
+    compile can hit) used to raise an uncaught `FileNotFoundError` and
+    crash the whole compile."""
+    import pyforge.scribe.compile as compile_module
+    from pyforge.scribe.models import parse_capture_file as real_parse_capture_file
+
+    capture(memory_root, "feedback", "content")
+    call_count = {"n": 0}
+
+    def _flaky_parse(path):
+        call_count["n"] += 1
+        if call_count["n"] == 2:
+            raise FileNotFoundError(f"simulated: {path} vanished between scans")
+        return real_parse_capture_file(path)
+
+    monkeypatch.setattr(compile_module, "parse_capture_file", _flaky_parse)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+
+    assert result.node_count == 1
+    assert any("supersession" in w for w in result.warnings)
+
+
+def test_data_named_directory_outside_dot_claude_is_not_excluded(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: `_EXCLUDED_DIR_NAMES` matched the bare name "data"
+    ANYWHERE in a path, silently dropping a legitimate CHANGELOG.md/
+    .memlog.md/*retro*.md under any directory literally named "data" --
+    "data" is only meant to exclude THIS repo's own `.claude/data`."""
+    capture(memory_root, "feedback", "content")
+    other_data_dir = tmp_path / "src" / "mypackage" / "data"
+    other_data_dir.mkdir(parents=True)
+    (other_data_dir / "CHANGELOG.md").write_text("# Changes\n\nsomething\n", encoding="utf-8")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+
+    doc_ids = [n.id for n in store.iter_nodes() if n.id.startswith("doc:")]
+    assert doc_ids == ["doc:src/mypackage/data/CHANGELOG.md"]
+
+
 def test_compile_never_prompts(tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Unattended (FR-11): patch builtins.input to raise if ever called."""
     capture(memory_root, "feedback", "content")

@@ -212,12 +212,32 @@ def _read_retro_surface(repo_root: Path) -> list[GraphNode]:
     ]
 
 
+def _is_excluded(parts: tuple[str, ...]) -> bool:
+    """Review finding: matching bare directory NAMES anywhere in the path
+    (the original approach) silently drops a legitimate CHANGELOG.md/
+    .memlog.md/*retro*.md living under ANY directory literally named
+    ``data`` (e.g. ``src/mypackage/data/CHANGELOG.md``) -- ``data`` is only
+    meant to exclude THIS repo's own ``.claude/data`` (the graph store's
+    gitignored home), so it is matched as the adjacent pair
+    ``(".claude", "data")`` instead of the bare name. Every other excluded
+    name (``.git``, ``node_modules``, ``dist``, ...) is unambiguous enough
+    to keep matching anywhere."""
+    for index, part in enumerate(parts):
+        if part == "data":
+            if index > 0 and parts[index - 1] == ".claude":
+                return True
+            continue
+        if part in _EXCLUDED_DIR_NAMES:
+            return True
+    return False
+
+
 def _rglob_excluding(repo_root: Path, pattern: str) -> list[Path]:
     results = []
     for path in sorted(repo_root.glob(pattern)):
         if not path.is_file():
             continue
-        if any(part in _EXCLUDED_DIR_NAMES for part in path.relative_to(repo_root).parts[:-1]):
+        if _is_excluded(path.relative_to(repo_root).parts[:-1]):
             continue
         results.append(path)
     return results
@@ -260,6 +280,8 @@ def _read_git_surface(repo_root: Path, max_commits: int, warnings: list[str]) ->
             cwd=str(repo_root),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
             check=False,
         )
@@ -324,6 +346,18 @@ def _apply_supersession(
                 record = parse_capture_file(path)
             except ValueError:
                 continue  # already warned in _read_memory_surface
+            except OSError as exc:
+                # This directory was already scanned once in
+                # _read_memory_surface -- a file that existed then can
+                # legitimately be gone by the time this second pass reaches
+                # it (e.g. a concurrent `scribe capture` cleanup, or simply
+                # normal repo activity during an unattended nightly run).
+                # Review finding: an earlier draft only caught ValueError
+                # here, so this re-read's own FileNotFoundError crashed the
+                # whole compile instead of degrading like every other
+                # surface.
+                warnings.append(f"skipped {path} during supersession pass: {exc}")
+                continue
             if not record.supersedes:
                 continue
             target_id = f"memory:{record.supersedes}"
