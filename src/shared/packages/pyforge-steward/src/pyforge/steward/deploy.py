@@ -13,6 +13,10 @@ commit + push to the currently checked-out branch) — together the FR-9
 reconciled-push behavior: bare `steward deploy dashboard` builds, diffs, and
 only commits+pushes on a real difference (AD-4 — no daemon, no new workflow;
 the operator or an existing workflow invokes the CLI).
+
+Story 2.3 slice: `--dry-run` on the same `dashboard` verb — build+diff,
+print, never commit/push. No new primitive; `_run_dashboard` just gains a
+third branch alongside `--build`/bare-reconcile.
 """
 
 from __future__ import annotations
@@ -148,15 +152,20 @@ _DEPLOY_VERBS: tuple[str, ...] = ("dashboard",)
 
 
 def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
-    """`deploy dashboard [--build]`.
+    """`deploy dashboard [--build] [--dry-run]`.
 
-    `--build`: build only, return — no diff/commit/push.
+    `--build` always wins over `--dry-run` if both are passed (build-only is
+    the narrower operation; ACs don't define combining them, so this is a
+    documented judgment call, not a silent one — see this story's spec,
+    "Design Notes") — builds and returns without ever computing a diff.
 
-    Bare invocation: build, then diff `docs/dashboard/` against the
-    committed tree. No diff → `ok=True`, "nothing to deploy" (FR-9's
-    zero-commit-on-no-diff property). A real diff → commit + push
-    unconditionally (Story 2.3 adds a `--dry-run` escape hatch on top of
-    this same branch).
+    Otherwise: build, then diff `docs/dashboard/` against the committed
+    tree. No diff → `ok=True`, "nothing to deploy", regardless of
+    `--dry-run` (FR-9's zero-commit-on-no-diff property). A real diff with
+    `--dry-run` → the diff is printed; `commit_and_push_dashboard` is never
+    called, so `git log`/`git status` are left unchanged. A real diff with
+    neither flag → commit + push (Story 2.2's FR-9 reconciled-push
+    behavior).
     """
     root = repo_root()
     build_dashboard(cwd=root)
@@ -167,6 +176,12 @@ def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
     diff_text = dashboard_diff(cwd=root)
     if not diff_text.strip():
         return DutyResult(ok=True, summary="deploy dashboard: no diff — nothing to deploy")
+
+    if getattr(ns, "dry_run", False):
+        return DutyResult(
+            ok=True,
+            summary=f"deploy dashboard: pending diff (dry-run, not committed):\n{diff_text}",
+        )
 
     sha = commit_and_push_dashboard(cwd=root)
     return DutyResult(ok=True, summary=f"deploy dashboard: committed and pushed {sha}")

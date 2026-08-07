@@ -121,8 +121,8 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `dashboard` verb (Story 2.1: `--build` only; later stories add
-    `--dry-run` and the `status` verb without changing this seam)."""
+    """Add the `dashboard` verb (`--build`/`--dry-run`; a later story adds the
+    `status` verb without changing this seam)."""
     deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard}")
 
     dashboard = deploy_subs.add_parser(
@@ -130,6 +130,9 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
     )
     dashboard.add_argument(
         "--build", action="store_true", help="build only — refresh docs/dashboard/, no diff/commit/push"
+    )
+    dashboard.add_argument(
+        "--dry-run", action="store_true", help="build + diff and print — no commit/push"
     )
 
 
