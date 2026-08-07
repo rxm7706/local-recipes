@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-doctor:report-schema",
   "title": "DoctorReport",
-  "description": "The frozen envelope for pyforge-doctor (Story 1.1): one document per invocation, {schema_version, verb, generated_at, findings, prescriptions}. prescriptions is present (an array, possibly empty) ONLY when verb == 'diagnose'; for 'check'/'monitor' the key must be entirely absent (never null). additionalProperties is deliberately left open on findings/prescriptions sub-objects: additive growth (a new evidence shape, new rank_factors keys) is never a schema break.",
+  "description": "The frozen envelope for pyforge-doctor (Story 1.1): one document per invocation, {schema_version, verb, generated_at, findings, prescriptions}. prescriptions is present (an array, possibly empty) ONLY when verb == 'diagnose'; for 'check'/'monitor' the key must be entirely absent (never null). grade/axis_scores (Story 4.1) are optional additive fields present only on a report the CLI actually computed a grade for (today: 'diagnose'). additionalProperties is deliberately left open on findings/prescriptions sub-objects: additive growth (a new evidence shape, new rank_factors keys) is never a schema break.",
   "type": "object",
   "required": ["schema_version", "verb", "generated_at", "findings"],
   "properties": {
@@ -26,6 +26,15 @@
     "prescriptions": {
       "type": "array",
       "items": { "$ref": "#/$defs/prescription" }
+    },
+    "grade": {
+      "enum": ["A", "B", "C", "D", "F", "incomplete"],
+      "description": "Story 4.1: composite health grade over this report's own findings; present only when the CLI computed one."
+    },
+    "axis_scores": {
+      "type": "array",
+      "description": "Story 4.1: per-Source axis breakdown backing 'grade'; present only alongside 'grade'.",
+      "items": { "$ref": "#/$defs/axis_score" }
     }
   },
   "if": {
@@ -51,7 +60,8 @@
             "behind-upstream",
             "feedstock-health",
             "release-cadence",
-            "env-hygiene"
+            "env-hygiene",
+            "adoption"
           ]
         },
         "check": { "type": "string" },
@@ -71,7 +81,9 @@
         "rank",
         "rank_factors",
         "action",
-        "root_cause"
+        "root_cause",
+        "safe_upgrade_target",
+        "safe_upgrade_reason"
       ],
       "properties": {
         "finding_ref": { "type": "string" },
@@ -85,7 +97,26 @@
           "description": "Populated by a later epic's ranking pass; null until then."
         },
         "action": { "type": "string" },
-        "root_cause": { "type": "string" }
+        "root_cause": { "type": "string" },
+        "safe_upgrade_target": {
+          "type": ["string", "null"],
+          "description": "Story 4.4: a single-hop next-safe-version recommendation; null when not confidently known (see safe_upgrade_reason)."
+        },
+        "safe_upgrade_reason": {
+          "type": ["string", "null"],
+          "description": "Story 4.4: always states why safe_upgrade_target is (or isn't) populated."
+        }
+      }
+    },
+    "axis_score": {
+      "type": "object",
+      "required": ["axis", "ok", "warn", "fail", "grade"],
+      "properties": {
+        "axis": { "type": "string" },
+        "ok": { "type": "integer", "minimum": 0 },
+        "warn": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 },
+        "grade": { "enum": ["A", "B", "C", "D", "F", "incomplete"] }
       }
     }
   }

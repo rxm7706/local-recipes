@@ -114,6 +114,15 @@ class Prescription:
     ``rank``/``rank_factors`` stay ``None``-able at scaffold stage — a later
     epic's ranking pass populates them; nothing produces a ``Prescription``
     yet in this story.
+
+    ``safe_upgrade_target``/``safe_upgrade_reason`` (Story 4.4, FR-13, AD-10)
+    are a later epic's single-hop upgrade-path recommendation: a specific
+    next-safe-version string when confidently known, else ``None`` with
+    ``safe_upgrade_reason`` always stating why (never a bare ``None`` with
+    no explanation, mirroring ``rank``/``rank_factors``'s own always-paired
+    value+explanation convention). Default to ``None`` so every existing
+    construction site (Epic 3, unaware of this pair) keeps working
+    unchanged.
     """
 
     finding_ref: str
@@ -122,6 +131,8 @@ class Prescription:
     rank_factors: dict | None
     action: str
     root_cause: str
+    safe_upgrade_target: str | None = None
+    safe_upgrade_reason: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "partition", Partition(self.partition))
@@ -138,6 +149,8 @@ class Prescription:
             "rank_factors": self.rank_factors,
             "action": self.action,
             "root_cause": self.root_cause,
+            "safe_upgrade_target": self.safe_upgrade_target,
+            "safe_upgrade_reason": self.safe_upgrade_reason,
         }
 
 
@@ -149,6 +162,19 @@ class DoctorReport:
     ``verb == "diagnose"``; for ``check``/``monitor`` it must stay ``None``
     in the Python model AND be omitted (never ``null``) from the serialized
     JSON — ``to_json_dict`` only adds the key when it is not ``None``.
+
+    ``grade``/``axis_scores`` (Story 4.1, FR-10) are a later epic's optional
+    composite-health-grade projection — deliberately stored here as ALREADY-
+    SERIALIZED plain data (a ``str`` value and a tuple of plain dicts), not
+    as ``doctor.score``'s own ``Grade``/``AxisScore`` types, so this module
+    never needs to import ``doctor.score`` (that would be a reverse
+    dependency onto a module that itself depends on ``models`` — AD-3 keeps
+    this taxonomy module's own import surface minimal). Present only when
+    the CLI layer actually computed a grade for this report (today: the
+    ``diagnose`` verb only); omitted, never ``null``, otherwise — same
+    presence discipline as ``prescriptions`` above, but WITHOUT that field's
+    hard verb-coupling validation, since a future verb may want to carry a
+    grade too without this module needing another edit.
     """
 
     schema_version: int
@@ -156,6 +182,8 @@ class DoctorReport:
     generated_at: str
     findings: tuple[Finding, ...]
     prescriptions: tuple[Prescription, ...] | None = None
+    grade: str | None = None
+    axis_scores: tuple[dict, ...] | None = None
 
     def __post_init__(self) -> None:
         # report-schema.json declares schema_version's minimum as 1 -- fail
@@ -181,6 +209,10 @@ class DoctorReport:
                 f"verb {self.verb!r} must not carry prescriptions (only "
                 "'diagnose' reports do) — the key must be omitted, never null"
             )
+        if self.axis_scores is not None:
+            object.__setattr__(
+                self, "axis_scores", tuple(dict(axis) for axis in self.axis_scores)
+            )
 
     def to_json_dict(self) -> dict[str, object]:
         document: dict[str, object] = {
@@ -193,4 +225,8 @@ class DoctorReport:
             document["prescriptions"] = [
                 prescription.to_json_dict() for prescription in self.prescriptions
             ]
+        if self.grade is not None:
+            document["grade"] = self.grade
+        if self.axis_scores is not None:
+            document["axis_scores"] = [dict(axis) for axis in self.axis_scores]
         return document

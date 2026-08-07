@@ -203,7 +203,42 @@ def test_prescription_to_json_dict_shape():
         "rank_factors": {"severity": "high"},
         "action": "upgrade foo",
         "root_cause": "foo is unmaintained",
+        "safe_upgrade_target": None,
+        "safe_upgrade_reason": None,
     }
+
+
+def test_prescription_safe_upgrade_fields_default_to_none():
+    # Story 4.4: existing (pre-Epic-4) construction sites never pass these
+    # kwargs -- they must default to None, not raise a TypeError.
+    prescription = Prescription(
+        finding_ref="x",
+        partition=Partition.ACTIONABLE,
+        rank=1,
+        rank_factors={},
+        action="do it",
+        root_cause="because",
+    )
+    assert prescription.safe_upgrade_target is None
+    assert prescription.safe_upgrade_reason is None
+
+
+def test_prescription_safe_upgrade_fields_round_trip():
+    prescription = Prescription(
+        finding_ref="x",
+        partition=Partition.ACTIONABLE,
+        rank=1,
+        rank_factors={},
+        action="do it",
+        root_cause="because",
+        safe_upgrade_target="2.1.0",
+        safe_upgrade_reason="patch version bump, no known breaking-change signal",
+    )
+    document = prescription.to_json_dict()
+    assert document["safe_upgrade_target"] == "2.1.0"
+    assert document["safe_upgrade_reason"] == (
+        "patch version bump, no known breaking-change signal"
+    )
 
 
 # --- DoctorReport: verb/prescriptions coherence ----------------------------

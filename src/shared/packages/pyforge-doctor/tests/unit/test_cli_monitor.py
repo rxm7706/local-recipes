@@ -87,6 +87,21 @@ def test_monitor_watch_duplicate_axes_are_deduplicated(monkeypatch):
     assert [axis for axis, _target in calls] == ["staleness"]
 
 
+def test_monitor_watch_adoption_is_opt_in_only(monkeypatch):
+    # Story 4.3 AC3: --watch adoption is accepted (a valid axis), but never
+    # silently added to the default set (proven separately above).
+    calls = _stub_gather(monkeypatch, {})
+    exit_code = main(["monitor", "--fleet", "--watch", "adoption"])
+    assert exit_code == 0
+    assert [axis for axis, _target in calls] == ["adoption"]
+
+
+def test_monitor_default_axis_set_is_unchanged_by_the_adoption_addition(monkeypatch):
+    calls = _stub_gather(monkeypatch, {})
+    main(["monitor", "--fleet"])
+    assert "adoption" not in [axis for axis, _target in calls]
+
+
 def test_monitor_watch_unknown_axis_is_a_usage_error(capsys, monkeypatch):
     calls = _stub_gather(monkeypatch, {})
     exit_code = main(["monitor", "--fleet", "--watch", "bogus"])
@@ -249,3 +264,63 @@ def test_monitor_exit_code_zero_for_warn_only(monkeypatch):
         {"cve": (_finding(Source.CVE_WATCHER, "pkg-a", DoctorStatus.WARN),)},
     )
     assert main(["monitor", "--fleet", "--watch", "cve"]) == 0
+
+
+# --- Story 4.2: --surface ----------------------------------------------
+
+
+def test_monitor_surface_writes_a_file_derived_from_this_runs_findings(
+    monkeypatch, tmp_path
+):
+    _stub_gather(
+        monkeypatch,
+        {"staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),)},
+    )
+    surface_path = tmp_path / "fleet-health.json"
+    main(["monitor", "--fleet", "--watch", "staleness", "--surface", str(surface_path)])
+    document = json.loads(surface_path.read_text(encoding="utf-8"))
+    assert document["schema_version"] == 1
+    assert document["axes"] == ["staleness"]
+    assert {f["check"] for f in document["findings"]} == {"pkg-a"}
+
+
+def test_monitor_without_surface_flag_writes_nothing(monkeypatch, tmp_path):
+    _stub_gather(
+        monkeypatch,
+        {"staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),)},
+    )
+    surface_path = tmp_path / "fleet-health.json"
+    main(["monitor", "--fleet", "--watch", "staleness"])
+    assert not surface_path.exists()
+
+
+def test_monitor_surface_reflects_the_source_filtered_findings(monkeypatch, tmp_path):
+    _stub_gather(
+        monkeypatch,
+        {
+            "staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),),
+            "cve": (_finding(Source.CVE_WATCHER, "pkg-b", DoctorStatus.FAIL),),
+        },
+    )
+    surface_path = tmp_path / "fleet-health.json"
+    main(
+        [
+            "monitor", "--fleet", "--watch", "staleness,cve",
+            "--source", "cve-watcher", "--surface", str(surface_path),
+        ]
+    )
+    document = json.loads(surface_path.read_text(encoding="utf-8"))
+    assert {f["check"] for f in document["findings"]} == {"pkg-b"}
+
+
+def test_monitor_surface_is_idempotent_across_two_runs(monkeypatch, tmp_path):
+    _stub_gather(
+        monkeypatch,
+        {"staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", DoctorStatus.WARN),)},
+    )
+    surface_path = tmp_path / "fleet-health.json"
+    main(["monitor", "--fleet", "--watch", "staleness", "--surface", str(surface_path)])
+    first_text = surface_path.read_text(encoding="utf-8")
+    main(["monitor", "--fleet", "--watch", "staleness", "--surface", str(surface_path)])
+    second_text = surface_path.read_text(encoding="utf-8")
+    assert first_text == second_text
