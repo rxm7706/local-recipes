@@ -19,6 +19,7 @@ from pyforge.scribe.promote import (
     classify_and_draft,
     default_user_local_root,
     rewrite_team_voice,
+    write_pointer_stub,
 )
 
 _MEMORY_MD_STARTER = """# Team Memory Index
@@ -363,7 +364,7 @@ def test_rewrite_does_not_touch_unrelated_parenthetical() -> None:
 # --- apply_promotion ------------------------------------------------------
 
 
-def test_apply_promotion_writes_via_capture_and_source_is_untouched(
+def test_apply_promotion_writes_via_capture_and_stubs_the_source(
     source_root: Path, memory_root: Path, repo_root: Path
 ) -> None:
     source_path = _write(
@@ -377,7 +378,6 @@ def test_apply_promotion_writes_via_capture_and_source_is_untouched(
         "I prefer that contributors run the full test suite (commit `31eb4e6bba`) "
         "before opening a PR.\n",
     )
-    original_source_bytes = source_path.read_bytes()
 
     proposal = classify_and_draft(source_root, memory_root, repo_root)
     results = apply_promotion(memory_root, proposal)
@@ -393,8 +393,113 @@ def test_apply_promotion_writes_via_capture_and_source_is_untouched(
     memory_md = (memory_root / "MEMORY.md").read_text(encoding="utf-8")
     assert memory_md.count(results[0].memory_index_line) == 1
 
-    # Source is byte-for-byte unchanged (Story 1.4 owns the pointer stub).
-    assert source_path.read_bytes() == original_source_bytes
+    # Source is rewritten to a pointer stub (Story 1.4, FR-5) -- the
+    # original body is gone, not preserved anywhere in user-local memory.
+    stub = source_path.read_text(encoding="utf-8")
+    assert "promoted: true" in stub
+    assert "I prefer" not in stub
+    assert "run the full test suite" not in stub
+    assert ".claude/memory/feedback/run-tests-first.md" in stub
+
+
+def test_apply_promotion_reinvocation_is_idempotent_no_duplicate_no_rewrite(
+    source_root: Path, memory_root: Path, repo_root: Path
+) -> None:
+    """The FR-6 proof: promote once, then re-scan + re-apply against the
+    same source dir must be a complete no-op -- no new `.claude/memory/`
+    file, no duplicate `MEMORY.md` line, stub untouched a second time."""
+    source_path = _write(
+        source_root,
+        "feedback_run_tests_first.md",
+        "---\nname: run-tests-first\ndescription: Run tests first.\ntype: feedback\n---\n"
+        "Run the full test suite before opening a PR.\n",
+    )
+
+    first_proposal = classify_and_draft(source_root, memory_root, repo_root)
+    first_results = apply_promotion(memory_root, first_proposal)
+    assert len(first_results) == 1
+    stub_after_first = source_path.read_text(encoding="utf-8")
+    memory_md_after_first = (memory_root / "MEMORY.md").read_text(encoding="utf-8")
+    written_files_after_first = sorted((memory_root / "feedback").glob("*.md"))
+
+    second_proposal = classify_and_draft(source_root, memory_root, repo_root)
+    assert len(second_proposal.entries) == 1
+    assert second_proposal.entries[0].classification == "already-promoted"
+    assert second_proposal.promotable == ()
+
+    second_results = apply_promotion(memory_root, second_proposal)
+
+    assert second_results == []
+    assert source_path.read_text(encoding="utf-8") == stub_after_first
+    assert (memory_root / "MEMORY.md").read_text(encoding="utf-8") == memory_md_after_first
+    assert sorted((memory_root / "feedback").glob("*.md")) == written_files_after_first
+
+
+# --- write_pointer_stub -----------------------------------------------------
+
+
+def test_write_pointer_stub_format(tmp_path: Path) -> None:
+    source_path = tmp_path / "feedback_example.md"
+    source_path.write_text("---\ntype: feedback\n---\noriginal body\n", encoding="utf-8")
+
+    write_pointer_stub(source_path, "feedback", "example-slug", promoted_date="2026-08-07")
+
+    content = source_path.read_text(encoding="utf-8")
+    assert content == (
+        "---\n"
+        "type: feedback\n"
+        "promoted: true\n"
+        "promoted_date: 2026-08-07\n"
+        "---\n"
+        "Promoted to `.claude/memory/feedback/example-slug.md` on 2026-08-07.\n"
+    )
+    assert "original body" not in content
+
+
+def test_write_pointer_stub_called_twice_is_byte_identical(tmp_path: Path) -> None:
+    """The idempotence proof for the writer itself: same arguments twice
+    produces the exact same bytes both times -- a full overwrite, never an
+    append or a duplicate section."""
+    source_path = tmp_path / "feedback_example.md"
+    source_path.write_text("---\ntype: feedback\n---\noriginal body\n", encoding="utf-8")
+
+    write_pointer_stub(source_path, "feedback", "example-slug", promoted_date="2026-08-07")
+    first_bytes = source_path.read_bytes()
+
+    write_pointer_stub(source_path, "feedback", "example-slug", promoted_date="2026-08-07")
+    second_bytes = source_path.read_bytes()
+
+    assert first_bytes == second_bytes
+
+
+def test_write_pointer_stub_uses_actual_written_slug_not_stale_preview(
+    source_root: Path, memory_root: Path, repo_root: Path
+) -> None:
+    """If another writer claims the previewed slug between `classify_and_draft()`
+    and `apply_promotion()`, the stub must name the file `capture()` actually
+    wrote, not the stale preview -- proven by forcing that exact collision."""
+    source_path = _write(
+        source_root,
+        "feedback_dup-case.md",
+        "---\nname: a\ndescription: A rule.\ntype: feedback\n---\nBody text.\n",
+    )
+
+    proposal = classify_and_draft(source_root, memory_root, repo_root)
+    assert proposal.entries[0].slug == "dup-case"
+
+    # Simulate a concurrent writer claiming the previewed slug first.
+    (memory_root / "feedback").mkdir(parents=True, exist_ok=True)
+    (memory_root / "feedback" / "dup-case.md").write_text("someone else got here first\n", encoding="utf-8")
+
+    results = apply_promotion(memory_root, proposal)
+
+    assert len(results) == 1
+    actual_path = results[0].path
+    assert actual_path.name == "dup-case-2.md"  # capture()'s own collision suffix
+
+    stub = source_path.read_text(encoding="utf-8")
+    assert ".claude/memory/feedback/dup-case-2.md" in stub
+    assert ".claude/memory/feedback/dup-case.md" not in stub
 
 
 def test_apply_promotion_is_a_no_op_when_nothing_is_promotable(

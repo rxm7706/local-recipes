@@ -90,13 +90,19 @@ content, `MEMORY.md` line). Nothing is written until you confirm — decline
 and it exits cleanly with zero files changed. The source user-local file is
 left byte-for-byte untouched; rewriting it to a pointer stub is Story 1.4.
 
-## Pointer stubs (arrives Story 1.4)
+## Pointer stubs (Story 1.4)
 
-Once promotion (Story 1.3) ships, a promoted user-local entry will not be
-deleted — it will be rewritten to a one-line pointer stub (`Promoted to
-.claude/memory/<type>/<slug>.md`) so the original session context and
-traceability are preserved without duplicating content, and re-promotion
-is idempotent. Not yet implemented.
+A promoted user-local entry is not deleted — once its content is written
+under `.claude/memory/`, the source file is rewritten in place to a pointer
+stub: `promoted: true` frontmatter (+ an ISO `promoted_date`) and a
+one-line redirect body (`` Promoted to `.claude/memory/<type>/<slug>.md`
+on <date>. ``). The original body content is not preserved in user-local
+memory after promotion.
+
+Re-running `scribe capture --promote` against the same source directory
+classifies any stubbed entry `already-promoted` and skips it — no
+re-proposal, no re-write, no duplicate `.claude/memory/` file. Promotion is
+therefore safe to re-invoke.
 
 ## When to prune
 
