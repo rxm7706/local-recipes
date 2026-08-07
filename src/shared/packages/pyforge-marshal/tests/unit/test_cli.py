@@ -999,7 +999,7 @@ def test_help_lists_gate_subcommand(capsys):
     exit_code = main(["--help"])
     assert exit_code == 0
     assert (
-        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire}"
+        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire,status}"
         in capsys.readouterr().out
     )
 
@@ -1019,6 +1019,19 @@ def test_retire_subcommand_is_wired(tmp_path, capsys, monkeypatch):
     payload = json.loads(capsys.readouterr().out)
     assert payload["command"] == "retire"
     assert payload["data"]["proposals"] == []
+
+
+def test_status_subcommand_is_wired(capsys):
+    """Smoke test (Story 5.1): ``marshal status`` dispatches to
+    ``cli/status.py::run_status`` and prints a real envelope -- mirrors this
+    module's own ``retire`` wiring precedent. Scoped to a nonexistent slug
+    so it never touches this dev repo's own real fleet state."""
+    exit_code = main(["status", "--project", "no-such-project-xyz", "--format", "json"])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["command"] == "status"
+    assert payload["data"]["homes"] == []
 
 
 def test_gate_missing_evaluate_action_is_a_usage_error(capsys):

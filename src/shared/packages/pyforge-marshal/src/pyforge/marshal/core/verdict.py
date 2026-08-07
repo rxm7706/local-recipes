@@ -501,6 +501,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # MRS-RETIRE-003 (a delete_branch failure under --execute, or a
 # post-deletion journal-write failure) both at WARN, alongside
 # MRS-DEPLOY-021/022/023 -- never blocking, the sweep continues.
+# Story 5.1 (fleet-wide runtime status, FR-36/AD-5) adds MRS-STATUS-002 (a
+# discovered home's most recent run journal / bmad-loop state.json could not
+# be read far enough to recover a supervisor pid and a live snapshot, or the
+# fleet's own list_worktrees enumeration itself failed) at WARN, the same
+# "per-row/per-sweep read failure degrades cleanly" tier as MRS-RETIRE-002.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -601,6 +606,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-RETIRE-001": Verdict.UNEVALUABLE,
     "MRS-RETIRE-002": Verdict.WARN,
     "MRS-RETIRE-003": Verdict.WARN,
+    "MRS-STATUS-002": Verdict.WARN,
 }
 
 
