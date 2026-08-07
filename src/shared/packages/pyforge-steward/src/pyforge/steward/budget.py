@@ -22,11 +22,24 @@ Story 4.2 slice: `format_ceilings` — read-only text/`--json` rendering of
 report for the empty case (never a crash, never a misleading zero). Wired
 as `steward budget show [--json]`.
 
+Story 4.3 slice: `_run_check` (FR-18) — `steward budget check` always
+reports "no metered spend source configured" via the dedicated
+`cli.EXIT_BUDGET_NOT_CONFIGURED` exit code, regardless of whether a
+ceiling was ever declared (Story 4.1) — never a fabricated pass/fail. Sets
+`DutyResult.details["exit_code"]`, the generic override `cli.main()` reads
+so a duty-specific exit code can exist without any duty ever calling
+`sys.exit()` itself (AD-8 stays intact: `cli.main()` remains the sole
+place a process exit code is decided). No cost-integration import
+(cloud-cost SDK, Kubecost/OpenCost/Infracost client) exists anywhere in
+this file — the honest-stub property is structural, not just behavioral,
+and is pinned by `tests/meta/test_invariants.py::
+test_no_cost_integration_sdk_imported_in_budget` (an AST import-scan, not
+a text/docstring grep).
+
 `BudgetDuty` is the `Duty`-conforming adapter `cli.py`'s `resolve_duty
-("budget")` now returns, wiring `steward budget set`/`show`. Bare `steward
-budget` (no verb) and `steward budget check` (not yet a real verb) degrade
-to `DutyResult(ok=True, ...)` naming the available verbs (AD-7) — `check`
-lands in Story 4.3.
+("budget")` now returns, wiring `steward budget set`/`show`/`check` — all
+three verbs Epic 4 defines. Bare `steward budget` degrades to
+`DutyResult(ok=True, ...)` naming the available verbs (AD-7).
 """
 
 from __future__ import annotations
@@ -255,14 +268,47 @@ def format_ceilings(ceilings: tuple[Ceiling, ...], *, as_json: bool) -> str:
     return "\n".join(lines)
 
 
+# ── `budget check` — honest signal, never a fabricated pass/fail (Story 4.3, AD-6) ──
+#
+# v1 has NO metered spend source wired in anywhere (PRD's explicit
+# non-goal: no Kubecost/OpenCost/Infracost-class integration) — so `check`
+# always reports "no metered spend source configured," regardless of
+# whether a ceiling was declared. This is intentionally a fixed, one-branch
+# function: it does not read `load_budget` at all, because a ceiling's
+# presence or absence has no bearing on THIS report (there is nothing to
+# compare the ceiling against either way). A future story that adds a real
+# metered spend source is the one that grows this into a real
+# under/over-budget comparison — see `cli.py`'s `EXIT_BUDGET_NOT_CONFIGURED`
+# docstring for the reserved, still-hypothetical under/over codes.
+
+_NOT_CONFIGURED_MESSAGE = (
+    "budget check: no metered spend source configured — Steward v1 declares "
+    "and shows a ceiling (see `steward budget set`/`show`) but does not "
+    "meter real spend against it (PRD non-goal: no Kubecost/OpenCost/"
+    "Infracost-class integration). This is an honest 'no data' signal, not "
+    "a fabricated pass or fail."
+)
+
+
+def _run_check(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no flags yet
+    """`budget check` (Story 4.3) — see module-level "budget check" note."""
+    from .cli import EXIT_BUDGET_NOT_CONFIGURED
+
+    return DutyResult(
+        ok=True,
+        summary=_NOT_CONFIGURED_MESSAGE,
+        details={"exit_code": EXIT_BUDGET_NOT_CONFIGURED},
+    )
+
+
 # ── BudgetDuty (Duty-protocol adapter) ──────────────────────────────────────
 
-_BUDGET_VERBS: tuple[str, ...] = ("set", "show")
+_BUDGET_VERBS: tuple[str, ...] = ("set", "show", "check")
 
 
 class BudgetDuty:
-    """The real `budget` duty — dispatches `set`/`show` (Stories 4.1/4.2;
-    `check` lands in Story 4.3).
+    """The real `budget` duty — dispatches `set`/`show`/`check`, all three
+    verbs Epic 4 defines.
 
     Bare `steward budget` (no verb) degrades to `DutyResult(ok=True, ...)`
     naming the available verbs (AD-7), matching `KeysDuty`'s/`ProvisionDuty`'s
@@ -305,9 +351,11 @@ class BudgetDuty:
                         f"{ceiling.currency}/{ceiling.period} (written to {path})"
                     ),
                 )
-            path = default_budget_path()
-            ceilings = load_budget(path)
-            return DutyResult(ok=True, summary=format_ceilings(ceilings, as_json=ns.json))
+            if verb == "show":
+                path = default_budget_path()
+                ceilings = load_budget(path)
+                return DutyResult(ok=True, summary=format_ceilings(ceilings, as_json=ns.json))
+            return _run_check(ns)  # verb == "check"
         except CapParseError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
         except BudgetError as exc:

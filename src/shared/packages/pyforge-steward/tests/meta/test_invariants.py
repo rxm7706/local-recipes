@@ -164,3 +164,40 @@ def test_no_third_party_provider_api_client_imported():
                 if name.lower() in banned_modules:
                     offenders.append(f"{path.name}:{node.lineno} imports {name!r}")
     assert not offenders, f"third-party provider API client import found: {offenders}"
+
+
+def test_no_cost_integration_sdk_imported_in_budget():
+    """Story 4.3 / AD-6 / this story's own second AC: `budget.py`'s
+    "honest stub" property is structural, not just behavioral -- no
+    cloud-cost SDK or Kubecost/OpenCost/Infracost-class client import may
+    exist ANYWHERE in the package, not only in `budget.py` (a helper
+    module quietly carrying the import would be just as much of a lie as
+    `budget.py` doing it directly).
+
+    AST-based (imports only), identical rationale to
+    `test_no_rotation_scheduler_exists`/
+    `test_no_third_party_provider_api_client_imported` -- `budget.py`'s
+    own module docstring and `_NOT_CONFIGURED_MESSAGE` NAME every one of
+    these products in prose, which a text scan would misflag as evidence
+    of importing one.
+    """
+    import ast
+
+    banned_modules = {
+        "kubecost", "opencost", "infracost", "boto3", "google", "azure",
+        "stripe", "awscostexplorer", "cloudability", "cloudhealth",
+        "cloudcheckr", "vantage", "kubecostgrpc", "kubecost_client",
+    }
+    offenders: list[str] = []
+    for path in (PKG_ROOT / "steward").rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name.split(".")[0] for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module.split(".")[0]]
+            for name in names:
+                if name.lower() in banned_modules:
+                    offenders.append(f"{path.name}:{node.lineno} imports {name!r}")
+    assert not offenders, f"cost-integration SDK import found (AD-6: budget v1 is a stub): {offenders}"

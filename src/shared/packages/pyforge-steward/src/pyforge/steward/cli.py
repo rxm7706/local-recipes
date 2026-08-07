@@ -22,9 +22,18 @@ EXIT_USAGE = 2           # argparse convention
 EXIT_INTERRUPTED = 130   # 128 + SIGINT
 EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 
-# The four duties. `keys` (Epic 1), `deploy` (Epic 2), and `provision`
-# (Epic 3) are real; `budget` (Epic 4) gains its first real verb (`set`)
-# this story — `steward --help` has stated the whole surface since Story 1.1.
+# budget's own triad (AD-6, FR-18): "no metered spend source configured" is
+# the ONLY one implemented in v1 (no metering source exists — see budget.py's
+# module docstring) — 0 (EXIT_OK) and EXIT_FAILED remain reserved for a
+# FUTURE "under budget"/"over budget" comparison a later story would add
+# once a real metered spend source exists; nothing in v1 ever returns those
+# two codes FROM `budget check` specifically. `3` is picked simply because
+# it is the next unused small integer after EXIT_USAGE(2) — not itself
+# meaningful, just distinct and documented.
+EXIT_BUDGET_NOT_CONFIGURED = 3
+
+# The four duties — all real as of this story. `keys` (Epic 1), `deploy`
+# (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3).
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
@@ -172,8 +181,8 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
 
 
 def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
-    """Add the `set`/`show` verbs (Stories 4.1/4.2) — `check` lands in Story 4.3."""
-    budget_subs = budget_parser.add_subparsers(dest="budget_verb", metavar="{set,show}")
+    """Add the `set`/`show`/`check` verbs (Epic 4, all three stories)."""
+    budget_subs = budget_parser.add_subparsers(dest="budget_verb", metavar="{set,show,check}")
 
     set_ = budget_subs.add_parser("set", help="declare a machine-readable budget ceiling")
     set_.add_argument(
@@ -182,6 +191,10 @@ def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
 
     show = budget_subs.add_parser("show", help="print the currently declared ceiling(s)")
     show.add_argument("--json", action="store_true", help="emit JSON instead of human-readable text")
+
+    budget_subs.add_parser(
+        "check", help="report whether spend is under the declared ceiling (v1: honest 'no data' only)"
+    )
 
 
 def resolve_duty(name: str) -> Duty:
@@ -224,6 +237,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             return EXIT_OK
         result: DutyResult = resolve_duty(ns.duty).run(ns)
         print(result.summary, file=sys.stderr if not result.ok else sys.stdout)
+        # A duty never calls sys.exit() (AD-8) — but it may name a specific
+        # documented exit code (e.g. budget.EXIT_BUDGET_NOT_CONFIGURED) via
+        # `DutyResult.details["exit_code"]` when the plain ok/not-ok binary
+        # can't express it (budget check's three-way not-configured/under/
+        # over signal, FR-18). main() is still the one that ACTS on it —
+        # the decision stays sole-owned here, a duty only requests it.
+        override = result.details.get("exit_code")
+        if isinstance(override, int):
+            return override
         return EXIT_OK if result.ok else EXIT_FAILED
     except KeyboardInterrupt:
         print("steward: interrupted", file=sys.stderr)
