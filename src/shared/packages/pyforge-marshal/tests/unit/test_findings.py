@@ -162,6 +162,17 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SPIN-013",
             "MRS-SPIN-014",
             "MRS-SPIN-015",
+            "MRS-ADP-001",
+            "MRS-ADP-002",
+            "MRS-ADP-003",
+            "MRS-ADP-004",
+            "MRS-ADP-005",
+            "MRS-ADP-006",
+            "MRS-ADP-007",
+            "MRS-ADP-008",
+            "MRS-ADP-009",
+            "MRS-ADP-010",
+            "MRS-ADP-011",
         }
     )
 

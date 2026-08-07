@@ -176,6 +176,52 @@ def test_adapter_first_run_note_for_the_real_claude_profile(harness, tmp_path):
     assert "claude" in note
 
 
+def test_adapter_skill_trees_covers_every_packaged_profile(harness, tmp_path):
+    """Story 6.2 (FR-41): every one of the six packaged profiles resolves,
+    keyed by adapter name -- ``claude``/``opencode-http`` at the canonical
+    tree, the other four at ``.agents/skills`` (this repo's own motivating
+    evidence: four of six find nothing without projection)."""
+    skill_trees = harness.adapter_skill_trees(tmp_path)
+    assert skill_trees["claude"] == ".claude/skills"
+    assert skill_trees["opencode-http"] == ".claude/skills"
+    for name in ("codex", "gemini", "copilot", "antigravity"):
+        assert skill_trees[name] == ".agents/skills"
+
+
+def test_adapter_skill_trees_includes_a_project_local_overlay(harness, tmp_path):
+    profiles_dir = tmp_path / ".bmad-loop" / "profiles"
+    profiles_dir.mkdir(parents=True)
+    (profiles_dir / "custom.toml").write_text(
+        'name = "custom"\n'
+        'binary = "custom-cli"\n'
+        'skill_tree = ".custom/skills"\n'
+        "[hooks]\n"
+        'dialect = "none"\n',
+        encoding="utf-8",
+    )
+    skill_trees = harness.adapter_skill_trees(tmp_path)
+    assert skill_trees["custom"] == ".custom/skills"
+
+
+def test_adapter_skill_trees_raises_harness_error_when_bmad_loop_unimportable(
+    harness, tmp_path, monkeypatch
+):
+    monkeypatch.setitem(sys.modules, "bmad_loop.adapters.profile", None)
+    with pytest.raises(HarnessError, match="not importable"):
+        harness.adapter_skill_trees(tmp_path)
+
+
+def test_adapter_skill_trees_raises_harness_error_not_raw_when_profile_overlay_is_not_utf8(
+    harness, tmp_path
+):
+    profiles_dir = tmp_path / ".bmad-loop" / "profiles"
+    profiles_dir.mkdir(parents=True)
+    (profiles_dir / "broken.toml").write_bytes(b"name = \"broken\"\nbinary = \"\xff\xfe\"\n")
+
+    with pytest.raises(HarnessError):
+        harness.adapter_skill_trees(tmp_path)
+
+
 def test_adapter_binary_differs_from_name_for_antigravity_profile(harness, tmp_path):
     """The precise reason ``HarnessPort`` needs a dedicated ``adapter_binary``
     method rather than reusing the adapter NAME as its own binary: two of the

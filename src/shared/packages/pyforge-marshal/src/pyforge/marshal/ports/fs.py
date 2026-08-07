@@ -122,6 +122,15 @@ class FsPort(Protocol):
         real content instead of moving a pointer."""
         ...
 
+    def remove_symlink(self, path: Path) -> bool:
+        """Story 6.2 (AD-12/AD-36): remove the symlink at ``path``.
+        ``True`` if a symlink was removed; ``False`` if ``path`` did not
+        exist at all (a safe no-op -- nothing to remove). Raises
+        ``FsError`` if ``path`` exists and is NOT a symlink (refuses to
+        destroy real content, mirroring ``repoint_symlink_atomic``'s
+        identical refusal) or on an ``OSError`` unlink failure."""
+        ...
+
     def is_dir(self, path: Path) -> bool:
         """``True`` if ``path`` exists and is a directory."""
         ...

@@ -168,6 +168,7 @@ second, overlapping bmad-loop-state-reading method").
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -372,6 +373,23 @@ class HarnessPort(Protocol):
         """The adapter's first-run trust-dialog instructions (``""`` if the
         profile declares none). Raises ``HarnessError`` for an unknown
         ``adapter_name`` or an unimportable ``bmad_loop``."""
+        ...
+
+    def adapter_skill_trees(self, project: Path) -> Mapping[str, str]:
+        """Story 6.2 (FR-41, AD-12/AD-36): every CONFIGURED adapter's
+        declared ``skill_tree`` (project-relative, e.g. ``".claude/skills"``,
+        ``".agents/skills"``) -- ``{adapter_name: skill_tree}`` for EVERY
+        profile ``bmad_loop.adapters.profile.load_profiles`` resolves for
+        ``project`` (packaged profiles plus any project-local
+        ``.bmad-loop/profiles/*.toml`` overlay/addition), never only the
+        one loop home's own active ``[adapter].name`` -- see
+        ``core/skill_projection.py``'s own docstring for why "configured
+        adapters" is read plural. Raises ``HarnessError`` for an
+        unimportable ``bmad_loop`` or an unreadable/malformed project-local
+        profile overlay, mirroring ``adapter_binary``'s identical
+        failure-mode contract; never raises for an individual adapter name
+        (there is none to look up here -- this returns every name the
+        registry itself resolves)."""
         ...
 
     def story_feed_error(self, project: Path) -> str | None:
