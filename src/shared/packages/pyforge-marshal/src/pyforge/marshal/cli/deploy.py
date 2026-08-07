@@ -171,6 +171,23 @@ merged_story_keys`` durability detection) short-circuits to a clean no-op
 before the gate ever runs. **P7** -- a ``--justification`` redaction
 failure now registers a WARN finding naming the gap, rather than silently
 writing ``null`` into the permanent journal record.
+
+Story 4.9 (an advisory lock serializes concurrent writes to the shared,
+git-tracked ``planning-artifacts/specs/`` store, AD-42) wraps ``run_promote``'s
+own write section -- the ``copy_file`` loop plus ``commit_paths`` -- in a new
+``FsPort.acquire_advisory_lock``/``release_advisory_lock`` pair (``ports/fs.py``,
+``adapters/fs_local.py``): two concurrent ``promote`` invocations for the SAME
+project can otherwise each independently compute overlapping
+``plan.to_promote`` sets and race through the copy-then-commit sequence with
+no coordination. The lock is acquired on ``specs_dir`` itself (never a file
+inside it), only when ``plan.to_promote`` is non-empty (nothing to
+serialize otherwise), and released in a ``finally`` after ``commit_paths``
+returns either way. A lock-acquisition failure is ``MRS-DEPLOY-023``
+(``Verdict.WARN``) -- a clean, re-entrant refusal (``data.lock_contended:
+true``, ``data.promoted: []``), never a hard error. The journal's own
+two-writer case (``_DeployRun``/``append_line``, AD-25/AD-28/AD-30) is
+explicitly untouched by this new lock -- a different, already-shipped
+concurrency answer.
 """
 
 from __future__ import annotations
@@ -247,6 +264,13 @@ _MRS_DEPLOY_017 = "MRS-DEPLOY-017"
 _MRS_DEPLOY_018 = "MRS-DEPLOY-018"
 _MRS_DEPLOY_021 = "MRS-DEPLOY-021"
 _MRS_DEPLOY_022 = "MRS-DEPLOY-022"
+_MRS_DEPLOY_023 = "MRS-DEPLOY-023"
+
+# Story 4.9 (AD-42): how long run_promote waits for a concurrent promoter
+# to release the specs_dir lock before refusing cleanly (MRS-DEPLOY-023).
+# Short -- a re-run converges cheaply (AD-6), so a long wait here buys
+# little over just refusing and letting an operator/scheduler retry.
+_PROMOTE_LOCK_TIMEOUT_S = 5.0
 
 # Story 4.3's own journal kind (mirrors cli/init.py's `_ABANDON_KIND`
 # convention) -- one `observation` entry per manual landing.
@@ -698,6 +722,10 @@ def run_promote(
 
     root = repo_root()
     data: dict[str, object] = {"slug": project_slug, "root": str(root)}
+    # Story 4.9 (AD-42): overwritten True only when the specs_dir advisory
+    # lock could not be acquired -- present on every run (even a lock-free
+    # one) so the envelope shape never varies across the two outcomes.
+    data["lock_contended"] = False
     findings: list[Finding] = []
     promoted: list[str] = []
     already_promoted_list: list[str] = []
@@ -748,80 +776,113 @@ def run_promote(
         gap_count = len(plan.gaps)
 
         commit_targets: list[Path] = []
-        for spec_candidate in plan.to_promote:
-            # Preserve the Tier-3 file's own descriptive filename
-            # (e.g. "spec-2-3-frozen-surface-scope-check-narrowing-
-            # only.md") rather than deriving a bare "spec-<key>.md" --
-            # every prior promotion in this archive (Epic 3's 8
-            # specs, promoted by hand) used the source's own title
-            # slug, and a bare rename here would be the one
-            # promoted spec in the whole tracked archive without a
-            # human-readable title (live finding, first real run of
-            # this command against this repo, 2026-08-06).
-            dest = specs_dir / Path(spec_candidate.path).name
+        if plan.to_promote:
+            # Story 4.9 (AD-42): the lock guards ONLY the write section --
+            # copy_file's loop plus commit_paths -- never the read-only
+            # `scan` above (cheap, safe to run unlocked/concurrently, per
+            # this story's own Design Notes). Acquired here, not earlier:
+            # "nothing to promote" (an empty `plan.to_promote`) never
+            # touches the lock at all (I/O matrix).
             try:
-                fs.copy_file(Path(spec_candidate.path), dest)
+                lock = fs.acquire_advisory_lock(specs_dir, timeout_s=_PROMOTE_LOCK_TIMEOUT_S)
             except FsError as exc:
+                data["lock_contended"] = True
                 findings.append(
                     Finding(
-                        code=_MRS_DEPLOY_003,
-                        severity=Severity.ERROR,
+                        code=_MRS_DEPLOY_023,
+                        severity=Severity.WARN,
                         message=(
-                            f"cannot copy {spec_candidate.path!r} into the "
-                            f"tracked archive at {str(dest)!r}: {exc}"
+                            f"cannot acquire the promotion lock on "
+                            f"{str(specs_dir)!r} within {_PROMOTE_LOCK_TIMEOUT_S}s "
+                            f"-- another promote is plausibly running "
+                            f"concurrently for {project_slug!r}; nothing was "
+                            f"promoted this run, re-run promote later: {exc}"
                         ),
                     )
                 )
-                continue
-            commit_targets.append(dest)
-            promoted.append(str(spec_candidate.story_key))
-
-        if commit_targets:
-            message = (
-                f"marshal: promote {len(commit_targets)} story spec(s) to "
-                "tracked artifacts"
-            )
-            # Story 4.6 (AD-6): an `intent` entry BEFORE the irreversible
-            # `commit_paths` call, an `outcome` AFTER it succeeds. A
-            # journal-write failure for the intent itself means no paper
-            # trail exists for the write about to happen -- `deploy_run
-            # .write` already reports it via a Finding; `commit_paths`
-            # still runs (a promote is not gated on its OWN journal write
-            # succeeding, matching this codebase's existing "best-effort
-            # journaling of an already-decided action" posture, e.g.
-            # `_journal_manual_landing`'s own post-merge journal write). A
-            # `commit_paths` failure leaves the intent open -- no outcome
-            # is written, per the story's own I/O matrix ("that step
-            # reports failed; intent for it stays open").
-            intent_id = deploy_run.write(
-                findings,
-                kind=_PROMOTE_COMMIT_KIND,
-                phase=Phase.INTENT,
-                payload={"action": "commit_paths", "story_keys": sorted(promoted)},
-            )
-            try:
-                vcs.commit_paths(root, tuple(commit_targets), message)
-            except VcsCommandError as exc:
-                findings.append(
-                    Finding(
-                        code=_MRS_DEPLOY_003,
-                        severity=Severity.ERROR,
-                        message=f"cannot commit promoted specs: {exc}",
-                    )
-                )
             else:
-                if intent_id is not None:
-                    deploy_run.write(
-                        findings,
-                        kind=_PROMOTE_COMMIT_KIND,
-                        phase=Phase.OUTCOME,
-                        payload={
-                            "action": "commit_paths",
-                            "story_keys": sorted(promoted),
-                            "commit_message": message,
-                        },
-                        intent_id=intent_id,
-                    )
+                try:
+                    for spec_candidate in plan.to_promote:
+                        # Preserve the Tier-3 file's own descriptive filename
+                        # (e.g. "spec-2-3-frozen-surface-scope-check-narrowing-
+                        # only.md") rather than deriving a bare "spec-<key>.md" --
+                        # every prior promotion in this archive (Epic 3's 8
+                        # specs, promoted by hand) used the source's own title
+                        # slug, and a bare rename here would be the one
+                        # promoted spec in the whole tracked archive without a
+                        # human-readable title (live finding, first real run of
+                        # this command against this repo, 2026-08-06).
+                        dest = specs_dir / Path(spec_candidate.path).name
+                        try:
+                            fs.copy_file(Path(spec_candidate.path), dest)
+                        except FsError as exc:
+                            findings.append(
+                                Finding(
+                                    code=_MRS_DEPLOY_003,
+                                    severity=Severity.ERROR,
+                                    message=(
+                                        f"cannot copy {spec_candidate.path!r} into "
+                                        f"the tracked archive at {str(dest)!r}: {exc}"
+                                    ),
+                                )
+                            )
+                            continue
+                        commit_targets.append(dest)
+                        promoted.append(str(spec_candidate.story_key))
+
+                    if commit_targets:
+                        message = (
+                            f"marshal: promote {len(commit_targets)} story spec(s) to "
+                            "tracked artifacts"
+                        )
+                        # Story 4.6 (AD-6): an `intent` entry BEFORE the irreversible
+                        # `commit_paths` call, an `outcome` AFTER it succeeds. A
+                        # journal-write failure for the intent itself means no paper
+                        # trail exists for the write about to happen -- `deploy_run
+                        # .write` already reports it via a Finding; `commit_paths`
+                        # still runs (a promote is not gated on its OWN journal write
+                        # succeeding, matching this codebase's existing "best-effort
+                        # journaling of an already-decided action" posture, e.g.
+                        # `_journal_manual_landing`'s own post-merge journal write). A
+                        # `commit_paths` failure leaves the intent open -- no outcome
+                        # is written, per the story's own I/O matrix ("that step
+                        # reports failed; intent for it stays open").
+                        intent_id = deploy_run.write(
+                            findings,
+                            kind=_PROMOTE_COMMIT_KIND,
+                            phase=Phase.INTENT,
+                            payload={"action": "commit_paths", "story_keys": sorted(promoted)},
+                        )
+                        try:
+                            vcs.commit_paths(root, tuple(commit_targets), message)
+                        except VcsCommandError as exc:
+                            findings.append(
+                                Finding(
+                                    code=_MRS_DEPLOY_003,
+                                    severity=Severity.ERROR,
+                                    message=f"cannot commit promoted specs: {exc}",
+                                )
+                            )
+                        else:
+                            if intent_id is not None:
+                                deploy_run.write(
+                                    findings,
+                                    kind=_PROMOTE_COMMIT_KIND,
+                                    phase=Phase.OUTCOME,
+                                    payload={
+                                        "action": "commit_paths",
+                                        "story_keys": sorted(promoted),
+                                        "commit_message": message,
+                                    },
+                                    intent_id=intent_id,
+                                )
+                finally:
+                    # Story 4.9: released AFTER commit_paths returns, success
+                    # or failure alike -- the smallest section that actually
+                    # needs serialization is "decide what to promote" (scan,
+                    # already run unlocked) through "the promotion is
+                    # durably committed" (this story's own Design Notes).
+                    fs.release_advisory_lock(lock)
 
     data["promoted"] = sorted(promoted)
     data["promoted_count"] = len(promoted)
@@ -853,6 +914,8 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         f"subjects examined: {data['subjects_examined']} "
         f"(matched: {data['subjects_matched']})",
     ]
+    if data.get("lock_contended"):
+        lines.append("lock contended: promotion lock busy -- nothing promoted, re-run later")
     if findings:
         lines.append("findings:")
         for finding in findings:

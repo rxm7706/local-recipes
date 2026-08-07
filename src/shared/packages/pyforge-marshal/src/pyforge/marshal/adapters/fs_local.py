@@ -35,16 +35,27 @@ method added here since Story 1.4, which all delegate to or vary the same
 temp-file-then-``os.replace`` idiom. It also adds
 ``DirectoryAlreadyExistsError``, a distinguishable ``FsError`` subtype for
 ``create_dir_exclusive``'s collision case.
+
+Story 4.9 adds ``acquire_advisory_lock``/``release_advisory_lock`` (AD-42,
+``ports.fs.AdvisoryLock``): a POSIX ``fcntl.flock`` on a sibling ``.lock``
+file, opened once and held open for the ``AdvisoryLock``'s own lifetime --
+another genuinely new primitive (this package's first use of ``fcntl``),
+not a variant of the temp-file-then-``os.replace`` idiom every write method
+above uses.
 """
 
 from __future__ import annotations
 
+import errno
+import fcntl
 import os
 import shutil
 import threading
+import time
 from pathlib import Path
 
 from ..core.egress import Redacted
+from ..ports.fs import AdvisoryLock
 
 
 class FsError(Exception):
@@ -65,6 +76,15 @@ class DirectoryAlreadyExistsError(FsError):
     caller can structurally tell a collision apart from any other I/O
     failure, matching ``remove_empty_dir``'s own "safe refusal vs. real
     failure" split."""
+
+
+# Story 4.9: fcntl.flock has no timeout parameter, so
+# acquire_advisory_lock polls with a short sleep between LOCK_NB attempts
+# instead -- mirrors this package's own "never an unbounded block"
+# convention (every ProcessPort.run call already carries an explicit
+# timeout). Short enough that a real acquisition (the common case) is not
+# meaningfully delayed, long enough not to busy-loop.
+_ADVISORY_LOCK_POLL_INTERVAL_S = 0.05
 
 
 def _tmp_sibling(path: Path) -> Path:
@@ -317,3 +337,75 @@ class LocalFs:
             raise DirectoryAlreadyExistsError(f"{path} already exists") from exc
         except OSError as exc:
             raise FsError(f"cannot create directory {path}: {exc}") from exc
+
+    def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
+        """Story 4.9 (AD-42): a POSIX ``fcntl.flock(LOCK_EX)`` on a sibling
+        lock file at ``path.with_suffix(path.suffix + ".lock")``, created if
+        absent. ``fcntl.flock`` has no timeout parameter, so this polls with
+        ``LOCK_EX | LOCK_NB`` every ``_ADVISORY_LOCK_POLL_INTERVAL_S`` until
+        it succeeds or ``timeout_s`` elapses (``time.monotonic()``-measured,
+        immune to a wall-clock adjustment mid-wait). The descriptor is kept
+        open across the whole locked section -- closing it (which
+        ``release_advisory_lock`` does) is what actually drops the kernel
+        lock; a crashed holder's descriptor closes when its process exits,
+        so a stale lock file is never itself a blocker (its mere existence
+        never blocks -- only a live ``flock`` hold does)."""
+        lock_path = path.with_suffix(path.suffix + ".lock")
+        try:
+            lock_path.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(lock_path, os.O_WRONLY | os.O_CREAT, 0o666)
+        except OSError as exc:
+            raise FsError(f"cannot open lock file {lock_path}: {exc}") from exc
+
+        deadline = time.monotonic() + timeout_s
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as exc:
+                if exc.errno not in (errno.EACCES, errno.EAGAIN):
+                    os.close(fd)
+                    raise FsError(f"cannot acquire lock on {lock_path}: {exc}") from exc
+                if time.monotonic() >= deadline:
+                    os.close(fd)
+                    raise FsError(
+                        f"timed out acquiring lock on {lock_path} after {timeout_s}s"
+                    )
+                time.sleep(_ADVISORY_LOCK_POLL_INTERVAL_S)
+            else:
+                return AdvisoryLock(path=lock_path, handle=fd)
+
+    def release_advisory_lock(self, lock: AdvisoryLock) -> None:
+        """Story 4.9: ``fcntl.flock(LOCK_UN)``, closes the descriptor, then
+        best-effort ``os.remove``s the sidecar lock file itself (code
+        review, 2026-08-06: without this, ``specs.lock`` accumulated
+        permanently inside the TRACKED ``planning-artifacts/`` directory
+        after the first ever promotion -- untracked, invisible to a plain
+        `git status` skim, and one `git add -A`/`git add .` away from being
+        committed upstream). The remove is safe even with a concurrent
+        acquirer already blocked on `open()`/`flock()` against the SAME
+        path: POSIX unlink only detaches the directory entry, the inode
+        (and this process's own now-closed fd) stays valid for any process
+        that already opened it, and the next `acquire_advisory_lock` call
+        simply recreates the file. Never raises (mirrors
+        ``remove_empty_dir``'s own "the caller already knows this is safe"
+        precondition shape) -- a release is always called on a lock this
+        SAME process just acquired, so there is nothing for a caller to
+        meaningfully react to on failure here; the unlock, the close, and
+        the remove are all best-effort. Call at most ONCE per successful
+        ``acquire_advisory_lock`` -- a second call operates on an fd number
+        the OS may already have reassigned to an unrelated open file
+        elsewhere in this process, so double-release is a caller bug this
+        method does not (and cannot) guard against."""
+        fd = lock.handle
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            lock.path.unlink()
+        except OSError:
+            pass

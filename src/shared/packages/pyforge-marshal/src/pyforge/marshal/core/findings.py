@@ -612,6 +612,19 @@ network/auth/conflict) classifies ``Verdict.ERROR``, the same tier as
 ``MRS-DEPLOY-008``/``014``: a real, irreversible-step write was attempted
 and did not converge; the intent stays open, no outcome is journaled.
 
+Story 4.9 (an advisory lock serializes concurrent writes to the shared,
+git-tracked ``planning-artifacts/specs/`` store, AD-42) adds a twenty-third
+``MRS-DEPLOY-*`` code, ``MRS-DEPLOY-023``: ``run_promote``'s new
+``FsPort.acquire_advisory_lock`` call (wrapping the ``copy_file`` loop plus
+``commit_paths``) could not acquire the lock within its own ``timeout_s`` --
+another process is plausibly promoting the SAME project concurrently, or the
+lock file's parent is unwritable. Classifies ``Verdict.WARN``, the same tier
+as ``MRS-DEPLOY-021``/``022``: a clean, re-entrant refusal
+(``data.lock_contended: true``, ``data.promoted: []``), never a hard error
+-- re-running ``promote`` later is always safe and expected to converge,
+matching AD-6's own idempotence posture for every other ``deploy``
+precondition.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -735,6 +748,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # required_check has not concluded yet), MRS-LAND-006 (an unacknowledged
 # WARN-tier finding from this run's own evaluation, escalated), and
 # MRS-LAND-007 (ForgePort.merge_pr itself failed).
+# Story 4.9 (an advisory lock serializes concurrent writes to the shared
+# planning-artifacts/specs/ store, AD-42) adds a twenty-third MRS-DEPLOY-*
+# code, MRS-DEPLOY-023: run_promote's new FsPort.acquire_advisory_lock call
+# could not acquire the lock within timeout_s -- WARN, a clean re-entrant
+# refusal (lock_contended: true, promoted: []), never a hard error.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -832,6 +850,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-005",
         "MRS-LAND-006",
         "MRS-LAND-007",
+        "MRS-DEPLOY-023",
     }
 )
 
