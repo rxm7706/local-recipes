@@ -1,14 +1,11 @@
-"""The argparse CLI skeleton (Story 1.1).
+"""The argparse CLI skeleton (Story 1.1), now wiring ``deck seed`` (Story 1.6).
 
-This story wires only the top-level parser and the empty ``deck`` subcommand
-group -- no ``seed``/``pull``/``status``/``watch`` parsers yet (those are
-Stories 1.2-1.5+ against
-``_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md``). The
-``deck`` group's own ``deck_command`` subparsers collection is registered as
-``required=True`` with zero parsers added, so ``herald deck`` alone is
-already a usage error (exit 2) -- the same "no bare group" contract
-``herald``'s own top-level ``command`` subparsers enforce (FR-26: every
-subcommand's ``--help`` is 100% argparse-generated, never hand-written).
+``pull``/``status``/``watch`` are still unwired (Epics 2-4). The ``deck``
+group's ``deck_command`` subparsers collection stays ``required=True``, so
+``herald deck`` alone is still a usage error (exit 2) -- the same "no bare
+group" contract ``herald``'s own top-level ``command`` subparsers enforce
+(FR-26: every subcommand's ``--help`` is 100% argparse-generated, never
+hand-written).
 
 Exit-code shape mirrors ``pyforge.warden.cli.main``: argparse's own exits
 (``--version``/``--help`` -> 0, usage errors -> 2, never 0) pass through as
@@ -17,21 +14,25 @@ success (0), an int code passes through verbatim. ``main`` itself still has
 no last-resort exception net and no ``KeyboardInterrupt`` handling -- out of
 this story's AC scope, same as Story 1.1.
 
-Story 1.4 adds ``dispatch``, AD-6's sole ``HeraldError`` catch point: the CLI
+``dispatch`` (Story 1.4) is AD-6's sole ``HeraldError`` catch point: the CLI
 boundary catches what bridge-core raises, writes one structured stderr line,
-and projects it to an exit code via ``errors.exit_code_for``. It is not yet
-wired into ``main``'s subparsers -- no subcommand exists to call it (that
-lands with Story 1.6's ``seed``) -- so it is exercised directly in tests
-until then.
-"""
+and projects it to an exit code via ``errors.exit_code_for``. ``deck seed``
+is the first subcommand wired through it -- ``main`` builds the V1-default
+``McpTransport`` (Story 1.2's spike outcome: the primary path, not the
+fallback), composes ``bridge.run`` with ``deck_pipeline.seed``, and hands the
+whole operation to ``dispatch``. This module is the one place allowed to name
+a concrete adapter (``McpTransport``) -- it is the composition root AD-2/AD-3
+carve out of the determinism boundary, never bridge-core itself."""
 
 from __future__ import annotations
 
 import argparse
 import sys
 from collections.abc import Callable
+from pathlib import Path
 
-from . import __version__, errors
+from . import __version__, bridge, deck_pipeline, errors
+from .transport import McpTransport
 
 TOOL_NAME = "herald"
 
@@ -52,9 +53,27 @@ def _build_parser() -> argparse.ArgumentParser:
     deck = subparsers.add_parser(
         "deck", help="manage Claude Design decks (seed/pull/status/watch)"
     )
-    # Empty subparser group by design (Story 1.1 scope): later stories add
-    # seed/pull/status/watch here, one at a time, under this same group.
-    deck.add_subparsers(dest="deck_command", required=True)
+    deck_subparsers = deck.add_subparsers(dest="deck_command", required=True)
+    seed = deck_subparsers.add_parser(
+        "seed", help="seed a deck slug into Claude Design (CAP-1)"
+    )
+    seed.add_argument("slug", help="deck slug, e.g. pyforge-warden")
+    seed.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    seed.add_argument(
+        "--support-source-project",
+        default=deck_pipeline.PILOT_SUPPORT_SOURCE_PROJECT_ID,
+        help=(
+            "Design project id to copy deck-stage.js from (default: the "
+            "already-seeded pyforge-marshal pilot project)"
+        ),
+    )
+    # pull/status/watch land in Epics 2-4, under this same deck_subparsers
+    # group.
     return parser
 
 
@@ -63,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         argv = sys.argv[1:]
     parser = _build_parser()
     try:
-        parser.parse_args(argv)
+        args = parser.parse_args(argv)
     except SystemExit as exc:
         # argparse exits itself: --version/--help -> 0, usage error -> 2
         # (never 0). Surface its code as a return value -- a caught
@@ -75,7 +94,36 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(exc.code, int):
             return exc.code
         return 1
+    if args.command == "deck" and args.deck_command == "seed":
+        return _run_deck_seed(args)
     return 0
+
+
+def _run_deck_seed(args: argparse.Namespace) -> int:
+    """Compose ``bridge.run`` + ``deck_pipeline.seed`` over the V1-default
+    ``McpTransport`` and hand the whole operation to ``dispatch`` (AD-6).
+
+    ``McpTransport()`` is constructed *inside* ``operation`` -- never before
+    ``dispatch`` is called -- so a construction failure (today: none;
+    ``McpTransport.__init__`` only ever raises on a non-https override,
+    never on its no-argument default) is caught by the same AD-6 boundary
+    as everything else in this call, rather than crashing ``main`` raw."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        transport = McpTransport()
+        result = bridge.run(
+            transport,
+            lambda t: deck_pipeline.seed(
+                t,
+                slug=args.slug,
+                repo_root=repo_root,
+                support_source_project_id=args.support_source_project,
+            ),
+        )
+        print(f"seeded {args.slug}: {result.project.url}")
+
+    return dispatch(operation)
 
 
 def dispatch(operation: Callable[[], None]) -> int:
@@ -89,8 +137,8 @@ def dispatch(operation: Callable[[], None]) -> int:
     message carrying ANSI escapes or backspaces can never erase or spoof
     the structured prefix on a terminal) and returns
     ``errors.exit_code_for``'s mapped exit code; returns 0 when
-    ``operation`` completes without raising. Not wired to any subcommand
-    yet -- exercised directly in tests."""
+    ``operation`` completes without raising. Wired to ``deck seed`` (Story
+    1.6, via ``_run_deck_seed``); also exercised directly in tests."""
     try:
         operation()
     except errors.HeraldError as exc:
