@@ -72,7 +72,7 @@ development_status:
   5-2-per-run-detail: done
   5-3-escalation-queue: done
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: done
-  5-5-durability-as-a-reported-fleet-status-dimension: backlog
+  5-5-durability-as-a-reported-fleet-status-dimension: done
   5-6-marshal-check-the-detector-registry-through-the-front-door: backlog
   6-1-profile-driven-adapter-selection-project-scoped: backlog
   6-2-skill-tree-projection: backlog

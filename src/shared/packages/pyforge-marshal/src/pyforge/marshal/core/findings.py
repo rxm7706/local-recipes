@@ -700,6 +700,25 @@ evidence) classifies ``Verdict.UNEVALUABLE``, mirroring
 cannot honestly determine ANY story's durability this run, so this is a
 "could not evaluate", never a "reported and moved on", finding.
 
+Story 5.5 (durability as a reported fleet-status dimension, FR-62/AD-48)
+adds two more codes to ``cli/status.py``'s own ``MRS-STATUS-*`` area, both
+sourced from the fleet-summary path's ONE-per-sweep read of the EXISTING
+``scripts/unpushed_work_check.py --json --branches-only`` detector (AD-48:
+read from that detector, never re-derive its branch-vs-remote diff a
+second way). ``MRS-STATUS-008`` (a home's own station branch,
+``loop/<slug>``, carries local-only content the detector confirmed is not
+on any remote) classifies ``Verdict.WARN``, the same "reported, never
+blocks progression" tier as this area's own 001/005 -- a home with
+unpushed work is never reported clean, but the sweep still reports every
+other home normally. ``MRS-STATUS-009`` (the detector itself could not be
+consulted this run at all -- the script is missing, its launch failed, it
+returned its own documented ``UNKNOWN``/exit-2 case, or its ``--json``
+output failed to parse) also classifies ``Verdict.WARN``, the same tier:
+every row's ``unpushed_work`` reports ``null`` (unknown) rather than
+crashing the sweep or, worse, silently reading as "confirmed clean" -- the
+exact false-green the detector's own module docstring names as the
+2026-07-31 incident's root cause.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -848,6 +867,12 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # at WARN, MRS-STATUS-006 (--reconcile-ledger given without --project) at
 # UNEVALUABLE, and MRS-STATUS-007 (main's own commit history could not be
 # read while gathering merged_story_keys) at UNEVALUABLE.
+# Story 5.5 (durability as a reported fleet-status dimension, FR-62/AD-48)
+# adds two more MRS-STATUS-* codes, both WARN: MRS-STATUS-008 (a home's own
+# station branch carries local-only content the unpushed_work_check.py
+# detector confirmed is not on origin) and MRS-STATUS-009 (that detector
+# could not be consulted this run at all -- every row's unpushed_work
+# reports null, never fabricated as clean).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -955,6 +980,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-STATUS-005",
         "MRS-STATUS-006",
         "MRS-STATUS-007",
+        "MRS-STATUS-008",
+        "MRS-STATUS-009",
     }
 )
 

@@ -57,21 +57,30 @@ never the gitignored Tier-3 feed AD-5 forbids everywhere else in this
 module -- explicitly to compare it against git's own durably-merged story
 keys and report any disagreement by name. See ``_reconcile_ledger``'s own
 docstring below.
+
+**Story 5.5 adds durability as a reported fleet-status DIMENSION**
+(FR-62/AD-48): the fleet-summary path runs the EXISTING, already-shipped
+``scripts/unpushed_work_check.py --json --branches-only`` detector ONCE
+per invocation and folds its own ``unpushed-branch`` findings onto each
+home's own row by matching ``ref == f"loop/{slug}"`` -- never a second,
+independently-maintained branch-vs-remote diff. See
+``_gather_unpushed_work_findings``'s own docstring below.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
-from ..adapters.process_posix import PosixProcess
+from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy as policy_core
 from ..core import promotion
@@ -151,6 +160,23 @@ _MRS_STATUS_003 = "MRS-STATUS-003"
 _MRS_STATUS_005 = "MRS-STATUS-005"
 _MRS_STATUS_006 = "MRS-STATUS-006"
 _MRS_STATUS_007 = "MRS-STATUS-007"
+
+# Story 5.5 (durability as a reported fleet-status dimension, FR-62/AD-48):
+# two more codes for the fleet-summary path's own `scripts/
+# unpushed_work_check.py --json --branches-only` fold (AD-48: read from the
+# existing detector, never re-derive against git independently).
+# `_MRS_STATUS_008` names ONE home's own station branch with local-only
+# content the detector confirmed is not on origin -- reported per matching
+# home, never silently absorbed into a "clean" verdict.
+# `_MRS_STATUS_009` names the detector itself could not be consulted this
+# run at all (missing script, launch failure, the documented `UNKNOWN`/
+# exit-2 case which prints plain text even with `--json`, or malformed
+# JSON) -- ONE WARN for the whole sweep, with every row's `unpushed_work`
+# reporting `null` (unknown), never fabricated as "nothing to report" (the
+# exact false-green the detector's own docstring names as the 2026-07-31
+# incident's root cause).
+_MRS_STATUS_008 = "MRS-STATUS-008"
+_MRS_STATUS_009 = "MRS-STATUS-009"
 
 # The tracked ledger's own conventional, fixed path (Story 5.4) -- NEVER
 # the gitignored Tier-3 feed AD-5 forbids this command's other views from
@@ -473,6 +499,136 @@ def _gather_home_facts(
     )
 
 
+# Story 5.5's own relative path to the EXISTING, already-shipped
+# repo-level detector (registered in `scripts/detectors.py`'s own runtime
+# registry) -- never a second, independently-maintained copy of its own
+# branch-vs-remote diff logic (AD-48).
+_UNPUSHED_WORK_SCRIPT_RELPATH = ("scripts", "unpushed_work_check.py")
+
+# A generous but bounded ceiling for the ONE subprocess call the fleet
+# summary makes per invocation -- a hung detector must not hang this whole
+# command (the same "bounded, never unbounded" rationale `cli/deploy.py::
+# _RESYNC_TIMEOUT_S` already establishes for its own single `ProcessPort.
+# run` call, though at a different value -- that call's own remedy
+# commands can legitimately run longer). Code review (2026-08-07, Edge
+# Case Hunter): this value is NOT itself a guarantee of NFR-14's 10-second/
+# 7-homes sweep budget -- it is a ceiling against a genuinely hung
+# subprocess, not a target the detector is expected to normally approach;
+# the detector's own real-world runtime (two git subprocesses per LOCAL
+# branch) is the actual determinant of whether NFR-14 holds in practice.
+_UNPUSHED_WORK_TIMEOUT_S = 30.0
+
+# The detector's own documented `UNKNOWN` exit code (offline / no remote)
+# -- printed as PLAIN TEXT even with `--json` passed (see
+# `scripts/unpushed_work_check.py::main`), so it is never JSON-parseable
+# and must be special-cased before the JSON parse is even attempted.
+_UNPUSHED_WORK_UNKNOWN_EXIT_CODE = 2
+
+
+def _gather_unpushed_work_findings(
+    process: ProcessPort, repo_root: Path
+) -> tuple[dict[str, dict[str, object]] | None, Finding | None]:
+    """Runs ``scripts/unpushed_work_check.py --json --branches-only`` ONCE
+    for the whole fleet sweep (FR-62/AD-48: read from that EXISTING
+    detector, never re-derive its branch-vs-remote diff, remote-branch
+    enumeration, or shortstat computation a second way). ``--branches-only``
+    is always passed -- the detector's own dangling-commit scan (``git
+    fsck``) is out of this story's scope (the Design Notes' own NFR-14
+    rationale).
+
+    Returns ``(by_ref, None)`` on success: a mapping of branch ref ->
+    ``{"files": int, "stat": str, "remedy": str}`` (the detector's own
+    ``unpushed-branch`` findings, verbatim -- never a re-derived line
+    count), possibly empty when the detector confirms a clean fleet.
+
+    Returns ``(None, finding)`` when the detector could not be consulted
+    AT ALL this run: the script could not be launched (missing, permission
+    failure), it exited its own documented ``UNKNOWN`` code (offline / no
+    remote -- printed as PLAIN TEXT even with ``--json``, so never
+    JSON-parseable), or its stdout failed to parse as the expected JSON
+    shape. This is never silently treated as "no unpushed work" -- the
+    exact false-green the detector's own module docstring names as the
+    2026-07-31 incident's root cause; the caller folds the returned
+    ``finding`` into the envelope and reports every row's own
+    ``unpushed_work`` as ``null`` (unknown, not clean)."""
+    script_path = repo_root.joinpath(*_UNPUSHED_WORK_SCRIPT_RELPATH)
+    unavailable_finding = Finding(
+        code=_MRS_STATUS_009,
+        severity=Severity.WARN,
+        message=(
+            "the unpushed-work detector "
+            f"({'/'.join(_UNPUSHED_WORK_SCRIPT_RELPATH)}) could not be "
+            "consulted this run -- every home's unpushed_work reports "
+            "null (unknown), never fabricated as clean"
+        ),
+    )
+
+    try:
+        result = process.run(
+            # Code review (2026-08-07, Edge Case Hunter): `sys.executable`,
+            # never a bare `"python3"` -- `cli/spin.py`'s own established
+            # precedent for spawning a Python child (`spawn_detached([sys.
+            # executable, "-m", ...])`) exists precisely so the child runs
+            # under the SAME interpreter/environment Marshal itself is
+            # running under. A bare `"python3"` resolved off `PATH` can
+            # silently be a DIFFERENT interpreter (or absent entirely) in a
+            # pixi/conda env whose activated shell doesn't expose that
+            # exact name -- degrading every run to MRS-STATUS-009 in
+            # exactly the environments most likely to differ from a
+            # developer's default shell.
+            [sys.executable, str(script_path), "--json", "--branches-only"],
+            cwd=repo_root,
+            timeout_s=_UNPUSHED_WORK_TIMEOUT_S,
+        )
+    except ProcessError:
+        return None, unavailable_finding
+
+    if result.returncode == _UNPUSHED_WORK_UNKNOWN_EXIT_CODE:
+        return None, unavailable_finding
+
+    try:
+        payload = json.loads(result.stdout)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return None, unavailable_finding
+
+    raw_findings = payload.get("findings") if isinstance(payload, dict) else None
+    if not isinstance(raw_findings, list):
+        return None, unavailable_finding
+
+    # Code review (2026-08-07, Edge Case Hunter): `files`/`stat`/`remedy`
+    # are now type-validated, not merely read via a bare `.get()` -- a
+    # structurally-valid-but-incomplete entry (a future detector version,
+    # a truncated write) previously still counted as "matched," producing
+    # a real MRS-STATUS-008 WARN with garbage content (e.g. "carries None
+    # file(s)... (None) -- None") instead of degrading. A malformed entry
+    # is now SKIPPED (never surfaced with placeholder content) -- the
+    # SWEEP still succeeds on every other well-formed entry; only this one
+    # bad entry is dropped, never escalated to a whole-sweep MRS-STATUS-009
+    # (a single malformed entry is not evidence the whole detector run is
+    # untrustworthy).
+    by_ref: dict[str, dict[str, object]] = {}
+    for entry in raw_findings:
+        if not isinstance(entry, dict) or entry.get("kind") != "unpushed-branch":
+            continue
+        ref = entry.get("ref")
+        if not isinstance(ref, str) or not ref:
+            continue
+        files = entry.get("files")
+        stat = entry.get("stat")
+        remedy = entry.get("remedy")
+        if (
+            not isinstance(files, int)
+            or isinstance(files, bool)
+            or not isinstance(stat, str)
+            or not stat
+            or not isinstance(remedy, str)
+            or not remedy
+        ):
+            continue
+        by_ref[ref] = {"files": files, "stat": stat, "remedy": remedy}
+    return by_ref, None
+
+
 def run_status(
     args: argparse.Namespace,
     *,
@@ -591,6 +747,22 @@ def run_status(
             continue
         fleet.append((slug, entry.path))
 
+    # Story 5.5 (FR-62/AD-48): the fleet's own unpushed-work evidence,
+    # gathered ONCE for the whole sweep (never per-home -- the detector's
+    # own read already covers every branch in the ONE physical repo every
+    # loop home shares; see this module's own `_gather_unpushed_work_
+    # findings` docstring). Skipped entirely when the fleet is empty --
+    # nothing to fold it onto. `by_ref is None` means the detector could
+    # not be consulted at all this run; every row below then reports
+    # `unpushed_work: null` (unknown), never a silent "clean".
+    unpushed_by_ref: dict[str, dict[str, object]] | None = {}
+    if fleet:
+        unpushed_by_ref, unpushed_unavailable_finding = _gather_unpushed_work_findings(
+            process, git_repo_root
+        )
+        if unpushed_unavailable_finding is not None:
+            findings.append(unpushed_unavailable_finding)
+
     rows: list[dict[str, object]] = []
     for slug, home in fleet:
         facts = _gather_home_facts(
@@ -604,10 +776,34 @@ def run_status(
             latest_run_dir=_latest_run_dir,
             resolve_harness_run_id=_resolve_harness_run_id_for_resume,
         )
+        if unpushed_by_ref:
+            matched = unpushed_by_ref.get(facts.branch)
+            if matched is not None:
+                facts = replace(facts, unpushed_work=matched)
         row, finding = status_core.build_fleet_row(facts)
         rows.append(row)
         if finding is not None:
             findings.append(finding)
+        # Story 5.5's own Always bullet: a home with unpushed work is
+        # NEVER reported clean -- gated on the RESULTING row (never on
+        # `matched` directly), since `build_fleet_row` itself hardcodes
+        # `unpushed_work: None` for a degraded (`journal_unreadable`/
+        # `has_run=False`) row, mirroring every other fact-derived field's
+        # identical precedent (`budget_consumed`, `escalation_reason`).
+        if row.get("unpushed_work") is not None:
+            unpushed = row["unpushed_work"]
+            findings.append(
+                Finding(
+                    code=_MRS_STATUS_008,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{slug}: branch {facts.branch!r} carries "
+                        f"{unpushed.get('files')} file(s) not on origin "
+                        f"({unpushed.get('stat')}) -- {unpushed.get('remedy')}"
+                    ),
+                    path=facts.branch,
+                )
+            )
 
     # Story 5.3 (FR-38): escalated rows sort first, stable otherwise --
     # ALWAYS applied to the fleet summary (never gated on --escalations,
@@ -942,6 +1138,18 @@ def _render_text_status(
                 f" reason={home.get('escalation_reason')!r} "
                 f"artifact={home.get('escalation_artifact')!r}"
             )
+        # Story 5.5 (FR-62/AD-48): the SAME `unpushed_work` dict the
+        # `--format json` payload carries -- a pure projection, never a
+        # second/independently-derived summary (NFR-12).
+        unpushed = home.get("unpushed_work")
+        if unpushed is not None:
+            # Code review (2026-08-07, Edge Case Hunter): the detector's
+            # own `stat` text is sanitized to a single line before
+            # interpolation -- an embedded newline would otherwise break
+            # this renderer's own "one line per row" contract every other
+            # text-format consumer of this output relies on.
+            stat_text = str(unpushed.get("stat")).replace("\n", " ").strip()
+            line += f" UNPUSHED files={unpushed.get('files')} ({stat_text})"
         lines.append(line)
 
     if findings:

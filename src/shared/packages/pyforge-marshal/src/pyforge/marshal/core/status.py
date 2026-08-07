@@ -796,6 +796,18 @@ class FleetHomeFacts:
     paused_reason: str | None = None
     escalated_spec_file: str | None = None
     escalated_task_phase: str | None = None
+    # Story 5.5 (FR-62/AD-48): the caller's own already-matched finding from
+    # `scripts/unpushed_work_check.py --json --branches-only` (`cli/status.py``
+    # runs that detector ONCE per sweep and matches by `ref == branch`) --
+    # `{"files": int, "stat": str, "remedy": str}` verbatim, never
+    # re-derived. `None` means either no matching finding exists for this
+    # home's branch, or the detector could not be consulted this run
+    # (indistinguishable at this layer -- `build_fleet_row` only surfaces a
+    # non-``None`` value for the fully-resolved row shape below, mirroring
+    # `budget_consumed`'s own "hardcoded None in a degraded row" precedent;
+    # ``cli/status.py`` is the one that knows which case it is and emits the
+    # matching WARN finding).
+    unpushed_work: dict[str, object] | None = None
 
 
 def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:
@@ -809,6 +821,21 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
     nothing else in ``facts`` this function can trust once that flag is
     set), then ``has_run is False`` (a clean, finding-free ``"idle"``
     row), then ``derive_home_state`` over the real run facts."""
+    # Code review (2026-08-07, Blind Hunter, the single most severe finding
+    # against this story, independently confirmed): `unpushed_work` is
+    # NEVER hardcoded to `None` in a degraded row, unlike `escalation_*`/
+    # `budget_consumed`/`current_story`. Those fields' ONLY source is the
+    # same journal/snapshot that is unreadable or absent in these two
+    # branches -- there is genuinely nothing to report. `unpushed_work`'s
+    # source is a COMPLETELY INDEPENDENT signal (a git branch-vs-remote
+    # diff, gathered once up front by the caller and threaded in via
+    # `facts.unpushed_work` regardless of whether this project has ever
+    # run bmad-loop or whether its journal is readable). Hardcoding `None`
+    # here discarded real evidence Marshal already had in hand for exactly
+    # the population most likely to carry real, unrescued local-only work
+    # (a home that crashed before ever landing a run, or whose journal
+    # write itself got interrupted) -- the precise false-green this
+    # story's own motivating incident describes.
     if facts.journal_unreadable:
         row: dict[str, object] = {
             "slug": facts.slug,
@@ -819,6 +846,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "budget_consumed": None,
             "escalation_reason": None,
             "escalation_artifact": None,
+            "unpushed_work": facts.unpushed_work,
         }
         finding = Finding(
             code=_MALFORMED_JOURNAL_CODE,
@@ -842,6 +870,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "budget_consumed": None,
             "escalation_reason": None,
             "escalation_artifact": None,
+            "unpushed_work": facts.unpushed_work,
         }
         return row, None
 
@@ -895,6 +924,10 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         "budget_consumed": facts.budget_consumed,
         "escalation_reason": escalation_reason,
         "escalation_artifact": escalation_artifact,
+        # Story 5.5: the caller's own already-matched detector finding,
+        # verbatim -- never re-derived here (AD-48). `None` when no
+        # matching finding exists, or the detector could not be consulted.
+        "unpushed_work": facts.unpushed_work,
     }
     return row, None
 
