@@ -26,9 +26,15 @@ development_status:
   3-2-rank-the-actionable-partition: done
   3-3-root-cause-naming: done
   3-4-doctor-diagnose-target-prescribe-cli-wiring-json: done
+  4-1-health-scoring: done
+  4-2-persistent-fleet-health-surface: done
+  4-3-adoption-tracking-watch-axis: done
+  4-4-safe-upgrade-path-recommendation: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
+  epic-4: done
+  epic-4-retrospective: optional
