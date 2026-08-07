@@ -979,15 +979,36 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
     # branch name -- see `resolve_ref`'s default return above.
     assert vcs.merge_branch_calls == [("branch-tip-sha", "main", expected_subject)]
 
+    # Story 4.6: `land-story` now also journals an intent/outcome pair
+    # around `merge_branch` itself (AD-6), alongside the pre-existing
+    # manual-landing observation entry -- three lines total, not one.
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
-    assert len(journal_lines) == 1
-    payload_entry = journal_lines[0]["payload"]
+    assert len(journal_lines) == 3
+    observations = [line for line in journal_lines if line["phase"] == "observation"]
+    assert len(observations) == 1
+    payload_entry = observations[0]["payload"]
     assert payload_entry["story_key"] == "4.3"
     assert payload_entry["merge_sha"] == "merge-sha-456"
     assert payload_entry["gate_verdict"] == "clean"
     assert "landed manually" in payload_entry["justification"]
-    assert journal_lines[0]["kind"] == "manual-landing"
-    assert journal_lines[0]["phase"] == "observation"
+    assert observations[0]["kind"] == "manual-landing"
+
+    merge_intents = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-land-story-merge" and line["phase"] == "intent"
+    ]
+    merge_outcomes = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-land-story-merge" and line["phase"] == "outcome"
+    ]
+    assert len(merge_intents) == 1
+    assert merge_intents[0]["payload"]["story_keys"] == ["4.3"]
+    assert merge_intents[0]["payload"]["action"] == "merge_branch"
+    assert len(merge_outcomes) == 1
+    assert merge_outcomes[0]["intent_id"] == merge_intents[0]["id"]
+    assert merge_outcomes[0]["payload"]["merge_sha"] == "merge-sha-456"
 
 
 def test_land_story_reports_non_conforming_merges_without_blocking(
@@ -1039,9 +1060,15 @@ def test_land_story_conformance_audit_read_failure_warns_but_does_not_block(
     assert _find_land_journal_lines(tmp_path, "acme") != []
 
 
-def test_land_story_merge_failure_is_a_hard_stop_with_no_journal_entry(
+def test_land_story_merge_failure_leaves_an_open_intent_with_no_outcome(
     tmp_path, capsys, monkeypatch
 ):
+    """Story 4.6 (AD-6): the intent is written BEFORE `merge_branch` is
+    even attempted, so a merge failure leaves exactly ONE journal line --
+    the open intent, with no outcome and no manual-landing observation
+    (the landing itself never happened). This used to assert NO journal
+    entry at all; that was the exact AD-6 gap Story 4.6 exists to close --
+    see the story's own Spec Change Log for why this assertion changed."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(
         gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
@@ -1055,7 +1082,11 @@ def test_land_story_merge_failure_is_a_hard_stop_with_no_journal_entry(
     assert "MRS-DEPLOY-008" in codes
     assert exit_code != 0
     assert "merge_sha" not in payload["data"]
-    assert _find_land_journal_lines(tmp_path, "acme") == []
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    assert len(journal_lines) == 1
+    assert journal_lines[0]["kind"] == "deploy-land-story-merge"
+    assert journal_lines[0]["phase"] == "intent"
+    assert "intent_id" not in journal_lines[0]
 
 
 def test_land_story_uses_an_explicit_since_ref_over_the_computed_merge_base(
@@ -1219,9 +1250,13 @@ def test_land_story_redaction_failure_warns_but_still_lands(tmp_path, capsys, mo
     assert payload["verdict"] == "warn"
     assert exit_code == 0
     assert "merge_sha" in payload["data"]
+    # Story 4.6: three lines total (merge intent + outcome, plus the
+    # pre-existing manual-landing observation) -- not one.
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
-    assert len(journal_lines) == 1
-    assert journal_lines[0]["payload"]["justification"] is None
+    assert len(journal_lines) == 3
+    observations = [line for line in journal_lines if line["phase"] == "observation"]
+    assert len(observations) == 1
+    assert observations[0]["payload"]["justification"] is None
 
 
 # =====================================================================

@@ -1099,3 +1099,49 @@ def _quarantine(
         kind=kind,
         finding=Finding(code=code, severity=Severity.ERROR, message=message, path=raw_line),
     )
+
+
+def intent_reconciles(
+    intent_payload: Mapping[str, object], evidence: Mapping[str, object]
+) -> bool:
+    """The reconciliation-evidence classification (Story 4.6, AD-6 x AD-21 x
+    AD-28): pure, caller-gathered evidence in, ``bool`` out (AD-4) -- the
+    CLI layer gathers ``evidence`` via ``VcsPort``/``ForgePort`` (a
+    committed tracked spec, a story now reachable in ``main``'s history, an
+    open PR reflecting the wave's content) and hands it here; this function
+    only judges whether that evidence closes a specific open ``intent``,
+    never fetches anything itself.
+
+    ``intent_payload`` is an open ``intent`` entry's own ``payload``
+    (``JournalEntry.payload``), expected to carry ``"story_keys"``: a
+    non-empty list of story-key strings naming what the now-uncertain
+    action targeted (mirrors every one of this story's own three callers'
+    literal payload shape, e.g. ``{"action": "commit_paths", "story_keys":
+    [...]}``). ``evidence`` carries ``"confirmed_story_keys"``: every story
+    key the caller has POSITIVELY confirmed, via its own external read, as
+    already reflecting the action's own outcome.
+
+    Reconciles (returns ``True``) only when EVERY key the intent named is
+    present in ``confirmed_story_keys`` -- all or nothing: a batched action
+    (``promote`` commits several specs in ONE commit) either fully happened
+    or Marshal cannot positively say it did, and a partial match is exactly
+    the ambiguous case this story's own Never bullet requires to stay open
+    rather than being waved through. A malformed or missing
+    ``"story_keys"``/``"confirmed_story_keys"`` (not a list of ``str``, or
+    an empty ``story_keys``) never reconciles -- the safe default on a
+    shape this function cannot even parse is "no evidence", never a
+    silent ``True`` that would let a caller skip re-attempting an action no
+    evidence actually confirms happened.
+
+    This module still does no I/O, no subprocess, no network, no clock
+    (AD-4) -- this function is the identical "pure classification, impure
+    gathering is the caller's job" split this module's own docstring
+    already establishes for ``build_entry``/``prepare_for_write``."""
+    keys = intent_payload.get("story_keys")
+    if not isinstance(keys, list) or not keys or not all(isinstance(key, str) for key in keys):
+        return False
+    confirmed = evidence.get("confirmed_story_keys")
+    if not isinstance(confirmed, list) or not all(isinstance(key, str) for key in confirmed):
+        return False
+    confirmed_set = set(confirmed)
+    return all(key in confirmed_set for key in keys)

@@ -548,6 +548,20 @@ progression" paper-trail-gap code (``MRS-DEPLOY-001``/``002``/``004``/
 way, so it is named, never silently passed over, but never itself
 invalidates the report.
 
+Story 4.6 (deploy idempotence and reconciliation of open intents, AD-6/
+AD-21/AD-28) adds a twenty-first ``MRS-DEPLOY-*`` code, ``MRS-DEPLOY-021``
+(``cli/deploy.py``'s ``promote``/``land-story``/``batch-pr`` all gain
+intent/outcome journal pairs around their own irreversible step -- a
+committed spec, a merge, a PR create/update -- and, before re-attempting
+that step, fold the journal for a matching OPEN intent left by a prior,
+possibly-crashed invocation; ``core.journal.intent_reconciles`` judges
+whether externally-gathered evidence closes it). ``MRS-DEPLOY-021`` names
+an open intent that no evidence yet confirms -- classifies ``Verdict.WARN``,
+never ``Verdict.ERROR``, per AD-21's own F-17 amendment: an unclosed
+intent must never make every subsequent ``deploy`` invocation non-zero,
+and never blocks the run reporting it; escalating it is an operator
+decision, never automatic.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -654,6 +668,10 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # commands entry could not be run at all; MRS-DEPLOY-020: it ran and exited
 # non-zero) plus a new area, MRS-STATUS-* (MRS-STATUS-001: a journal-claimed
 # commit_sha for a story git's own merged_story_keys does not confirm).
+# Story 4.6's cli/deploy.py adds a twenty-first MRS-DEPLOY-* code,
+# MRS-DEPLOY-021 (an open intent from a prior promote/land-story/batch-pr
+# invocation has no confirming evidence yet -- WARN, never ERROR, per
+# AD-21's own F-17 amendment).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -742,6 +760,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-019",
         "MRS-DEPLOY-020",
         "MRS-STATUS-001",
+        "MRS-DEPLOY-021",
     }
 )
 
