@@ -916,7 +916,14 @@ _SUSTAINED_AUTOMATION_CAVEAT = (
 )
 
 
-def _ack_state_path() -> Path:
+def _machine_state_dir() -> Path:
+    """AD-37's single declared machine-scoped path (the BASE directory, not
+    any one fact's filename) -- extracted from this function's own former
+    body (Story 6.4, FR-43) so a second machine-scoped fact
+    (``cli/adapters.py``'s own adapter-probe record) resolves through the
+    SAME override/anchoring logic rather than a second, driftable copy of
+    it. Behavior unchanged: ``_ack_state_path`` below is now a one-line
+    caller."""
     override = os.environ.get(ENV_MARSHAL_STATE_HOME)
     base = (
         Path(override).expanduser()
@@ -930,7 +937,11 @@ def _ack_state_path() -> Path:
         # invocation with a different CWD, so the acknowledgement would
         # never appear to "stick" from the operator's point of view).
         base = Path.cwd() / base
-    return base / _ACK_STATE_FILENAME
+    return base
+
+
+def _ack_state_path() -> Path:
+    return _machine_state_dir() / _ACK_STATE_FILENAME
 
 
 def _read_acknowledged(fs: FsPort, path: Path) -> set[str]:
