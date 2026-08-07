@@ -132,3 +132,35 @@ def test_keys_list_output_never_contains_a_planted_secret_value(tmp_path):
 
     assert planted_secret not in text_output
     assert planted_secret not in json_output
+
+
+def test_no_third_party_provider_api_client_imported():
+    """Story 1.7 / this story's own second AC: `keys revoke` is a local
+    record-and-guide action only -- no JFrog/GitHub/Anthropic (or any other
+    provider) API client import anywhere in the package.
+
+    AST-based (imports only), same rationale as `test_no_rotation_scheduler_
+    exists` -- a docstring or remediation-guidance STRING naming a provider
+    (e.g. "JFrog", "GitHub") is expected and correct; importing a client
+    library for one is not.
+    """
+    import ast
+
+    banned_modules = {
+        "requests", "httpx", "urllib3", "github", "pygithub", "gitlab",
+        "python-gitlab", "anthropic", "boto3", "google", "artifactory",
+        "dohq_artifactory", "pyjfrog",
+    }
+    offenders: list[str] = []
+    for path in (PKG_ROOT / "steward").rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name.split(".")[0] for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module.split(".")[0]]
+            for name in names:
+                if name.lower() in banned_modules:
+                    offenders.append(f"{path.name}:{node.lineno} imports {name!r}")
+    assert not offenders, f"third-party provider API client import found: {offenders}"

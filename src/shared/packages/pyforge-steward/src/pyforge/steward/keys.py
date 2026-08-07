@@ -40,9 +40,13 @@ result formatting. This is also this duty's dogfood target (the package's
 own `pyforge-steward-dogfood` pixi task runs `steward keys audit --drift`
 against this repo's own state).
 
-Story 1.7 continues to extend this same file (the architecture's single
-duty-adapter-module design for Epic 1) rather than splitting it into a
-subpackage.
+Story 1.7 slice: `revoke_identity` — marks the `active` inventory entry for
+a `--scope` `status="retired"` (a pure local record write, no cryptographic
+operation, no network call, no third-party provider API client anywhere)
+and `_remediation_for`, which prints provenance-appropriate (or, for a
+recognized provider like JFrog, scope-name-specific) manual remediation
+guidance alongside it. Epic 1 (Keys) is now complete: encrypt/decrypt
+(1.3), rotate (1.4), list (1.5), audit (1.6), revoke (1.7).
 """
 
 from __future__ import annotations
@@ -833,9 +837,97 @@ def format_inventory(entries: tuple[KeyIdentityEntry, ...], *, as_json: bool) ->
     return "\n".join(lines)
 
 
+# ── Revocation: a local record-and-guide action only (Story 1.7) ───────────
+#
+# NO third-party provider API client, NO network call, anywhere below. This
+# is a pure filesystem read/write via load_inventory/save_inventory — see
+# tests/meta/test_invariants.py's test_no_third_party_provider_api_client_
+# imported for the regression-tested version of this claim.
+
+_PROVENANCE_REMEDIATION: dict[str, str] = {
+    "issued": (
+        "this identity was Steward-issued, but revoking it only updates "
+        "Steward's OWN record -- the age identity file itself can still "
+        "decrypt anything it was ever used to encrypt. If any of its "
+        "secrets need to stop being decryptable by it, run "
+        "`steward keys rotate --scope {scope}` to re-encrypt them to a "
+        "fresh identity."
+    ),
+    "observed": (
+        "this is an observed (non-Steward-issued) credential -- Steward has "
+        "no upstream API to revoke it. Rotate or revoke it directly at its "
+        "own origin (the issuing provider's own dashboard/CLI), then update "
+        "anywhere it is referenced."
+    ),
+}
+
+# Scope-name-keyed overrides (substring match, case-insensitive) for a
+# provider this epic already names by its own historical incident (the
+# JFrog cross-host leak). Deliberately a small, literal, hand-curated table
+# -- not a provider SDK, not a pluggable rule engine (mirrors the
+# plaintext-secret pattern table's own restraint, Story 1.3).
+_SCOPE_SPECIFIC_REMEDIATION: dict[str, str] = {
+    "jfrog": "rotate the upstream JFrog token; this tool cannot call JFrog's revocation API.",
+}
+
+
+def _remediation_for(entry: KeyIdentityEntry) -> str:
+    """The remediation text `revoke` prints for `entry`.
+
+    A scope-name match against `_SCOPE_SPECIFIC_REMEDIATION` wins over the
+    generic per-`provenance` text in `_PROVENANCE_REMEDIATION`.
+    """
+    scope_lower = entry.scope.lower()
+    for keyword, guidance in _SCOPE_SPECIFIC_REMEDIATION.items():
+        if keyword in scope_lower:
+            return guidance
+    return _PROVENANCE_REMEDIATION[entry.provenance].format(scope=entry.scope)
+
+
+def revoke_identity(inventory_path: str | Path, *, scope: str) -> KeyIdentityEntry:
+    """Mark the `active` identity for `scope` `status="retired"`.
+
+    Works for BOTH `provenance == "issued"` and `"observed"` entries (unlike
+    `rotate_identity`, which only ever touches `issued` ones) — revoke never
+    re-encrypts anything, so there is no cryptographic operation that
+    provenance would need to gate. Every field besides `status` is carried
+    over unchanged; the retired entry stays in the inventory (visible via
+    `steward keys list`) rather than being removed — "leaves a record, not a
+    silent gap."
+
+    Raises `InventoryError` if no `active` entry exists for `scope` (no
+    entry at all, or every entry for that scope is already `retired`) —
+    never a silent no-op on a repeat call.
+    """
+    entries = load_inventory(inventory_path)
+
+    active: KeyIdentityEntry | None = None
+    for entry in entries:
+        if entry.scope == scope and entry.status == "active":
+            active = entry
+            break
+    if active is None:
+        raise InventoryError(
+            f"revoke: no active identity found for scope {scope!r} in {inventory_path}"
+        )
+
+    retired = KeyIdentityEntry(
+        name=active.name,
+        scope=active.scope,
+        provenance=active.provenance,
+        status="retired",
+        last_rotated=active.last_rotated,
+        identity_path=active.identity_path,
+        secrets=active.secrets,
+    )
+    updated = tuple(retired if e is active else e for e in entries)
+    save_inventory(inventory_path, updated)
+    return retired
+
+
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
 
-_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list", "audit")
+_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list", "audit", "revoke")
 
 
 def _run_audit(ns: argparse.Namespace) -> DutyResult:
@@ -937,8 +1029,19 @@ class KeysDuty:
                 inventory_path = ns.inventory or default_inventory_path()
                 entries = load_inventory(inventory_path)
                 return DutyResult(ok=True, summary=format_inventory(entries, as_json=ns.json))
-            else:  # verb == "audit"
+            elif verb == "audit":
                 return _run_audit(ns)
+            else:  # verb == "revoke"
+                inventory_path = ns.inventory or default_inventory_path()
+                entry = revoke_identity(inventory_path, scope=ns.scope)
+                guidance = _remediation_for(entry)
+                return DutyResult(
+                    ok=True,
+                    summary=(
+                        f"keys revoke: scope {ns.scope!r} ({entry.name!r}) marked "
+                        f"retired.\n{guidance}"
+                    ),
+                )
         except ValueError as exc:
             return DutyResult(ok=False, summary=f"keys {verb}: {exc}")
         except subprocess.CalledProcessError as exc:

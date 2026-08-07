@@ -27,7 +27,7 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
-    "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit (revoke lands in a later story)",
+    "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
     "deploy": "deployment duties",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
@@ -54,7 +54,7 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
     keys_subs = keys_parser.add_subparsers(
-        dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit}"
+        dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit,revoke}"
     )
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
@@ -104,6 +104,16 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
         default=None,
         metavar="PATH",
         help="file or directory to scan for plaintext-secret-shaped content",
+    )
+
+    revoke = keys_subs.add_parser(
+        "revoke", help="mark a credential retired and print manual remediation guidance"
+    )
+    revoke.add_argument("--scope", required=True, help="the credential scope to revoke")
+    revoke.add_argument(
+        "--inventory",
+        default=None,
+        help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
     )
 
 
