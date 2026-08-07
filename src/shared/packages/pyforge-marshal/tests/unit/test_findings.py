@@ -188,6 +188,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SMOKE-007",
             "MRS-MATRIX-001",
             "MRS-MATRIX-002",
+            "MRS-ENTRY-001",
         }
     )
 

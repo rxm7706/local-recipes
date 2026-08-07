@@ -10,6 +10,8 @@ import pytest
 
 from pyforge.marshal.core.conformance import (
     ALL_STATUSES,
+    ENTRY_FILE_FAMILY,
+    ENTRY_FILE_TOOLS,
     STAGE_CHANGE,
     STAGE_COMMIT,
     STAGE_READ,
@@ -28,6 +30,7 @@ from pyforge.marshal.core.conformance import (
     STATUS_SMOKE_UNAVAILABLE,
     STATUS_UNAVAILABLE,
     ConformanceReport,
+    EntryFileState,
     SmokeFacts,
     TreeLiveState,
     _check_symlink_identity,
@@ -35,6 +38,7 @@ from pyforge.marshal.core.conformance import (
     build_probe_record,
     build_smoke_record,
     evaluate_conformance,
+    evaluate_entry_file_family,
     evaluate_smoke,
     render_matrix_markdown,
 )
@@ -469,3 +473,83 @@ def test_matrix_statuses_never_appear_in_any_other_vocabulary():
     assert STATUS_MATRIX_UNAVAILABLE == STATUS_SMOKE_UNAVAILABLE
     assert STATUS_MATRIX_FAIL == STATUS_SMOKE_FAIL
     assert STATUS_MATRIX_PASS == STATUS_SMOKE_PASS
+
+
+# --- Story 6.7: entry-file family drift check, detect-only -------------
+
+_HUB = ENTRY_FILE_FAMILY[0]
+
+
+def _consistent_states() -> dict[str, EntryFileState]:
+    states: dict[str, EntryFileState] = {}
+    for path in ENTRY_FILE_FAMILY:
+        if path == _HUB:
+            states[path] = EntryFileState(path=path, exists=True, mentions_hub=None)
+        else:
+            states[path] = EntryFileState(path=path, exists=True, mentions_hub=True)
+    return states
+
+
+def test_entry_file_family_all_consistent_reports_no_divergence():
+    assert evaluate_entry_file_family(_consistent_states()) == ()
+
+
+def test_entry_file_family_missing_hub_names_every_tool_that_reads_it():
+    states = _consistent_states()
+    states[_HUB] = EntryFileState(path=_HUB, exists=False, mentions_hub=None)
+    divergences = evaluate_entry_file_family(states)
+    assert len(divergences) == 1
+    divergence = divergences[0]
+    assert divergence.path == _HUB
+    expected_tools = tuple(sorted(t.tool for t in ENTRY_FILE_TOOLS if _HUB in t.reads))
+    assert divergence.affected_tools == expected_tools
+    assert "claude" in divergence.affected_tools  # claude reads both CLAUDE.md and AGENTS.md
+
+
+def test_entry_file_family_missing_satellite_single_reader_not_cross_contaminating():
+    cursor_path = ".cursor/rules/specs.mdc"
+    states = _consistent_states()
+    states[cursor_path] = EntryFileState(path=cursor_path, exists=False, mentions_hub=None)
+    divergences = evaluate_entry_file_family(states)
+    assert len(divergences) == 1
+    divergence = divergences[0]
+    assert divergence.path == cursor_path
+    assert divergence.affected_tools == ("cursor",)
+    assert divergence.cross_contaminating is False
+
+
+def test_entry_file_family_satellite_no_longer_mentions_hub_is_a_divergence():
+    states = _consistent_states()
+    states["CLAUDE.md"] = EntryFileState(path="CLAUDE.md", exists=True, mentions_hub=False)
+    divergences = evaluate_entry_file_family(states)
+    assert len(divergences) == 1
+    assert divergences[0].path == "CLAUDE.md"
+    assert "no longer references" in divergences[0].detail
+
+
+def test_entry_file_family_multi_reader_tool_divergence_is_cross_contaminating():
+    """CLAUDE.md's own tool (claude) reads TWO family members -- a
+    divergence on either one is cross-contaminating for it."""
+    states = _consistent_states()
+    states["CLAUDE.md"] = EntryFileState(path="CLAUDE.md", exists=True, mentions_hub=False)
+    divergences = evaluate_entry_file_family(states)
+    assert divergences[0].cross_contaminating is True
+    assert "claude" in divergences[0].affected_tools
+
+
+def test_entry_file_family_missing_state_entry_treated_as_absent():
+    """A caller that omits a family member from `states` entirely (never
+    crashes)."""
+    states = _consistent_states()
+    del states[".github/copilot-instructions.md"]
+    divergences = evaluate_entry_file_family(states)
+    assert len(divergences) == 1
+    assert divergences[0].path == ".github/copilot-instructions.md"
+
+
+def test_entry_file_tools_reads_are_all_declared_family_members():
+    """The declared table's own internal consistency -- every tool's
+    `reads` entry is a real, declared family member."""
+    for tool in ENTRY_FILE_TOOLS:
+        for path in tool.reads:
+            assert path in ENTRY_FILE_FAMILY

@@ -84,9 +84,11 @@ from ..adapters.harness_bmadloop import (
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.conformance import (
+    ENTRY_FILE_FAMILY,
     STATUS_ADDED,
     STATUS_LINK_TARGET_CONFIRMED,
     STATUS_SMOKE_FAIL,
+    EntryFileState,
     MatrixRow,
     SmokeFacts,
     TreeLiveState,
@@ -94,6 +96,7 @@ from ..core.conformance import (
     build_probe_record,
     build_smoke_record,
     evaluate_conformance,
+    evaluate_entry_file_family,
     evaluate_smoke,
     render_matrix_markdown,
 )
@@ -340,6 +343,24 @@ def add_adapters_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     matrix_parser.set_defaults(handler=run_adapters_matrix)
 
+    entry_files_parser = adapters_subparsers.add_parser(
+        "entry-files",
+        help="Detect cross-tool entry-file family drift, report-only (FR-46).",
+        description=(
+            "Read-only: reports presence and mutual consistency across "
+            "this repo's own entry-file family (AGENTS.md plus its "
+            "per-tool satellite pointers) -- never edits any of them "
+            "(C-3/AD-11: ownership between stations is unsettled)."
+        ),
+    )
+    entry_files_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    entry_files_parser.set_defaults(handler=run_adapters_entry_files)
+
 
 def _render_text(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
@@ -451,6 +472,30 @@ def _render_text_matrix(data: dict[str, object], findings: tuple[Finding, ...]) 
                 f"harness_version={entry.get('harness_version')} "
                 f"date={entry.get('date')} stale={entry.get('stale')}"
             )
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _render_text_entry_files(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints, mirroring ``_render_text_matrix``'s own
+    shape (AD-14)."""
+    lines = ["adapters entry-files"]
+    divergences = data.get("divergences")
+    if isinstance(divergences, list):
+        for entry in divergences:
+            if not isinstance(entry, dict):
+                continue
+            lines.append(
+                f"  {entry.get('path', '?'):32} {entry.get('detail', '')} "
+                f"affected={','.join(entry.get('affected_tools', []))} "
+                f"cross_contaminating={entry.get('cross_contaminating')}"
+            )
+    if not divergences:
+        lines.append("  no divergence detected")
     if findings:
         lines.append("findings:")
         for finding in findings:
@@ -1869,3 +1914,75 @@ def run_adapters_matrix(
         )
 
     return _emit(args, data, findings, command="adapters matrix", renderer=_render_text_matrix)
+
+
+# =====================================================================
+# ``marshal adapters entry-files`` (Story 6.7, FR-46/C-3/AD-11).
+# =====================================================================
+
+
+def run_adapters_entry_files(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    context: MarshalContext | None = None,
+) -> int:
+    """``marshal adapters entry-files`` (Story 6.7, FR-46/C-3/AD-11):
+    read-only cross-tool entry-file family drift detection -- reports
+    presence and mutual consistency, never edits any family member (a
+    shared repo-level file whose ownership between stations is unsettled)."""
+    del context
+    fs = fs if fs is not None else LocalFs()
+
+    findings: list[Finding] = []
+    data: dict[str, object] = {}
+
+    root = repo_root()
+    states: dict[str, EntryFileState] = {}
+    for path in ENTRY_FILE_FAMILY:
+        # `FsPort.read_text` raises `FsError` for a real read failure (a
+        # permission error, or `path` naming a directory) -- distinct from
+        # its `None` "does not exist" return. Self-review finding: an
+        # unguarded call here would crash this whole detect-only command on
+        # an unreadable ancestor directory, the identical class of failure
+        # `gather_conformance_findings`'s own docstring already documents
+        # (Blind Hunter, Story 6.3) -- degrades to the SAME "absent" shape
+        # a genuinely missing file already reports, rather than crashing.
+        try:
+            text = fs.read_text(root / path)
+        except FsError:
+            text = None
+        mentions_hub: bool | None
+        if path == ENTRY_FILE_FAMILY[0]:
+            mentions_hub = None
+        elif text is None:
+            mentions_hub = None
+        else:
+            mentions_hub = ENTRY_FILE_FAMILY[0] in text
+        states[path] = EntryFileState(path=path, exists=text is not None, mentions_hub=mentions_hub)
+
+    divergences = evaluate_entry_file_family(states)
+    data["divergences"] = [
+        {
+            "path": divergence.path,
+            "detail": divergence.detail,
+            "affected_tools": list(divergence.affected_tools),
+            "cross_contaminating": divergence.cross_contaminating,
+        }
+        for divergence in divergences
+    ]
+
+    if divergences:
+        summary = "; ".join(f"{d.path} ({d.detail})" for d in divergences)
+        findings.append(
+            Finding(
+                code="MRS-ENTRY-001",
+                severity=Severity.WARN,
+                message=(
+                    f"entry-file family drift detected for {len(divergences)} "
+                    f"member(s): {summary}"
+                ),
+            )
+        )
+
+    return _emit(args, data, findings, command="adapters entry-files", renderer=_render_text_entry_files)

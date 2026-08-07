@@ -605,3 +605,127 @@ def render_matrix_markdown(rows: Iterable[MatrixRow], *, hostname: str, generate
             + " |"
         )
     return "\n".join(lines) + "\n"
+
+
+# =====================================================================
+# Story 6.7 -- entry-file family drift check, detect-only (FR-46, C-3,
+# AD-11).
+# =====================================================================
+#
+# This repo's own cross-tool "entry-file family": AGENTS.md is the declared
+# hub (the cross-tool entry point), and each of the other four is a
+# per-tool satellite pointer at THAT tool's own conventional path. Ownership
+# between stations for these shared, repo-level files is unsettled (C-3/
+# AD-11) -- Marshal never edits one; this concern is detection only.
+#
+# Family membership is a declared table, never inline branching on a
+# filename literal (the AC's own "family membership is configuration, not
+# a literal") -- mirrors `MECHANISM_CHECKERS`'s own "ONE table, one owner"
+# shape. Hub first, by convention (`ENTRY_FILE_FAMILY[0]`).
+ENTRY_FILE_FAMILY: tuple[str, ...] = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".cursor/rules/specs.mdc",
+    "GEMINI.md",
+    ".github/copilot-instructions.md",
+)
+
+
+@dataclass(frozen=True)
+class EntryFileTool:
+    """One CLI tool's own entry-file consumption contract: `reads` is the
+    subset of `ENTRY_FILE_FAMILY` that tool's own runtime actually loads at
+    session start. `len(reads) > 1` is exactly the AC's own "applies the
+    union of two files" shape."""
+
+    tool: str
+    reads: tuple[str, ...]
+
+
+# Confirmed against each tool's own documented behavior (this repo's own
+# CLAUDE.md/AGENTS.md text): Claude Code reads `CLAUDE.md` directly, and
+# `CLAUDE.md`'s own text documents `AGENTS.md` as the cross-tool hub it
+# forwards to -- Claude Code applies the union of both. Cursor, Gemini, and
+# Copilot each read only their own single satellite pointer.
+ENTRY_FILE_TOOLS: tuple[EntryFileTool, ...] = (
+    EntryFileTool("claude", ("CLAUDE.md", "AGENTS.md")),
+    EntryFileTool("cursor", (".cursor/rules/specs.mdc",)),
+    EntryFileTool("gemini", ("GEMINI.md",)),
+    EntryFileTool("copilot", (".github/copilot-instructions.md",)),
+)
+
+_ENTRY_FILE_HUB: str = ENTRY_FILE_FAMILY[0]
+
+
+@dataclass(frozen=True)
+class EntryFileState:
+    """One family member's already-read presence/content facts (Story 6.7)
+    -- gathered by `cli/adapters.py::run_adapters_entry_files`, nothing is
+    read here (AD-4). `mentions_hub` is `None` for the hub's own row (not
+    applicable to itself) -- `True`/`False` for every satellite, per
+    whether its content contains the hub's own filename as a substring."""
+
+    path: str
+    exists: bool
+    mentions_hub: bool | None
+
+
+@dataclass(frozen=True)
+class EntryFileDivergence:
+    """One detected divergence (Story 6.7) -- `affected_tools` is computed
+    from `ENTRY_FILE_TOOLS` itself, never hand-listed per divergence.
+    `cross_contaminating` is `True` exactly when at least one affected
+    tool's own `reads` set has more than one member (the AC's own
+    "cross-contaminating, not merely cosmetic" requirement, made
+    structural)."""
+
+    path: str
+    detail: str
+    affected_tools: tuple[str, ...]
+    cross_contaminating: bool
+
+
+def evaluate_entry_file_family(
+    states: Mapping[str, EntryFileState],
+    *,
+    tools: Iterable[EntryFileTool] = ENTRY_FILE_TOOLS,
+) -> tuple[EntryFileDivergence, ...]:
+    """The pure, total classifier every caller uses (Story 6.7, FR-46): no
+    I/O (AD-4) -- `states` is caller-supplied, keyed by `ENTRY_FILE_FAMILY`
+    path. A missing `states` entry for a family member is treated the same
+    as `exists=False` (never crashes on a partial read).
+
+    A divergence is reported for a family member that is ABSENT, or
+    (satellites only, never the hub itself) present but `mentions_hub is
+    False` -- a satellite that has drifted away from forwarding to the hub
+    is exactly the "instruction content is not isolated per-CLI" hazard
+    this story targets. The hub's own `mentions_hub` field is never
+    consulted (it is `None`, not applicable to itself)."""
+    tools_tuple = tuple(tools)
+    divergences: list[EntryFileDivergence] = []
+    for path in ENTRY_FILE_FAMILY:
+        state = states.get(path)
+        affected_tools = tuple(sorted(tool.tool for tool in tools_tuple if path in tool.reads))
+        cross_contaminating = any(
+            path in tool.reads and len(tool.reads) > 1 for tool in tools_tuple
+        )
+        if state is None or not state.exists:
+            divergences.append(
+                EntryFileDivergence(
+                    path=path,
+                    detail=f"{path!r} is absent",
+                    affected_tools=affected_tools,
+                    cross_contaminating=cross_contaminating,
+                )
+            )
+            continue
+        if path != _ENTRY_FILE_HUB and state.mentions_hub is False:
+            divergences.append(
+                EntryFileDivergence(
+                    path=path,
+                    detail=f"{path!r} exists but no longer references the hub {_ENTRY_FILE_HUB!r}",
+                    affected_tools=affected_tools,
+                    cross_contaminating=cross_contaminating,
+                )
+            )
+    return tuple(divergences)

@@ -790,6 +790,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # MRS-SMOKE-006's own "a real write was attempted and failed" tier.
     "MRS-MATRIX-001": Verdict.WARN,
     "MRS-MATRIX-002": Verdict.ERROR,
+    # Story 6.7 (entry-file family drift check, detect-only, FR-46/C-3/
+    # AD-11): MRS-ENTRY-001 (a declared family member absent, or present
+    # but no longer referencing the hub) at WARN -- detect-only, never
+    # blocks, mirroring MRS-ADP-007/MRS-DEPLOY-001's own "reported, never
+    # blocks" tier.
+    "MRS-ENTRY-001": Verdict.WARN,
 }
 
 

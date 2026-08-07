@@ -44,6 +44,7 @@ class FakeFs:
         self.fail_repoint: dict[Path, Exception] = {}
         self.fail_remove: dict[Path, Exception] = {}
         self.fail_read_symlink: dict[Path, Exception] = {}
+        self.fail_read_text: dict[Path, Exception] = {}
         self.fail_write_text: Exception | None = None
         self.fail_acquire_lock: Exception | None = None
         # Real `Path.exists()` FOLLOWS a symlink and reports False for a
@@ -96,6 +97,8 @@ class FakeFs:
         return _lexical_normalize(path)
 
     def read_text(self, path: Path) -> str | None:
+        if path in self.fail_read_text:
+            raise self.fail_read_text[path]
         return self.texts.get(path)
 
     def write_text_atomic(self, path: Path, content: str) -> None:
@@ -1491,3 +1494,117 @@ def test_matrix_written_content_matches_render_matrix_markdown(capsys, _patch_ma
     expected = render_matrix_markdown([row], hostname="host1", generated_at="ignored")
     assert written.splitlines()[4:] == expected.splitlines()[4:]
     assert envelope["data"]["hostname"] == "host1"
+
+
+# =====================================================================
+# ``marshal adapters entry-files`` (Story 6.7, FR-46/C-3/AD-11).
+# =====================================================================
+
+_ENTRY_ROOT = Path("/fake/entry-repo")
+
+
+def _entry_args(fmt: str = "json") -> argparse.Namespace:
+    return argparse.Namespace(format=fmt)
+
+
+@pytest.fixture
+def _patch_entry_files(monkeypatch):
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: _ENTRY_ROOT)
+
+
+def _consistent_entry_texts() -> dict[Path, str]:
+    from pyforge.marshal.core.conformance import ENTRY_FILE_FAMILY
+
+    texts: dict[Path, str] = {_ENTRY_ROOT / ENTRY_FILE_FAMILY[0]: "the hub, AGENTS.md\n"}
+    for path in ENTRY_FILE_FAMILY[1:]:
+        texts[_ENTRY_ROOT / path] = f"see AGENTS.md for the full rules\n"
+    return texts
+
+
+def test_entry_files_all_consistent_reports_no_finding(capsys, _patch_entry_files):
+    fs = FakeFs(texts=_consistent_entry_texts())
+    code = adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["divergences"] == []
+    assert code == 0
+
+
+def test_entry_files_missing_satellite_reports_mrs_entry_001(capsys, _patch_entry_files):
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / ".cursor/rules/specs.mdc"]
+    fs = FakeFs(texts=texts)
+    code = adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ENTRY-001" in codes
+    assert code == 0  # WARN exits 0 -- a detect-only advisory, never blocking
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert ".cursor/rules/specs.mdc" in divergences
+    assert divergences[".cursor/rules/specs.mdc"]["cross_contaminating"] is False
+
+
+def test_entry_files_missing_hub_names_claude_as_cross_contaminating(capsys, _patch_entry_files):
+    from pyforge.marshal.core.conformance import ENTRY_FILE_FAMILY
+
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / ENTRY_FILE_FAMILY[0]]
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert divergences[ENTRY_FILE_FAMILY[0]]["cross_contaminating"] is True
+    assert "claude" in divergences[ENTRY_FILE_FAMILY[0]]["affected_tools"]
+
+
+def test_entry_files_drifted_satellite_no_longer_mentioning_hub(capsys, _patch_entry_files):
+    texts = _consistent_entry_texts()
+    texts[_ENTRY_ROOT / "CLAUDE.md"] = "totally standalone content, no cross-reference\n"
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert "CLAUDE.md" in divergences
+    assert "no longer references" in divergences["CLAUDE.md"]["detail"]
+
+
+def test_entry_files_never_writes(capsys, _patch_entry_files):
+    """A detect-only command -- no mutator call ever fires, regardless of
+    how many divergences are found."""
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / "GEMINI.md"]
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    _envelope_from(capsys)
+    assert fs.symlinks == {}
+    # write_text_atomic's own store is `texts` -- assert it holds ONLY the
+    # seeded family-member content, never a new/rewritten entry.
+    assert set(fs.texts.keys()) == set(texts.keys())
+
+
+def test_entry_files_unreadable_family_member_degrades_to_absent_never_crashes(capsys, _patch_entry_files):
+    """Self-review finding: `fs.read_text` can raise `FsError` for a real
+    read failure (permission error, path naming a directory) -- distinct
+    from its `None` 'does not exist' return. An unguarded call would crash
+    this detect-only command entirely; it must degrade to the same
+    'absent' shape instead."""
+    texts = _consistent_entry_texts()
+    fs = FakeFs(texts=texts)
+    fs.fail_read_text = {_ENTRY_ROOT / "GEMINI.md": FsError("permission denied")}
+    code = adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ENTRY-001" in codes
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert "GEMINI.md" in divergences
+    assert code == 0
+
+
+def test_entry_files_text_format_renders_without_crashing(capsys, _patch_entry_files):
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / "GEMINI.md"]
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(fmt="text"), fs=fs)
+    out = capsys.readouterr().out
+    assert "adapters entry-files" in out
+    assert "GEMINI.md" in out

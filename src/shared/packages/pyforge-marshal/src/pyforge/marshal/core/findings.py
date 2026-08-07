@@ -1031,6 +1031,17 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # reporting surface, never a run precondition" tier MRS-ADP-013/014's own
 # sibling verb (`adapters probe`) already established for the identical
 # real-world fact.
+# Story 6.7 (entry-file family drift check, detect-only, FR-46/C-3/AD-11)
+# adds `cli/adapters.py`'s own `run_adapters_entry_files` (`marshal
+# adapters entry-files`) -- a NEW area, `MRS-ENTRY-*`, one code.
+# `MRS-ENTRY-001` (a declared family member -- the hub `AGENTS.md` or one
+# of its per-tool satellite pointers -- is absent, or present but no
+# longer references the hub) classifies WARN: a detect-only advisory that
+# never blocks, the same tier as `MRS-ADP-007`/`MRS-DEPLOY-001`'s own
+# "reported, never blocks" precedent. This command never writes (C-3/AD-11:
+# ownership between stations for a shared repo-level file is unsettled),
+# so no code here ever classifies ERROR/GATE_FAILED for a failed write --
+# there is no write to fail.
 # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37) adds
 # `cli/adapters.py`'s own `run_adapters_matrix` (`marshal adapters matrix`)
 # -- a NEW area, `MRS-MATRIX-*`, reusing `MRS-ADP-001` verbatim for its one
@@ -1185,6 +1196,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SMOKE-007",
         "MRS-MATRIX-001",
         "MRS-MATRIX-002",
+        "MRS-ENTRY-001",
     }
 )
 
