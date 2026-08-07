@@ -15,7 +15,7 @@ import pytest
 
 from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Finding, Source
-from pyforge.doctor.sources.atlas import _call_staleness_mcp_async, gather
+from pyforge.doctor.sources.atlas import _call_mcp_async, gather
 
 _ROWS = [
     {
@@ -144,9 +144,9 @@ def test_mcp_transport_is_bounded_by_the_timeout_argument(monkeypatch):
     must bound the WHOLE MCP session lifecycle (connect + initialize +
     call + close), not just the CLI fallback leg -- a stalled local server
     must not hang indefinitely regardless of the `timeout` argument passed
-    in. Exercises the REAL `_call_staleness_mcp_async` (not the
-    `mcp_caller` fake, which bypasses the async transport entirely) against
-    a `stdio_client` that never completes."""
+    in. Exercises the REAL `_call_mcp_async` (not the `mcp_caller` fake,
+    which bypasses the async transport entirely) against a `stdio_client`
+    that never completes."""
     import mcp.client.stdio as stdio_module
 
     class _HangingStdioClient:
@@ -164,7 +164,9 @@ def test_mcp_transport_is_bounded_by_the_timeout_argument(monkeypatch):
 
     with pytest.raises(TimeoutError):
         asyncio.run(
-            _call_staleness_mcp_async(Path("/nonexistent"), {}, timeout=0.05)
+            _call_mcp_async(
+                Path("/nonexistent"), "staleness_report", {}, timeout=0.05
+            )
         )
 
 
@@ -287,12 +289,11 @@ def test_unrecognized_axis_raises_value_error():
         gather("bogus")
 
 
-def test_cve_and_abandonment_axes_not_yet_supported():
-    # Stories 2.2/2.3's job -- explicitly out of scope this story.
-    with pytest.raises(ValueError):
-        gather("cve")
-    with pytest.raises(ValueError):
-        gather("abandonment")
+def test_cve_and_abandonment_axes_are_now_supported():
+    # Story 2.2 wired these -- both must no longer raise (Story 2.1 had
+    # this test asserting the opposite; Story 2.2 supersedes it).
+    gather("cve", mcp_caller=lambda tool, args: json.dumps({"meta": {}, "rows": []}))
+    gather("abandonment", mcp_caller=lambda tool, args: json.dumps([]))
 
 
 # --- empty result set ------------------------------------------------------
