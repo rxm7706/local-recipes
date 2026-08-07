@@ -301,6 +301,20 @@ for the given project) classifies ``Verdict.WARN``, the same "clean,
 reportable gap" tier as ``MRS-DEPLOY-004``'s own orphaned-key precedent: a
 typo'd or torn-down run id is named, never fabricated, and never blocks.
 
+Story 5.4 (ledger-vs-git reconciliation, FR-39/FR-40) adds three more
+codes to ``cli/status.py``'s own ``MRS-STATUS-*`` area. ``MRS-STATUS-005``
+(the tracked ``sprint-status-ledger.yaml`` twin could not be read) and
+``MRS-STATUS-007`` (main's own commit history could not be read while
+gathering ``core.promotion.merged_story_keys``'s durability evidence) --
+``005`` classifies ``Verdict.WARN``, alongside ``MRS-STATUS-004``'s own
+"clean, reportable gap" tier (``data.discrepancies`` reports empty, never
+fabricated); ``007`` classifies ``Verdict.UNEVALUABLE``, mirroring
+``MRS-DEPLOY-003``'s identical "cannot honestly determine durability this
+run" rationale -- a REQUIRED read, not a per-row degradation.
+``MRS-STATUS-006`` (``--reconcile-ledger`` given without ``--project``,
+checked before any I/O) classifies ``Verdict.UNEVALUABLE``, alongside
+``MRS-STATUS-003``'s own identical pre-I/O shape-gate precedent.
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -625,6 +639,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-STATUS-002": Verdict.WARN,
     "MRS-STATUS-003": Verdict.UNEVALUABLE,
     "MRS-STATUS-004": Verdict.WARN,
+    "MRS-STATUS-005": Verdict.WARN,
+    "MRS-STATUS-006": Verdict.UNEVALUABLE,
+    "MRS-STATUS-007": Verdict.UNEVALUABLE,
 }
 
 

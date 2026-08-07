@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:status.v1",
+  "title": "MarshalStatusLedgerReconciliation",
+  "description": "The `data` payload of `marshal status --reconcile-ledger --project <slug>` (Story 5.4, FR-39/FR-40) -- envelope.v1.json's own `data_version: 2` payload shape (a genuinely NEW shape, distinct from data_version 1's fleet-summary/run-detail rows this command's other views emit). additionalProperties is false, mirroring policy.json's own discipline -- an unrecognized/typo'd key is a schema violation. `discrepancies` names every story key on which the tracked sprint-status-ledger.yaml twin's own status: done keys disagree with git's own durably-merged story keys, in either direction (core.status.reconcile_ledger_vs_git) -- an empty array means the two sources fully agree.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["project", "discrepancies"],
+  "properties": {
+    "project": {
+      "type": ["string", "null"],
+      "description": "The --project SLUG this reconciliation ran against -- null only for the pre-I/O --reconcile-ledger-without---project refusal (MRS-STATUS-006), which never reaches a real comparison."
+    },
+    "discrepancies": {
+      "type": "array",
+      "description": "One entry per story key present in exactly one of {the ledger's own status: done keys, git's own durably-merged keys} -- core.status.reconcile_ledger_vs_git's pure output, sorted by kind then story key. Empty when the two sources fully agree, or when a read failure (MRS-STATUS-005/007) meant the comparison could not be attempted at all.",
+      "items": { "$ref": "#/$defs/discrepancy" }
+    }
+  },
+  "$defs": {
+    "discrepancy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["story_key", "kind", "confidence"],
+      "properties": {
+        "story_key": {
+          "type": "string",
+          "description": "Marshal's own canonical <epic>.<seq> story key form (core.identity.StoryKey, rendered via str())."
+        },
+        "kind": {
+          "enum": ["done-in-ledger-not-merged", "merged-not-done-in-ledger"],
+          "description": "The named discrepancy direction (core.status.DONE_IN_LEDGER_NOT_MERGED / MERGED_NOT_DONE_IN_LEDGER): 'done-in-ledger-not-merged' is the tracked ledger's own status: done claim with no confirming git merge (the silent-stale-ledger case this story exists to catch); 'merged-not-done-in-ledger' is the converse -- a story git confirms as durably merged whose ledger status is anything other than done, including absent entirely."
+        },
+        "confidence": {
+          "enum": ["confirmed", "unconfirmed"],
+          "description": "Code review (2026-08-07): the two 'kind' directions are NOT equally reliable. 'merged-not-done-in-ledger' is always 'confirmed' -- a positive git match (core.promotion.merged_story_keys found a conforming commit subject) is proof the story really is durably merged. 'done-in-ledger-not-merged' is always 'unconfirmed' -- merged_story_keys has a real, documented blind spot for GitHub squash-merge commits (free-form prose subjects it cannot parse a story key out of), so an absence of a match does NOT prove the story was never merged. Confirmed live against this repo's own real history: 5 'done-in-ledger-not-merged' rows for genuinely-merged squash-merged stories, zero true positives."
+        }
+      }
+    }
+  }
+}

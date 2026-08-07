@@ -47,9 +47,16 @@ enumerated) -- reported as one WARN over an otherwise-empty report, never a
 crash.
 
 No ``sprint-status.yaml``, ledger, or any other hand-maintained feed is ever
-read (AD-5's own explicit prohibition) -- see ``core/status.py``'s own
-module-level docstring section for the pure derivation core this module
-feeds.
+read for the fleet summary or ``--run`` detail views above (AD-5's own
+explicit prohibition) -- see ``core/status.py``'s own module-level
+docstring section for the pure derivation core this module feeds.
+
+**Story 5.4's ``--reconcile-ledger`` view is the ONE deliberate exception**
+(FR-39/FR-40): it reads the TRACKED ``sprint-status-ledger.yaml`` twin --
+never the gitignored Tier-3 feed AD-5 forbids everywhere else in this
+module -- explicitly to compare it against git's own durably-merged story
+keys and report any disagreement by name. See ``_reconcile_ledger``'s own
+docstring below.
 """
 
 from __future__ import annotations
@@ -63,10 +70,13 @@ from pathlib import Path
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness
+from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..adapters.process_posix import PosixProcess
 from ..adapters.vcs_git import GitVcs, VcsCommandError
+from ..core import policy as policy_core
+from ..core import promotion
 from ..core import status as status_core
+from ..core.identity import MalformedStoryKeyError, normalize
 from ..core.journal import Phase, fold
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
@@ -75,7 +85,13 @@ from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
-from .config import _suppress_downstream_pipe_close
+from .config import (
+    PolicyIOError,
+    _read_project_policy,
+    _suppress_downstream_pipe_close,
+    conventional_project_policy_path,
+    repo_root,
+)
 
 # This module's own local copy of `cli/spin.py`'s journal-shape constants --
 # `cli/retire.py` establishes the identical "each module owns its own copy
@@ -122,6 +138,33 @@ _MRS_STATUS_002 = "MRS-STATUS-002"
 # already establishes.
 _MRS_STATUS_003 = "MRS-STATUS-003"
 
+# Story 5.4 (ledger-vs-git reconciliation, FR-39/FR-40): three more codes
+# in this same MRS-STATUS-* area. `_MRS_STATUS_005` names a tracked
+# `sprint-status-ledger.yaml` that could not be read (missing entirely, or
+# a parse failure) -- reported, `data.discrepancies` stays empty, never
+# fabricated. `_MRS_STATUS_006` is the `--reconcile-ledger` counterpart to
+# `_MRS_STATUS_003`'s `--run` precedent: given without `--project`,
+# refused before any I/O. `_MRS_STATUS_007` names a `main` commit-history
+# read failure while gathering `core.promotion.merged_story_keys`'s
+# durability evidence -- mirrors `cli/deploy.py::_MRS_DEPLOY_003`'s
+# identical "a REQUIRED read, not a per-row degradation" rationale.
+_MRS_STATUS_005 = "MRS-STATUS-005"
+_MRS_STATUS_006 = "MRS-STATUS-006"
+_MRS_STATUS_007 = "MRS-STATUS-007"
+
+# The tracked ledger's own conventional, fixed path (Story 5.4) -- NEVER
+# the gitignored Tier-3 feed AD-5 forbids this command's other views from
+# ever reading (see this module's own docstring's closing paragraph).
+_LEDGER_RELPATH = "_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
+
+# The base branch git's own durable-merge evidence reads against -- the
+# SAME hardcoded `"main"` every other `merged_story_keys` caller in this
+# package uses (see `core/status.py`'s own module docstring, `cli/deploy.py`
+# `_MERGE_BASE_BRANCH`'s identical precedent).
+_MERGE_BASE_BRANCH = "main"
+
+_DONE_STATUS = "done"
+
 
 def add_status_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register the ``status`` subcommand on ``main.py``'s subparser tree --
@@ -160,6 +203,17 @@ def add_status_subparser(subparsers: argparse._SubParsersAction) -> None:
         help=(
             "Fleet-summary only (ignored with --run): filter data.homes to "
             "rows currently paused-on-escalation (Story 5.3, FR-38)."
+        ),
+    )
+    parser.add_argument(
+        "--reconcile-ledger",
+        action="store_true",
+        help=(
+            "Compare the tracked sprint-status-ledger.yaml's own status: "
+            "done story keys against git's own durably-merged story keys, "
+            "reporting any disagreement by name (Story 5.4, FR-39/FR-40) "
+            "-- requires --project SLUG alongside it. An opt-in extra "
+            "read, never folded into the default fleet/run-detail views."
         ),
     )
     parser.add_argument(
@@ -442,6 +496,7 @@ def run_status(
     clock = clock if clock is not None else SystemClock()
 
     run_id = getattr(args, "run", None)
+    reconcile_ledger = getattr(args, "reconcile_ledger", False)
 
     # Story 5.2's own Always bullet: `--run` requires `--project` alongside
     # it -- checked FIRST, before any I/O (the same pre-I/O precedence
@@ -459,6 +514,52 @@ def run_status(
         )
         data = {"project": None, "run": run_id}
         return _emit(args, data, [finding])
+
+    # Story 5.4's own Always bullet: `--reconcile-ledger` requires
+    # `--project` alongside it -- the SAME pre-I/O precedence `--run` above
+    # already establishes for this command; a fleet-wide reconciliation
+    # sweep is out of this story's own scope.
+    if reconcile_ledger and args.project is None:
+        finding = Finding(
+            code=_MRS_STATUS_006,
+            severity=Severity.ERROR,
+            message=(
+                "--reconcile-ledger requires --project SLUG alongside it "
+                "-- a fleet-wide reconciliation sweep is out of this "
+                "command's scope"
+            ),
+        )
+        # Code review (2026-08-07, Edge Case Hunter): `discrepancies` is a
+        # REQUIRED field in `schemas/status.json`'s own data_version-2
+        # shape -- every other data_version-2 return path already includes
+        # it; this refusal path was the one exception, so a `--format json`
+        # caller of this exact invocation got a payload that failed its
+        # own published schema.
+        data = {"project": None, "discrepancies": []}
+        return _emit(args, data, [finding], _render_text_reconcile, data_version=2)
+
+    # Code review (2026-08-07, Edge Case Hunter): `--run` and
+    # `--reconcile-ledger` are mutually exclusive view SELECTORS (fleet
+    # summary / run detail / ledger reconciliation are three distinct
+    # reports); giving both silently let `--reconcile-ledger` win with no
+    # signal that `--run` was ignored -- inconsistent with this module's
+    # own "reported, never a silent partial" convention (see the module
+    # docstring). Refused before any I/O, same tier as the two precondition
+    # checks above.
+    if reconcile_ledger and run_id is not None:
+        finding = Finding(
+            code=_MRS_STATUS_006,
+            severity=Severity.ERROR,
+            message=(
+                "--run and --reconcile-ledger are mutually exclusive -- "
+                "each selects a different report; pass only one"
+            ),
+        )
+        data = {"project": args.project, "discrepancies": []}
+        return _emit(args, data, [finding], _render_text_reconcile, data_version=2)
+
+    if reconcile_ledger:
+        return _reconcile_ledger(args, vcs=vcs, harness=harness)
 
     if run_id is not None:
         return _run_detail(
@@ -670,6 +771,150 @@ def _run_detail(
     return _emit(args, row, findings, _render_text_run_detail)
 
 
+# =============================================================================
+# Story 5.4: ledger-vs-git reconciliation (``marshal status --reconcile-
+# ledger --project <slug>``, FR-39/FR-40) -- a THIRD switch on this SAME
+# command, alongside the fleet summary and ``--run`` detail above.
+# ``run_status`` has already confirmed ``args.project`` is present before
+# ever calling this. Opt-in only: never folded into the default view (a
+# YAML parse plus a `git log`-scale walk over `main`'s full history is a
+# genuinely heavier read than either sibling switch, per the spec's own
+# Design Notes).
+# =============================================================================
+
+
+def _reconcile_ledger(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort,
+    harness: HarnessPort,
+) -> int:
+    """Compares the tracked ``sprint-status-ledger.yaml`` twin's own
+    ``status: done`` story keys against git's own durably-merged story keys
+    (Story 5.4): reads the ledger via ``HarnessPort.ledger_story_statuses``
+    (the SAME ``bmad_loop.sprintstatus.load`` parser
+    ``story_feed_keys``/``story_feed_error`` already reuse -- AD-3 forbids
+    this module from importing ``bmad_loop`` directly), gathers git's own
+    durable-merge evidence via ``VcsPort.commit_subjects``/``core.promotion.
+    merged_story_keys`` (Story 4.1's own already-shipped machinery, the SAME
+    reuse ``cli/deploy.py``/``cli/retire.py``/``cli/land.py`` already
+    establish), and delegates the actual comparison to ``core.status.
+    reconcile_ledger_vs_git`` (AD-4). Neither source is ever rewritten
+    (AD-33) -- purely diagnostic. ``data_version=2``: a genuinely NEW
+    payload shape (AD-39), never additive fields on an already-shipped one."""
+    slug = args.project
+    findings: list[Finding] = []
+    root = repo_root()
+
+    ledger_path = root / _LEDGER_RELPATH.format(slug=slug)
+    try:
+        raw_statuses = harness.ledger_story_statuses(ledger_path)
+    except HarnessError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_STATUS_005,
+                severity=Severity.WARN,
+                message=(
+                    f"project {slug!r}: cannot read the tracked ledger at "
+                    f"{ledger_path}: {exc}"
+                ),
+                path=str(ledger_path),
+            )
+        )
+        data: dict[str, object] = {"project": slug, "discrepancies": []}
+        return _emit(args, data, findings, _render_text_reconcile, data_version=2)
+
+    # A raw ledger key that fails to normalize is skipped, never a crash --
+    # mirrors every other Epic 5 story's established convention (the spec's
+    # own I/O matrix: "A ledger entry with a malformed key").
+    ledger_done_keys: set[str] = set()
+    for raw_key, raw_status in raw_statuses:
+        if raw_status != _DONE_STATUS:
+            continue
+        try:
+            ledger_done_keys.add(str(normalize(raw_key)))
+        except MalformedStoryKeyError:
+            continue
+
+    project_data: Mapping[str, object] = {}
+    if policy_core._is_valid_project_slug(slug):
+        policy_path = conventional_project_policy_path(slug)
+        try:
+            present = policy_path.is_file()
+        except OSError:
+            present = True
+        if present:
+            try:
+                project_data = _read_project_policy(policy_path)
+            except PolicyIOError as exc:
+                findings.append(exc.finding)
+    effective, policy_findings = policy_core.compose(
+        project_slug=slug, project=project_data, flags={}
+    )
+    findings.extend(policy_findings)
+    template = effective.merge_subject_template.value
+
+    # Git's own durable-merge evidence is REQUIRED, not best-effort (mirrors
+    # `cli/deploy.py::_scan_promotions`'s identical "cannot honestly
+    # determine ANY story's durability this run" rationale for its own
+    # `_MRS_DEPLOY_003`) -- a read failure here is a hard, run-wide finding,
+    # never a silently-empty `merged_keys` (which would read as "nothing
+    # merged yet" and report every ledger `done` key as a false positive).
+    try:
+        main_subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_STATUS_007,
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot read {_MERGE_BASE_BRANCH!r}'s commit history "
+                    f"to determine story durability: {exc}"
+                ),
+            )
+        )
+        data = {"project": slug, "discrepancies": []}
+        return _emit(args, data, findings, _render_text_reconcile, data_version=2)
+
+    merged_keys = frozenset(
+        str(key)
+        for key in promotion.merged_story_keys(main_subjects, template, slug)
+    )
+
+    discrepancies = status_core.reconcile_ledger_vs_git(
+        frozenset(ledger_done_keys), merged_keys
+    )
+    data = {"project": slug, "discrepancies": list(discrepancies)}
+    return _emit(args, data, findings, _render_text_reconcile, data_version=2)
+
+
+def _render_text_reconcile(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14/NFR-12), matching every other view
+    this command's own ``_render_text*`` convention already establishes."""
+    project = data.get("project")
+    discrepancies = data.get("discrepancies") or []
+    lines = [
+        f"status --project {project!r} --reconcile-ledger",
+        f"discrepancies: {len(discrepancies)}",
+    ]
+    for discrepancy in discrepancies:
+        lines.append(
+            f"  {discrepancy['story_key']} {discrepancy['kind']} "
+            f"[{discrepancy.get('confidence', 'unconfirmed')}]"
+        )
+
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
+    return "\n".join(lines)
+
+
 def _render_text_status(
     data: Mapping[str, object], findings: tuple[Finding, ...]
 ) -> str:
@@ -781,6 +1026,8 @@ def _emit(
     data: dict[str, object],
     findings: list[Finding],
     render: Callable[[Mapping[str, object], tuple[Finding, ...]], str] = _render_text_status,
+    *,
+    data_version: int = 1,
 ) -> int:
     """The envelope-build-then-print tail every ``cli/*.py`` command shares
     (AD-14: one envelope shape per command). ``render`` defaults to
@@ -788,10 +1035,18 @@ def _emit(
     ``_run_detail`` passes ``_render_text_run_detail`` instead -- the SAME
     "value-returning core, distinct text-render callable per data shape"
     convention ``cli/deploy.py``'s own ``_emit`` (``land-story`` vs.
-    ``batch-pr``) already established."""
+    ``batch-pr``) already established. ``data_version`` defaults to ``1``
+    (every payload shape this command shipped before Story 5.4); Story
+    5.4's ``--reconcile-ledger`` view passes ``2`` -- a genuinely NEW
+    payload shape (AD-39), never additive fields on an already-shipped
+    one, which would leave the version unchanged instead."""
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(
-        command="status", verdict=verdict_value, data=data, findings=tuple(findings)
+        command="status",
+        verdict=verdict_value,
+        data=data,
+        data_version=data_version,
+        findings=tuple(findings),
     )
 
     if args.format == "json":
