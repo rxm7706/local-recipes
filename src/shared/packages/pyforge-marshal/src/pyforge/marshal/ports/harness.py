@@ -402,6 +402,38 @@ class AdapterProbe:
     probe_note: str | None
 
 
+@dataclass(frozen=True)
+class SmokeRunResult:
+    """One bounded ``bmad-loop run --story <story> --max-stories 1`` attempt
+    against a named adapter, inside an ephemeral loop home (Story 6.5,
+    FR-44/AD-37) -- a plain, frozen value type ``HarnessPort.run_smoke``
+    returns, mirroring ``AdapterProbe``'s own "facts the caller could not
+    have known in advance" convention. ``adapter`` is the profile name
+    driven; ``binary`` is the profile's declared binary name (the SAME field
+    ``adapter_binary``/``adapter_probe`` resolve). ``binary_present`` is a
+    plain ``shutil.which`` presence check; when ``False``, NO subprocess is
+    attempted at all and ``launched``/``returncode``/``timed_out`` are
+    ``False``/``None``/``False`` (mirrors ``AdapterProbe``'s identical
+    short-circuit). ``launched`` is ``True`` iff the subprocess actually
+    started (a launch-time ``OSError`` -- a genuinely broken PATH entry, not
+    a missing binary, which ``binary_present`` already rules out -- leaves
+    this ``False``). ``returncode`` is the child's exit code, normalized for
+    a signal-killed child (``BmadLoopHarness._normalize_returncode``'s own
+    128+signal convention), or ``None`` when the process never started or
+    timed out. ``timed_out`` is ``True`` iff the bounded subprocess call
+    exceeded its caller-given ``timeout_s`` -- there is no Marshal
+    supervisor watching an unattended ephemeral smoke run, so a hang must
+    degrade to a reported fact here rather than blocking the CLI
+    invocation forever."""
+
+    adapter: str
+    binary: str
+    binary_present: bool
+    launched: bool
+    returncode: int | None
+    timed_out: bool
+
+
 class HarnessPort(Protocol):
     def binary_present(self, binary: str) -> bool:
         """``True`` iff ``binary`` resolves on ``PATH``. Never raises."""
@@ -648,4 +680,29 @@ class HarnessPort(Protocol):
         already has (both resolve the SAME profile). Never raises for
         anything else -- see ``AdapterProbe``'s own docstring for how each
         of those failures degrades instead."""
+        ...
+
+    def run_smoke(
+        self,
+        project: Path,
+        *,
+        adapter_name: str,
+        story: str,
+        timeout_s: float,
+        log_path: Path,
+    ) -> SmokeRunResult:
+        """Drive ONE bounded ``bmad-loop run --story <story> --max-stories
+        1`` attempt against ``adapter_name`` inside ``project`` (Story 6.5,
+        FR-44/AD-37) -- redirecting both streams to ``log_path`` (mirrors
+        ``spin``'s own log-redirection recipe) and bounded by ``timeout_s``
+        (there is no supervisor watching this unattended, ephemeral run).
+        Raises ``HarnessError`` for an unknown ``adapter_name`` or an
+        unimportable ``bmad_loop`` -- the SAME contract ``adapter_probe``/
+        ``adapter_binary`` already have (all three resolve the SAME
+        profile). Never raises for anything else: an absent binary short-
+        circuits to no subprocess call at all
+        (``SmokeRunResult.binary_present=False``); a launch-time ``OSError``
+        degrades to ``launched=False``; a bounded timeout degrades to
+        ``timed_out=True`` -- mirrors ``adapter_probe``'s identical
+        "subprocess flakiness is not an error" convention."""
         ...

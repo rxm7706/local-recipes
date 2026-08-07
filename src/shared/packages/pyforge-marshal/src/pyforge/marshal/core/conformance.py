@@ -275,3 +275,163 @@ def build_probe_record(probe: AdapterProbe) -> dict[str, object]:
         "probe_output": probe.probe_output,
         "probe_note": probe.probe_note,
     }
+
+
+# Story 6.5 (FR-44, AD-31/AD-37) -- a THIRD, independent closed status pair
+# for a THIRD distinct fact ("did the canonical smoke story complete end to
+# end on this adapter, on this machine"), never conflated with either of the
+# two pairs above even though the string literal "unavailable" happens to
+# coincide with Story 6.4's own STATUS_UNAVAILABLE -- AD-31's "never
+# conflated, never sharing a constant" is about the CLASSIFICATION/constant,
+# not incidental string equality between two independently-declared,
+# independently-owned vocabularies.
+STATUS_SMOKE_PASS = "pass"
+STATUS_SMOKE_FAIL = "fail"
+STATUS_SMOKE_UNAVAILABLE = "unavailable"
+
+# The AC's own "spec read -> change -> verify -> commit" lifecycle -- a
+# closed, ordered four-member vocabulary naming the FAILING stage when
+# `evaluate_smoke` classifies `STATUS_SMOKE_FAIL`. `None` for `pass`/
+# `unavailable` (there is no "failing stage" for either).
+STAGE_READ = "read"
+STAGE_CHANGE = "change"
+STAGE_VERIFY = "verify"
+STAGE_COMMIT = "commit"
+SMOKE_STAGES: tuple[str, ...] = (STAGE_READ, STAGE_CHANGE, STAGE_VERIFY, STAGE_COMMIT)
+
+
+@dataclass(frozen=True)
+class SmokeFacts:
+    """Already-gathered raw facts from ONE `HarnessPort.run_smoke` attempt
+    plus the caller's own pre/post git-worktree observation (Story 6.5) --
+    nothing is read here (AD-4); `cli/adapters.py::run_adapters_smoke`
+    gathers every field via `VcsPort`/`FsPort` and `SmokeRunResult`.
+
+    - `binary_present`/`launched`/`timed_out`/`returncode` mirror
+      `SmokeRunResult`'s own same-named fields verbatim.
+    - `file_changed` -- the smoke's own target file (`SMOKE.md`) differs
+      from its seeded content after the run.
+    - `commit_made` -- the ephemeral worktree's `HEAD` sha advanced past
+      its pre-run baseline (`VcsPort.worktree_head_sha`, AD-33: git is the
+      sole authority for repository facts).
+    """
+
+    binary_present: bool
+    launched: bool
+    timed_out: bool
+    returncode: int | None
+    file_changed: bool
+    commit_made: bool
+
+
+@dataclass(frozen=True)
+class SmokeReport:
+    """The full, pure output of `evaluate_smoke` -- `cli/adapters.py` turns
+    this into a finding (when `status == STATUS_SMOKE_FAIL`) and an
+    envelope's own `data` payload; this dataclass carries no I/O result
+    itself."""
+
+    status: str
+    failing_stage: str | None
+    detail: str
+
+
+def evaluate_smoke(facts: SmokeFacts) -> SmokeReport:
+    """The total, pure classifier every caller uses (Story 6.5, FR-44):
+    `not binary_present` -> `STATUS_SMOKE_UNAVAILABLE`, no failing stage
+    (the AC's own "an adapter absent from the host reports unavailable
+    without failing the command"). `commit_made` -> `STATUS_SMOKE_PASS` --
+    the ONE passing condition, since a durable commit is only reachable
+    after read/change/verify already completed in `bmad-loop`'s own
+    dev-session lifecycle. Short of a commit, the EARLIEST stage lacking
+    positive OBSERVABLE evidence is named the failing one: `file_changed`
+    (but no commit) -> `STAGE_VERIFY` (a change landed, so read+change
+    plausibly completed, but verify -- or the commit step itself -- never
+    did); `launched` (but no file change) -> `STAGE_CHANGE` (the harness
+    ran but produced no observable edit); otherwise (never launched despite
+    a present binary -- a launch-time OSError) -> `STAGE_READ`. This is a
+    genuine, documented fidelity limit (see the spec's own Design Notes):
+    Marshal cannot observe "read" or "verify" succeeding independently from
+    OUTSIDE the adapter's own session, so the classification is inferred
+    from the outermost observable boundary a git worktree and a known
+    target file expose, never from adapter-internal introspection.
+    `timed_out` is folded into `detail` whenever informative, never into
+    `status`/`failing_stage` itself. `returncode` is different: PASS
+    requires `commit_made` AND `file_changed` AND a clean exit (`0` or
+    `None`) all together (review finding: a commit landing is not, on its
+    own, sufficient corroboration -- a non-zero exit alongside a landed
+    commit, or a commit that never touched the smoke's own target file,
+    both used to misreport PASS). Short of that full corroboration, a
+    `commit_made` without it still names `STAGE_COMMIT` as the failing
+    stage rather than falling through to the weaker `file_changed`/
+    `launched` checks below, which assume no commit landed at all."""
+    if not facts.binary_present:
+        return SmokeReport(
+            status=STATUS_SMOKE_UNAVAILABLE,
+            failing_stage=None,
+            detail="adapter binary not present on this host",
+        )
+    detail_suffix = ""
+    if facts.timed_out:
+        detail_suffix = " (the bounded harness call timed out before returning)"
+    elif facts.launched and facts.returncode not in (0, None):
+        detail_suffix = f" (bmad-loop run exited {facts.returncode})"
+    if facts.commit_made:
+        if facts.file_changed and facts.returncode in (0, None):
+            return SmokeReport(
+                status=STATUS_SMOKE_PASS,
+                failing_stage=None,
+                detail="spec read, change, verify, and commit all completed" + detail_suffix,
+            )
+        return SmokeReport(
+            status=STATUS_SMOKE_FAIL,
+            failing_stage=STAGE_COMMIT,
+            detail=(
+                "a commit landed but does not fully corroborate a completed run "
+                f"(target file changed={facts.file_changed}, returncode={facts.returncode})"
+                + detail_suffix
+            ),
+        )
+    if facts.file_changed:
+        return SmokeReport(
+            status=STATUS_SMOKE_FAIL,
+            failing_stage=STAGE_VERIFY,
+            detail=(
+                "a change was made but never committed -- verify (or the "
+                "commit step itself) did not complete" + detail_suffix
+            ),
+        )
+    if facts.launched:
+        return SmokeReport(
+            status=STATUS_SMOKE_FAIL,
+            failing_stage=STAGE_CHANGE,
+            detail=(
+                "the harness launched but produced no observable change"
+                + detail_suffix
+            ),
+        )
+    return SmokeReport(
+        status=STATUS_SMOKE_FAIL,
+        failing_stage=STAGE_READ,
+        detail="the harness could not be launched against this adapter at all" + detail_suffix,
+    )
+
+
+def build_smoke_record(
+    adapter: str, report: SmokeReport, *, binary: str, binary_present: bool
+) -> dict[str, object]:
+    """Shape an already-classified `SmokeReport` (Story 6.5, FR-44) into the
+    plain dict `cli/adapters.py::run_adapters_smoke` reports as `data.smoke`
+    and (after routing through `core.egress.to_redacted` at the write
+    boundary -- never here, AD-4) persists to the machine-scoped smoke
+    record file. Mirrors `build_probe_record`'s own "the caller already
+    gathered every fact, this function only shapes" convention -- no I/O, no
+    redaction."""
+    return {
+        "adapter": adapter,
+        "binary": binary,
+        "binary_present": binary_present,
+        "status": report.status,
+        "failing_stage": report.failing_stage,
+        "detail": report.detail,
+    }

@@ -201,6 +201,7 @@ from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
     RunStatusSnapshot,
+    SmokeRunResult,
     SpinResult,
     TaskPhaseSnapshot,
     UsageSnapshot,
@@ -333,7 +334,12 @@ low_frame_rate = false
 _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 
 
-def render_policy_toml(effective: policy.EffectivePolicy, *, difficulty: str | None = None) -> str:
+def render_policy_toml(
+    effective: policy.EffectivePolicy,
+    *,
+    difficulty: str | None = None,
+    adapter: str | None = None,
+) -> str:
     """Pure string builder (no I/O): parse ``_POLICY_TEMPLATE``, overwrite
     Marshal's 6 mapped keys from ``effective``, apply FR-51 tier-batching,
     and return ``tomlkit.dumps(...)``. Identical ``(effective, difficulty)``
@@ -364,6 +370,15 @@ def render_policy_toml(effective: policy.EffectivePolicy, *, difficulty: str | N
     file that bricks the loop home's next run (``max_followup_reviews = 0``
     is legal on both sides and renders fine). A plain exception, not an
     ``MRS-*`` finding -- no CLI caller exists yet to convert one.
+
+    ``adapter`` (Story 6.5, FR-44): when given, overwrites ``[adapter].name``
+    -- the template's own hardcoded ``"claude"`` baseline is otherwise NEVER
+    derived from ``effective`` (confirmed live: no existing composed field
+    names the configured adapter at all). Mirrors ``difficulty``'s own
+    additive, backward-compatible keyword shape; every existing caller that
+    never passes it renders byte-identically unaffected. Applied
+    independently of ``difficulty``'s own tier-batching (which touches only
+    ``[adapter.<stage>].model`` sub-tables, never ``[adapter].name``).
     """
     doc = tomlkit.parse(_POLICY_TEMPLATE)
 
@@ -386,6 +401,9 @@ def render_policy_toml(effective: policy.EffectivePolicy, *, difficulty: str | N
     doc["limits"]["max_followup_reviews"] = seed["max_followup_reviews"].value
     doc["verify"]["commands"] = list(effective.verify_commands.value)
     doc["scm"]["worktree_seed"] = list(effective.worktree_seed_paths.value)
+
+    if adapter is not None:
+        doc["adapter"]["name"] = adapter
 
     tier_map = effective.model_tier_map.value
     if difficulty is not None and difficulty in tier_map:
@@ -413,7 +431,11 @@ class HarnessPolicyWriteError(Exception):
 
 
 def write_policy_toml(
-    effective: policy.EffectivePolicy, loop_home: Path, *, difficulty: str | None = None
+    effective: policy.EffectivePolicy,
+    loop_home: Path,
+    *,
+    difficulty: str | None = None,
+    adapter: str | None = None,
 ) -> Path:
     """The I/O boundary: render via ``render_policy_toml`` and atomically
     write ``<loop_home>/.bmad-loop/policy.toml`` whole, mirroring
@@ -431,8 +453,11 @@ def write_policy_toml(
     OK-status compositions) -- this function writes whatever
     ``EffectivePolicy`` it is handed, subject only to
     ``render_policy_toml``'s own attempt-count floor.
+
+    ``adapter`` (Story 6.5, FR-44) passes straight through to
+    ``render_policy_toml``.
     """
-    text = render_policy_toml(effective, difficulty=difficulty)
+    text = render_policy_toml(effective, difficulty=difficulty, adapter=adapter)
     bmad_loop_dir = Path(loop_home) / ".bmad-loop"
     try:
         bmad_loop_dir.mkdir(parents=True, exist_ok=True)
@@ -985,6 +1010,87 @@ class BmadLoopHarness:
         except OSError as exc:
             raise HarnessError(f"cannot launch bmad-loop run: {exc}") from exc
         return self._normalize_returncode(result.returncode)
+
+    def run_smoke(
+        self,
+        project: Path,
+        *,
+        adapter_name: str,
+        story: str,
+        timeout_s: float,
+        log_path: Path,
+    ) -> SmokeRunResult:
+        """Story 6.5 (FR-44/AD-37): drive ONE bounded ``bmad-loop run
+        --story <story> --max-stories 1`` attempt against ``adapter_name``.
+        Resolves the profile via the EXISTING ``_get_profile`` seam (raises
+        ``HarnessError`` for an unknown adapter or an unimportable
+        ``bmad_loop``, the SAME contract ``adapter_probe``/``adapter_binary``
+        already have). An absent binary short-circuits to NO subprocess call
+        at all (mirrors ``adapter_probe``'s identical short-circuit); a
+        present binary gets exactly one bounded, log-redirected
+        ``subprocess.run`` call (mirrors ``spin``'s own log-redirection
+        recipe, but synchronous and bounded rather than detached -- there is
+        no supervisor watching an unattended ephemeral smoke run)."""
+        profile = self._get_profile(adapter_name, project)
+        binary = profile.binary
+        binary_present = self.binary_present(binary)
+        if not binary_present:
+            return SmokeRunResult(
+                adapter=adapter_name,
+                binary=binary,
+                binary_present=False,
+                launched=False,
+                returncode=None,
+                timed_out=False,
+            )
+        argv = self._run_argv(epic=None, story=story, max_count=1)
+        try:
+            log_file = open(log_path, "wb")
+        except OSError:
+            return SmokeRunResult(
+                adapter=adapter_name,
+                binary=binary,
+                binary_present=True,
+                launched=False,
+                returncode=None,
+                timed_out=False,
+            )
+        with log_file:
+            try:
+                result = subprocess.run(
+                    argv,
+                    cwd=project,
+                    stdin=subprocess.DEVNULL,
+                    stdout=log_file,
+                    stderr=log_file,
+                    timeout=timeout_s,
+                )
+            except subprocess.TimeoutExpired:
+                return SmokeRunResult(
+                    adapter=adapter_name,
+                    binary=binary,
+                    binary_present=True,
+                    launched=True,
+                    returncode=None,
+                    timed_out=True,
+                )
+            except OSError:
+                return SmokeRunResult(
+                    adapter=adapter_name,
+                    binary=binary,
+                    binary_present=True,
+                    launched=False,
+                    returncode=None,
+                    timed_out=False,
+                )
+        return SmokeRunResult(
+            adapter=adapter_name,
+            binary=binary,
+            binary_present=True,
+            launched=True,
+            returncode=self._normalize_returncode(result.returncode),
+            timed_out=False,
+        )
 
     def stop(self, project: Path, run_id: str) -> bool:
         # Synchronous, capturing output like `attach`/`run_foreground` do NOT

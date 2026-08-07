@@ -179,6 +179,13 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-ADP-014",
             "MRS-ADP-015",
             "MRS-ADP-016",
+            "MRS-SMOKE-001",
+            "MRS-SMOKE-002",
+            "MRS-SMOKE-003",
+            "MRS-SMOKE-004",
+            "MRS-SMOKE-005",
+            "MRS-SMOKE-006",
+            "MRS-SMOKE-007",
         }
     )
 

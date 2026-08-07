@@ -8,17 +8,27 @@ import pytest
 
 from pyforge.marshal.core.conformance import (
     ALL_STATUSES,
+    STAGE_CHANGE,
+    STAGE_COMMIT,
+    STAGE_READ,
+    STAGE_VERIFY,
     STATUS_ADDED,
     STATUS_AVAILABLE,
     STATUS_LINK_TARGET_CONFIRMED,
     STATUS_MODIFIED,
     STATUS_REMOVED,
+    STATUS_SMOKE_FAIL,
+    STATUS_SMOKE_PASS,
+    STATUS_SMOKE_UNAVAILABLE,
     STATUS_UNAVAILABLE,
     ConformanceReport,
+    SmokeFacts,
     TreeLiveState,
     _check_symlink_identity,
     build_probe_record,
+    build_smoke_record,
     evaluate_conformance,
+    evaluate_smoke,
 )
 from pyforge.marshal.ports.harness import AdapterProbe
 
@@ -179,3 +189,113 @@ def test_probe_statuses_never_appear_in_the_tree_drift_vocabulary():
     share a member (Story 6.3's own closed set stays unchanged)."""
     assert STATUS_AVAILABLE not in ALL_STATUSES
     assert STATUS_UNAVAILABLE not in ALL_STATUSES
+
+
+# --- Story 6.5: `evaluate_smoke`/`build_smoke_record` ------------------------
+
+
+def _facts(
+    *,
+    binary_present: bool = True,
+    launched: bool = True,
+    timed_out: bool = False,
+    returncode: int | None = 0,
+    file_changed: bool = False,
+    commit_made: bool = False,
+) -> SmokeFacts:
+    return SmokeFacts(
+        binary_present=binary_present,
+        launched=launched,
+        timed_out=timed_out,
+        returncode=returncode,
+        file_changed=file_changed,
+        commit_made=commit_made,
+    )
+
+
+def test_evaluate_smoke_unavailable_when_binary_absent():
+    report = evaluate_smoke(_facts(binary_present=False, launched=False, returncode=None))
+    assert report.status == STATUS_SMOKE_UNAVAILABLE
+    assert report.failing_stage is None
+
+
+def test_evaluate_smoke_pass_when_commit_made():
+    report = evaluate_smoke(_facts(file_changed=True, commit_made=True))
+    assert report.status == STATUS_SMOKE_PASS
+    assert report.failing_stage is None
+
+
+def test_evaluate_smoke_fail_verify_when_file_changed_but_no_commit():
+    report = evaluate_smoke(_facts(file_changed=True, commit_made=False))
+    assert report.status == STATUS_SMOKE_FAIL
+    assert report.failing_stage == STAGE_VERIFY
+
+
+def test_evaluate_smoke_fail_change_when_launched_but_no_file_change():
+    report = evaluate_smoke(_facts(launched=True, file_changed=False, commit_made=False))
+    assert report.status == STATUS_SMOKE_FAIL
+    assert report.failing_stage == STAGE_CHANGE
+
+
+def test_evaluate_smoke_fail_read_when_never_launched_despite_present_binary():
+    report = evaluate_smoke(
+        _facts(binary_present=True, launched=False, returncode=None, file_changed=False, commit_made=False)
+    )
+    assert report.status == STATUS_SMOKE_FAIL
+    assert report.failing_stage == STAGE_READ
+
+
+def test_evaluate_smoke_timed_out_folds_into_detail_never_status():
+    report = evaluate_smoke(_facts(launched=True, timed_out=True, returncode=None))
+    assert report.status == STATUS_SMOKE_FAIL
+    assert report.failing_stage == STAGE_CHANGE
+    assert "timed out" in report.detail
+
+
+def test_evaluate_smoke_nonzero_returncode_with_commit_is_not_a_pass():
+    """Review finding: a commit landing alone used to be treated as PASS
+    regardless of `returncode` -- a non-zero exit alongside a landed commit
+    must not be reported as a clean pass."""
+    report = evaluate_smoke(_facts(file_changed=True, commit_made=True, returncode=1))
+    assert report.status == STATUS_SMOKE_FAIL
+    assert report.failing_stage == STAGE_COMMIT
+    assert "exited 1" in report.detail
+
+
+def test_evaluate_smoke_commit_without_file_change_is_not_a_pass():
+    """Review finding: a commit that never touched the smoke's own target
+    file is not corroborating evidence of a completed run -- it used to be
+    reported as PASS purely on `commit_made`."""
+    report = evaluate_smoke(_facts(file_changed=False, commit_made=True, returncode=0))
+    assert report.status == STATUS_SMOKE_FAIL
+    assert report.failing_stage == STAGE_COMMIT
+
+
+def test_build_smoke_record_shape():
+    report = evaluate_smoke(_facts(file_changed=True, commit_made=True))
+    record = build_smoke_record("claude", report, binary="claude", binary_present=True)
+    assert record == {
+        "adapter": "claude",
+        "binary": "claude",
+        "binary_present": True,
+        "status": STATUS_SMOKE_PASS,
+        "failing_stage": None,
+        "detail": report.detail,
+    }
+
+
+def test_smoke_statuses_never_appear_in_the_tree_drift_or_probe_vocabularies():
+    """A THIRD, independent fact from both tree-drift status and adapter-
+    probe status -- none of the three vocabularies share a member, even
+    though 'unavailable' happens to coincide as a STRING between this
+    module's own STATUS_SMOKE_UNAVAILABLE and Story 6.4's STATUS_UNAVAILABLE
+    (AD-31: never conflated as a CONSTANT/classification)."""
+    smoke_statuses = {STATUS_SMOKE_PASS, STATUS_SMOKE_FAIL, STATUS_SMOKE_UNAVAILABLE}
+    assert smoke_statuses.isdisjoint(ALL_STATUSES)
+    assert STATUS_SMOKE_PASS != STATUS_AVAILABLE
+    assert STATUS_SMOKE_FAIL != STATUS_AVAILABLE
+    # STATUS_SMOKE_UNAVAILABLE and STATUS_UNAVAILABLE ARE the same string by
+    # coincidence (both "unavailable") -- asserted explicitly so a future
+    # refactor cannot silently rely on that coincidence for correctness.
+    assert STATUS_SMOKE_UNAVAILABLE == STATUS_UNAVAILABLE
+    assert STAGE_COMMIT not in (STAGE_READ, STAGE_CHANGE, STAGE_VERIFY)
