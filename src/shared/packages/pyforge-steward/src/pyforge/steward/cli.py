@@ -27,7 +27,7 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
-    "keys": "credential lifecycle — encrypt/decrypt/rotate (list/audit/revoke land in later stories)",
+    "keys": "credential lifecycle — encrypt/decrypt/rotate/list (audit/revoke land in later stories)",
     "deploy": "deployment duties",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
@@ -53,7 +53,7 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
-    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate}")
+    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate,list}")
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
     encrypt.add_argument("file", help="the plaintext file to encrypt")
@@ -77,6 +77,14 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
         default=None,
         help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
     )
+
+    list_ = keys_subs.add_parser("list", help="list known credential identities (never a secret value)")
+    list_.add_argument(
+        "--inventory",
+        default=None,
+        help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
+    )
+    list_.add_argument("--json", action="store_true", help="emit JSON instead of a text table")
 
 
 def resolve_duty(name: str) -> Duty:

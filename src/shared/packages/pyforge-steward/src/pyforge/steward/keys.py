@@ -28,7 +28,12 @@ No calendar/cron/scheduler path exists anywhere in this module — rotation
 is on-demand only (FR-3), pinned by `tests/meta/test_invariants.py`'s
 `test_no_rotation_scheduler_exists`.
 
-Stories 1.5-1.7 continue to extend this same file (the architecture's
+Story 1.5 slice: `format_inventory` — read-only text/`--json` rendering of
+the inventory (`steward keys list`), built strictly from `KeyIdentityEntry`
+fields; never opens `identity_path` or a `secrets` path, so a raw secret
+value structurally cannot appear in either format (NFR-7).
+
+Stories 1.6-1.7 continue to extend this same file (the architecture's
 single duty-adapter-module design for Epic 1) rather than splitting it into
 a subpackage.
 """
@@ -37,6 +42,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import re
 import stat
 import subprocess
@@ -775,9 +781,54 @@ def rotate_identity(
     return new_entry
 
 
+# ── Inventory display (FR-5/NFR-7, Story 1.5) ───────────────────────────────
+
+
+def _entry_to_dict(entry: KeyIdentityEntry) -> dict[str, object]:
+    """`entry`'s existing fields only — `identity_path`/`secrets` are
+    filesystem pointers (Story 1.4's Design Notes), never key material or
+    file content. This function never opens either path."""
+    return {
+        "name": entry.name,
+        "scope": entry.scope,
+        "provenance": entry.provenance,
+        "status": entry.status,
+        "last_rotated": entry.last_rotated,
+        "identity_path": entry.identity_path,
+        "secrets": list(entry.secrets),
+    }
+
+
+def format_inventory(entries: tuple[KeyIdentityEntry, ...], *, as_json: bool) -> str:
+    """Render `entries` for `steward keys list`.
+
+    `as_json=True`: a JSON array, one object per entry (all fields) —
+    `[]` for an empty inventory, the correct machine-parseable empty state.
+    `as_json=False`: an aligned text table (name/scope/provenance/status/
+    last_rotated); a plain sentence for an empty inventory.
+
+    Reads only `KeyIdentityEntry`'s own fields — never opens `identity_path`
+    or any `secrets` entry, so a raw secret value cannot appear in either
+    format (NFR-7; `tests/meta/test_invariants.py`'s
+    `test_keys_list_output_never_contains_a_planted_secret_value` proves
+    this by execution, not just by this docstring's claim).
+    """
+    if as_json:
+        return json.dumps([_entry_to_dict(e) for e in entries], indent=2)
+    if not entries:
+        return "keys list: no identities in the inventory"
+    header = f"{'NAME':<20} {'SCOPE':<20} {'PROVENANCE':<10} {'STATUS':<8} LAST_ROTATED"
+    lines = [header]
+    for e in entries:
+        lines.append(
+            f"{e.name:<20} {e.scope:<20} {e.provenance:<10} {e.status:<8} {e.last_rotated or '-'}"
+        )
+    return "\n".join(lines)
+
+
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
 
-_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate")
+_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list")
 
 
 class KeysDuty:
@@ -811,7 +862,7 @@ class KeysDuty:
                 encrypt_file(ns.file, recipient=ns.recipient, output=ns.output)
             elif verb == "decrypt":
                 decrypt_file(ns.file, identity=ns.identity, output=ns.output)
-            else:  # verb == "rotate"
+            elif verb == "rotate":
                 inventory_path = ns.inventory or default_inventory_path()
                 entry = rotate_identity(
                     inventory_path, scope=ns.scope, new_identity_path=ns.new_identity
@@ -826,6 +877,10 @@ class KeysDuty:
                         f"{entry.name!r} (identity at {entry.identity_path})"
                     ),
                 )
+            else:  # verb == "list"
+                inventory_path = ns.inventory or default_inventory_path()
+                entries = load_inventory(inventory_path)
+                return DutyResult(ok=True, summary=format_inventory(entries, as_json=ns.json))
         except ValueError as exc:
             return DutyResult(ok=False, summary=f"keys {verb}: {exc}")
         except subprocess.CalledProcessError as exc:

@@ -99,3 +99,36 @@ def test_no_rotation_scheduler_exists():
                 if name.lower() in banned_modules:
                     offenders.append(f"{path.name}:{node.lineno} imports {name!r}")
     assert not offenders, f"scheduler-shaped import found (rotation must be on-demand only): {offenders}"
+
+
+def test_keys_list_output_never_contains_a_planted_secret_value(tmp_path):
+    """Story 1.5 / NFR-7: `steward keys list` must never print a raw secret
+    value, under ANY flag combination.
+
+    Plants a real-looking secret string inside the file `identity_path`
+    points at (an `age` identity file is exactly what this would be in
+    production) and proves by execution -- not by reading `format_inventory`'s
+    source -- that neither text nor `--json` output ever dereferences that
+    pointer to read its content.
+    """
+    from pyforge.steward.keys import KeyIdentityEntry, format_inventory
+
+    planted_secret = "AGE-SECRET-KEY-1PLANTEDVALUETHATMUSTNEVERAPPEARINLISTOUTPUT"
+    identity_file = tmp_path / "identity.txt"
+    identity_file.write_text(f"# created: 2026-08-07\n{planted_secret}\n")
+
+    entry = KeyIdentityEntry(
+        name="jfrog",
+        scope="jfrog",
+        provenance="issued",
+        status="active",
+        last_rotated="2026-08-07T00:00:00+00:00",
+        identity_path=str(identity_file),
+        secrets=(),
+    )
+
+    text_output = format_inventory((entry,), as_json=False)
+    json_output = format_inventory((entry,), as_json=True)
+
+    assert planted_secret not in text_output
+    assert planted_secret not in json_output
