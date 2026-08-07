@@ -511,26 +511,40 @@ def build_matrix_row(
     from the two EXISTING machine-scoped files (`_read_smoke_state`/
     `_read_probe_state`) before calling this function.
 
-    `smoke_record is None` -> `STATUS_MATRIX_NOT_ATTEMPTED`, every other
-    field `None`/`False` -- the ONE case a row can report with no smoke
-    record at all (SM-6's own "not gameable" requirement: a `pass` row
-    requires a REAL smoke record, never inferred from a probe alone or from
-    silence). Otherwise `smoke_record["status"]` maps through
+    `smoke_record is None` -> `STATUS_MATRIX_NOT_ATTEMPTED`, with `date`/
+    `stale`/`harness_version`/`failing_stage` all `None`/`False` (no smoke
+    claim exists at all to carry those facts) -- but `adapter_version`
+    STILL comes from `probe_record` when one is available (SM-6's "not
+    gameable" requirement is about `status`, never about discarding a real,
+    already-known probe fact just because smoke hasn't run yet -- review
+    finding: an earlier draft hardcoded `adapter_version=None` here too,
+    silently dropping a known probed version).
+
+    Otherwise `smoke_record["status"]` maps through
     `_SMOKE_STATUS_TO_MATRIX_STATUS`; an unrecognized/missing value degrades
     to `STATUS_MATRIX_NOT_ATTEMPTED` rather than fabricating a `pass` --
     defensive against a record this module did not itself produce (e.g. a
-    hand-edited `adapter-smoke.json`).
+    hand-edited `adapter-smoke.json`). This degraded case ALSO reports
+    `date: None`, `stale: False` -- the same "no claim exists to age" rule
+    as the `smoke_record is None` case applies here too (review finding: an
+    earlier draft computed `date`/`stale` from the malformed record's own
+    `recorded_at` even when `status` itself was unrecognized, producing a
+    self-contradictory `not-attempted, stale=True` row).
 
-    `date`/`stale`: `smoke_record["recorded_at"]` is parsed via
+    `date`/`stale` (only computed when `status` is a recognized, real
+    smoke-run status): `smoke_record["recorded_at"]` is parsed via
     `datetime.fromisoformat`; a naive result is treated as UTC (matches
     `core.egress`'s own timestamp convention). An unparseable or missing
     value reports `date: None`, `stale: False` -- never raises, and never
     fabricates staleness from an absent fact."""
+    raw_adapter_version = probe_record.get("binary_version") if probe_record is not None else None
+    adapter_version = raw_adapter_version if isinstance(raw_adapter_version, str) else None
+
     if smoke_record is None:
         return MatrixRow(
             adapter=adapter,
             status=STATUS_MATRIX_NOT_ATTEMPTED,
-            adapter_version=None,
+            adapter_version=adapter_version,
             harness_version=None,
             date=None,
             failing_stage=None,
@@ -541,6 +555,17 @@ def build_matrix_row(
     status = _SMOKE_STATUS_TO_MATRIX_STATUS.get(
         raw_status if isinstance(raw_status, str) else "", STATUS_MATRIX_NOT_ATTEMPTED
     )
+
+    if status == STATUS_MATRIX_NOT_ATTEMPTED:
+        return MatrixRow(
+            adapter=adapter,
+            status=status,
+            adapter_version=adapter_version,
+            harness_version=None,
+            date=None,
+            failing_stage=None,
+            stale=False,
+        )
 
     raw_date = smoke_record.get("recorded_at")
     date = raw_date if isinstance(raw_date, str) else None
@@ -554,9 +579,6 @@ def build_matrix_row(
             if parsed.tzinfo is None:
                 parsed = parsed.replace(tzinfo=timezone.utc)
             stale = (now - parsed) > timedelta(days=stale_after_days)
-
-    raw_adapter_version = probe_record.get("binary_version") if probe_record is not None else None
-    adapter_version = raw_adapter_version if isinstance(raw_adapter_version, str) else None
 
     raw_harness_version = smoke_record.get("harness_version")
     harness_version = raw_harness_version if isinstance(raw_harness_version, str) else None

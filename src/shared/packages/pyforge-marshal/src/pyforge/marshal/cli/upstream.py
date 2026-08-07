@@ -143,6 +143,14 @@ def run_upstream(
         register_path = register_path / part
     data["path"] = str(register_path)
 
+    # `unreadable` (a real I/O failure -- e.g. permission-denied on a file
+    # that genuinely exists) and `absent` (`read_text` returns `None`, no
+    # exception) are two different facts about the register and must never
+    # both be reported for the same run (review finding: an earlier draft
+    # fell through to the `text is None` check below even after already
+    # reporting the `FsError`, producing a second, factually wrong "is
+    # absent" finding on a real read failure).
+    unreadable = False
     try:
         text = fs.read_text(register_path)
     except FsError as exc:
@@ -155,20 +163,22 @@ def run_upstream(
             )
         )
         text = None
+        unreadable = True
 
     entries: tuple = ()
     if text is None:
-        findings.append(
-            Finding(
-                code="MRS-UPSTREAM-001",
-                severity=Severity.WARN,
-                message=(
-                    f"upstream contribution register {str(register_path)!r} is absent -- "
-                    "treated as empty"
-                ),
-                path=str(register_path),
+        if not unreadable:
+            findings.append(
+                Finding(
+                    code="MRS-UPSTREAM-001",
+                    severity=Severity.WARN,
+                    message=(
+                        f"upstream contribution register {str(register_path)!r} is absent -- "
+                        "treated as empty"
+                    ),
+                    path=str(register_path),
+                )
             )
-        )
     else:
         try:
             raw = json.loads(text)

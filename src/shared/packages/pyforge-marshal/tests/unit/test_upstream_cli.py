@@ -153,6 +153,23 @@ def test_unreadable_register_reports_warn_never_crashes(capsys):
     assert code == 0
 
 
+def test_unreadable_register_reports_exactly_one_finding_never_also_absent(capsys):
+    """Review finding: a real read failure (FsError -- the file genuinely
+    exists but can't be read) used to ALSO fall through the subsequent
+    ``text is None`` check and report a second, factually wrong "is absent"
+    finding on top of the accurate "cannot read" one -- unreadable and
+    absent are different facts and must never both be reported for the
+    same run."""
+    fs = FakeFs(fail_read_text={_REGISTER_PATH: FsError("permission denied")})
+    code = upstream_cli.run_upstream(_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    findings = [f for f in envelope["findings"] if f["code"] == "MRS-UPSTREAM-001"]
+    assert len(findings) == 1
+    assert "cannot read" in findings[0]["message"]
+    assert "is absent" not in findings[0]["message"]
+    assert code == 0
+
+
 def test_one_malformed_entry_others_still_report(capsys):
     incomplete = dict(_GOOD_ENTRY)
     del incomplete["compensating_fr"]

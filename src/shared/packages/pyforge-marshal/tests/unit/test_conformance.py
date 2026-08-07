@@ -389,6 +389,42 @@ def test_matrix_row_unrecognized_smoke_status_degrades_to_not_attempted():
     assert row.status == STATUS_MATRIX_NOT_ATTEMPTED
 
 
+def test_matrix_row_no_smoke_record_still_reports_a_known_probed_version():
+    """Review finding: an earlier draft hardcoded adapter_version=None
+    whenever smoke_record was None, discarding a real, already-known probe
+    fact -- an adapter that has been probed but never smoked should still
+    report its known version, even while status stays not-attempted."""
+    row = build_matrix_row(
+        "claude",
+        smoke_record=None,
+        probe_record={"binary_version": "9.9.9"},
+        now=_NOW,
+        stale_after_days=30,
+    )
+    assert row.status == STATUS_MATRIX_NOT_ATTEMPTED
+    assert row.adapter_version == "9.9.9"
+
+
+def test_matrix_row_unrecognized_status_never_reports_stale_or_date():
+    """Review finding: a hand-edited/corrupt smoke record with BOTH an
+    unrecognized status AND a stale-looking recorded_at used to still
+    compute stale=True from the malformed record's own recorded_at,
+    producing a self-contradictory not-attempted row that also claims to
+    be stale and dated -- "no claim exists to age" must hold for every
+    not-attempted row, not just the no-smoke-record-at-all case."""
+    row = build_matrix_row(
+        "claude",
+        smoke_record={"status": "corrupted", "recorded_at": "2020-01-01T00:00:00+00:00"},
+        probe_record=None,
+        now=_NOW,
+        stale_after_days=30,
+    )
+    assert row.status == STATUS_MATRIX_NOT_ATTEMPTED
+    assert row.stale is False
+    assert row.date is None
+    assert row.harness_version is None
+
+
 def test_matrix_row_stale_when_older_than_threshold():
     smoke_record = {"status": STATUS_SMOKE_PASS, "recorded_at": "2026-06-01T00:00:00+00:00"}
     row = build_matrix_row("claude", smoke_record=smoke_record, probe_record=None, now=_NOW, stale_after_days=30)
