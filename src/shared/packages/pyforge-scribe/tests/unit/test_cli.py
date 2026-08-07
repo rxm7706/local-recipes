@@ -341,7 +341,7 @@ def test_graph_compile_happy_path_is_unattended_and_reports_node_count(
     assert (tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph.json").is_file()
 
 
-def test_recall_stub_touches_nothing_and_exits_0(
+def test_recall_no_compiled_graph_yet_reports_no_grounded_answer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -349,5 +349,26 @@ def test_recall_stub_touches_nothing_and_exits_0(
     result = runner.invoke(app, ["recall", "why did we pick X"])
 
     assert result.exit_code == 0
-    assert "not yet implemented" in _combined_output(result)
+    assert "no grounded answer found" in _combined_output(result)
     assert not (tmp_path / ".claude").exists()
+
+
+def test_recall_after_compile_returns_grounded_cited_answer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    (tmp_path / ".claude" / "memory" / "project" / "kuzu-drop.md").write_text(
+        '---\nname: "kuzu-drop"\ndescription: "d"\nmetadata:\n  type: project\n---\n'
+        "We dropped Kuzu because it was archived upstream after an acquisition.\n",
+        encoding="utf-8",
+    )
+    compile_result = runner.invoke(app, ["graph", "compile", "--nightly"])
+    assert compile_result.exit_code == 0
+
+    result = runner.invoke(app, ["recall", "why did we drop Kuzu"])
+
+    assert result.exit_code == 0
+    output = _combined_output(result)
+    assert "archived upstream" in output
+    assert "[source: .claude/memory/project/kuzu-drop.md]" in output

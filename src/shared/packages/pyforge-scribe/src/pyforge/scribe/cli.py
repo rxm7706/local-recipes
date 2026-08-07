@@ -15,7 +15,8 @@ from pathlib import Path
 import typer
 
 from pyforge.scribe.capture import capture as capture_write
-from pyforge.scribe.compile import compile_graph
+from pyforge.scribe.compile import compile_graph, default_store_path
+from pyforge.scribe.graph_store import FlatFileGraphStore
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
     PromotionProposal,
@@ -23,6 +24,7 @@ from pyforge.scribe.promote import (
     classify_and_draft,
     default_user_local_root,
 )
+from pyforge.scribe.recall import answer as recall_answer
 
 app = typer.Typer(
     name="scribe",
@@ -158,8 +160,16 @@ def graph_compile(
 def recall_cmd(
     query: str = typer.Argument(..., help="Natural-language question to recall an answer for."),
 ) -> None:
-    """Stub — Epic 2 (Story 2.1+) owns the real, cited recall query path."""
-    typer.echo("scribe recall: not yet implemented", err=True)
+    """Answer from the compiled graph with a resolvable citation, or report
+    no grounded coverage (Story 2.4, AD-8) -- zero network calls (AD-6)."""
+    repo_root = Path.cwd()
+    store = FlatFileGraphStore(default_store_path(repo_root))
+    result = recall_answer(query, store, repo_root=repo_root)
+    if result.grounded:
+        typer.echo(result.text)
+        typer.echo(f"[source: {result.citation}]")
+    else:
+        typer.echo("no grounded answer found")
 
 
 def main() -> None:
