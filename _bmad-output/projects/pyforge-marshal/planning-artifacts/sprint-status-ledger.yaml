@@ -70,7 +70,7 @@ development_status:
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: done
   5-1-fleet-view: done
   5-2-per-run-detail: done
-  5-3-escalation-queue: backlog
+  5-3-escalation-queue: done
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: backlog
   5-5-durability-as-a-reported-fleet-status-dimension: backlog
   5-6-marshal-check-the-detector-registry-through-the-front-door: backlog

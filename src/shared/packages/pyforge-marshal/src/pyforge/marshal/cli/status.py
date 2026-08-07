@@ -155,6 +155,14 @@ def add_status_subparser(subparsers: argparse._SubParsersAction) -> None:
         ),
     )
     parser.add_argument(
+        "--escalations",
+        action="store_true",
+        help=(
+            "Fleet-summary only (ignored with --run): filter data.homes to "
+            "rows currently paused-on-escalation (Story 5.3, FR-38)."
+        ),
+    )
+    parser.add_argument(
         "--format",
         choices=("text", "json"),
         default="text",
@@ -405,6 +413,9 @@ def _gather_home_facts(
         supervisor_alive=supervisor_alive,
         elapsed_seconds=elapsed_seconds,
         budget_consumed=journal_facts.budget_consumed,
+        paused_reason=snapshot.paused_reason,
+        escalated_spec_file=snapshot.escalated_spec_file,
+        escalated_task_phase=snapshot.escalated_task_phase,
     )
 
 
@@ -496,6 +507,13 @@ def run_status(
         rows.append(row)
         if finding is not None:
             findings.append(finding)
+
+    # Story 5.3 (FR-38): escalated rows sort first, stable otherwise --
+    # ALWAYS applied to the fleet summary (never gated on --escalations,
+    # which only additionally FILTERS the same already-sorted list).
+    rows = status_core.sort_fleet_rows(rows)
+    if getattr(args, "escalations", False):
+        rows = [row for row in rows if row.get("state") == "paused-on-escalation"]
 
     data["homes"] = rows
     return _emit(args, data, findings)
@@ -662,12 +680,24 @@ def _render_text_status(
     homes = data.get("homes") or []
     lines = [f"status: {project!r}", f"homes: {len(homes)}"]
     for home in homes:
-        lines.append(
-            f"  {home['slug']} ({home['branch']}): {home['state']} "
+        # Story 5.3 (FR-38): a `[ESCALATED]` prefix visually distinguishes a
+        # paused-on-escalation row from every other state, and names its
+        # own reason/artifact inline -- `--format json` output is
+        # unaffected (same fields either way, NFR-12).
+        escalated = home["state"] == "paused-on-escalation"
+        prefix = "[ESCALATED] " if escalated else ""
+        line = (
+            f"  {prefix}{home['slug']} ({home['branch']}): {home['state']} "
             f"story={home['current_story']} "
             f"elapsed_seconds={home['elapsed_seconds']} "
             f"budget_consumed={home['budget_consumed']}"
         )
+        if escalated:
+            line += (
+                f" reason={home.get('escalation_reason')!r} "
+                f"artifact={home.get('escalation_artifact')!r}"
+            )
+        lines.append(line)
 
     if findings:
         lines.append("findings:")
