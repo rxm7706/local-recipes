@@ -4,8 +4,10 @@ Story 1.5 wires the ``check`` subcommand (FR-9/NFR-4): ``--engines``/
 ``--env`` compose Story 1.2/1.4's gather functions (``sources.warden.gather``,
 ``checks.env_hygiene.gather``) and Story 1.3's ``checks.registry``
 (catalog + single-check filter) into one human-readable-or-``--json``
-``DoctorReport``, exiting via ``verdict.exit_code_for``. ``monitor``/
-``diagnose`` are not wired yet -- those land with their own epics.
+``DoctorReport``, exiting via ``verdict.exit_code_for``. Story 2.3 wires
+``monitor --fleet`` the same way, composing Story 2.1/2.2's
+``sources.atlas.gather`` per requested ``--watch`` axis. ``diagnose`` is not
+wired yet -- it lands with Epic 3.
 
 ``main`` always RETURNS an int; it never calls an exit primitive itself
 (``verdict.py`` is the sole module permitted to do that -- the
@@ -30,8 +32,13 @@ import jsonschema
 
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Source
-from .sources import warden as warden_source
+from .sources import atlas, warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
+
+# Story 2.3 AC1: omitting `--watch` runs this documented default axis set
+# (the two highest-signal defaults per Story 2.1/2.2's own Sources), not
+# every axis unconditionally.
+_DEFAULT_MONITOR_AXES: tuple[str, ...] = ("staleness", "cve")
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant -- see models.py's module docstring for the taxonomy rationale),
@@ -47,7 +54,9 @@ __version__ = "0.1.0"
 _WHOLE_CATEGORY = object()
 
 
-def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
+def _build_parser() -> tuple[
+    argparse.ArgumentParser, argparse.ArgumentParser, argparse.ArgumentParser
+]:
     parser = argparse.ArgumentParser(
         prog="doctor",
         description=(
@@ -107,7 +116,48 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     # `pyforge.warden.cli.main(["scan", "--version"])` (an argparse usage
     # error, exit 2) -- --version stays top-level only, mirroring warden's
     # own convention exactly (see the story spec's Design Notes).
-    return parser, check
+
+    monitor = subparsers.add_parser(
+        "monitor",
+        help="fleet-pulse watch over cf_atlas's staleness/cve/abandonment signals",
+    )
+    monitor.add_argument(
+        "--fleet",
+        action="store_true",
+        required=True,
+        help=(
+            "required -- names the scope this verb watches (the whole "
+            "fleet); mirrors the Dream's own `doctor monitor --fleet` "
+            "surface literally"
+        ),
+    )
+    monitor.add_argument(
+        "--watch",
+        default=None,
+        metavar="AXIS[,AXIS...]",
+        help=(
+            "comma-separated Watch axes to run (staleness, cve, "
+            "abandonment); default when omitted: staleness,cve"
+        ),
+    )
+    monitor.add_argument(
+        "--target",
+        default=None,
+        metavar="MAINTAINER",
+        help="scope every requested axis to one maintainer/feedstock",
+    )
+    monitor.add_argument(
+        "--source",
+        default=None,
+        metavar="SOURCE",
+        help="filter the rendered output to one Finding.source tag",
+    )
+    monitor.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one schema-valid DoctorReport document on stdout",
+    )
+    return parser, check, monitor
 
 
 def _validate_check_names(
@@ -162,6 +212,47 @@ def _validate_check_names(
             )
 
 
+def _split_watch_axes(raw: str | None) -> tuple[str, ...]:
+    """Pure parse of ``--watch``'s comma-separated axis list -- no
+    validation, no side effects. ``raw is None`` (the flag omitted
+    entirely) returns Story 2.3's documented default axis set.
+    De-duplication preserves first-occurrence order (``dict.fromkeys``) so
+    a redundant ``--watch staleness,staleness`` doesn't double-gather;
+    empty tokens (``",,"``, a leading/trailing comma) are dropped."""
+    if raw is None:
+        return _DEFAULT_MONITOR_AXES
+    tokens = (token.strip() for token in raw.split(","))
+    return tuple(dict.fromkeys(token for token in tokens if token))
+
+
+def _validate_monitor_args(
+    args: argparse.Namespace, monitor_parser: argparse.ArgumentParser
+) -> None:
+    """An unknown axis or an unrecognized ``--source`` is a usage error
+    (``.error()``, exit 2) raised HERE, before any ``atlas.gather`` call --
+    mirrors ``_validate_check_names``'s own "validate at the call boundary,
+    not inside the gather" discipline."""
+    axes = _split_watch_axes(args.watch)
+    if not axes:
+        monitor_parser.error(
+            "argument --watch: expected at least one axis, got an empty "
+            f"value ({args.watch!r})"
+        )
+    unknown_axes = [axis for axis in axes if axis not in atlas.VALID_WATCH_AXES]
+    if unknown_axes:
+        monitor_parser.error(
+            f"argument --watch: unknown axis(es) {unknown_axes!r} "
+            f"(known: {', '.join(sorted(atlas.VALID_WATCH_AXES))})"
+        )
+    if args.source is not None:
+        known_sources = sorted(source.value for source in Source)
+        if args.source not in known_sources:
+            monitor_parser.error(
+                f"argument --source: unknown source {args.source!r} "
+                f"(known: {', '.join(known_sources)})"
+            )
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse ``argv`` and return an exit code -- never raises ``SystemExit``
     itself. Exit codes stay inside Doctor's frozen ``{0, 2, 130}`` domain
@@ -171,11 +262,14 @@ def main(argv: list[str] | None = None) -> int:
     """
     if argv is None:
         argv = sys.argv[1:]
-    parser, check_parser = _build_parser()
+    parser, check_parser, monitor_parser = _build_parser()
     try:
         try:
             args = parser.parse_args(argv)
-            _validate_check_names(args, check_parser)
+            if args.command == "check":
+                _validate_check_names(args, check_parser)
+            elif args.command == "monitor":
+                _validate_monitor_args(args, monitor_parser)
         except SystemExit as exc:
             # argparse exits itself: --version/--help -> 0, a usage error
             # -> 2 (never 0). Surface its code as a return value, never
@@ -196,13 +290,15 @@ def main(argv: list[str] | None = None) -> int:
             # might exit with something outside Doctor's frozen {0, 2, 130}
             # domain (AD-2).
             return 2
-        # `check` is the only registered subcommand today -- args.command is
-        # always "check" past this point (subparsers is required=True with no
-        # other subparser registered). Dispatch stays INSIDE the outer try:
-        # a gather call is real multi-second work (the whole point of this
-        # story), so a Ctrl-C during `_run_check` -- not just during parsing
-        # -- must also return EXIT_SIGINT rather than escape as a raw
-        # KeyboardInterrupt (main() never raises -- see its own docstring).
+        # Dispatch stays INSIDE the outer try: a gather call is real
+        # multi-second work (the whole point of this story), so a Ctrl-C
+        # during dispatch -- not just during parsing -- must also return
+        # EXIT_SIGINT rather than escape as a raw KeyboardInterrupt (main()
+        # never raises -- see its own docstring). `args.command` is one of
+        # `{"check", "monitor"}` past this point (subparsers is
+        # required=True; `diagnose` lands with Epic 3).
+        if args.command == "monitor":
+            return _run_monitor(args)
         return _run_check(args)
     except KeyboardInterrupt:
         return EXIT_SIGINT
@@ -307,9 +403,39 @@ def _run_check(args: argparse.Namespace) -> int:
     # the already-computed exit code (mirrors warden's cli.py discipline).
     exit_code = exit_code_for(findings)
     if args.json:
-        _emit_json(findings)
+        _emit_json(findings, verb="check")
     else:
-        _emit_text(findings)
+        _emit_text(findings, verb="check")
+    return exit_code
+
+
+def _run_monitor(args: argparse.Namespace) -> int:
+    """Story 2.3: compose Story 2.1/2.2's ``sources.atlas.gather`` per
+    requested ``--watch`` axis (already validated by ``_validate_monitor_args``
+    before this ever runs) into one ``DoctorReport``. Multi-axis composition
+    (Story 2.2 AC3) is exactly this loop-and-concatenate -- see
+    ``sources/atlas.py``'s own module docstring for why that composition
+    deliberately lives here, not inside ``gather()`` itself.
+
+    ``--source`` filters the ALREADY-GATHERED findings before either
+    render (never a second, narrower gather) -- this keeps the FR-9 parity
+    guarantee automatic: whatever the human-readable output shows is
+    exactly what ``--json`` shows, because both render from the same
+    filtered tuple."""
+    axes = _split_watch_axes(args.watch)
+
+    findings: tuple[Finding, ...] = ()
+    for axis in axes:
+        findings += atlas.gather(axis, target=args.target)
+
+    if args.source is not None:
+        findings = tuple(f for f in findings if f.source.value == args.source)
+
+    exit_code = exit_code_for(findings)
+    if args.json:
+        _emit_json(findings, verb="monitor")
+    else:
+        _emit_text(findings, verb="monitor")
     return exit_code
 
 
@@ -328,10 +454,10 @@ def _report_schema() -> dict:
     return json.loads(schema_text)
 
 
-def _emit_json(findings: tuple[Finding, ...]) -> None:
+def _emit_json(findings: tuple[Finding, ...], *, verb: str) -> None:
     report = DoctorReport(
         schema_version=1,
-        verb="check",
+        verb=verb,
         generated_at=datetime.now(UTC).isoformat(),
         findings=findings,
     )
@@ -355,12 +481,12 @@ def _single_line(text: str) -> str:
     return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
 
 
-def _emit_text(findings: tuple[Finding, ...]) -> None:
+def _emit_text(findings: tuple[Finding, ...], *, verb: str) -> None:
     ok = sum(1 for f in findings if f.status is DoctorStatus.OK)
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
     fail = sum(1 for f in findings if f.status is DoctorStatus.FAIL)
     lines = [
-        f"doctor check: {len(findings)} finding(s) -- "
+        f"doctor {verb}: {len(findings)} finding(s) -- "
         f"{ok} ok, {warn} warn, {fail} fail"
     ]
     for finding in findings:
