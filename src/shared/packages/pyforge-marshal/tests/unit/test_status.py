@@ -27,7 +27,11 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
 )
 from pyforge.marshal.core.model import Severity
-from pyforge.marshal.ports.harness import RunStatusSnapshot, TaskPhaseSnapshot
+from pyforge.marshal.ports.harness import (
+    DeferredStory,
+    RunStatusSnapshot,
+    TaskPhaseSnapshot,
+)
 from pyforge.marshal.ports.process import ProcessResult
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
@@ -756,14 +760,18 @@ class _FakeVcs:
         self,
         *,
         repo_root_value: Path = Path("/fake-repo-root"),
+        repo_root_raises: bool = False,
         worktrees: tuple[WorktreeEntry, ...] = (),
         worktrees_raise: bool = False,
     ) -> None:
         self.repo_root_value = repo_root_value
+        self.repo_root_raises = repo_root_raises
         self.worktrees = worktrees
         self.worktrees_raise = worktrees_raise
 
     def repo_common_root(self, start):
+        if self.repo_root_raises:
+            raise VcsCommandError("cannot resolve repo root")
         return self.repo_root_value
 
     def list_worktrees(self, repo_root):
@@ -809,8 +817,10 @@ class _FakeClock:
         return 0.0
 
 
-def _args(*, project: str | None = None, format: str = "json"):
-    return argparse.Namespace(project=project, format=format)
+def _args(
+    *, project: str | None = None, format: str = "json", run: str | None = None
+):
+    return argparse.Namespace(project=project, format=format, run=run)
 
 
 def _payload(capsys):
@@ -864,7 +874,11 @@ def _supervisor_attach_line(
 
 
 def _budget_usage_line(
-    run_id: str, *, cost_estimate: int, ts: str = "2026-08-06T00:05:00.000Z"
+    run_id: str,
+    *,
+    cost_estimate: int,
+    story_key: str = "1.1",
+    ts: str = "2026-08-06T00:05:00.000Z",
 ) -> str:
     entry = build_entry(
         id=JournalEntryId("supervisor-1", 1),
@@ -872,7 +886,54 @@ def _budget_usage_line(
         run_id=run_id,
         kind="budget-usage",
         phase=Phase.OBSERVATION,
-        payload={"story_key": "1.1", "cost_estimate": cost_estimate},
+        payload={"story_key": story_key, "cost_estimate": cost_estimate},
+    )
+    return prepare_for_write(entry).line
+
+
+def _manual_landing_line(
+    run_id: str,
+    *,
+    story_key: str,
+    gate_verdict: str,
+    ts: str = "2026-08-06T00:07:00.000Z",
+) -> str:
+    """A minimal, valid ``"manual-landing"`` journal line -- the SAME shape
+    ``cli/deploy.py``'s own ``run_land_story`` journals (Story 4.3's own
+    ``_LAND_KIND``), the one real source ``_gather_gate_verdicts`` reads a
+    per-story gate verdict from."""
+    entry = build_entry(
+        id=JournalEntryId("deploy-1", 1),
+        ts=ts,
+        run_id=run_id,
+        kind="manual-landing",
+        phase=Phase.OBSERVATION,
+        payload={
+            "story_key": story_key,
+            "justification": "because",
+            "merge_sha": "deadbeef",
+            "gate_verdict": gate_verdict,
+        },
+    )
+    return prepare_for_write(entry).line
+
+
+def _open_intent_line(
+    run_id: str,
+    *,
+    kind: str = "story-spec-commit",
+    ts: str = "2026-08-06T00:08:00.000Z",
+) -> str:
+    """A minimal, valid ``phase: intent`` journal line with no matching
+    ``outcome`` -- ``core.journal.fold``'s own ``FoldResult.open_intents``
+    reports it as still-open."""
+    entry = build_entry(
+        id=JournalEntryId("deploy-1", 2),
+        ts=ts,
+        run_id=run_id,
+        kind=kind,
+        phase=Phase.INTENT,
+        payload={"story_keys": ["1.1"]},
     )
     return prepare_for_write(entry).line
 
@@ -1334,3 +1395,620 @@ class TestRunStatus:
         assert isinstance(exit_code, int)
         payload = _payload(capsys)
         assert payload["data"]["homes"] == []
+
+
+# =============================================================================
+# Story 5.2: RunDetailFacts / build_run_detail (`marshal status --run
+# <run_id> --project <slug>`, FR-37/NFR-12) -- covers every row of the
+# spec's I/O & Edge-Case Matrix, pure-core level (no ports, no I/O).
+# =============================================================================
+
+
+def _deferred(story_key: str = "1.2") -> DeferredStory:
+    return DeferredStory(
+        story_key=story_key,
+        reason="blocked on external review",
+        attempt=2,
+        branch="loop/acme/1.2",
+        worktree_path="/loop-homes/acme/.worktrees/1.2",
+        spec_file="spec-1.2.md",
+    )
+
+
+def _intent_dict(story_key: str = "1.1") -> dict[str, object]:
+    """A plain, already-rendered ``JournalEntry.to_json_dict()`` shape --
+    ``build_run_detail`` reports ``RunDetailFacts.open_intents`` verbatim,
+    so the pure-core tests never need a real ``JournalEntry``."""
+    return {
+        "id": {"writer_id": "deploy-1", "counter": 2},
+        "ts": "2026-08-06T00:08:00.000Z",
+        "run_id": "acme-run1",
+        "story": story_key,
+        "kind": "story-spec-commit",
+        "phase": "intent",
+        "payload": {"story_keys": [story_key]},
+    }
+
+
+class TestBuildRunDetail:
+    def test_not_found_reports_mrs_status_004(self):
+        facts = status.RunDetailFacts(project="acme", run_id="acme-run9", found=False)
+        row, finding = status.build_run_detail(facts)
+        assert row == {
+            "project": "acme",
+            "run_id": "acme-run9",
+            "found": False,
+            "state_readable": None,
+            "finished": None,
+            "paused_stage": None,
+            "paused_story_key": None,
+            "paused_reason": None,
+            "escalated_spec_file": None,
+            "escalated_task_phase": None,
+            "stories": [],
+            "deferred": [],
+            "open_intents": [],
+        }
+        assert finding is not None
+        assert finding.code == "MRS-STATUS-004"
+        assert finding.severity is Severity.WARN
+        assert "acme-run9" in finding.message
+
+    def test_state_unreadable_nulls_out_snapshot_fields_and_warns(self):
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=False,
+            gate_verdicts={"1.1": "clean"},
+            budget_by_story={"1.1": 500},
+            open_intents=(_intent_dict(),),
+        )
+        row, finding = status.build_run_detail(facts)
+        assert row["found"] is True
+        assert row["state_readable"] is False
+        assert row["finished"] is None
+        assert row["paused_stage"] is None
+        assert row["stories"] == []
+        assert row["deferred"] == []
+        # Journal-sourced facts stay populated -- unaffected by a dead/
+        # detached loop home (a distinct failure source from state.json).
+        assert row["open_intents"] == [_intent_dict()]
+        assert finding is not None
+        assert finding.code == "MRS-STATUS-002"
+        assert finding.severity is Severity.WARN
+        assert "acme-run1" in finding.message
+
+    def test_empty_tasks_is_no_crash_empty_stories_no_finding(self):
+        facts = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=True
+        )
+        row, finding = status.build_run_detail(facts)
+        assert row["stories"] == []
+        assert finding is None
+
+    def test_story_with_gate_verdict_is_named(self):
+        task = TaskPhaseSnapshot(
+            story_key="1.1", phase="done", commit_sha="cafe123", branch=""
+        )
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
+            tasks=(task,),
+            gate_verdicts={"1.1": "clean"},
+        )
+        row, finding = status.build_run_detail(facts)
+        assert row["stories"] == [
+            {
+                "story_key": "1.1",
+                "phase": "done",
+                "commit_sha": "cafe123",
+                "branch": "",
+                "gate_verdict": "clean",
+                "budget_consumed": None,
+            }
+        ]
+        assert finding is None
+
+    def test_story_without_gate_verdict_is_null_not_fabricated(self):
+        task = TaskPhaseSnapshot(story_key="1.1", phase="dev-running", commit_sha=None)
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
+            tasks=(task,),
+            gate_verdicts={},
+        )
+        row, _ = status.build_run_detail(facts)
+        assert row["stories"][0]["gate_verdict"] is None
+
+    def test_story_sequence_reported_verbatim_never_resorted_or_deduped(self):
+        """The spec's own Always bullet: ``state.json``'s own ``tasks``
+        iteration order, a duplicate story key reported as-is."""
+        tasks = (
+            TaskPhaseSnapshot(story_key="1.2", phase="done", commit_sha="aaa"),
+            TaskPhaseSnapshot(story_key="1.1", phase="dev-running", commit_sha=None),
+            TaskPhaseSnapshot(story_key="1.2", phase="review-verify", commit_sha="bbb"),
+        )
+        facts = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            tasks=tasks,
+        )
+        row, _ = status.build_run_detail(facts)
+        assert [s["story_key"] for s in row["stories"]] == ["1.2", "1.1", "1.2"]
+
+    def test_escalation_paused_names_reason_and_artifact(self):
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
+            paused_stage="escalation",
+            paused_story_key="1.3",
+            paused_reason="ambiguous spec",
+            escalated_spec_file="spec-1.3.md",
+            escalated_task_phase="dev-verify",
+        )
+        row, finding = status.build_run_detail(facts)
+        assert row["paused_stage"] == "escalation"
+        assert row["paused_story_key"] == "1.3"
+        assert row["paused_reason"] == "ambiguous spec"
+        assert row["escalated_spec_file"] == "spec-1.3.md"
+        assert row["escalated_task_phase"] == "dev-verify"
+        assert finding is None
+
+    def test_deferred_stories_listed_with_reason_and_attempt(self):
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
+            deferred=(_deferred(),),
+        )
+        row, _ = status.build_run_detail(facts)
+        assert row["deferred"] == [
+            {
+                "story_key": "1.2",
+                "reason": "blocked on external review",
+                "attempt": 2,
+                "branch": "loop/acme/1.2",
+                "worktree_path": "/loop-homes/acme/.worktrees/1.2",
+                "spec_file": "spec-1.2.md",
+            }
+        ]
+
+    def test_open_intent_reported_verbatim_never_reinterpreted(self):
+        intent = _intent_dict()
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
+            open_intents=(intent,),
+        )
+        row, _ = status.build_run_detail(facts)
+        assert row["open_intents"] == [intent]
+
+    def test_budget_consumed_grouped_per_story_key_not_a_single_latest(self):
+        """Story 5.2's own genuinely different aggregation from Story 5.1's
+        fleet row: EACH story key's own latest value, not one overall
+        latest."""
+        tasks = (
+            TaskPhaseSnapshot(story_key="1.1", phase="done", commit_sha="a"),
+            TaskPhaseSnapshot(story_key="1.2", phase="dev-running", commit_sha=None),
+        )
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
+            tasks=tasks,
+            budget_by_story={"1.1": 1000, "1.2": 2500},
+        )
+        row, _ = status.build_run_detail(facts)
+        by_key = {s["story_key"]: s["budget_consumed"] for s in row["stories"]}
+        assert by_key == {"1.1": 1000, "1.2": 2500}
+
+    def test_story_with_no_budget_usage_entry_reports_null_not_zero(self):
+        task = TaskPhaseSnapshot(story_key="1.1", phase="dev-running", commit_sha=None)
+        facts = status.RunDetailFacts(
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
+            tasks=(task,),
+            budget_by_story={},
+        )
+        row, _ = status.build_run_detail(facts)
+        assert row["stories"][0]["budget_consumed"] is None
+
+    def test_render_story_key_best_effort_renders_dot_form(self):
+        key = normalize("1.2")
+        assert status._render_story_key_best_effort(str(key)) == "1.2"
+
+    def test_render_story_key_best_effort_falls_back_to_raw_on_unparseable(self):
+        assert status._render_story_key_best_effort("not-a-story-key") == (
+            "not-a-story-key"
+        )
+
+
+# =============================================================================
+# Story 5.2: `cli/status.py`'s ``--run <run_id> --project <slug>`` path --
+# I/O matrix, fake VcsPort/HarnessPort doubles, real LocalFs against a REAL
+# tmp_path journal file (mirrors TestRunStatus's own established shape).
+# =============================================================================
+
+
+def _run_detail_dir(tmp_path: Path, *, slug: str, run_id: str) -> Path:
+    """The EXACT path ``cli/status.py::_run_detail`` computes -- the
+    project's own canonical Tier-3 store, never a home-relative path (this
+    command reads run directories directly off the repo root/slug, mirroring
+    ``cli/deploy.py::_gather_gate_verdicts``'s own identical convention)."""
+    return (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
+    )
+
+
+def _seed_run_detail_journal(
+    tmp_path: Path, *, slug: str, run_id: str, lines: list[str]
+) -> Path:
+    run_dir = _run_detail_dir(tmp_path, slug=slug, run_id=run_id)
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return run_dir
+
+
+class TestRunDetail:
+    def test_run_without_project_refuses_before_any_io_mrs_status_003(self, capsys):
+        exit_code = status_cli.run_status(
+            _args(run="acme-run1"),
+            vcs=_FakeVcs(),
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-003"]
+        assert payload["verdict"] == "unevaluable"
+        assert exit_code == 1
+
+    def test_repo_root_failure_never_fabricates_a_confirmed_absent_run(
+        self, capsys
+    ):
+        """Code review (2026-08-07, Edge Case Hunter): a `VcsCommandError`
+        resolving the repo root means the filesystem was never consulted
+        -- whether the run exists is genuinely UNKNOWN, not confirmed
+        absent. Must report ONLY the repo-root finding, never also
+        synthesize `MRS-STATUS-004`'s "no run directory found" claim on
+        top of it (mirrors `run_status`'s own identical `VcsCommandError`
+        handling for the fleet-summary path)."""
+        exit_code = status_cli.run_status(
+            _args(project="acme", run="acme-run1"),
+            vcs=_FakeVcs(repo_root_raises=True),
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-002"]
+        assert "found" not in payload["data"]
+        assert exit_code == 0
+
+    def test_run_id_with_no_matching_directory_reports_mrs_status_004(
+        self, tmp_path, capsys
+    ):
+        vcs = _FakeVcs(repo_root_value=tmp_path)
+        exit_code = status_cli.run_status(
+            _args(project="acme", run="acme-run-does-not-exist"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"]["found"] is False
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-004" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_full_run_detail_reports_stories_gate_verdicts_budget_and_open_intent(
+        self, tmp_path, capsys
+    ):
+        slug = "acme"
+        run_id = "acme-run1"
+        _seed_run_detail_journal(
+            tmp_path,
+            slug=slug,
+            run_id=run_id,
+            lines=[
+                _outcome_line(run_id, pid=4242, harness_run_id="hrid-1"),
+                _manual_landing_line(run_id, story_key="1.1", gate_verdict="clean"),
+                _budget_usage_line(
+                    run_id, story_key="1.1", cost_estimate=1000,
+                    ts="2026-08-06T00:05:00.000Z",
+                ),
+                _budget_usage_line(
+                    run_id, story_key="1.1", cost_estimate=1500,
+                    ts="2026-08-06T00:06:00.000Z",
+                ),
+                _budget_usage_line(
+                    run_id, story_key="1.2", cost_estimate=300,
+                    ts="2026-08-06T00:06:30.000Z",
+                ),
+                _open_intent_line(run_id),
+            ],
+        )
+        home = tmp_path / "loop-homes" / slug
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
+        )
+        tasks = (
+            _task(story_key="1.1", phase="done"),
+            _task(story_key="1.2", phase="dev-running"),
+        )
+        harness = _FakeHarness(
+            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=tasks)}
+        )
+
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        data = payload["data"]
+        assert data["project"] == slug
+        assert data["run_id"] == run_id
+        assert data["found"] is True
+        assert data["state_readable"] is True
+        assert data["finished"] is False
+
+        by_key = {s["story_key"]: s for s in data["stories"]}
+        assert by_key["1.1"]["gate_verdict"] == "clean"
+        assert by_key["1.1"]["budget_consumed"] == 1500
+        assert by_key["1.2"]["gate_verdict"] is None
+        assert by_key["1.2"]["budget_consumed"] == 300
+
+        assert len(data["open_intents"]) == 1
+        assert data["open_intents"][0]["kind"] == "story-spec-commit"
+        assert exit_code == 0
+
+    def test_run_paused_on_escalation_names_reason_and_artifact(
+        self, tmp_path, capsys
+    ):
+        slug = "acme"
+        run_id = "acme-run1"
+        _seed_run_detail_journal(
+            tmp_path,
+            slug=slug,
+            run_id=run_id,
+            lines=[_outcome_line(run_id, pid=4242, harness_run_id="hrid-1")],
+        )
+        home = tmp_path / "loop-homes" / slug
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
+        )
+        snapshot = RunStatusSnapshot(
+            paused_stage="escalation",
+            paused_story_key="1.3",
+            paused_reason="ambiguous spec",
+            escalated_spec_file="spec-1.3.md",
+            escalated_task_phase="dev-verify",
+            deferred=(),
+            finished=False,
+            tasks=(),
+        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): snapshot})
+
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        data = payload["data"]
+        assert data["paused_stage"] == "escalation"
+        assert data["paused_story_key"] == "1.3"
+        assert data["escalated_spec_file"] == "spec-1.3.md"
+        assert exit_code == 0
+
+    def test_run_with_deferred_stories_lists_every_one(self, tmp_path, capsys):
+        slug = "acme"
+        run_id = "acme-run1"
+        _seed_run_detail_journal(
+            tmp_path,
+            slug=slug,
+            run_id=run_id,
+            lines=[_outcome_line(run_id, pid=4242, harness_run_id="hrid-1")],
+        )
+        home = tmp_path / "loop-homes" / slug
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
+        )
+        deferred = DeferredStory(
+            story_key="1.4",
+            reason="waiting on upstream",
+            attempt=1,
+            branch="loop/acme/1.4",
+            worktree_path="/loop-homes/acme/.worktrees/1.4",
+            spec_file="spec-1.4.md",
+        )
+        snapshot = RunStatusSnapshot(
+            paused_stage=None,
+            paused_story_key=None,
+            paused_reason=None,
+            escalated_spec_file=None,
+            escalated_task_phase=None,
+            deferred=(deferred,),
+            finished=False,
+            tasks=(),
+        )
+        harness = _FakeHarness(snapshots={(str(home), "hrid-1"): snapshot})
+
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["deferred"] == [
+            {
+                "story_key": "1.4",
+                "reason": "waiting on upstream",
+                "attempt": 1,
+                "branch": "loop/acme/1.4",
+                "worktree_path": "/loop-homes/acme/.worktrees/1.4",
+                "spec_file": "spec-1.4.md",
+            }
+        ]
+        assert exit_code == 0
+
+    def test_run_with_empty_tasks_reports_empty_stories_no_crash(
+        self, tmp_path, capsys
+    ):
+        slug = "acme"
+        run_id = "acme-run1"
+        _seed_run_detail_journal(
+            tmp_path,
+            slug=slug,
+            run_id=run_id,
+            lines=[_outcome_line(run_id, pid=4242, harness_run_id="hrid-1")],
+        )
+        home = tmp_path / "loop-homes" / slug
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
+        )
+        harness = _FakeHarness(
+            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())}
+        )
+
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["stories"] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_no_loop_home_attached_degrades_state_readable_but_keeps_journal_facts(
+        self, tmp_path, capsys
+    ):
+        """No ``loop/acme`` worktree currently attached -- ``state.json``
+        cannot be read at all, but the run's own journal-sourced facts
+        (gate verdicts, consumption, open intents) stay populated (a dead/
+        detached loop home is a different failure source, per the spec's
+        own Design Notes)."""
+        slug = "acme"
+        run_id = "acme-run1"
+        _seed_run_detail_journal(
+            tmp_path,
+            slug=slug,
+            run_id=run_id,
+            lines=[
+                _outcome_line(run_id, pid=4242, harness_run_id="hrid-1"),
+                _manual_landing_line(run_id, story_key="1.1", gate_verdict="clean"),
+            ],
+        )
+        vcs = _FakeVcs(repo_root_value=tmp_path, worktrees=())
+
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        data = payload["data"]
+        assert data["found"] is True
+        assert data["state_readable"] is False
+        assert data["stories"] == []
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-002" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_text_format_run_detail_renders_without_crashing(self, tmp_path, capsys):
+        slug = "acme"
+        run_id = "acme-run1"
+        _seed_run_detail_journal(
+            tmp_path,
+            slug=slug,
+            run_id=run_id,
+            lines=[_outcome_line(run_id, pid=4242, harness_run_id="hrid-1")],
+        )
+        home = tmp_path / "loop-homes" / slug
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
+        )
+        harness = _FakeHarness(
+            snapshots={(str(home), "hrid-1"): _snapshot(finished=False, tasks=())}
+        )
+
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id, format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        assert "--run" in out
+        assert "stories: 0" in out
+        assert exit_code == 0
+
+    def test_run_status_with_default_ports_and_run_flag_does_not_crash(self, capsys):
+        """Smoke test over the real GitVcs/LocalFs/BmadLoopHarness default
+        construction path (mirrors ``TestRunStatus``'s own identical
+        precedent) -- a run id naming nothing real for a project naming
+        nothing real stays a clean, reportable 'not found', never a
+        crash."""
+        exit_code = status_cli.run_status(
+            _args(project="no-such-project-xyz", run="no-such-run-xyz")
+        )
+
+        assert isinstance(exit_code, int)
+        payload = _payload(capsys)
+        assert payload["data"]["found"] is False

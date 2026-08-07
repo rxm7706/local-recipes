@@ -68,14 +68,14 @@ must not become an import edge.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from ..ports.harness import TaskPhaseSnapshot
+from ..ports.harness import DeferredStory, TaskPhaseSnapshot
 from ..ports.process import ProcessResult
-from .identity import StoryKey
+from .identity import StoryKey, normalize, render_feed_key
 from .model import Finding, Severity
 
 _LOOP_BRANCH_PREFIX = "loop/"
@@ -848,3 +848,200 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         "budget_consumed": facts.budget_consumed,
     }
     return row, None
+
+
+# =============================================================================
+# Story 5.2: per-run detail (``marshal status --run <run_id> --project
+# <slug>``, FR-37/NFR-12) -- extends the SAME ``marshal status`` command with
+# a single-run drill-down: the FULL story sequence (``RunStatusSnapshot.
+# tasks``, in ``state.json``'s own order, never re-sorted/deduplicated),
+# each story's own gate verdict (``cli/deploy.py::_gather_gate_verdicts``,
+# reused verbatim), escalation/deferral state (``RunStatusSnapshot``'s own
+# already-shipped fields, read never re-derived), per-story consumption
+# (Story 3.6's own ``"budget-usage"`` observations, grouped by
+# ``payload["story_key"]`` this time rather than Story 5.1's own single
+# latest-overall value), and open ``intent``-phase journal entries
+# (``core.journal.fold``'s own ``FoldResult.open_intents``, reported
+# verbatim). ``cli/status.py`` gathers every fact via ``VcsPort``/``FsPort``/
+# ``HarnessPort`` first -- this module stays pure (AD-4): no I/O, subprocess,
+# or clock read.
+# =============================================================================
+
+_RUN_NOT_FOUND_CODE = "MRS-STATUS-004"
+
+
+def _render_story_key_best_effort(raw: str) -> str:
+    """Marshal's own canonical dot-form rendering of a harness-native story
+    key, falling back to ``raw`` unchanged when it does not parse --
+    DUPLICATED from ``cli/spin.py``'s own identically-named helper (and
+    ``supervisor/__main__.py``'s own ``_feed_key_form``), never imported:
+    this module sits in ``core/``, which AD-3/AD-4 forbid from ever
+    importing ``cli/``. Used ONLY to look ``TaskPhaseSnapshot.story_key``
+    (bmad-loop's native spelling) up against ``gate_verdicts``/
+    ``budget_by_story`` (both keyed by Marshal's own dot form, since
+    ``_gather_gate_verdicts``'s own ``manual-landing`` payloads and
+    ``supervisor/__main__.py``'s own ``_BUDGET_USAGE_KIND`` payloads are
+    both already written in that form) -- the STORY SEQUENCE itself
+    (``build_run_detail``'s own ``data.stories[*]["story_key"]``) always
+    reports ``task.story_key`` verbatim, mirroring ``_current_story_key``'s
+    own established convention (Story 5.1) of never rendering the fleet
+    row's own ``current_story`` field either."""
+    try:
+        return render_feed_key(normalize(raw))
+    except ValueError:
+        return raw
+
+
+@dataclass(frozen=True, kw_only=True)
+class RunDetailFacts:
+    """Already-gathered facts for ONE run's own detail view (Story 5.2) --
+    read by ``cli/status.py::_run_detail`` via ``VcsPort``/``FsPort``/
+    ``HarnessPort`` before this pure module ever sees them (AD-4).
+
+    ``found`` is ``False`` when no run directory exists at all for
+    ``project``/``run_id`` -- every other field is then a placeholder, and
+    ``build_run_detail`` reports a clean, registered ``MRS-STATUS-004``
+    finding rather than crashing (the spec's own "a run id with no matching
+    directory" row).
+
+    ``state_readable`` is ``True`` only when bmad-loop's own live
+    ``RunStatusSnapshot`` was actually obtained for this run (a loop home is
+    currently attached for ``project`` AND its own ``state.json`` read
+    cleanly) -- ``False`` degrades ``finished``/``paused_*``/
+    ``escalated_*`` to ``None`` and ``tasks``/``deferred`` are then expected
+    to be empty (nothing to report), with one reused ``MRS-STATUS-002`` WARN
+    naming the gap (mirrors Story 5.1's own ``journal_unreadable``
+    precedent: one degraded row, never a crash, never silently reported as
+    healthy). ``gate_verdicts``/``budget_by_story``/``open_intents`` are
+    sourced independently (the project's own cross-run land journal, and
+    THIS run's own ``journal.jsonl`` fold, respectively) and remain
+    populated even when ``state_readable`` is ``False`` -- a dead/detached
+    loop home does not itself invalidate either journal read.
+
+    ``gate_verdicts``/``budget_by_story`` are both keyed by Marshal's own
+    canonical dot-form story key (``_gather_gate_verdicts``'s own
+    ``manual-landing`` payloads and ``supervisor/__main__.py``'s own
+    ``_BUDGET_USAGE_KIND`` payloads are both already written in that form)
+    -- ``build_run_detail`` renders each task's own bmad-loop-native
+    ``story_key`` via ``_render_story_key_best_effort`` ONLY to perform
+    this lookup; the reported ``story_key`` itself stays verbatim.
+    ``open_intents`` is ``core.journal.fold``'s own ``FoldResult.
+    open_intents``, already rendered to plain JSON-dicts (``JournalEntry.
+    to_json_dict()``) by the caller -- reported verbatim, kind/payload/id
+    included, never re-interpreted (this command does not attempt to close
+    or reconcile them; that stays ``cli/deploy.py``'s own
+    ``_reconcile_open_intents`` machinery, out of scope here)."""
+
+    project: str
+    run_id: str
+    found: bool = True
+    state_readable: bool = True
+    finished: bool = False
+    paused_stage: str | None = None
+    paused_story_key: str | None = None
+    paused_reason: str | None = None
+    escalated_spec_file: str | None = None
+    escalated_task_phase: str | None = None
+    tasks: tuple[TaskPhaseSnapshot, ...] = ()
+    deferred: tuple[DeferredStory, ...] = ()
+    gate_verdicts: Mapping[str, str] = field(default_factory=dict)
+    budget_by_story: Mapping[str, int | float] = field(default_factory=dict)
+    open_intents: tuple[dict[str, object], ...] = ()
+
+
+def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding | None]:
+    """One run's full detail row (Story 5.2) plus an optional ``Finding`` --
+    mirrors this module's own ``build_fleet_row`` convention (already-
+    gathered facts in, a plain row dict out). Every field this row carries
+    has an identical machine-readable counterpart to whatever
+    ``cli/status.py``'s own ``_render_text_run_detail`` prints (NFR-12): the
+    text view is a pure projection of this SAME dict, never a second,
+    independently-computed rendering."""
+    if not facts.found:
+        row: dict[str, object] = {
+            "project": facts.project,
+            "run_id": facts.run_id,
+            "found": False,
+            "state_readable": None,
+            "finished": None,
+            "paused_stage": None,
+            "paused_story_key": None,
+            "paused_reason": None,
+            "escalated_spec_file": None,
+            "escalated_task_phase": None,
+            "stories": [],
+            "deferred": [],
+            "open_intents": [],
+        }
+        finding = Finding(
+            code=_RUN_NOT_FOUND_CODE,
+            severity=Severity.WARN,
+            message=(
+                f"project {facts.project!r}: no run directory found for "
+                f"run id {facts.run_id!r} -- reported, never fabricated"
+            ),
+            path=facts.run_id,
+        )
+        return row, finding
+
+    stories: list[dict[str, object]] = []
+    for task in facts.tasks:
+        rendered_key = _render_story_key_best_effort(task.story_key)
+        stories.append(
+            {
+                "story_key": task.story_key,
+                "phase": task.phase,
+                "commit_sha": task.commit_sha,
+                "branch": task.branch,
+                "gate_verdict": facts.gate_verdicts.get(rendered_key),
+                "budget_consumed": facts.budget_by_story.get(rendered_key),
+            }
+        )
+
+    deferred = [
+        {
+            "story_key": deferred_story.story_key,
+            "reason": deferred_story.reason,
+            "attempt": deferred_story.attempt,
+            "branch": deferred_story.branch,
+            "worktree_path": deferred_story.worktree_path,
+            "spec_file": deferred_story.spec_file,
+        }
+        for deferred_story in facts.deferred
+    ]
+
+    row = {
+        "project": facts.project,
+        "run_id": facts.run_id,
+        "found": True,
+        "state_readable": facts.state_readable,
+        "finished": facts.finished if facts.state_readable else None,
+        "paused_stage": facts.paused_stage if facts.state_readable else None,
+        "paused_story_key": (
+            facts.paused_story_key if facts.state_readable else None
+        ),
+        "paused_reason": facts.paused_reason if facts.state_readable else None,
+        "escalated_spec_file": (
+            facts.escalated_spec_file if facts.state_readable else None
+        ),
+        "escalated_task_phase": (
+            facts.escalated_task_phase if facts.state_readable else None
+        ),
+        "stories": stories,
+        "deferred": deferred,
+        "open_intents": list(facts.open_intents),
+    }
+
+    finding = None
+    if not facts.state_readable:
+        finding = Finding(
+            code=_MALFORMED_JOURNAL_CODE,
+            severity=Severity.WARN,
+            message=(
+                f"{facts.project}: run {facts.run_id}'s live run state "
+                "could not be read -- finished/paused/escalation/story "
+                "fields report as null/empty, never fabricated"
+            ),
+            path=facts.project,
+        )
+    return row, finding

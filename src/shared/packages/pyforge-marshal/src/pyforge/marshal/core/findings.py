@@ -660,6 +660,28 @@ rather than crashing or silently reading as healthy -- see
 ``core/status.py::build_fleet_row``'s own docstring for the row-shape
 degradation.
 
+Story 5.2 (per-run detail, FR-37/NFR-12) adds two more codes to
+``cli/status.py``'s own ``MRS-STATUS-*`` area: ``MRS-STATUS-003``
+(``--run <run_id>`` was supplied without ``--project <slug>`` alongside it
+-- a run id alone does not name which project's Tier-3 store to look
+under, checked before any I/O) and ``MRS-STATUS-004`` (``--run``/
+``--project`` were both supplied but no run directory exists for that
+project/run-id pair). ``MRS-STATUS-003`` classifies ``Verdict.
+UNEVALUABLE``, the same tier as every other pre-I/O precondition-shape
+gate (``MRS-INIT-001``, ``MRS-SPIN-001``, ``MRS-DEPLOY-006``'s own
+``--justification`` precedent): Marshal cannot determine what to report.
+``MRS-STATUS-004`` classifies ``Verdict.WARN``, the same "clean, reportable
+gap, never itself a failure" tier as ``MRS-DEPLOY-004``'s own orphaned-key
+precedent: a typo'd or torn-down run id is reported, never fabricated, and
+never blocks (``data.found: false``). ``MRS-STATUS-002`` (already
+registered, Story 5.1) is REUSED, not replaced, with a broadened meaning:
+it now ALSO names a per-run detail view whose live ``state.json`` could not
+be read (no loop home currently attached for the project, or its own
+``RunStatusSnapshot`` read failed) -- the identical shape and rationale
+Story 4.1's own ``MRS-GATE-005`` broadening already established for the
+SAME "a run-scoped answer was requested and Marshal could not honor it"
+caller-facing meaning.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -795,6 +817,14 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # fleet) and MRS-RETIRE-003 (a delete_branch failure under --execute, or a
 # post-deletion journal-write failure) both at WARN -- never blocking, the
 # sweep continues.
+# Story 5.1's cli/status.py adds MRS-STATUS-002 (a discovered home's
+# journal/state.json couldn't be read far enough, or the fleet enumeration
+# itself failed) at WARN.
+# Story 5.2 (per-run detail, FR-37/NFR-12) adds MRS-STATUS-003 (--run given
+# without --project) at UNEVALUABLE and MRS-STATUS-004 (a run id that does
+# not resolve to a real run directory) at WARN; MRS-STATUS-002 is reused,
+# broadened to also cover a per-run detail view's own unreadable
+# state.json.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -897,6 +927,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-RETIRE-002",
         "MRS-RETIRE-003",
         "MRS-STATUS-002",
+        "MRS-STATUS-003",
+        "MRS-STATUS-004",
     }
 )
 

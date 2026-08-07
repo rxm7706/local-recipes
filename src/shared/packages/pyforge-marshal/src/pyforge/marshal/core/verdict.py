@@ -291,6 +291,16 @@ progression" paper-trail-gap code (``MRS-DEPLOY-021``/``022``/``023``): a
 refused/failed branch is named, but the sweep continues for every other
 branch and project.
 
+Story 5.2 (per-run detail, FR-37/NFR-12) adds two more codes to
+``cli/status.py``'s own ``MRS-STATUS-*`` area: ``MRS-STATUS-003`` (``--run``
+supplied without ``--project`` alongside it, checked before any I/O)
+classifies ``Verdict.UNEVALUABLE``, the same tier as ``MRS-INIT-001``/
+``MRS-SPIN-001``/``MRS-RETIRE-001``'s identical pre-I/O shape gates.
+``MRS-STATUS-004`` (a run id that does not resolve to a real run directory
+for the given project) classifies ``Verdict.WARN``, the same "clean,
+reportable gap" tier as ``MRS-DEPLOY-004``'s own orphaned-key precedent: a
+typo'd or torn-down run id is named, never fabricated, and never blocks.
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -506,6 +516,12 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # be read far enough to recover a supervisor pid and a live snapshot, or the
 # fleet's own list_worktrees enumeration itself failed) at WARN, the same
 # "per-row/per-sweep read failure degrades cleanly" tier as MRS-RETIRE-002.
+# Story 5.2 (per-run detail, FR-37/NFR-12) adds MRS-STATUS-003 (--run given
+# without --project, checked before any I/O) at UNEVALUABLE, alongside
+# MRS-INIT-001/MRS-SPIN-001/MRS-RETIRE-001, and MRS-STATUS-004 (a run id
+# that does not resolve to a real run directory) at WARN, alongside
+# MRS-DEPLOY-004's own orphaned-key precedent -- a clean, reportable gap,
+# never itself a failure.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -607,6 +623,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-RETIRE-002": Verdict.WARN,
     "MRS-RETIRE-003": Verdict.WARN,
     "MRS-STATUS-002": Verdict.WARN,
+    "MRS-STATUS-003": Verdict.UNEVALUABLE,
+    "MRS-STATUS-004": Verdict.WARN,
 }
 
 
