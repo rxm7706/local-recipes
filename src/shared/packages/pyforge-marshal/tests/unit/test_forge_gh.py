@@ -309,6 +309,63 @@ def test_check_run_status_treats_a_missing_started_at_as_oldest(forge, monkeypat
     assert status == "success"
 
 
+# --- merge_pr (Story 4.8) --------------------------------------------------
+
+
+def test_merge_pr_merge_strategy_argv(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=0)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(
+        _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
+    )
+    (argv,) = run.calls
+    assert argv[:4] == ["gh", "pr", "merge", "42"]
+    assert "--repo" in argv and argv[argv.index("--repo") + 1] == "acme/widgets"
+    assert "--merge" in argv
+    assert "--match-head-commit" in argv
+    assert argv[argv.index("--match-head-commit") + 1] == "deadbeef"
+    assert "--delete-branch" not in argv
+
+
+def test_merge_pr_squash_strategy_argv(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=0)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(
+        _REPO, 42, ForgeRef("squash"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
+    )
+    (argv,) = run.calls
+    assert "--squash" in argv
+
+
+def test_merge_pr_rebase_strategy_argv(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=0)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(
+        _REPO, 42, ForgeRef("rebase"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
+    )
+    (argv,) = run.calls
+    assert "--rebase" in argv
+
+
+def test_merge_pr_delete_branch_true_adds_flag(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=0)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(
+        _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True
+    )
+    (argv,) = run.calls
+    assert "--delete-branch" in argv
+
+
+def test_merge_pr_raises_on_gh_failure(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=1, stderr="pull request is not mergeable")])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError, match="not mergeable"):
+        forge.merge_pr(
+            _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True
+        )
+
+
 # --- gh launch failures (never a real network call; a real gh is never invoked) --
 
 

@@ -26,6 +26,12 @@ for why the Protocol wraps ``repo``/``head_branch``/``base``/``head``/
 once, at the point a ``gh`` argv is assembled -- never earlier, so a caller
 constructing a ``ForgeRef`` and passing it straight through is the only
 path a routing identifier travels.
+
+``merge_pr`` (Story 4.8, FR-60/AD-40) shells out to ``gh pr merge <number>
+--repo <repo> --<strategy> [--delete-branch]`` -- ``gh`` already performs
+the merge and, when requested, the head-branch deletion as ONE atomic
+server-side write, so this method needs no follow-up read the way
+``create_pr``/``update_pr`` do.
 """
 
 from __future__ import annotations
@@ -289,3 +295,36 @@ class GhForge:
         matching.sort(key=_started_at, reverse=True)
         conclusion = matching[0].get("conclusion")
         return conclusion if isinstance(conclusion, str) else None
+
+    def merge_pr(
+        self,
+        repo: ForgeRef,
+        number: int,
+        strategy: ForgeRef,
+        *,
+        expected_head_sha: ForgeRef,
+        delete_branch: bool,
+    ) -> None:
+        repo_value, strategy_value = repo.value, strategy.value
+        sha_value = expected_head_sha.value
+        args = [
+            "gh",
+            "pr",
+            "merge",
+            str(number),
+            "--repo",
+            repo_value,
+            f"--{strategy_value}",
+            "--match-head-commit",
+            sha_value,
+        ]
+        if delete_branch:
+            args.append("--delete-branch")
+        result = _run(args, timeout_s=_GH_WRITE_TIMEOUT_S)
+        if result.returncode != 0:
+            raise ForgeCommandError(
+                f"gh pr merge {number} --repo {repo_value} --{strategy_value} "
+                f"--match-head-commit {sha_value} "
+                f"{'--delete-branch ' if delete_branch else ''}failed: "
+                f"{result.stderr.strip()}"
+            )
