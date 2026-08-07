@@ -78,10 +78,10 @@ development_status:
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done
   6-4-adapter-probe-with-a-machine-scoped-record: done
-  6-5-conformance-smoke-in-an-ephemeral-home: backlog
-  6-6-the-conformance-matrix: backlog
-  6-7-entry-file-family-drift-check-detect-only: backlog
-  6-8-upstream-contribution-register: backlog
+  6-5-conformance-smoke-in-an-ephemeral-home: done
+  6-6-the-conformance-matrix: done
+  6-7-entry-file-family-drift-check-detect-only: done
+  6-8-upstream-contribution-register: done
   6-9-tool-surface-rendering-and-preflight-probe: backlog
   7-1-package-skeleton-as-a-pixi-workspace-member: backlog
   7-2-error-taxonomy-and-exit-codes: backlog
