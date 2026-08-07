@@ -916,7 +916,14 @@ _SUSTAINED_AUTOMATION_CAVEAT = (
 )
 
 
-def _ack_state_path() -> Path:
+def _machine_state_dir() -> Path:
+    """AD-37's single declared machine-scoped path (the BASE directory, not
+    any one fact's filename) -- extracted from this function's own former
+    body (Story 6.4, FR-43) so a second machine-scoped fact
+    (``cli/adapters.py``'s own adapter-probe record) resolves through the
+    SAME override/anchoring logic rather than a second, driftable copy of
+    it. Behavior unchanged: ``_ack_state_path`` below is now a one-line
+    caller."""
     override = os.environ.get(ENV_MARSHAL_STATE_HOME)
     base = (
         Path(override).expanduser()
@@ -930,7 +937,11 @@ def _ack_state_path() -> Path:
         # invocation with a different CWD, so the acknowledgement would
         # never appear to "stick" from the operator's point of view).
         base = Path.cwd() / base
-    return base / _ACK_STATE_FILENAME
+    return base
+
+
+def _ack_state_path() -> Path:
+    return _machine_state_dir() / _ACK_STATE_FILENAME
 
 
 def _read_acknowledged(fs: FsPort, path: Path) -> set[str]:
@@ -1459,7 +1470,17 @@ def run_preflight(
     # without a second, narrower predicate.
     from .adapters import gather_conformance_findings
 
-    conform_data, conform_findings = gather_conformance_findings(home, fs=fs, harness=harness)
+    # Review finding (Edge Case Hunter, Story 6.4): `treat_never_synced_as_
+    # drift=False` -- a tree a configured adapter declares but that has
+    # never gone through `marshal adapters sync` is the ordinary,
+    # expected state right after `marshal init`, not a regression to
+    # flag at ERROR on every routine preflight run. See
+    # `gather_conformance_findings`'s own docstring for the full
+    # reasoning; `run_adapters_conform` (the standalone operator-invoked
+    # audit) keeps the stricter default.
+    conform_data, conform_findings = gather_conformance_findings(
+        home, fs=fs, harness=harness, treat_never_synced_as_drift=False
+    )
     data["projection_conformance"] = conform_data
     findings.extend(conform_findings)
 

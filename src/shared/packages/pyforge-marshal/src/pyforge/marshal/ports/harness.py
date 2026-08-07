@@ -164,6 +164,27 @@ block. This satisfies the story's own Never clause ("no new ``HarnessPort``
 method ... extend ``RunStatusSnapshot``'s return value if the current shape
 doesn't expose per-task ``phase``/``commit_sha``, rather than adding a
 second, overlapping bmad-loop-state-reading method").
+
+Story 6.4 (adapter probe with a machine-scoped record, FR-43, AD-31/AD-34/
+AD-37) adds ``adapter_probe`` -- a bundled observation of what a named
+adapter actually supports on THIS machine, mirroring ``UsageSnapshot``/
+``RunStatusSnapshot``'s own "facts the caller could not have known in
+advance" convention, since the AC asks for three distinct facts (binary
+presence/version, the profile's own declared capabilities, and probe
+output) captured together as one observation. Raises ``HarnessError`` for
+an unknown ``adapter_name`` or an unimportable ``bmad_loop`` -- the SAME
+contract ``adapter_binary``/``adapter_seed_files``/``adapter_first_run_
+note`` already have (all four resolve the SAME profile via the harness's
+own ``_get_profile`` seam). Never raises for anything else: an absent
+binary, a failed ``--version`` read, or a failed ``bmad-loop probe-adapter
+--json`` call each degrade to a ``None``/``False`` field on the returned
+``AdapterProbe``, mirroring ``harness_version``'s own "never raises"
+convention for the identical class of subprocess flakiness. Pane-derived
+free text this method reads (``probe_output``, the probed CLI's own
+``--help``/JSON output as relayed by ``bmad-loop probe-adapter``) is
+redacted at capture, before it is ever returned (AD-34) -- the SAME
+``_redact_text``/``to_redacted`` round-trip ``run_status_snapshot`` already
+established for ``paused_reason``/``defer_reason``.
 """
 
 from __future__ import annotations
@@ -334,6 +355,51 @@ class RunStatusSnapshot:
     deferred: tuple[DeferredStory, ...]
     finished: bool = False
     tasks: tuple[TaskPhaseSnapshot, ...] = ()
+
+
+@dataclass(frozen=True)
+class AdapterProbe:
+    """One adapter's observed support on this machine (Story 6.4, FR-43) --
+    a plain, frozen value type ``HarnessPort.adapter_probe`` returns,
+    mirroring ``UsageSnapshot``/``DeferredStory``'s own "facts the caller
+    could not have known in advance" convention. ``adapter`` is the profile
+    name probed (``get_profile``'s own registry key, e.g. ``"claude"``).
+    ``binary`` is the profile's declared binary name (``CLIProfile.binary``,
+    e.g. ``"claude"``, ``"agy"`` for ``antigravity`` -- the SAME field
+    ``adapter_binary`` resolves). ``binary_present`` is a plain
+    ``shutil.which`` presence check; when ``False``, ``binary_version`` and
+    ``probe_output`` are always ``None`` (no subprocess is attempted against
+    a binary that is not on ``PATH``). ``binary_version`` is the resolved
+    binary's own ``--version`` output (parsed the same permissive way
+    ``harness_version`` handles ``bmad-loop --version``), or ``None`` if it
+    could not be determined. ``capabilities`` is a curated, read-only subset
+    of the resolved ``CLIProfile``'s own already-declared fields (never a
+    literal upstream ``capabilities`` attribute -- see the spec's Design
+    Notes for which fields and why). ``probe_output`` is ``bmad-loop
+    probe-adapter --cli <adapter> --json``'s own stdout (its default SCAN
+    mode only -- never the interactive ``--probe`` mode), already redacted
+    at capture (AD-34), or ``None`` if the probe subprocess could not
+    produce it. Stored opaque: a well-formed JSON document is redacted via
+    the full field-name-and-shape pass and re-serialized (review finding --
+    a document merely WRAPPED as one string value, the original approach,
+    would have hidden the field-name half of redaction from every key
+    inside it); anything that fails to parse as a JSON object falls back to
+    opaque-string redaction rather than being rejected -- this module never
+    validates or enforces the probed tool's output shape, only redacts
+    whatever it received. ``probe_note`` names WHY ``probe_output`` is
+    ``None`` when it is (binary absent, subprocess failure/timeout, or a
+    redaction failure) -- ``None`` when ``probe_output`` is set. There is
+    NO "malformed/non-JSON output" case distinct from these: malformed
+    output that the subprocess itself reported success on (exit 0) is
+    still captured and redacted, opaquely if unparseable, never refused."""
+
+    adapter: str
+    binary: str
+    binary_present: bool
+    binary_version: str | None
+    capabilities: Mapping[str, object]
+    probe_output: str | None
+    probe_note: str | None
 
 
 class HarnessPort(Protocol):
@@ -570,4 +636,16 @@ class HarnessPort(Protocol):
         spelling). Never raises: an unimportable ``bmad_loop`` or any
         failure resolving the path degrades to ``None``, the same shape a
         genuinely absent marker produces."""
+        ...
+
+    def adapter_probe(self, adapter_name: str, project: Path) -> AdapterProbe:
+        """Observe what ``adapter_name`` actually supports on THIS machine
+        (Story 6.4, FR-43/AD-31/AD-34): binary presence and version, the
+        resolved profile's own declared capabilities, and ``bmad-loop
+        probe-adapter --json``'s own (redacted-at-capture) scan-mode output.
+        Raises ``HarnessError`` for an unknown ``adapter_name`` or an
+        unimportable ``bmad_loop`` -- the SAME contract ``adapter_binary``
+        already has (both resolve the SAME profile). Never raises for
+        anything else -- see ``AdapterProbe``'s own docstring for how each
+        of those failures degrades instead."""
         ...

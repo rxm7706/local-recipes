@@ -46,6 +46,13 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 
+# `ports/` is NOT in AD-4's forbidden-modules list (only `subprocess`/`os`/
+# `time`/`pyforge.marshal.adapters` are) -- `core/status.py` already imports
+# `..ports.harness` (`DeferredStory`, `TaskPhaseSnapshot`) for the identical
+# reason: a Protocol/dataclass module declares shapes only, no I/O of its
+# own to import transitively.
+from ..ports.harness import AdapterProbe
+
 STATUS_LINK_TARGET_CONFIRMED = "link-target-confirmed"
 STATUS_ADDED = "added"
 STATUS_REMOVED = "removed"
@@ -54,6 +61,13 @@ STATUS_MODIFIED = "modified"
 ALL_STATUSES: frozenset[str] = frozenset(
     {STATUS_LINK_TARGET_CONFIRMED, STATUS_ADDED, STATUS_REMOVED, STATUS_MODIFIED}
 )
+
+# Story 6.4 (FR-43, AD-31) -- a SECOND, independent closed status pair for a
+# DIFFERENT fact ("does this adapter exist on this host", never conflated
+# with the tree-drift vocabulary above). Deliberately excluded from
+# `ALL_STATUSES`, which stays Story 6.3's own closed set unchanged.
+STATUS_AVAILABLE = "available"
+STATUS_UNAVAILABLE = "unavailable"
 
 
 @dataclass(frozen=True)
@@ -234,3 +248,30 @@ def evaluate_conformance(
         )
     checks = tuple(checker(state) for state in live_states)
     return ConformanceReport(mechanism=mechanism, checks=checks, unevaluated_trees=tuple(unevaluated_trees))
+
+
+def build_probe_record(probe: AdapterProbe) -> dict[str, object]:
+    """Shape an already-observed ``AdapterProbe`` (Story 6.4, FR-43) into the
+    plain dict ``cli/adapters.py::run_adapters_probe`` reports as
+    ``data.probe`` and (after routing the WHOLE dict through
+    ``core.egress.to_redacted`` at the write boundary -- never here, AD-4)
+    persists to the machine-scoped probe-record file. Mirrors ``core.egress.
+    build_gate_record``'s own "the caller already gathered every fact, this
+    function only shapes" convention -- no I/O, no redaction (redaction is a
+    port-boundary property, AD-34; this module has no port boundary).
+
+    ``status`` is ``STATUS_UNAVAILABLE`` if and only if ``probe.binary_present``
+    is ``False`` -- the ONE condition this closed, two-member vocabulary
+    distinguishes (AD-31); every other ``AdapterProbe`` field passes through
+    unchanged."""
+    status = STATUS_UNAVAILABLE if not probe.binary_present else STATUS_AVAILABLE
+    return {
+        "adapter": probe.adapter,
+        "binary": probe.binary,
+        "status": status,
+        "binary_present": probe.binary_present,
+        "binary_version": probe.binary_version,
+        "capabilities": dict(probe.capabilities),
+        "probe_output": probe.probe_output,
+        "probe_note": probe.probe_note,
+    }

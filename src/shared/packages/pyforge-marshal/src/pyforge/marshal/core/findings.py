@@ -968,6 +968,37 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # tier, a second call site, per AD-31's own MRS-DEPLOY-003 precedent ("the
 # SAME code two different ways depending on which of its two emit sites
 # fired... both fold into this one rung").
+#
+# Story 6.4 (adapter probe with a machine-scoped record, FR-43, AD-31/AD-34/
+# AD-37) adds `cli/adapters.py`'s own `run_adapters_probe` (`marshal
+# adapters probe`), reusing MRS-ADP-001/002 verbatim for the preconditions
+# it shares with `sync`/`conform` (the SAME MRS-DEPLOY-003 precedent, now a
+# THIRD call site), plus four wholly new codes. MRS-ADP-013 (`--adapter` is
+# missing/blank, checked before any harness/filesystem touch) classifies
+# UNEVALUABLE, the same pre-I/O shape-gate tier as MRS-STATUS-003's own
+# "a required companion argument is missing" precedent. MRS-ADP-014
+# (`HarnessPort.adapter_probe` raised `HarnessError` -- an unknown adapter
+# name or an unimportable `bmad_loop`) classifies UNEVALUABLE, the same
+# tier as MRS-SPIN-014's own "an adapter name could not be resolved to a
+# real profile" reasoning -- a configuration fact Marshal cannot determine,
+# never a real precondition that was checked and failed. MRS-ADP-015
+# (writing the machine-scoped probe record failed -- `RecordPort.
+# write_redacted_atomic` raised `FsError`) classifies ERROR, the same tier
+# as MRS-ADP-006/008's own "a real write was attempted and failed" rung --
+# the OBSERVATION itself still succeeded and is still reported in
+# `data.probe`; only the durable write is what failed. MRS-ADP-016 (a
+# pre-existing `adapter-probes.json` was malformed JSON or not a JSON
+# object) classifies WARN, the same "malformed bookkeeping degrades to
+# empty, never blocks" tier MRS-ADP-009 already established for the
+# skill-projection manifest -- this probe's own fresh entry still writes.
+# Deliberately, `binary_present is False` (the AC's own "unavailable")
+# registers NO finding at all: `data.probe.status == "unavailable"` with an
+# empty findings list folds to `Verdict.CLEAN`, exit 0 -- the AC's own
+# "reports it as unavailable and exits 0", read literally. The DIFFERENT
+# reading ("unevaluable anywhere a run depends on it", AD-31) is already
+# satisfied by the SHIPPED `MRS-PREFLIGHT-004` (a run-dependent call site
+# reporting the identical real-world fact at `Verdict.ERROR`) -- see the
+# story's own spec Design Notes for why this needed no new code.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1097,6 +1128,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-ADP-011",
         "MRS-CONFORM-001",
         "MRS-ADP-012",
+        "MRS-ADP-013",
+        "MRS-ADP-014",
+        "MRS-ADP-015",
+        "MRS-ADP-016",
     }
 )
 
