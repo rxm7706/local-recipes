@@ -219,9 +219,11 @@ Durability first; curation is owned follow-up work.
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-transport-port-primary-mcp-client-adapter-the-transport-spike.md`
   summary: `mcp_transport.py` imports `_as_text` and `_as_optional_text` from `base.py` as underscored privates, the exact cross-module-private import that `require_conditional` was promoted to public to avoid.
   evidence: Found by the 2026-07-25 follow-up review; confirmed in `mcp_transport.py`'s import block. Story 1.3's `AgentSdkTransport` needs the same null-coercion (the `str(None)` -> truthy `"None"` etag trap these exist to prevent), so it will either repeat the private import or re-implement the coercion untested. Fix candidate: promote both alongside `require_conditional` when Story 1.3 lands, so the public seam is settled by its second consumer rather than its first.
-  status: open
+  status: done 2026-08-07
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — and the contrast is visible in a single import block. `mcp_transport.py` imports `_as_optional_text` (`:77`) and `_as_text` (`:78`) as underscored privates from `base.py`, immediately alongside the public `require_conditional` (`:80`) that was promoted specifically to avoid this pattern. `_as_text` is in live use at `:331`.
+
+  resolved: 2026-08-07 — Story 1.3 landed exactly the fix candidate: `base.py`'s `_as_text`/`_as_optional_text` are now public `as_text`/`as_optional_text`, re-exported from `transport/__init__.py` alongside `require_conditional`. `mcp_transport.py`'s import updated to the public names (no behavior change, pure rename); `agent_sdk_transport.py` is the second consumer that settles the seam as public, exactly as the fix candidate anticipated.
 
 ## DW-1-2-15 — `ARCHITECTURE-SPINE.md`'s amended *Etag headers* convention row asserts that `read_file`'s `if_n…
 

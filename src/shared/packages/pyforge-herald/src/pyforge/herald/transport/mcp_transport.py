@@ -74,8 +74,8 @@ from .base import (
     ProjectRef,
     ToolCaller,
     ToolResult,
-    _as_optional_text,
-    _as_text,
+    as_optional_text,
+    as_text,
     parse_read_response,
     require_conditional,
     sanitize_payload,
@@ -328,8 +328,8 @@ class McpTransport:
             arguments["design_system_id"] = design_system_id
         payload = self._call_json("create_project", arguments)
         return ProjectRef(
-            project_id=_as_text(payload.get("project_id")),
-            url=_as_text(payload.get("url")),
+            project_id=as_text(payload.get("project_id")),
+            url=as_text(payload.get("url")),
         )
 
     def finalize_plan(
@@ -380,8 +380,8 @@ class McpTransport:
                 f"claude-design finalize_plan returned base_etags as "
                 f"{type(raw_etags).__name__}, expected an object"
             )
-        etags = {str(key): _as_text(value) for key, value in raw_etags.items()}
-        plan_token = _as_text(payload.get("plan_token"))
+        etags = {str(key): as_text(value) for key, value in raw_etags.items()}
+        plan_token = as_text(payload.get("plan_token"))
         if not plan_token:
             # An empty token is not "no token": it is marshalled as an
             # explicit `plan_token: ""` on every later write rather than
@@ -483,8 +483,8 @@ class McpTransport:
             "render_preview", {"project_id": project_id, "path": path}
         )
         return PreviewRef(
-            open_url=_as_text(payload.get("open_url")),
-            expires_at=_as_optional_text(payload.get("expires_at")),
+            open_url=as_text(payload.get("open_url")),
+            expires_at=as_optional_text(payload.get("expires_at")),
         )
 
     # --- the call pipeline ---------------------------------------------
