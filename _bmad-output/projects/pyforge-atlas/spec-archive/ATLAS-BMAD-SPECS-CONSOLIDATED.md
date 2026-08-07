@@ -7819,7 +7819,9 @@ The credentialed comparator MUST read a legacy **SQLite** `cf_atlas.db`, but `sq
 
 ```python
 cols = list(exp.columns) if not exp.empty else list(getattr(actual, "columns", []))
-assert_frame_equal(_normalize(actual, cols), _normalize(exp, cols), check_dtype=False, check_like=False)
+assert_frame_equal(
+    _normalize(actual, cols), _normalize(exp, cols), check_dtype=False, check_like=False
+)
 ```
 
 Two under-checks to eliminate:

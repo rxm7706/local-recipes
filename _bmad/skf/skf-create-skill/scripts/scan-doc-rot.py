@@ -83,7 +83,9 @@ PATTERN_TABLE: list[tuple[str, str]] = [
     ("signature changed", "Signature change"),
 ]
 
-_MIGRATION_HEADING = re.compile(r"^\s*##\s+Migration\s*&\s*Deprecation Warnings", re.IGNORECASE)
+_MIGRATION_HEADING = re.compile(
+    r"^\s*##\s+Migration\s*&\s*Deprecation Warnings", re.IGNORECASE
+)
 
 
 def scan_text(text: str, source: str) -> list[dict]:

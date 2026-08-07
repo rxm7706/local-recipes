@@ -216,7 +216,11 @@ def test_purity_guard_findings_survive_every_operational_failure_path(
 
     result = OsvEngine().run(tmp_path, inventory)
 
-    unsafe_ids = [f.id for f in result.findings if f.id.startswith("indeterminate:unsafe-identity:")]
+    unsafe_ids = [
+        f.id
+        for f in result.findings
+        if f.id.startswith("indeterminate:unsafe-identity:")
+    ]
     if returncode == 128:
         # 128 reclassifies EVERY candidate (including purity-guard-excluded
         # ones) into offline-db-unavailable -- the story's own sanctioned

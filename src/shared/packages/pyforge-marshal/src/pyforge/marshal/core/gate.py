@@ -379,7 +379,9 @@ def check_scope(
     if not isinstance(frozen_paths, tuple) or not all(
         isinstance(item, FrozenPath) for item in frozen_paths
     ):
-        raise TypeError(f"frozen_paths must be a tuple of FrozenPath, got {frozen_paths!r}")
+        raise TypeError(
+            f"frozen_paths must be a tuple of FrozenPath, got {frozen_paths!r}"
+        )
     if not isinstance(changed_files, tuple) or not all(
         isinstance(item, str) for item in changed_files
     ):
@@ -392,7 +394,11 @@ def check_scope(
             (fp for fp in frozen_paths if fnmatch.fnmatch(path, fp.path)), None
         )
         if frozen is not None:
-            owner = f"story {frozen.story_key}" if frozen.story_key is not None else "policy"
+            owner = (
+                f"story {frozen.story_key}"
+                if frozen.story_key is not None
+                else "policy"
+            )
             result.append(
                 Finding(
                     code="MRS-GATE-008",

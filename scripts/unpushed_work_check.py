@@ -45,6 +45,7 @@ WHAT COUNTS AS AT RISK:
 Remedy is one line and printed with the finding, because a detector that names a
 problem without naming its fix is a complaint.
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `runtime`: reads local clone
@@ -64,8 +65,9 @@ RESCUE_PREFIX = "rescue/dangling-"
 
 def git(*args: str, cwd: pathlib.Path = ROOT) -> str:
     try:
-        p = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
-                           text=True, timeout=120)
+        p = subprocess.run(
+            ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=120
+        )
         return p.stdout.strip() if p.returncode == 0 else ""
     except (OSError, subprocess.TimeoutExpired):
         return ""
@@ -80,8 +82,9 @@ def default_remote_head() -> str:
 
 def remote_branches() -> set[str]:
     out = git("ls-remote", "--heads", "origin")
-    return {ln.split("refs/heads/", 1)[1] for ln in out.splitlines()
-            if "refs/heads/" in ln}
+    return {
+        ln.split("refs/heads/", 1)[1] for ln in out.splitlines() if "refs/heads/" in ln
+    }
 
 
 def rescued() -> set[str]:
@@ -92,17 +95,27 @@ def rescued() -> set[str]:
 
 def find_unpushed(base: str, remote: set[str]) -> list[dict]:
     findings = []
-    for br in git("for-each-ref", "--format=%(refname:short)", "refs/heads/").splitlines():
+    for br in git(
+        "for-each-ref", "--format=%(refname:short)", "refs/heads/"
+    ).splitlines():
         br = br.strip()
         if not br or br in remote:
             continue
-        files = [f for f in git("diff", "--name-only", f"{base}...{br}").splitlines() if f]
+        files = [
+            f for f in git("diff", "--name-only", f"{base}...{br}").splitlines() if f
+        ]
         if not files:
-            continue                      # merged/empty: untidy, not at risk
+            continue  # merged/empty: untidy, not at risk
         stat = git("diff", "--shortstat", f"{base}...{br}")
-        findings.append({"kind": "unpushed-branch", "ref": br,
-                         "files": len(files), "stat": stat,
-                         "remedy": f"git push origin {br}"})
+        findings.append(
+            {
+                "kind": "unpushed-branch",
+                "ref": br,
+                "files": len(files),
+                "stat": stat,
+                "remedy": f"git push origin {br}",
+            }
+        )
     return findings
 
 
@@ -114,36 +127,55 @@ def find_dangling(min_files: int, safe: set[str]) -> list[dict]:
         sha = line.split()[2]
         if sha in safe:
             continue
-        files = [f for f in git("diff", "--name-only", f"{sha}^", sha).splitlines() if f]
+        files = [
+            f for f in git("diff", "--name-only", f"{sha}^", sha).splitlines() if f
+        ]
         if len(files) <= min_files:
             continue
         subject = git("log", "-1", "--format=%s", sha)[:70]
         date = git("log", "-1", "--format=%ad", "--date=format:%Y%m%d", sha)
         tag = f"{RESCUE_PREFIX}{date}-{sha[:8]}"
-        findings.append({"kind": "dangling-commit", "ref": sha[:10],
-                         "files": len(files), "stat": subject,
-                         "remedy": f"git tag {tag} {sha} && git push origin {tag}"})
+        findings.append(
+            {
+                "kind": "dangling-commit",
+                "ref": sha[:10],
+                "files": len(files),
+                "stat": subject,
+                "remedy": f"git tag {tag} {sha} && git push origin {tag}",
+            }
+        )
     return findings
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--min-files", type=int, default=3,
-                    help="dangling commits touching more than this are reported (default 3)")
-    ap.add_argument("--branches-only", action="store_true",
-                    help="skip the dangling-object scan (much faster on a large repo)")
+    ap.add_argument(
+        "--min-files",
+        type=int,
+        default=3,
+        help="dangling commits touching more than this are reported (default 3)",
+    )
+    ap.add_argument(
+        "--branches-only",
+        action="store_true",
+        help="skip the dangling-object scan (much faster on a large repo)",
+    )
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
     base = default_remote_head()
     if not base:
-        print("UNKNOWN: no origin/main or origin/master — cannot judge what is unpushed.")
+        print(
+            "UNKNOWN: no origin/main or origin/master — cannot judge what is unpushed."
+        )
         return 2
 
     remote = remote_branches()
     if not remote:
-        print("UNKNOWN: could not list remote branches (offline?) — "
-              "refusing to report everything as unpushed.")
+        print(
+            "UNKNOWN: could not list remote branches (offline?) — "
+            "refusing to report everything as unpushed."
+        )
         return 2
 
     findings = find_unpushed(base, remote)
@@ -157,18 +189,24 @@ def main() -> int:
         dangling = [f for f in findings if f["kind"] == "dangling-commit"]
         print(f"unpushed work — base {base}, {len(remote)} remote branch(es)\n")
         if not findings:
-            print("OK: every branch with unique content is on origin, and no "
-                  "unreachable commit holds real work.")
+            print(
+                "OK: every branch with unique content is on origin, and no "
+                "unreachable commit holds real work."
+            )
             return 0
-        print(f"FINDINGS ({len(findings)}): "
-              f"{len(branches)} unpushed branch(es), {len(dangling)} dangling commit(s)\n")
+        print(
+            f"FINDINGS ({len(findings)}): "
+            f"{len(branches)} unpushed branch(es), {len(dangling)} dangling commit(s)\n"
+        )
         for f in findings[:60]:
             print(f"  ✗ [{f['kind']}] {f['ref']}  ({f['files']} files)")
             print(f"      {f['stat']}")
             print(f"      → {f['remedy']}")
         if len(findings) > 60:
             # No silent caps: say what was withheld and how to see it.
-            print(f"\n  … {len(findings) - 60} more not shown — rerun with --json for the full set.")
+            print(
+                f"\n  … {len(findings) - 60} more not shown — rerun with --json for the full set."
+            )
     return 1
 
 

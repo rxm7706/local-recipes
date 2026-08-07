@@ -45,6 +45,7 @@ from `~/.bmad-loops/` and `tmux`, neither of which exists on a runner. This is a
 LOCAL-only view, the same Tier-3-invisible-to-CI asymmetry that has bitten this
 board before.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -66,8 +67,11 @@ def live_runs() -> list[tuple[str, str]]:
     if not LOOP_ROOT.is_dir():
         return out
     for home in sorted(p for p in LOOP_ROOT.iterdir() if (p / ".git").exists()):
-        runs = sorted((home / ".bmad-loop" / "runs").glob("*/"),
-                      key=lambda p: p.stat().st_mtime, reverse=True)
+        runs = sorted(
+            (home / ".bmad-loop" / "runs").glob("*/"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         if not runs:
             continue
         try:
@@ -81,8 +85,13 @@ def live_runs() -> list[tuple[str, str]]:
 
 
 def regenerate() -> bool:
-    r = subprocess.run([sys.executable, str(GEN), "--source", "sprint-status"],
-                       cwd=ROOT, capture_output=True, text=True, timeout=900)
+    r = subprocess.run(
+        [sys.executable, str(GEN), "--source", "sprint-status"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=900,
+    )
     if r.returncode != 0:
         print(f"  regen FAILED (rc={r.returncode}): {r.stderr.strip()[:200]}")
         return False
@@ -94,10 +103,17 @@ def regenerate() -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--interval", type=int, default=DEFAULT_INTERVAL,
-                    help=f"seconds between regenerations (default {DEFAULT_INTERVAL})")
-    ap.add_argument("--once", action="store_true",
-                    help="regenerate once and exit, regardless of live runs")
+    ap.add_argument(
+        "--interval",
+        type=int,
+        default=DEFAULT_INTERVAL,
+        help=f"seconds between regenerations (default {DEFAULT_INTERVAL})",
+    )
+    ap.add_argument(
+        "--once",
+        action="store_true",
+        help="regenerate once and exit, regardless of live runs",
+    )
     args = ap.parse_args()
 
     if args.once:
@@ -118,11 +134,15 @@ def main() -> int:
         while True:
             still = live_runs()
             if not still:
-                print(f"\nno live run left after {cycles} cycle(s) — final regen, then exit")
+                print(
+                    f"\nno live run left after {cycles} cycle(s) — final regen, then exit"
+                )
                 regenerate()
                 return 0
-            print(f"[{time.strftime('%H:%M:%S')}] cycle {cycles + 1} — "
-                  f"{', '.join(s for s, _ in still)}")
+            print(
+                f"[{time.strftime('%H:%M:%S')}] cycle {cycles + 1} — "
+                f"{', '.join(s for s, _ in still)}"
+            )
             regenerate()
             cycles += 1
             time.sleep(args.interval)

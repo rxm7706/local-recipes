@@ -73,17 +73,14 @@ def fetch_epss_scores(*, timeout: int = 60) -> list[dict[str, object]]:
     ``feeds.load_epss_scores``'s own per-entry shape AND domain tolerance
     on the read side, so ``score_count`` only ever counts rows a scan could
     actually use)."""
-    request = urllib.request.Request(
-        EPSS_FEED_URL, headers={"User-Agent": _USER_AGENT}
-    )
+    request = urllib.request.Request(EPSS_FEED_URL, headers={"User-Agent": _USER_AGENT})
     with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
         raw_gzip = response.read()
     try:
         raw_csv = gzip.decompress(raw_gzip).decode("utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         raise ValueError(
-            "FIRST.org EPSS response is not a valid gzip-compressed UTF-8 "
-            "CSV document"
+            "FIRST.org EPSS response is not a valid gzip-compressed UTF-8 CSV document"
         ) from exc
     # The real feed's first line is a `#model_version:...,score_date:...`
     # metadata comment, not the CSV header -- drop EVERY `#`-prefixed line
@@ -116,9 +113,7 @@ def fetch_epss_scores(*, timeout: int = 60) -> list[dict[str, object]]:
             continue
         if not (math.isfinite(percentile_value) and 0.0 <= percentile_value <= 1.0):
             continue
-        scores.append(
-            {"cve": cve, "epss": epss_value, "percentile": percentile_value}
-        )
+        scores.append({"cve": cve, "epss": epss_value, "percentile": percentile_value})
     if not scores:
         raise ValueError("FIRST.org EPSS response parsed to zero usable score rows")
     return scores
@@ -161,10 +156,7 @@ def _build_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--cache-dir",
         default=os.environ.get(FEED_CACHE_DIR_ENV_VAR),
-        help=(
-            "feed cache root to write into (default: "
-            f"${FEED_CACHE_DIR_ENV_VAR})"
-        ),
+        help=(f"feed cache root to write into (default: ${FEED_CACHE_DIR_ENV_VAR})"),
     )
     parser.add_argument(
         "--timeout",

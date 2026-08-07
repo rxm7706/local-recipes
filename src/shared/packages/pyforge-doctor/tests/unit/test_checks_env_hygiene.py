@@ -22,9 +22,7 @@ from pyforge.doctor.models import DoctorStatus, Finding, Source
 # mirrors pyforge-warden's tests/unit/test_currency.py::
 # test_bundled_registry_matches_the_cfe_canonical_source_when_present.
 _REPO_ROOT = Path(__file__).resolve().parents[6]
-_HTTP_PY_DIR = (
-    _REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "scripts"
-)
+_HTTP_PY_DIR = _REPO_ROOT / ".claude" / "skills" / "conda-forge-expert" / "scripts"
 
 
 def _write(tmp_path: Path, name: str, source: str) -> None:
@@ -250,9 +248,7 @@ def test_gather_golden_fixture_finds_the_real_jfrog_api_key_injection():
     # The real, unmodified _http.py::auth_headers_for -- read-only, never
     # copied into a synthetic string (spec's context-file instruction).
     if not _HTTP_PY_DIR.is_dir():
-        pytest.skip(
-            "CFE _http.py golden fixture not present (non-monorepo context)"
-        )
+        pytest.skip("CFE _http.py golden fixture not present (non-monorepo context)")
 
     result = gather(_HTTP_PY_DIR)
 
@@ -307,9 +303,7 @@ def test_gather_one_env_returns_none_for_a_target_with_no_matches(
 # --- discovery-walk incompleteness signal --------------------------------
 
 
-def test_discover_python_files_onerror_marks_incomplete(
-    monkeypatch, tmp_path: Path
-):
+def test_discover_python_files_onerror_marks_incomplete(monkeypatch, tmp_path: Path):
     # Review finding: an unreadable subdirectory previously vanished from
     # the scan with zero signal (os.walk's default onerror=None silently
     # drops it). Drives the walk through a fake os.walk so this is
@@ -327,9 +321,7 @@ def test_discover_python_files_onerror_marks_incomplete(
     assert incomplete is True
 
 
-def test_discover_python_files_entry_cap_marks_incomplete(
-    monkeypatch, tmp_path: Path
-):
+def test_discover_python_files_entry_cap_marks_incomplete(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 2)
     for i in range(5):
         _write(tmp_path, f"f{i}.py", "x = 1\n")
@@ -379,16 +371,11 @@ def test_gather_one_env_can_address_the_incomplete_sentinel_by_name(
     _write(
         tmp_path,
         "a_direct.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Y"] = os.environ["X"]\n',
+        'import os\n\ndef handler():\n    headers["Y"] = os.environ["X"]\n',
     )
     _write(tmp_path, "b.py", "y = 2\n")
 
-    sentinel = gather_one(
-        "env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path
-    )
+    sentinel = gather_one("env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path)
 
     assert sentinel is not None
     assert "INCOMPLETE" in sentinel.message
@@ -434,10 +421,7 @@ def test_gather_skips_a_file_whose_ast_blows_the_recursion_limit(
     _write(
         tmp_path,
         "normal.py",
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["Y"] = os.environ["X"]\n',
+        'import os\n\ndef handler():\n    headers["Y"] = os.environ["X"]\n',
     )
 
     result = gather(tmp_path)  # must not raise

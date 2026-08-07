@@ -4,7 +4,7 @@ from pathlib import Path
 
 class LaSuiteClient:
     """REST API client for La Suite Docs.
-    
+
     Agents use this to push wiki articles into La Suite Docs.
     All content is written by agents — humans just read and browse.
     """
@@ -17,7 +17,9 @@ class LaSuiteClient:
         }
         self.timeout = timeout
 
-    def create_document(self, title: str, content: str, parent_id: str | None = None) -> dict:
+    def create_document(
+        self, title: str, content: str, parent_id: str | None = None
+    ) -> dict:
         """Create a new wiki article in La Suite Docs."""
         payload = {
             "title": title,

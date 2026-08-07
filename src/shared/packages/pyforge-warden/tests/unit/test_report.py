@@ -230,9 +230,7 @@ def test_empty_extraction_overrides_locked_closure_too(component_factory):
     'nothing was actually resolved' outranks 'this manifest kind proves the
     transitive closure when something IS resolved'."""
     inventory = _inventory(component_factory)
-    report = _assemble(
-        inventory, empty_extraction=True, has_locked_closure=True
-    )
+    report = _assemble(inventory, empty_extraction=True, has_locked_closure=True)
     by_axis = {c.axis: c for c in report.coverage}
     assert by_axis["hygiene"].resolution_depth is None
     assert by_axis["vulnerability"].resolution_depth is None
@@ -796,8 +794,7 @@ def test_remediation_line_currency_over_lag():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: django: 12 release(s) behind 5.0.0 -- upgrade to "
-        "close the gap"
+        "      -> fix: django: 12 release(s) behind 5.0.0 -- upgrade to close the gap"
     )
 
 
@@ -824,8 +821,9 @@ def test_manifest_clause_matches_canonicalized_subject_spelling():
         report,
         manifest_locations={"foo-bar": ("pyproject.toml [project.dependencies]",)},
     )
-    assert "(declared in pyproject.toml [project.dependencies])" in (
-        rendered.splitlines()[-1]
+    assert (
+        "(declared in pyproject.toml [project.dependencies])"
+        in (rendered.splitlines()[-1])
     )
 
 
@@ -892,9 +890,7 @@ def test_remediation_line_lookup_miss_omits_manifest_clause_gracefully():
     )
     rendered = render_text(
         report,
-        manifest_locations={
-            "requests": ("pyproject.toml [project.dependencies]",)
-        },
+        manifest_locations={"requests": ("pyproject.toml [project.dependencies]",)},
     )
     assert rendered.splitlines()[-1] == (
         "      -> fix: hygiene: investigate the 'coverage-floor' condition "

@@ -260,7 +260,9 @@ def derive_stats(prov: dict, judgment: dict, shape: str = "library") -> dict:
 # --------------------------------------------------------------------------
 
 
-def _cmp_int(violations: list, field: str, expected, actual, note: str | None = None) -> None:
+def _cmp_int(
+    violations: list, field: str, expected, actual, note: str | None = None
+) -> None:
     if expected != actual:
         v = {"field": field, "expected": expected, "actual": actual}
         if note:
@@ -269,7 +271,11 @@ def _cmp_int(violations: list, field: str, expected, actual, note: str | None = 
 
 
 def _cmp_ratio(violations: list, field: str, expected, actual) -> None:
-    norm = round(float(actual), 4) if isinstance(actual, (int, float)) and not isinstance(actual, bool) else actual
+    norm = (
+        round(float(actual), 4)
+        if isinstance(actual, (int, float)) and not isinstance(actual, bool)
+        else actual
+    )
     exp = round(expected, 4) if isinstance(expected, float) else expected
     if exp != norm:
         violations.append({"field": field, "expected": expected, "actual": actual})
@@ -288,15 +294,17 @@ def coherence_compute(derived: dict, prov: dict) -> dict:
     dist_sum = derived["_derivation"]["distribution_sum"]
     if dist_sum != entry_count:
         missing = entry_count - dist_sum
-        violations.append({
-            "field": "confidence_distribution",
-            "expected": entry_count,
-            "actual": dist_sum,
-            "note": (
-                f"{missing} provenance entr{'y' if abs(missing) == 1 else 'ies'} "
-                "with missing or unrecognized signature_source"
-            ),
-        })
+        violations.append(
+            {
+                "field": "confidence_distribution",
+                "expected": entry_count,
+                "actual": dist_sum,
+                "note": (
+                    f"{missing} provenance entr{'y' if abs(missing) == 1 else 'ies'} "
+                    "with missing or unrecognized signature_source"
+                ),
+            }
+        )
 
     fe = count_file_entries_by_type(prov)
     sc = derived["stats"]["scripts_count"]
@@ -305,11 +313,21 @@ def coherence_compute(derived: dict, prov: dict) -> dict:
     # carries rows of that type (file_entries are written in a later compile
     # section, so an empty count is "not yet populated", not "zero").
     if fe["script"] > 0:
-        _cmp_int(violations, "stats.scripts_count", fe["script"], sc,
-                 "stats.scripts_count disagrees with provenance-map file_entries[file_type=script]")
+        _cmp_int(
+            violations,
+            "stats.scripts_count",
+            fe["script"],
+            sc,
+            "stats.scripts_count disagrees with provenance-map file_entries[file_type=script]",
+        )
     if fe["asset"] > 0:
-        _cmp_int(violations, "stats.assets_count", fe["asset"], ac,
-                 "stats.assets_count disagrees with provenance-map file_entries[file_type=asset]")
+        _cmp_int(
+            violations,
+            "stats.assets_count",
+            fe["asset"],
+            ac,
+            "stats.assets_count disagrees with provenance-map file_entries[file_type=asset]",
+        )
 
     return {"ok": not violations, "violations": violations}
 
@@ -325,32 +343,64 @@ def check_stats(derived: dict, metadata: dict, prov: dict) -> dict:
     m_stats = metadata.get("stats") if isinstance(metadata.get("stats"), dict) else {}
     d_stats = derived["stats"]
 
-    _cmp_int(violations, "stats.exports_documented", d_stats["exports_documented"],
-             m_stats.get("exports_documented"))
-    _cmp_int(violations, "stats.exports_total", d_stats["exports_total"],
-             m_stats.get("exports_total"))
-    _cmp_ratio(violations, "stats.public_api_coverage", d_stats["public_api_coverage"],
-               m_stats.get("public_api_coverage"))
-    _cmp_ratio(violations, "stats.total_coverage", d_stats["total_coverage"],
-               m_stats.get("total_coverage"))
+    _cmp_int(
+        violations,
+        "stats.exports_documented",
+        d_stats["exports_documented"],
+        m_stats.get("exports_documented"),
+    )
+    _cmp_int(
+        violations,
+        "stats.exports_total",
+        d_stats["exports_total"],
+        m_stats.get("exports_total"),
+    )
+    _cmp_ratio(
+        violations,
+        "stats.public_api_coverage",
+        d_stats["public_api_coverage"],
+        m_stats.get("public_api_coverage"),
+    )
+    _cmp_ratio(
+        violations,
+        "stats.total_coverage",
+        d_stats["total_coverage"],
+        m_stats.get("total_coverage"),
+    )
 
-    m_dist = metadata.get("confidence_distribution") if isinstance(metadata.get("confidence_distribution"), dict) else {}
+    m_dist = (
+        metadata.get("confidence_distribution")
+        if isinstance(metadata.get("confidence_distribution"), dict)
+        else {}
+    )
     for key in _DIST_KEYS:
-        _cmp_int(violations, f"confidence_distribution.{key}",
-                 derived["confidence_distribution"][key], m_dist.get(key))
+        _cmp_int(
+            violations,
+            f"confidence_distribution.{key}",
+            derived["confidence_distribution"][key],
+            m_dist.get(key),
+        )
 
     # array length vs its stats count (validate.md §7: "verify
     # stats.scripts_count/stats.assets_count match array lengths")
     scripts_arr = metadata.get("scripts")
     if isinstance(scripts_arr, list):
-        _cmp_int(violations, "stats.scripts_count", len(scripts_arr),
-                 m_stats.get("scripts_count"),
-                 "stats.scripts_count does not match len(scripts[])")
+        _cmp_int(
+            violations,
+            "stats.scripts_count",
+            len(scripts_arr),
+            m_stats.get("scripts_count"),
+            "stats.scripts_count does not match len(scripts[])",
+        )
     assets_arr = metadata.get("assets")
     if isinstance(assets_arr, list):
-        _cmp_int(violations, "stats.assets_count", len(assets_arr),
-                 m_stats.get("assets_count"),
-                 "stats.assets_count does not match len(assets[])")
+        _cmp_int(
+            violations,
+            "stats.assets_count",
+            len(assets_arr),
+            m_stats.get("assets_count"),
+            "stats.assets_count does not match len(assets[])",
+        )
 
     # provenance-map file_entries count vs metadata scripts/assets counts
     if isinstance(scripts_arr, list) or isinstance(assets_arr, list):
@@ -358,11 +408,21 @@ def check_stats(derived: dict, metadata: dict, prov: dict) -> dict:
         claimed_sc = _int(m_stats.get("scripts_count"), 0)
         claimed_ac = _int(m_stats.get("assets_count"), 0)
         if fe["script"] != claimed_sc and (fe["script"] > 0 or claimed_sc > 0):
-            _cmp_int(violations, "provenance.file_entries.script", claimed_sc, fe["script"],
-                     "provenance-map file_entries[file_type=script] count disagrees with metadata scripts_count")
+            _cmp_int(
+                violations,
+                "provenance.file_entries.script",
+                claimed_sc,
+                fe["script"],
+                "provenance-map file_entries[file_type=script] count disagrees with metadata scripts_count",
+            )
         if fe["asset"] != claimed_ac and (fe["asset"] > 0 or claimed_ac > 0):
-            _cmp_int(violations, "provenance.file_entries.asset", claimed_ac, fe["asset"],
-                     "provenance-map file_entries[file_type=asset] count disagrees with metadata assets_count")
+            _cmp_int(
+                violations,
+                "provenance.file_entries.asset",
+                claimed_ac,
+                fe["asset"],
+                "provenance-map file_entries[file_type=asset] count disagrees with metadata assets_count",
+            )
 
     return {"ok": not violations, "violations": violations}
 
@@ -412,16 +472,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("provenance_map", help="path to the staged provenance-map.json")
     parser.add_argument(
-        "--check", metavar="METADATA_JSON", dest="check",
+        "--check",
+        metavar="METADATA_JSON",
+        dest="check",
         help="verify this on-disk metadata.json against the provenance-map instead of "
-             "reading judgment from stdin; emits corrected stats + a violations list",
+        "reading judgment from stdin; emits corrected stats + a violations list",
     )
     parser.add_argument(
-        "--shape", choices=_VALID_SHAPES, default=None,
+        "--shape",
+        choices=_VALID_SHAPES,
+        default=None,
         help="assembly shape (default: library in compute mode; inferred from "
-             "metadata.json in --check mode). Selects what exports_documented equals.",
+        "metadata.json in --check mode). Selects what exports_documented equals.",
     )
-    parser.add_argument("-o", "--output", dest="output", help="write JSON here (default: stdout)")
+    parser.add_argument(
+        "-o", "--output", dest="output", help="write JSON here (default: stdout)"
+    )
     parser.add_argument("--verbose", action="store_true", help="diagnostics to stderr")
     return parser
 
@@ -453,10 +519,14 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"error: {exc}\n")
             return 2
         if not isinstance(metadata, dict):
-            sys.stderr.write("error: metadata.json must be a JSON object at top level\n")
+            sys.stderr.write(
+                "error: metadata.json must be a JSON object at top level\n"
+            )
             return 2
         shape = args.shape or detect_shape(metadata)
-        m_stats = metadata.get("stats") if isinstance(metadata.get("stats"), dict) else {}
+        m_stats = (
+            metadata.get("stats") if isinstance(metadata.get("stats"), dict) else {}
+        )
         judgment = {
             "exports_public_api": m_stats.get("exports_public_api"),
             "exports_internal": m_stats.get("exports_internal"),

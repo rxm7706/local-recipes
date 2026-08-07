@@ -103,7 +103,7 @@ def split_frontmatter(content):
             key, _, val = line.partition(":")
             fm[key.strip()] = val.strip().strip("'\"")
 
-    body = "\n".join(lines[end_idx + 1:])
+    body = "\n".join(lines[end_idx + 1 :])
     return fm, body
 
 
@@ -199,7 +199,7 @@ def main(argv=None):
             "Confirms the five required body sections (Executive Summary, "
             "Coverage Analysis, Integration Verdicts, Recommendations, "
             "Evidence Sources) are present and in canonical order, and that "
-            "frontmatter schemaVersion == \"1.0\". Exit 0 valid, 1 "
+            'frontmatter schemaVersion == "1.0". Exit 0 valid, 1 '
             "schema-violation, 2 IO/parse error."
         )
     )
@@ -225,7 +225,10 @@ def main(argv=None):
         print(text)
 
     if args.verbose:
-        print(f"exit_code={exit_code} violation={result.get('violation')}", file=sys.stderr)
+        print(
+            f"exit_code={exit_code} violation={result.get('violation')}",
+            file=sys.stderr,
+        )
 
     return exit_code
 

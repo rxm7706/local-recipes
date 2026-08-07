@@ -262,9 +262,7 @@ def test_duplicate_pr_is_skipped_not_reopened(capsys, monkeypatch):
     assert all(o["pr_url"] for o in outcomes)
 
 
-def test_forge_failure_leaves_exit_unchanged_with_a_stderr_line(
-    capsys, monkeypatch
-):
+def test_forge_failure_leaves_exit_unchanged_with_a_stderr_line(capsys, monkeypatch):
     with _FakeForge(_failing_responder) as forge:
         _set_forge_env(monkeypatch, forge.api_url)
         rc, out, err = run_scan(capsys, VULN_CRITICAL, "--open-fix-prs")

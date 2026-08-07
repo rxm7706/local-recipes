@@ -291,8 +291,10 @@ itself into `provenance.py` too, via `load_with_provenance`, so
 
 ```python
 with _session.bootstrapped_session(project_path, env=env) as s:
-    catalog = _session.loaded_catalog(s)                                  # assignment: OK, root _session
-    result, info = _provenance.load_with_provenance(catalog, name)        # ONE call, root _provenance: OK
+    catalog = _session.loaded_catalog(s)  # assignment: OK, root _session
+    result, info = _provenance.load_with_provenance(
+        catalog, name
+    )  # ONE call, root _provenance: OK
 ```
 
 `_provenance.load_with_provenance` (inside the ungated module) does

@@ -180,7 +180,9 @@ def _atomic_write(target: Path, content: str) -> None:
 
 def _yaml_block(value, indent: int = 0) -> str:
     """Dump a value as a YAML fragment, indented by `indent` spaces, no trailing newline."""
-    text = yaml.safe_dump(value, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    text = yaml.safe_dump(
+        value, default_flow_style=False, sort_keys=False, allow_unicode=True
+    )
     text = text.rstrip("\n")
     if indent == 0:
         return text
@@ -217,7 +219,9 @@ def render_forge_tier_yaml(payload: dict) -> str:
         "indexed_path": ccc_index.get("indexed_path"),
         "last_indexed": ccc_index.get("last_indexed"),
         "status": ccc_index.get("status"),
-        "staleness_threshold_hours": ccc_index.get("staleness_threshold_hours", DEFAULT_STALENESS_HOURS),
+        "staleness_threshold_hours": ccc_index.get(
+            "staleness_threshold_hours", DEFAULT_STALENESS_HOURS
+        ),
         "file_count": ccc_index.get("file_count"),
         "exclude_patterns": ccc_index.get("exclude_patterns", []),
     }
@@ -251,7 +255,12 @@ def render_forge_tier_yaml(payload: dict) -> str:
 
 def _yaml_scalar(value) -> str:
     """Render a scalar value using YAML's own quoting rules so timestamps, booleans, etc. round-trip."""
-    return yaml.safe_dump(value, default_flow_style=False).rstrip("\n").rstrip("...").rstrip()
+    return (
+        yaml.safe_dump(value, default_flow_style=False)
+        .rstrip("\n")
+        .rstrip("...")
+        .rstrip()
+    )
 
 
 def _merge_preserved_fields(payload: dict, existing: dict | None) -> dict:
@@ -312,14 +321,16 @@ def cmd_write_tools(target: Path) -> None:
 
     rendered = render_forge_tier_yaml(payload)
     _atomic_write(target, rendered)
-    _ok({
-        "wrote": str(target),
-        "preserved_arrays": {
-            "qmd_collections": len(payload.get("qmd_collections", [])),
-            "ccc_index_registry": len(payload.get("ccc_index_registry", [])),
-        },
-        "tier": payload["tier"],
-    })
+    _ok(
+        {
+            "wrote": str(target),
+            "preserved_arrays": {
+                "qmd_collections": len(payload.get("qmd_collections", [])),
+                "ccc_index_registry": len(payload.get("ccc_index_registry", [])),
+            },
+            "tier": payload["tier"],
+        }
+    )
 
 
 def cmd_init_prefs(target: Path) -> None:
@@ -353,8 +364,11 @@ def cmd_register_qmd_collection(target: Path) -> None:
 
     data = _read_yaml(target)
     if data is None:
-        _die(1, f"register-qmd-collection: target does not exist: {target}. "
-                f"Run setup workflow first to create forge-tier.yaml.")
+        _die(
+            1,
+            f"register-qmd-collection: target does not exist: {target}. "
+            f"Run setup workflow first to create forge-tier.yaml.",
+        )
 
     collections = list(data.get("qmd_collections") or [])
     replaced = False
@@ -369,20 +383,23 @@ def cmd_register_qmd_collection(target: Path) -> None:
     payload = {
         "tools": data.get("tools", {}),
         "tier": data.get("tier", "Quick"),
-        "tier_detected_at": data.get("tier_detected_at",
-                                     datetime.now(timezone.utc).isoformat()),
+        "tier_detected_at": data.get(
+            "tier_detected_at", datetime.now(timezone.utc).isoformat()
+        ),
         "ccc_index": data.get("ccc_index", {}),
         "ccc_index_registry": data.get("ccc_index_registry", []),
         "qmd_collections": collections,
     }
     rendered = render_forge_tier_yaml(payload)
     _atomic_write(target, rendered)
-    _ok({
-        "name": name,
-        "action": "replaced" if replaced else "appended",
-        "qmd_collections_count": len(collections),
-        "wrote": str(target),
-    })
+    _ok(
+        {
+            "name": name,
+            "action": "replaced" if replaced else "appended",
+            "qmd_collections_count": len(collections),
+            "wrote": str(target),
+        }
+    )
 
 
 def cmd_register_ccc_index(target: Path) -> None:
@@ -399,21 +416,30 @@ def cmd_register_ccc_index(target: Path) -> None:
     source_repo = entry.get("source_repo")
     skill_name = entry.get("skill_name")
     if not source_repo or not isinstance(source_repo, str):
-        _die(1, "register-ccc-index: entry must include a non-empty 'source_repo' string")
+        _die(
+            1, "register-ccc-index: entry must include a non-empty 'source_repo' string"
+        )
     if not skill_name or not isinstance(skill_name, str):
-        _die(1, "register-ccc-index: entry must include a non-empty 'skill_name' string")
+        _die(
+            1, "register-ccc-index: entry must include a non-empty 'skill_name' string"
+        )
 
     data = _read_yaml(target)
     if data is None:
-        _die(1, f"register-ccc-index: target does not exist: {target}. "
-                f"Run setup workflow first to create forge-tier.yaml.")
+        _die(
+            1,
+            f"register-ccc-index: target does not exist: {target}. "
+            f"Run setup workflow first to create forge-tier.yaml.",
+        )
 
     registry = list(data.get("ccc_index_registry") or [])
     replaced = False
     for i, existing in enumerate(registry):
-        if (isinstance(existing, dict)
-                and existing.get("source_repo") == source_repo
-                and existing.get("skill_name") == skill_name):
+        if (
+            isinstance(existing, dict)
+            and existing.get("source_repo") == source_repo
+            and existing.get("skill_name") == skill_name
+        ):
             registry[i] = entry
             replaced = True
             break
@@ -423,25 +449,29 @@ def cmd_register_ccc_index(target: Path) -> None:
     payload = {
         "tools": data.get("tools", {}),
         "tier": data.get("tier", "Quick"),
-        "tier_detected_at": data.get("tier_detected_at",
-                                     datetime.now(timezone.utc).isoformat()),
+        "tier_detected_at": data.get(
+            "tier_detected_at", datetime.now(timezone.utc).isoformat()
+        ),
         "ccc_index": data.get("ccc_index", {}),
         "ccc_index_registry": registry,
         "qmd_collections": data.get("qmd_collections", []),
     }
     rendered = render_forge_tier_yaml(payload)
     _atomic_write(target, rendered)
-    _ok({
-        "source_repo": source_repo,
-        "skill_name": skill_name,
-        "action": "replaced" if replaced else "appended",
-        "ccc_index_registry_count": len(registry),
-        "wrote": str(target),
-    })
+    _ok(
+        {
+            "source_repo": source_repo,
+            "skill_name": skill_name,
+            "action": "replaced" if replaced else "appended",
+            "ccc_index_registry_count": len(registry),
+            "wrote": str(target),
+        }
+    )
 
 
-def cmd_clean_stale(target: Path, qmd_live_names: list[str] | None,
-                    prune_missing_ccc_paths: bool) -> None:
+def cmd_clean_stale(
+    target: Path, qmd_live_names: list[str] | None, prune_missing_ccc_paths: bool
+) -> None:
     data = _read_yaml(target)
     if data is None:
         _die(1, f"clean-stale: target does not exist: {target}")
@@ -485,19 +515,22 @@ def cmd_clean_stale(target: Path, qmd_live_names: list[str] | None,
     payload = {
         "tools": data.get("tools", {}),
         "tier": data.get("tier", "Quick"),
-        "tier_detected_at": data.get("tier_detected_at",
-                                     datetime.now(timezone.utc).isoformat()),
+        "tier_detected_at": data.get(
+            "tier_detected_at", datetime.now(timezone.utc).isoformat()
+        ),
         "ccc_index": data.get("ccc_index", {}),
         "ccc_index_registry": data.get("ccc_index_registry", []),
         "qmd_collections": data.get("qmd_collections", []),
     }
     rendered = render_forge_tier_yaml(payload)
     _atomic_write(target, rendered)
-    _ok({
-        "qmd_removed": qmd_removed,
-        "ccc_removed": ccc_removed,
-        "wrote": True,
-    })
+    _ok(
+        {
+            "qmd_removed": qmd_removed,
+            "ccc_removed": ccc_removed,
+            "wrote": True,
+        }
+    )
 
 
 # ─── CLI ─────────────────────────────────────────────────────────────────────
@@ -513,30 +546,43 @@ def main() -> None:
     p_read = sub.add_parser("read", help="Read a forge-tier.yaml and emit JSON")
     p_read.add_argument("--target", type=Path, required=True)
 
-    p_write = sub.add_parser("write-tools",
-                             help="Write a fresh forge-tier.yaml from a JSON payload on stdin")
+    p_write = sub.add_parser(
+        "write-tools", help="Write a fresh forge-tier.yaml from a JSON payload on stdin"
+    )
     p_write.add_argument("--target", type=Path, required=True)
 
-    p_init = sub.add_parser("init-prefs",
-                            help="Create preferences.yaml with first-run defaults if missing")
+    p_init = sub.add_parser(
+        "init-prefs", help="Create preferences.yaml with first-run defaults if missing"
+    )
     p_init.add_argument("--target", type=Path, required=True)
 
-    p_clean = sub.add_parser("clean-stale",
-                             help="Remove stale qmd_collections / ccc_index_registry entries")
+    p_clean = sub.add_parser(
+        "clean-stale", help="Remove stale qmd_collections / ccc_index_registry entries"
+    )
     p_clean.add_argument("--target", type=Path, required=True)
-    p_clean.add_argument("--qmd-live-names", default=None,
-                         help="Comma-separated list of currently-live QMD collection names. "
-                              "Entries in qmd_collections whose name is NOT in this list are removed. "
-                              "Omit the flag entirely to skip QMD cleanup.")
-    p_clean.add_argument("--prune-missing-ccc-paths", action="store_true",
-                         help="Remove ccc_index_registry entries whose path no longer exists.")
+    p_clean.add_argument(
+        "--qmd-live-names",
+        default=None,
+        help="Comma-separated list of currently-live QMD collection names. "
+        "Entries in qmd_collections whose name is NOT in this list are removed. "
+        "Omit the flag entirely to skip QMD cleanup.",
+    )
+    p_clean.add_argument(
+        "--prune-missing-ccc-paths",
+        action="store_true",
+        help="Remove ccc_index_registry entries whose path no longer exists.",
+    )
 
-    p_register = sub.add_parser("register-qmd-collection",
-                                help="Append-or-replace a single qmd_collections entry by name")
+    p_register = sub.add_parser(
+        "register-qmd-collection",
+        help="Append-or-replace a single qmd_collections entry by name",
+    )
     p_register.add_argument("--target", type=Path, required=True)
 
-    p_ccc = sub.add_parser("register-ccc-index",
-                           help="Append-or-replace a single ccc_index_registry entry by source_repo+skill_name")
+    p_ccc = sub.add_parser(
+        "register-ccc-index",
+        help="Append-or-replace a single ccc_index_registry entry by source_repo+skill_name",
+    )
     p_ccc.add_argument("--target", type=Path, required=True)
 
     args = parser.parse_args()

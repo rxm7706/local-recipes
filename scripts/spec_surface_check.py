@@ -19,6 +19,7 @@ path separators, `*`/`?` do not; a pattern with no glob chars matches exactly.
 Usage:  python scripts/spec_surface_check.py [--write-baseline] [--json]
 Pixi:   pixi run -e local-recipes spec-surface-check
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
@@ -42,7 +43,7 @@ def glob_to_re(pattern: str) -> re.Pattern:
     out, i = [], 0
     while i < len(pattern):
         c = pattern[i]
-        if pattern[i:i + 2] == "**":
+        if pattern[i : i + 2] == "**":
             out.append(".*")
             i += 2
         elif c == "*":
@@ -77,7 +78,8 @@ def parse_surface(spec_md: Path) -> tuple[list[str], str]:
             continue
         if section and line.startswith("  - "):
             (globs if section == "surface" else excludes).append(
-                line[4:].split("#", 1)[0].strip())
+                line[4:].split("#", 1)[0].strip()
+            )
             continue
         # A comment or blank line INSIDE a block sequence is valid YAML and must not
         # end the section. Before 2026-07-28 any such line reset `section`, silently
@@ -111,8 +113,12 @@ def load_allowlist() -> list[tuple[str, str]]:
 
 
 def tracked_files() -> list[str]:
-    out = subprocess.run(["git", "-C", str(REPO_ROOT), "ls-files"],
-                         capture_output=True, text=True, check=True).stdout
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
     return [l for l in out.splitlines() if l]
 
 
@@ -122,8 +128,11 @@ def sha1(path: Path) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--write-baseline", action="store_true",
-                    help="stamp the drift baseline after a spec reconciliation")
+    ap.add_argument(
+        "--write-baseline",
+        action="store_true",
+        help="stamp the drift baseline after a spec reconciliation",
+    )
     ap.add_argument("--json", action="store_true", help="machine output")
     args = ap.parse_args()
 
@@ -146,7 +155,7 @@ def main() -> int:
         }
 
     allow = load_allowlist()
-    allow_res = [(glob_to_re(p), p, r) for p, r, in allow]
+    allow_res = [(glob_to_re(p), p, r) for p, r in allow]
 
     files = tracked_files()
     governed: dict[str, list[str]] = {}  # spec -> files
@@ -170,7 +179,9 @@ def main() -> int:
         findings.append(f"[ungoverned] {f}: no spec surface and no allowlist entry")
     for pat, n in allow_hits.items():
         if n == 0:
-            findings.append(f"[stale-allowlist] {pat!r} matches nothing — remove or fix")
+            findings.append(
+                f"[stale-allowlist] {pat!r} matches nothing — remove or fix"
+            )
 
     # drift: governed content moved while the spec's contract did not.
     # The contract hash is the memlog, plus any sentinel file (a repo file
@@ -186,17 +197,23 @@ def main() -> int:
     current = {
         name: {
             "memlog": contract_hash(s),
-            "files": {} if s["drift"] == "exempt" else
-                     {f: sha1(REPO_ROOT / f) for f in sorted(governed.get(name, []))
-                      if f not in s["exclude"] and (REPO_ROOT / f).is_file()},
+            "files": {}
+            if s["drift"] == "exempt"
+            else {
+                f: sha1(REPO_ROOT / f)
+                for f in sorted(governed.get(name, []))
+                if f not in s["exclude"] and (REPO_ROOT / f).is_file()
+            },
         }
         for name, s in specs.items()
     }
     if args.write_baseline:
-        BASELINE.write_text(json.dumps(current, indent=1, sort_keys=True) + "\n",
-                            encoding="utf-8")
-        print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} "
-              f"({len(specs)} specs)")
+        BASELINE.write_text(
+            json.dumps(current, indent=1, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(
+            f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} ({len(specs)} specs)"
+        )
     elif BASELINE.exists():
         base = json.loads(BASELINE.read_text(encoding="utf-8"))
         for name, cur in current.items():
@@ -210,27 +227,39 @@ def main() -> int:
                 old, new = b["files"].get(f), cur["files"].get(f)
                 if old != new:
                     what = "changed" if old and new else ("added" if new else "removed")
-                    findings.append(f"[drift] {name}: {f} {what} but the spec's "
-                                    f"memlog did not move — reconcile the spec, "
-                                    f"then --write-baseline")
+                    findings.append(
+                        f"[drift] {name}: {f} {what} but the spec's "
+                        f"memlog did not move — reconcile the spec, "
+                        f"then --write-baseline"
+                    )
     else:
         findings.append("[no-baseline] baseline missing: run --write-baseline")
 
     if args.json:
-        print(json.dumps({
-            "specs": {n: s["globs"] for n, s in specs.items()},
-            "governed": {n: len(v) for n, v in governed.items()},
-            "allowlisted": allow_hits, "findings": findings,
-        }, indent=1))
+        print(
+            json.dumps(
+                {
+                    "specs": {n: s["globs"] for n, s in specs.items()},
+                    "governed": {n: len(v) for n, v in governed.items()},
+                    "allowlisted": allow_hits,
+                    "findings": findings,
+                },
+                indent=1,
+            )
+        )
         return 1 if findings else 0
 
-    print(f"specs: {len(specs)}  ·  tracked files: {len(files)}  ·  "
-          f"governed: {sum(len(v) for v in governed.values())}  ·  "
-          f"allowlisted: {sum(allow_hits.values())}")
+    print(
+        f"specs: {len(specs)}  ·  tracked files: {len(files)}  ·  "
+        f"governed: {sum(len(v) for v in governed.values())}  ·  "
+        f"allowlisted: {sum(allow_hits.values())}"
+    )
     for name, s in sorted(specs.items()):
         mode = "" if s["drift"] == "memlog" else f"  [drift: {s['drift']}]"
-        print(f"  {name}: {len(governed.get(name, []))} file(s) "
-              f"via {len(s['globs'])} surface glob(s){mode}")
+        print(
+            f"  {name}: {len(governed.get(name, []))} file(s) "
+            f"via {len(s['globs'])} surface glob(s){mode}"
+        )
     print("  allowlist (explicit, reason-tagged):")
     for pat, reason in allow:
         print(f"    {allow_hits[pat]:>5}  {pat}  # {reason}")

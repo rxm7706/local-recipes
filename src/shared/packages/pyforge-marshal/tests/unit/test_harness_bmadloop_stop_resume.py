@@ -28,12 +28,16 @@ class _FakeProcess:
 # --- stop: synchronous, captures output -----------------------------------------
 
 
-def test_stop_builds_the_expected_argv_and_returns_true_on_success(harness, tmp_path, monkeypatch):
+def test_stop_builds_the_expected_argv_and_returns_true_on_success(
+    harness, tmp_path, monkeypatch
+):
     calls: list[tuple[list[str], dict]] = []
 
     def _fake_run(argv, **kwargs):
         calls.append((list(argv), kwargs))
-        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="run x stopped\n")
+        return subprocess.CompletedProcess(
+            args=argv, returncode=0, stdout="run x stopped\n"
+        )
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     assert harness.stop(tmp_path, "acme-20260803T054512123Z-ab12cd") is True
@@ -48,7 +52,9 @@ def test_stop_returns_false_for_a_nonzero_exit(harness, tmp_path, monkeypatch):
     is the ordinary "did not stop" shape -- never raised."""
 
     def _fake_run(argv, **kwargs):
-        return subprocess.CompletedProcess(args=argv, returncode=1, stdout="already finished\n")
+        return subprocess.CompletedProcess(
+            args=argv, returncode=1, stdout="already finished\n"
+        )
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     assert harness.stop(tmp_path, "acme-run") is False
@@ -74,7 +80,9 @@ def test_stop_raises_harness_error_on_timeout(harness, tmp_path, monkeypatch):
         harness.stop(tmp_path, "acme-run")
 
 
-def test_stop_raises_harness_error_for_an_embedded_null_byte(harness, tmp_path, monkeypatch):
+def test_stop_raises_harness_error_for_an_embedded_null_byte(
+    harness, tmp_path, monkeypatch
+):
     def _fake_run(argv, **kwargs):
         raise ValueError("embedded null byte")
 
@@ -98,7 +106,9 @@ def test_stop_passes_the_bounded_timeout(harness, tmp_path, monkeypatch):
 # --- resume: detached, mirrors spin's own recipe --------------------------------
 
 
-def test_resume_builds_the_expected_argv_and_returns_the_new_pid(harness, tmp_path, monkeypatch):
+def test_resume_builds_the_expected_argv_and_returns_the_new_pid(
+    harness, tmp_path, monkeypatch
+):
     calls: list[tuple[list[str], dict]] = []
 
     def _fake_popen(argv, **kwargs):
@@ -108,7 +118,9 @@ def test_resume_builds_the_expected_argv_and_returns_the_new_pid(harness, tmp_pa
     monkeypatch.setattr(module.subprocess, "Popen", _fake_popen)
     log_path = tmp_path / "harness.log"
 
-    result = harness.resume(tmp_path, "acme-20260803T054512123Z-ab12cd", log_path=log_path)
+    result = harness.resume(
+        tmp_path, "acme-20260803T054512123Z-ab12cd", log_path=log_path
+    )
 
     assert result == 424242
     [(argv, kwargs)] = calls
@@ -120,7 +132,9 @@ def test_resume_builds_the_expected_argv_and_returns_the_new_pid(harness, tmp_pa
     assert kwargs["stderr"] is kwargs["stdout"]
 
 
-def test_resume_appends_to_the_log_and_never_truncates_it(harness, tmp_path, monkeypatch):
+def test_resume_appends_to_the_log_and_never_truncates_it(
+    harness, tmp_path, monkeypatch
+):
     """Review finding: ``resume`` opened its ``log_path`` with mode ``"wb"``,
     copied from ``spin``'s own detach recipe. But the file ``spin`` opens is
     brand new, while the one ``resume`` is handed is the WEDGED run's
@@ -128,7 +142,9 @@ def test_resume_appends_to_the_log_and_never_truncates_it(harness, tmp_path, mon
     for however long it ran. Truncating it destroyed the only record of what
     the run was doing when it stopped producing output, at exactly the
     moment ``stop-and-retry`` fires and that record is most valuable."""
-    monkeypatch.setattr(module.subprocess, "Popen", lambda argv, **kw: _FakeProcess(pid=1))
+    monkeypatch.setattr(
+        module.subprocess, "Popen", lambda argv, **kw: _FakeProcess(pid=1)
+    )
     log_path = tmp_path / "harness.log"
     log_path.write_text("the wedged run's own output\n", encoding="utf-8")
 
@@ -149,7 +165,9 @@ def test_resume_appends_to_the_log_and_never_truncates_it(harness, tmp_path, mon
     assert "stop-and-retry" not in contents
 
 
-def test_resume_forces_pythonunbuffered_on_the_child_env(harness, tmp_path, monkeypatch):
+def test_resume_forces_pythonunbuffered_on_the_child_env(
+    harness, tmp_path, monkeypatch
+):
     captured_env: dict = {}
 
     def _fake_popen(argv, **kwargs):
@@ -189,7 +207,9 @@ def test_resume_raises_harness_error_when_the_log_cannot_be_opened(harness, tmp_
         harness.resume(tmp_path, "acme-run", log_path=log_path)
 
 
-def test_resume_raises_harness_error_when_popen_raises_oserror(harness, tmp_path, monkeypatch):
+def test_resume_raises_harness_error_when_popen_raises_oserror(
+    harness, tmp_path, monkeypatch
+):
     def _fake_popen(argv, **kwargs):
         raise FileNotFoundError("no such file: bmad-loop")
 

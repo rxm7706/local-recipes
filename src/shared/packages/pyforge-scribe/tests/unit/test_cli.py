@@ -51,7 +51,13 @@ def test_capture_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
     result = runner.invoke(
         app,
-        ["capture", "--type", "project", "--text", "ADR-005b: in-house gateway replaces LiteLLM"],
+        [
+            "capture",
+            "--type",
+            "project",
+            "--text",
+            "ADR-005b: in-house gateway replaces LiteLLM",
+        ],
     )
 
     assert result.exit_code == 0
@@ -67,7 +73,9 @@ def test_capture_invalid_type_writes_nothing_and_exits_2(
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
 
-    result = runner.invoke(app, ["capture", "--type", "decision", "--text", "some text"])
+    result = runner.invoke(
+        app, ["capture", "--type", "decision", "--text", "some text"]
+    )
 
     assert result.exit_code == 2
     for capture_type in ("feedback", "project", "reference"):
@@ -153,11 +161,15 @@ def test_capture_promote_confirm_yes_writes_file_and_prints_proposal(
     assert "team-relevant" in output
     assert "run-tests-first" in output
 
-    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
+    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(
+        encoding="utf-8"
+    )
     assert "run-tests-first" in memory_md
 
     # Source untouched.
-    source_content = (source_root / "feedback_run_tests_first.md").read_text(encoding="utf-8")
+    source_content = (source_root / "feedback_run_tests_first.md").read_text(
+        encoding="utf-8"
+    )
     assert "I prefer that contributors run the full test suite" in source_content
 
 

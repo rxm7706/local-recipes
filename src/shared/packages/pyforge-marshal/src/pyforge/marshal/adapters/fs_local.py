@@ -94,7 +94,9 @@ def _tmp_sibling(path: Path) -> Path:
     recycling, so ``write_text_atomic`` unlinks any pre-existing file at
     this path before its ``O_EXCL`` open -- safe precisely because any
     file already there cannot belong to a live writer."""
-    return path.with_name(f".{path.name}.tmp.pid{os.getpid()}.t{threading.get_native_id()}")
+    return path.with_name(
+        f".{path.name}.tmp.pid{os.getpid()}.t{threading.get_native_id()}"
+    )
 
 
 class LocalFs:
@@ -306,7 +308,9 @@ class LocalFs:
         on the host running the loop home (review finding: this caveat was
         previously undocumented)."""
         if "\n" in line:
-            raise FsError(f"cannot append to {path}: line must not contain an embedded newline")
+            raise FsError(
+                f"cannot append to {path}: line must not contain an embedded newline"
+            )
         try:
             fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o666)
             try:

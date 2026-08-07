@@ -68,6 +68,7 @@ USAGE
     seed-claude-consent -- --all-loop-homes    # seed every git worktree under ~/.bmad-loops
     seed-claude-consent -- <path> [<path>...]  # seed specific homes
 """
+
 from __future__ import annotations
 
 import argparse
@@ -114,8 +115,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("paths", nargs="*")
     ap.add_argument("--all-loop-homes", action="store_true")
-    ap.add_argument("--check", action="store_true",
-                    help="report only; exit 1 if any target would stall on a dialog")
+    ap.add_argument(
+        "--check",
+        action="store_true",
+        help="report only; exit 1 if any target would stall on a dialog",
+    )
     args = ap.parse_args()
 
     targets = [Path(p).resolve() for p in args.paths]
@@ -154,10 +158,16 @@ def main() -> int:
 
     if args.check:
         if gaps:
-            print(f"\n{len(gaps)} loop home(s) can stall a run on an interactive dialog.")
-            print("Fix: pixi run -e local-recipes seed-claude-consent -- --all-loop-homes")
+            print(
+                f"\n{len(gaps)} loop home(s) can stall a run on an interactive dialog."
+            )
+            print(
+                "Fix: pixi run -e local-recipes seed-claude-consent -- --all-loop-homes"
+            )
             return 1
-        print("\nOK: every loop home is pre-approved; no startup dialog can stall a run.")
+        print(
+            "\nOK: every loop home is pre-approved; no startup dialog can stall a run."
+        )
         return 0
 
     if not changed:
@@ -177,7 +187,9 @@ def main() -> int:
         Path(tmp).unlink(missing_ok=True)
         raise
 
-    print(f"\nseeded {len(changed)} home(s); previous config kept as ~/.claude.json.bak")
+    print(
+        f"\nseeded {len(changed)} home(s); previous config kept as ~/.claude.json.bak"
+    )
     return 0
 
 

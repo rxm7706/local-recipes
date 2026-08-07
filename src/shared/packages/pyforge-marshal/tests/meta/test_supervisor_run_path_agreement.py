@@ -157,8 +157,12 @@ def test_the_supervisor_still_does_not_import_the_cli():
             absolute = node.module or ""
             relative_to_cli = node.level == 2 and absolute.split(".")[0] == "cli"
             if absolute.startswith("pyforge.marshal.cli") or relative_to_cli:
-                offenders.append(f"line {node.lineno}: from {'.' * node.level}{absolute}")
-    assert not offenders, f"the supervisor must never import the cli (AD-9): {offenders}"
+                offenders.append(
+                    f"line {node.lineno}: from {'.' * node.level}{absolute}"
+                )
+    assert not offenders, (
+        f"the supervisor must never import the cli (AD-9): {offenders}"
+    )
 
 
 def test_the_module_really_runs_under_dash_m(tmp_path):

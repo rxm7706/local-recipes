@@ -25,6 +25,7 @@ Two operations:
 Output is a single JSON object on stdout. Exit codes: 0 ok; 2 usage error
 (missing/unknown op, or a non-integer byte count for `humanize`).
 """
+
 from __future__ import annotations
 
 import json
@@ -73,7 +74,9 @@ def _op_sizes(paths: list[str]) -> dict:
         b = dir_bytes(p) if exists else 0
         if exists:
             total += b
-        entries.append({"path": p, "exists": exists, "bytes": b, "human": humanize_bytes(b)})
+        entries.append(
+            {"path": p, "exists": exists, "bytes": b, "human": humanize_bytes(b)}
+        )
     return {
         "status": "ok",
         "op": "sizes",
@@ -90,16 +93,34 @@ def _op_humanize(raw: list[str]) -> dict:
             total += int(value)
         except (TypeError, ValueError):
             print(
-                json.dumps({"status": "error", "error": f"not an integer byte count: {value!r}"}),
+                json.dumps(
+                    {
+                        "status": "error",
+                        "error": f"not an integer byte count: {value!r}",
+                    }
+                ),
                 file=sys.stderr,
             )
             sys.exit(2)
-    return {"status": "ok", "op": "humanize", "total_bytes": total, "total_human": humanize_bytes(total)}
+    return {
+        "status": "ok",
+        "op": "humanize",
+        "total_bytes": total,
+        "total_human": humanize_bytes(total),
+    }
 
 
 def main(argv: list[str]) -> int:
     if not argv:
-        print(json.dumps({"status": "error", "error": "usage: dir-sizes.py {sizes|humanize} <args>"}), file=sys.stderr)
+        print(
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "usage: dir-sizes.py {sizes|humanize} <args>",
+                }
+            ),
+            file=sys.stderr,
+        )
         return 2
     op, args = argv[0], argv[1:]
     if op == "sizes":
@@ -108,7 +129,9 @@ def main(argv: list[str]) -> int:
     if op == "humanize":
         print(json.dumps(_op_humanize(args)))
         return 0
-    print(json.dumps({"status": "error", "error": f"unknown op: {op!r}"}), file=sys.stderr)
+    print(
+        json.dumps({"status": "error", "error": f"unknown op: {op!r}"}), file=sys.stderr
+    )
     return 2
 
 

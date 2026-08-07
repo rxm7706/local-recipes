@@ -208,14 +208,20 @@ def _build_parser():
         epilog=(
             "Example:\n"
             "  uv run skf-verdict-rollup.py "
-            "'{\"coveragePercentage\":100,\"missingCount\":0,\"pairsBlocked\":0,"
-            "\"pairsRisky\":0,\"pairsPlausible\":0,\"pairsVerified\":3}'"
+            '\'{"coveragePercentage":100,"missingCount":0,"pairsBlocked":0,'
+            '"pairsRisky":0,"pairsPlausible":0,"pairsVerified":3}\''
         ),
     )
     src = parser.add_mutually_exclusive_group()
-    src.add_argument("json_input", nargs="?", help="JSON object as a positional argument.")
-    src.add_argument("--json-input", dest="json_input_flag", help="JSON object passed via flag.")
-    src.add_argument("--stdin", action="store_true", help="Read the JSON object from stdin.")
+    src.add_argument(
+        "json_input", nargs="?", help="JSON object as a positional argument."
+    )
+    src.add_argument(
+        "--json-input", dest="json_input_flag", help="JSON object passed via flag."
+    )
+    src.add_argument(
+        "--stdin", action="store_true", help="Read the JSON object from stdin."
+    )
     return parser
 
 

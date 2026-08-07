@@ -67,6 +67,7 @@ EXIT
     0  every `done` is backed by a landing, or by no contrary evidence
     1  at least one story reads `done` while its own run says it deferred
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
@@ -88,8 +89,9 @@ NOT_LANDED = {"deferred", "escalated", "abandoned"}
 
 def sh(*args: str) -> str:
     try:
-        return subprocess.run(args, cwd=ROOT, capture_output=True, text=True,
-                              timeout=60).stdout.strip()
+        return subprocess.run(
+            args, cwd=ROOT, capture_output=True, text=True, timeout=60
+        ).stdout.strip()
     except Exception:
         return ""
 
@@ -120,7 +122,9 @@ def main() -> int:
     args = ap.parse_args()
 
     findings, audited = [], 0
-    for feed in sorted(PROJECTS.glob("pyforge-*/implementation-artifacts/sprint-status.yaml")):
+    for feed in sorted(
+        PROJECTS.glob("pyforge-*/implementation-artifacts/sprint-status.yaml")
+    ):
         slug = feed.parent.parent.name.removeprefix("pyforge-")
         tasks = harness_tasks(slug)
         for key in DONE_RE.findall(feed.read_text()):
@@ -129,7 +133,9 @@ def main() -> int:
             # No run record at all -> pre-loop or hand-implemented. Stay silent.
             if task is None:
                 if args.verbose:
-                    print(f"  ok       {slug}/{key}  (no run record -- hand-landed or pre-loop)")
+                    print(
+                        f"  ok       {slug}/{key}  (no run record -- hand-landed or pre-loop)"
+                    )
                 continue
             if task.get("commit_sha"):
                 if args.verbose:
@@ -172,28 +178,40 @@ def main() -> int:
                 subjects = sh("git", "log", "--format=%s", "main").lower().splitlines()
                 if any(slug in s and needle in s for s in subjects):
                     if args.verbose:
-                        print(f"  ok       {slug}/{key}  (hand-landed; named in a commit subject on main)")
+                        print(
+                            f"  ok       {slug}/{key}  (hand-landed; named in a commit subject on main)"
+                        )
                     continue
             phase = task.get("phase", "")
             if phase in NOT_LANDED:
                 findings.append((slug, key, phase, task.get("defer_reason") or ""))
             elif args.verbose:
-                print(f"  ok       {slug}/{key}  (harness phase {phase!r}, no contrary evidence)")
+                print(
+                    f"  ok       {slug}/{key}  (harness phase {phase!r}, no contrary evidence)"
+                )
 
-    print(f"story-status -- audited {audited} `done` entries across every station feed\n")
+    print(
+        f"story-status -- audited {audited} `done` entries across every station feed\n"
+    )
     if findings:
         for slug, key, phase, why in findings:
-            print(f"  ✗ [false-green] {slug}/{key}: reads `done` in the sprint feed, but the "
-                  f"harness says {phase!r} with no commit and no merge commit anywhere."
-                  + (f" Reason: {why}" if why else ""))
+            print(
+                f"  ✗ [false-green] {slug}/{key}: reads `done` in the sprint feed, but the "
+                f"harness says {phase!r} with no commit and no merge commit anywhere."
+                + (f" Reason: {why}" if why else "")
+            )
         print(f"\n{len(findings)} story(s) claim completion they cannot show.")
         print("The board will over-report and the next run will SKIP them.")
-        print("Fix: set each back to `backlog` in the project's Tier-3 "
-              "implementation-artifacts/sprint-status.yaml, then re-run "
-              "`pixi run -e local-recipes sprint-ledger-sync` to re-promote the twin.")
+        print(
+            "Fix: set each back to `backlog` in the project's Tier-3 "
+            "implementation-artifacts/sprint-status.yaml, then re-run "
+            "`pixi run -e local-recipes sprint-ledger-sync` to re-promote the twin."
+        )
         return 1
 
-    print("OK: every `done` story is backed by a merge commit or a recorded commit sha.")
+    print(
+        "OK: every `done` story is backed by a merge commit or a recorded commit sha."
+    )
     return 0
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy bmad-manticore skills into the current project's .claude/skills/ directory."""
+
 import argparse
 import os
 import shutil

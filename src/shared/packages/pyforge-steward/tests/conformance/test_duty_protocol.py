@@ -33,7 +33,7 @@ def test_dutyresult_is_frozen():
 
     result = DutyResult(ok=True, summary="x")
     with pytest.raises(dataclasses.FrozenInstanceError):
-        result.ok = False        # type: ignore[misc]
+        result.ok = False  # type: ignore[misc]
 
 
 def test_an_object_missing_run_is_not_a_duty():

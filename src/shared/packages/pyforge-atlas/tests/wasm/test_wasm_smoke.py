@@ -159,8 +159,9 @@ def test_wasm_smoke_client_side_query(playwright_sync, static_server):
         # Wait for the query to resolve to EITHER ready or error, then require ready.
         # (Waiting for "ready" only would let an error state hang until timeout; this
         # fails fast and surfaces the real error text.)
-        page.wait_for_selector('#status[data-state="ready"], #status[data-state="error"]',
-                               timeout=60_000)
+        page.wait_for_selector(
+            '#status[data-state="ready"], #status[data-state="error"]', timeout=60_000
+        )
         state = page.get_attribute("#status", "data-state")
         status_text = page.inner_text("#status")
         assert state == "ready", (
@@ -169,7 +170,9 @@ def test_wasm_smoke_client_side_query(playwright_sync, static_server):
         )
 
         # No external network was attempted at runtime (offline / no backend, AD-21).
-        assert external_requests == [], f"unexpected external requests: {external_requests}"
+        assert external_requests == [], (
+            f"unexpected external requests: {external_requests}"
+        )
 
         # The engine actually ran (guards against a hollow page that sets ready blindly).
         engine = page.inner_text("#engine")

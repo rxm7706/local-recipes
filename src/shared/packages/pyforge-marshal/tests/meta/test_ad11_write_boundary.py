@@ -93,7 +93,9 @@ class _RecordingVcs:
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
         return self._provisioned_worktree
 
-    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
+    def add_worktree(
+        self, repo_root: Path, home: Path, branch: str, *, base: str
+    ) -> None:
         self.write_paths.append(home)
 
     def list_worktrees(self, repo_root: Path) -> tuple[WorktreeEntry, ...]:
@@ -101,7 +103,9 @@ class _RecordingVcs:
         # one loop home, so run_homes has a non-trivial home row to gather.
         return (
             WorktreeEntry(path=self.repo_root, branch="main"),
-            WorktreeEntry(path=self.repo_root / "loop-homes" / "acme", branch="loop/acme"),
+            WorktreeEntry(
+                path=self.repo_root / "loop-homes" / "acme", branch="loop/acme"
+            ),
         )
 
     def has_uncommitted_changes(self, worktree_path: Path) -> bool:
@@ -114,12 +118,16 @@ class _RecordingVcs:
         # the same reason as has_uncommitted_changes above.
         return True
 
-    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+    def remove_worktree(
+        self, repo_root: Path, home: Path, *, force: bool = False
+    ) -> None:
         # The worktree TARGET path this guard tracks, mirroring
         # add_worktree's own recorded write above.
         self.write_paths.append(home)
 
-    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+    def delete_branch(
+        self, repo_root: Path, branch: str, *, force: bool = False
+    ) -> None:
         # NOT recorded: branch deletion is a git-ref-level operation inside
         # $GIT_DIR, outside both allowed targets -- git-internal bookkeeping
         # exempt from this guard's claim for the SAME reason add_worktree's
@@ -135,7 +143,9 @@ class _RecordingVcs:
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
         return ()
 
-    def commit_paths(self, repo_root: Path, paths: tuple, message: str) -> str:  # pragma: no cover
+    def commit_paths(
+        self, repo_root: Path, paths: tuple, message: str
+    ) -> str:  # pragma: no cover
         return "deadbeef"
 
     def path_has_uncommitted_changes(self, repo_root: Path, path: Path) -> bool:
@@ -383,7 +393,9 @@ class _RecordingProcess:
     def __init__(self) -> None:
         self.spawn_log_paths: list[Path] = []
 
-    def run(self, argv, *, cwd: Path, timeout_s: float | None = None):  # pragma: no cover
+    def run(
+        self, argv, *, cwd: Path, timeout_s: float | None = None
+    ):  # pragma: no cover
         raise AssertionError("run_spin must never call ProcessPort.run")
 
     def is_alive(self, pid: int) -> bool:  # pragma: no cover
@@ -467,7 +479,9 @@ def test_teardown_produces_zero_fs_writes_and_its_one_vcs_write_resolves_under_t
     repo_root = tmp_path / "repo"
     home = tmp_path / "loop-homes" / slug
 
-    vcs = _RecordingVcs(repo_root, provisioned_worktree=home, provisioned_branch_exists=True)
+    vcs = _RecordingVcs(
+        repo_root, provisioned_worktree=home, provisioned_branch_exists=True
+    )
     fs = _RecordingFs(set())
 
     args = argparse.Namespace(slug=slug, force=False, format="text")
@@ -522,7 +536,12 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     home = tmp_path / "loop-homes" / slug
     tier3_local = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
     tier3_canonical = (
-        tmp_path / "repo" / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+        tmp_path
+        / "repo"
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
     )
 
     fs = _RecordingFs({home}, symlinks={tier3_local: tier3_canonical})
@@ -530,7 +549,12 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     process = _RecordingProcess()
 
     args = argparse.Namespace(
-        slug=slug, epic=None, story=None, max_count=None, foreground=False, format="text"
+        slug=slug,
+        epic=None,
+        story=None,
+        max_count=None,
+        foreground=False,
+        format="text",
     )
     exit_code = run_spin(args, fs=fs, harness=harness, process=process)
 
@@ -539,7 +563,9 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     # itself (create_dir_exclusive), and the two journal appends (intent +
     # outcome, both to the same journal.jsonl) -- four recorded writes.
     assert len(fs.write_paths) == 4, f"unexpected write set: {fs.write_paths}"
-    assert harness.spin_log_paths, "no spin log path was observed -- the guard would be vacuous"
+    assert harness.spin_log_paths, (
+        "no spin log path was observed -- the guard would be vacuous"
+    )
     # Story 3.4: the supervisor's own log is the SECOND non-FsPort write
     # target this command hands out, and it must be guarded exactly like the
     # harness log above -- without this the guard is blind to it entirely.

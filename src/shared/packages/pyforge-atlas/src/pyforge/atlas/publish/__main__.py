@@ -31,10 +31,18 @@ _DEFAULT_TARGET = _HERE / "_site"
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="publish", description=__doc__)
-    parser.add_argument("--target", type=Path, default=_DEFAULT_TARGET,
-                        help=f"static-host output directory (default: {_DEFAULT_TARGET})")
-    parser.add_argument("--seed", type=Path, default=_DEFAULT_SEED,
-                        help=f"seed CSV for the demo dataset (default: {_DEFAULT_SEED})")
+    parser.add_argument(
+        "--target",
+        type=Path,
+        default=_DEFAULT_TARGET,
+        help=f"static-host output directory (default: {_DEFAULT_TARGET})",
+    )
+    parser.add_argument(
+        "--seed",
+        type=Path,
+        default=_DEFAULT_SEED,
+        help=f"seed CSV for the demo dataset (default: {_DEFAULT_SEED})",
+    )
     parser.add_argument("--rows-per-chunk", type=int, default=250_000)
     parser.add_argument("--row-group-size", type=int, default=100_000)
     args = parser.parse_args(argv)
@@ -55,7 +63,9 @@ def main(argv: list[str] | None = None) -> int:
     for name, ds in manifest["datasets"].items():
         print(f"  {name}: {ds['row_count']} rows, {len(ds['chunks'])} chunk(s)")
         for chunk in ds["chunks"]:
-            print(f"    {chunk['path']}  ({chunk['bytes']} bytes, sha256 {chunk['sha256'][:12]}…)")
+            print(
+                f"    {chunk['path']}  ({chunk['bytes']} bytes, sha256 {chunk['sha256'][:12]}…)"
+            )
     print(f"  {args.target}/manifest.json  (single-owner layout contract)")
     print(
         "\nServe this directory from any static host (host-agnostic, AD-2). "

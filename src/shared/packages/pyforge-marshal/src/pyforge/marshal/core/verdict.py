@@ -367,7 +367,9 @@ LATTICE_ORDER: tuple[Verdict, ...] = (
     Verdict.CLEAN,
 )
 
-_RANK: dict[Verdict, int] = {verdict: rank for rank, verdict in enumerate(LATTICE_ORDER)}
+_RANK: dict[Verdict, int] = {
+    verdict: rank for rank, verdict in enumerate(LATTICE_ORDER)
+}
 
 EXIT_SIGINT = 130
 

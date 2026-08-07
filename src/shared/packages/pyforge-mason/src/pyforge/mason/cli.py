@@ -122,23 +122,33 @@ def _build_global_flags_parser() -> argparse.ArgumentParser:
     """
     parent = argparse.ArgumentParser(add_help=False)
     parent.add_argument(
-        "--cfe-root", default=argparse.SUPPRESS, metavar="PATH",
+        "--cfe-root",
+        default=argparse.SUPPRESS,
+        metavar="PATH",
         help=f"conda-forge-expert skill root (flag -> {_ENV_CFE_ROOT} -> auto-discovery)",
     )
     parent.add_argument(
-        "--cfe-python", default=argparse.SUPPRESS, metavar="PATH",
+        "--cfe-python",
+        default=argparse.SUPPRESS,
+        metavar="PATH",
         help=f"interpreter used to run CFE scripts (flag -> {_ENV_CFE_PYTHON} -> running interpreter)",
     )
     parent.add_argument(
-        "--format", choices=("text", "json"), default=argparse.SUPPRESS,
+        "--format",
+        choices=("text", "json"),
+        default=argparse.SUPPRESS,
         help=f'output format (flag -> {_ENV_FORMAT} -> "text")',
     )
     parent.add_argument(
-        "--verbose", action="store_true", default=argparse.SUPPRESS,
+        "--verbose",
+        action="store_true",
+        default=argparse.SUPPRESS,
         help=f"increase log verbosity (flag -> {_ENV_VERBOSE} -> off)",
     )
     parent.add_argument(
-        "--quiet", action="store_true", default=argparse.SUPPRESS,
+        "--quiet",
+        action="store_true",
+        default=argparse.SUPPRESS,
         help=f"decrease log verbosity (flag -> {_ENV_QUIET} -> off)",
     )
     return parent
@@ -163,7 +173,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     for name, help_text in _NOUNS.items():
         noun_parser = nouns.add_parser(
-            name, help=help_text, description=help_text, parents=[global_flags],
+            name,
+            help=help_text,
+            description=help_text,
+            parents=[global_flags],
         )
         # No verbs beneath these yet — Story 1.2 is CLI wiring only. Later
         # stories register verbs by editing build_parser() right here:
@@ -176,7 +189,10 @@ def build_parser() -> argparse.ArgumentParser:
         noun_parser.set_defaults(_noun_parser=noun_parser)
 
     doctor_parser = nouns.add_parser(
-        "doctor", help=_DOCTOR_HELP, description=_DOCTOR_HELP, parents=[global_flags],
+        "doctor",
+        help=_DOCTOR_HELP,
+        description=_DOCTOR_HELP,
+        parents=[global_flags],
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
 
@@ -209,8 +225,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             # with real diagnosis; the plumbing here does not change then.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             render.write(
-                fmt, sys.stdout, "doctor", "ok",
-                {"message": "not implemented yet (Story 1.8 implements real diagnosis)"},
+                fmt,
+                sys.stdout,
+                "doctor",
+                "ok",
+                {
+                    "message": "not implemented yet (Story 1.8 implements real diagnosis)"
+                },
                 [],
             )
             return EXIT_OK
@@ -244,11 +265,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         # below, since MasonError is a subclass of it.
         print(str(exc), file=sys.stderr)
         return EXIT_FAILED
-    except Exception:                              # noqa: BLE001 — deliberate boundary
+    except Exception:  # noqa: BLE001 — deliberate boundary
         import traceback
+
         traceback.print_exc()
         return EXIT_FAILED
 
 
-if __name__ == "__main__":                          # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())

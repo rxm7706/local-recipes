@@ -258,8 +258,7 @@ def check(
         "head_short_sha": short(head),
         "match_kind": None,
         "log_message": (
-            f"workspace_drift_check: mismatch "
-            f"(pinned={pinned_commit}, head={head})"
+            f"workspace_drift_check: mismatch (pinned={pinned_commit}, head={head})"
         ),
         "halt_message": halt_message,
     }

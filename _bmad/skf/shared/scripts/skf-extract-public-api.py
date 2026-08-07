@@ -267,7 +267,9 @@ def parse_package_swift(content: str) -> dict:
     SwiftPM has no version field in the manifest (versions come from git tags),
     so `version` is always None; the brief falls back to target_version / default.
     """
-    name_m = re.search(r"\bPackage\s*\(\s*name:\s*['\"]([^'\"]+)['\"]", content, re.DOTALL)
+    name_m = re.search(
+        r"\bPackage\s*\(\s*name:\s*['\"]([^'\"]+)['\"]", content, re.DOTALL
+    )
     deps: list[str] = []
     for m in re.finditer(r"\.package\s*\(\s*url:\s*['\"]([^'\"]+)['\"]", content):
         seg = m.group(1).rstrip("/").rsplit("/", 1)[-1]
@@ -318,7 +320,9 @@ def scan_exports_js(content: str, source_file: str) -> list[dict]:
             m2 = re.match(r"\w+$", exposed)
             if m2 and exposed not in seen:
                 seen.add(exposed)
-                out.append({"name": exposed, "type": "re-export", "source_file": source_file})
+                out.append(
+                    {"name": exposed, "type": "re-export", "source_file": source_file}
+                )
     return out
 
 
@@ -380,13 +384,19 @@ def scan_exports_java(content: str, source_file: str) -> list[dict]:
     # the next class/interface/enum/record declaration after it.
     for m in _JAVA_ANNOTATION_RE.finditer(content):
         annotation = m.group(1)
-        tail = content[m.end():]
+        tail = content[m.end() :]
         m2 = re.search(r"\b(class|interface|enum|record)\s+(\w+)", tail)
         if m2:
             name = m2.group(2)
             if name not in seen:
                 seen.add(name)
-                out.append({"name": name, "type": annotation.lower(), "source_file": source_file})
+                out.append(
+                    {
+                        "name": name,
+                        "type": annotation.lower(),
+                        "source_file": source_file,
+                    }
+                )
     return out
 
 
@@ -421,7 +431,15 @@ _SWIFT_DECL_RE = re.compile(
     re.MULTILINE,
 )
 _SWIFT_DECL_KEYWORDS = {
-    "func", "class", "struct", "enum", "protocol", "actor", "typealias", "var", "let",
+    "func",
+    "class",
+    "struct",
+    "enum",
+    "protocol",
+    "actor",
+    "typealias",
+    "var",
+    "let",
 }
 
 
@@ -473,7 +491,9 @@ def _select_manifest_parser(language: str, manifest_path: str) -> ManifestParser
 # these as the resolved version produce skills tagged with garbage version
 # strings; surface them at brief-creation instead.
 _PLACEHOLDER_VERSION_PREFIXES = ("workspace:",)
-_PLACEHOLDER_VERSION_EXACTS = frozenset({"0.0.0-development", "0.0.0-semantically-released"})
+_PLACEHOLDER_VERSION_EXACTS = frozenset(
+    {"0.0.0-development", "0.0.0-semantically-released"}
+)
 
 
 def _detect_placeholder_version(version: str | None) -> str | None:
@@ -493,7 +513,9 @@ def extract(payload: dict) -> dict:
     warnings: list[str] = []
     language = (payload.get("language") or "").lower()
     if language not in LANGUAGE_DISPATCH:
-        return {"_error": f"unknown language: {language!r}; expected one of {sorted(LANGUAGE_DISPATCH)}"}
+        return {
+            "_error": f"unknown language: {language!r}; expected one of {sorted(LANGUAGE_DISPATCH)}"
+        }
 
     manifest = payload.get("manifest") or {}
     manifest_path = (manifest.get("path") or "").strip()

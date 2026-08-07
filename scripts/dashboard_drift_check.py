@@ -128,15 +128,22 @@ def main() -> int:
         # cure, just relocated. Promoting is `sprint-ledger-sync`.
         rel_feed = gen.PROJECT_SOURCES.get(key)
         slug_ = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
-        twin = (REPO_ROOT / "_bmad-output" / "projects" / slug_
-                / "planning-artifacts" / "sprint-status-ledger.yaml")
+        twin = (
+            REPO_ROOT
+            / "_bmad-output"
+            / "projects"
+            / slug_
+            / "planning-artifacts"
+            / "sprint-status-ledger.yaml"
+        )
         feed_p = REPO_ROOT / rel_feed if rel_feed else None
         if feed_p and feed_p.is_file() and twin.is_file():
             feed_map = gen.parse_sprint_status(feed_p)
             twin_map = gen.parse_sprint_status(twin)
             checked_twin += len(set(feed_map) | set(twin_map))
             drifted = sorted(
-                k for k in set(feed_map) | set(twin_map)
+                k
+                for k in set(feed_map) | set(twin_map)
                 if feed_map.get(k) != twin_map.get(k)
             )
             if drifted:
@@ -178,8 +185,14 @@ def main() -> int:
         # Same key -> slug rule scan_projects uses (its `_KEY_SLUG_OVERRIDE`
         # inverted, else the `pyforge-` prefix it strips).
         slug = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
-        epics_md = (REPO_ROOT / "_bmad-output" / "projects" / slug
-                    / "planning-artifacts" / "epics.md")
+        epics_md = (
+            REPO_ROOT
+            / "_bmad-output"
+            / "projects"
+            / slug
+            / "planning-artifacts"
+            / "epics.md"
+        )
         if not epics_md.is_file() or key in getattr(gen, "_DERIVE_EXCLUDE", set()):
             continue
         heading_ids = _epics_md_ids(epics_md)
@@ -197,16 +210,20 @@ def main() -> int:
                 f"data.js by hand."
             )
 
-    print(f"dashboard drift — {len(projects)} line(s) · {checked_done} board status(es) "
-          f"vs sprint feeds · {checked_stories} epics.md heading(s) vs the board · "
-          f"{checked_twin} tracked-ledger entry(ies) vs the Tier-3 feeds")
+    print(
+        f"dashboard drift — {len(projects)} line(s) · {checked_done} board status(es) "
+        f"vs sprint feeds · {checked_stories} epics.md heading(s) vs the board · "
+        f"{checked_twin} tracked-ledger entry(ies) vs the Tier-3 feeds"
+    )
     if findings:
         print(f"\nFINDINGS ({len(findings)}):")
         for f in findings:
             print(f"  ✗ {f}")
         return 1
-    print("\nOK: the committed data.js matches the feeds, every epics.md story is on "
-          "the board, and every tracked ledger matches its Tier-3 feed.")
+    print(
+        "\nOK: the committed data.js matches the feeds, every epics.md story is on "
+        "the board, and every tracked ledger matches its Tier-3 feed."
+    )
     return 0
 
 

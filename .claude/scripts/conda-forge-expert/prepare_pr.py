@@ -10,13 +10,17 @@ Canonical implementation:
 
 Do NOT put logic here — delegate entirely to the canonical script.
 """
+
 import subprocess
 import sys
 from pathlib import Path
 
 _SKILL_SCRIPT = (
     Path(__file__).parent.parent.parent
-    / "skills" / "conda-forge-expert" / "scripts" / "submit_pr.py"
+    / "skills"
+    / "conda-forge-expert"
+    / "scripts"
+    / "submit_pr.py"
 )
 
 if __name__ == "__main__":

@@ -63,8 +63,9 @@ def _has_vss() -> bool:
         return False
 
 
-requires_vss = pytest.mark.skipif(not _has_vss(), reason="vss extension is not provisioned in local cache")
-
+requires_vss = pytest.mark.skipif(
+    not _has_vss(), reason="vss extension is not provisioned in local cache"
+)
 
 
 def _offline_connection() -> "duckdb.DuckDBPyConnection":
@@ -166,9 +167,7 @@ def test_unprovisioned_vss_raises_clear_error_not_a_network_install():
         }
     )
     with pytest.raises(VssNotProvisionedError) as exc:
-        DuckdbVssRagStore(
-            embedder=HashingEmbedder(dim=32), connection=unprovisioned
-        )
+        DuckdbVssRagStore(embedder=HashingEmbedder(dim=32), connection=unprovisioned)
     msg = str(exc.value)
     assert "provision" in msg.lower()
     assert "INSTALL" in msg  # the message points at the one-time provisioning step
@@ -290,7 +289,9 @@ def test_zero_vector_artifact_indexes_and_ranks():
     store.index([("empty", ""), ("real", "python recipe")])
     assert store.count() == 2
     results = store.similarity_search("python recipe", k=2)
-    assert results[0]["id"] == "real"  # the real match ranks above the zero-vector artifact
+    assert (
+        results[0]["id"] == "real"
+    )  # the real match ranks above the zero-vector artifact
 
 
 @requires_vss
@@ -342,7 +343,9 @@ def test_provision_vss_is_a_separate_attended_path():
     # the default loader is the OFFLINE one, not the provisioning one
     import inspect
 
-    assert DuckdbVssRagStore.__init__.__defaults__ is None  # kw-only; check signature default
+    assert (
+        DuckdbVssRagStore.__init__.__defaults__ is None
+    )  # kw-only; check signature default
     sig = inspect.signature(DuckdbVssRagStore.__init__)
     assert sig.parameters["vss_loader"].default is load_vss_offline
     assert provision_vss is not load_vss_offline
@@ -355,15 +358,21 @@ def test_index_and_search_on_a_PERSISTENT_connection():
     hnsw_enable_experimental_persistence is set — the store now sets it, so index()+search
     work on a file-backed connection (every prior test used in-memory, masking this)."""
     import os as _os
+
     with tempfile.TemporaryDirectory() as d:
         path = _os.path.join(d, "f1_consolidated.duckdb")
         con = duckdb.connect(
             path,
-            config={"autoinstall_known_extensions": False, "autoload_known_extensions": False},
+            config={
+                "autoinstall_known_extensions": False,
+                "autoload_known_extensions": False,
+            },
         )
         try:
             store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=32), connection=con)
-            n = store.index([("a", "conda-forge python recipe"), ("b", "rust cargo crate")])
+            n = store.index(
+                [("a", "conda-forge python recipe"), ("b", "rust cargo crate")]
+            )
             assert n == 2
             hits = store.similarity_search("python recipe", k=1)
             assert len(hits) == 1 and hits[0]["id"] in {"a", "b"}
@@ -380,10 +389,13 @@ def test_malicious_table_or_metric_identifier_is_rejected():
     con.execute("CREATE TABLE victim(secret VARCHAR)")
     with pytest.raises(ValueError, match="invalid table identifier"):
         DuckdbVssRagStore(
-            embedder=HashingEmbedder(dim=8), connection=con,
+            embedder=HashingEmbedder(dim=8),
+            connection=con,
             table="rag (id VARCHAR); DROP TABLE victim; CREATE TABLE rag2",
         )
     # victim survives — the injection never executed.
     assert con.execute("SELECT count(*) FROM victim").fetchone()[0] == 0
     with pytest.raises(ValueError, match="invalid metric identifier"):
-        DuckdbVssRagStore(embedder=HashingEmbedder(dim=8), metric="l2sq'); DROP TABLE x; --")
+        DuckdbVssRagStore(
+            embedder=HashingEmbedder(dim=8), metric="l2sq'); DROP TABLE x; --"
+        )

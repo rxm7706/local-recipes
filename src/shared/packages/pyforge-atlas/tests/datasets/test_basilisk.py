@@ -25,6 +25,7 @@ from pyforge.atlas.datasets.rate_limit import FetchError, RateLimitedScheduler
 
 # --- chunk_queries (the ≤1,000-query discipline, AC-1) ----------------------
 
+
 def test_chunk_queries_splits_at_1000_no_drop_no_dupe():
     purls = [f"pkg:conda/conda-forge/p{i}" for i in range(2500)]
     chunks = chunk_queries(purls)
@@ -52,6 +53,7 @@ def test_build_conda_purl_cep63_form():
 
 
 # --- BasiliskBatchDataset (querybatch chunking + AD-13) ---------------------
+
 
 def _batch(tmp_path, **kw):
     return BasiliskBatchDataset(
@@ -97,7 +99,7 @@ def test_batch_query_population_uses_the_scheduler(tmp_path):
 def test_batch_query_population_1001_boundary(tmp_path):
     # the ≤1,000 discipline at the exact off-by-one boundary, at the DATASET (IO owner)
     seen: list[int] = []
-    ds = _batch(tmp_path, fetcher=lambda chunk: (seen.append(len(chunk)) or []))
+    ds = _batch(tmp_path, fetcher=lambda chunk: seen.append(len(chunk)) or [])
     ds.query_population([build_conda_purl(f"p{i}") for i in range(1001)])
     assert seen == [1000, 1]  # never a 1001-query request
 
@@ -107,7 +109,7 @@ def test_batch_query_population_accepts_series_without_crash(tmp_path):
     import pandas as pd
 
     seen: list[int] = []
-    ds = _batch(tmp_path, fetcher=lambda chunk: (seen.append(len(chunk)) or []))
+    ds = _batch(tmp_path, fetcher=lambda chunk: seen.append(len(chunk)) or [])
     ds.query_population(pd.Series([build_conda_purl(f"p{i}") for i in range(3)]))
     assert seen == [3]
 
@@ -165,7 +167,9 @@ def test_batch_nonserializable_payload_keeps_last_good_no_propagate(tmp_path):
     ds = _batch(tmp_path, fetcher=lambda chunk: good)
     ds.query_population([build_conda_purl("libtiff")])  # persist a good last-good first
     # now a payload with an un-serializable datetime must NOT raise out of query_population
-    ds._fetcher = lambda chunk: [{"conda_name": "libtiff", "modified": _dt.datetime(2026, 1, 1)}]
+    ds._fetcher = lambda chunk: [
+        {"conda_name": "libtiff", "modified": _dt.datetime(2026, 1, 1)}
+    ]
     out = ds.query_population([build_conda_purl("libtiff")])  # must NOT raise
     assert out == [{"conda_name": "libtiff", "modified": _dt.datetime(2026, 1, 1)}]
     assert ds.is_stale() is True  # write failed -> marked stale
@@ -187,6 +191,7 @@ def test_batch_url_from_basilisk_base_url(tmp_path):
 
 
 # --- BasiliskDetailDataset (bounded rate-limit discipline + AD-13) ----------
+
 
 def _detail(tmp_path, **kw):
     return BasiliskDetailDataset(
@@ -240,7 +245,9 @@ def test_detail_gives_up_after_max_retries(tmp_path):
         err.retry_after = "1"
         raise err
 
-    ds = _detail(tmp_path, fetcher=always_429, sleep=lambda s: None, max_retries=2, rng_seed=0)
+    ds = _detail(
+        tmp_path, fetcher=always_429, sleep=lambda s: None, max_retries=2, rng_seed=0
+    )
     # exceeds retries -> the AD-13 outer guard catches it -> stale, never propagates
     out = ds.fetch_details(["BAS-1"])
     assert out == []
@@ -253,7 +260,7 @@ def test_detail_fetch_dedupes_advisory_ids(tmp_path):
     calls: list[str] = []
     ds = _detail(
         tmp_path,
-        fetcher=lambda aid: (calls.append(aid) or {"advisory_id": aid, "affected": []}),
+        fetcher=lambda aid: calls.append(aid) or {"advisory_id": aid, "affected": []},
     )
     out = ds.fetch_details(["BAS-1", "BAS-2", "BAS-1", "BAS-1"])
     assert calls == ["BAS-1", "BAS-2"]  # deduped, order preserved
@@ -284,7 +291,9 @@ def test_detail_nonserializable_payload_keeps_last_good_no_propagate(tmp_path):
 def test_detail_concurrency_cap_default_single_worker(tmp_path, monkeypatch):
     monkeypatch.delenv("PHASE_K_AGGRESSIVE", raising=False)
     ds = _detail(tmp_path, fetcher=lambda aid: None)
-    assert ds._describe()["concurrency"] == 1  # single-worker default (Phase K contract)
+    assert (
+        ds._describe()["concurrency"] == 1
+    )  # single-worker default (Phase K contract)
 
 
 def test_detail_staleness_sidecar_is_valid_json(tmp_path):

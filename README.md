@@ -197,6 +197,7 @@ scripts/bmad-switch <slug>             # set active project
 - Verified minimal sanity check for a Rattler recipe file structure:
   ```python
   from pathlib import Path
+
   recipe = Path(r"recipes/py-key-value/recipe.yaml")
   text = recipe.read_text(encoding="utf-8")
   required = ["schema_version:", "build:", "outputs:", "tests:"]

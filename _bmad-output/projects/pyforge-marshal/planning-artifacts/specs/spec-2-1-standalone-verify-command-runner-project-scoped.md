@@ -164,12 +164,32 @@ final_revision: '12bac3af682b1c545895408fa0056815522c4bdf'
 
 ```python
 # core/gate.py -- pure, no I/O
-def classify_outcome(command: str, result: ProcessResult | None, *, failure_reason: str | None = None) -> tuple[dict, Finding | None]:
+def classify_outcome(
+    command: str, result: ProcessResult | None, *, failure_reason: str | None = None
+) -> tuple[dict, Finding | None]:
     if result is None:
-        return {"command": command, "resolvable": False, "returncode": None}, Finding(code=..., severity=Severity.ERROR, message=failure_reason)
+        return {"command": command, "resolvable": False, "returncode": None}, Finding(
+            code=..., severity=Severity.ERROR, message=failure_reason
+        )
     if result.returncode != 0:
-        return {"command": command, "resolvable": True, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}, Finding(code="MRS-GATE-001", severity=Severity.ERROR, message=f"{command!r} exited {result.returncode}")
-    return {"command": command, "resolvable": True, "returncode": 0, "stdout": result.stdout, "stderr": result.stderr}, None
+        return {
+            "command": command,
+            "resolvable": True,
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }, Finding(
+            code="MRS-GATE-001",
+            severity=Severity.ERROR,
+            message=f"{command!r} exited {result.returncode}",
+        )
+    return {
+        "command": command,
+        "resolvable": True,
+        "returncode": 0,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }, None
 ```
 
 `cli/gate.py` builds the `ProcessResult | None` per command (via `shlex.split` + `process.run`, catching `ProcessError`), then calls this per command and folds the returned findings with `verdict.compute_verdict`.

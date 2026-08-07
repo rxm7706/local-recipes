@@ -79,7 +79,11 @@ def test_config_resolves_only_from_env(monkeypatch):
     assert resolve_lasuite_config() is None  # token still missing -> unconfigured
     monkeypatch.setenv("LASUITE_API_TOKEN", "tok")
     cfg = resolve_lasuite_config()
-    assert cfg is not None and cfg.base_url == "https://cms.example" and cfg.api_token == "tok"
+    assert (
+        cfg is not None
+        and cfg.base_url == "https://cms.example"
+        and cfg.api_token == "tok"
+    )
 
 
 # --- client error clarity (§ 2.1) ------------------------------------------------------
@@ -192,7 +196,9 @@ def test_sync_writes_mapping_inside_wiki_root_only(tmp_path: Path):
     layout = _wiki_with_outputs(tmp_path, {"a.md": "---\ntitle: A\n---\nalpha\n"})
     WikiSyncer(LaSuiteClient(_cfg(), opener=MockWagtail()), layout).sync_all()
     assert (layout.root / ".lasuite_sync.json").is_file()
-    assert not (layout.root / ".lasuite_sync.json.tmp").exists()  # atomic write leaves no tmp
+    assert not (
+        layout.root / ".lasuite_sync.json.tmp"
+    ).exists()  # atomic write leaves no tmp
 
 
 # --- review-finding regressions --------------------------------------------------------
@@ -202,8 +208,12 @@ def test_syncs_outputs_stage_not_compiled_by_default(tmp_path: Path):
     # Review #3 / H1 layout contract + § 7.4: the CMS gets the Oracle's final outputs/, not the
     # internal compiled/ knowledge-graph artifacts.
     layout = scaffold_wiki(tmp_path / "wiki")
-    layout.stage_path("outputs", "report.md").write_text("---\ntitle: R\n---\nfinal\n", "utf-8")
-    layout.stage_path("compiled", "internal.md").write_text("---\ntitle: I\n---\ngraph\n", "utf-8")
+    layout.stage_path("outputs", "report.md").write_text(
+        "---\ntitle: R\n---\nfinal\n", "utf-8"
+    )
+    layout.stage_path("compiled", "internal.md").write_text(
+        "---\ntitle: I\n---\ngraph\n", "utf-8"
+    )
     mock = MockWagtail()
     r = WikiSyncer(LaSuiteClient(_cfg(), opener=mock), layout).sync_all()
     assert r.created == ["report.md"]  # only outputs/, not compiled/internal.md
@@ -217,7 +227,9 @@ def test_syncs_outputs_stage_not_compiled_by_default(tmp_path: Path):
 def test_create_2xx_without_id_raises_clear_error(tmp_path: Path):
     # Review #1: a 2xx create body lacking 'id' must be a clear LaSuiteError, not a bare KeyError.
     layout = _wiki_with_outputs(tmp_path, {"a.md": "---\ntitle: A\n---\nalpha\n"})
-    syncer = WikiSyncer(LaSuiteClient(_cfg(), opener=lambda req: Response(201, {"pk": 7})), layout)
+    syncer = WikiSyncer(
+        LaSuiteClient(_cfg(), opener=lambda req: Response(201, {"pk": 7})), layout
+    )
     with pytest.raises(LaSuiteError) as exc:
         syncer.sync_all()
     assert "no 'id'" in str(exc.value)

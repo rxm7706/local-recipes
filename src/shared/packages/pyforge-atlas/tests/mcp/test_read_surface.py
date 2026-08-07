@@ -59,13 +59,17 @@ def test_read_dataset_is_a_catalog_load_passthrough(real_catalog_session):
     assert loaded == {"rows": [{"package": "demo", "health": "green"}]}
 
 
-def test_read_dataset_envelope_carries_schema_version_and_dataset_name(real_catalog_session):
+def test_read_dataset_envelope_carries_schema_version_and_dataset_name(
+    real_catalog_session,
+):
     envelope = tools.read_dataset("demo_ds")
     assert envelope["schema_version"] == "1"
     assert envelope["dataset"] == "demo_ds"
 
 
-def test_read_dataset_unknown_kind_reports_unavailable_with_reason(real_catalog_session):
+def test_read_dataset_unknown_kind_reports_unavailable_with_reason(
+    real_catalog_session,
+):
     """A ``MemoryDataset`` (or any type outside the three known kinds) has no
     genuine provenance — ``unavailable`` + a non-empty reason is a REQUIRED,
     valid, non-error response (C4), never a fabricated value."""
@@ -131,7 +135,9 @@ def test_read_dataset_coerces_series_ndarray_set(monkeypatch):
 
     catalog = DataCatalog(
         datasets={
-            "series_ds": MemoryDataset(pd.Series([1, 2], index=["a", "b"]), copy_mode="assign"),
+            "series_ds": MemoryDataset(
+                pd.Series([1, 2], index=["a", "b"]), copy_mode="assign"
+            ),
             "arr_ds": MemoryDataset(np.array([1, 2, 3]), copy_mode="assign"),
             "set_ds": MemoryDataset({"x", "y"}, copy_mode="assign"),
         }
@@ -222,12 +228,14 @@ def test_read_dataset_incremental_parquet_reports_fetched_at_not_read_time(
 
     envelope = tools.read_dataset("incr_ds")
     assert envelope["provenance_kind"] == "row-fetched-at"
-    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
-        111, tz=datetime.UTC
-    ).isoformat()
-    assert envelope["build_stamp_newest"] == datetime.datetime.fromtimestamp(
-        222, tz=datetime.UTC
-    ).isoformat()
+    assert (
+        envelope["build_stamp"]
+        == datetime.datetime.fromtimestamp(111, tz=datetime.UTC).isoformat()
+    )
+    assert (
+        envelope["build_stamp_newest"]
+        == datetime.datetime.fromtimestamp(222, tz=datetime.UTC).isoformat()
+    )
 
 
 def test_read_dataset_incremental_parquet_normalizes_millisecond_fetched_at(
@@ -266,7 +274,9 @@ def test_read_dataset_incremental_parquet_normalizes_millisecond_fetched_at(
 
     envelope = tools.read_dataset("ms_ds")  # must NOT raise ValueError
     assert envelope["provenance_kind"] == "row-fetched-at"
-    expected = datetime.datetime.fromtimestamp(ms_value / 1000, tz=datetime.UTC).isoformat()
+    expected = datetime.datetime.fromtimestamp(
+        ms_value / 1000, tz=datetime.UTC
+    ).isoformat()
     assert envelope["build_stamp"] == expected
     assert envelope["build_stamp_newest"] == expected
 
@@ -303,9 +313,10 @@ def test_read_dataset_pandas_parquet_reports_file_mtime_not_read_time(
 
     envelope = tools.read_dataset("pq_ds")
     assert envelope["provenance_kind"] == "file-mtime"
-    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
-        old_ts, tz=datetime.UTC
-    ).isoformat()
+    assert (
+        envelope["build_stamp"]
+        == datetime.datetime.fromtimestamp(old_ts, tz=datetime.UTC).isoformat()
+    )
     assert envelope["build_stamp_newest"] is None
 
 
@@ -348,12 +359,20 @@ def test_read_dataset_datetime_typed_fetched_at_reports_genuine_stamp(
 
     envelope = tools.read_dataset("dt_ds")  # must NOT raise ValueError
     assert envelope["provenance_kind"] == "row-fetched-at"
-    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
-        1_577_836_800, tz=datetime.UTC  # 2020-01-01T00:00:00Z (the OLDEST)
-    ).isoformat()
-    assert envelope["build_stamp_newest"] == datetime.datetime.fromtimestamp(
-        1_577_923_200, tz=datetime.UTC  # 2020-01-02T00:00:00Z
-    ).isoformat()
+    assert (
+        envelope["build_stamp"]
+        == datetime.datetime.fromtimestamp(
+            1_577_836_800,
+            tz=datetime.UTC,  # 2020-01-01T00:00:00Z (the OLDEST)
+        ).isoformat()
+    )
+    assert (
+        envelope["build_stamp_newest"]
+        == datetime.datetime.fromtimestamp(
+            1_577_923_200,
+            tz=datetime.UTC,  # 2020-01-02T00:00:00Z
+        ).isoformat()
+    )
 
 
 def test_read_dataset_out_of_range_fetched_at_degrades_to_unavailable(
@@ -427,7 +446,9 @@ def test_resolve_for_catalog_dataset_non_local_parquet_degrades_honestly():
     ds = ParquetDataset(filepath="memory://bucket/x.parquet")
     catalog = DataCatalog(datasets={"mem_ds": ds})
 
-    info = _provenance_mod.resolve_for_catalog_dataset(catalog, "mem_ds", loaded_value=None)
+    info = _provenance_mod.resolve_for_catalog_dataset(
+        catalog, "mem_ds", loaded_value=None
+    )
     assert info.kind == "unavailable"
     assert "non-local protocol 'memory'" in info.reason
     assert "not found" not in info.reason
@@ -445,17 +466,27 @@ def test_resolve_row_fetched_at_reads_object_dtype_timestamp_strings():
 
     from pyforge.atlas import provenance as _provenance_mod
 
-    frame = pd.DataFrame({"fetched_at": ["2020-01-02T00:00:00Z", "2020-01-01T00:00:00Z"]})
+    frame = pd.DataFrame(
+        {"fetched_at": ["2020-01-02T00:00:00Z", "2020-01-01T00:00:00Z"]}
+    )
     assert frame["fetched_at"].dtype == object  # the shape under test
 
     info = _provenance_mod._resolve_row_fetched_at(frame, "fetched_at")
     assert info.kind == "row-fetched-at"
-    assert info.build_stamp == datetime.datetime.fromtimestamp(
-        1_577_836_800, tz=datetime.UTC  # 2020-01-01T00:00:00Z (the OLDEST)
-    ).isoformat()
-    assert info.build_stamp_newest == datetime.datetime.fromtimestamp(
-        1_577_923_200, tz=datetime.UTC  # 2020-01-02T00:00:00Z
-    ).isoformat()
+    assert (
+        info.build_stamp
+        == datetime.datetime.fromtimestamp(
+            1_577_836_800,
+            tz=datetime.UTC,  # 2020-01-01T00:00:00Z (the OLDEST)
+        ).isoformat()
+    )
+    assert (
+        info.build_stamp_newest
+        == datetime.datetime.fromtimestamp(
+            1_577_923_200,
+            tz=datetime.UTC,  # 2020-01-02T00:00:00Z
+        ).isoformat()
+    )
 
 
 def test_resolve_row_fetched_at_unparseable_column_states_an_honest_reason():

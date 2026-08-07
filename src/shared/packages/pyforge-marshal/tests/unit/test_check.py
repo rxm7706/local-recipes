@@ -93,7 +93,9 @@ def test_a_detector_reporting_findings_registers_mrs_check_002(capsys):
             stdout=json.dumps(
                 {
                     "registry": [],
-                    "results": [_detector("check_layout", "FINDINGS", "3 files affected")],
+                    "results": [
+                        _detector("check_layout", "FINDINGS", "3 files affected")
+                    ],
                 }
             ),
             stderr="",
@@ -283,10 +285,14 @@ def test_project_falls_back_to_args_project_when_no_context_supplied(capsys):
 
 def test_context_slug_is_the_primary_source_when_supplied(capsys):
     process = _FakeProcess()
-    effective, _findings = policy_core.compose(project_slug="acme", project={}, flags={})
+    effective, _findings = policy_core.compose(
+        project_slug="acme", project={}, flags={}
+    )
     context = MarshalContext(slug="acme", loop_home=None, policy=effective, story=None)
 
-    check_cli.run_check(_args(project="ignored-because-context-wins"), process=process, context=context)
+    check_cli.run_check(
+        _args(project="ignored-because-context-wins"), process=process, context=context
+    )
 
     payload = _payload(capsys)
     assert payload["data"]["project"] == "acme"

@@ -85,7 +85,9 @@ def test_overlay_may_not_rename_a_persona():
     with pytest.raises(ValueError):
         resolve_personas({"Oracle": {"name": "Ingester"}})
     # A no-op name override that MATCHES the key is harmless (still refines other fields).
-    resolved = resolve_personas({"Oracle": {"name": "Oracle", "wiki_stage": "compiled"}})
+    resolved = resolve_personas(
+        {"Oracle": {"name": "Oracle", "wiki_stage": "compiled"}}
+    )
     assert resolved["Oracle"].name == "Oracle"
     assert resolved["Oracle"].wiki_stage == "compiled"
 

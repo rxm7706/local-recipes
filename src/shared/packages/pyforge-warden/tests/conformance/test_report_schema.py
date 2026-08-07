@@ -62,9 +62,7 @@ COHERENT_EXIT = {
 
 
 def load_schema() -> dict:
-    schema_file = (
-        resources.files("pyforge.warden") / "data" / "report-schema.json"
-    )
+    schema_file = resources.files("pyforge.warden") / "data" / "report-schema.json"
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
@@ -200,7 +198,9 @@ def test_exit_code_enum_is_closed():
     ],
     ids=["clean-0", "policy-violation-1", "error-2", "sigint-130"],
 )
-def test_frozen_exit_codes_accepted_in_coherent_pairings(status, with_driver, exit_code):
+def test_frozen_exit_codes_accepted_in_coherent_pairings(
+    status, with_driver, exit_code
+):
     driver = (
         StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod")
         if with_driver

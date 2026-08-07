@@ -107,10 +107,26 @@ AUTH_DOC_BASENAMES = {
 # Path-segment names that mark generated/vendored output trees — same
 # exclusion set as skf-detect-scripts-assets.py.
 EXCLUDED_DIR_NAMES = {
-    "node_modules", "__pycache__", "dist", "build", ".webpack",
-    "target", ".next", ".nuxt", "out", "coverage", ".git",
-    ".venv", "venv", ".tox", ".mypy_cache", ".pytest_cache",
-    ".ruff_cache", ".gradle", ".idea", ".vscode",
+    "node_modules",
+    "__pycache__",
+    "dist",
+    "build",
+    ".webpack",
+    "target",
+    ".next",
+    ".nuxt",
+    "out",
+    "coverage",
+    ".git",
+    ".venv",
+    "venv",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".gradle",
+    ".idea",
+    ".vscode",
 }
 
 
@@ -226,9 +242,7 @@ def scope_match(
       - "not matched by any scope.include" if no include matches
       - None when the path IS in scope
     """
-    matched_exclude = next(
-        (p for p in excludes if glob_match(rel_path, p)), None
-    )
+    matched_exclude = next((p for p in excludes if glob_match(rel_path, p)), None)
     matched_include = any(glob_match(rel_path, p) for p in includes)
 
     if matched_exclude is not None:
@@ -251,13 +265,10 @@ def load_brief(brief_path: Path) -> dict:
     try:
         brief = yaml.safe_load(text)
     except yaml.YAMLError as exc:
-        raise ValueError(
-            f"brief at {brief_path} is not valid YAML: {exc}"
-        ) from exc
+        raise ValueError(f"brief at {brief_path} is not valid YAML: {exc}") from exc
     if not isinstance(brief, dict):
         raise ValueError(
-            f"brief at {brief_path} must be a YAML mapping; got "
-            f"{type(brief).__name__}"
+            f"brief at {brief_path} must be a YAML mapping; got {type(brief).__name__}"
         )
     return brief
 
@@ -272,7 +283,9 @@ def extract_scope(brief: dict) -> tuple[list[str], list[str], dict[str, list[str
     scope = brief.get("scope") if isinstance(brief.get("scope"), dict) else {}
     includes = scope.get("include") if isinstance(scope.get("include"), list) else []
     excludes = scope.get("exclude") if isinstance(scope.get("exclude"), list) else []
-    amendments = scope.get("amendments") if isinstance(scope.get("amendments"), list) else []
+    amendments = (
+        scope.get("amendments") if isinstance(scope.get("amendments"), list) else []
+    )
 
     by_path: dict[str, list[str]] = {}
     for amend in amendments:
@@ -373,61 +386,67 @@ def resolve(
             # promoted_docs[]. Includes the "user manually added to
             # scope.include" case AND the "amendments has promoted" case
             # (which is the deterministic replay path).
-            already_in_scope.append({
-                "path": rel,
-                "heuristic": heuristic,
-                "size_bytes": file_path.stat().st_size,
-                "line_count": count_lines(file_path),
-                "content_hash": sha256_of_file(file_path),
-            })
+            already_in_scope.append(
+                {
+                    "path": rel,
+                    "heuristic": heuristic,
+                    "size_bytes": file_path.stat().st_size,
+                    "line_count": count_lines(file_path),
+                    "content_hash": sha256_of_file(file_path),
+                }
+            )
             continue
 
         if prior_action == _PROMOTED:
             # Amendment says promoted but scope.include doesn't currently
             # match — unusual (brief was edited?) — still populate
             # promoted_docs[] per the deterministic replay rule.
-            pre_decided.append({
-                "path": rel,
-                "heuristic": heuristic,
-                "prior_action": _PROMOTED,
-                "should_add_to_promoted_docs": True,
-                "size_bytes": file_path.stat().st_size,
-                "line_count": count_lines(file_path),
-                "content_hash": sha256_of_file(file_path),
-            })
+            pre_decided.append(
+                {
+                    "path": rel,
+                    "heuristic": heuristic,
+                    "prior_action": _PROMOTED,
+                    "should_add_to_promoted_docs": True,
+                    "size_bytes": file_path.stat().st_size,
+                    "line_count": count_lines(file_path),
+                    "content_hash": sha256_of_file(file_path),
+                }
+            )
             continue
 
         if prior_action == _SKIPPED:
-            pre_decided.append({
-                "path": rel,
-                "heuristic": heuristic,
-                "prior_action": _SKIPPED,
-                "should_add_to_promoted_docs": False,
-                "size_bytes": None,
-                "line_count": None,
-                "content_hash": None,
-            })
+            pre_decided.append(
+                {
+                    "path": rel,
+                    "heuristic": heuristic,
+                    "prior_action": _SKIPPED,
+                    "should_add_to_promoted_docs": False,
+                    "size_bytes": None,
+                    "line_count": None,
+                    "content_hash": None,
+                }
+            )
             continue
 
         # No prior amendment and out of scope → unresolved
-        unresolved.append({
-            "path": rel,
-            "heuristic": heuristic,
-            "size_bytes": file_path.stat().st_size,
-            "line_count": count_lines(file_path),
-            "content_hash": sha256_of_file(file_path),
-            "preview": load_preview(file_path, max_lines=preview_lines),
-            "excluded_by_pattern": excluded_by,
-        })
+        unresolved.append(
+            {
+                "path": rel,
+                "heuristic": heuristic,
+                "size_bytes": file_path.stat().st_size,
+                "line_count": count_lines(file_path),
+                "content_hash": sha256_of_file(file_path),
+                "preview": load_preview(file_path, max_lines=preview_lines),
+                "excluded_by_pattern": excluded_by,
+            }
+        )
 
     # Deterministic ordering for stable diffs / cache keys
     already_in_scope.sort(key=lambda r: r["path"])
     pre_decided.sort(key=lambda r: r["path"])
     unresolved.sort(key=lambda r: r["path"])
 
-    candidates_total = (
-        len(already_in_scope) + len(pre_decided) + len(unresolved)
-    )
+    candidates_total = len(already_in_scope) + len(pre_decided) + len(unresolved)
     return {
         "status": "candidates-found" if candidates_total > 0 else "no-candidates",
         "summary": {
@@ -450,9 +469,7 @@ def resolve(
 def _cmd_resolve(args: argparse.Namespace) -> int:
     source_root = Path(args.source_root)
     if not source_root.is_dir():
-        print(
-            f"error: source-root not a directory: {source_root}", file=sys.stderr
-        )
+        print(f"error: source-root not a directory: {source_root}", file=sys.stderr)
         return 1
     brief_path = Path(args.brief)
     if not brief_path.is_file():

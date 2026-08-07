@@ -37,14 +37,18 @@ def bsl_model_names() -> list[str]:
     Derived from the semantic package's ``build_<name>_model`` builders so this stays in
     lock-step with D1 without hardcoding — the same seam the D2 dashboard consumes.
     """
-    from .. import semantic  # the BSL seam (never boring_semantic_layer directly — AD-8)
+    from .. import (
+        semantic,
+    )  # the BSL seam (never boring_semantic_layer directly — AD-8)
 
     return sorted(
         name
         for attr in dir(semantic)
         if attr.startswith("build_")
         and attr.endswith("_model")
-        and (name := attr[len("build_"):-len("_model")])  # drop a bare ``build__model`` → ""
+        and (
+            name := attr[len("build_") : -len("_model")]
+        )  # drop a bare ``build__model`` → ""
     )
 
 
@@ -82,7 +86,9 @@ def vizro_ai_available() -> bool:
     return True
 
 
-def query_vizro_ai(query: str, *, env: Mapping[str, str] | None = None) -> dict[str, Any]:
+def query_vizro_ai(
+    query: str, *, env: Mapping[str, str] | None = None
+) -> dict[str, Any]:
     """Answer a natural-language query with a Vizro-AI chart/insight (LIVE PATH DEFERRED).
 
     Resolves the backend from repo model-backend config and grounds the query in the BSL

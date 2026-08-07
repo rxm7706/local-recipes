@@ -80,10 +80,45 @@ _NON_CORPUS_SEGMENTS = ("whatsnew", "contribute", "wiki")
 # language part is). Keeps a genuine subsection like `/go/` or `/is/` from being
 # misread as a locale.
 _LOCALE_CODES = {
-    "en", "ja", "zh", "ko", "fr", "de", "es", "pt", "ru", "it", "nl", "pl",
-    "tr", "uk", "cs", "id", "vi", "fa", "ar", "hi", "th", "sv", "da", "fi",
-    "nb", "no", "hu", "ro", "el", "he", "bg", "hr", "sk", "sl", "et", "lv",
-    "lt", "sr", "ca",
+    "en",
+    "ja",
+    "zh",
+    "ko",
+    "fr",
+    "de",
+    "es",
+    "pt",
+    "ru",
+    "it",
+    "nl",
+    "pl",
+    "tr",
+    "uk",
+    "cs",
+    "id",
+    "vi",
+    "fa",
+    "ar",
+    "hi",
+    "th",
+    "sv",
+    "da",
+    "fi",
+    "nb",
+    "no",
+    "hu",
+    "ro",
+    "el",
+    "he",
+    "bg",
+    "hr",
+    "sk",
+    "sl",
+    "et",
+    "lv",
+    "lt",
+    "sr",
+    "ca",
 }
 _LOCALE_REGION_RE = re.compile(r"^([a-z]{2})-[a-z]{2}$")
 
@@ -148,7 +183,11 @@ def _matches_non_corpus_segment(path: str) -> bool:
             if low == token:
                 return True
             # component + separator (whatsnew-2024) — but NOT whatsnewfeatures
-            if low.startswith(token) and len(low) > len(token) and not low[len(token)].isalnum():
+            if (
+                low.startswith(token)
+                and len(low) > len(token)
+                and not low[len(token)].isalnum()
+            ):
                 return True
     return False
 
@@ -177,7 +216,9 @@ def merge_doc_urls(
     registry_hosts = {
         _norm_parts(e["url"])[0]
         for e in kept
-        if isinstance(e, dict) and e.get("url") and e.get("source") == "language-registry"
+        if isinstance(e, dict)
+        and e.get("url")
+        and e.get("source") == "language-registry"
     }
     suppression_active = scope_type == "full-library" and bool(registry_hosts)
 
@@ -204,7 +245,9 @@ def merge_doc_urls(
                         if k.get("url")
                     )
                     if twin:
-                        suppressed.append({"url": url, "reason": "non-primary-locale-dup"})
+                        suppressed.append(
+                            {"url": url, "reason": "non-primary-locale-dup"}
+                        )
                         continue
 
         seen.add(key)
@@ -231,11 +274,15 @@ def main() -> int:
     existing = payload.get("existing") or []
     detected = payload.get("detected") or []
     if not isinstance(existing, list) or not isinstance(detected, list):
-        sys.stderr.write("skf-merge-doc-urls: 'existing' and 'detected' must be arrays\n")
+        sys.stderr.write(
+            "skf-merge-doc-urls: 'existing' and 'detected' must be arrays\n"
+        )
         return 2
 
     doc_urls, suppressed = merge_doc_urls(scope_type, existing, detected)
-    json.dump({"doc_urls": doc_urls, "suppressed": suppressed}, sys.stdout, ensure_ascii=False)
+    json.dump(
+        {"doc_urls": doc_urls, "suppressed": suppressed}, sys.stdout, ensure_ascii=False
+    )
     sys.stdout.write("\n")
     return 0
 

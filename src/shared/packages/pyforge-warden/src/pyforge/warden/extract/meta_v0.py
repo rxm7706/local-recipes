@@ -147,9 +147,7 @@ _MAX_LINE_BYTES = 8_192
 _JINJA_SET_TAG_RE = re.compile(
     r"\{%-?\s*set\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?P<value>.*?)\s*-?%\}"
 )
-_JINJA_SPAN_RE = re.compile(
-    _JINJA_SET_TAG_RE.pattern + r"|\{%-?.*?-?%\}|\{#.*?#\}"
-)
+_JINJA_SPAN_RE = re.compile(_JINJA_SET_TAG_RE.pattern + r"|\{%-?.*?-?%\}|\{#.*?#\}")
 # A YAML list-item (`- {{...`) or mapping-value (`key: {{...`) line whose
 # content starts with a BARE (un-`$`-prefixed) `{{` — the one shape that
 # breaks yaml.safe_load if left unquoted (a plain scalar starting with `{`

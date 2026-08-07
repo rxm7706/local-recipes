@@ -16,12 +16,16 @@ import pytest
 from pyforge.warden.mapping import load_conda_pypi_map
 
 _SCRIPT_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "scripts" / "generate_conda_pypi_map.py"
+    Path(__file__).resolve().parent.parent.parent
+    / "scripts"
+    / "generate_conda_pypi_map.py"
 )
 
 
 def _load_converter():
-    spec = importlib.util.spec_from_file_location("generate_conda_pypi_map", _SCRIPT_PATH)
+    spec = importlib.util.spec_from_file_location(
+        "generate_conda_pypi_map", _SCRIPT_PATH
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -77,7 +81,10 @@ def test_converter_purl_name_extraction():
     converter = _load_converter()
     assert converter._purl_name("pkg:conda/numpy?channel=conda-forge") == "numpy"
     assert converter._purl_name("pkg:pypi/numpy") == "numpy"
-    assert converter._purl_name("pkg:conda/py-yaml12@1.0.0?channel=conda-forge") == "py-yaml12"
+    assert (
+        converter._purl_name("pkg:conda/py-yaml12@1.0.0?channel=conda-forge")
+        == "py-yaml12"
+    )
 
 
 def test_converter_filters_none_match_source(tmp_path):
@@ -218,9 +225,7 @@ def test_converter_duplicate_conda_name_upgrades_to_a_later_more_trusted_row(tmp
     }
 
 
-def test_converter_reports_equal_confidence_conflicts_and_keeps_first(
-    tmp_path, capsys
-):
+def test_converter_reports_equal_confidence_conflicts_and_keeps_first(tmp_path, capsys):
     """Two equal-trust rows for one conda name with DIFFERENT pypi names tie
     on rank: the first-seen row is kept (deterministic for a given TSV) and
     the conflict is reported to stderr — an upstream data-integrity alarm

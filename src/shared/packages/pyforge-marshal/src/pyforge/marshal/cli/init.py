@@ -245,7 +245,9 @@ def add_init_subparser(subparsers: argparse._SubParsersAction) -> None:
             "writes and exits 0."
         ),
     )
-    parser.add_argument("slug", help="The BMAD project slug to provision a loop home for.")
+    parser.add_argument(
+        "slug", help="The BMAD project slug to provision a loop home for."
+    )
     parser.add_argument(
         "--format",
         choices=("text", "json"),
@@ -378,7 +380,9 @@ def run_init(
         # report through the envelope, not escape as a raw traceback
         # (review finding: Path.cwd() raises OSError, which the
         # VcsCommandError catch below never covered).
-        findings.append(_op_failed_finding(f"resolving the current working directory: {exc}"))
+        findings.append(
+            _op_failed_finding(f"resolving the current working directory: {exc}")
+        )
         return _emit(args, data, findings)
     try:
         repo_root = vcs.repo_common_root(invocation_dir)
@@ -430,7 +434,9 @@ def run_init(
     try:
         existing = vcs.worktree_path_for_branch(repo_root, branch)
     except VcsCommandError as exc:
-        findings.append(_op_failed_finding(f"resolving worktree state for {branch}: {exc}"))
+        findings.append(
+            _op_failed_finding(f"resolving worktree state for {branch}: {exc}")
+        )
         return _emit(args, data, findings)
 
     if existing is not None and existing.resolve() == home.resolve():
@@ -494,7 +500,9 @@ def run_init(
     # scripts/bmad-switch::ensure_tier3_backlink). Runs before the
     # marker/symlink pair below and is entirely independent of their desync
     # guard -- this backlink has its own convergence check.
-    canonical = repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    canonical = (
+        repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    )
     local = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
     try:
         tier3_link_target = fs.read_symlink_target(local)
@@ -519,7 +527,9 @@ def run_init(
                 removed = fs.remove_empty_dir(local)
             except FsError as exc:
                 findings.append(
-                    _op_failed_finding(f"removing stale tier-3 directory {local}: {exc}")
+                    _op_failed_finding(
+                        f"removing stale tier-3 directory {local}: {exc}"
+                    )
                 )
                 return _emit(args, data, findings)
             if not removed:
@@ -649,11 +659,15 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
-def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+def _emit(
+    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+) -> int:
     verdict_value = compute_verdict(tuple(findings))
     envelope = build_envelope(
         command="init", verdict=verdict_value, data=data, findings=tuple(findings)
@@ -664,7 +678,10 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
     # touches the fd inside this guard).
     try:
         if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
         else:
             print(_render_text(envelope.data, envelope.findings), flush=True)
     except OSError:
@@ -681,7 +698,9 @@ def _homes_op_failed_finding(message: str) -> Finding:
     return Finding(code="MRS-HOMES-003", severity=Severity.ERROR, message=message)
 
 
-def _gather_home_facts(entry: WorktreeEntry, repo_root: Path, fs: FsPort) -> status.HomeFacts:
+def _gather_home_facts(
+    entry: WorktreeEntry, repo_root: Path, fs: FsPort
+) -> status.HomeFacts:
     """Reads ONE ``loop/<slug>`` worktree's raw state via ``FsPort`` --
     ``entry.branch`` is guaranteed ``loop/``-prefixed by ``run_homes``'s own
     discovery filter before this is ever called."""
@@ -857,7 +876,9 @@ def run_homes(
     return _emit_homes(args, data, findings)
 
 
-def _render_text_homes(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_homes(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching ``_render_text``'s own
     convention for ``init``."""
@@ -876,11 +897,15 @@ def _render_text_homes(data: Mapping[str, object], findings: tuple[Finding, ...]
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
-def _emit_homes(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+def _emit_homes(
+    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+) -> int:
     verdict_value = compute_verdict(tuple(findings))
     envelope = build_envelope(
         command="homes", verdict=verdict_value, data=data, findings=tuple(findings)
@@ -889,7 +914,10 @@ def _emit_homes(args: argparse.Namespace, data: dict[str, object], findings: lis
     # and cli/config.py::run_config.
     try:
         if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
         else:
             print(_render_text_homes(envelope.data, envelope.findings), flush=True)
     except OSError:
@@ -972,7 +1000,9 @@ def add_preflight_subparser(subparsers: argparse._SubParsersAction) -> None:
             "on an unacknowledged adapter first-run requirement."
         ),
     )
-    parser.add_argument("slug", help="The BMAD project slug whose loop home to preflight.")
+    parser.add_argument(
+        "slug", help="The BMAD project slug whose loop home to preflight."
+    )
     parser.add_argument(
         "--acknowledge",
         metavar="ADAPTER",
@@ -1258,7 +1288,9 @@ def run_preflight(
     data["story_feed"] = {"resolvable": feed_error is None, "error": feed_error}
     if feed_error is not None:
         findings.append(
-            Finding(code="MRS-PREFLIGHT-005", severity=Severity.ERROR, message=feed_error)
+            Finding(
+                code="MRS-PREFLIGHT-005", severity=Severity.ERROR, message=feed_error
+            )
         )
 
     # --- verify commands ---------------------------------------------------------
@@ -1433,7 +1465,9 @@ def run_preflight(
         is_acknowledged = adapter_name is not None and adapter_name in acknowledged
         data["first_run_acknowledged"] = is_acknowledged
         if adapter_name is not None and not is_acknowledged:
-            note = first_run_note or "(this adapter's profile declares no first-run note)"
+            note = (
+                first_run_note or "(this adapter's profile declares no first-run note)"
+            )
             findings.append(
                 Finding(
                     code="MRS-PREFLIGHT-008",
@@ -1450,7 +1484,9 @@ def run_preflight(
     return _emit_preflight(args, data, findings)
 
 
-def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_preflight(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching this module's own
     ``_render_text``/``_render_text_homes`` convention."""
@@ -1490,11 +1526,15 @@ def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, 
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
-def _emit_preflight(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+def _emit_preflight(
+    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+) -> int:
     verdict_value = compute_verdict(tuple(findings))
     envelope = build_envelope(
         command="preflight", verdict=verdict_value, data=data, findings=tuple(findings)
@@ -1503,7 +1543,10 @@ def _emit_preflight(args: argparse.Namespace, data: dict[str, object], findings:
     # and cli/config.py::run_config.
     try:
         if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
         else:
             print(_render_text_preflight(envelope.data, envelope.findings), flush=True)
     except OSError:
@@ -1529,7 +1572,9 @@ def add_teardown_subparser(subparsers: argparse._SubParsersAction) -> None:
             "provisioned is a clean no-op."
         ),
     )
-    parser.add_argument("slug", help="The BMAD project slug whose loop home to tear down.")
+    parser.add_argument(
+        "slug", help="The BMAD project slug whose loop home to tear down."
+    )
     parser.add_argument(
         "--force",
         action="store_true",
@@ -1601,7 +1646,9 @@ def _unreachable_promotions(
     CONFIRMED-empty. ``run_teardown`` treats the two differently -- see its
     own comment at the call site for the override discipline an
     UNDETERMINED result now requires."""
-    keys = deploy.unreachable_promotions_for_slug(repo_root, project_slug, vcs=vcs, fs=fs)
+    keys = deploy.unreachable_promotions_for_slug(
+        repo_root, project_slug, vcs=vcs, fs=fs
+    )
     if keys is None:
         return None
     return tuple(str(key) for key in keys)
@@ -1654,7 +1701,9 @@ def _abandon_format_entry_ts(moment: datetime) -> str:
     return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
 
 
-def _append_abandonment_journal_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
+def _append_abandonment_journal_entry(
+    fs: FsPort, run_dir: Path, entry, *, fsync: bool
+) -> None:
     """Mirrors ``cli/spin.py::_append_entry``'s own write path exactly
     (AD-30: sidecar-if-any BEFORE the line that references it, then the
     line itself)."""
@@ -1677,7 +1726,9 @@ def _journal_abandonments(
     left no entry is itself a hard finding" -- here enforced at write time
     rather than deferred to a later fold)."""
     moment = datetime.now(timezone.utc)
-    run_id = mint_run_id(slug, _abandon_format_utc_compact(moment), _abandon_random_token())
+    run_id = mint_run_id(
+        slug, _abandon_format_utc_compact(moment), _abandon_random_token()
+    )
     run_dir = (
         repo_root
         / "_bmad-output"
@@ -1790,7 +1841,9 @@ def run_teardown(
         invocation_dir = Path.cwd()
     except OSError as exc:
         findings.append(
-            _teardown_op_failed_finding(f"resolving the current working directory: {exc}")
+            _teardown_op_failed_finding(
+                f"resolving the current working directory: {exc}"
+            )
         )
         return _emit_teardown(args, data, findings)
     try:
@@ -1803,7 +1856,9 @@ def run_teardown(
     try:
         home = _home_path(slug)
     except (RuntimeError, OSError) as exc:
-        findings.append(_teardown_op_failed_finding(f"resolving the loop-home root: {exc}"))
+        findings.append(
+            _teardown_op_failed_finding(f"resolving the loop-home root: {exc}")
+        )
         return _emit_teardown(args, data, findings)
     branch = f"loop/{slug}"
     data["home"] = str(home)
@@ -1820,7 +1875,9 @@ def run_teardown(
     try:
         branch_present = vcs.branch_exists(repo_root, branch)
     except VcsCommandError as exc:
-        findings.append(_teardown_op_failed_finding(f"checking whether {branch} exists: {exc}"))
+        findings.append(
+            _teardown_op_failed_finding(f"checking whether {branch} exists: {exc}")
+        )
         return _emit_teardown(args, data, findings)
 
     if worktree_path is None:
@@ -1881,7 +1938,9 @@ def run_teardown(
             worktree_on_disk = fs.is_dir(worktree_path)
         except FsError as exc:
             findings.append(
-                _teardown_op_failed_finding(f"checking whether {worktree_path} exists: {exc}")
+                _teardown_op_failed_finding(
+                    f"checking whether {worktree_path} exists: {exc}"
+                )
             )
             return _emit_teardown(args, data, findings)
         if worktree_on_disk:
@@ -2116,7 +2175,9 @@ def run_teardown(
     return _emit_teardown(args, data, findings)
 
 
-def _render_text_teardown(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_teardown(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching this module's own
     ``_render_text``/``_render_text_homes``/``_render_text_preflight``
@@ -2137,11 +2198,15 @@ def _render_text_teardown(data: Mapping[str, object], findings: tuple[Finding, .
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
-def _emit_teardown(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+def _emit_teardown(
+    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+) -> int:
     verdict_value = compute_verdict(tuple(findings))
     envelope = build_envelope(
         command="teardown", verdict=verdict_value, data=data, findings=tuple(findings)
@@ -2150,7 +2215,10 @@ def _emit_teardown(args: argparse.Namespace, data: dict[str, object], findings: 
     # _emit_preflight and cli/config.py::run_config.
     try:
         if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
         else:
             print(_render_text_teardown(envelope.data, envelope.findings), flush=True)
     except OSError:

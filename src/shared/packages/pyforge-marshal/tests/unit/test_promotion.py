@@ -27,9 +27,15 @@ _VALID_SPEC = "---\ntitle: 'x'\nstatus: 'shipped'\n---\n\nbody\n"
 # constructed happy-path strings (Blind Hunter's own finding on the
 # original pass: "only the tautological case where the template and the
 # fixture agree by construction").
-_REAL_SUBJECT_2_3 = "Merge pull request #269 from rxm7706/marshal/2-3-frozen-surface-scope-check"
-_REAL_SUBJECT_3_8 = "Merge pull request #266 from rxm7706/marshal/3-8-stage-bound-durability"
-_REAL_SUBJECT_AMBIGUOUS = "Merge pull request #265 from rxm7706/marshal/refresh-dashboard-3-7"
+_REAL_SUBJECT_2_3 = (
+    "Merge pull request #269 from rxm7706/marshal/2-3-frozen-surface-scope-check"
+)
+_REAL_SUBJECT_3_8 = (
+    "Merge pull request #266 from rxm7706/marshal/3-8-stage-bound-durability"
+)
+_REAL_SUBJECT_AMBIGUOUS = (
+    "Merge pull request #265 from rxm7706/marshal/refresh-dashboard-3-7"
+)
 _REAL_SUBJECT_NON_STORY_1 = "Merge pull request #268 from rxm7706/marshal/epic-3-retro"
 _REAL_SUBJECT_NON_STORY_2 = (
     "Merge bmad-loop/20260803-023308-65b7/3-7-escalation-deferral-and-resume "
@@ -43,11 +49,15 @@ _REAL_SUBJECT_NOT_A_MERGE_2 = 'pixi update requires-pixi = ">=0.75.0"'
 
 
 def test_extracts_key_from_real_github_merge_subject_2_3():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_2_3) == StoryKey(2, 3)
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_2_3) == StoryKey(
+        2, 3
+    )
 
 
 def test_extracts_key_from_real_github_merge_subject_3_8():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_3_8) == StoryKey(3, 8)
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_3_8) == StoryKey(
+        3, 8
+    )
 
 
 def test_ambiguous_real_subject_with_non_leading_digits_is_rejected():
@@ -60,16 +70,24 @@ def test_ambiguous_real_subject_with_non_leading_digits_is_rejected():
 
 
 def test_real_non_story_merge_subject_returns_none():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_1) is None
+    assert (
+        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_1) is None
+    )
 
 
 def test_non_github_shaped_merge_subject_returns_none():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_2) is None
+    assert (
+        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_2) is None
+    )
 
 
 def test_non_merge_subject_returns_none():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1) is None
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_2) is None
+    assert (
+        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1) is None
+    )
+    assert (
+        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_2) is None
+    )
 
 
 # --- extract_story_key_from_bmadloop_merge_subject ---------------------------
@@ -88,7 +106,9 @@ def test_extract_story_key_from_bmadloop_merge_subject_parses_a_real_one():
         "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
         "into loop/pyforge-marshal (bmad-loop)"
     )
-    assert extract_story_key_from_bmadloop_merge_subject(subject, _PROJECT_SLUG) == StoryKey(2, 4)
+    assert extract_story_key_from_bmadloop_merge_subject(
+        subject, _PROJECT_SLUG
+    ) == StoryKey(2, 4)
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_parses_a_different_project():
@@ -99,9 +119,9 @@ def test_extract_story_key_from_bmadloop_merge_subject_parses_a_different_projec
         "Merge bmad-loop/20260724-042801-7c01/6-7-epss-feed-the-min-epss-gate "
         "into loop/pyforge-warden (bmad-loop)"
     )
-    assert extract_story_key_from_bmadloop_merge_subject(subject, "pyforge-warden") == StoryKey(
-        6, 7
-    )
+    assert extract_story_key_from_bmadloop_merge_subject(
+        subject, "pyforge-warden"
+    ) == StoryKey(6, 7)
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_rejects_a_different_projects_merge():
@@ -113,16 +133,24 @@ def test_extract_story_key_from_bmadloop_merge_subject_rejects_a_different_proje
         "Merge bmad-loop/20260724-055419-3c0e/6-8-baseline-grandfathering "
         "into loop/pyforge-warden (bmad-loop)"
     )
-    assert extract_story_key_from_bmadloop_merge_subject(warden_subject, _PROJECT_SLUG) is None
+    assert (
+        extract_story_key_from_bmadloop_merge_subject(warden_subject, _PROJECT_SLUG)
+        is None
+    )
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_github_shape():
-    assert extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_2_3, _PROJECT_SLUG) is None
+    assert (
+        extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_2_3, _PROJECT_SLUG)
+        is None
+    )
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_non_merge():
     assert (
-        extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1, _PROJECT_SLUG)
+        extract_story_key_from_bmadloop_merge_subject(
+            _REAL_SUBJECT_NOT_A_MERGE_1, _PROJECT_SLUG
+        )
         is None
     )
 
@@ -143,10 +171,12 @@ def test_merged_story_keys_skips_a_non_story_merge_subject():
     is skipped, never a hard failure for the whole scan."""
     subjects = (
         "fastmcp-v4",
-        "pixi update requires-pixi = \">=0.75.0\"",
+        'pixi update requires-pixi = ">=0.75.0"',
         "Merge 2.3 into main",
     )
-    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
+        {StoryKey(2, 3)}
+    )
 
 
 def test_merged_story_keys_empty_subjects_returns_empty_set():
@@ -155,7 +185,9 @@ def test_merged_story_keys_empty_subjects_returns_empty_set():
 
 def test_merged_story_keys_deduplicates_repeated_subjects():
     subjects = ("Merge 1.2 into main", "Merge 1.2 into main")
-    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(1, 2)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
+        {StoryKey(1, 2)}
+    )
 
 
 def test_merged_story_keys_recognizes_real_github_merge_subjects_too():
@@ -163,7 +195,9 @@ def test_merged_story_keys_recognizes_real_github_merge_subjects_too():
     is entirely GitHub PR-merge subjects, never the templated form -- both
     must be recognized by the SAME `merged_story_keys` call."""
     subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8, _REAL_SUBJECT_AMBIGUOUS)
-    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3), StoryKey(3, 8)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
+        {StoryKey(2, 3), StoryKey(3, 8)}
+    )
 
 
 def test_merged_story_keys_recognizes_real_bmadloop_merge_subjects_too():
@@ -176,14 +210,18 @@ def test_merged_story_keys_recognizes_real_bmadloop_merge_subjects_too():
         "into loop/pyforge-marshal (bmad-loop)"
     )
     subjects = (_REAL_SUBJECT_2_3, bmadloop_subject, _REAL_SUBJECT_NON_STORY_1)
-    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3), StoryKey(2, 4)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
+        {StoryKey(2, 3), StoryKey(2, 4)}
+    )
 
 
 def test_merged_story_keys_tries_templated_pattern_before_github_pattern():
     """A subject conforming to the templated form is still recognized even
     though it would also superficially resemble neither GitHub shape."""
     subjects = ("Merge 5.5 into main",)
-    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(5, 5)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
+        {StoryKey(5, 5)}
+    )
 
 
 # --- count_conforming_subjects ------------------------------------------------
@@ -240,7 +278,10 @@ def test_is_valid_spec_text_false_for_status_as_a_bare_substring_not_a_key():
     """Review finding: the prior check was a raw substring test, matching
     `"status:"` anywhere in the frontmatter -- including as PART of a
     different key's name. `substatus:` is not `status:`."""
-    assert is_valid_spec_text("---\ntitle: 'x'\nsubstatus: 'draft'\n---\n\nbody\n") is False
+    assert (
+        is_valid_spec_text("---\ntitle: 'x'\nsubstatus: 'draft'\n---\n\nbody\n")
+        is False
+    )
 
 
 def test_is_valid_spec_text_false_for_status_inside_a_comment():
@@ -249,9 +290,7 @@ def test_is_valid_spec_text_false_for_status_inside_a_comment():
 
 
 def test_is_valid_spec_text_true_for_status_key_regardless_of_line_position():
-    assert (
-        is_valid_spec_text("---\nstatus: 'draft'\ntitle: 'x'\n---\n\nbody\n") is True
-    )
+    assert is_valid_spec_text("---\nstatus: 'draft'\ntitle: 'x'\n---\n\nbody\n") is True
 
 
 # --- classify_promotion_candidates -------------------------------------------
@@ -385,7 +424,9 @@ def test_missing_spec_keys_names_only_the_no_spec_at_all_case():
     invalid_key = StoryKey(1, 4)
     promoted_key = StoryKey(1, 5)
     invalid = SpecCandidate(story_key=invalid_key, path="spec-1-4.md", text=None)
-    promoted = SpecCandidate(story_key=promoted_key, path="spec-1-5.md", text=_VALID_SPEC)
+    promoted = SpecCandidate(
+        story_key=promoted_key, path="spec-1-5.md", text=_VALID_SPEC
+    )
 
     plan = classify_promotion_candidates(
         candidates=(invalid, promoted),

@@ -73,7 +73,9 @@ def capture(
     missing/malformed ``memory_root`` -- always before any filesystem write.
     """
     if capture_type not in CAPTURE_TYPES:
-        raise ValueError(f"invalid capture type {capture_type!r}; must be one of {CAPTURE_TYPES}")
+        raise ValueError(
+            f"invalid capture type {capture_type!r}; must be one of {CAPTURE_TYPES}"
+        )
     if not text.strip():
         raise ValueError("capture text must not be blank")
     if not memory_root.is_dir():
@@ -100,9 +102,13 @@ def capture(
         )
 
         path = type_dir / f"{final_slug}.md"
-        path.write_text(record.to_frontmatter() + "\n" + text.strip() + "\n", encoding="utf-8")
+        path.write_text(
+            record.to_frontmatter() + "\n" + text.strip() + "\n", encoding="utf-8"
+        )
 
-        index_line = f"- [{final_slug}]({capture_type}/{final_slug}.md) — {final_description}"
+        index_line = (
+            f"- [{final_slug}]({capture_type}/{final_slug}.md) — {final_description}"
+        )
         _append_index_line(memory_md_path, capture_type, index_line)
 
     return CaptureResult(record=record, path=path, memory_index_line=index_line)
@@ -125,7 +131,9 @@ def _locked(memory_root: Path):
     `.gitignore` stays untouched (everything there is intentionally
     tracked), so a stray runtime artifact must not land in that tree.
     """
-    root_key = hashlib.sha256(str(memory_root.resolve()).encode("utf-8")).hexdigest()[:16]
+    root_key = hashlib.sha256(str(memory_root.resolve()).encode("utf-8")).hexdigest()[
+        :16
+    ]
     lock_path = Path(tempfile.gettempdir()) / f"pyforge-scribe-{root_key}.lock"
     lock_file = open(lock_path, "a+")
     deadline = time.monotonic() + _LOCK_TIMEOUT_S
@@ -135,12 +143,16 @@ def _locked(memory_root: Path):
 
             while True:
                 try:
-                    lock_file.seek(0)  # lock a consistent byte-0 region across processes
+                    lock_file.seek(
+                        0
+                    )  # lock a consistent byte-0 region across processes
                     msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
                     break
                 except OSError:
                     if time.monotonic() > deadline:
-                        raise TimeoutError(f"timed out waiting for capture lock: {lock_path}") from None
+                        raise TimeoutError(
+                            f"timed out waiting for capture lock: {lock_path}"
+                        ) from None
                     time.sleep(0.05)
             try:
                 yield
@@ -156,7 +168,9 @@ def _locked(memory_root: Path):
                     break
                 except BlockingIOError:
                     if time.monotonic() > deadline:
-                        raise TimeoutError(f"timed out waiting for capture lock: {lock_path}") from None
+                        raise TimeoutError(
+                            f"timed out waiting for capture lock: {lock_path}"
+                        ) from None
                     time.sleep(0.05)
             try:
                 yield
@@ -169,7 +183,9 @@ def _locked(memory_root: Path):
 def _require_section(memory_md_path: Path, heading: str) -> None:
     """Fail before writing anything if `MEMORY.md` or its section is missing."""
     if not memory_md_path.is_file():
-        raise ValueError(f"{memory_md_path} does not exist -- was .claude/memory/ scaffolded?")
+        raise ValueError(
+            f"{memory_md_path} does not exist -- was .claude/memory/ scaffolded?"
+        )
     if heading not in memory_md_path.read_text(encoding="utf-8").splitlines():
         raise ValueError(f"{memory_md_path} is missing the {heading!r} section")
 
@@ -196,7 +212,9 @@ def _truncate(text: str, limit: int) -> str:
     return collapsed[: limit - 1].rstrip() + "…"
 
 
-def _append_index_line(memory_md_path: Path, capture_type: CaptureType, index_line: str) -> None:
+def _append_index_line(
+    memory_md_path: Path, capture_type: CaptureType, index_line: str
+) -> None:
     """Add exactly one new line under the matching H2 section of MEMORY.md."""
     heading = _SECTION_HEADINGS[capture_type]
     lines = memory_md_path.read_text(encoding="utf-8").splitlines()
@@ -204,7 +222,9 @@ def _append_index_line(memory_md_path: Path, capture_type: CaptureType, index_li
     try:
         heading_idx = lines.index(heading)
     except ValueError as exc:
-        raise ValueError(f"{memory_md_path} is missing the {heading!r} section") from exc
+        raise ValueError(
+            f"{memory_md_path} is missing the {heading!r} section"
+        ) from exc
 
     body_end = len(lines)
     for i in range(heading_idx + 1, len(lines)):
@@ -216,4 +236,6 @@ def _append_index_line(memory_md_path: Path, capture_type: CaptureType, index_li
     body.append(index_line)
 
     new_lines = lines[: heading_idx + 1] + [""] + body + [""] + lines[body_end:]
-    memory_md_path.write_text("\n".join(new_lines).rstrip("\n") + "\n", encoding="utf-8")
+    memory_md_path.write_text(
+        "\n".join(new_lines).rstrip("\n") + "\n", encoding="utf-8"
+    )

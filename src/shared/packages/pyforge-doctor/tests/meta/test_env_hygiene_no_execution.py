@@ -41,9 +41,7 @@ def _no_execution_violations(tree: ast.Module) -> list[int]:
             violations.append(node.lineno)
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "importlib" or alias.name.startswith(
-                    "importlib."
-                ):
+                if alias.name == "importlib" or alias.name.startswith("importlib."):
                     violations.append(node.lineno)
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
@@ -93,9 +91,5 @@ def test_guard_fires_on_synthetic_importlib_import():
 
 
 def test_guard_does_not_fire_on_benign_ast_parse_usage():
-    benign = (
-        "import ast\n"
-        "from pathlib import Path\n"
-        "tree = ast.parse('x = 1')\n"
-    )
+    benign = "import ast\nfrom pathlib import Path\ntree = ast.parse('x = 1')\n"
     assert _no_execution_violations(ast.parse(benign)) == []

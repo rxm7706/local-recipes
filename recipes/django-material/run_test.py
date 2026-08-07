@@ -1,7 +1,7 @@
 import django
 from django.conf import settings
 
-settings.configure(INSTALLED_APPS=['material'])
+settings.configure(INSTALLED_APPS=["material"])
 django.setup()
 
 import material

@@ -119,7 +119,12 @@ class ForgePort(Protocol):
         ...
 
     def create_pr(
-        self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted
+        self,
+        repo: ForgeRef,
+        base: ForgeRef,
+        head: ForgeRef,
+        title: Redacted,
+        body: Redacted,
     ) -> PrInfo:
         """Opens a new PR on ``repo`` from ``head`` into ``base``.
         ``title``/``body`` accept ONLY ``Redacted`` -- never a bare ``str``

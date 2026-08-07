@@ -47,6 +47,7 @@ def _as_bool_series(col: pd.Series) -> pd.Series:
 # Phase B — conda package enumeration
 # ---------------------------------------------------------------------------
 
+
 def enumerate_conda_packages(
     core_repodata_raw: pd.DataFrame,
     core_channeldata_raw: pd.DataFrame,
@@ -75,7 +76,11 @@ def enumerate_conda_packages(
     df = repo.copy()
     # Newest build per package wins latest_version (order by version string is not
     # semver-correct; the legacy path keys on the repodata timestamp — newest build).
-    ts = pd.to_numeric(df.get("timestamp"), errors="coerce") if "timestamp" in df else None
+    ts = (
+        pd.to_numeric(df.get("timestamp"), errors="coerce")
+        if "timestamp" in df
+        else None
+    )
     if ts is not None:
         # ms → s boundary normalization (repodata per-build timestamps are ms).
         ts_sec = ts.where(ts < _MS_THRESHOLD, ts // 1000)
@@ -87,8 +92,12 @@ def enumerate_conda_packages(
         latest_version=("version", "last"),
     )
 
-    if core_channeldata_raw is not None and "subdirs" in getattr(core_channeldata_raw, "columns", []):
-        cd = core_channeldata_raw[["conda_name", "subdirs"]].drop_duplicates("conda_name")
+    if core_channeldata_raw is not None and "subdirs" in getattr(
+        core_channeldata_raw, "columns", []
+    ):
+        cd = core_channeldata_raw[["conda_name", "subdirs"]].drop_duplicates(
+            "conda_name"
+        )
         latest = latest.merge(cd, on="conda_name", how="left")
     else:
         latest["subdirs"] = None
@@ -98,6 +107,7 @@ def enumerate_conda_packages(
 # ---------------------------------------------------------------------------
 # Phase B.5 — feedstock attribution
 # ---------------------------------------------------------------------------
+
 
 def _pick_feedstock(pkg_name: str, feedstocks: list[str] | None) -> str | None:
     # legacy: Phase B.5  (_pick_feedstock CFA:1572; logic CFA:1586-1590; call CFA:1632)
@@ -141,6 +151,7 @@ def attribute_feedstocks(core_feedstock_outputs_raw: pd.DataFrame) -> pd.DataFra
 # Phase B.6 — latest-status (LITE: presence → active; NO per-version yanked scan)
 # ---------------------------------------------------------------------------
 
+
 def detect_latest_status(
     core_repodata_raw: pd.DataFrame,
     core_channeldata_raw: pd.DataFrame,
@@ -154,12 +165,15 @@ def detect_latest_status(
     if repo is None or repo.empty:
         return pd.DataFrame(columns=["conda_name", "latest_status"])
     names = pd.Index(repo["conda_name"].dropna().unique(), name="conda_name")
-    return pd.DataFrame({"conda_name": names, "latest_status": "active"}).reset_index(drop=True)
+    return pd.DataFrame({"conda_name": names, "latest_status": "active"}).reset_index(
+        drop=True
+    )
 
 
 # ---------------------------------------------------------------------------
 # Phase F — downloads (provenance discipline)
 # ---------------------------------------------------------------------------
+
 
 def compute_downloads(
     core_anaconda_downloads_raw: pd.DataFrame,
@@ -236,22 +250,29 @@ def compute_downloads(
     # Assemble core_downloads with per-package downloads_source.
     if s3_present and ana_present:
         merged = parts["s3-parquet"].merge(
-            parts["anaconda-api"], on="conda_name", how="outer", suffixes=("_s3", "_ana")
+            parts["anaconda-api"],
+            on="conda_name",
+            how="outer",
+            suffixes=("_s3", "_ana"),
         )
         # prefer s3 total where present, else anaconda
         # A 'merged' row prefers the granular s3 total (falling back to anaconda where
         # s3 is absent). The two are correlated MEASUREMENTS of the same downloads, NOT
         # additive — summing would double-count (CFA:188 "correlated-but-distinct"). The
         # downloads_source label preserves which source the value came from.
-        merged["downloads_total"] = merged["downloads_total_s3"].fillna(merged["downloads_total_ana"])
+        merged["downloads_total"] = merged["downloads_total_s3"].fillna(
+            merged["downloads_total_ana"]
+        )
         # Per-row provenance reflects the dataset that ACTUALLY populated
         # downloads_total (s3 preferred, anaconda fallback) — the legacy contract
         # is downloads_source ∈ {'s3-parquet', 'anaconda-api'} PER ROW; 'merged'
         # is a run-summary label the schema explicitly NEVER writes per row
         # (CFA:189-193). A both-present package whose value came from s3 is
         # 's3-parquet'; only a row that fell back to anaconda is 'anaconda-api'.
-        merged["downloads_source"] = merged["downloads_total_s3"].notna().map(
-            {True: "s3-parquet", False: "anaconda-api"}
+        merged["downloads_source"] = (
+            merged["downloads_total_s3"]
+            .notna()
+            .map({True: "s3-parquet", False: "anaconda-api"})
         )
         downloads = merged[["conda_name", "downloads_total", "downloads_source"]]
     elif s3_present:
@@ -261,7 +282,14 @@ def compute_downloads(
         downloads = parts["anaconda-api"].copy()
         downloads["downloads_source"] = "anaconda-api"
     else:
-        empty = pd.DataFrame(columns=["conda_name", "downloads_total", "downloads_30d", "downloads_source"])
+        empty = pd.DataFrame(
+            columns=[
+                "conda_name",
+                "downloads_total",
+                "downloads_30d",
+                "downloads_source",
+            ]
+        )
         return empty, platform_breakdown, pyver_breakdown, channel_breakdown
 
     if d30 is not None:
@@ -269,7 +297,9 @@ def compute_downloads(
     else:
         downloads["downloads_30d"] = pd.NA
 
-    downloads = downloads[["conda_name", "downloads_total", "downloads_30d", "downloads_source"]]
+    downloads = downloads[
+        ["conda_name", "downloads_total", "downloads_30d", "downloads_source"]
+    ]
     return (
         downloads.reset_index(drop=True),
         platform_breakdown.reset_index(drop=True),
@@ -282,7 +312,10 @@ def compute_downloads(
 # Phase I — per-version download history (PROMOTED to an explicit node, AC-3)
 # ---------------------------------------------------------------------------
 
-def compute_version_download_history(core_anaconda_downloads_raw: pd.DataFrame) -> pd.DataFrame:
+
+def compute_version_download_history(
+    core_anaconda_downloads_raw: pd.DataFrame,
+) -> pd.DataFrame:
     # legacy: Phase I  (promoted from Phase F side-effect: api CFA:2931 / s3 CFA:3402; table CFA:312-316)
     """Per-version download history as an EXPLICIT declared output (AC-3) — no longer
     an unregistered side-effect of Phase F's anaconda-api path. Consumed downstream by
@@ -300,11 +333,15 @@ def compute_version_download_history(core_anaconda_downloads_raw: pd.DataFrame) 
 # Phase J — dependency graph (archived-feedstock skip-set filter at the write site)
 # ---------------------------------------------------------------------------
 
+
 def _inactive_feedstocks(cf_graph: pd.DataFrame) -> set[str]:
     """Build the archived/inactive feedstock skip-set (v7.9.0 fix; spec § 3.3
     "Phases J + M archived-feedstock filter") — the set is built at the write site
     BEFORE emitting edges, so archived feedstocks never pollute the graph."""
-    if "feedstock_archived" not in cf_graph.columns or "feedstock_name" not in cf_graph.columns:
+    if (
+        "feedstock_archived" not in cf_graph.columns
+        or "feedstock_name" not in cf_graph.columns
+    ):
         return set()
     archived = cf_graph[_as_bool_series(cf_graph["feedstock_archived"])]
     return set(archived["feedstock_name"].dropna())
@@ -322,13 +359,16 @@ def build_dependency_graph(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=["conda_name", "depends_on", "dep_type"])
     skip = _inactive_feedstocks(g)
     active = g[~g["feedstock_name"].isin(skip)]
-    edges = active[["conda_name", "depends_on", "dep_type"]].dropna(subset=["depends_on"])
+    edges = active[["conda_name", "depends_on", "dep_type"]].dropna(
+        subset=["depends_on"]
+    )
     return edges.drop_duplicates().reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
 # Phase M — feedstock health (same archived-feedstock scope filter at write SELECT)
 # ---------------------------------------------------------------------------
+
 
 def compute_feedstock_health(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase M  (phase_m_feedstock_health CFA:6263)
@@ -338,9 +378,15 @@ def compute_feedstock_health(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:
     one row per ACTIVE feedstock with its health signals."""
     g = core_cf_graph_raw
     if g is None or g.empty or "feedstock_name" not in getattr(g, "columns", []):
-        return pd.DataFrame(columns=["feedstock_name", "ci_status", "open_prs", "open_issues"])
+        return pd.DataFrame(
+            columns=["feedstock_name", "ci_status", "open_prs", "open_issues"]
+        )
     skip = _inactive_feedstocks(g)
     active = g[~g["feedstock_name"].isin(skip)]
-    cols = [c for c in ("feedstock_name", "ci_status", "open_prs", "open_issues") if c in active.columns]
+    cols = [
+        c
+        for c in ("feedstock_name", "ci_status", "open_prs", "open_issues")
+        if c in active.columns
+    ]
     health = active[cols].drop_duplicates("feedstock_name")
     return health.reset_index(drop=True)

@@ -71,7 +71,9 @@ def test_empty_hosts_is_rejected_rather_than_silently_never_matching():
 
 def test_subdomain_and_suffix_lookalike_hosts_do_not_match(monkeypatch):
     monkeypatch.setenv("JFROG_API_KEY", "synthetic-test-token")
-    assert resolve_headers(ARTIFACTORY, "https://mirror.artifactory.example.com/x") == {}
+    assert (
+        resolve_headers(ARTIFACTORY, "https://mirror.artifactory.example.com/x") == {}
+    )
     assert (
         resolve_headers(ARTIFACTORY, "https://artifactory.example.com.evil.example/x")
         == {}

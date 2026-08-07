@@ -23,7 +23,12 @@ from pyforge.marshal.core.verdict import EXIT_SIGINT, EXIT_USAGE
 
 _PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 _SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas" / "policy.json"
+    Path(__file__).resolve().parents[2]
+    / "src"
+    / "pyforge"
+    / "marshal"
+    / "schemas"
+    / "policy.json"
 )
 
 
@@ -84,9 +89,7 @@ def test_exit_code_always_in_guarded_domain(argv, capsys):
 
 
 def test_keyboard_interrupt_during_parsing_returns_exit_sigint():
-    with patch(
-        "argparse.ArgumentParser.parse_args", side_effect=KeyboardInterrupt
-    ):
+    with patch("argparse.ArgumentParser.parse_args", side_effect=KeyboardInterrupt):
         assert main([]) == EXIT_SIGINT
 
 
@@ -94,9 +97,7 @@ def test_keyboard_interrupt_during_parser_construction_returns_exit_sigint():
     """The interrupt window opens before parse_args: _build_parser() must
     sit inside the same try, or a Ctrl-C during parser construction makes
     main() raise in violation of its returns-an-int-never-raises contract."""
-    with patch(
-        "pyforge.marshal.cli.main._build_parser", side_effect=KeyboardInterrupt
-    ):
+    with patch("pyforge.marshal.cli.main._build_parser", side_effect=KeyboardInterrupt):
         assert main([]) == EXIT_SIGINT
 
 
@@ -104,9 +105,7 @@ def test_bool_systemexit_code_is_clamped_not_relayed():
     """``SystemExit(True)`` passes an isinstance-int check (bool is an int
     subclass) -- the relay must exclude bools like every other boundary in
     this package, clamping to the usage code instead of returning True."""
-    with patch(
-        "argparse.ArgumentParser.parse_args", side_effect=SystemExit(True)
-    ):
+    with patch("argparse.ArgumentParser.parse_args", side_effect=SystemExit(True)):
         result = main([])
     assert result == 2
     assert not isinstance(result, bool)
@@ -144,7 +143,9 @@ def _patch_harness_version(monkeypatch, version: str | None) -> None:
     # default-port construction) -- monkeypatching THAT attribute is the
     # pragmatic seam, since there is no subcommand-handler frame to inject
     # a fake harness through here.
-    monkeypatch.setattr(main_module, "BmadLoopHarness", lambda: _FakeHarnessVersion(version))
+    monkeypatch.setattr(
+        main_module, "BmadLoopHarness", lambda: _FakeHarnessVersion(version)
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -195,7 +196,9 @@ def test_version_harness_major_mismatch_shows_warning(monkeypatch, capsys):
     assert "WARNING" in out
 
 
-def test_version_harness_unparseable_shows_could_not_be_parsed_warning(monkeypatch, capsys):
+def test_version_harness_unparseable_shows_could_not_be_parsed_warning(
+    monkeypatch, capsys
+):
     """Review finding: an unparseable-but-non-None version (e.g. "dev") is
     NOT "outside the supported range" -- it isn't a version at all. The
     warning must name that distinctly, not reuse the numerically-out-of-range
@@ -324,7 +327,9 @@ def test_config_set_bogus_gate_mode_prints_fallback_and_nonzero_exit(capsys):
 
 
 def test_config_set_scalar_override_applies(capsys):
-    exit_code = main(["config", "--set", "gate_mode=none", "--set", "max_dev_attempts=7"])
+    exit_code = main(
+        ["config", "--set", "gate_mode=none", "--set", "max_dev_attempts=7"]
+    )
     assert exit_code == 0
     captured = capsys.readouterr()
     assert "layer=flag" in captured.out
@@ -358,7 +363,9 @@ def test_config_project_flag_wins_over_env(monkeypatch, capsys):
     assert "env-slug" not in captured.out
 
 
-def test_config_missing_project_slug_reports_warn_finding_still_exits_zero(monkeypatch, capsys):
+def test_config_missing_project_slug_reports_warn_finding_still_exits_zero(
+    monkeypatch, capsys
+):
     """Spec: 'missing -> a registered finding, still prints defaults' AND
     '`marshal config` exits 0 with defaults only' -- reconciled by
     MRS-POLICY-005 classifying Verdict.WARN (exit 0). The project-derived
@@ -410,7 +417,9 @@ def test_config_format_json_with_findings_has_error_status(capsys, monkeypatch):
     assert payload["findings"][0]["code"] == "MRS-POLICY-003"
 
 
-def test_config_format_json_renders_a_nonempty_landing_rule(tmp_path, capsys, monkeypatch):
+def test_config_format_json_renders_a_nonempty_landing_rule(
+    tmp_path, capsys, monkeypatch
+):
     """Review finding P5: no existing test exercised `--format json` with a
     NON-EMPTY `landing_rules` -- the prior test changes only bumped
     generic key-count assertions against the empty-tuple default, so
@@ -431,9 +440,7 @@ def test_config_format_json_renders_a_nonempty_landing_rule(tmp_path, capsys, mo
         """,
         encoding="utf-8",
     )
-    exit_code = main(
-        ["config", "--project-policy", str(toml_path), "--format", "json"]
-    )
+    exit_code = main(["config", "--project-policy", str(toml_path), "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     rules = payload["data"]["policy"]["landing_rules"]["value"]
@@ -450,7 +457,9 @@ def test_config_format_json_renders_a_nonempty_landing_rule(tmp_path, capsys, mo
     assert payload["data"]["policy"]["landing_rules"]["layer"] == "project"
 
 
-def test_config_materialize_writes_once_and_second_call_is_a_true_noop(tmp_path, capsys):
+def test_config_materialize_writes_once_and_second_call_is_a_true_noop(
+    tmp_path, capsys
+):
     target_dir = tmp_path / "materialized"
     exit_code = main(["config", "--materialize", str(target_dir)])
     assert exit_code == 0
@@ -533,7 +542,9 @@ def test_config_missing_project_policy_file_reports_finding_not_crash(tmp_path, 
     assert "gate_mode" in captured.out
 
 
-def test_config_malformed_project_policy_toml_reports_finding_not_crash(tmp_path, capsys):
+def test_config_malformed_project_policy_toml_reports_finding_not_crash(
+    tmp_path, capsys
+):
     bad_toml = tmp_path / "project-policy.toml"
     bad_toml.write_text("this is not [ valid toml\n", encoding="utf-8")
     exit_code = main(["config", "--project-policy", str(bad_toml)])
@@ -542,7 +553,9 @@ def test_config_malformed_project_policy_toml_reports_finding_not_crash(tmp_path
     assert "MRS-POLICY-004" in captured.out
 
 
-def test_config_materialize_target_collision_with_directory_reports_finding(tmp_path, capsys):
+def test_config_materialize_target_collision_with_directory_reports_finding(
+    tmp_path, capsys
+):
     """A directory occupying the content-addressed path must not read as a
     silent no-write 'success' -- the write-once check distinguishes file
     from non-file."""
@@ -572,7 +585,9 @@ def test_materialize_raises_policy_io_error_on_unwritable_target(tmp_path):
         materialize(effective, blocked / "subdir")
 
 
-def test_config_materialize_failure_preserves_a_successful_project_layer(tmp_path, capsys):
+def test_config_materialize_failure_preserves_a_successful_project_layer(
+    tmp_path, capsys
+):
     """A LATER materialize() failure must not discard an already-successful
     compose() and silently swap the operator's real project-policy layer
     for Marshal's bare defaults -- only a --project-policy READ failure
@@ -584,9 +599,7 @@ def test_config_materialize_failure_preserves_a_successful_project_layer(tmp_pat
 
     # Must match exactly what run_config() will compose below (same slug,
     # same project layer) so the collision lands on the SAME content hash.
-    effective, _ = compose(
-        project_slug="", project={"gate_mode": "per-epic"}, flags={}
-    )
+    effective, _ = compose(project_slug="", project={"gate_mode": "per-epic"}, flags={})
     target_dir = tmp_path / "materialized"
     target_dir.mkdir(parents=True)
     (target_dir / f"policy-{effective.content_hash}.json").mkdir()  # forces a collision
@@ -629,7 +642,9 @@ def test_config_non_utf8_project_policy_reports_finding_not_crash(tmp_path, caps
     as every other read failure, not crash straight through main()."""
     bad_bytes = tmp_path / "project-policy.toml"
     bad_bytes.write_bytes(b"\xff\xfe not utf-8 \x00")
-    exit_code = main(["config", "--project", "acme", "--project-policy", str(bad_bytes)])
+    exit_code = main(
+        ["config", "--project", "acme", "--project-policy", str(bad_bytes)]
+    )
     assert exit_code != 0
     captured = capsys.readouterr()
     assert "MRS-POLICY-004" in captured.out
@@ -652,7 +667,9 @@ def test_field_order_matches_the_closed_policy_vocabulary():
     assert set(schema["required"]) == set(policy._ALL_KEYS)
 
 
-def test_config_json_envelope_validates_against_envelope_schema(tmp_path, capsys, monkeypatch):
+def test_config_json_envelope_validates_against_envelope_schema(
+    tmp_path, capsys, monkeypatch
+):
     """The envelope output is the machine contract every consumer parses --
     validate it against schemas/envelope.v1.json (the materialized FILE was
     already schema-validated; the envelope was not), and pin the
@@ -660,7 +677,15 @@ def test_config_json_envelope_validates_against_envelope_schema(tmp_path, capsys
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     target_dir = tmp_path / "materialized"
     exit_code = main(
-        ["config", "--project", "acme", "--format", "json", "--materialize", str(target_dir)]
+        [
+            "config",
+            "--project",
+            "acme",
+            "--format",
+            "json",
+            "--materialize",
+            str(target_dir),
+        ]
     )
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
@@ -1094,11 +1119,19 @@ def test_gate_evaluate_all_commands_pass_exits_clean(tmp_path, capsys, monkeypat
     assert payload["verdict"] == "clean"
     assert payload["status"] == "ok"
     assert payload["data"]["commands"] == [
-        {"command": "true", "resolvable": True, "returncode": 0, "stdout": "", "stderr": ""}
+        {
+            "command": "true",
+            "resolvable": True,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+        }
     ]
 
 
-def test_gate_evaluate_one_command_fails_reports_gate_failed(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_one_command_fails_reports_gate_failed(
+    tmp_path, capsys, monkeypatch
+):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(
         tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
@@ -1116,7 +1149,9 @@ def test_gate_evaluate_one_command_fails_reports_gate_failed(tmp_path, capsys, m
     assert failing["resolvable"] is True
 
 
-def test_gate_evaluate_unresolvable_command_reports_unevaluable(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_unresolvable_command_reports_unevaluable(
+    tmp_path, capsys, monkeypatch
+):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(
         tmp_path,
@@ -1139,7 +1174,9 @@ def test_gate_evaluate_unresolvable_command_reports_unevaluable(tmp_path, capsys
     ]
 
 
-def test_gate_evaluate_malformed_command_reports_unevaluable(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_malformed_command_reports_unevaluable(
+    tmp_path, capsys, monkeypatch
+):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(
         tmp_path, monkeypatch, "acme", 'verify_commands = ["\'unterminated"]\n'
@@ -1246,9 +1283,7 @@ def test_gate_evaluate_no_run_reports_project_overridden_gate_mode_label(
     """The label tracks the EFFECTIVE (post-composition) gate mode, not just
     the built-in default -- a project policy selecting `per-epic` (L3)
     surfaces the L3 label, not L2."""
-    _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'gate_mode = "per-epic"\n'
-    )
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'gate_mode = "per-epic"\n')
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
@@ -1315,8 +1350,12 @@ def test_gate_evaluate_project_flag_wins_over_env(tmp_path, capsys, monkeypatch)
     slugs have a real conventional policy, with distinct commands whose exit
     codes differ, so the run's verdict alone identifies which one was read."""
     monkeypatch.setenv("BMAD_ACTIVE_PROJECT", "env-slug")
-    _conventional_policy(tmp_path, monkeypatch, "env-slug", 'verify_commands = ["false"]\n')
-    _conventional_policy(tmp_path, monkeypatch, "flag-slug", 'verify_commands = ["true"]\n')
+    _conventional_policy(
+        tmp_path, monkeypatch, "env-slug", 'verify_commands = ["false"]\n'
+    )
+    _conventional_policy(
+        tmp_path, monkeypatch, "flag-slug", 'verify_commands = ["true"]\n'
+    )
     exit_code = main(["gate", "evaluate", "--project", "flag-slug", "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
@@ -1341,10 +1380,18 @@ def test_gate_evaluate_only_the_selected_projects_conventional_policy_is_read(
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["commands"] == [
-        {"command": "true", "resolvable": True, "returncode": 0, "stdout": "", "stderr": ""}
+        {
+            "command": "true",
+            "resolvable": True,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+        }
     ]
 
-    exit_code_other = main(["gate", "evaluate", "--project", "other-slug", "--format", "json"])
+    exit_code_other = main(
+        ["gate", "evaluate", "--project", "other-slug", "--format", "json"]
+    )
     assert exit_code_other == 3
     payload_other = json.loads(capsys.readouterr().out)
     assert payload_other["data"]["commands"][0]["command"] == "false"
@@ -1386,7 +1433,9 @@ def test_gate_evaluate_traversal_shaped_slug_never_reads_or_runs_a_file(
     assert not marker.exists()
 
 
-def test_gate_evaluate_rejects_an_arbitrary_project_policy_path(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_rejects_an_arbitrary_project_policy_path(
+    tmp_path, capsys, monkeypatch
+):
     """Review finding (security): `gate evaluate` briefly carried `marshal
     config`'s `--project-policy PATH` flag. On `config` that flag only PRINTS
     the policy it reads; here it EXECUTED the `verify_commands` of any file on
@@ -1530,13 +1579,22 @@ def test_gate_evaluate_unreadable_policy_does_not_also_claim_it_is_unconfigured(
     assert "MRS-GATE-004" not in codes
 
 
-def test_gate_evaluate_unconfigured_project_slug_uses_bare_defaults(capsys, monkeypatch):
+def test_gate_evaluate_unconfigured_project_slug_uses_bare_defaults(
+    capsys, monkeypatch
+):
     """A project slug with no conventional policy file composes against
     Marshal's bare defaults (verify_commands=()) -- it can never accidentally
     pick up some OTHER project's commands."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(
-        ["gate", "evaluate", "--project", "definitely-not-a-real-marshal-project", "--format", "json"]
+        [
+            "gate",
+            "evaluate",
+            "--project",
+            "definitely-not-a-real-marshal-project",
+            "--format",
+            "json",
+        ]
     )
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
@@ -1545,7 +1603,9 @@ def test_gate_evaluate_unconfigured_project_slug_uses_bare_defaults(capsys, monk
     assert "MRS-GATE-004" in codes
 
 
-def test_gate_evaluate_text_format_is_a_projection_of_the_same_data(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_text_format_is_a_projection_of_the_same_data(
+    tmp_path, capsys, monkeypatch
+):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(
         tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
@@ -1562,7 +1622,9 @@ def test_gate_evaluate_text_format_is_a_projection_of_the_same_data(tmp_path, ca
     assert "MRS-GATE-001" in out
 
 
-def test_gate_evaluate_text_format_includes_captured_output(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_text_format_includes_captured_output(
+    tmp_path, capsys, monkeypatch
+):
     """Review finding: `--format text` is the DEFAULT, and the AC's wording is
     "reported per command WITH captured output" -- but every other text-format
     test uses `true`/`false`, whose stdout and stderr are both empty, so the
@@ -1690,7 +1752,9 @@ def _scope_check_args(*, project="acme", run_id=None, story=None, format="json")
     )
 
 
-def _write_epic_surfaces_policy(tmp_path, monkeypatch, slug, epic_surfaces_toml, extra=""):
+def _write_epic_surfaces_policy(
+    tmp_path, monkeypatch, slug, epic_surfaces_toml, extra=""
+):
     from pyforge.marshal.cli import config as config_module
     from pyforge.marshal.cli import gate as gate_module
 
@@ -1720,7 +1784,8 @@ def test_gate_evaluate_scope_check_without_story_reports_mrs_gate_009(
 
 
 def test_gate_evaluate_scope_check_without_active_project_reports_mrs_gate_009(
-    capsys, monkeypatch,
+    capsys,
+    monkeypatch,
 ):
     from pyforge.marshal.cli import gate as gate_module
 
@@ -1843,12 +1908,7 @@ def test_gate_evaluate_scope_check_spec_declared_surface_narrows(
         'epic_surfaces = { "2" = ["recipes/x/**", "recipes/y/**"] }\n',
     )
     specs_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "planning-artifacts"
-        / "specs"
+        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
     )
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
@@ -1882,7 +1942,9 @@ def test_find_spec_text_degrades_to_none_on_a_non_utf8_spec_file(tmp_path):
     )
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
-    (specs_dir / f"spec-{render_filename_slug(key)}.md").write_bytes(b"\xff\xfe not utf-8")
+    (specs_dir / f"spec-{render_filename_slug(key)}.md").write_bytes(
+        b"\xff\xfe not utf-8"
+    )
 
     assert _find_spec_text(tmp_path, "acme", key) is None
 
@@ -1906,12 +1968,7 @@ def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
         'epic_surfaces = { "2" = ["recipes/x/**"] }\n',
     )
     specs_dir = (
-        tmp_path
-        / "_bmad-output"
-        / "projects"
-        / "acme"
-        / "planning-artifacts"
-        / "specs"
+        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
     )
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
@@ -1922,7 +1979,7 @@ def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
     # and this test still isolates the ONE thing it means to pin: the
     # multi-line `surface:` block's own MRS-GATE-009.
     (specs_dir / f"spec-{render_filename_slug(key)}-scope.md").write_text(
-        '---\ntitle: \'x\'\nsurface:\n  - "recipes/x/**"\n---\n\n'
+        "---\ntitle: 'x'\nsurface:\n  - \"recipes/x/**\"\n---\n\n"
         "<intent-contract>\n\n## Verification\n",
         encoding="utf-8",
     )
@@ -2028,7 +2085,9 @@ def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(
 # whenever `--story` is supplied, WITH or WITHOUT `--scope-check`.
 
 
-def _story_args(*, project="acme", run_id=None, scope_check=False, story="2.3", format="json"):
+def _story_args(
+    *, project="acme", run_id=None, scope_check=False, story="2.3", format="json"
+):
     return argparse.Namespace(
         project=project,
         run_id=run_id,
@@ -2048,7 +2107,9 @@ def _write_tracked_spec(tmp_path, slug, key, *, commands=()):
         tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
     )
     specs_dir.mkdir(parents=True, exist_ok=True)
-    commands_block = "\n".join(f"- `{command}` -- expected: ok." for command in commands)
+    commands_block = "\n".join(
+        f"- `{command}` -- expected: ok." for command in commands
+    )
     (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
         "---\ntitle: 'x'\n---\n\n<intent-contract>\n\n"
         f"## Verification\n\n**Commands:**\n{commands_block}\n",
@@ -2508,7 +2569,9 @@ def test_gate_evaluate_broken_symlink_policy_is_not_a_green_gate(
     assert "MRS-GATE-004" not in codes
 
 
-def test_gate_evaluate_shell_syntax_never_half_runs_green(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_shell_syntax_never_half_runs_green(
+    tmp_path, capsys, monkeypatch
+):
     """`true && false` must not report `clean`.
 
     Review finding, verified live for `&&`, `|` and `>`: `PosixProcess` never
@@ -2587,7 +2650,7 @@ def test_gate_evaluate_every_shell_operator_form_fails_closed(
         # byte-identical to a bare one and failed these CLOSED -- a valid
         # verify command permanently `unevaluable` with no escape hatch.
         "echo '|'",
-        "echo \"|\"",
+        'echo "|"',
         "echo '>'",
         "echo '&&'",
         "echo ';'",
@@ -2621,14 +2684,16 @@ def test_gate_evaluate_quoted_or_escaped_metacharacters_still_run(
     assert payload["data"]["commands"][0]["returncode"] == 0
 
 
-def test_gate_evaluate_quoted_shell_metacharacters_still_run(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_quoted_shell_metacharacters_still_run(
+    tmp_path, capsys, monkeypatch
+):
     """The operator check matches WHOLE tokens only, so a metacharacter
     inside a quoted argument (where it is inert data, not shell syntax) must
     still execute -- otherwise the fix would fail-closed on legitimate
     commands and train the gate away."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _conventional_policy(
-        tmp_path, monkeypatch, "acme", 'verify_commands = ["echo \'a && b\'"]\n'
+        tmp_path, monkeypatch, "acme", "verify_commands = [\"echo 'a && b'\"]\n"
     )
 
     exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
@@ -2740,7 +2805,9 @@ def test_gate_evaluate_text_format_cannot_be_forged_by_a_command_string(
     assert "\\nfindings:" in out
 
 
-def test_gate_evaluate_text_format_cannot_be_forged_by_a_slug(tmp_path, capsys, monkeypatch):
+def test_gate_evaluate_text_format_cannot_be_forged_by_a_slug(
+    tmp_path, capsys, monkeypatch
+):
     """The header line interpolated `data["slug"]` raw, so a newline in
     `--project` forged report structure even though a malformed slug never
     reaches a policy read at all."""
@@ -2752,7 +2819,12 @@ def test_gate_evaluate_text_format_cannot_be_forged_by_a_slug(tmp_path, capsys, 
     monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
 
     exit_code = main(
-        ["gate", "evaluate", "--project", "bad\nfindings:\n  MRS-GATE-001 [error] FORGED"]
+        [
+            "gate",
+            "evaluate",
+            "--project",
+            "bad\nfindings:\n  MRS-GATE-001 [error] FORGED",
+        ]
     )
     out = capsys.readouterr().out
 

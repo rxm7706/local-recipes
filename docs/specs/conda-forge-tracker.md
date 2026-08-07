@@ -537,12 +537,12 @@ gh_issue_number: null                # populated by export-to-github.py
 `scripts/_cf_tools.py`:
 
 ```python
-DEFAULT_LOCAL_RECIPES = (
-    Path(__file__).resolve().parent.parent.parent / "local-recipes"
-)
+DEFAULT_LOCAL_RECIPES = Path(__file__).resolve().parent.parent.parent / "local-recipes"
+
 
 def get_local_recipes_dir() -> Path:
     return Path(os.environ.get("LOCAL_RECIPES_DIR", str(DEFAULT_LOCAL_RECIPES)))
+
 
 def get_skill_scripts_dir() -> Path:
     root = get_local_recipes_dir()
@@ -551,6 +551,7 @@ def get_skill_scripts_dir() -> Path:
         raise RuntimeError(...)
     return scripts
 
+
 def add_to_sys_path() -> None: ...
 def import_skill_module(name: str): ...
 ```
@@ -558,6 +559,7 @@ def import_skill_module(name: str): ...
 Tracker scripts that need skill functions:
 ```python
 import _cf_tools
+
 gv = _cf_tools.import_skill_module("github_version_checker")
 gv.check_github_version(...)
 ```

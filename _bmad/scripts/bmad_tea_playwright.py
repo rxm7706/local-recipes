@@ -113,7 +113,9 @@ class BMadTeaPlaywrightGenerator:
         risk_map = {"high": [], "medium": [], "low": []}
 
         for epic in epics:
-            text = (epic["goal"] + " " + " ".join([s["title"] for s in epic["stories"]])).lower()
+            text = (
+                epic["goal"] + " " + " ".join([s["title"] for s in epic["stories"]])
+            ).lower()
 
             for level, keywords in risk_keywords.items():
                 if any(keyword in text for keyword in keywords):
@@ -338,12 +340,16 @@ markers =
         # Step 1: Parse epics
         print(f"  1️⃣  Parsing epics from {self.epics_file.name}...")
         epics = self.parse_epics()
-        print(f"     Found {len(epics)} epics, {sum(len(e['stories']) for e in epics)} stories")
+        print(
+            f"     Found {len(epics)} epics, {sum(len(e['stories']) for e in epics)} stories"
+        )
 
         # Step 2: Assess risk
         print("  2️⃣  Assessing risk...")
         risk_map = self.assess_risk(epics)
-        print(f"     High-risk: {len(risk_map['high'])}, Medium: {len(risk_map['medium'])}, Low: {len(risk_map['low'])}")
+        print(
+            f"     High-risk: {len(risk_map['high'])}, Medium: {len(risk_map['medium'])}, Low: {len(risk_map['low'])}"
+        )
 
         # Step 3: Generate test architecture document
         print("  3️⃣  Generating test architecture document...")
@@ -379,10 +385,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="Generate BMAD TEA + Playwright test architecture for PyForge projects"
     )
-    parser.add_argument("--project", required=True, help="Project name (e.g., pyforge-atlas)")
     parser.add_argument(
-        "--epics", required=True, help="Path to epics-with-stories.md"
+        "--project", required=True, help="Project name (e.g., pyforge-atlas)"
     )
+    parser.add_argument("--epics", required=True, help="Path to epics-with-stories.md")
     parser.add_argument(
         "--architecture", help="Path to ARCHITECTURE-SPINE.md (optional)"
     )

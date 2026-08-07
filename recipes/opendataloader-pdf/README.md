@@ -56,7 +56,7 @@ import opendataloader_pdf
 opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
-    format="markdown,json"
+    format="markdown,json",
 )
 ```
 
@@ -150,7 +150,7 @@ import opendataloader_pdf
 opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
-    format="markdown,json"
+    format="markdown,json",
 )
 ```
 
@@ -208,7 +208,7 @@ opendataloader-pdf --hybrid docling-fast file1.pdf file2.pdf folder/
 opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
-    hybrid="docling-fast"
+    hybrid="docling-fast",
 )
 ```
 
@@ -333,7 +333,7 @@ When a PDF has structure tags, OpenDataLoader extracts the **exact layout** the 
 opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
-    use_struct_tree=True           # Use native PDF structure tags
+    use_struct_tree=True,  # Use native PDF structure tags
 )
 ```
 
@@ -366,8 +366,7 @@ pip install -U langchain-opendataloader-pdf
 from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
 
 loader = OpenDataLoaderPDFLoader(
-    file_path=["file1.pdf", "file2.pdf", "folder/"],
-    format="text"
+    file_path=["file1.pdf", "file2.pdf", "folder/"], format="text"
 )
 documents = loader.load()
 ```
@@ -382,9 +381,9 @@ opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
     format="json,markdown,pdf",
-    image_output="embedded",        # "off", "embedded" (Base64), or "external" (default)
-    image_format="jpeg",            # "png" or "jpeg"
-    use_struct_tree=True,           # Use native PDF structure
+    image_output="embedded",  # "off", "embedded" (Base64), or "external" (default)
+    image_format="jpeg",  # "png" or "jpeg"
+    use_struct_tree=True,  # Use native PDF structure
 )
 ```
 
@@ -429,7 +428,7 @@ opendataloader_pdf.convert(
 opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
-    auto_tag=True                   # Generate structure tags for untagged PDFs
+    auto_tag=True,  # Generate structure tags for untagged PDFs
 )
 ```
 
@@ -481,7 +480,7 @@ opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
     format="json",
-    hybrid="docling-fast"           # For complex tables
+    hybrid="docling-fast",  # For complex tables
 )
 ```
 
@@ -534,7 +533,7 @@ import opendataloader_pdf
 opendataloader_pdf.convert(
     input_path=["file1.pdf", "file2.pdf", "folder/"],
     output_dir="output/",
-    format="markdown"
+    format="markdown",
 )
 ```
 

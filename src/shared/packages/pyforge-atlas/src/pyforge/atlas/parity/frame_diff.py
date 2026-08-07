@@ -169,10 +169,7 @@ def compare_frames(
             for c in cols
             if c in a_norm.columns
             and c in e_norm.columns
-            and (
-                a_norm[c].dtype != e_norm[c].dtype
-                or not a_norm[c].equals(e_norm[c])
-            )
+            and (a_norm[c].dtype != e_norm[c].dtype or not a_norm[c].equals(e_norm[c]))
         )
         # Fallback: if the raised diff was a shape/row-count mismatch (no
         # per-column value diff derivable), still report the compared columns

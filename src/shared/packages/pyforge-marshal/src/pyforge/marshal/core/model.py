@@ -151,13 +151,10 @@ class Envelope:
             or self.schema_version != SCHEMA_VERSION
         ):
             raise ValueError(
-                f"schema_version must be {SCHEMA_VERSION}, got "
-                f"{self.schema_version!r}"
+                f"schema_version must be {SCHEMA_VERSION}, got {self.schema_version!r}"
             )
         if not isinstance(self.command, str) or not self.command:
-            raise ValueError(
-                f"command must be a non-empty str, got {self.command!r}"
-            )
+            raise ValueError(f"command must be a non-empty str, got {self.command!r}")
         if (
             isinstance(self.data_version, bool)
             or not isinstance(self.data_version, int)

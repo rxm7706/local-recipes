@@ -60,7 +60,9 @@ class PageDef:
 
 
 PAGE_INVENTORY: tuple[PageDef, ...] = (
-    PageDef("feedstock-health", "Feedstock Health", "feedstock-health", "grounded-data"),
+    PageDef(
+        "feedstock-health", "Feedstock Health", "feedstock-health", "grounded-data"
+    ),
     PageDef("my-feedstocks", "My Feedstocks", "my-feedstocks", "grounded-data"),
     PageDef(
         "staleness-report",
@@ -116,10 +118,14 @@ def _provenance_line(provenance: ProvenanceInfo) -> str:
     dashboard's build/render time standing in for it (C6)."""
     if provenance.kind == "unavailable":
         return f"**Data build stamp (AD-17):** unavailable — {provenance.reason}"
-    return f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
+    return (
+        f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
+    )
 
 
-def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInfo) -> vm.Card:
+def _legibility_card(
+    page: PageDef, *, grounded: bool, provenance: ProvenanceInfo
+) -> vm.Card:
     """A semantic markdown Card carrying the page's provenance + any data-gap note
     (NFR-8 agent-legibility — a deterministic, agent-readable header)."""
     lines = [
@@ -139,7 +145,11 @@ def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInf
 
 
 def _data_page(
-    page: PageDef, loader: Callable[[], Any], *, grounded: bool, provenance: ProvenanceInfo
+    page: PageDef,
+    loader: Callable[[], Any],
+    *,
+    grounded: bool,
+    provenance: ProvenanceInfo,
 ) -> vm.Page:
     """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data function."""
     key = f"data::{page.id}"
@@ -196,7 +206,10 @@ def _factory_page(
     return vm.Page(
         id=page.id,
         title=page.title,
-        components=[stamp_card, vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key))],
+        components=[
+            stamp_card,
+            vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
+        ],
     )
 
 
@@ -229,8 +242,12 @@ def build_dashboard(
     # reason when the file is absent — the composed store's real, honest state
     # today for the 3 packages-backed shells, DW-D2). The 2 no-bsl-shell pages have
     # no backing file at all — a hardcoded "unavailable", never a fabricated stamp.
-    feedstock_health_provenance = _provenance.resolve_for_file(root / _data.FEEDSTOCK_HEALTH_PARQUET)
-    my_feedstocks_provenance = _provenance.resolve_for_file(root / _data.PACKAGE_MAINTAINERS_PARQUET)
+    feedstock_health_provenance = _provenance.resolve_for_file(
+        root / _data.FEEDSTOCK_HEALTH_PARQUET
+    )
+    my_feedstocks_provenance = _provenance.resolve_for_file(
+        root / _data.PACKAGE_MAINTAINERS_PARQUET
+    )
     packages_provenance = _provenance.resolve_for_file(root / _data.PACKAGES_PARQUET)
     no_bsl_model_provenance = ProvenanceInfo(
         kind="unavailable",

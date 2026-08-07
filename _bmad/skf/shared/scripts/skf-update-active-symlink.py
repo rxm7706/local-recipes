@@ -184,8 +184,7 @@ def _envelope_mismatch(skill_group: Path, version: str, current: str | None) -> 
         "current_target": current,
         "action_taken": "halt",
         "log_message": (
-            f"active_symlink_update: mismatch "
-            f"(expected={version}, current={cur})"
+            f"active_symlink_update: mismatch (expected={version}, current={cur})"
         ),
         "halt_message": (
             f"Active symlink divergence. `{skill_group / ACTIVE_NAME}` "
@@ -243,9 +242,7 @@ def _exit_code_for_status(status: str) -> int:
 def _cmd_update(args: argparse.Namespace) -> int:
     skill_group = Path(args.skill_group)
     if not skill_group.is_dir():
-        print(
-            f"error: skill-group not a directory: {skill_group}", file=sys.stderr
-        )
+        print(f"error: skill-group not a directory: {skill_group}", file=sys.stderr)
         return 1
     try:
         result = update(skill_group, args.version)
@@ -260,9 +257,7 @@ def _cmd_update(args: argparse.Namespace) -> int:
 def _cmd_verify(args: argparse.Namespace) -> int:
     skill_group = Path(args.skill_group)
     if not skill_group.is_dir():
-        print(
-            f"error: skill-group not a directory: {skill_group}", file=sys.stderr
-        )
+        print(f"error: skill-group not a directory: {skill_group}", file=sys.stderr)
         return 1
     try:
         result = verify(skill_group, args.version)
@@ -285,7 +280,9 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_upd = sub.add_parser("update", help="flip the symlink if needed")
-    p_upd.add_argument("--skill-group", required=True, help="path to the skill_group dir")
+    p_upd.add_argument(
+        "--skill-group", required=True, help="path to the skill_group dir"
+    )
     p_upd.add_argument("--version", required=True, help="version directory name")
     p_upd.set_defaults(func=_cmd_update)
 

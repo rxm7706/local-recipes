@@ -55,14 +55,13 @@ _GITHUB_URL_RE = re.compile(
     re.IGNORECASE,
 )
 
-_SEMVER_RE = re.compile(
-    r"^v?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(?:\+[a-zA-Z0-9.]+)?)$"
-)
+_SEMVER_RE = re.compile(r"^v?(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(?:\+[a-zA-Z0-9.]+)?)$")
 
 
 # ---------------------------------------------------------------------------
 # gh CLI helpers
 # ---------------------------------------------------------------------------
+
 
 def _run_gh(args: List[str]) -> Optional[str]:
     try:
@@ -108,6 +107,7 @@ def _run_git(args: List[str]) -> Optional[str]:
 # Version extraction
 # ---------------------------------------------------------------------------
 
+
 def extract_version(tag: str) -> Optional[str]:
     m = _SEMVER_RE.match(tag)
     if m:
@@ -119,11 +119,17 @@ def extract_version(tag: str) -> Optional[str]:
 # Tag listing
 # ---------------------------------------------------------------------------
 
+
 def list_tags(owner: str, repo: str, repo_url: str) -> List[str]:
-    raw = _run_gh([
-        "api", f"repos/{owner}/{repo}/tags",
-        "--paginate", "--jq", ".[].name",
-    ])
+    raw = _run_gh(
+        [
+            "api",
+            f"repos/{owner}/{repo}/tags",
+            "--paginate",
+            "--jq",
+            ".[].name",
+        ]
+    )
     if raw:
         return [t for t in raw.splitlines() if t.strip()]
 
@@ -145,6 +151,7 @@ def list_tags(owner: str, repo: str, repo_url: str) -> List[str]:
 # Branch verification
 # ---------------------------------------------------------------------------
 
+
 def check_branch_exists(repo_url: str, branch: str) -> bool:
     raw = _run_git(["ls-remote", "--heads", repo_url, branch])
     if raw and branch in raw:
@@ -155,6 +162,7 @@ def check_branch_exists(repo_url: str, branch: str) -> bool:
 # ---------------------------------------------------------------------------
 # Tag matching (mirrors source-resolution-protocols.md)
 # ---------------------------------------------------------------------------
+
 
 def _derive_name_from_url(owner: str, repo: str) -> str:
     return repo.lower()
@@ -182,6 +190,7 @@ def match_tag(pin: str, tags: List[str], owner: str, repo: str) -> Optional[str]
 # ---------------------------------------------------------------------------
 # Suggestion generation
 # ---------------------------------------------------------------------------
+
 
 def _semver_sort_key(tag: str) -> Tuple:
     v = extract_version(tag)
@@ -218,18 +227,27 @@ def generate_suggestions(pin: str, tags: List[str], max_count: int = 5) -> List[
 # Latest release resolution
 # ---------------------------------------------------------------------------
 
+
 def resolve_latest_release(owner: str, repo: str) -> Optional[str]:
-    raw = _run_gh([
-        "api", f"repos/{owner}/{repo}/releases/latest",
-        "--jq", ".tag_name",
-    ])
+    raw = _run_gh(
+        [
+            "api",
+            f"repos/{owner}/{repo}/releases/latest",
+            "--jq",
+            ".tag_name",
+        ]
+    )
     if raw and raw != "null":
         return raw.strip()
 
-    raw = _run_gh([
-        "api", f"repos/{owner}/{repo}/tags",
-        "--jq", ".[0].name",
-    ])
+    raw = _run_gh(
+        [
+            "api",
+            f"repos/{owner}/{repo}/tags",
+            "--jq",
+            ".[0].name",
+        ]
+    )
     if raw and raw != "null":
         return raw.strip()
 
@@ -239,6 +257,7 @@ def resolve_latest_release(owner: str, repo: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Core validation logic
 # ---------------------------------------------------------------------------
+
 
 def validate_pin(
     repo_url: str,
@@ -320,6 +339,7 @@ def validate_pin(
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(

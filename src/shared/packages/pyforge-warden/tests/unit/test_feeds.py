@@ -46,8 +46,7 @@ _NOW = datetime(2026, 7, 18, 12, 0, 0, tzinfo=UTC)
 
 def test_resolve_cache_dir_reads_the_env_var():
     assert (
-        resolve_cache_dir(env={FEED_CACHE_DIR_ENV_VAR: "/some/cache"})
-        == "/some/cache"
+        resolve_cache_dir(env={FEED_CACHE_DIR_ENV_VAR: "/some/cache"}) == "/some/cache"
     )
 
 
@@ -466,7 +465,11 @@ def test_load_epss_scores_skips_malformed_entries_without_aborting(tmp_path):
                 "scores": [
                     "not-a-dict",
                     {"epss": 0.5, "percentile": 0.5},  # missing cve
-                    {"cve": "CVE-1970-00003", "epss": "not-a-number", "percentile": 0.5},
+                    {
+                        "cve": "CVE-1970-00003",
+                        "epss": "not-a-number",
+                        "percentile": 0.5,
+                    },
                     {"cve": "CVE-1970-00004", "epss": 0.5, "percentile": "bad"},
                     {"cve": "CVE-1970-00005", "epss": True, "percentile": 0.5},
                     {"cve": "CVE-1970-00006", "epss": 0.4, "percentile": 0.6},
@@ -538,6 +541,4 @@ def test_write_epss_cache_is_atomic_replace_on_a_second_write(tmp_path):
         tmp_path,
         {"scores": [{"cve": "CVE-1970-00008", "epss": 0.3, "percentile": 0.4}]},
     )
-    assert load_epss_scores(epss_cache_path(tmp_path)) == {
-        "CVE-1970-00008": (0.3, 0.4)
-    }
+    assert load_epss_scores(epss_cache_path(tmp_path)) == {"CVE-1970-00008": (0.3, 0.4)}

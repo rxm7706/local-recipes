@@ -43,6 +43,7 @@ def get_host_platform():
         return "linux-64"
     elif sys.platform == "darwin":
         import platform
+
         arch = "arm64" if platform.machine() == "arm64" else "64"
         return f"osx-{arch}"
     elif sys.platform == "win32":
@@ -102,10 +103,7 @@ def check_wsl():
         return False
     try:
         result = subprocess.run(
-            ["wsl", "--list", "--quiet"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["wsl", "--list", "--quiet"], capture_output=True, text=True, timeout=5
         )
         return result.returncode == 0 and result.stdout.strip() != ""
     except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -127,7 +125,7 @@ def get_wsl_path(windows_path):
     path = Path(windows_path).resolve()
     # Convert C:\path\to\file to /mnt/c/path/to/file
     drive = path.drive.lower().replace(":", "")
-    rest = str(path)[len(path.drive):].replace("\\", "/")
+    rest = str(path)[len(path.drive) :].replace("\\", "/")
     return f"/mnt/{drive}{rest}"
 
 
@@ -142,19 +140,23 @@ def build_with_rattler_native(recipe_name, platform, dry_run=False):
     variant_config = script_dir / ".ci_support" / f"{plat}{arch}.yaml"
 
     cmd = [
-        "rattler-build", "build",
-        "--recipe", str(recipe_path / "recipe.yaml"),
-        "--target-platform", platform,
-        "-c", "conda-forge",
+        "rattler-build",
+        "build",
+        "--recipe",
+        str(recipe_path / "recipe.yaml"),
+        "--target-platform",
+        platform,
+        "-c",
+        "conda-forge",
     ]
 
     if variant_config.exists():
         cmd.extend(["--variant-config", str(variant_config)])
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"[{platform}] Building {recipe_name} with rattler-build")
     print(f"Command: {' '.join(cmd)}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     if dry_run:
         print("[DRY RUN] Would execute the command above")
@@ -181,16 +183,17 @@ def build_with_conda_native(recipe_name, platform, dry_run=False):
     cmd = [
         "conda-build",
         str(recipe_path),
-        "-c", "conda-forge",
+        "-c",
+        "conda-forge",
     ]
 
     if variant_config.exists():
         cmd.extend(["--variant-config-files", str(variant_config)])
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"[{platform}] Building {recipe_name} with conda-build")
     print(f"Command: {' '.join(cmd)}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     if dry_run:
         print("[DRY RUN] Would execute the command above")
@@ -204,7 +207,9 @@ def build_with_conda_native(recipe_name, platform, dry_run=False):
         return False
 
 
-def build_with_docker(recipe_name, recipe_type, platform, dry_run=False, linux_version="alma9"):
+def build_with_docker(
+    recipe_name, recipe_type, platform, dry_run=False, linux_version="alma9"
+):
     """Build a recipe using Docker for Linux.
 
     Args:
@@ -239,19 +244,24 @@ def build_with_docker(recipe_name, recipe_type, platform, dry_run=False, linux_v
         build_cmd = f"conda-build /recipe -c conda-forge"
 
     docker_cmd = [
-        "docker", "run", "--rm",
-        "-v", f"{recipe_path}:/recipe:ro",
-        "-v", f"{script_dir / '.ci_support'}:/ci_support:ro",
+        "docker",
+        "run",
+        "--rm",
+        "-v",
+        f"{recipe_path}:/recipe:ro",
+        "-v",
+        f"{script_dir / '.ci_support'}:/ci_support:ro",
         docker_image,
-        "bash", "-c",
-        f"micromamba install -y -n base rattler-build conda-build && {build_cmd}"
+        "bash",
+        "-c",
+        f"micromamba install -y -n base rattler-build conda-build && {build_cmd}",
     ]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"[{platform}] Building {recipe_name} with Docker")
     print(f"Image: {docker_image}")
     print(f"Command: {' '.join(docker_cmd[:6])}...")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     if dry_run:
         print("[DRY RUN] Would execute Docker command")
@@ -274,7 +284,9 @@ def build_with_wsl(recipe_name, recipe_type, platform, dry_run=False):
     if recipe_type != "recipe.yaml":
         # meta.yaml with conda-build doesn't work well with WSL + Windows filesystem
         # Fall back to Docker
-        print(f"Note: meta.yaml recipes require Docker on WSL (conda-build compatibility issue)")
+        print(
+            f"Note: meta.yaml recipes require Docker on WSL (conda-build compatibility issue)"
+        )
         return None  # Signal to use Docker fallback
 
     script_dir = get_script_dir()
@@ -304,14 +316,16 @@ def build_with_wsl(recipe_name, recipe_type, platform, dry_run=False):
 
     wsl_cmd = ["wsl", "bash", "-c", build_cmd]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"[{platform}] Building {recipe_name} with WSL (pixi + rattler-build)")
     print(f"Recipe path: {wsl_recipe_path}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     if dry_run:
         print("[DRY RUN] Would execute WSL command")
-        print(f"  wsl bash -c \"cd {wsl_script_dir} && pixi run -e build rattler-build build ...\"")
+        print(
+            f'  wsl bash -c "cd {wsl_script_dir} && pixi run -e build rattler-build build ..."'
+        )
         return True
 
     try:
@@ -418,58 +432,48 @@ def main():
     parser = argparse.ArgumentParser(
         description="Test recipes on all platforms",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
+        epilog=__doc__,
+    )
+    parser.add_argument("--recipe", "-r", nargs="+", help="Specific recipe(s) to test")
+    parser.add_argument(
+        "--random", "-n", type=int, metavar="N", help="Test N random recipes"
     )
     parser.add_argument(
-        "--recipe", "-r",
-        nargs="+",
-        help="Specific recipe(s) to test"
+        "--list", "-l", action="store_true", help="List all available recipes"
     )
     parser.add_argument(
-        "--random", "-n",
-        type=int,
-        metavar="N",
-        help="Test N random recipes"
-    )
-    parser.add_argument(
-        "--list", "-l",
+        "--dry-run",
+        "-d",
         action="store_true",
-        help="List all available recipes"
+        help="Show what would be tested without actually building",
     )
     parser.add_argument(
-        "--dry-run", "-d",
-        action="store_true",
-        help="Show what would be tested without actually building"
-    )
-    parser.add_argument(
-        "--platform", "-p",
+        "--platform",
+        "-p",
         nargs="+",
         choices=list(PLATFORMS.keys()),
-        help="Target platform(s) (default: current platform)"
+        help="Target platform(s) (default: current platform)",
     )
     parser.add_argument(
-        "--all", "-a",
-        action="store_true",
-        help="Test on all available platforms"
+        "--all", "-a", action="store_true", help="Test on all available platforms"
     )
     parser.add_argument(
-        "--filter", "-f",
-        help="Filter recipes by name pattern (e.g., 'air*')"
+        "--filter", "-f", help="Filter recipes by name pattern (e.g., 'air*')"
     )
     parser.add_argument(
-        "--type", "-t",
+        "--type",
+        "-t",
         choices=["meta.yaml", "recipe.yaml"],
-        help="Only test recipes of a specific type"
+        help="Only test recipes of a specific type",
     )
     parser.add_argument(
-        "--stop-on-error", "-s",
-        action="store_true",
-        help="Stop on first build error"
+        "--stop-on-error", "-s", action="store_true", help="Stop on first build error"
     )
     parser.add_argument(
-        "--check", "-c",
+        "--check",
+        "-c",
         action="store_true",
-        help="Check available build tools and platforms"
+        help="Check available build tools and platforms",
     )
 
     args = parser.parse_args()
@@ -537,7 +541,10 @@ def main():
     # Apply filters
     if args.filter:
         import fnmatch
-        all_recipes = [(n, t) for n, t in all_recipes if fnmatch.fnmatch(n, args.filter)]
+
+        all_recipes = [
+            (n, t) for n, t in all_recipes if fnmatch.fnmatch(n, args.filter)
+        ]
 
     if args.type:
         all_recipes = [(n, t) for n, t in all_recipes if t == args.type]
@@ -642,9 +649,9 @@ def main():
         break  # Break outer loop if inner loop broke
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     any_failed = False
     for platform in target_platforms:

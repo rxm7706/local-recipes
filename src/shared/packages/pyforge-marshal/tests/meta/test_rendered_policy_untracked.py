@@ -46,7 +46,8 @@ def test_policy_toml_is_untracked():
 def test_gitignore_covers_policy_toml():
     repo_root = _repo_root()
     gitignore_lines = {
-        line.strip() for line in (repo_root / ".gitignore").read_text(encoding="utf-8").splitlines()
+        line.strip()
+        for line in (repo_root / ".gitignore").read_text(encoding="utf-8").splitlines()
     }
     assert ".bmad-loop/policy.toml" in gitignore_lines, (
         ".gitignore must contain a literal '.bmad-loop/policy.toml' line"

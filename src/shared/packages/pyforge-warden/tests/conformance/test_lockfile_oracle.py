@@ -77,7 +77,9 @@ def test_pixi_lock_extractor_matches_py_rattler_lockfile():
 
 def test_url_basename_pitfall_matches_py_rattler_lockfile():
     rattler = _rattler_module()
-    pitfall_path = FIXTURE.parent.parent / "pixi_lock_url_basename_pitfall" / "pixi.lock"
+    pitfall_path = (
+        FIXTURE.parent.parent / "pixi_lock_url_basename_pitfall" / "pixi.lock"
+    )
     components = PixiLockExtractor(DefaultRouter()).extract(pitfall_path, MANIFEST)
     ours = {(c.ecosystem, c.name, c.version) for c in components}
 

@@ -208,10 +208,7 @@ def _private_verdict_references(tree: ast.Module) -> list[str]:
             if isinstance(node.value, ast.Name) and node.value.id in verdict_names:
                 references.append(node.attr)
             # ... or pkg.verdict._priv via a plain `import pkg.verdict`.
-            elif (
-                isinstance(node.value, ast.Attribute)
-                and node.value.attr == "verdict"
-            ):
+            elif isinstance(node.value, ast.Attribute) and node.value.attr == "verdict":
                 references.append(node.attr)
     return references
 
@@ -274,9 +271,7 @@ def test_package_scan_surface_is_not_empty():
     assert "verdict.py" in names, "verdict.py missing from the installed package"
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=lambda p: p.name)
 def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     violations = _exit_literal_violations(_parse(module_path))
     assert not violations, (
@@ -285,9 +280,7 @@ def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     )
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=lambda p: p.name)
 def test_no_private_verdict_import_outside_verdict(module_path: Path):
     references = _private_verdict_references(_parse(module_path))
     assert not references, (
@@ -295,9 +288,7 @@ def test_no_private_verdict_import_outside_verdict(module_path: Path):
     )
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=lambda p: p.name)
 def test_no_rung_ordering_outside_verdict(module_path: Path):
     violations = _rung_ordering_literals(_parse(module_path))
     assert not violations, (
@@ -370,20 +361,13 @@ def test_interleaved_status_tokens_do_not_fire():
 
 
 def test_private_detector_sees_verdict_module_aliases():
-    aliased = (
-        "from pyforge.warden import verdict as v\n"
-        "rank = v._RANK\n"
-    )
+    aliased = "from pyforge.warden import verdict as v\nrank = v._RANK\n"
     assert _private_verdict_references(ast.parse(aliased)) == ["_RANK"]
     plain_import = (
-        "import pyforge.warden.verdict\n"
-        "rank = pyforge.warden.verdict._RANK\n"
+        "import pyforge.warden.verdict\nrank = pyforge.warden.verdict._RANK\n"
     )
     assert _private_verdict_references(ast.parse(plain_import)) == ["_RANK"]
-    public_only = (
-        "from pyforge.warden import verdict\n"
-        "code = verdict.exit_code_for\n"
-    )
+    public_only = "from pyforge.warden import verdict\ncode = verdict.exit_code_for\n"
     assert _private_verdict_references(ast.parse(public_only)) == []
 
 

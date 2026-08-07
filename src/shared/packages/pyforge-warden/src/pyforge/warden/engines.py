@@ -468,8 +468,7 @@ def _check_engine_version(
             kind=ErrorKind.ENGINE_UNAVAILABLE,
             owner=owner,
             message=(
-                f"could not parse version {match.group(1)!r} reported by "
-                f"{owner!r}"
+                f"could not parse version {match.group(1)!r} reported by {owner!r}"
             ),
         )
     if version not in expected:
@@ -642,8 +641,7 @@ def _doctor_check_feed(
         name=check_name,
         ok=True,
         message=(
-            f"operating air-gapped: {feed_name} feed not present -- "
-            f"{absent_hint}"
+            f"operating air-gapped: {feed_name} feed not present -- {absent_hint}"
         ),
     )
     cache_dir = feeds.resolve_cache_dir()
@@ -697,8 +695,7 @@ def _doctor_check_feed(
         name=check_name,
         ok=True,
         message=(
-            f"{feed_name} feed present, snapshot {provenance.snapshot_at} "
-            "(fresh)"
+            f"{feed_name} feed present, snapshot {provenance.snapshot_at} (fresh)"
         ),
     )
 
@@ -931,10 +928,7 @@ class DeptryEngine:
         synthesized = _synthesize_deptry_frontdoor(inventory.components)
         excluded_findings = tuple(
             sorted(
-                (
-                    hygiene_unsafe_identity_finding(c)
-                    for c in synthesized.excluded
-                ),
+                (hygiene_unsafe_identity_finding(c) for c in synthesized.excluded),
                 key=lambda f: f.id,
             )
         )
@@ -1147,7 +1141,9 @@ def _kev_enrichment(
         # provenance stat (TOCTOU) -- treat exactly like "no usable feed"
         # rather than letting the race propagate as an engine crash.
         return None, None, (kev_stale_finding(unavailable=True),)
-    kev_findings = () if kev_data.max_age_ok else (kev_stale_finding(unavailable=False),)
+    kev_findings = (
+        () if kev_data.max_age_ok else (kev_stale_finding(unavailable=False),)
+    )
     return catalog, kev_data, kev_findings
 
 
@@ -1187,7 +1183,9 @@ def _stamp_kev(
 
 def _epss_enrichment(
     min_epss: float | None,
-) -> tuple[dict[str, tuple[float, float]] | None, FeedProvenance | None, tuple[Finding, ...]]:
+) -> tuple[
+    dict[str, tuple[float, float]] | None, FeedProvenance | None, tuple[Finding, ...]
+]:
     """Consult the EPSS feed (``feeds.py``) ONCE per ``OsvEngine.run`` call —
     mirrors ``_kev_enrichment`` structurally, one feed over. Returns
     ``(scores, epss_data, epss_axis_findings)``:
@@ -1356,7 +1354,9 @@ class OsvEngine:
     name: str = "osv-scanner"
     axis: str = AXIS_VULNERABILITY
 
-    def __init__(self, *, fail_on_kev: bool = True, min_epss: float | None = None) -> None:
+    def __init__(
+        self, *, fail_on_kev: bool = True, min_epss: float | None = None
+    ) -> None:
         self.fail_on_kev = fail_on_kev
         self.min_epss = min_epss
 
@@ -1381,7 +1381,11 @@ class OsvEngine:
 
         cache_dir = resolve_cache_dir()
         zip_path = db_zip_path(cache_dir) if cache_dir is not None else None
-        if cache_dir is None or zip_path is None or not _db_has_valid_advisory(zip_path):
+        if (
+            cache_dir is None
+            or zip_path is None
+            or not _db_has_valid_advisory(zip_path)
+        ):
             return EngineResult(
                 findings=_withheld_findings([*candidates, *name_level_candidates]),
                 errors=(),
@@ -1524,8 +1528,7 @@ class OsvEngine:
                 kind=ErrorKind.ENGINE_EXECUTION_FAILED,
                 owner=self.name,
                 message=(
-                    "could not create a temp osv input file: "
-                    f"{exc.__class__.__name__}"
+                    f"could not create a temp osv input file: {exc.__class__.__name__}"
                 ),
             )
             # The purity guard already ran (candidates are known before the
@@ -1850,7 +1853,10 @@ class CurrencyEngine:
             # merged in exactly the way OsvEngine spreads *kev_findings.
             findings = tuple(
                 sorted(
-                    (*findings, currency_stale_finding(unavailable=currency_data is None)),
+                    (
+                        *findings,
+                        currency_stale_finding(unavailable=currency_data is None),
+                    ),
                     key=lambda f: f.id,
                 )
             )

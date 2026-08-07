@@ -18,6 +18,7 @@ capability text.
 
 Exit codes: 0 clean, 1 drift found, 2 missing input file.
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
@@ -98,9 +99,14 @@ def catalog_entries(text: str) -> set[tuple[str, str]]:
 
 
 def mentioned(name: str, text: str) -> bool:
-    return re.search(
-        rf"(?<![A-Za-z0-9_-]){re.escape(name)}(?![A-Za-z0-9_-])", text, re.IGNORECASE
-    ) is not None
+    return (
+        re.search(
+            rf"(?<![A-Za-z0-9_-]){re.escape(name)}(?![A-Za-z0-9_-])",
+            text,
+            re.IGNORECASE,
+        )
+        is not None
+    )
 
 
 def run() -> tuple[list[dict], dict]:
@@ -110,27 +116,39 @@ def run() -> tuple[list[dict], dict]:
     findings: list[dict] = []
     for name in sorted(deps):
         if not mentioned(name, text):
-            findings.append({
-                "kind": "undocumented-dep", "name": name,
-                "detail": f"active in pixi.toml ({', '.join(sorted(deps[name]))}) "
-                          "but never mentioned in the catalog"})
+            findings.append(
+                {
+                    "kind": "undocumented-dep",
+                    "name": name,
+                    "detail": f"active in pixi.toml ({', '.join(sorted(deps[name]))}) "
+                    "but never mentioned in the catalog",
+                }
+            )
 
     entries = sorted(catalog_entries(text))
     for name, spec in entries:
         if name not in deps:
-            findings.append({
-                "kind": "ghost-entry", "name": name,
-                "detail": f"catalog documents it ({spec}) but it is not an "
-                          "active pixi.toml dependency"})
+            findings.append(
+                {
+                    "kind": "ghost-entry",
+                    "name": name,
+                    "detail": f"catalog documents it ({spec}) but it is not an "
+                    "active pixi.toml dependency",
+                }
+            )
             continue
         doc_v = first_version(spec)
         if doc_v is None:
             continue
         if not any(versions_compatible(doc_v, first_version(s)) for s in deps[name]):
-            findings.append({
-                "kind": "floor-drift", "name": name,
-                "detail": f"catalog says ({spec}) but pixi.toml pins "
-                          f"{', '.join(sorted(deps[name]))}"})
+            findings.append(
+                {
+                    "kind": "floor-drift",
+                    "name": name,
+                    "detail": f"catalog says ({spec}) but pixi.toml pins "
+                    f"{', '.join(sorted(deps[name]))}",
+                }
+            )
 
     return findings, {"manifest_deps": len(deps), "catalog_entries": len(entries)}
 
@@ -139,7 +157,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         prog="llms-full-check",
         description="Detect drift between pixi.toml and docs/reference/library-llms-full.md "
-                    "(the library catalog). Exits 1 on drift.")
+        "(the library catalog). Exits 1 on drift.",
+    )
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args()
 
@@ -153,11 +172,15 @@ def main() -> int:
         print(json.dumps({"stats": stats, "findings": findings}, indent=2))
         return 1 if findings else 0
 
-    print(f"llms-full-check: {stats['manifest_deps']} active deps in pixi.toml | "
-          f"{stats['catalog_entries']} versioned entries in {CATALOG.name}\n")
+    print(
+        f"llms-full-check: {stats['manifest_deps']} active deps in pixi.toml | "
+        f"{stats['catalog_entries']} versioned entries in {CATALOG.name}\n"
+    )
     if not findings:
-        print("  clean — catalog covers every active dependency; no ghost entries "
-              "or floor drift.")
+        print(
+            "  clean — catalog covers every active dependency; no ghost entries "
+            "or floor drift."
+        )
         return 0
     by_kind: dict[str, list[dict]] = {}
     for f in findings:
@@ -166,8 +189,10 @@ def main() -> int:
         print(f"  {kind} ({len(items)}):")
         for f in items:
             print(f"    - {f['name']}: {f['detail']}")
-    print(f"\nDRIFT: {len(findings)} finding(s). Reconcile by regenerating the "
-          "catalog (prompt in its header), then re-run.")
+    print(
+        f"\nDRIFT: {len(findings)} finding(s). Reconcile by regenerating the "
+        "catalog (prompt in its header), then re-run."
+    )
     return 1
 
 

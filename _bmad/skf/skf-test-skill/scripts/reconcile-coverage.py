@@ -264,9 +264,9 @@ def _build_parser():
         epilog=(
             "Example (barrel branch):\n"
             "  uv run reconcile-coverage.py "
-            "'{\"denominatorSource\":\"barrel\","
-            "\"exports\":[{\"name\":\"a\",\"kind\":\"function\"}],"
-            "\"barrelSet\":[\"a\",\"b\"]}'"
+            '\'{"denominatorSource":"barrel",'
+            '"exports":[{"name":"a","kind":"function"}],'
+            '"barrelSet":["a","b"]}\''
         ),
     )
     src = parser.add_mutually_exclusive_group()

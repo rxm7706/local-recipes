@@ -127,4 +127,6 @@ def classify_retirement(
         missing.append("story_done_with_sha")
     if missing:
         return InsufficientEvidence(candidate=candidate, missing=tuple(missing))
-    return RetirementProposal(candidate=candidate, recorded_merge_sha=recorded_merge_sha)
+    return RetirementProposal(
+        candidate=candidate, recorded_merge_sha=recorded_merge_sha
+    )

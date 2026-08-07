@@ -206,21 +206,23 @@ def test_result_order_survives_reordered_completion(capsys, monkeypatch):
     register_engine_for_test(
         monkeypatch,
         _make_dedupe_engine(
-            "slow-first-registered", sleep_seconds=0.3, message="from the FIRST-registered (slow) engine"
+            "slow-first-registered",
+            sleep_seconds=0.3,
+            message="from the FIRST-registered (slow) engine",
         ),
     )
     register_engine_for_test(
         monkeypatch,
         _make_dedupe_engine(
-            "fast-second-registered", sleep_seconds=0.0, message="from the SECOND-registered (fast) engine"
+            "fast-second-registered",
+            sleep_seconds=0.0,
+            message="from the SECOND-registered (fast) engine",
         ),
     )
 
     rc, out, _err = run_scan(capsys, CLEAN)
     document = parse_report(out)
-    matches = [
-        f for f in document["findings"] if f["id"] == "hygiene:DEP002:requests"
-    ]
+    matches = [f for f in document["findings"] if f["id"] == "hygiene:DEP002:requests"]
     assert len(matches) == 1, "engine-vs-engine dedupe must yield exactly one finding"
     assert matches[0]["message"] == "from the FIRST-registered (slow) engine"
 

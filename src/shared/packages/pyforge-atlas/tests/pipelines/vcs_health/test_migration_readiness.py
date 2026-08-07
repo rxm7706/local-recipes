@@ -60,6 +60,7 @@ def _detail_stub(details: dict):
 #               classification; a new migration flows through with no code edit)
 # ============================================================================
 
+
 def _run_chain(tmp_path, category_payload: dict, details: dict, pkgs, downloads):
     """Exercise the FULL chain: category list -> active names -> detail partitions ->
     classification. NO migration name is referenced literally anywhere."""
@@ -92,7 +93,9 @@ def test_zero_code_change_partitioning_new_migration_flows_through(tmp_path):
 
     # Then: ADD python315 to the category-list fixture — with NO code change it flows to a
     # new partition AND classifies (both migrations present in the output).
-    out2 = _run_chain(tmp_path / "b", {"python314": {}, "python315": {}}, details, pkgs, downloads)
+    out2 = _run_chain(
+        tmp_path / "b", {"python314": {}, "python315": {}}, details, pkgs, downloads
+    )
     assert set(out2["migration"]) == {"python314", "python315"}
     # the new migration classified its feedstocks correctly (scipy done in python315).
     p315 = out2[out2["migration"] == "python315"].set_index("conda_name")
@@ -105,19 +108,32 @@ def test_zero_code_change_partitioning_new_migration_flows_through(tmp_path):
 # MANDATORY 2 — the not-in-tracker bucket is INFERRED, never confirmed
 # ============================================================================
 
+
 def test_not_in_tracker_is_labeled_inferred_never_confirmed():
     pkgs = _pkgs(
         [
             {"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]},
-            {"conda_name": "pend", "latest_version": "3.0", "subdirs": ["linux-64"]},  # a CONFIRMED-pending row
-            {"conda_name": "ghost", "latest_version": "1.0", "subdirs": ["linux-64"]},  # absent from detail
+            {
+                "conda_name": "pend",
+                "latest_version": "3.0",
+                "subdirs": ["linux-64"],
+            },  # a CONFIRMED-pending row
+            {
+                "conda_name": "ghost",
+                "latest_version": "1.0",
+                "subdirs": ["linux-64"],
+            },  # absent from detail
         ]
     )
     # `pend` sits in a confirmed pending bucket — the "confirmed" class the inferred flag
     # must never touch (Reviewer-A F1: the mandatory test must place a confirmed-pending
     # row in the frame, else a regression setting inferred=True on it slips through).
-    detail = {"python314": {"done": ["numpy"], "in-pr": ["pend"]}}  # ghost is in NO bucket
-    out = classify_migration_readiness(detail, pkgs, _downloads([])).set_index("conda_name")
+    detail = {
+        "python314": {"done": ["numpy"], "in-pr": ["pend"]}
+    }  # ghost is in NO bucket
+    out = classify_migration_readiness(detail, pkgs, _downloads([])).set_index(
+        "conda_name"
+    )
 
     # ghost: absent from the migration JSON -> not-in-tracker, and the inferred flag is SET.
     assert out.loc["ghost", "readiness"] == READINESS_NOT_IN_TRACKER
@@ -145,13 +161,30 @@ def test_not_in_tracker_is_labeled_inferred_never_confirmed():
 # four-way split correctness
 # ============================================================================
 
+
 def test_four_way_split_all_classes_present():
     pkgs = _pkgs(
         [
-            {"conda_name": "purepy", "latest_version": "1.0", "subdirs": ["noarch"]},   # noarch
-            {"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]},   # done
-            {"conda_name": "scipy", "latest_version": "1.0", "subdirs": ["linux-64"]},   # pending
-            {"conda_name": "ghost", "latest_version": "1.0", "subdirs": ["linux-64"]},   # absent
+            {
+                "conda_name": "purepy",
+                "latest_version": "1.0",
+                "subdirs": ["noarch"],
+            },  # noarch
+            {
+                "conda_name": "numpy",
+                "latest_version": "2.0",
+                "subdirs": ["linux-64"],
+            },  # done
+            {
+                "conda_name": "scipy",
+                "latest_version": "1.0",
+                "subdirs": ["linux-64"],
+            },  # pending
+            {
+                "conda_name": "ghost",
+                "latest_version": "1.0",
+                "subdirs": ["linux-64"],
+            },  # absent
         ]
     )
     detail = {"python314": {"done": ["numpy"], "not-solvable": ["scipy"]}}
@@ -169,7 +202,15 @@ def test_four_way_split_all_classes_present():
 def test_noarch_takes_precedence_over_tracker_bucket():
     # a noarch package needs no rebuild for a python migration — noarch wins even if the
     # tracker ALSO lists it (it is ready by construction; no double-count).
-    pkgs = _pkgs([{"conda_name": "purepy", "latest_version": "1.0", "subdirs": ["noarch", "linux-64"]}])
+    pkgs = _pkgs(
+        [
+            {
+                "conda_name": "purepy",
+                "latest_version": "1.0",
+                "subdirs": ["noarch", "linux-64"],
+            }
+        ]
+    )
     detail = {"python314": {"in-pr": ["purepy"]}}  # tracker says pending...
     out = classify_migration_readiness(detail, pkgs, _downloads([]))
     assert out.iloc[0]["readiness"] == READINESS_NOARCH  # ...but noarch wins
@@ -184,16 +225,44 @@ def test_conda_noarch_derived_from_subdirs_shapes():
 
     pkgs = _pkgs(
         [
-            {"conda_name": "a", "latest_version": "1", "subdirs": ["noarch"]},          # list -> noarch
-            {"conda_name": "b", "latest_version": "1", "subdirs": "linux-64,noarch"},    # comma-str -> noarch
-            {"conda_name": "c", "latest_version": "1", "subdirs": "linux-64,osx-64"},    # comma-str -> not noarch
-            {"conda_name": "d", "latest_version": "1", "subdirs": None},                 # None -> not noarch
-            {"conda_name": "e", "latest_version": "1", "subdirs": np.array(["noarch"])}, # np array -> noarch
-            {"conda_name": "f", "latest_version": "1", "subdirs": ["noarch-extra"]},     # substring -> NOT noarch
+            {
+                "conda_name": "a",
+                "latest_version": "1",
+                "subdirs": ["noarch"],
+            },  # list -> noarch
+            {
+                "conda_name": "b",
+                "latest_version": "1",
+                "subdirs": "linux-64,noarch",
+            },  # comma-str -> noarch
+            {
+                "conda_name": "c",
+                "latest_version": "1",
+                "subdirs": "linux-64,osx-64",
+            },  # comma-str -> not noarch
+            {
+                "conda_name": "d",
+                "latest_version": "1",
+                "subdirs": None,
+            },  # None -> not noarch
+            {
+                "conda_name": "e",
+                "latest_version": "1",
+                "subdirs": np.array(["noarch"]),
+            },  # np array -> noarch
+            {
+                "conda_name": "f",
+                "latest_version": "1",
+                "subdirs": ["noarch-extra"],
+            },  # substring -> NOT noarch
         ]
     )
-    detail = {"python314": {"done": []}}  # nobody done -> non-noarch fall to not-in-tracker
-    out = classify_migration_readiness(detail, pkgs, _downloads([])).set_index("conda_name")
+    detail = {
+        "python314": {"done": []}
+    }  # nobody done -> non-noarch fall to not-in-tracker
+    out = classify_migration_readiness(detail, pkgs, _downloads([])).set_index(
+        "conda_name"
+    )
     assert out.loc["a", "readiness"] == READINESS_NOARCH
     assert out.loc["b", "readiness"] == READINESS_NOARCH
     assert out.loc["c", "readiness"] == READINESS_NOT_IN_TRACKER
@@ -206,12 +275,25 @@ def test_conda_noarch_derived_from_subdirs_shapes():
 # downloads join -> top-unmigrated-by-volume ranking
 # ============================================================================
 
+
 def test_downloads_join_ranks_unmigrated_by_volume():
     pkgs = _pkgs(
         [
-            {"conda_name": "big", "latest_version": "1", "subdirs": ["linux-64"]},    # pending, high vol
-            {"conda_name": "small", "latest_version": "1", "subdirs": ["linux-64"]},  # not-in-tracker, low vol
-            {"conda_name": "done1", "latest_version": "1", "subdirs": ["linux-64"]},  # done -> no rank
+            {
+                "conda_name": "big",
+                "latest_version": "1",
+                "subdirs": ["linux-64"],
+            },  # pending, high vol
+            {
+                "conda_name": "small",
+                "latest_version": "1",
+                "subdirs": ["linux-64"],
+            },  # not-in-tracker, low vol
+            {
+                "conda_name": "done1",
+                "latest_version": "1",
+                "subdirs": ["linux-64"],
+            },  # done -> no rank
         ]
     )
     downloads = _downloads(
@@ -235,7 +317,11 @@ def test_downloads_join_missing_row_ranks_as_zero_not_dropped():
     pkgs = _pkgs(
         [
             {"conda_name": "havol", "latest_version": "1", "subdirs": ["linux-64"]},
-            {"conda_name": "novol", "latest_version": "1", "subdirs": ["linux-64"]},  # no download row
+            {
+                "conda_name": "novol",
+                "latest_version": "1",
+                "subdirs": ["linux-64"],
+            },  # no download row
         ]
     )
     downloads = _downloads([{"conda_name": "havol", "downloads_total": 50.0}])
@@ -244,13 +330,18 @@ def test_downloads_join_missing_row_ranks_as_zero_not_dropped():
     # both kept; the one with a download row outranks the zero-volume one.
     assert int(out.loc["havol", "unmigrated_volume_rank"]) == 1
     assert int(out.loc["novol", "unmigrated_volume_rank"]) == 2
-    assert pd.isna(out.loc["novol", "downloads_total"])  # no row -> NaN downloads (kept)
+    assert pd.isna(
+        out.loc["novol", "downloads_total"]
+    )  # no row -> NaN downloads (kept)
 
 
 def test_duplicate_download_rows_take_max():
     pkgs = _pkgs([{"conda_name": "p", "latest_version": "1", "subdirs": ["linux-64"]}])
     downloads = _downloads(
-        [{"conda_name": "p", "downloads_total": 10.0}, {"conda_name": "p", "downloads_total": 99.0}]
+        [
+            {"conda_name": "p", "downloads_total": 10.0},
+            {"conda_name": "p", "downloads_total": 99.0},
+        ]
     )
     detail = {"python314": {"in-pr": ["p"]}}
     out = classify_migration_readiness(detail, pkgs, downloads)
@@ -261,10 +352,13 @@ def test_duplicate_download_rows_take_max():
 # edge cases / AD-13 safety
 # ============================================================================
 
+
 def test_feedstock_in_detail_but_not_in_atlas_is_out_of_scope():
     # the atlas feedstock set is the authoritative row universe; a bucket member NOT in the
     # atlas set produces no row.
-    pkgs = _pkgs([{"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]}])
+    pkgs = _pkgs(
+        [{"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]}]
+    )
     detail = {"python314": {"done": ["numpy", "not-in-atlas-pkg"]}}
     out = classify_migration_readiness(detail, pkgs, _downloads([]))
     assert set(out["conda_name"]) == {"numpy"}
@@ -303,7 +397,9 @@ def test_done_and_pending_done_wins_no_double_count():
 
 def test_malformed_detail_bucket_is_not_list_never_crashes():
     pkgs = _pkgs([{"conda_name": "p", "latest_version": "1", "subdirs": ["linux-64"]}])
-    detail = {"python314": {"done": "numpy", "in-pr": {"a": 1}}}  # scalar / dict buckets
+    detail = {
+        "python314": {"done": "numpy", "in-pr": {"a": 1}}
+    }  # scalar / dict buckets
     out = classify_migration_readiness(detail, pkgs, _downloads([]))
     # p is in no *list* bucket -> not-in-tracker (never crashes on the bad shapes).
     assert out.iloc[0]["readiness"] == READINESS_NOT_IN_TRACKER
@@ -317,14 +413,20 @@ def test_empty_and_missing_inputs_return_typed_empty_frame():
     assert str(out["downloads_total"].dtype) == "float64"
     assert str(out["unmigrated_volume_rank"].dtype) == "Int64"
     # no detail partitions but a real atlas set -> still empty (nothing to classify against).
-    pkgs = _pkgs([{"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]}])
+    pkgs = _pkgs(
+        [{"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]}]
+    )
     assert classify_migration_readiness({}, pkgs, empty).empty
     # missing conda_name column -> typed empty.
-    assert classify_migration_readiness({"python314": {"done": []}}, pd.DataFrame({"x": [1]}), empty).empty
+    assert classify_migration_readiness(
+        {"python314": {"done": []}}, pd.DataFrame({"x": [1]}), empty
+    ).empty
 
 
 def test_non_dict_detail_input_is_safe():
-    pkgs = _pkgs([{"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]}])
+    pkgs = _pkgs(
+        [{"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]}]
+    )
     assert classify_migration_readiness(None, pkgs, _downloads([])).empty
     assert classify_migration_readiness([1, 2, 3], pkgs, _downloads([])).empty
 
@@ -332,6 +434,7 @@ def test_non_dict_detail_input_is_safe():
 # ============================================================================
 # AD-14 parity boundary (new-signal, never parity-gated)
 # ============================================================================
+
 
 def test_output_dataset_is_in_the_frozen_new_signal_exclusion_set():
     from pyforge.atlas.parity import EXCLUDED_NEW_SIGNAL_DATASETS

@@ -77,8 +77,7 @@ def test_flip_story_markers_match_declared_map(catalog_raw_text):
     markers = parse_markers(catalog_raw_text)
     flip_marked = {name: m for name, m in markers.items() if m != "A3"}
     assert flip_marked == EXPECTED_FLIP_MARKERS, (
-        f"FLIP marker drift — in-yaml: {flip_marked}, "
-        f"declared: {EXPECTED_FLIP_MARKERS}"
+        f"FLIP marker drift — in-yaml: {flip_marked}, declared: {EXPECTED_FLIP_MARKERS}"
     )
 
 
@@ -151,9 +150,11 @@ def test_orphan_ttls_name_their_future_consumer(parameters, parameters_raw_text)
     annotated = {
         m.group(1): m.group(2)
         for line in parameters_raw_text.splitlines()
-        if (m := re.match(
-            r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+)\b", line.strip()
-        ))
+        if (
+            m := re.match(
+                r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+)\b", line.strip()
+            )
+        )
     }
     missing = sorted(k for k in ttls if k not in FLIP_LIST and k not in annotated)
     assert not missing, (
@@ -161,7 +162,9 @@ def test_orphan_ttls_name_their_future_consumer(parameters, parameters_raw_text)
         f"annotation: {missing}"
     )
     stray = sorted(k for k in annotated if k in FLIP_LIST)
-    assert not stray, f"FLIP_LIST entries carrying a future_consumer annotation: {stray}"
+    assert not stray, (
+        f"FLIP_LIST entries carrying a future_consumer annotation: {stray}"
+    )
 
 
 def test_freshness_contract_is_separate_from_fetch_ttls(parameters):

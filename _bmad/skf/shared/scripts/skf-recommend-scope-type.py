@@ -116,7 +116,12 @@ def _find_registry_files(tree: list[str]) -> list[str]:
         if not isinstance(path, str):
             continue
         basename = path.rsplit("/", 1)[-1]
-        if basename in {"registry.ts", "components.ts", "registry.tsx", "components.tsx"}:
+        if basename in {
+            "registry.ts",
+            "components.ts",
+            "registry.tsx",
+            "components.tsx",
+        }:
             hits.append(path)
     return hits
 
@@ -252,7 +257,9 @@ def recommend(payload: dict) -> dict:
     mode = payload.get("mode") or "headless"
 
     if source_type not in VALID_SOURCE_TYPES:
-        _die(f"source_type must be one of {sorted(t for t in VALID_SOURCE_TYPES if t)} or null; got {source_type!r}")
+        _die(
+            f"source_type must be one of {sorted(t for t in VALID_SOURCE_TYPES if t)} or null; got {source_type!r}"
+        )
     if mode not in VALID_MODES:
         _die(f"mode must be one of {sorted(VALID_MODES)}; got {mode!r}")
 
@@ -274,7 +281,9 @@ def recommend(payload: dict) -> dict:
         if cr.get("component_array_annotation"):
             rationale_bits.append("and a Component[] type annotation")
         if not cr.get("contents_inspected"):
-            rationale_bits.append("(presence-only match — file contents not inspected in headless mode)")
+            rationale_bits.append(
+                "(presence-only match — file contents not inspected in headless mode)"
+            )
         return {
             "scope_type": "component-library",
             "matched_heuristic": "component-registry",
@@ -299,7 +308,9 @@ def recommend(payload: dict) -> dict:
         heuristic, signals = sm
         if heuristic == "specific-modules-naming":
             phrases = ", ".join(f"'{p}'" for p in signals["phrases"])
-            rationale = f"Specific Modules because the intent names a subset ({phrases})."
+            rationale = (
+                f"Specific Modules because the intent names a subset ({phrases})."
+            )
         else:
             rationale = f"Specific Modules because the analysis surfaced {signals['module_count']} top-level modules — likely too many for a single cohesive scope."
         return {

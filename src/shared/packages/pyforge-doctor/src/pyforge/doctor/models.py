@@ -90,9 +90,7 @@ class Finding:
         # the original dict must not be able to mutate this Finding after
         # construction.
         if not isinstance(self.evidence, dict):
-            raise ValueError(
-                f"evidence must be a dict, got {self.evidence!r}"
-            )
+            raise ValueError(f"evidence must be a dict, got {self.evidence!r}")
         object.__setattr__(self, "evidence", dict(self.evidence))
 
     def to_json_dict(self) -> dict[str, object]:

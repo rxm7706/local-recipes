@@ -194,11 +194,17 @@ class _StaleAwareStatusSource(AbstractDataset):
 
     def _mark_stale(self, reason: str, *, last_good_exists: bool) -> StalenessMarker:
         """Keep last-good; stamp a staleness marker. Never raises (AD-13 never-fail)."""
-        marker = StalenessMarker(stale=True, reason=reason, last_good_exists=last_good_exists)
+        marker = StalenessMarker(
+            stale=True, reason=reason, last_good_exists=last_good_exists
+        )
         try:
-            self._atomic_write(self._staleness_path, json.dumps(marker.to_dict(), indent=2))
+            self._atomic_write(
+                self._staleness_path, json.dumps(marker.to_dict(), indent=2)
+            )
         except OSError as exc:  # a marker write must never take the run down
-            logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
+            logger.warning(
+                "could not write staleness marker for %s: %s", self._filepath, exc
+            )
         return marker
 
     def _clear_stale(self) -> None:
@@ -278,18 +284,26 @@ class MigrationCategoryDataset(_StaleAwareStatusSource):
         try:
             payload = fetcher(self._url)
         except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
-            logger.warning("migration category fetch failed, keeping last-good: %s", exc)
+            logger.warning(
+                "migration category fetch failed, keeping last-good: %s", exc
+            )
             self._mark_stale(
                 f"category fetch failed: {type(exc).__name__}: {exc}",
                 last_good_exists=last_good_exists,
             )
             return self._read_last_good()
         if not payload:  # never write an empty/None payload over a good one (AD-13).
-            self._mark_stale("category fetch returned no data", last_good_exists=last_good_exists)
+            self._mark_stale(
+                "category fetch returned no data", last_good_exists=last_good_exists
+            )
             return self._read_last_good()
         try:
             self._atomic_write(self._store_path, json.dumps(payload))
-        except (OSError, TypeError, ValueError) as exc:  # write failure → keep last-good.
+        except (
+            OSError,
+            TypeError,
+            ValueError,
+        ) as exc:  # write failure → keep last-good.
             logger.warning("category write failed, keeping last-good: %s", exc)
             self._mark_stale(
                 f"category write failed: {type(exc).__name__}: {exc}",
@@ -376,7 +390,11 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         Returns the resolved ``{name: detail}`` map. The pure node consumes :meth:`load`.
         """
         fetcher = fetcher if fetcher is not None else self._fetcher
-        names = [n for n in _as_name_list(active_migrations) if n not in EXCLUDED_STATUS_FILES]
+        names = [
+            n
+            for n in _as_name_list(active_migrations)
+            if n not in EXCLUDED_STATUS_FILES
+        ]
         if fetcher is None:
             self._mark_stale(
                 "offline: no GitHub-raw fetcher wired (consumer profile)",
@@ -387,8 +405,14 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         for name in names:
             try:
                 payload = fetcher(self._detail_url(name))
-            except Exception as exc:  # AD-13: a per-migration failure never aborts the sweep.
-                logger.warning("migration detail fetch failed for %s, keeping last-good: %s", name, exc)
+            except (
+                Exception
+            ) as exc:  # AD-13: a per-migration failure never aborts the sweep.
+                logger.warning(
+                    "migration detail fetch failed for %s, keeping last-good: %s",
+                    name,
+                    exc,
+                )
                 any_failure = True
                 continue
             if not payload:  # 404 / empty → keep this partition's last-good (AD-13).
@@ -396,10 +420,19 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
                 continue
             try:
                 self._atomic_write(
-                    self._partitions_dir / self._partition_filename(name), json.dumps(payload)
+                    self._partitions_dir / self._partition_filename(name),
+                    json.dumps(payload),
                 )
-            except (OSError, TypeError, ValueError) as exc:  # write failure → keep last-good.
-                logger.warning("migration detail write failed for %s, keeping last-good: %s", name, exc)
+            except (
+                OSError,
+                TypeError,
+                ValueError,
+            ) as exc:  # write failure → keep last-good.
+                logger.warning(
+                    "migration detail write failed for %s, keeping last-good: %s",
+                    name,
+                    exc,
+                )
                 any_failure = True
         if any_failure:
             self._mark_stale(
@@ -423,8 +456,13 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
                 continue
             try:
                 out[path.stem] = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, ValueError):  # a corrupt partition is skipped, not fatal (AD-13).
-                logger.warning("migration detail partition unreadable, skipping: %s", path)
+            except (
+                OSError,
+                ValueError,
+            ):  # a corrupt partition is skipped, not fatal (AD-13).
+                logger.warning(
+                    "migration detail partition unreadable, skipping: %s", path
+                )
                 continue
         return out
 

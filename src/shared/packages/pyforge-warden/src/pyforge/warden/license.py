@@ -287,9 +287,9 @@ def license_rung(
     # fail closed via the `.get(..., INDETERMINATE)` fallback below, never
     # short-circuit back to the all-WARN module default (a false-green
     # direction). `None` alone means "no policy supplied" -> module default.
-    status = (
-        policy if policy is not None else DEFAULT_LICENSE_POLICY
-    ).get(info.verdict, Status.INDETERMINATE)
+    status = (policy if policy is not None else DEFAULT_LICENSE_POLICY).get(
+        info.verdict, Status.INDETERMINATE
+    )
     return (
         status,
         StatusDriver(axis=finding.axis, finding_id=finding.id),
@@ -367,9 +367,7 @@ def _license_ref_reparse(text: str) -> object | None:
     grammar-degenerate input like ``"()"``)."""
     try:
         unknown = _LICENSING.unknown_license_keys(text)
-        if not unknown or not all(
-            _LICENSE_REF_RE.fullmatch(key) for key in unknown
-        ):
+        if not unknown or not all(_LICENSE_REF_RE.fullmatch(key) for key in unknown):
             return None
         return _LICENSING.parse(text, validate=False, strict=False)
     except Exception:  # noqa: BLE001 — same never-raises contract as _parse_spdx
@@ -586,7 +584,9 @@ _NON_NAMING_LICENSE_CLASSIFIERS = frozenset(
 )
 
 
-def _classifier_license_candidate(meta: importlib.metadata.PackageMetadata) -> str | None:
+def _classifier_license_candidate(
+    meta: importlib.metadata.PackageMetadata,
+) -> str | None:
     """The trove-classifier fallback tier's own single candidate (Fix 6b,
     review finding 2026-07-18): every license-naming ``Classifier`` maps
     through ``_CLASSIFIER_SPDX`` to its SPDX id, deduplicated to the

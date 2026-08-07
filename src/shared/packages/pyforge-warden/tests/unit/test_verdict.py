@@ -98,7 +98,10 @@ def test_compose_winner_driver_propagates():
         [
             (Status.CLEAN, None),
             (Status.POLICY_VIOLATION, winner_driver),
-            (Status.WARN, StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP003:x")),
+            (
+                Status.WARN,
+                StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP003:x"),
+            ),
         ]
     )
     assert status is Status.POLICY_VIOLATION
@@ -135,9 +138,7 @@ def test_compose_equal_rank_tie_break_is_feed_order_independent():
     """Equal-rank ties resolve to the smallest (axis, finding_id) driver,
     regardless of feed order."""
     small = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:aaa")
-    big = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-zzzz:zlib@1.3"
-    )
+    big = StatusDriver(axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-zzzz:zlib@1.3")
     rungs = [(Status.POLICY_VIOLATION, big), (Status.POLICY_VIOLATION, small)]
     assert compose(rungs) == (Status.POLICY_VIOLATION, small)
     assert compose(reversed(rungs)) == (Status.POLICY_VIOLATION, small)
@@ -177,7 +178,9 @@ def test_unknown_match_level_is_indeterminate_never_clean(level):
 
 def test_only_exact_reaches_clean_across_current_members():
     for level in CveMatchLevel:
-        expected = Status.CLEAN if level is CveMatchLevel.EXACT else Status.INDETERMINATE
+        expected = (
+            Status.CLEAN if level is CveMatchLevel.EXACT else Status.INDETERMINATE
+        )
         assert match_level_rung(level) is expected
 
 
@@ -188,9 +191,7 @@ def test_allow_empty_downgrades_the_empty_extraction_driver_to_zero():
     driver = StatusDriver(
         axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
     )
-    assert (
-        exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 0
-    )
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=True) == 0
 
 
 def test_allow_empty_false_leaves_the_empty_extraction_driver_at_one():
@@ -198,9 +199,7 @@ def test_allow_empty_false_leaves_the_empty_extraction_driver_at_one():
         axis=AXIS_HYGIENE, finding_id="indeterminate:empty-extraction:scan"
     )
     assert exit_code_for(Status.INDETERMINATE, driver=driver) == 1
-    assert (
-        exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=False) == 1
-    )
+    assert exit_code_for(Status.INDETERMINATE, driver=driver, allow_empty=False) == 1
 
 
 def test_allow_empty_with_no_driver_stays_at_one():
@@ -233,9 +232,9 @@ def test_allow_empty_never_affects_non_indeterminate_statuses():
     for status in Status:
         if status is Status.INDETERMINATE:
             continue
-        assert exit_code_for(
-            status, driver=driver, allow_empty=True
-        ) == exit_code_for(status)
+        assert exit_code_for(status, driver=driver, allow_empty=True) == exit_code_for(
+            status
+        )
 
 
 def test_all_clean_guard_socket_proven_total_not_dead(component_factory):

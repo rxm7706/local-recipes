@@ -104,7 +104,9 @@ def build_feedstock_health_model(table: Any) -> SemanticModel:
         table=table,
         name="feedstock_health",
         dimensions={
-            "feedstock_name": Dimension(expr=lambda t: t.feedstock_name, is_entity=True),
+            "feedstock_name": Dimension(
+                expr=lambda t: t.feedstock_name, is_entity=True
+            ),
             "ci_red": Dimension(expr=metrics.ci_red),
             "has_open_prs": Dimension(expr=metrics.has_open_prs),
             "has_open_issues": Dimension(expr=metrics.has_open_issues),
@@ -119,7 +121,9 @@ def build_feedstock_health_model(table: Any) -> SemanticModel:
                 expr=lambda t: metrics.has_open_prs(t).ifelse(1, 0).sum().fill_null(0)
             ),
             "open_issues_count": Measure(
-                expr=lambda t: metrics.has_open_issues(t).ifelse(1, 0).sum().fill_null(0)
+                expr=lambda t: (
+                    metrics.has_open_issues(t).ifelse(1, 0).sum().fill_null(0)
+                )
             ),
         },
     )

@@ -14,7 +14,9 @@ from pyforge.atlas.datasets.rate_limit import DEFAULT_RPS, RateLimitedScheduler
 
 
 def test_anaconda_dataset_constructs_offline_and_owns_scheduler():
-    ds = AnacondaDownloadsDataset(url="https://api.anaconda.org/package", metadata={"layer": "raw"})
+    ds = AnacondaDownloadsDataset(
+        url="https://api.anaconda.org/package", metadata={"layer": "raw"}
+    )
     assert isinstance(ds.scheduler, RateLimitedScheduler)
     assert ds.scheduler.rps == DEFAULT_RPS == 3.0
     d = ds._describe()
@@ -24,9 +26,15 @@ def test_anaconda_dataset_constructs_offline_and_owns_scheduler():
 
 def test_anaconda_request_path_is_per_package():
     ds = AnacondaDownloadsDataset(url="https://api.anaconda.org/package")
-    assert ds.request_path("conda-forge", "numpy") == "https://api.anaconda.org/package/conda-forge/numpy"
+    assert (
+        ds.request_path("conda-forge", "numpy")
+        == "https://api.anaconda.org/package/conda-forge/numpy"
+    )
     # owner defaults to conda-forge, slashes trimmed
-    assert ds.request_path("", "pandas") == "https://api.anaconda.org/package/conda-forge/pandas"
+    assert (
+        ds.request_path("", "pandas")
+        == "https://api.anaconda.org/package/conda-forge/pandas"
+    )
 
 
 def test_github_dataset_constructs_offline_with_credentials():

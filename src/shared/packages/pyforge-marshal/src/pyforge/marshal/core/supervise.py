@@ -203,7 +203,9 @@ def idle_since(samples: Sequence[Sample]) -> datetime | None:
     tick that exception class sits outside the ``except (FsError,
     ValueError)`` handler and would kill the sidecar with a traceback after
     ``supervisor-attach``."""
-    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
+    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(
+        samples, Sequence
+    ):
         raise TypeError(
             "samples must be a sequence of Sample (not a bare str/bytes), "
             f"got {samples!r}"
@@ -225,7 +227,9 @@ def idle_anchor(samples: Sequence[Sample]) -> Sample | None:
     reading would restart the very elapsed count the rebase exists to
     preserve -- silently making ``stop-and-retry`` unreachable again, the
     exact defect the rebase was introduced to fix."""
-    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
+    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(
+        samples, Sequence
+    ):
         raise TypeError(
             "samples must be a sequence of Sample (not a bare str/bytes), "
             f"got {samples!r}"
@@ -260,7 +264,9 @@ def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRun
     compares ``False`` against every relational operator and so must be
     rejected via a NEGATED ``>`` check, never a direct ``<= 0`` (review
     finding)."""
-    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
+    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(
+        samples, Sequence
+    ):
         raise TypeError(
             "samples must be a sequence of Sample (not a bare str/bytes), "
             f"got {samples!r}"

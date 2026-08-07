@@ -58,10 +58,9 @@ def test_definitions_are_loadable(defs):
 
 def test_jobs_resolve(defs):
     names = {j.name for j in defs.jobs}
-    expected = (
-        {D.BOOTSTRAP_JOB_NAME, D.PHASE_P_JOB_NAME}
-        | {job_name for job_name, *_ in D.SCHEDULED_JOBS}
-    )
+    expected = {D.BOOTSTRAP_JOB_NAME, D.PHASE_P_JOB_NAME} | {
+        job_name for job_name, *_ in D.SCHEDULED_JOBS
+    }
     assert expected <= names, f"missing jobs: {expected - names}"
     # each kedro op-job actually resolves into a graph of ops (not empty).
     for job in _kedro_jobs(defs):
@@ -84,13 +83,18 @@ def test_schedules_enumerate(defs):
 
 def test_all_cron_strings_are_well_formed(defs):
     for s in defs.schedules:
-        assert _CRON_RE.match(s.cron_schedule), f"malformed cron on {s.name}: {s.cron_schedule!r}"
+        assert _CRON_RE.match(s.cron_schedule), (
+            f"malformed cron on {s.name}: {s.cron_schedule!r}"
+        )
 
 
 def test_cadence_table_is_encoded(defs):
     """Every row of guides/atlas-operations.md cron cadence table is present at
     the right cadence (AC-1)."""
-    by_job = {job_name: (ops, cron, cadence) for job_name, ops, cron, cadence, _ in D.SCHEDULED_JOBS}
+    by_job = {
+        job_name: (ops, cron, cadence)
+        for job_name, ops, cron, cadence, _ in D.SCHEDULED_JOBS
+    }
     # weekly bootstrap "everything"
     boot_sched = next(s for s in defs.schedules if s.job_name == D.BOOTSTRAP_JOB_NAME)
     assert boot_sched.cron_schedule == "0 2 * * 0"  # weekly
@@ -106,7 +110,9 @@ def test_cadence_table_is_encoded(defs):
         "phase_n_live_health": "hourly",
         "refresh_assets": "weekly",
     }
-    assert set(by_job) == set(expected_cadence), "cadence job set drifted from the table"
+    assert set(by_job) == set(expected_cadence), (
+        "cadence job set drifted from the table"
+    )
     for job_name, cadence in expected_cadence.items():
         _ops, cron, actual_cadence = by_job[job_name]
         assert actual_cadence == cadence
@@ -160,7 +166,11 @@ def test_phase_r_overrun_cannot_abort_phase_f_k_n(defs):
         for node in job.graph.nodes
     }
     r_budget = budgets["enrich_pypi_intelligence"]  # Phase R cold pull
-    for phase_op in ("compute_downloads", "track_upstream_versions", "fetch_live_health"):
+    for phase_op in (
+        "compute_downloads",
+        "track_upstream_versions",
+        "fetch_live_health",
+    ):
         assert budgets[phase_op] < r_budget, (
             f"{phase_op} shares/exceeds Phase R's budget — not independent"
         )
@@ -220,7 +230,9 @@ def test_profile_default_used_when_no_env_no_override():
 
 
 def test_explicit_env_beats_profile_default():
-    cfg = D.resolve_profile_config("maintainer", env={"PYFORGE_ATLAS_SCOPE": "env-scope"})
+    cfg = D.resolve_profile_config(
+        "maintainer", env={"PYFORGE_ATLAS_SCOPE": "env-scope"}
+    )
     assert cfg["scope"] == "env-scope"
 
 
@@ -415,7 +427,9 @@ def test_malformed_event_payload_does_not_crash(defs):
         job=job,
         run_key_prefix="pypi",
         description="test",
-        event_source=_sim_source({"nope": 1}, {"seq": "x", "id": "a"}, {"seq": -1, "id": "b"}),
+        event_source=_sim_source(
+            {"nope": 1}, {"seq": "x", "id": "a"}, {"seq": -1, "id": "b"}
+        ),
     )
     results = list(sensor(dg.build_sensor_context()))
     assert all(isinstance(r, dg.SkipReason) for r in results)
@@ -519,8 +533,10 @@ def test_mix_of_new_and_already_seen_events_counts_only_the_new(defs):
         description="test",
         # seq 3,4,5 already seen (cursor 5); 6,7 are new.
         event_source=_sim_source(
-            {"seq": 3, "id": "a"}, {"seq": 5, "id": "b"},
-            {"seq": 6, "id": "c"}, {"seq": 7, "id": "d"},
+            {"seq": 3, "id": "a"},
+            {"seq": 5, "id": "b"},
+            {"seq": 6, "id": "c"},
+            {"seq": 7, "id": "d"},
         ),
     )
     ctx = dg.build_sensor_context(cursor="5")
@@ -695,7 +711,9 @@ def test_scan_raw_docs_missing_dir_is_empty(tmp_path):
     assert scan_raw_docs(tmp_path / "nope") == ()
 
 
-@pytest.mark.parametrize("bad", ['[{"x": 1}]', "[[1]]", "{}", '"5"', "42", "not json", "[1, 2]"])
+@pytest.mark.parametrize(
+    "bad", ['[{"x": 1}]', "[[1]]", "{}", '"5"', "42", "not json", "[1, 2]"]
+)
 def test_evaluate_raw_scan_tolerates_malformed_cursor(bad):
     """A valid-JSON-but-nested / foreign cursor degrades to 'nothing seen' — NEVER a crash (the
     sensor tick must not die on a corrupt Dagster cursor store). Mirrors G3's garbage-cursor test.
@@ -712,6 +730,10 @@ def test_compile_sensor_survives_a_corrupt_cursor(defs):
     the idempotent safe path — the daemon stays alive)."""
     import dagster as dg
 
-    sensor = D.build_wiki_compile_sensor(job=_compile_job(defs), raw_lister=lambda: ["a.md"])
-    results = list(sensor(dg.build_sensor_context(cursor='[{"x": 1}]')))  # must not raise
+    sensor = D.build_wiki_compile_sensor(
+        job=_compile_job(defs), raw_lister=lambda: ["a.md"]
+    )
+    results = list(
+        sensor(dg.build_sensor_context(cursor='[{"x": 1}]'))
+    )  # must not raise
     assert any(isinstance(r, dg.RunRequest) for r in results)

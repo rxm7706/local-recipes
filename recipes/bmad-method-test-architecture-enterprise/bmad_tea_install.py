@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy bmad-method-test-architecture-enterprise agent and workflows into .claude/skills/ directory."""
+
 import argparse
 import os
 import shutil
@@ -38,7 +39,10 @@ def main():
 
     prefix = os.environ.get("CONDA_PREFIX", "")
     if not prefix:
-        print("Error: CONDA_PREFIX is not set. Activate your pixi/conda environment first.", file=sys.stderr)
+        print(
+            "Error: CONDA_PREFIX is not set. Activate your pixi/conda environment first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     share = os.path.join(prefix, "share", "bmad-method-test-architecture-enterprise")

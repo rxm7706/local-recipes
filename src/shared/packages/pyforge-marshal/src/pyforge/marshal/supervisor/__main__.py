@@ -456,6 +456,7 @@ def _feed_key_form(raw: str) -> str:
         # `MalformedStoryKeyError` is a `ValueError`.
         return raw
 
+
 # `CeilingStatus` carries no intrinsic ordering (mirrors `LadderRung`'s own
 # convention, ordered via `core.supervise.rung_index`) -- this is the one
 # place `run_supervisor`'s own tick loop needs "is this a rising edge"
@@ -1072,7 +1073,9 @@ def run_supervisor(
             nonlocal previous_task_phases, last_durability_push_monotonic
             if status_snapshot is None:
                 return
-            current_task_phases = {task.story_key: task for task in status_snapshot.tasks}
+            current_task_phases = {
+                task.story_key: task for task in status_snapshot.tasks
+            }
             triggers: tuple[PushTrigger, ...] = classify_push_triggers(
                 previous_task_phases, current_task_phases
             )
@@ -1382,7 +1385,10 @@ def run_supervisor(
             # above -- this is a best-effort side effect, not an action that
             # competes with the idle ladder/budget ceilings for "did this
             # tick already decide to end the run".
-            if watched_alive and (monotonic_now - last_durability_push_monotonic) >= threshold_s:
+            if (
+                watched_alive
+                and (monotonic_now - last_durability_push_monotonic) >= threshold_s
+            ):
                 _push_branch(station_branch, _INTERVAL_PUSH_BOUNDARY, None)
                 last_durability_push_monotonic = monotonic_now
 
@@ -1454,7 +1460,9 @@ def run_supervisor(
                     # tick simply carries the previous value forward, same
                     # as the idle ladder's own "act only on evidence it has"
                     # discipline for an unobservable pane.
-                    new_story_key = usage.story_key if usage is not None else current_story_key
+                    new_story_key = (
+                        usage.story_key if usage is not None else current_story_key
+                    )
                     if new_story_key != current_story_key:
                         if current_story_key is not None:
                             # "Cost estimate" (the spec's own Always bullet):
@@ -1495,7 +1503,10 @@ def run_supervisor(
                     if usage is not None and new_story_key is not None:
                         last_story_weighted_tokens = usage.story_weighted_tokens
 
-                    if current_story_key is not None and story_started_monotonic is not None:
+                    if (
+                        current_story_key is not None
+                        and story_started_monotonic is not None
+                    ):
                         story_elapsed_minutes = (
                             monotonic_now - story_started_monotonic
                         ) / 60.0
@@ -1761,7 +1772,9 @@ def run_supervisor(
 
                 if rung_index(rung) > rung_index(last_acted_rung):
                     if rung is LadderRung.NUDGE:
-                        intent_id = _append_intent(_NUDGE_KIND, {"session": session_name})
+                        intent_id = _append_intent(
+                            _NUDGE_KIND, {"session": session_name}
+                        )
                         sent = observer.send_text(session_name, _NUDGE_TEXT)
                         outcome_payload: dict[str, object] = {"sent": sent}
                         if not sent:
@@ -2030,7 +2043,9 @@ def run_supervisor(
                                     # is honest.
                                     watched_alive = process.is_alive(watched_pid)
                     elif rung is LadderRung.DEFER:
-                        intent_id = _append_intent(_DEFER_KIND, {"watched_pid": watched_pid})
+                        intent_id = _append_intent(
+                            _DEFER_KIND, {"watched_pid": watched_pid}
+                        )
                         # Best-effort (review finding): a failed stop must
                         # never block the defer outcome from being
                         # journaled, nor keep this loop running against a
@@ -2055,9 +2070,7 @@ def run_supervisor(
                             # stopped -- the run may still be running". The
                             # frame names the run; the detail says only what
                             # is known about WHY.
-                            defer_detail = (
-                                "bmad-loop reported it was not stopped"
-                            )
+                            defer_detail = "bmad-loop reported it was not stopped"
                         defer_payload["stopped"] = stopped
                         if not stopped:
                             # A failed stop at the TERMINAL rung is the worst
@@ -2186,7 +2199,9 @@ def run_supervisor(
                 {
                     "story_key": _feed_key_form(current_story_key),
                     "cost_estimate": (
-                        last_story_weighted_tokens if last_story_weighted_tokens else None
+                        last_story_weighted_tokens
+                        if last_story_weighted_tokens
+                        else None
                     ),
                 },
             )
@@ -2291,7 +2306,10 @@ def run_supervisor(
         # An uncaught one here kills the sidecar with a raw traceback AFTER
         # `supervisor-attach` is journaled -- the dangling attach with no
         # matching detach AD-9 says must never happen.
-        print(f"supervisor: cannot append to journal {journal_path}: {exc}", file=sys.stderr)
+        print(
+            f"supervisor: cannot append to journal {journal_path}: {exc}",
+            file=sys.stderr,
+        )
         return 1
 
     return 0
@@ -2359,7 +2377,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     # re-anchors -- a relative home here means the caller is malformed, not
     # that a default needs filling in.
     if not Path(home).is_absolute():
-        print(f"supervisor: home must be an absolute path, got {home!r}", file=sys.stderr)
+        print(
+            f"supervisor: home must be an absolute path, got {home!r}", file=sys.stderr
+        )
         return 1
     # `slug` and `run_id` are BOTH path components of the journal this
     # process reads AND appends to (`_run_dir`), so an unvalidated value
@@ -2397,7 +2417,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         # a malformed direct invocation -- guarded here regardless, the same
         # "raise/refuse rather than silently misinterpret" discipline every
         # other boundary in this package already applies.
-        print(f"supervisor: watched pid must be positive, got {watched_pid}", file=sys.stderr)
+        print(
+            f"supervisor: watched pid must be positive, got {watched_pid}",
+            file=sys.stderr,
+        )
         return 1
     if watched_pid > _MAX_PROBEABLE_PID:
         # The upper half of the same guard (review finding). `is_alive` is
@@ -2475,8 +2498,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         # plus an explicit finiteness check, never a bare `<= 0`.
         if not (_value > 0) or not math.isfinite(_value):
             print(
-                f"supervisor: {_name} must be a positive finite number, "
-                f"got {_value}",
+                f"supervisor: {_name} must be a positive finite number, got {_value}",
                 file=sys.stderr,
             )
             return 1

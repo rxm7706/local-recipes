@@ -134,8 +134,8 @@ def _build_parser():
         epilog=(
             "Example:\n"
             "  uv run skf-coverage-tally.py "
-            "'{\"rows\":[{\"technology\":\"react\",\"verdict\":\"Covered\"},"
-            "{\"technology\":\"postgres\",\"verdict\":\"Missing\"}]}'"
+            '\'{"rows":[{"technology":"react","verdict":"Covered"},'
+            '{"technology":"postgres","verdict":"Missing"}]}\''
         ),
     )
     src = parser.add_mutually_exclusive_group()

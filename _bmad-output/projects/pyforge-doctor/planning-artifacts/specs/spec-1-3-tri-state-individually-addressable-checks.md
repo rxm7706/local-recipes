@@ -127,8 +127,16 @@ warnings: ['oversized']
 ```python
 _ENGINE_CHECKS: tuple[CheckSpec, ...] = tuple(
     CheckSpec(category="engines", name=n)
-    for n in ("deptry", "osv-scanner", "osv-db", "kev-feed", "epss-feed", "endoflife-feed")
+    for n in (
+        "deptry",
+        "osv-scanner",
+        "osv-db",
+        "kev-feed",
+        "epss-feed",
+        "endoflife-feed",
+    )
 )
+
 
 def gather_one(category: str, name: str, target: Path) -> Finding | None:
     if category != "engines":

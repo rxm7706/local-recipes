@@ -50,7 +50,10 @@ FORBIDDEN_PUBLIC_HOSTS = (
 # no host and is fine (the resolver validates env values against it).
 _URL_WITH_HOST = re.compile(r"https?://[\w.-]+\.\w")
 
-_CFG_ENV = {"OPENAI_BASE_URL": "http://localhost:4141/v1", "OPENAI_API_KEY": "unit-test-key"}
+_CFG_ENV = {
+    "OPENAI_BASE_URL": "http://localhost:4141/v1",
+    "OPENAI_API_KEY": "unit-test-key",
+}
 
 
 # --------------------------------------------------------------------------- #
@@ -65,7 +68,9 @@ def _mcp_tool_registrations(server_src: str) -> dict[str, str]:
     pytest puts ``tests/`` on sys.path (building the live server would import the SDK)."""
     tree = ast.parse(server_src)
     build = next(
-        n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "build_server"
+        n
+        for n in tree.body
+        if isinstance(n, ast.FunctionDef) and n.name == "build_server"
     )
     reg: dict[str, str] = {}
     for fn in [n for n in ast.walk(build) if isinstance(n, ast.FunctionDef)]:
@@ -80,7 +85,11 @@ def _mcp_tool_registrations(server_src: str) -> dict[str, str]:
         delegate = ""
         for call in (n for n in ast.walk(fn) if isinstance(n, ast.Call)):
             f = call.func
-            if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) and f.value.id == "tools":
+            if (
+                isinstance(f, ast.Attribute)
+                and isinstance(f.value, ast.Name)
+                and f.value.id == "tools"
+            ):
                 delegate = f.attr
         reg[fn.name] = delegate
     return reg
@@ -91,7 +100,9 @@ def test_tool_is_registered_in_the_mcp_server_surface():
     wrapper delegating 1:1 to tools.query_vizro_ai)."""
     src = Path(server.__file__).read_text(encoding="utf-8")
     reg = _mcp_tool_registrations(src)
-    assert "query_vizro_ai" in reg, f"query_vizro_ai not registered in server.py; got {sorted(reg)}"
+    assert "query_vizro_ai" in reg, (
+        f"query_vizro_ai not registered in server.py; got {sorted(reg)}"
+    )
     assert reg["query_vizro_ai"] == "query_vizro_ai"
     # exposed alongside the existing surface (sanity: the B3 tools are still there too)
     assert {"read_atlas_dataset", "list_atlas_pipelines"} <= set(reg)
@@ -128,7 +139,12 @@ def test_unconfigured_backend_returns_structured_advisory():
 
 
 def test_unconfigured_is_the_default_with_scrubbed_process_env(monkeypatch):
-    for var in ("OPENAI_BASE_URL", "OPENAI_API_KEY", "ANTHROPIC_BASE_URL", "ANTHROPIC_API_KEY"):
+    for var in (
+        "OPENAI_BASE_URL",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_BASE_URL",
+        "ANTHROPIC_API_KEY",
+    ):
         monkeypatch.delenv(var, raising=False)
     out = tools.query_vizro_ai("anything")  # env=None -> reads os.environ
     assert out["status"] == nl.STATUS_UNCONFIGURED
@@ -155,7 +171,9 @@ def test_resolver_reads_openai_base_url_from_env():
     cfg = nl_backend.resolve_backend(_CFG_ENV)
     assert cfg is not None
     assert cfg.provider == "openai"
-    assert cfg.base_url == "http://localhost:4141/v1"  # the configured endpoint, verbatim
+    assert (
+        cfg.base_url == "http://localhost:4141/v1"
+    )  # the configured endpoint, verbatim
     assert cfg.api_key == "unit-test-key"
 
 
@@ -170,7 +188,9 @@ def test_resolver_reads_anthropic_base_url_from_env():
 def test_configured_backend_uses_the_env_endpoint_and_defers_live_call():
     out = tools.query_vizro_ai("plot downloads", env=_CFG_ENV)
     assert out["status"] == nl.STATUS_DEFERRED
-    assert out["endpoint"] == "http://localhost:4141/v1"  # repo-config endpoint, not a default
+    assert (
+        out["endpoint"] == "http://localhost:4141/v1"
+    )  # repo-config endpoint, not a default
     assert out["provider"] == "openai"
     assert out["chart"] is None  # live NL->chart is the attended Q3 event
     assert out["deferred_work"] == "DW-D3"
@@ -179,10 +199,14 @@ def test_configured_backend_uses_the_env_endpoint_and_defers_live_call():
 def test_no_hardcoded_public_host_in_the_resolver_or_query_source():
     for label, src in (("backend.py", BACKEND_SRC), ("query.py", QUERY_SRC)):
         for host in FORBIDDEN_PUBLIC_HOSTS:
-            assert host not in src, f"hardcoded public host {host!r} found in nl/{label} (Q3 §11)"
+            assert host not in src, (
+                f"hardcoded public host {host!r} found in nl/{label} (Q3 §11)"
+            )
 
 
-@pytest.mark.parametrize("label,src", [("backend.py", BACKEND_SRC), ("query.py", QUERY_SRC)])
+@pytest.mark.parametrize(
+    "label,src", [("backend.py", BACKEND_SRC), ("query.py", QUERY_SRC)]
+)
 def test_nl_source_has_no_url_literal_with_a_host(label, src):
     """Strong Q3 §11 proof: no string constant ANYWHERE in the nl/ endpoint-facing modules
     (backend.py AND query.py) is a host-bearing URL — the endpoint can ONLY come from the
@@ -219,11 +243,12 @@ def _call_root(func: ast.expr) -> str | None:
 
 
 def test_query_vizro_ai_tool_body_is_ad7_thin():
-    src = (
-        Path(tools.__file__).resolve().parent / "tools.py"
-    ).read_text(encoding="utf-8")
+    src = (Path(tools.__file__).resolve().parent / "tools.py").read_text(
+        encoding="utf-8"
+    )
     fn = next(
-        n for n in ast.parse(src).body
+        n
+        for n in ast.parse(src).body
         if isinstance(n, ast.FunctionDef) and n.name == "query_vizro_ai"
     )
     roots = {_call_root(c.func) for c in ast.walk(fn) if isinstance(c, ast.Call)}
@@ -272,13 +297,22 @@ def test_partial_config_key_without_base_degrades_to_unconfigured():
 
 
 def test_malformed_base_url_degrades_to_unconfigured():
-    out = tools.query_vizro_ai("q", env={"OPENAI_BASE_URL": "not-a-url", "OPENAI_API_KEY": "k"})
+    out = tools.query_vizro_ai(
+        "q", env={"OPENAI_BASE_URL": "not-a-url", "OPENAI_API_KEY": "k"}
+    )
     assert out["status"] == nl.STATUS_UNCONFIGURED
     assert "not a valid http(s) URL" in out["advisory"]
-    assert nl_backend.resolve_backend({"OPENAI_BASE_URL": "not-a-url", "OPENAI_API_KEY": "k"}) is None
+    assert (
+        nl_backend.resolve_backend(
+            {"OPENAI_BASE_URL": "not-a-url", "OPENAI_API_KEY": "k"}
+        )
+        is None
+    )
 
 
-@pytest.mark.parametrize("bad_base", ["http://", "https://", "http://   ", "http://\n", "ftp://host"])
+@pytest.mark.parametrize(
+    "bad_base", ["http://", "https://", "http://   ", "http://\n", "ftp://host"]
+)
 def test_scheme_only_or_hostless_base_url_is_not_configured(bad_base):
     """Reviewer-B finding 1: a base-url that is a bare scheme (http://) or lacks a host is NOT a
     usable endpoint — it must degrade to unconfigured, never a false 'configured' receipt that
@@ -305,7 +339,9 @@ def test_empty_and_garbage_query_still_return_a_structured_advisory():
 def test_vizro_ai_import_failure_never_breaks_the_tool_or_probe(monkeypatch):
     """If ``vizro_ai`` cannot be imported, the guarded probe returns False and the tool still
     returns a structured result (Reviewer-B: a missing/broken vizro_ai must not break D3)."""
-    monkeypatch.setitem(sys.modules, "vizro_ai", None)  # any `import vizro_ai` -> ImportError
+    monkeypatch.setitem(
+        sys.modules, "vizro_ai", None
+    )  # any `import vizro_ai` -> ImportError
     assert nl.vizro_ai_available() is False
     out = tools.query_vizro_ai("q", env=_CFG_ENV)
     assert out["status"] == nl.STATUS_DEFERRED
@@ -318,7 +354,9 @@ def test_configured_path_makes_no_live_llm_call_even_with_a_backend(monkeypatch)
     attended Q3 event). Block sockets and confirm the configured path still just returns."""
 
     def _boom(*a, **k):
-        raise AssertionError("configured NL path must not open a socket in-container (DW-D3)")
+        raise AssertionError(
+            "configured NL path must not open a socket in-container (DW-D3)"
+        )
 
     monkeypatch.setattr(socket, "socket", _boom)
     out = tools.query_vizro_ai("plot it", env=_CFG_ENV)

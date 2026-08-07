@@ -45,9 +45,7 @@ from pathlib import Path
 try:
     import tomllib
 except ImportError:
-    sys.stderr.write(
-        "error: Python 3.11+ is required (stdlib `tomllib` not found).\n"
-    )
+    sys.stderr.write("error: Python 3.11+ is required (stdlib `tomllib` not found).\n")
     sys.exit(3)
 
 
@@ -188,11 +186,16 @@ def main():
         description="Resolve BMad central config using up-to-six-layer TOML merge with optional per-project overlay.",
     )
     parser.add_argument(
-        "--project-root", "-p", required=True,
+        "--project-root",
+        "-p",
+        required=True,
         help="Absolute path to the project root (contains _bmad/)",
     )
     parser.add_argument(
-        "--key", "-k", action="append", default=[],
+        "--key",
+        "-k",
+        action="append",
+        default=[],
         help="Dotted field path to resolve (repeatable). Omit for full dump.",
     )
     parser.add_argument(
@@ -200,7 +203,8 @@ def main():
         help="Active project slug — overrides BMAD_ACTIVE_PROJECT env and .active-project marker for this call.",
     )
     parser.add_argument(
-        "--show-active-project", action="store_true",
+        "--show-active-project",
+        action="store_true",
         help="Print the resolved active project slug to stderr (debug).",
     )
     args = parser.parse_args()

@@ -240,9 +240,7 @@ def test_non_dict_record_is_counted_and_reported():
     assert parse.records_total == 2
     assert parse.records_unparseable == 2
     assert parse.unparseable_rate == 1.0
-    assert all(
-        e.kind is ErrorKind.ENGINE_OUTPUT_UNRECOGNIZED for e in parse.errors
-    )
+    assert all(e.kind is ErrorKind.ENGINE_OUTPUT_UNRECOGNIZED for e in parse.errors)
 
 
 def test_mixed_valid_and_malformed_records_partition_correctly():
@@ -440,9 +438,7 @@ def test_frontdoor_excludes_components_with_no_pypi_identity(component_factory):
 
 
 def test_frontdoor_excludes_components_not_hygiene_covered(component_factory):
-    component = component_factory(
-        name="numpy", version="1.26.0", hygiene_covered=False
-    )
+    component = component_factory(name="numpy", version="1.26.0", hygiene_covered=False)
     synthesized = _synthesize_deptry_frontdoor([component])
     assert synthesized.lines == ()
 

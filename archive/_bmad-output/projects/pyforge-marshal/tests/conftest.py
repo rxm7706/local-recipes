@@ -23,6 +23,7 @@ import pytest
 # Verdict Lattice Fixtures
 # ============================================================================
 
+
 class VerdiLattice:
     """Closed verdict lattice with states: ERROR, WARNING, PASS (no invalid transitions)."""
 
@@ -44,13 +45,15 @@ class VerdiLattice:
 
     def add_finding(self, finding_code: str, severity: str, message: str):
         """Add a finding to the verdict."""
-        self.findings.append({
-            "code": finding_code,
-            "severity": severity,
-            "message": message,
-        })
+        self.findings.append(
+            {
+                "code": finding_code,
+                "severity": severity,
+                "message": message,
+            }
+        )
 
-    def aggregate(self, verdicts: List[str]) -> 'VerdiLattice':
+    def aggregate(self, verdicts: List[str]) -> "VerdiLattice":
         """Aggregate multiple verdicts into one."""
         result = VerdiLattice()
         for verdict in verdicts:
@@ -79,6 +82,7 @@ def verdict_lattice():
 # ============================================================================
 # Finding Codes Fixtures
 # ============================================================================
+
 
 class FindingCodeRegistry:
     """Registry of all valid finding codes."""
@@ -134,6 +138,7 @@ def finding_codes():
 # Loop Home & Policy Fixtures
 # ============================================================================
 
+
 class LoopHome:
     """Real worktree provisioned at a path. Auto-cleaned up after test."""
 
@@ -170,6 +175,7 @@ class LoopHome:
         # In real implementation, would remove git worktree
         # For tests, just cleanup temp directory
         import shutil
+
         if self.path.exists():
             shutil.rmtree(self.path)
 
@@ -220,6 +226,7 @@ def policy_layers(loop_home_fixture):
 # ============================================================================
 # Journal & Config Fixtures
 # ============================================================================
+
 
 class RunJournal:
     """Append-only journal with deterministic serialization."""
@@ -288,6 +295,7 @@ def adapter_config(loop_home_fixture):
 # ============================================================================
 # Markers
 # ============================================================================
+
 
 def pytest_configure(config):
     """Configure pytest markers."""

@@ -23,7 +23,8 @@ Enable `conda install -c conda-forge python-magic` to work on `win-64`. Today, `
 - A user can run, on a fresh Windows machine after `conda install python-magic`:
   ```python
   import magic
-  m = magic.Magic()             # loads libmagic.dll
+
+  m = magic.Magic()  # loads libmagic.dll
   print(m.from_file("README.md"))  # prints something like "ASCII text"
   ```
 

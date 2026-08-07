@@ -189,7 +189,10 @@ def check(state_file: str, skill_name: str, force: bool = False) -> int:
 
     if forced:
         json.dump(
-            {"warning": f"Forcing past unmet dependencies for '{skill_name}'", "unmet": unmet},
+            {
+                "warning": f"Forcing past unmet dependencies for '{skill_name}'",
+                "unmet": unmet,
+            },
             sys.stderr,
         )
         sys.stderr.write("\n")
@@ -223,7 +226,9 @@ def main() -> int:
         action="store_true",
         help="Check if a skill's dependencies are satisfied",
     )
-    parser.add_argument("--state-file", required=True, help="Path to _campaign-state.yaml")
+    parser.add_argument(
+        "--state-file", required=True, help="Path to _campaign-state.yaml"
+    )
     parser.add_argument("--skill", help="Skill name (required for --check)")
     parser.add_argument(
         "--force",

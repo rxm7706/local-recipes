@@ -169,14 +169,10 @@ def validate_boundaries(boundaries: object) -> list[dict]:
             )
         path = entry.get("path")
         if not isinstance(path, str):
-            raise ValueError(
-                f"boundary entry {name!r} missing required `path` field"
-            )
+            raise ValueError(f"boundary entry {name!r} missing required `path` field")
         files = entry.get("files")
         if not isinstance(files, list):
-            raise ValueError(
-                f"boundary entry {name!r} missing required `files` array"
-            )
+            raise ValueError(f"boundary entry {name!r} missing required `files` array")
         norm_files: list[str] = []
         for f_idx, f in enumerate(files):
             if not isinstance(f, str):
@@ -184,11 +180,13 @@ def validate_boundaries(boundaries: object) -> list[dict]:
                     f"boundary {name!r} files[{f_idx}] is not a string: {f!r}"
                 )
             norm_files.append(f.replace("\\", "/"))
-        normalized.append({
-            "name": name,
-            "path": path.replace("\\", "/"),
-            "files": norm_files,
-        })
+        normalized.append(
+            {
+                "name": name,
+                "path": path.replace("\\", "/"),
+                "files": norm_files,
+            }
+        )
     return normalized
 
 
@@ -461,9 +459,7 @@ def _read_boundaries_source(source: str) -> object:
         try:
             text = path.read_text(encoding="utf-8")
         except OSError as exc:
-            raise ValueError(
-                f"failed to read boundaries file {path}: {exc}"
-            ) from exc
+            raise ValueError(f"failed to read boundaries file {path}: {exc}") from exc
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:
@@ -480,9 +476,7 @@ def _cmd_filter(args: argparse.Namespace) -> int:
 
     source_root = Path(args.source_root or ".").resolve()
     if not source_root.is_dir():
-        print(
-            f"error: source-root not a directory: {source_root}", file=sys.stderr
-        )
+        print(f"error: source-root not a directory: {source_root}", file=sys.stderr)
         return 1
 
     if args.min_files < 0:
@@ -529,8 +523,8 @@ def _build_parser() -> argparse.ArgumentParser:
         required=True,
         help=(
             "path to boundaries JSON, or '-' to read from stdin. "
-            "Shape: [{\"name\": \"<unit>\", \"path\": \"<rel>\", "
-            "\"files\": [\"<rel>\", ...]}, ...]"
+            'Shape: [{"name": "<unit>", "path": "<rel>", '
+            '"files": ["<rel>", ...]}, ...]'
         ),
     )
     p_filter.add_argument(

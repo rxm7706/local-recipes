@@ -157,7 +157,9 @@ def _find_workspace_manifest(workspace_path: str, tree: set[str]) -> Optional[st
     return None
 
 
-def _read_workspace_name(manifest_path: str, manifests: dict[str, str], fallback: str) -> str:
+def _read_workspace_name(
+    manifest_path: str, manifests: dict[str, str], fallback: str
+) -> str:
     """Extract a sensible name from a workspace's manifest.
 
     Best-effort: returns the manifest's declared package name when parseable,
@@ -353,12 +355,12 @@ def detect_generic_folders(
 
 
 DETECTORS: list[tuple[str, callable]] = [
-    ("npm-workspaces",       detect_npm_workspaces),
-    ("pnpm-workspaces",      detect_pnpm_workspaces),
-    ("lerna",                detect_lerna),
-    ("cargo-workspace",      detect_cargo_workspace),
+    ("npm-workspaces", detect_npm_workspaces),
+    ("pnpm-workspaces", detect_pnpm_workspaces),
+    ("lerna", detect_lerna),
+    ("cargo-workspace", detect_cargo_workspace),
     ("python-multi-package", detect_python_multi_package),
-    ("generic-folders",      detect_generic_folders),
+    ("generic-folders", detect_generic_folders),
 ]
 
 # Language ecosystem each manifest kind belongs to. Drives the cross-ecosystem
@@ -366,18 +368,18 @@ DETECTORS: list[tuple[str, callable]] = [
 # it is a tree-shape heuristic, not a distinct root workspace manifest, so it
 # never participates in cross-ecosystem warnings.
 ECOSYSTEM_OF_KIND = {
-    "npm-workspaces":       "js",
-    "pnpm-workspaces":      "js",
-    "lerna":                "js",
-    "cargo-workspace":      "rust",
+    "npm-workspaces": "js",
+    "pnpm-workspaces": "js",
+    "lerna": "js",
+    "cargo-workspace": "rust",
     "python-multi-package": "python",
 }
 
 ROOT_MANIFEST_OF_KIND = {
-    "npm-workspaces":       "package.json",
-    "pnpm-workspaces":      "pnpm-workspace.yaml",
-    "lerna":                "lerna.json",
-    "cargo-workspace":      "Cargo.toml",
+    "npm-workspaces": "package.json",
+    "pnpm-workspaces": "pnpm-workspace.yaml",
+    "lerna": "lerna.json",
+    "cargo-workspace": "Cargo.toml",
     "python-multi-package": None,  # discovered from the tree; no single root manifest
 }
 
@@ -429,30 +431,36 @@ def detect(payload: dict) -> dict:
         return {"_payload_error": "missing or non-list 'tree' field"}
     if not isinstance(manifests, dict):
         return {"_payload_error": "missing or non-dict 'manifests' field"}
-    tree: set[str] = {_normalise_path(p) for p in tree_raw if isinstance(p, str) and p.strip()}
+    tree: set[str] = {
+        _normalise_path(p) for p in tree_raw if isinstance(p, str) and p.strip()
+    }
 
     for kind, detector in DETECTORS:
         result = detector(tree, manifests, warnings)
         if result and len(result) >= 1:
             warnings.extend(_cross_ecosystem_warnings(kind, tree, manifests))
             return {
-                "is_monorepo":   True,
+                "is_monorepo": True,
                 "manifest_kind": kind,
-                "workspaces":    result,
-                "warnings":      warnings,
+                "workspaces": result,
+                "warnings": warnings,
             }
 
     return {
-        "is_monorepo":   False,
+        "is_monorepo": False,
         "manifest_kind": None,
-        "workspaces":    [],
-        "warnings":      warnings,
+        "workspaces": [],
+        "warnings": warnings,
     }
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="Detect monorepo / workspace layouts from a tree + manifests payload.")
-    parser.add_argument("--json", help="Inline JSON payload (otherwise read from stdin).")
+    parser = argparse.ArgumentParser(
+        description="Detect monorepo / workspace layouts from a tree + manifests payload."
+    )
+    parser.add_argument(
+        "--json", help="Inline JSON payload (otherwise read from stdin)."
+    )
     args = parser.parse_args(argv)
 
     raw = args.json

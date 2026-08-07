@@ -466,9 +466,7 @@ def _exact_pep508_pin(requirement: Requirement) -> str | None:
     return None
 
 
-def pep508_pypi_component(
-    raw: str, provenance: tuple[Provenance, ...]
-) -> Component:
+def pep508_pypi_component(raw: str, provenance: tuple[Provenance, ...]) -> Component:
     """Build a PyPI-ecosystem ``Component`` from a PEP 508 requirement
     STRING -- ``identity_source=NATIVE``, mirroring
     ``pyproject.py::PyprojectExtractor._component``'s shape exactly (a

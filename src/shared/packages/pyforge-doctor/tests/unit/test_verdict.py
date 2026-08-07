@@ -34,9 +34,7 @@ def test_all_warn_findings_exit_zero():
 
 
 def test_mixed_ok_and_warn_findings_exit_zero():
-    assert (
-        exit_code_for([_finding(DoctorStatus.OK), _finding(DoctorStatus.WARN)]) == 0
-    )
+    assert exit_code_for([_finding(DoctorStatus.OK), _finding(DoctorStatus.WARN)]) == 0
 
 
 def test_one_fail_present_exits_two():

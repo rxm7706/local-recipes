@@ -99,19 +99,27 @@ def _as_artifacts(artifacts: Any) -> list[tuple[str, str]]:
         return []
     if isinstance(artifacts, str):
         # a bare str is iterable char-by-char — almost never the intent; fail loudly (Gemini #94).
-        raise TypeError("artifacts must be an iterable of (id, text) pairs or {id,text} dicts, not a str")
+        raise TypeError(
+            "artifacts must be an iterable of (id, text) pairs or {id,text} dicts, not a str"
+        )
     out: list[tuple[str, str]] = []
     for item in artifacts:
         if isinstance(item, dict):
             if "id" not in item or "text" not in item:
-                raise ValueError(f"artifact dict must have 'id' and 'text' keys, got {sorted(item)}")
+                raise ValueError(
+                    f"artifact dict must have 'id' and 'text' keys, got {sorted(item)}"
+                )
             out.append((str(item["id"]), str(item["text"])))
         elif isinstance(item, (list, tuple)):
             if len(item) != 2:
-                raise ValueError(f"artifact pair must have exactly 2 elements (id, text), got {len(item)}")
+                raise ValueError(
+                    f"artifact pair must have exactly 2 elements (id, text), got {len(item)}"
+                )
             out.append((str(item[0]), str(item[1])))
         else:
-            raise TypeError(f"artifact must be a dict or a 2-tuple/list, got {type(item).__name__}")
+            raise TypeError(
+                f"artifact must be a dict or a 2-tuple/list, got {type(item).__name__}"
+            )
     return out
 
 
@@ -133,7 +141,9 @@ class DuckdbVssRagStore:
         table: str = "rag_artifacts",
         metric: str = _HNSW_METRIC,
     ) -> None:
-        self.embedder: Embedder = embedder if embedder is not None else HashingEmbedder()
+        self.embedder: Embedder = (
+            embedder if embedder is not None else HashingEmbedder()
+        )
         self.dim = int(self.embedder.dim)
         # `table`/`metric` are interpolated into DDL/DML by name (DuckDB has no bind param for
         # an identifier), so validate them as bare SQL identifiers — a value like
@@ -187,7 +197,8 @@ class DuckdbVssRagStore:
             self.con.execute(f"DELETE FROM {self._table}")
             if prepared:
                 self.con.executemany(
-                    f"INSERT INTO {self._table} VALUES (?, ?, ?::FLOAT[{self.dim}])", prepared
+                    f"INSERT INTO {self._table} VALUES (?, ?, ?::FLOAT[{self.dim}])",
+                    prepared,
                 )
             # Build the HNSW index (requires vss — proves provisioning). Safe on an empty table.
             self.con.execute(
@@ -214,7 +225,9 @@ class DuckdbVssRagStore:
         ``{"id", "text", "distance"}``, ascending by ``distance``."""
         return self._search_vector(self.embedder.embed(query), k)
 
-    def _search_vector(self, query_vec: Sequence[float], k: int) -> list[dict[str, Any]]:
+    def _search_vector(
+        self, query_vec: Sequence[float], k: int
+    ) -> list[dict[str, Any]]:
         """Rank by a raw query vector — the DuckDB-side k-NN. Validates the query dimension
         matches the index (a mismatch raises a CLEAR ValueError, never a silent wrong answer —
         AD-13). ``k <= 0`` returns an empty list; a very large ``k`` simply returns all rows."""
@@ -237,7 +250,9 @@ class DuckdbVssRagStore:
             )
 
     def count(self) -> int:
-        return int(self.con.execute(f"SELECT count(*) FROM {self._table}").fetchone()[0])
+        return int(
+            self.con.execute(f"SELECT count(*) FROM {self._table}").fetchone()[0]
+        )
 
     def close(self) -> None:
         """Close the connection ONLY if this store created it. An injected connection (the F1

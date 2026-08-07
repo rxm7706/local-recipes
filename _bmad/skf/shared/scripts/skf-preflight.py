@@ -31,10 +31,12 @@ try:
     import yaml
 except ImportError:
     print(
-        json.dumps({
-            "error": "PyYAML not installed. Invoke via `uv run` (auto-resolves PEP 723 deps — see docs/getting-started.md) or install manually with `pip install pyyaml`.",
-            "code": "MISSING_DEPENDENCY",
-        }),
+        json.dumps(
+            {
+                "error": "PyYAML not installed. Invoke via `uv run` (auto-resolves PEP 723 deps — see docs/getting-started.md) or install manually with `pip install pyyaml`.",
+                "code": "MISSING_DEPENDENCY",
+            }
+        ),
     )
     sys.exit(1)
 
@@ -149,7 +151,9 @@ def run_preflight(project_root, config_path=None):
         "sidecar": sidecar,
         "derived": {
             "tier": tier_override or tier_value,
-            "tier_source": "override" if tier_override else ("detected" if tier_value else None),
+            "tier_source": "override"
+            if tier_override
+            else ("detected" if tier_value else None),
             "compact_greeting": compact_greeting,
             "is_first_run": tier_value is None,
         },
@@ -158,7 +162,10 @@ def run_preflight(project_root, config_path=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: uv run skf-preflight.py <project-root> [--config-path <path>]", file=sys.stderr)
+        print(
+            "Usage: uv run skf-preflight.py <project-root> [--config-path <path>]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     proj_root = sys.argv[1]

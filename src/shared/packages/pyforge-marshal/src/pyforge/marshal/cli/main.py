@@ -202,9 +202,19 @@ class _VersionAction(argparse.Action):
     init`` and ``marshal --version --bogus`` exited ``2`` instead of
     printing the version under that approach)."""
 
-    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
+    def __init__(
+        self,
+        option_strings,
+        dest=argparse.SUPPRESS,
+        default=argparse.SUPPRESS,
+        help=None,
+    ):
         super().__init__(
-            option_strings=option_strings, dest=dest, default=default, nargs=0, help=help
+            option_strings=option_strings,
+            dest=dest,
+            default=default,
+            nargs=0,
+            help=help,
         )
 
     def __call__(self, parser, namespace, values, option_string=None):
@@ -294,7 +304,9 @@ def _resolve_context(args: argparse.Namespace) -> MarshalContext | None:
     effective, _findings = policy_core.compose(
         project_slug=slug, project=project_data, flags={}
     )
-    loop_home = init_cli._home_path(slug) if policy_core._is_valid_project_slug(slug) else None
+    loop_home = (
+        init_cli._home_path(slug) if policy_core._is_valid_project_slug(slug) else None
+    )
     story = getattr(args, "story", None)
     return MarshalContext(slug=slug, loop_home=loop_home, policy=effective, story=story)
 

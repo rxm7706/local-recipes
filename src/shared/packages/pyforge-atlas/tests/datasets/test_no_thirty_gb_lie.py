@@ -54,7 +54,9 @@ def test_cost_estimate_is_derived_from_dry_run_bytes_not_a_literal():
     ds = _ds()
     # doubling the (dry-run) scanned bytes doubles the estimated cost -> it is a pure
     # function of the measured bytes, not a fixed "30 GB" literal.
-    assert ds.estimate_cost_usd(2_000_000_000_000) == 2 * ds.estimate_cost_usd(1_000_000_000_000)
+    assert ds.estimate_cost_usd(2_000_000_000_000) == 2 * ds.estimate_cost_usd(
+        1_000_000_000_000
+    )
     # exact formula: bytes / 1e12 (conservative decimal TB unit) * usd_per_tb
     assert ds.estimate_cost_usd(1_000_000_000_000) == 6.25
 
@@ -62,8 +64,8 @@ def test_cost_estimate_is_derived_from_dry_run_bytes_not_a_literal():
 def test_preflight_reads_bytes_from_the_clients_dry_run():
     # the estimate must come from THIS run's dry-run, so different table states yield
     # different estimates (the exact failure mode the 2016 literal hid).
-    small = _ds(_StubBQClient(dry_bytes=30_000_000_000))    # 30 GB
-    big = _ds(_StubBQClient(dry_bytes=9_500_000_000_000))   # 9.5 TB (the real 2026 cost)
+    small = _ds(_StubBQClient(dry_bytes=30_000_000_000))  # 30 GB
+    big = _ds(_StubBQClient(dry_bytes=9_500_000_000_000))  # 9.5 TB (the real 2026 cost)
     q = "SELECT 1 WHERE timestamp >= TIMESTAMP('a') AND timestamp < TIMESTAMP('b')"
     small_bytes, small_usd = small.preflight(q)
     big_bytes, big_usd = big.preflight(q)

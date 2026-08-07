@@ -91,9 +91,14 @@ NODE_REGISTRY: dict[str, tuple] = {
     "track_registry_versions": (
         vcs_nodes.track_registry_versions,
         [
-            "vcs_registry_npm_raw", "vcs_registry_cran_raw", "vcs_registry_cpan_raw",
-            "vcs_registry_luarocks_raw", "vcs_registry_crates_raw",
-            "vcs_registry_rubygems_raw", "vcs_registry_maven_raw", "vcs_registry_nuget_raw",
+            "vcs_registry_npm_raw",
+            "vcs_registry_cran_raw",
+            "vcs_registry_cpan_raw",
+            "vcs_registry_luarocks_raw",
+            "vcs_registry_crates_raw",
+            "vcs_registry_rubygems_raw",
+            "vcs_registry_maven_raw",
+            "vcs_registry_nuget_raw",
         ],
         ["vcs_registry_versions"],
     ),

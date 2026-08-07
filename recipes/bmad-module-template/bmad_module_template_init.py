@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy the bmad-module-template tree into a target directory."""
+
 import argparse
 import os
 import shutil
@@ -65,7 +66,9 @@ def main():
         for n in copied:
             print(f"  - {n}")
     else:
-        print("Nothing copied (use --force to overwrite existing files).", file=sys.stderr)
+        print(
+            "Nothing copied (use --force to overwrite existing files).", file=sys.stderr
+        )
         sys.exit(1)
 
     print(

@@ -21,7 +21,9 @@ from pathlib import Path
 # atlas project root: <repo>/src/shared/packages/pyforge-atlas (parents[2] from
 # tests/orchestration/<this file>: [0]=orchestration [1]=tests [2]=pyforge-atlas).
 PROJECT_PATH = Path(__file__).resolve().parents[2]
-REPO_ROOT = PROJECT_PATH.parents[3]  # pyforge-atlas -> packages -> shared -> src -> repo
+REPO_ROOT = PROJECT_PATH.parents[
+    3
+]  # pyforge-atlas -> packages -> shared -> src -> repo
 
 
 def test_kedro_viz_load_data_builds_the_atlas_dag_offline():
@@ -43,7 +45,9 @@ def test_kedro_viz_load_data_builds_the_atlas_dag_offline():
         "universal_sbom",
         "derived_artifacts",
     }
-    assert expected <= set(pipelines), f"viz cannot see pipelines: {expected - set(pipelines)}"
+    assert expected <= set(pipelines), (
+        f"viz cannot see pipelines: {expected - set(pipelines)}"
+    )
 
     # the DAG has real nodes + declared datasets for viz to render lineage over.
     nodes = {n for p in pipelines.values() for n in p.nodes}

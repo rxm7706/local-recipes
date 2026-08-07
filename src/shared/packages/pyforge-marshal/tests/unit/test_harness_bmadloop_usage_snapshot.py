@@ -26,7 +26,11 @@ def harness() -> BmadLoopHarness:
 
 
 def _write_state(
-    project: Path, run_id: str, *, tasks: dict[str, object], cache_read_weight: float = 0.1
+    project: Path,
+    run_id: str,
+    *,
+    tasks: dict[str, object],
+    cache_read_weight: float = 0.1,
 ) -> Path:
     run_dir = project / ".bmad-loop" / "runs" / run_id
     run_dir.mkdir(parents=True)
@@ -72,8 +76,20 @@ def test_usage_snapshot_attributes_the_sole_non_terminal_task(harness, tmp_path)
         tmp_path,
         "acme-run-1",
         tasks={
-            "3.5": _task("3.5", "done", input_tokens=1_000, output_tokens=200, cache_read_tokens=500),
-            "3.6": _task("3.6", "dev-running", input_tokens=300, output_tokens=50, cache_read_tokens=100),
+            "3.5": _task(
+                "3.5",
+                "done",
+                input_tokens=1_000,
+                output_tokens=200,
+                cache_read_tokens=500,
+            ),
+            "3.6": _task(
+                "3.6",
+                "dev-running",
+                input_tokens=300,
+                output_tokens=50,
+                cache_read_tokens=100,
+            ),
         },
     )
 
@@ -85,10 +101,15 @@ def test_usage_snapshot_attributes_the_sole_non_terminal_task(harness, tmp_path)
     assert snapshot.story_weighted_tokens == 360
     # Run-wide: task 3.5 (1000 + 200 + round(500*0.1) = 1250) + task 3.6 (360).
     assert snapshot.run_weighted_tokens == 1610
-    assert snapshot.sample_path == tmp_path / ".bmad-loop" / "runs" / "acme-run-1" / "state.json"
+    assert (
+        snapshot.sample_path
+        == tmp_path / ".bmad-loop" / "runs" / "acme-run-1" / "state.json"
+    )
 
 
-def test_usage_snapshot_uses_the_default_cache_read_weight_when_absent(harness, tmp_path):
+def test_usage_snapshot_uses_the_default_cache_read_weight_when_absent(
+    harness, tmp_path
+):
     """``RunState.cache_read_weight()`` falls back to the product default
     (0.1) when the persisted ``policy_snapshot`` predates the field or is
     malformed -- ``usage_snapshot`` inherits that fallback, never a second
@@ -112,7 +133,9 @@ def test_usage_snapshot_uses_the_default_cache_read_weight_when_absent(harness, 
 # --- I/O matrix: no single current story -----------------------------------------
 
 
-def test_usage_snapshot_reports_no_story_when_zero_non_terminal_tasks(harness, tmp_path):
+def test_usage_snapshot_reports_no_story_when_zero_non_terminal_tasks(
+    harness, tmp_path
+):
     _write_state(
         tmp_path,
         "acme-run-1",
@@ -127,7 +150,9 @@ def test_usage_snapshot_reports_no_story_when_zero_non_terminal_tasks(harness, t
     assert snapshot.run_weighted_tokens == 100
 
 
-def test_usage_snapshot_reports_no_story_when_more_than_one_non_terminal_task(harness, tmp_path):
+def test_usage_snapshot_reports_no_story_when_more_than_one_non_terminal_task(
+    harness, tmp_path
+):
     _write_state(
         tmp_path,
         "acme-run-1",
@@ -180,7 +205,9 @@ def test_usage_snapshot_never_attributes_a_tally_to_an_unnamed_story(
     assert snapshot.run_weighted_tokens == 100
 
 
-def test_usage_snapshot_zero_tasks_reports_no_story_and_zero_run_tokens(harness, tmp_path):
+def test_usage_snapshot_zero_tasks_reports_no_story_and_zero_run_tokens(
+    harness, tmp_path
+):
     _write_state(tmp_path, "acme-run-1", tasks={})
 
     snapshot = harness.usage_snapshot(tmp_path, "acme-run-1")
@@ -226,14 +253,18 @@ def test_usage_snapshot_returns_none_for_a_wrong_typed_field(harness, tmp_path):
         "run_id": "acme-run-1",
         "project": str(tmp_path),
         "started_at": "2026-08-03T00:00:00Z",
-        "tasks": {"3.6": {"story_key": "3.6", "epic": "not-a-number", "phase": "dev-running"}},
+        "tasks": {
+            "3.6": {"story_key": "3.6", "epic": "not-a-number", "phase": "dev-running"}
+        },
     }
     (run_dir / "state.json").write_text(json.dumps(state), encoding="utf-8")
 
     assert harness.usage_snapshot(tmp_path, "acme-run-1") is None
 
 
-def test_usage_snapshot_returns_none_for_a_non_mapping_policy_snapshot(harness, tmp_path):
+def test_usage_snapshot_returns_none_for_a_non_mapping_policy_snapshot(
+    harness, tmp_path
+):
     """Review finding (Edge Case Hunter): ``RunState.from_dict`` never
     validates that a PRESENT ``policy_snapshot`` field is actually a
     ``Mapping`` -- it assigns whatever JSON type was there verbatim. A
@@ -259,7 +290,9 @@ def test_usage_snapshot_returns_none_for_a_non_mapping_policy_snapshot(harness, 
     assert harness.usage_snapshot(tmp_path, "acme-run-1") is None
 
 
-def test_usage_snapshot_returns_none_for_a_non_finite_cache_read_weight(harness, tmp_path):
+def test_usage_snapshot_returns_none_for_a_non_finite_cache_read_weight(
+    harness, tmp_path
+):
     """Review finding: a syntactically-valid document carrying
     ``"cache_read_weight": Infinity`` (which ``json`` both emits and accepts
     by default) makes ``TokenUsage.weighted_total``'s own
@@ -287,9 +320,7 @@ def test_usage_snapshot_returns_none_for_a_deeply_nested_document(harness, tmp_p
     as the case above)."""
     run_dir = tmp_path / ".bmad-loop" / "runs" / "acme-run-1"
     run_dir.mkdir(parents=True)
-    (run_dir / "state.json").write_text(
-        "[" * 200_000 + "]" * 200_000, encoding="utf-8"
-    )
+    (run_dir / "state.json").write_text("[" * 200_000 + "]" * 200_000, encoding="utf-8")
 
     assert harness.usage_snapshot(tmp_path, "acme-run-1") is None
 

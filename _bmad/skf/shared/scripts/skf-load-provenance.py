@@ -175,7 +175,9 @@ def detect_stack_flags(data: dict) -> tuple[bool, bool]:
     """
     version = _normalize_version(data.get("provenance_version"))
     has_libraries = isinstance(data.get("libraries"), (dict, list))
-    skill_type = data.get("skill_type") if isinstance(data.get("skill_type"), str) else None
+    skill_type = (
+        data.get("skill_type") if isinstance(data.get("skill_type"), str) else None
+    )
     is_v2 = version is not None and version[0] >= 2
 
     if is_v2:
@@ -229,9 +231,13 @@ def extract_reexport_map(data: dict) -> dict[str, str]:
 def normalize(data: dict) -> dict:
     """Build the full normalized projection record."""
     is_stack, legacy = detect_stack_flags(data)
-    source_root = data.get("source_root") if isinstance(data.get("source_root"), str) else None
+    source_root = (
+        data.get("source_root") if isinstance(data.get("source_root"), str) else None
+    )
     baseline_commit = (
-        data.get("source_commit") if isinstance(data.get("source_commit"), str) else None
+        data.get("source_commit")
+        if isinstance(data.get("source_commit"), str)
+        else None
     )
     baseline_ref = (
         data.get("source_ref") if isinstance(data.get("source_ref"), str) else None

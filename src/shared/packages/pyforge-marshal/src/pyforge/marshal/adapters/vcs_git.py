@@ -226,9 +226,7 @@ class GitVcs:
         the block whose ``branch`` line is exactly ``refs/heads/<branch>``."""
         result = _run(["git", "-C", str(repo_root), "worktree", "list", "--porcelain"])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git worktree list failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git worktree list failed: {result.stderr.strip()}")
         wanted = f"refs/heads/{branch}"
         for lines in _iter_worktree_blocks(result.stdout):
             if lines.get("branch") == wanted:
@@ -256,9 +254,7 @@ class GitVcs:
         block, which carries no ``branch`` line at all."""
         result = _run(["git", "-C", str(repo_root), "worktree", "list", "--porcelain"])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git worktree list failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git worktree list failed: {result.stderr.strip()}")
         entries: list[WorktreeEntry] = []
         for lines in _iter_worktree_blocks(result.stdout):
             worktree = lines.get("worktree")
@@ -271,11 +267,17 @@ class GitVcs:
                     "no worktree line"
                 )
             branch_ref = lines.get("branch")
-            branch = branch_ref.removeprefix("refs/heads/") if branch_ref is not None else None
+            branch = (
+                branch_ref.removeprefix("refs/heads/")
+                if branch_ref is not None
+                else None
+            )
             entries.append(WorktreeEntry(path=Path(worktree), branch=branch))
         return tuple(entries)
 
-    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
+    def add_worktree(
+        self, repo_root: Path, home: Path, branch: str, *, base: str
+    ) -> None:
         """Mirrors the reference script's ``has_branch``-gated
         ``git worktree add`` call: a NEW branch is always minted FROM
         ``base`` (``-b branch home base``); an EXISTING branch attaches via
@@ -365,7 +367,15 @@ class GitVcs:
         into_ref = f"refs/heads/{into}"
 
         ancestry = _run(
-            ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", branch_ref, into_ref]
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "merge-base",
+                "--is-ancestor",
+                branch_ref,
+                into_ref,
+            ]
         )
         if ancestry.returncode == 0:
             return True
@@ -479,7 +489,9 @@ class GitVcs:
             )
         return all(line.startswith("-") for line in lines)
 
-    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+    def remove_worktree(
+        self, repo_root: Path, home: Path, *, force: bool = False
+    ) -> None:
         """``git worktree remove``, optionally ``--force``. ``force`` is the
         caller's decision (``run_teardown``'s own refusal logic), never
         inferred here. Uses ``_GIT_CHECKOUT_TIMEOUT_S`` (review finding:
@@ -498,7 +510,9 @@ class GitVcs:
                 f"git worktree remove failed for {home}: {result.stderr.strip()}"
             )
 
-    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+    def delete_branch(
+        self, repo_root: Path, branch: str, *, force: bool = False
+    ) -> None:
         """``git branch -d``/``-D``, selected by ``force``. See the port's
         own docstring for why a caller that already ran ``is_branch_merged``
         passes ``force=True`` rather than relying on git's own
@@ -541,7 +555,14 @@ class GitVcs:
         ``_GIT_CHECKOUT_TIMEOUT_S`` -- a push is a network round-trip, not a
         local query or tree-populating checkout (review finding)."""
         upstream_check = _run(
-            ["git", "-C", str(repo_root), "rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"]
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "rev-parse",
+                "--abbrev-ref",
+                f"{branch}@{{upstream}}",
+            ]
         )
         if upstream_check.returncode == 0:
             upstream = upstream_check.stdout.strip()
@@ -554,7 +575,14 @@ class GitVcs:
                     f"cannot parse upstream {upstream!r} for {branch} into "
                     "<remote>/<remote_branch>"
                 )
-            args = ["git", "-C", str(repo_root), "push", remote, f"{branch}:{remote_branch}"]
+            args = [
+                "git",
+                "-C",
+                str(repo_root),
+                "push",
+                remote,
+                f"{branch}:{remote_branch}",
+            ]
         elif "no upstream configured for branch" in upstream_check.stderr:
             args = ["git", "-C", str(repo_root), "push", "origin", branch]
         else:
@@ -565,7 +593,9 @@ class GitVcs:
             )
         result = _run(args, timeout_s=_GIT_PUSH_TIMEOUT_S)
         if result.returncode != 0:
-            raise VcsCommandError(f"git push failed for {branch}: {result.stderr.strip()}")
+            raise VcsCommandError(
+                f"git push failed for {branch}: {result.stderr.strip()}"
+            )
 
     def changed_files(
         self, repo_root: Path, worktree_path: Path, *, base: str
@@ -691,7 +721,9 @@ class GitVcs:
             )
         return tuple(result.stdout.splitlines())
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+    def commit_paths(
+        self, repo_root: Path, paths: tuple[Path, ...], message: str
+    ) -> str:
         """Story 4.1 (AD-29): stages exactly ``paths`` (one ``git add --
         <path>`` per entry, never ``git add -A``) then commits ONLY those
         paths (``git commit -m <message> -- <path> ...``, never a bare
@@ -795,7 +827,9 @@ class GitVcs:
             )
         return result.stdout.strip()
 
-    def merge_branch(self, repo_root: Path, branch: str, *, into: str, subject: str) -> str:
+    def merge_branch(
+        self, repo_root: Path, branch: str, *, into: str, subject: str
+    ) -> str:
         """Story 4.3 (FR-27, AD-24). Redesigned by code review (2026-08-06,
         P1, Blind Hunter + Edge Case Hunter, both independently): the
         ORIGINAL implementation ran ``git checkout into`` directly against
@@ -929,7 +963,15 @@ class GitVcs:
             # unremarked failure of a landing that in fact already happened).
             try:
                 remove_result = _run(
-                    ["git", "-C", str(repo_root), "worktree", "remove", "--force", str(tmp_path)],
+                    [
+                        "git",
+                        "-C",
+                        str(repo_root),
+                        "worktree",
+                        "remove",
+                        "--force",
+                        str(tmp_path),
+                    ],
                     timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
                 )
                 removed = remove_result.returncode == 0

@@ -53,7 +53,9 @@ def _quality_gate_summary(qg: Dict[str, Any]) -> str:
     )
 
 
-def _dependency_status_table(skill: Dict[str, Any], skill_map: Dict[str, Dict[str, Any]]) -> str:
+def _dependency_status_table(
+    skill: Dict[str, Any], skill_map: Dict[str, Dict[str, Any]]
+) -> str:
     deps = skill.get("depends_on", []) or []
     if not deps:
         return "No dependencies."
@@ -87,12 +89,18 @@ def render_kickoff(
     targets = {t["name"]: t for t in brief.get("targets", [])}
     repo_url = targets.get(skill_name, {}).get("repo_url", "")
 
-    wa = workarounds if workarounds is not None else (skill.get("workarounds_applied", []) or [])
+    wa = (
+        workarounds
+        if workarounds is not None
+        else (skill.get("workarounds_applied", []) or [])
+    )
 
     mechanical = {
         "{{campaign_name}}": str(campaign.get("name", "")),
         "{{current_stage}}": str(campaign.get("current_stage", "")),
-        "{{quality_gate_summary}}": _quality_gate_summary(campaign.get("quality_gate", {})),
+        "{{quality_gate_summary}}": _quality_gate_summary(
+            campaign.get("quality_gate", {})
+        ),
         "{{skill_name}}": skill_name,
         "{{skill_tier}}": str(skill.get("tier", "")),
         "{{pin}}": skill.get("pin") or "latest",
@@ -108,8 +116,18 @@ def render_kickoff(
     return out
 
 
-def run(state_file: str, brief_file: str, skill: str, template_file: str, workarounds_json: Optional[str]) -> int:
-    for label, p in (("State", state_file), ("Brief", brief_file), ("Template", template_file)):
+def run(
+    state_file: str,
+    brief_file: str,
+    skill: str,
+    template_file: str,
+    workarounds_json: Optional[str],
+) -> int:
+    for label, p in (
+        ("State", state_file),
+        ("Brief", brief_file),
+        ("Template", template_file),
+    ):
         if not Path(p).is_file():
             return _err(f"{label} file not found: {p}", f"{label.upper()}_NOT_FOUND")
 
@@ -147,11 +165,23 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--state-file", required=True)
     parser.add_argument("--brief-file", required=True)
-    parser.add_argument("--skill", required=True, help="skill name (must exist in state)")
+    parser.add_argument(
+        "--skill", required=True, help="skill name (must exist in state)"
+    )
     parser.add_argument("--template", required=True, dest="template_file")
-    parser.add_argument("--workarounds", dest="workarounds_json", help="JSON list of applied workarounds")
+    parser.add_argument(
+        "--workarounds",
+        dest="workarounds_json",
+        help="JSON list of applied workarounds",
+    )
     args = parser.parse_args(argv)
-    return run(args.state_file, args.brief_file, args.skill, args.template_file, args.workarounds_json)
+    return run(
+        args.state_file,
+        args.brief_file,
+        args.skill,
+        args.template_file,
+        args.workarounds_json,
+    )
 
 
 if __name__ == "__main__":

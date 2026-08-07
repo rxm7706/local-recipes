@@ -51,9 +51,7 @@ MARKER_PATTERN = re.compile(
 # prefixed by the format's leading `|`. Requires a ` v<version>` inside the
 # brackets so the section header `[SKF Skills]|{n} skills|{m} stack` (no ` v`)
 # is never mistaken for a skill row.
-ROW_HEADER_PATTERN = re.compile(
-    r"^\|?\[(?P<name>[^\]]+?) v(?P<version>[^\]\s]+)\]"
-)
+ROW_HEADER_PATTERN = re.compile(r"^\|?\[(?P<name>[^\]]+?) v(?P<version>[^\]\s]+)\]")
 # The `root:` field of a snippet's first line: `…|root: {prefix}{skill-name}/`.
 SNIPPET_ROOT_PATTERN = re.compile(r"root:\s*(?P<root>\S.*?)\s*$")
 
@@ -120,11 +118,12 @@ def _write_and_verify(file_path, updated, *, expect_section):
     except OSError as e:
         return f"post-write verification failed: {e}"
     if on_disk != updated.encode("utf-8"):
-        return "post-write verification failed: on-disk bytes do not match staged content"
-    if (find_managed_section(on_disk.decode("utf-8")) is not None) != expect_section:
         return (
-            "post-write verification failed: managed section "
-            + ("missing after write" if expect_section else "still present after clear")
+            "post-write verification failed: on-disk bytes do not match staged content"
+        )
+    if (find_managed_section(on_disk.decode("utf-8")) is not None) != expect_section:
+        return "post-write verification failed: managed section " + (
+            "missing after write" if expect_section else "still present after clear"
         )
     return None
 
@@ -146,7 +145,9 @@ def cmd_check(file_path):
             "has_managed_section": True,
             "markers_valid": True,
             "section_length": len(section_content.strip()),
-            "section_line_count": len(section_content.strip().split("\n")) if section_content.strip() else 0,
+            "section_line_count": len(section_content.strip().split("\n"))
+            if section_content.strip()
+            else 0,
         }
     elif has_begin and not has_end:
         return {
@@ -187,7 +188,10 @@ def cmd_replace(file_path, new_content):
 
     match = find_managed_section(content)
     if not match:
-        return {"status": "error", "error": "No managed section found. Use 'insert' to create one."}
+        return {
+            "status": "error",
+            "error": "No managed section found. Use 'insert' to create one.",
+        }
 
     # Replace content between markers with fresh timestamp
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -208,7 +212,11 @@ def cmd_clear(file_path):
 
     match = find_managed_section(content)
     if not match:
-        return {"status": "ok", "action": "no_change", "reason": "No managed section found"}
+        return {
+            "status": "ok",
+            "action": "no_change",
+            "reason": "No managed section found",
+        }
 
     # Remove the entire marker block, plus any surrounding blank lines
     before = content[: match.start()].rstrip("\n")
@@ -233,11 +241,18 @@ def cmd_insert(file_path, new_content):
 
     match = find_managed_section(content)
     if match:
-        return {"status": "error", "error": "Managed section already exists. Use 'replace' instead."}
+        return {
+            "status": "error",
+            "error": "Managed section already exists. Use 'replace' instead.",
+        }
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     section = f"\n<!-- SKF:BEGIN updated:{today} -->\n{new_content}\n{END_MARKER}\n"
-    updated = content.rstrip("\n") + "\n" + section if content.strip() else section.lstrip("\n")
+    updated = (
+        content.rstrip("\n") + "\n" + section
+        if content.strip()
+        else section.lstrip("\n")
+    )
 
     verify_err = _write_and_verify(file_path, updated, expect_section=True)
     if verify_err:
@@ -270,7 +285,11 @@ def parse_managed_rows(body):
             continue
         start = i
         i += 1
-        while i < n and not ROW_HEADER_PATTERN.match(lines[i]) and not _is_row_separator(lines[i]):
+        while (
+            i < n
+            and not ROW_HEADER_PATTERN.match(lines[i])
+            and not _is_row_separator(lines[i])
+        ):
             i += 1
         rows.append(
             {
@@ -372,7 +391,9 @@ def _run_query_action(argv):
             prog="skf-rebuild-managed-sections.py orphan-detect",
             description="Detect managed-section rows absent from the exported skill set.",
         )
-        parser.add_argument("context_files", nargs="+", help="Context file paths to scan")
+        parser.add_argument(
+            "context_files", nargs="+", help="Context file paths to scan"
+        )
         parser.add_argument(
             "--exported-skills",
             default="",
@@ -404,7 +425,10 @@ def main():
         sys.exit(code)
 
     if len(sys.argv) < 3:
-        print("Usage: python3 skf-rebuild-managed-sections.py <context-file> <action> [--content <text>]", file=sys.stderr)
+        print(
+            "Usage: python3 skf-rebuild-managed-sections.py <context-file> <action> [--content <text>]",
+            file=sys.stderr,
+        )
         print("Actions: read, replace, clear, insert, check", file=sys.stderr)
         sys.exit(1)
 
@@ -425,14 +449,20 @@ def main():
         result = cmd_read(file_path)
     elif action == "replace":
         if content_arg is None or not content_arg.strip():
-            result = {"status": "error", "error": "replace requires non-empty --content or stdin"}
+            result = {
+                "status": "error",
+                "error": "replace requires non-empty --content or stdin",
+            }
         else:
             result = cmd_replace(file_path, content_arg)
     elif action == "clear":
         result = cmd_clear(file_path)
     elif action == "insert":
         if content_arg is None or not content_arg.strip():
-            result = {"status": "error", "error": "insert requires non-empty --content or stdin"}
+            result = {
+                "status": "error",
+                "error": "insert requires non-empty --content or stdin",
+            }
         else:
             result = cmd_insert(file_path, content_arg)
     else:

@@ -162,14 +162,10 @@ def _gather_until_next_heading(
 
 # Bullet-list shape: "- `path/to/thing` — evidence text"
 # (em-dash, en-dash, or plain hyphen as separator)
-_BULLET = re.compile(
-    r"^\s*[-*]\s+`(?P<path>[^`]+)`\s*[—–-]\s*(?P<evidence>.+?)\s*$"
-)
+_BULLET = re.compile(r"^\s*[-*]\s+`(?P<path>[^`]+)`\s*[—–-]\s*(?P<evidence>.+?)\s*$")
 
 # Table shape: "| path | evidence |"
-_TABLE_ROW = re.compile(
-    r"^\|\s*`?(?P<path>[^|`]+?)`?\s*\|\s*(?P<evidence>[^|]+?)\s*\|"
-)
+_TABLE_ROW = re.compile(r"^\|\s*`?(?P<path>[^|`]+?)`?\s*\|\s*(?P<evidence>[^|]+?)\s*\|")
 _TABLE_SEPARATOR = re.compile(r"^\|\s*[-:]+\s*\|")
 
 
@@ -225,7 +221,14 @@ def _looks_like_table_header(text: str) -> bool:
     """True if `text` looks like a table-header cell label (e.g. 'path',
     'evidence'). Headers slip past `_TABLE_SEPARATOR` only when the report
     uses a header row without the canonical `|---|---|` separator."""
-    return text.lower() in {"path", "evidence", "file", "files", "candidate", "rationale"}
+    return text.lower() in {
+        "path",
+        "evidence",
+        "file",
+        "files",
+        "candidate",
+        "rationale",
+    }
 
 
 # --------------------------------------------------------------------------
@@ -251,8 +254,7 @@ def load_brief(brief_path: Path) -> dict:
         raise ValueError(f"brief at {brief_path} is not valid YAML: {exc}") from exc
     if not isinstance(brief, dict):
         raise ValueError(
-            f"brief at {brief_path} must be a YAML mapping, got "
-            f"{type(brief).__name__}"
+            f"brief at {brief_path} must be a YAML mapping, got {type(brief).__name__}"
         )
     return brief
 
@@ -380,9 +382,7 @@ def dispatch(
 def _cmd_dispatch(args: argparse.Namespace) -> int:
     forge = Path(args.forge_data_folder)
     if not forge.is_dir():
-        print(
-            f"error: forge-data-folder not a directory: {forge}", file=sys.stderr
-        )
+        print(f"error: forge-data-folder not a directory: {forge}", file=sys.stderr)
         return 1
     brief_path = Path(args.brief)
     if not brief_path.is_file():

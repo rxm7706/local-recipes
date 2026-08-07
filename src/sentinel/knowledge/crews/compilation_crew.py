@@ -10,9 +10,9 @@ from ..config import KnowledgeConfig
 def run_compilation_crew(raw_file_path: Path, config: KnowledgeConfig) -> None:
     """
     Compile a single raw document into the wiki.
-    
+
     This is called by Dagster when a new file lands in raw/.
-    
+
     Args:
         raw_file_path: Path to the new document in raw/
         config: Configuration (La Suite URL, API token, wiki paths)
@@ -21,16 +21,15 @@ def run_compilation_crew(raw_file_path: Path, config: KnowledgeConfig) -> None:
     # --- Tools ---
     # Agno provides built-in FileTools for reading/writing
     file_tools = FileTools(
-        base_dir=Path.cwd(),
-        read_file=True,
-        write_file=True,
-        list_files=True
+        base_dir=Path.cwd(), read_file=True, write_file=True, list_files=True
     )
 
     # --- Agents (BMAD personas loaded from .md files) ---
     ingester = Agent(
         name="Knowledge Ingester",
-        description=Path("agents/ingester.md").read_text() if Path("agents/ingester.md").exists() else "You extract key topics and structure from raw documents.",
+        description=Path("agents/ingester.md").read_text()
+        if Path("agents/ingester.md").exists()
+        else "You extract key topics and structure from raw documents.",
         tools=[file_tools],
         model=Claude(id="claude-3-5-sonnet-20241022"),
         show_tool_calls=True,
@@ -38,7 +37,9 @@ def run_compilation_crew(raw_file_path: Path, config: KnowledgeConfig) -> None:
 
     compiler = Agent(
         name="Knowledge Compiler",
-        description=Path("agents/compiler.md").read_text() if Path("agents/compiler.md").exists() else "You transform raw documents into structured wiki articles.",
+        description=Path("agents/compiler.md").read_text()
+        if Path("agents/compiler.md").exists()
+        else "You transform raw documents into structured wiki articles.",
         tools=[file_tools],
         model=Claude(id="claude-3-5-sonnet-20241022"),
         show_tool_calls=True,
@@ -46,14 +47,16 @@ def run_compilation_crew(raw_file_path: Path, config: KnowledgeConfig) -> None:
 
     linker = Agent(
         name="Knowledge Linker",
-        description=Path("agents/linker.md").read_text() if Path("agents/linker.md").exists() else "You connect the new article to related existing wiki articles.",
+        description=Path("agents/linker.md").read_text()
+        if Path("agents/linker.md").exists()
+        else "You connect the new article to related existing wiki articles.",
         tools=[file_tools],
         model=Claude(id="claude-3-5-sonnet-20241022"),
         show_tool_calls=True,
     )
 
     # --- Execution (BMAD: sequential workflow) ---
-    
+
     # 1. Ingest
     ingester_response = ingester.run(
         f"""

@@ -41,9 +41,7 @@ from pyforge.warden.feeds import (  # noqa: E402
     write_kev_cache,
 )
 
-KEV_FEED_URL = (
-    "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
-)
+KEV_FEED_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 
 _USER_AGENT = "pyforge-warden-refresh-kev-feed/1.0"
 
@@ -53,9 +51,7 @@ def fetch_kev_document(*, timeout: int = 60) -> dict[str, object]:
     on a network failure or ``ValueError`` on a response that is not a JSON
     object with a ``vulnerabilities`` list -- a parse-sanity check so a
     provisioning run never silently caches a malformed/truncated document."""
-    request = urllib.request.Request(
-        KEV_FEED_URL, headers={"User-Agent": _USER_AGENT}
-    )
+    request = urllib.request.Request(KEV_FEED_URL, headers={"User-Agent": _USER_AGENT})
     with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
         raw = response.read().decode("utf-8")
     document = json.loads(raw)
@@ -81,7 +77,9 @@ def refresh(cache_dir: str, *, timeout: int = 60) -> dict[str, object]:
         "cache_path": str(path),
         "catalog_version": document.get("catalogVersion"),
         "date_released": document.get("dateReleased"),
-        "vulnerability_count": len(vulnerabilities) if isinstance(vulnerabilities, list) else 0,
+        "vulnerability_count": len(vulnerabilities)
+        if isinstance(vulnerabilities, list)
+        else 0,
     }
 
 
@@ -90,10 +88,7 @@ def _build_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--cache-dir",
         default=os.environ.get(FEED_CACHE_DIR_ENV_VAR),
-        help=(
-            "feed cache root to write into (default: "
-            f"${FEED_CACHE_DIR_ENV_VAR})"
-        ),
+        help=(f"feed cache root to write into (default: ${FEED_CACHE_DIR_ENV_VAR})"),
     )
     parser.add_argument(
         "--timeout",

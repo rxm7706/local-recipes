@@ -31,7 +31,9 @@ def scan_raw_docs(raw_dir: str | Path) -> tuple[str, ...]:
     # Normalize to '/' so the cursor's seen-set keys are identical across platforms (on Windows
     # ``relative_to`` yields backslashes, which would never match a '/'-keyed cursor).
     return tuple(
-        sorted(str(p.relative_to(root)).replace(chr(92), "/") for p in root.rglob("*.md"))
+        sorted(
+            str(p.relative_to(root)).replace(chr(92), "/") for p in root.rglob("*.md")
+        )
     )
 
 

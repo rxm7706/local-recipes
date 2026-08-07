@@ -36,9 +36,7 @@ NODE_BIN = "/opt/node22/bin"
 # The extension repo lays out artifacts as <version>/wasm_mvp/<name>.duckdb_extension.wasm.
 # Kept in lockstep with the package.json pin; a drift makes the vendor step below 404.
 DUCKDB_VERSION = "v1.5.4"
-EXT_URL = (
-    f"https://extensions.duckdb.org/{DUCKDB_VERSION}/wasm_mvp/parquet.duckdb_extension.wasm"
-)
+EXT_URL = f"https://extensions.duckdb.org/{DUCKDB_VERSION}/wasm_mvp/parquet.duckdb_extension.wasm"
 
 # Files copied out of node_modules into the served artifact.
 DIST = "node_modules/@duckdb/duckdb-wasm/dist"
@@ -102,7 +100,9 @@ def main() -> int:
 
     # 4. vendor the parquet extension locally (build-time network is allowed).
     #    Use curl: it honours the agent proxy + CA bundle where urllib gets a 403.
-    ext_dst = BUILD / "ext" / DUCKDB_VERSION / "wasm_mvp" / "parquet.duckdb_extension.wasm"
+    ext_dst = (
+        BUILD / "ext" / DUCKDB_VERSION / "wasm_mvp" / "parquet.duckdb_extension.wasm"
+    )
     print(f"+ vendoring {EXT_URL}")
     curl = shutil.which("curl") or "curl"
     proc = subprocess.run(
@@ -116,10 +116,14 @@ def main() -> int:
             f"pin, fix it in build.py + index.html."
         )
     if ext_dst.stat().st_size < 100_000:
-        sys.exit(f"vendored parquet extension looks too small: {ext_dst.stat().st_size} bytes")
+        sys.exit(
+            f"vendored parquet extension looks too small: {ext_dst.stat().st_size} bytes"
+        )
 
     # 5. CSV -> Parquet (the statically-hosted dataset the client-side query reads)
-    _csv_to_parquet(HERE / "data" / "feedstock_health.csv", BUILD / "core_feedstock_health.parquet")
+    _csv_to_parquet(
+        HERE / "data" / "feedstock_health.csv", BUILD / "core_feedstock_health.parquet"
+    )
 
     # 6. the page itself
     shutil.copy2(HERE / "index.html", BUILD / "index.html")

@@ -46,7 +46,10 @@ def insight() -> AtlasInsight:
         subject="numpy",
         metric_id="staleness_age_days",
         value=412,  # an int — must NOT become 412.0 across the round-trip
-        detail={"maintainer": "rxm7706", "feedstocks": ["numpy-feedstock", "scipy-feedstock"]},
+        detail={
+            "maintainer": "rxm7706",
+            "feedstocks": ["numpy-feedstock", "scipy-feedstock"],
+        },
         build_stamp=STAMP,
     )
 
@@ -78,7 +81,9 @@ def test_alert_round_trip_is_exact(alert: AtlasAlert):
     assert restored == alert
     assert restored.build_stamp == STAMP
     assert restored.severity is Severity.high
-    assert restored.evidence["actual_rows"] == 3 and isinstance(restored.evidence["actual_rows"], int)
+    assert restored.evidence["actual_rows"] == 3 and isinstance(
+        restored.evidence["actual_rows"], int
+    )
     assert restored.evidence["π"] == "unïcode ✓"  # unicode preserved
 
 
@@ -109,7 +114,9 @@ def test_analytical_to_authoring_hand_off(insight: AtlasInsight, alert: AtlasAle
 # --------------------------------------------------------------------------------------
 def test_ad17_stamp_required_and_injected():
     with pytest.raises(ValueError):
-        build_insight_payload(subject="numpy", metric_id="staleness_age_days", build_stamp="")
+        build_insight_payload(
+            subject="numpy", metric_id="staleness_age_days", build_stamp=""
+        )
     with pytest.raises(TypeError):
         build_alert_payload(subject="x", severity="high", rule="r")  # type: ignore[call-arg]
 
@@ -129,10 +136,14 @@ def test_ad17_stamp_on_the_wire_envelope(insight: AtlasInsight):
 def test_ad8_insight_metric_must_be_a_bsl_identifier():
     # every known BSL metric id is accepted…
     for metric_id in METRIC_PROVENANCE:
-        assert build_insight_payload(subject="s", metric_id=metric_id, build_stamp=STAMP)
+        assert build_insight_payload(
+            subject="s", metric_id=metric_id, build_stamp=STAMP
+        )
     # …and an unknown identifier is rejected (no ad-hoc metric can enter the channel).
     with pytest.raises(ValueError, match="unknown BSL metric id"):
-        build_insight_payload(subject="s", metric_id="totally_made_up_metric", build_stamp=STAMP)
+        build_insight_payload(
+            subject="s", metric_id="totally_made_up_metric", build_stamp=STAMP
+        )
 
 
 # --------------------------------------------------------------------------------------
@@ -217,8 +228,10 @@ def test_malformed_json_on_decode_does_not_crash():
 def test_schema_validation_failure_is_controlled():
     # extra/forbidden field → controlled A2ADecodeError, not a raw ValidationError bubbling up.
     with pytest.raises(A2ADecodeError):
-        decode_payload('{"kind": "alert", "subject": "x", "build_stamp": "t", "rule": "r", '
-                        '"severity": "high", "bogus": 1}')
+        decode_payload(
+            '{"kind": "alert", "subject": "x", "build_stamp": "t", "rule": "r", '
+            '"severity": "high", "bogus": 1}'
+        )
 
 
 def test_missing_evidence_is_allowed_and_empty(alert: AtlasAlert):
@@ -228,7 +241,9 @@ def test_missing_evidence_is_allowed_and_empty(alert: AtlasAlert):
 
 
 def test_none_and_optional_insight_fields_round_trip():
-    a = build_insight_payload(subject="x", metric_id="is_actionable", value=None, build_stamp=STAMP)
+    a = build_insight_payload(
+        subject="x", metric_id="is_actionable", value=None, build_stamp=STAMP
+    )
     restored = from_message(to_message(a))
     assert restored == a and restored.value is None and restored.detail == {}
 
@@ -238,11 +253,18 @@ def test_non_json_native_field_fails_fast_at_construction():
     # round-trip mutation), so we reject it at construction with a controlled error.
     with pytest.raises(ValueError, match="non-JSON-native"):
         build_insight_payload(
-            subject="x", metric_id="is_actionable", value={"s": {1, 2, 3}}, build_stamp=STAMP
+            subject="x",
+            metric_id="is_actionable",
+            value={"s": {1, 2, 3}},
+            build_stamp=STAMP,
         )
     with pytest.raises(ValueError, match="non-JSON-native"):
         build_alert_payload(
-            subject="x", severity="low", rule="r", evidence={"o": object()}, build_stamp=STAMP
+            subject="x",
+            severity="low",
+            rule="r",
+            evidence={"o": object()},
+            build_stamp=STAMP,
         )
 
 
@@ -251,7 +273,9 @@ def test_non_finite_floats_are_rejected():
     # so they are rejected at construction rather than corrupting the round-trip.
     for bad in (float("nan"), float("inf"), float("-inf")):
         with pytest.raises(ValueError, match="non-finite float"):
-            build_insight_payload(subject="x", metric_id="is_actionable", value=bad, build_stamp=STAMP)
+            build_insight_payload(
+                subject="x", metric_id="is_actionable", value=bad, build_stamp=STAMP
+            )
 
 
 def test_from_message_without_payload_part_raises():
@@ -291,7 +315,9 @@ def test_model_construct_bypass_is_caught_at_the_serialization_boundary():
     int-key that model_dump_json() silently coerces — the round-trip would then MUTATE it
     with no error. to_message's serialization self-check must reject it (Reviewer-B F1)."""
     corrupt = AtlasInsight.model_construct(
-        build_stamp=STAMP, subject="numpy", metric_id="staleness_age_days",
+        build_stamp=STAMP,
+        subject="numpy",
+        metric_id="staleness_age_days",
         value={1, 2, 3},  # a set — not JSON-native; validation was skipped
     )
     with pytest.raises(A2ATransportError):

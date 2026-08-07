@@ -84,7 +84,8 @@ def _imported_names(path: Path) -> set[str]:
         elif isinstance(node, ast.Call):
             func = node.func
             is_dynamic_import = (
-                isinstance(func, ast.Name) and func.id in ("__import__", "import_module")
+                isinstance(func, ast.Name)
+                and func.id in ("__import__", "import_module")
             ) or (isinstance(func, ast.Attribute) and func.attr == "import_module")
             if not is_dynamic_import:
                 continue
@@ -99,7 +100,11 @@ def _imported_names(path: Path) -> set[str]:
                     if kw.arg == "name":
                         arg = kw.value
                         break
-            if arg is not None and isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            if (
+                arg is not None
+                and isinstance(arg, ast.Constant)
+                and isinstance(arg.value, str)
+            ):
                 names.add(arg.value)
     return names
 
@@ -181,7 +186,9 @@ def _bsl_violations() -> dict[str, list[str]]:
         rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(BSL_SEMANTIC_PREFIX):
             continue
-        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, BSL_DENYLIST)]
+        hits = [
+            n for n in sorted(_imported_names(path)) if _denylisted(n, BSL_DENYLIST)
+        ]
         if hits:
             found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
     return found
@@ -220,7 +227,9 @@ def _vizro_violations() -> dict[str, list[str]]:
         rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(DASHBOARD_PREFIX):
             continue
-        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, VIZRO_DENYLIST)]
+        hits = [
+            n for n in sorted(_imported_names(path)) if _denylisted(n, VIZRO_DENYLIST)
+        ]
         if hits:
             found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
     return found
@@ -264,7 +273,11 @@ def _vizro_ai_violations() -> dict[str, list[str]]:
         rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(NL_PREFIX):
             continue
-        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, VIZRO_AI_DENYLIST)]
+        hits = [
+            n
+            for n in sorted(_imported_names(path))
+            if _denylisted(n, VIZRO_AI_DENYLIST)
+        ]
         if hits:
             found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
     return found
@@ -275,8 +288,7 @@ def test_vizro_ai_only_in_nl_layer():
     (LLM) backend is replaceable glue confined to one subpackage."""
     violations = _vizro_ai_violations()
     assert not violations, (
-        "AD-1 violation — only the nl/ subpackage may import vizro_ai: "
-        f"{violations}"
+        f"AD-1 violation — only the nl/ subpackage may import vizro_ai: {violations}"
     )
     # positive: the nl query module DOES import vizro_ai (lazy+guarded, but statically present)
     # — so the glue genuinely lives there, not a dead exemption.
@@ -289,8 +301,11 @@ def test_vizro_ai_only_in_nl_layer():
     # boring_semantic_layer directly (the BSL ban above covers nl/, asserted here too).
     for mod in ("query.py", "backend.py", "__init__.py"):
         assert not any(
-            _denylisted(n, BSL_DENYLIST) for n in _imported_names(ATLAS_PKG / "nl" / mod)
-        ), f"nl/{mod} imports boring_semantic_layer directly — must go through semantic/"
+            _denylisted(n, BSL_DENYLIST)
+            for n in _imported_names(ATLAS_PKG / "nl" / mod)
+        ), (
+            f"nl/{mod} imports boring_semantic_layer directly — must go through semantic/"
+        )
 
 
 # AD-20 (Story E1): the ``a2a`` SDK is the inter-agent transport seam — only the
@@ -308,7 +323,9 @@ def _a2a_sdk_violations() -> dict[str, list[str]]:
         rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(A2A_PREFIX):
             continue
-        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, A2A_SDK_DENYLIST)]
+        hits = [
+            n for n in sorted(_imported_names(path)) if _denylisted(n, A2A_SDK_DENYLIST)
+        ]
         if hits:
             found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
     return found
@@ -326,9 +343,9 @@ def test_a2a_sdk_only_in_a2a_layer():
     # there, not a dead exemption).
     transport_mod = ATLAS_PKG / "a2a" / "transport.py"
     assert transport_mod.is_file(), "a2a/transport.py missing"
-    assert any(_denylisted(n, A2A_SDK_DENYLIST) for n in _imported_names(transport_mod)), (
-        "a2a/transport.py does not import the a2a SDK"
-    )
+    assert any(
+        _denylisted(n, A2A_SDK_DENYLIST) for n in _imported_names(transport_mod)
+    ), "a2a/transport.py does not import the a2a SDK"
 
 
 # AD-6/AD-23 (Story E2): ``openlineage`` / ``opentelemetry`` are REPLACEABLE
@@ -448,13 +465,25 @@ def test_dagster_only_in_glue():
         assert (ATLAS_PKG / rel).is_file(), f"glue exempt path missing: {rel}"
     # the glue actually imports dagster + kedro_dagster.
     glue_imports = _imported_names(ATLAS_PKG / "orchestration" / "definitions.py")
-    assert any(_denylisted(n, ("dagster",)) for n in glue_imports), "glue does not import dagster"
-    assert any(_denylisted(n, ("kedro_dagster",)) for n in glue_imports), "glue does not import kedro_dagster"
+    assert any(_denylisted(n, ("dagster",)) for n in glue_imports), (
+        "glue does not import dagster"
+    )
+    assert any(_denylisted(n, ("kedro_dagster",)) for n in glue_imports), (
+        "glue does not import kedro_dagster"
+    )
     # …but even the glue must NOT import kedro_mcp (orchestration seam, not MCP seam).
-    assert not any(_denylisted(n, ("kedro_mcp",)) for n in glue_imports), "glue imports kedro_mcp"
+    assert not any(_denylisted(n, ("kedro_mcp",)) for n in glue_imports), (
+        "glue imports kedro_mcp"
+    )
     # every OTHER package file is dagster/kedro_dagster-free (scan minus the glue).
     for path in _iter_scanned_files():
         if path.relative_to(ATLAS_PKG).as_posix() in AD1_GLUE_EXEMPT:
             continue
-        hits = [n for n in _imported_names(path) if _denylisted(n, ("dagster", "kedro_dagster"))]
-        assert not hits, f"non-glue module imports orchestration libs: {path.name}: {hits}"
+        hits = [
+            n
+            for n in _imported_names(path)
+            if _denylisted(n, ("dagster", "kedro_dagster"))
+        ]
+        assert not hits, (
+            f"non-glue module imports orchestration libs: {path.name}: {hits}"
+        )

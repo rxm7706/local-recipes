@@ -520,7 +520,9 @@ class HarnessPort(Protocol):
         precondition an enforcement ceiling can block on."""
         ...
 
-    def run_status_snapshot(self, project: Path, run_id: str) -> RunStatusSnapshot | None:
+    def run_status_snapshot(
+        self, project: Path, run_id: str
+    ) -> RunStatusSnapshot | None:
         """bmad-loop's own run-level pause state plus every currently
         ``Phase.DEFERRED`` task, read from ``<project>/.bmad-loop/runs/
         <run_id>/state.json`` (Story 3.7, FR-15/16/17) -- ``run_id`` is the

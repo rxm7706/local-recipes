@@ -24,10 +24,10 @@ After initial AST extraction, some top-level exports may resolve to **module imp
 
 ```python
 # Module re-export — follow required
-from .api.v1.delete import delete    # delete/ is a directory → read delete/__init__.py
+from .api.v1.delete import delete  # delete/ is a directory → read delete/__init__.py
 
 # Direct function import — no follow needed
-from .api.v1.add.add import add      # add.py exists with def add()
+from .api.v1.add.add import add  # add.py exists with def add()
 
 # Aliased re-export — follow through alias
 # In cognee/api/v1/visualize/__init__.py:

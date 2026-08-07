@@ -80,7 +80,12 @@ def _identity(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _run(hooks: DataValidationHooks, output_value: pd.DataFrame, *, out_name: str = "pypi_current_versions"):
+def _run(
+    hooks: DataValidationHooks,
+    output_value: pd.DataFrame,
+    *,
+    out_name: str = "pypi_current_versions",
+):
     """Run a real one-node pipeline whose node emits ``output_value`` as ``out_name``.
     Returns (raised_exception_or_None, saved_dataset_names)."""
     saves: list[str] = []
@@ -120,9 +125,13 @@ def test_malformed_payload_halts_via_native_raise_before_persist_and_alerts():
 
     # (1) a NATIVE python exception halted the run…
     assert isinstance(raised, DataContractViolation)
-    assert isinstance(raised, Exception)  # native — Dagster/kedro treat it as a run failure
+    assert isinstance(
+        raised, Exception
+    )  # native — Dagster/kedro treat it as a run failure
     # (2) …BEFORE the bad output persisted (the save loop never ran).
-    assert saves == [], "output persisted despite a contract violation — halt was NOT pre-persist"
+    assert saves == [], (
+        "output persisted despite a contract violation — halt was NOT pre-persist"
+    )
     # (3) an A2A alert was emitted carrying severity + the violated rule + evidence.
     assert len(alerts) == 1
     alert = alerts[0]
@@ -211,8 +220,10 @@ def test_validator_agnostic_stub_second_validator_no_node_change():
     alerts, sink = _capturing_sink()
     hooks = DataValidationHooks(
         [
-            PanderaValidator({"pypi_current_versions": PYPI_SCHEMA}),  # would PASS this frame
-            _StubValidator(forbidden="version"),                       # but the stub flags it
+            PanderaValidator(
+                {"pypi_current_versions": PYPI_SCHEMA}
+            ),  # would PASS this frame
+            _StubValidator(forbidden="version"),  # but the stub flags it
         ],
         alert_sink=sink,
         build_stamp=STAMP,
@@ -233,7 +244,11 @@ class _HostileEvidenceValidator:
     name = "hostile_backend"
 
     def check(self, dataset: str, data) -> list[ContractViolation]:
-        return [ContractViolation(dataset, self.name, "", {"cases": {1, 2, 3}, "score": float("nan")})]
+        return [
+            ContractViolation(
+                dataset, self.name, "", {"cases": {1, 2, 3}, "score": float("nan")}
+            )
+        ]
 
 
 def test_hostile_backend_evidence_still_halts_with_contract_violation_and_alerts():
@@ -242,14 +257,17 @@ def test_hostile_backend_evidence_still_halts_with_contract_violation_and_alerts
     falls back on the rule, so the raised type is always DataContractViolation and the alert
     always fires (AD-20)."""
     alerts, sink = _capturing_sink()
-    hooks = DataValidationHooks([_HostileEvidenceValidator()], alert_sink=sink, build_stamp=STAMP)
+    hooks = DataValidationHooks(
+        [_HostileEvidenceValidator()], alert_sink=sink, build_stamp=STAMP
+    )
     raised, saves = _run(hooks, GOOD)
     assert isinstance(raised, DataContractViolation)  # NOT a pydantic ValueError
-    assert saves == []                                 # still halted before persist
-    assert len(alerts) == 1                            # alert still delivered
+    assert saves == []  # still halted before persist
+    assert len(alerts) == 1  # alert still delivered
     assert alerts[0].rule == "data-contract-violation"  # empty rule → safe fallback
     # the set/NaN were coerced to strings, so the alert round-trips through the a2a channel:
     from pyforge.atlas.a2a import to_message, from_message
+
     assert from_message(to_message(alerts[0])) == alerts[0]
 
 
@@ -257,7 +275,9 @@ def test_stub_validator_alone_proves_pandera_is_not_special():
     # No pandera at all — ONLY the stub backend. The same hook + same node halts, showing the
     # hook hardcodes nothing about pandera (AC-3).
     alerts, sink = _capturing_sink()
-    hooks = DataValidationHooks([_StubValidator(forbidden="name")], alert_sink=sink, build_stamp=STAMP)
+    hooks = DataValidationHooks(
+        [_StubValidator(forbidden="name")], alert_sink=sink, build_stamp=STAMP
+    )
     raised, saves = _run(hooks, GOOD)  # GOOD has a "name" column
     assert isinstance(raised, DataContractViolation)
     assert saves == []
@@ -299,8 +319,14 @@ def test_shipped_validation_module_imports_no_great_expectations():
 def test_no_registered_contract_is_passthrough():
     # a dataset the pandera validator has NO contract for must pass through, not fail.
     alerts, sink = _capturing_sink()
-    hooks = DataValidationHooks([PanderaValidator({"some_other_dataset": PYPI_SCHEMA})], alert_sink=sink, build_stamp=STAMP)
-    raised, saves = _run(hooks, MISSING_VERSION)  # malformed, but no contract for this name
+    hooks = DataValidationHooks(
+        [PanderaValidator({"some_other_dataset": PYPI_SCHEMA})],
+        alert_sink=sink,
+        build_stamp=STAMP,
+    )
+    raised, saves = _run(
+        hooks, MISSING_VERSION
+    )  # malformed, but no contract for this name
     assert raised is None
     assert saves == ["pypi_current_versions"]
     assert alerts == []
@@ -311,12 +337,32 @@ def test_non_dataframe_output_skips_gracefully():
     # gracefully (no crash, no false halt).
     out = "not-a-frame"
     saves: list[str] = []
-    pipe = Pipeline([node(lambda x: out, inputs="raw_in", outputs="pypi_current_versions", name="emit")])
+    pipe = Pipeline(
+        [
+            node(
+                lambda x: out,
+                inputs="raw_in",
+                outputs="pypi_current_versions",
+                name="emit",
+            )
+        ]
+    )
     catalog = DataCatalog(
-        {"raw_in": MemoryDataset("seed"), "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions")}
+        {
+            "raw_in": MemoryDataset("seed"),
+            "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions"),
+        }
     )
     hm = _create_hook_manager()
-    _register_hooks(hm, (DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),))
+    _register_hooks(
+        hm,
+        (
+            DataValidationHooks(
+                [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})],
+                build_stamp=STAMP,
+            ),
+        ),
+    )
     SequentialRunner().run(pipe, catalog, hook_manager=hm)  # must NOT raise
     assert saves == ["pypi_current_versions"]  # persisted (skipped, not halted)
 
@@ -332,9 +378,14 @@ def test_empty_frame_with_valid_columns_passes():
     # frame (the pin's normal output) will hit the same mismatch. Tracked in
     # deferred-work.md rather than fixed here (out of scope for this bugfix).
     empty_ok = pd.DataFrame(
-        {"name": pd.Series([], dtype="string[pyarrow]"), "version": pd.Series([], dtype="string[pyarrow]")}
+        {
+            "name": pd.Series([], dtype="string[pyarrow]"),
+            "version": pd.Series([], dtype="string[pyarrow]"),
+        }
     )
-    hooks = DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP)
+    hooks = DataValidationHooks(
+        [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP
+    )
     raised, saves = _run(hooks, empty_ok)
     assert raised is None
     assert saves == ["pypi_current_versions"]
@@ -343,15 +394,22 @@ def test_empty_frame_with_valid_columns_passes():
 def test_empty_frame_missing_a_required_column_halts():
     # same `string[pyarrow]` note as above -- keeps this test isolated to the missing-column
     # failure it's named for, instead of also (incidentally) tripping the dtype mismatch.
-    empty_bad = pd.DataFrame({"name": pd.Series([], dtype="string[pyarrow]")})  # no version column
-    hooks = DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP)
+    empty_bad = pd.DataFrame(
+        {"name": pd.Series([], dtype="string[pyarrow]")}
+    )  # no version column
+    hooks = DataValidationHooks(
+        [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP
+    )
     raised, saves = _run(hooks, empty_bad)
     assert isinstance(raised, DataContractViolation)
     # the violation is the missing `version` column specifically, and ONLY that — not the
     # incidental empty-frame dtype mismatch this test used to (also) trip pre-AUD-ATLAS-011.
     [violation] = raised.violations
     cases = violation.evidence["failure_cases"]
-    assert any(c.get("check") == "column_in_dataframe" and c.get("failure_case") == "version" for c in cases)
+    assert any(
+        c.get("check") == "column_in_dataframe" and c.get("failure_case") == "version"
+        for c in cases
+    )
     assert all(c.get("check") == "column_in_dataframe" for c in cases)
     assert saves == []
 
@@ -366,9 +424,14 @@ def test_a_broken_validator_halts_never_silently_passes():
             raise RuntimeError("schema is broken")
 
     saves: list[str] = []
-    pipe = Pipeline([node(_identity, inputs="raw_in", outputs="pypi_current_versions", name="emit")])
+    pipe = Pipeline(
+        [node(_identity, inputs="raw_in", outputs="pypi_current_versions", name="emit")]
+    )
     catalog = DataCatalog(
-        {"raw_in": MemoryDataset(GOOD), "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions")}
+        {
+            "raw_in": MemoryDataset(GOOD),
+            "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions"),
+        }
     )
     hm = _create_hook_manager()
     _register_hooks(hm, (DataValidationHooks([_BrokenValidator()], build_stamp=STAMP),))
@@ -380,7 +443,9 @@ def test_a_broken_validator_halts_never_silently_passes():
 def test_default_no_op_sink_does_not_crash():
     # DataValidationHooks() default: no sink injected → the alert is built but delivered
     # nowhere; the violation still raises natively and nothing crashes.
-    hooks = DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP)
+    hooks = DataValidationHooks(
+        [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP
+    )
     raised, saves = _run(hooks, MISSING_VERSION)
     assert isinstance(raised, DataContractViolation)
     assert isinstance(raised.alert, AtlasAlert)  # payload built even with no sink
@@ -394,10 +459,14 @@ def test_a_failing_sink_never_masks_the_halt():
         raise RuntimeError("sink down")
 
     hooks = DataValidationHooks(
-        [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], alert_sink=_boom, build_stamp=STAMP
+        [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})],
+        alert_sink=_boom,
+        build_stamp=STAMP,
     )
     raised, saves = _run(hooks, MISSING_VERSION)
-    assert isinstance(raised, DataContractViolation)  # the halt survived the sink failure
+    assert isinstance(
+        raised, DataContractViolation
+    )  # the halt survived the sink failure
     assert saves == []
 
 
@@ -409,7 +478,16 @@ def test_multi_output_node_halts_before_any_output_persists():
     def _two(df):
         return GOOD, MISSING_VERSION
 
-    pipe = Pipeline([node(_two, inputs="raw_in", outputs=["clean_out", "pypi_current_versions"], name="emit")])
+    pipe = Pipeline(
+        [
+            node(
+                _two,
+                inputs="raw_in",
+                outputs=["clean_out", "pypi_current_versions"],
+                name="emit",
+            )
+        ]
+    )
     catalog = DataCatalog(
         {
             "raw_in": MemoryDataset("seed"),
@@ -418,7 +496,15 @@ def test_multi_output_node_halts_before_any_output_persists():
         }
     )
     hm = _create_hook_manager()
-    _register_hooks(hm, (DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),))
+    _register_hooks(
+        hm,
+        (
+            DataValidationHooks(
+                [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})],
+                build_stamp=STAMP,
+            ),
+        ),
+    )
     with pytest.raises(DataContractViolation):
         SequentialRunner().run(pipe, catalog, hook_manager=hm)
     assert saves == []  # NEITHER output persisted
@@ -450,16 +536,24 @@ def test_co_registered_with_observability_still_halts_order_independent():
     # both the E2 observability hook AND the validation hook registered together: the run
     # still halts before persist regardless of hook order (the save loop never starts).
     saves: list[str] = []
-    pipe = Pipeline([node(_identity, inputs="raw_in", outputs="pypi_current_versions", name="emit")])
+    pipe = Pipeline(
+        [node(_identity, inputs="raw_in", outputs="pypi_current_versions", name="emit")]
+    )
     catalog = DataCatalog(
-        {"raw_in": MemoryDataset(MISSING_VERSION), "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions")}
+        {
+            "raw_in": MemoryDataset(MISSING_VERSION),
+            "pypi_current_versions": _TrackingDataset(saves, "pypi_current_versions"),
+        }
     )
     hm = _create_hook_manager()
     _register_hooks(
         hm,
         (
             AtlasObservabilityHooks(),
-            DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),
+            DataValidationHooks(
+                [PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})],
+                build_stamp=STAMP,
+            ),
         ),
     )
     with pytest.raises(DataContractViolation):

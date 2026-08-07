@@ -32,10 +32,10 @@ _MODEL_OVERRIDE = "VIZRO_AI_MODEL"
 class BackendConfig:
     """A resolved model backend — the endpoint + key come from the environment, never code."""
 
-    provider: str          # "openai" (OpenAI-compatible) | "anthropic"
-    base_url: str          # resolved from the *_BASE_URL env var
-    api_key: str           # resolved from the *_API_KEY env var
-    model: str | None      # optional VIZRO_AI_MODEL override
+    provider: str  # "openai" (OpenAI-compatible) | "anthropic"
+    base_url: str  # resolved from the *_BASE_URL env var
+    api_key: str  # resolved from the *_API_KEY env var
+    model: str | None  # optional VIZRO_AI_MODEL override
 
 
 def _valid_base_url(value: str | None) -> bool:
@@ -83,7 +83,10 @@ def unconfigured_reason(env: Mapping[str, str] | None = None) -> str:
     missing without the tool ever guessing a default.
     """
     env = os.environ if env is None else env
-    for base_var, key_var in ((_OPENAI_BASE, _OPENAI_KEY), (_ANTHROPIC_BASE, _ANTHROPIC_KEY)):
+    for base_var, key_var in (
+        (_OPENAI_BASE, _OPENAI_KEY),
+        (_ANTHROPIC_BASE, _ANTHROPIC_KEY),
+    ):
         base = env.get(base_var)
         key = env.get(key_var)
         if base and not _valid_base_url(base):

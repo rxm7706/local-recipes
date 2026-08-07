@@ -70,6 +70,7 @@ have open.
 Contract: docs/dreams/fidelity-enforcement.md § The frontier (invariant 3 —
 a detector that cannot run reports unknown, never green).
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
@@ -91,14 +92,14 @@ HERE = Path(__file__).resolve().parent
 WIDE = (1600, 1400, 1200, 1000, 820)
 NARROW = (700,)
 BREAKPOINT = 720
-CENTRE_TOL = 2.0   # px; sub-pixel layout means exact 0 is not a fair demand
+CENTRE_TOL = 2.0  # px; sub-pixel layout means exact 0 is not a fair demand
 
 # Chips inside the status row. `#chip-gen` deliberately excluded — it lives in
 # `.cbrow` now, and treating it as a row member made the gate report a phantom
 # "bar wrapped to 2 rows" (the two elements are in different containers, at the
 # same one-line bar height of 34px).
 CHIPS = ("#chip-ship", "#chip-run")
-EDGE_TOL = 14.0   # px; the bar's own 12px padding plus a sub-pixel allowance
+EDGE_TOL = 14.0  # px; the bar's own 12px padding plus a sub-pixel allowance
 
 # Font sizes in px applied to `.cchip`. 11 is the design size; the rest simulate
 # a wider font face or a zoomed browser, which is how the operator hits at 11px
@@ -180,21 +181,25 @@ def check(width: int, m: dict, scenario: str = "live") -> list[str]:
         for a, b in zip(ordered, ordered[1:]):
             gap = chips[b]["l"] - chips[a]["r"]
             if gap < 0:
-                found.append(f"{at}: {a} and {b} share a row and OVERLAP by {-gap:.1f}px")
+                found.append(
+                    f"{at}: {a} and {b} share a row and OVERLAP by {-gap:.1f}px"
+                )
 
     # (5) no chip is clipping its own label
     for name, c in chips.items():
         if c.get("need", 0) > c.get("have", 0) + 1.0:
             found.append(
                 f"{at}: {name} is CLIPPED — label needs {c['need']:.0f}px, chip has "
-                f"{c['have']:.0f}px; the text is rendering outside its own box")
+                f"{c['have']:.0f}px; the text is rendering outside its own box"
+            )
 
     # (4) nothing escapes the bar
     for name, c in chips.items():
         if c["l"] < bar["l"] - 0.5 or c["r"] > bar["r"] + 0.5:
             found.append(
                 f"{at}: {name} escapes the bar "
-                f"(chip {c['l']:.0f}–{c['r']:.0f} vs bar {bar['l']:.0f}–{bar['r']:.0f})")
+                f"(chip {c['l']:.0f}–{c['r']:.0f} vs bar {bar['l']:.0f}–{bar['r']:.0f})"
+            )
 
     if width > BREAKPOINT:
         # (3) one row above the breakpoint — only at the design font size, since
@@ -202,16 +207,21 @@ def check(width: int, m: dict, scenario: str = "live") -> list[str]:
         if scenario == f"{DESIGN_SIZE}px" and len(rows) != 1:
             found.append(
                 f"{at}: bar wrapped to {len(rows)} rows above the {BREAKPOINT}px "
-                f"breakpoint (height {bar['h']:.0f}px) — a chip is folding when it should not")
+                f"breakpoint (height {bar['h']:.0f}px) — a chip is folding when it should not"
+            )
         # (1) ship flush left, running flush right
         dl = chips["#chip-ship"]["l"] - bar["l"]
         dr = bar["r"] - chips["#chip-run"]["r"]
         if dl > EDGE_TOL:
-            found.append(f"{at}: last-shipped chip is {dl:.1f}px from the bar's left edge "
-                         f"(tolerance {EDGE_TOL}px) — it is not left-flush")
+            found.append(
+                f"{at}: last-shipped chip is {dl:.1f}px from the bar's left edge "
+                f"(tolerance {EDGE_TOL}px) — it is not left-flush"
+            )
         if dr > EDGE_TOL:
-            found.append(f"{at}: running chip is {dr:.1f}px from the bar's right edge "
-                         f"(tolerance {EDGE_TOL}px) — it is not right-flush")
+            found.append(
+                f"{at}: running chip is {dr:.1f}px from the bar's right edge "
+                f"(tolerance {EDGE_TOL}px) — it is not right-flush"
+            )
     return found
 
 
@@ -237,7 +247,9 @@ def main() -> int:
                 try:
                     browser = p.chromium.launch()
                 except Exception as exc:
-                    print(f"UNKNOWN: no usable chromium ({type(exc).__name__}) — cannot measure layout.")
+                    print(
+                        f"UNKNOWN: no usable chromium ({type(exc).__name__}) — cannot measure layout."
+                    )
                     return 2
             try:
                 for width in (*WIDE, *NARROW):
@@ -252,7 +264,8 @@ def main() -> int:
                             m = page.evaluate(PROBE)
                             if not m:
                                 findings.append(
-                                    f"w={width} [{name}]: .cbstatus not found — the bar did not render")
+                                    f"w={width} [{name}]: .cbstatus not found — the bar did not render"
+                                )
                                 continue
                             measured += 1
                             findings += check(width, m, name)
@@ -267,14 +280,18 @@ def main() -> int:
         print("UNKNOWN: the bar never rendered at any width.")
         return 2
     if findings:
-        print(f"console-bar layout — {measured} measurement(s) "
-              f"({len(WIDE) + len(NARROW)} widths x {len(PRESSURES)} font-pressure steps)\n")
+        print(
+            f"console-bar layout — {measured} measurement(s) "
+            f"({len(WIDE) + len(NARROW)} widths x {len(PRESSURES)} font-pressure steps)\n"
+        )
         print(f"FINDINGS ({len(findings)}):")
         for f in findings:
             print(f"  ✗ {f}")
         return 1
-    print(f"OK: console bar edges held, no overlap — {measured} measurement(s): "
-          f"{len(WIDE) + len(NARROW)} width(s) x {len(PRESSURES)} font-pressure step(s).")
+    print(
+        f"OK: console bar edges held, no overlap — {measured} measurement(s): "
+        f"{len(WIDE) + len(NARROW)} width(s) x {len(PRESSURES)} font-pressure step(s)."
+    )
     return 0
 
 

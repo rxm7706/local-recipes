@@ -302,8 +302,9 @@ v20_pre_count = conn.execute(
     "SELECT COUNT(*) FROM packages WHERE relationship = 'pypi_only'"
 ).fetchone()[0]
 if v20_pre_count > 0:
-    print(f"  v20 migration: moving {v20_pre_count:,} pypi_only rows "
-          f"to pypi_universe...")
+    print(
+        f"  v20 migration: moving {v20_pre_count:,} pypi_only rows to pypi_universe..."
+    )
     conn.execute("BEGIN TRANSACTION")
     try:
         conn.execute("""
@@ -437,7 +438,8 @@ set of archived/inactive feedstock basenames from `packages`:
 # Build the skip set BEFORE the BEGIN TRANSACTION so the DELETE+INSERT
 # inside the transaction sees a coherent snapshot.
 inactive_feedstocks = set(
-    row[0] for row in conn.execute(
+    row[0]
+    for row in conn.execute(
         "SELECT DISTINCT feedstock_name FROM packages "
         "WHERE feedstock_name IS NOT NULL "
         "  AND (COALESCE(feedstock_archived, 0) = 1 "
@@ -460,19 +462,23 @@ gains the same triplet:
 
 ```python
 # BEFORE:
-rows_to_process = list(conn.execute(
-    "SELECT conda_name, feedstock_name FROM packages "
-    "WHERE conda_name IS NOT NULL AND feedstock_name IS NOT NULL"
-))
+rows_to_process = list(
+    conn.execute(
+        "SELECT conda_name, feedstock_name FROM packages "
+        "WHERE conda_name IS NOT NULL AND feedstock_name IS NOT NULL"
+    )
+)
 
 # AFTER:
-rows_to_process = list(conn.execute(
-    "SELECT conda_name, feedstock_name FROM packages "
-    "WHERE conda_name IS NOT NULL "
-    "  AND feedstock_name IS NOT NULL "
-    "  AND COALESCE(latest_status, 'active') = 'active' "
-    "  AND COALESCE(feedstock_archived, 0) = 0"
-))
+rows_to_process = list(
+    conn.execute(
+        "SELECT conda_name, feedstock_name FROM packages "
+        "WHERE conda_name IS NOT NULL "
+        "  AND feedstock_name IS NOT NULL "
+        "  AND COALESCE(latest_status, 'active') = 'active' "
+        "  AND COALESCE(feedstock_archived, 0) = 0"
+    )
+)
 ```
 
 ### 7. New CLI: `pypi-only-candidates`
@@ -488,17 +494,24 @@ def main():
     parser = argparse.ArgumentParser(
         description="List PyPI projects that don't have a conda-forge equivalent."
     )
-    parser.add_argument("--limit", type=int, default=100,
-                        help="Maximum rows to return (default 100)")
-    parser.add_argument("--min-serial", type=int, default=0,
-                        help="Filter to projects with last_serial >= N "
-                             "(rough proxy for activity)")
-    parser.add_argument("--json", action="store_true",
-                        help="Emit JSON instead of a text table")
+    parser.add_argument(
+        "--limit", type=int, default=100, help="Maximum rows to return (default 100)"
+    )
+    parser.add_argument(
+        "--min-serial",
+        type=int,
+        default=0,
+        help="Filter to projects with last_serial >= N (rough proxy for activity)",
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Emit JSON instead of a text table"
+    )
     args = parser.parse_args()
 
     conn = open_db()
-    rows = list(conn.execute("""
+    rows = list(
+        conn.execute(
+            """
         SELECT pu.pypi_name, pu.last_serial, pu.fetched_at
         FROM pypi_universe pu
         LEFT JOIN packages p ON p.pypi_name = pu.pypi_name
@@ -506,7 +519,10 @@ def main():
           AND pu.last_serial >= ?
         ORDER BY pu.last_serial DESC
         LIMIT ?
-    """, (args.min_serial, args.limit)))
+    """,
+            (args.min_serial, args.limit),
+        )
+    )
     # ... format and print
 ```
 
@@ -1005,11 +1021,13 @@ Prevents the kind of drift v7.9.0 fixed by-hand. New phase authors
 either query the view (and inherit the canonical triplet) or
 explicitly justify why a broader scope is needed.
 """
+
+
 def test_packages_selectors_use_view_or_justify_scope():
     src = Path(SCRIPTS_DIR / "conda_forge_atlas.py").read_text()
     for match in re.finditer(r"SELECT [^;]+ FROM packages\b", src, re.DOTALL):
         # walk upward to find the preceding comment or context
-        ... # see tests/meta/test_actionable_scope.py for full impl
+        ...  # see tests/meta/test_actionable_scope.py for full impl
 ```
 
 ### Part B — Phase H `pypi_last_serial` freshness gate (A3)
@@ -1040,9 +1058,9 @@ sql = (
     "SELECT DISTINCT pypi_name FROM v_actionable_packages "
     "WHERE pypi_name IS NOT NULL "
     "  AND ("
-    "       pypi_version_fetched_at IS NULL "       # never fetched
+    "       pypi_version_fetched_at IS NULL "  # never fetched
     "    OR pypi_last_serial != pypi_version_serial_at_fetch "  # upstream moved
-    "    OR pypi_version_fetched_at < ? "           # safety re-check (30d cap)
+    "    OR pypi_version_fetched_at < ? "  # safety re-check (30d cap)
     "  )"
 )
 ```
@@ -1077,9 +1095,13 @@ Use the standard rebuild pattern:
 
 ```python
 # v20 → v21: drop vuln_total column (write-only, no consumer reads).
-v21_drop_vuln_total = bool(list(conn.execute(
-    "SELECT 1 FROM pragma_table_info('packages') WHERE name='vuln_total'"
-)))
+v21_drop_vuln_total = bool(
+    list(
+        conn.execute(
+            "SELECT 1 FROM pragma_table_info('packages') WHERE name='vuln_total'"
+        )
+    )
+)
 if v21_drop_vuln_total:
     print("  v21 migration: dropping unused vuln_total column from packages...")
     # SQLite ≥ 3.35 supports DROP COLUMN directly; fall back to rebuild
@@ -1122,16 +1144,16 @@ merged into `os.environ` before invoking the phase dispatcher:
 ```python
 PROFILES = {
     "maintainer": {
-        "PHASE_E_DISABLED": "",        # opt-out (default-on)
+        "PHASE_E_DISABLED": "",  # opt-out (default-on)
         "PHASE_N_ENABLED": "1",
         "PHASE_F_SOURCE": "auto",
         "PHASE_H_SOURCE": "auto",
         # PHASE_N_MAINTAINER set dynamically from `gh api user`
     },
-    "admin": { ... },
+    "admin": {...},
     "consumer": {
         "PHASE_E_DISABLED": "",
-        "PHASE_N_ENABLED": "",          # opt-in stays opt-in
+        "PHASE_N_ENABLED": "",  # opt-in stays opt-in
         "PHASE_F_SOURCE": "s3-parquet",
         "PHASE_H_SOURCE": "cf-graph",
         "PHASE_D_UNIVERSE_DISABLED": "1",
@@ -1143,11 +1165,15 @@ The auto-derivation of `PHASE_N_MAINTAINER` for `--profile maintainer`:
 
 ```python
 import subprocess
+
+
 def _auto_detect_gh_user():
     try:
         result = subprocess.run(
             ["gh", "api", "user", "--jq", ".login"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.returncode == 0:
             return result.stdout.strip()
@@ -1940,7 +1966,7 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
       PHASE_P_BQ_WINDOW_DAYS : default 30 + 90 windows; can extend to 7d
       PHASE_P_TTL_DAYS       : default 30 (re-fetch monthly)
     """
-    query = '''
+    query = """
         SELECT
             LOWER(REGEXP_REPLACE(file.project, '[-_.]+', '-')) AS pypi_name,
             SUM(IF(timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(),
@@ -1953,7 +1979,7 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
         WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(),
                                           INTERVAL 90 DAY)
         GROUP BY pypi_name
-    '''
+    """
 ```
 
 Result is bulk-loaded via `INSERT INTO pypi_intelligence (pypi_name,
@@ -1970,17 +1996,17 @@ Default-on weekly (`PHASE_Q_TTL_DAYS=7`). Opt-out via `PHASE_Q_DISABLED=1`.
 
 ```python
 _PHASE_Q_CHANNELS = {
-    "bioconda":   "https://conda.anaconda.org/bioconda/noarch/current_repodata.json",
-    "pytorch":    "https://conda.anaconda.org/pytorch/noarch/current_repodata.json",
-    "nvidia":     "https://conda.anaconda.org/nvidia/noarch/current_repodata.json",
-    "robostack":  "https://conda.anaconda.org/robostack-staging/noarch/current_repodata.json",
+    "bioconda": "https://conda.anaconda.org/bioconda/noarch/current_repodata.json",
+    "pytorch": "https://conda.anaconda.org/pytorch/noarch/current_repodata.json",
+    "nvidia": "https://conda.anaconda.org/nvidia/noarch/current_repodata.json",
+    "robostack": "https://conda.anaconda.org/robostack-staging/noarch/current_repodata.json",
 }
 _PHASE_Q_BULK_INDEXES = {
-    "homebrew":   "https://formulae.brew.sh/api/formula.json",
-    "nixpkgs":    "https://channels.nixos.org/nixos-unstable/packages.json.br",
-    "spack":      "https://github.com/spack/spack/raw/develop/var/spack/repos/builtin/packages/<...>",
-    "debian":     "https://sources.debian.org/api/list/",
-    "fedora":     "https://src.fedoraproject.org/rest/projects/",
+    "homebrew": "https://formulae.brew.sh/api/formula.json",
+    "nixpkgs": "https://channels.nixos.org/nixos-unstable/packages.json.br",
+    "spack": "https://github.com/spack/spack/raw/develop/var/spack/repos/builtin/packages/<...>",
+    "debian": "https://sources.debian.org/api/list/",
+    "fedora": "https://src.fedoraproject.org/rest/projects/",
 }
 ```
 
@@ -2036,20 +2062,24 @@ def _classify_packaging_shape(json_doc: dict) -> str:
 
     # Pure-python: only -none-any.whl wheel files OR sdist with no
     # build_system requires beyond setuptools/poetry/hatchling
-    if all(f.get("packagetype") == "bdist_wheel"
-           and "none-any" in (f.get("filename") or "")
-           for f in files if f.get("packagetype") == "bdist_wheel"):
+    if all(
+        f.get("packagetype") == "bdist_wheel"
+        and "none-any" in (f.get("filename") or "")
+        for f in files
+        if f.get("packagetype") == "bdist_wheel"
+    ):
         return "pure-python"
 
     # Rust-pyO3: requires_dist or build_system_requires contains "maturin"
     # or filename has cp3X-cp3X-linux_*.whl AND repo has Cargo.toml signal
-    if any("maturin" in (r or "").lower()
-           for r in [*requires, *_get_build_system_requires(json_doc)]):
+    if any(
+        "maturin" in (r or "").lower()
+        for r in [*requires, *_get_build_system_requires(json_doc)]
+    ):
         return "rust-pyo3"
 
     # Cython: build_system_requires contains "cython"
-    if any("cython" in (r or "").lower()
-           for r in _get_build_system_requires(json_doc)):
+    if any("cython" in (r or "").lower() for r in _get_build_system_requires(json_doc)):
         return "cython"
 
     # C-extension: per-platform wheels with cp3X tags and no maturin/cython
@@ -2072,27 +2102,27 @@ Default-on. Runs after Phase R completes. Pure SQL UPDATE chain — no HTTP.
 
 ```python
 # Composite 0-100 score; each component is 0-N points
-SCORE_LICENSE_OK         = 25  # OSI-approved SPDX / not "UNKNOWN"
+SCORE_LICENSE_OK = 25  # OSI-approved SPDX / not "UNKNOWN"
 SCORE_REQUIRES_PYTHON_OK = 20  # explicit >= 3.10 OR unspecified (assumed OK)
-SCORE_HAS_REPO           = 15  # repo_url populated
-SCORE_RECENT_RELEASE     = 15  # latest_upload_at within 2 years
-SCORE_HAS_SDIST          = 10  # sdist available
+SCORE_HAS_REPO = 15  # repo_url populated
+SCORE_RECENT_RELEASE = 15  # latest_upload_at within 2 years
+SCORE_HAS_SDIST = 10  # sdist available
 SCORE_PACKAGING_SHAPE_OK = 15  # pure-python / rust-pyo3 / cython
-                               # = full points; c-extension / unknown = half;
-                               # multi-output / fortran = 0 (manual)
+# = full points; c-extension / unknown = half;
+# multi-output / fortran = 0 (manual)
 ```
 
 #### `recommended_template` mapping
 
 ```python
 PACKAGING_SHAPE_TO_TEMPLATE = {
-    "pure-python":   "templates/python/recipe.yaml",
-    "rust-pyo3":     "templates/python/maturin-recipe.yaml",
-    "cython":        "templates/python/cython-recipe.yaml",
-    "c-extension":   "templates/python/compiled-recipe.yaml",
-    "fortran":       "templates/python/fortran-recipe.yaml",   # new
-    "multi-output":  None,                                     # manual
-    "unknown":       None,
+    "pure-python": "templates/python/recipe.yaml",
+    "rust-pyo3": "templates/python/maturin-recipe.yaml",
+    "cython": "templates/python/cython-recipe.yaml",
+    "c-extension": "templates/python/compiled-recipe.yaml",
+    "fortran": "templates/python/fortran-recipe.yaml",  # new
+    "multi-output": None,  # manual
+    "unknown": None,
 }
 ```
 
@@ -2608,12 +2638,12 @@ No new phase. Modifies the existing Phase G + Phase G' loop:
 
 ```python
 # Phase G loop (modified)
-kev_cves = _load_kev_cves(conn)      # existing (DW13)
-epss_map = _load_epss_scores(conn)   # new (v8.6.0) — pre-Phase-U fast path
-cwe_map = _load_cwe_categories(conn) # new (v8.6.0)
+kev_cves = _load_kev_cves(conn)  # existing (DW13)
+epss_map = _load_epss_scores(conn)  # new (v8.6.0) — pre-Phase-U fast path
+cwe_map = _load_cwe_categories(conn)  # new (v8.6.0)
 # ... existing loop ...
 for v in affecting:
-    if v.get("withdrawn"):              # new: skip withdrawn
+    if v.get("withdrawn"):  # new: skip withdrawn
         withdrawn_count += 1
         continue
     # existing severity/kev counters ...
@@ -3313,7 +3343,7 @@ def download_pr_artifacts(
     pr_ref: str,
     repo: str = "conda-forge/staged-recipes",
     build_id: int | None = None,
-    output_dir: str | None = None,   # default build_artifacts/pr/<pr>/
+    output_dir: str | None = None,  # default build_artifacts/pr/<pr>/
     extract: bool = True,
     platforms: list[str] | None = None,
     all_runs: bool = False,
@@ -3995,6 +4025,7 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
       PHASE_P_FORCE_FIRST_PULL           : "1" to wipe + re-bootstrap
     """
     import datetime
+
     t0 = time.monotonic()
     print("  Phase P: PyPI download counts via BigQuery (incremental v8.15.0)")
 
@@ -4038,8 +4069,10 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
             mode = "first-pull-after-gap"
             window_start = today - datetime.timedelta(days=90)
             cap_usd = float(os.environ.get("PHASE_P_MAX_COST_FIRST_PULL_USD", "100"))
-            print(f"  gap since last refresh ({gap_days} d) > 90; "
-                  f"reverting to first-pull mode")
+            print(
+                f"  gap since last refresh ({gap_days} d) > 90; "
+                f"reverting to first-pull mode"
+            )
         else:
             mode = "incremental"
             window_start = last_date + datetime.timedelta(days=1)
@@ -4048,8 +4081,10 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
     window_end = today  # excluded
     if window_start >= window_end:
         elapsed = time.monotonic() - t0
-        print(f"  pypi_downloads_daily already current through {last_date_str}; "
-              f"no new partitions to query.")
+        print(
+            f"  pypi_downloads_daily already current through {last_date_str}; "
+            f"no new partitions to query."
+        )
         return {
             "skipped": True,
             "reason": "no new partitions since last refresh",
@@ -4081,16 +4116,20 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
         return _skip(f"BigQuery dry-run failed: {e}", t0)
 
     days = (window_end - window_start).days
-    print(f"  mode={mode}; window=[{window_start}, {window_end}) "
-          f"({days} d); dry-run: ~{est_gb:,.0f} GB scan, "
-          f"est ~${est_usd:.2f} (cap ${cap_usd:.2f})")
+    print(
+        f"  mode={mode}; window=[{window_start}, {window_end}) "
+        f"({days} d); dry-run: ~{est_gb:,.0f} GB scan, "
+        f"est ~${est_usd:.2f} (cap ${cap_usd:.2f})"
+    )
 
     if est_usd > cap_usd:
         return {
             "skipped": True,
-            "reason": (f"estimated ${est_usd:.2f} exceeds cap ${cap_usd:.2f}; "
-                       f"raise PHASE_P_MAX_COST_USD or PHASE_P_MAX_COST_FIRST_PULL_USD "
-                       f"to override"),
+            "reason": (
+                f"estimated ${est_usd:.2f} exceeds cap ${cap_usd:.2f}; "
+                f"raise PHASE_P_MAX_COST_USD or PHASE_P_MAX_COST_FIRST_PULL_USD "
+                f"to override"
+            ),
             "estimated_usd": round(est_usd, 2),
             "cap_usd": cap_usd,
             "mode": mode,
@@ -4123,7 +4162,9 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
         if not name:
             continue
         date_val = r["download_date"]
-        date_str = date_val.isoformat() if hasattr(date_val, "isoformat") else str(date_val)
+        date_str = (
+            date_val.isoformat() if hasattr(date_val, "isoformat") else str(date_val)
+        )
         insert_rows.append((name, date_str, int(r["downloads"])))
 
     conn.execute("BEGIN")
@@ -4133,15 +4174,14 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
             "(pypi_name, download_date, downloads) VALUES (?, ?, ?)",
             insert_rows,
         )
-        rows_inserted = conn.execute(
-            "SELECT changes()"
-        ).fetchone()[0]
+        rows_inserted = conn.execute("SELECT changes()").fetchone()[0]
 
         # --- Recompute downloads_30d/90d from local table ---
         cutoff_30d = (today - datetime.timedelta(days=30)).isoformat()
         cutoff_90d = (today - datetime.timedelta(days=90)).isoformat()
         now = int(time.time())
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO pypi_intelligence (
                 pypi_name, downloads_30d, downloads_90d,
                 downloads_fetched_at, downloads_source
@@ -4160,7 +4200,9 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
                 downloads_90d        = excluded.downloads_90d,
                 downloads_fetched_at = excluded.downloads_fetched_at,
                 downloads_source     = excluded.downloads_source
-        """, (cutoff_30d, now, cutoff_90d))
+        """,
+            (cutoff_30d, now, cutoff_90d),
+        )
 
         # --- GC: prune old daily rows ---
         retain_days = int(os.environ.get("PHASE_P_RETAIN_DAYS", "95"))
@@ -4176,9 +4218,11 @@ def phase_p_pypi_downloads(conn: sqlite3.Connection) -> dict:
         raise
 
     elapsed = time.monotonic() - t0
-    print(f"  Phase P done in {elapsed:.1f}s — mode={mode}, "
-          f"inserted {rows_inserted:,} daily rows, pruned {rows_pruned:,}; "
-          f"actual cost ~${est_usd:.2f}")
+    print(
+        f"  Phase P done in {elapsed:.1f}s — mode={mode}, "
+        f"inserted {rows_inserted:,} daily rows, pruned {rows_pruned:,}; "
+        f"actual cost ~${est_usd:.2f}"
+    )
     return {
         "mode": mode,
         "window_start": window_start.isoformat(),

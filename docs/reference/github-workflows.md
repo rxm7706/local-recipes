@@ -87,7 +87,7 @@ workflows authored here.
 `linter_issue_comment.py` did:
 
 ```python
-repo = gh.get_repo(f"{args.owner}/staged-recipes")   # --owner = github.repository_owner
+repo = gh.get_repo(f"{args.owner}/staged-recipes")  # --owner = github.repository_owner
 ```
 
 On this fork that resolves to `rxm7706/staged-recipes`, which **does exist** (a

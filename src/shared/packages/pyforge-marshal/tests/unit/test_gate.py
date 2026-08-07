@@ -90,7 +90,11 @@ def test_classify_outcome_unresolvable_command_reports_mrs_gate_002():
         failure_code="MRS-GATE-002",
         failure_reason="executable not found",
     )
-    assert report == {"command": "nonexistent-bin", "resolvable": False, "returncode": None}
+    assert report == {
+        "command": "nonexistent-bin",
+        "resolvable": False,
+        "returncode": None,
+    }
     assert finding.code == "MRS-GATE-002"
     assert finding.severity is Severity.ERROR
     assert finding.message == "executable not found"
@@ -106,7 +110,11 @@ def test_classify_outcome_malformed_command_reports_mrs_gate_003_no_spawn_shape(
     )
     # "no spawn attempted" (I/O matrix): the report carries no returncode/
     # stdout/stderr from a process that was never launched.
-    assert report == {"command": "'unterminated", "resolvable": False, "returncode": None}
+    assert report == {
+        "command": "'unterminated",
+        "resolvable": False,
+        "returncode": None,
+    }
     assert "stdout" not in report
     assert "stderr" not in report
     assert finding.code == "MRS-GATE-003"
@@ -254,9 +262,7 @@ def test_classify_doc_only_declaration_pass_never_suppresses_an_independent_scop
     proof does not depend on Story 2.3 existing.
     """
     synthetic_code = "MRS-TST-201"
-    monkeypatch.setattr(
-        findings, "REGISTERED_CODES", frozenset({synthetic_code})
-    )
+    monkeypatch.setattr(findings, "REGISTERED_CODES", frozenset({synthetic_code}))
     monkeypatch.setattr(
         verdict, "_CLASSIFY_TABLE", {synthetic_code: Verdict.SCOPE_VIOLATION}
     )

@@ -318,7 +318,9 @@ def cmd_flip_link(link: Path, target: str) -> None:
         # os.replace can swap a symlink-over-symlink atomically, but Windows
         # rejects renaming a directory (junction) over an existing directory
         # (junction or real). Drop the existing link first when junction-based.
-        if link_kind == "junction" and (link.is_dir() or link.is_symlink() or link.exists()):
+        if link_kind == "junction" and (
+            link.is_dir() or link.is_symlink() or link.exists()
+        ):
             if link.is_symlink() or not link.is_dir():
                 link.unlink()
             else:
@@ -340,7 +342,9 @@ def cmd_flip_link(link: Path, target: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_write = sub.add_parser("write", help="Atomic file write from stdin")
@@ -351,7 +355,11 @@ def main() -> None:
 
     p_commit = sub.add_parser("commit-dir", help="Commit staging directory to target")
     p_commit.add_argument("--target", type=Path, required=True)
-    p_commit.add_argument("--rollback", action="store_true", help="Restore from rollback dir instead of committing")
+    p_commit.add_argument(
+        "--rollback",
+        action="store_true",
+        help="Restore from rollback dir instead of committing",
+    )
 
     p_flip = sub.add_parser("flip-link", help="Atomic symlink flip")
     p_flip.add_argument("--link", type=Path, required=True)

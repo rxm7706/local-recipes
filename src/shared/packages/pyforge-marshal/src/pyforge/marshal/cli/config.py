@@ -56,7 +56,9 @@ ENV_ACTIVE_PROJECT = "BMAD_ACTIVE_PROJECT"
 
 # Only these 3 of the 5 --set-eligible scalar keys are int-typed; the other
 # two (gate_mode, merge_subject_template) stay plain strings.
-_INT_SET_KEYS = frozenset({"max_dev_attempts", "max_review_cycles", "max_followup_reviews"})
+_INT_SET_KEYS = frozenset(
+    {"max_dev_attempts", "max_review_cycles", "max_followup_reviews"}
+)
 
 # The subset of `_UNSETTABLE_KEYS` that is scalar-typed but excluded from
 # `--set` for the "no AC asks for a CLI override surface" reason, never the
@@ -326,7 +328,9 @@ def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, objec
 #: a fresh clone and a newly provisioned loop home both have it -- unlike the
 #: rendered `.bmad-loop/policy.toml`, which is a derived artifact (AD-12/AD-35)
 #: and gitignored.
-PROJECT_POLICY_RELPATH = "_bmad-output/projects/{slug}/planning-artifacts/marshal-policy.toml"
+PROJECT_POLICY_RELPATH = (
+    "_bmad-output/projects/{slug}/planning-artifacts/marshal-policy.toml"
+)
 
 
 def repo_root() -> Path:
@@ -361,7 +365,9 @@ class PolicyIOError(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
-        self.finding = Finding(code="MRS-POLICY-004", severity=Severity.ERROR, message=message)
+        self.finding = Finding(
+            code="MRS-POLICY-004", severity=Severity.ERROR, message=message
+        )
 
 
 def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> Path:
@@ -390,9 +396,9 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
         target_dir.mkdir(parents=True, exist_ok=True)
         target_path = target_dir / f"policy-{effective_policy.content_hash}.json"
         payload = _policy_fields_payload(effective_policy)
-        expected_bytes = (
-            json.dumps(payload, indent=2, sort_keys=True) + "\n"
-        ).encode("utf-8")
+        expected_bytes = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode(
+            "utf-8"
+        )
         if target_path.exists():
             if not target_path.is_file():
                 raise PolicyIOError(
@@ -435,7 +441,9 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
     except PolicyIOError:
         raise
     except OSError as exc:
-        raise PolicyIOError(f"cannot materialize policy to {target_dir}: {exc}") from exc
+        raise PolicyIOError(
+            f"cannot materialize policy to {target_dir}: {exc}"
+        ) from exc
 
 
 def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
@@ -456,7 +464,9 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
@@ -496,7 +506,9 @@ def run_config(args: argparse.Namespace) -> int:
     # BMAD_ACTIVE_PROJECT (Python truthiness would otherwise treat an empty
     # flag value as "omitted" and silently fall through to the env var).
     project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
+        args.project
+        if args.project is not None
+        else os.environ.get(ENV_ACTIVE_PROJECT, "")
     )
 
     # `--project-policy` is read BEFORE compose() -- a read failure here
@@ -618,7 +630,10 @@ def run_config(args: argparse.Namespace) -> int:
     # where the guard can actually catch it.
     try:
         if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
         else:
             print(_render_text(envelope.data, envelope.findings), flush=True)
     except OSError:

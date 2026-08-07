@@ -71,7 +71,9 @@ def _as_score(value, label, errors):
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        errors.append(f"{label} must be a number between 0 and 100 or null (got {value!r})")
+        errors.append(
+            f"{label} must be a number between 0 and 100 or null (got {value!r})"
+        )
         return None
     if value < 0 or value > 100:
         errors.append(f"{label} must be between 0 and 100 (got {value})")
@@ -129,7 +131,7 @@ def _build_parser():
         epilog=(
             "Example:\n"
             "  uv run combine-external-scores.py "
-            "'{\"skillCheckScore\":80,\"tesslReviewScore\":73}'"
+            '\'{"skillCheckScore":80,"tesslReviewScore":73}\''
         ),
     )
     src = parser.add_mutually_exclusive_group()

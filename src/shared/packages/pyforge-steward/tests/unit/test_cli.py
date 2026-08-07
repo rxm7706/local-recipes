@@ -6,8 +6,14 @@ import pytest
 
 from pyforge.steward import __version__
 from pyforge.steward.cli import (
-    DUTIES, EXIT_FAILED, EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_OK,
-    build_parser, main, resolve_duty,
+    DUTIES,
+    EXIT_FAILED,
+    EXIT_INTERNAL,
+    EXIT_INTERRUPTED,
+    EXIT_OK,
+    build_parser,
+    main,
+    resolve_duty,
 )
 from pyforge.steward.interfaces import DutyResult
 
@@ -45,7 +51,7 @@ def test_failing_duty_projects_to_exit_1(monkeypatch):
     class Failing:
         name = "keys"
 
-        def run(self, ns):        # noqa: ARG002
+        def run(self, ns):  # noqa: ARG002
             return DutyResult(ok=False, summary="nope")
 
     monkeypatch.setattr("pyforge.steward.cli.resolve_duty", lambda n: Failing())
@@ -53,17 +59,20 @@ def test_failing_duty_projects_to_exit_1(monkeypatch):
 
 
 def test_keyboard_interrupt_projects_to_130(monkeypatch):
-    monkeypatch.setattr("pyforge.steward.cli.build_parser",
-                        lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
+    monkeypatch.setattr(
+        "pyforge.steward.cli.build_parser",
+        lambda: (_ for _ in ()).throw(KeyboardInterrupt()),
+    )
     assert main([]) == EXIT_INTERRUPTED
 
 
 def test_crash_never_returns_bare_1(monkeypatch):
     """A crash must be distinguishable from a duty that legitimately failed."""
+
     class Crashing:
         name = "keys"
 
-        def run(self, ns):        # noqa: ARG002
+        def run(self, ns):  # noqa: ARG002
             raise RuntimeError("boom")
 
     monkeypatch.setattr("pyforge.steward.cli.resolve_duty", lambda n: Crashing())

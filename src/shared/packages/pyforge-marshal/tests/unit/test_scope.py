@@ -243,9 +243,7 @@ def test_check_scope_glob_matching_uses_fnmatch_semantics():
     ``*`` matches ANY character including ``/`` -- so a shallow glob still
     matches a deeper path. Confirms the real matcher, rather than assuming
     a path-aware recursive-glob library this module does not use."""
-    findings = gate.check_scope(
-        ("recipes/x/*.yaml",), (), ("recipes/x/sub/deep.yaml",)
-    )
+    findings = gate.check_scope(("recipes/x/*.yaml",), (), ("recipes/x/sub/deep.yaml",))
     assert findings == ()
 
 

@@ -143,7 +143,9 @@ class _NodeState:
     started: float
     ol_run_id: str
     cache_hits: int
-    node: Any = None  # the Kedro node — kept so a pipeline-error can emit its OL FAIL lineage
+    node: Any = (
+        None  # the Kedro node — kept so a pipeline-error can emit its OL FAIL lineage
+    )
 
 
 def _now_iso() -> str:
@@ -203,7 +205,9 @@ class AtlasObservabilityHooks:
     @property
     def _tracer(self):
         if self._tracer_cache is None:
-            provider = self._provider if self._provider is not None else TracerProvider()
+            provider = (
+                self._provider if self._provider is not None else TracerProvider()
+            )
             self._tracer_cache = provider.get_tracer("pyforge.atlas.observability")
         return self._tracer_cache
 
@@ -219,11 +223,13 @@ class AtlasObservabilityHooks:
         cls = self.__class__
         new = cls.__new__(cls)
         memo[id(self)] = new
-        new._provider = self._provider          # shared by reference (survives; un-deepcopyable)
-        new._ol = self._ol                       # shared by reference (same backend, both planes)
+        new._provider = (
+            self._provider
+        )  # shared by reference (survives; un-deepcopyable)
+        new._ol = self._ol  # shared by reference (same backend, both planes)
         new._namespace = self._namespace
-        new._tracer_cache = None                 # rebuilt lazily from the shared provider
-        new._pipelines = []                      # fresh per-run span/lineage state
+        new._tracer_cache = None  # rebuilt lazily from the shared provider
+        new._pipelines = []  # fresh per-run span/lineage state
         new._nodes = {}
         return new
 
@@ -253,7 +259,9 @@ class AtlasObservabilityHooks:
                 # A down/misconfigured OpenLineage collector must not take the pipeline with it
                 # (observability is side-channel; the run's correctness does not depend on it).
                 logging.getLogger(__name__).warning(
-                    "OpenLineage emit failed (%s: %s); continuing", type(exc).__name__, exc
+                    "OpenLineage emit failed (%s: %s); continuing",
+                    type(exc).__name__,
+                    exc,
                 )
 
     def _input_datasets(self, node: Any) -> list[InputDataset]:
@@ -301,7 +309,9 @@ class AtlasObservabilityHooks:
         self, run_params: dict[str, Any], pipeline: Any, catalog: Any
     ) -> None:
         span = self._tracer.start_span("pipeline_run")
-        span.set_attribute("pyforge.pipeline", str(run_params.get("pipeline_name") or "__default__"))
+        span.set_attribute(
+            "pyforge.pipeline", str(run_params.get("pipeline_name") or "__default__")
+        )
         self._pipelines.append(_PipelineFrame(span=span))
 
     @hook_impl
@@ -367,8 +377,11 @@ class AtlasObservabilityHooks:
 
         ol_run_id = str(generate_new_uuid())
         self._nodes[node.name] = _NodeState(
-            span=span, started=time.perf_counter(), ol_run_id=ol_run_id,
-            cache_hits=cache_hits, node=node,
+            span=span,
+            started=time.perf_counter(),
+            ol_run_id=ol_run_id,
+            cache_hits=cache_hits,
+            node=node,
         )
 
         self._emit(
@@ -450,9 +463,13 @@ class AtlasObservabilityHooks:
             state.span.set_status(Status(StatusCode.ERROR))
             state.span.record_exception(error)
             state.span.end()
-        self._emit_node_fail(node, state.ol_run_id if state is not None else None, error)
+        self._emit_node_fail(
+            node, state.ol_run_id if state is not None else None, error
+        )
 
-    def _emit_node_fail(self, node: Any, ol_run_id: str | None, error: Exception) -> None:
+    def _emit_node_fail(
+        self, node: Any, ol_run_id: str | None, error: Exception
+    ) -> None:
         """Emit the OpenLineage FAIL terminal for a node run (shared by on_node_error and the
         pipeline-error sweep, so an OL consumer that pairs START↔terminal never sees a
         dangling run — Reviewer-B finding 3)."""
@@ -461,7 +478,9 @@ class AtlasObservabilityHooks:
                 eventType=RunState.FAIL,
                 eventTime=_now_iso(),
                 run=Run(
-                    runId=ol_run_id if ol_run_id is not None else str(generate_new_uuid()),
+                    runId=ol_run_id
+                    if ol_run_id is not None
+                    else str(generate_new_uuid()),
                     facets={
                         "errorMessage": error_message_run.ErrorMessageRunFacet(
                             message=str(error),

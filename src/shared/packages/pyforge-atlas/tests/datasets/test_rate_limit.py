@@ -11,7 +11,11 @@ import time
 from typing import Callable
 import pytest
 
-from pyforge.atlas.datasets.rate_limit import RateLimitedScheduler, parse_retry_after, resolve_worker_count
+from pyforge.atlas.datasets.rate_limit import (
+    RateLimitedScheduler,
+    parse_retry_after,
+    resolve_worker_count,
+)
 
 
 class MockClock:
@@ -28,10 +32,12 @@ class MockClock:
 def make_mock_sleep(clock: MockClock) -> Callable[[float], None]:
     def sleep(duration: float) -> None:
         clock.tick(duration)
+
     return sleep
 
 
 # -- 1. Worker count and Retry-After parsing tests -------------------------
+
 
 def test_resolve_worker_count():
     assert resolve_worker_count("1") == 8
@@ -55,6 +61,7 @@ def test_parse_retry_after_http_date():
 
 
 # -- 2. Scheduler Unit Tests ------------------------------------------------
+
 
 def test_scheduler_init_validation():
     with pytest.raises(ValueError, match="rps must be > 0"):
@@ -107,11 +114,14 @@ def test_scheduler_acquire_above_capacity_raises():
 
 def test_scheduler_stall_detection():
     clock = MockClock()
+
     # A no-op sleep that does NOT advance the clock
     def noop_sleep(duration: float) -> None:
         pass
 
-    sched = RateLimitedScheduler(rps=2.0, bucket_capacity=5, clock=clock, sleep=noop_sleep)
+    sched = RateLimitedScheduler(
+        rps=2.0, bucket_capacity=5, clock=clock, sleep=noop_sleep
+    )
     sched.acquire(5)  # empty the bucket
 
     with pytest.raises(RuntimeError, match="cannot make progress"):
@@ -119,6 +129,7 @@ def test_scheduler_stall_detection():
 
 
 # -- 3. Concurrency / Thread-Safety Tests -----------------------------------
+
 
 def test_scheduler_concurrency_thread_safety():
     """Verify that multiple threads accessing the scheduler concurrently

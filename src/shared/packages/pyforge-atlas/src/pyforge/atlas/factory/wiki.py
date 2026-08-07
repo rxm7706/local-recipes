@@ -44,7 +44,9 @@ def _require_safe_segment(segment: str) -> str:
         raise ValueError(f"unsafe wiki path {segment!r}: '..' traversal is not allowed")
     p = Path(segment)
     if p.is_absolute() or (p.drive or p.root):
-        raise ValueError(f"unsafe wiki path {segment!r}: must be relative to the stage dir")
+        raise ValueError(
+            f"unsafe wiki path {segment!r}: must be relative to the stage dir"
+        )
     return segment
 
 
@@ -62,7 +64,9 @@ class WikiLayout:
     def stage_dir(self, stage: str) -> Path:
         """The directory for ``stage`` (one of :data:`WIKI_STAGES`)."""
         if stage not in WIKI_STAGES:
-            raise ValueError(f"unknown wiki stage {stage!r}; expected one of {WIKI_STAGES}")
+            raise ValueError(
+                f"unknown wiki stage {stage!r}; expected one of {WIKI_STAGES}"
+            )
         return self.root / stage
 
     def stage_path(self, stage: str, relative: str) -> Path:
@@ -78,7 +82,9 @@ class WikiLayout:
         normalized = relative.replace(chr(92), "/")
         parts = Path(normalized).parts
         if not parts:  # e.g. "." collapses to no parts — addresses the stage dir itself
-            raise ValueError(f"wiki path {relative!r} does not name a file within the stage")
+            raise ValueError(
+                f"wiki path {relative!r} does not name a file within the stage"
+            )
         for part in parts:
             _require_safe_segment(part)
         return base / normalized

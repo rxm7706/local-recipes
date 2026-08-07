@@ -49,7 +49,9 @@ _FIXED_NOW = datetime(2026, 8, 6, 0, 30, 0, tzinfo=timezone.utc)
 
 # Story 5.4: schema files this file's own `jsonschema.validate` tests load
 # -- mirrors `test_init.py`'s own established `_SCHEMA_PATH` convention.
-_SCHEMAS_DIR = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas"
+_SCHEMAS_DIR = (
+    Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas"
+)
 _STATUS_SCHEMA_PATH = _SCHEMAS_DIR / "status.json"
 _ENVELOPE_SCHEMA_PATH = _SCHEMAS_DIR / "envelope.v1.json"
 
@@ -289,7 +291,11 @@ def test_tier3_and_slug_mismatch_both_fire_independently():
 
 
 def test_unprovisioned_tier3_backlink_is_not_a_violation():
-    home = _home(marker="acme\n", symlink=Path("projects/acme/planning-artifacts"), tier3_local=None)
+    home = _home(
+        marker="acme\n",
+        symlink=Path("projects/acme/planning-artifacts"),
+        tier3_local=None,
+    )
     result = status.evaluate_homes((home,), _CLEAN_MAIN)
     assert result.findings == ()
     assert result.homes[0]["desynced"] is False
@@ -318,7 +324,12 @@ def test_missing_canonical_store_without_a_backlink_is_not_a_violation():
     """The dangling-backlink check only applies when a backlink exists --
     an unprovisioned home whose canonical store also doesn't exist yet is
     still just 'never provisioned'."""
-    home = _home(marker="acme\n", symlink=Path("projects/acme/planning-artifacts"), tier3_local=None, tier3_canonical_is_dir=False)
+    home = _home(
+        marker="acme\n",
+        symlink=Path("projects/acme/planning-artifacts"),
+        tier3_local=None,
+        tier3_canonical_is_dir=False,
+    )
     result = status.evaluate_homes((home,), _CLEAN_MAIN)
     assert result.findings == ()
     assert result.homes[0]["desynced"] is False
@@ -328,8 +339,14 @@ def test_missing_canonical_store_without_a_backlink_is_not_a_violation():
 
 
 def test_main_checkout_desync_reports_mrs_homes_001_naming_main():
-    main = _main(marker="other\n", symlink=Path("projects/elsewhere/planning-artifacts"))
-    home = _home(marker="acme\n", symlink=Path("projects/acme/planning-artifacts"), tier3_local=_CANONICAL)
+    main = _main(
+        marker="other\n", symlink=Path("projects/elsewhere/planning-artifacts")
+    )
+    home = _home(
+        marker="acme\n",
+        symlink=Path("projects/acme/planning-artifacts"),
+        tier3_local=_CANONICAL,
+    )
     result = status.evaluate_homes((home,), main)
     assert len(result.findings) == 1
     finding = result.findings[0]
@@ -388,7 +405,11 @@ def test_zero_homes_reports_empty_homes_and_the_main_checkout():
 
 
 def test_one_home_reports_a_single_row():
-    home = _home(marker="acme\n", symlink=Path("projects/acme/planning-artifacts"), tier3_local=_CANONICAL)
+    home = _home(
+        marker="acme\n",
+        symlink=Path("projects/acme/planning-artifacts"),
+        tier3_local=_CANONICAL,
+    )
     result = status.evaluate_homes((home,), _CLEAN_MAIN)
     assert len(result.homes) == 1
     assert result.findings == ()
@@ -498,9 +519,10 @@ def test_reconcile_claimed_commit_not_in_merged_keys_is_mrs_status_001():
 
 def test_reconcile_claimed_commit_none_is_no_finding_git_stands_alone():
     key = normalize("3.1")
-    report = status.reconcile_feed_domains(frozenset({key}), (
-        status.ClaimedCommit(story_key=key, claimed_commit_sha=None),
-    ))
+    report = status.reconcile_feed_domains(
+        frozenset({key}),
+        (status.ClaimedCommit(story_key=key, claimed_commit_sha=None),),
+    )
     assert report.findings == ()
     row = report.stories[0]
     assert row["durable"].value is True
@@ -552,7 +574,9 @@ def test_reconcile_duplicate_story_key_prefers_later_phase_non_none_sha():
 
 def test_reconcile_duplicate_story_key_prefers_non_none_sha_over_none():
     key = normalize("5.2")
-    no_claim = status.ClaimedCommit(story_key=key, claimed_commit_sha=None, phase="done")
+    no_claim = status.ClaimedCommit(
+        story_key=key, claimed_commit_sha=None, phase="done"
+    )
     has_claim = status.ClaimedCommit(
         story_key=key, claimed_commit_sha="sha123", phase="dev-running"
     )
@@ -869,7 +893,11 @@ class TestSortFleetRows:
         return {"slug": slug, "state": state}
 
     def test_zero_escalations_order_unchanged(self):
-        rows = [self._row("a", "idle"), self._row("b", "running"), self._row("c", "stopped")]
+        rows = [
+            self._row("a", "idle"),
+            self._row("b", "running"),
+            self._row("c", "stopped"),
+        ]
         assert status.sort_fleet_rows(rows) == rows
 
     def test_one_escalation_sorts_first(self):
@@ -913,22 +941,26 @@ class TestReconcileLedgerVsGit:
         assert status.reconcile_ledger_vs_git(frozenset(), frozenset()) == ()
 
     def test_done_in_ledger_not_merged(self):
-        result = status.reconcile_ledger_vs_git(
-            frozenset({"1.1"}), frozenset()
-        )
+        result = status.reconcile_ledger_vs_git(frozenset({"1.1"}), frozenset())
         assert result == (
-            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
+            {
+                "story_key": "1.1",
+                "kind": "done-in-ledger-not-merged",
+                "confidence": "unconfirmed",
+            },
         )
 
     def test_merged_not_done_in_ledger(self):
         """The live incident this story exists to catch: a story git
         confirms as durably merged whose ledger status is anything other
         than done -- including absent entirely, the case exercised here."""
-        result = status.reconcile_ledger_vs_git(
-            frozenset(), frozenset({"4.1"})
-        )
+        result = status.reconcile_ledger_vs_git(frozenset(), frozenset({"4.1"}))
         assert result == (
-            {"story_key": "4.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},
+            {
+                "story_key": "4.1",
+                "kind": "merged-not-done-in-ledger",
+                "confidence": "confirmed",
+            },
         )
 
     def test_both_directions_at_once_sorted_by_key_within_each_kind(self):
@@ -936,10 +968,26 @@ class TestReconcileLedgerVsGit:
             frozenset({"1.2", "1.1"}), frozenset({"2.2", "2.1"})
         )
         assert result == (
-            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
-            {"story_key": "1.2", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
-            {"story_key": "2.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},
-            {"story_key": "2.2", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},
+            {
+                "story_key": "1.1",
+                "kind": "done-in-ledger-not-merged",
+                "confidence": "unconfirmed",
+            },
+            {
+                "story_key": "1.2",
+                "kind": "done-in-ledger-not-merged",
+                "confidence": "unconfirmed",
+            },
+            {
+                "story_key": "2.1",
+                "kind": "merged-not-done-in-ledger",
+                "confidence": "confirmed",
+            },
+            {
+                "story_key": "2.2",
+                "kind": "merged-not-done-in-ledger",
+                "confidence": "confirmed",
+            },
         )
 
     def test_result_is_deterministic_regardless_of_set_construction_order(self):
@@ -1705,8 +1753,12 @@ class TestRunStatus:
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
         vcs = _FakeVcs(
             worktrees=(
-                WorktreeEntry(path=tmp_path / "loop-homes" / "acme", branch="loop/acme"),
-                WorktreeEntry(path=tmp_path / "loop-homes" / "beta", branch="loop/beta"),
+                WorktreeEntry(
+                    path=tmp_path / "loop-homes" / "acme", branch="loop/acme"
+                ),
+                WorktreeEntry(
+                    path=tmp_path / "loop-homes" / "beta", branch="loop/beta"
+                ),
             )
         )
 
@@ -2042,7 +2094,10 @@ class TestBuildRunDetail:
             TaskPhaseSnapshot(story_key="1.2", phase="review-verify", commit_sha="bbb"),
         )
         facts = status.RunDetailFacts(
-            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            project="acme",
+            run_id="acme-run1",
+            found=True,
+            state_readable=True,
             tasks=tasks,
         )
         row, _ = status.build_run_detail(facts)
@@ -2191,9 +2246,7 @@ class TestRunDetail:
         assert payload["verdict"] == "unevaluable"
         assert exit_code == 1
 
-    def test_repo_root_failure_never_fabricates_a_confirmed_absent_run(
-        self, capsys
-    ):
+    def test_repo_root_failure_never_fabricates_a_confirmed_absent_run(self, capsys):
         """Code review (2026-08-07, Edge Case Hunter): a `VcsCommandError`
         resolving the repo root means the filesystem was never consulted
         -- whether the run exists is genuinely UNKNOWN, not confirmed
@@ -2247,15 +2300,21 @@ class TestRunDetail:
                 _outcome_line(run_id, pid=4242, harness_run_id="hrid-1"),
                 _manual_landing_line(run_id, story_key="1.1", gate_verdict="clean"),
                 _budget_usage_line(
-                    run_id, story_key="1.1", cost_estimate=1000,
+                    run_id,
+                    story_key="1.1",
+                    cost_estimate=1000,
                     ts="2026-08-06T00:05:00.000Z",
                 ),
                 _budget_usage_line(
-                    run_id, story_key="1.1", cost_estimate=1500,
+                    run_id,
+                    story_key="1.1",
+                    cost_estimate=1500,
                     ts="2026-08-06T00:06:00.000Z",
                 ),
                 _budget_usage_line(
-                    run_id, story_key="1.2", cost_estimate=300,
+                    run_id,
+                    story_key="1.2",
+                    cost_estimate=300,
                     ts="2026-08-06T00:06:30.000Z",
                 ),
                 _open_intent_line(run_id),
@@ -2301,9 +2360,7 @@ class TestRunDetail:
         assert data["open_intents"][0]["kind"] == "story-spec-commit"
         assert exit_code == 0
 
-    def test_run_paused_on_escalation_names_reason_and_artifact(
-        self, tmp_path, capsys
-    ):
+    def test_run_paused_on_escalation_names_reason_and_artifact(self, tmp_path, capsys):
         slug = "acme"
         run_id = "acme-run1"
         _seed_run_detail_journal(
@@ -2677,7 +2734,11 @@ class TestReconcileLedgerCli:
         )
         payload = _payload(capsys)
         assert payload["data"]["discrepancies"] == [
-            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"}
+            {
+                "story_key": "1.1",
+                "kind": "done-in-ledger-not-merged",
+                "confidence": "unconfirmed",
+            }
         ]
         assert payload["findings"] == []
         assert payload["verdict"] == "clean"
@@ -2702,7 +2763,11 @@ class TestReconcileLedgerCli:
         )
         payload = _payload(capsys)
         assert payload["data"]["discrepancies"] == [
-            {"story_key": "4.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"}
+            {
+                "story_key": "4.1",
+                "kind": "merged-not-done-in-ledger",
+                "confidence": "confirmed",
+            }
         ]
         assert payload["findings"] == []
         assert payload["verdict"] == "clean"
@@ -2729,12 +2794,18 @@ class TestReconcileLedgerCli:
         )
         payload = _payload(capsys)
         assert payload["data"]["discrepancies"] == [
-            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"}
+            {
+                "story_key": "1.1",
+                "kind": "done-in-ledger-not-merged",
+                "confidence": "unconfirmed",
+            }
         ]
         assert payload["findings"] == []
         assert exit_code == 0
 
-    def test_json_data_payload_matches_status_schema(self, tmp_path, capsys, monkeypatch):
+    def test_json_data_payload_matches_status_schema(
+        self, tmp_path, capsys, monkeypatch
+    ):
         monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
         vcs = _FakeVcs(commit_subjects_value=(_merged_subject("4.1"),))
         harness = _FakeHarness(ledger_statuses=(("4-1-title", "review"),))
@@ -2781,7 +2852,9 @@ class TestReconcileLedgerCli:
 # =============================================================================
 
 
-def _unpushed_result(*findings: dict[str, object], base: str = "origin/main") -> ProcessResult:
+def _unpushed_result(
+    *findings: dict[str, object], base: str = "origin/main"
+) -> ProcessResult:
     # Code review (2026-08-07, Edge Case Hunter): the real
     # `scripts/unpushed_work_check.py::main` always returns 1 in --json
     # mode (the early `return 0` only exists on the plain-text OK-clean
@@ -2795,7 +2868,10 @@ def _unpushed_result(*findings: dict[str, object], base: str = "origin/main") ->
 
 
 def _unpushed_finding(
-    ref: str, *, files: int = 3, stat: str = "3 files changed, 40 insertions(+)",
+    ref: str,
+    *,
+    files: int = 3,
+    stat: str = "3 files changed, 40 insertions(+)",
     remedy: str | None = None,
 ) -> dict[str, object]:
     return {
@@ -2862,7 +2938,9 @@ class TestUnpushedWork:
         )
         process = _FakeProcess(
             alive_pids=frozenset({5252}),
-            run_result=_unpushed_result(_unpushed_finding("loop/acme", files=9, stat="9 files changed")),
+            run_result=_unpushed_result(
+                _unpushed_finding("loop/acme", files=9, stat="9 files changed")
+            ),
         )
 
         exit_code = status_cli.run_status(

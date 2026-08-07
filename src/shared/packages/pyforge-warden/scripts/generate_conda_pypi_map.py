@@ -130,8 +130,12 @@ def convert(tsv_path: Path) -> dict[str, dict[str, str]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tsv_path", type=Path, help="path to purls_conda-pypi_mapped.tsv")
-    parser.add_argument("--out", type=Path, default=_DEFAULT_OUT, help="output JSON path")
+    parser.add_argument(
+        "tsv_path", type=Path, help="path to purls_conda-pypi_mapped.tsv"
+    )
+    parser.add_argument(
+        "--out", type=Path, default=_DEFAULT_OUT, help="output JSON path"
+    )
     args = parser.parse_args()
 
     entries = convert(args.tsv_path)

@@ -79,7 +79,10 @@ def test_rule_does_not_apply_when_every_path_matches_the_glob():
 
 def test_rule_never_applies_to_an_empty_changed_paths_exclude_mode():
     rule = LandingRule(
-        name="x", trigger_path_glob="recipes/**", trigger_mode="exclude", label="maintenance"
+        name="x",
+        trigger_path_glob="recipes/**",
+        trigger_mode="exclude",
+        label="maintenance",
     )
     assert rule_applies(rule, ()) is False
 

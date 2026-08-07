@@ -130,8 +130,8 @@ def _build_parser():
         epilog=(
             "Example:\n"
             "  uv run verify-declared-numerator.py "
-            "'{\"declaredNames\":[\"foo\",\"bar\"],"
-            "\"skillPackagePath\":\"/path/to/skill\"}'"
+            '\'{"declaredNames":["foo","bar"],'
+            '"skillPackagePath":"/path/to/skill"}\''
         ),
     )
     src = parser.add_mutually_exclusive_group()

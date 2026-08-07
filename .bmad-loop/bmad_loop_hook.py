@@ -40,9 +40,12 @@ def main() -> int:
         # Payload keys vary by CLI: snake_case (claude/codex), conversation_id
         # (cursor), or camelCase (copilot's sessionId/transcriptPath). Try each.
         "session_id": (
-            payload.get("session_id") or payload.get("conversation_id") or payload.get("sessionId")
+            payload.get("session_id")
+            or payload.get("conversation_id")
+            or payload.get("sessionId")
         ),
-        "transcript_path": payload.get("transcript_path") or payload.get("transcriptPath"),
+        "transcript_path": payload.get("transcript_path")
+        or payload.get("transcriptPath"),
         "cwd": payload.get("cwd"),
     }
     events_dir = os.path.join(run_dir, "events")

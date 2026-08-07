@@ -130,17 +130,22 @@ def test_no_stdout_write_outside_the_allowlist():
 # trees rather than the real package -- these assert the scanner's own
 # behavior independent of what src/pyforge/mason/ currently contains. ------
 
+
 def test_detection_fires_on_a_violation_and_permits_allowed_files(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "cli.py").write_text("print('hi')\n", encoding="utf-8")
-    (root / "render.py").write_text("import sys\nsys.stdout.write('hi')\n", encoding="utf-8")
+    (root / "render.py").write_text(
+        "import sys\nsys.stdout.write('hi')\n", encoding="utf-8"
+    )
     (root / "recipe.py").write_text("print('uh oh')\n", encoding="utf-8")
     (root / "other.py").write_text(
-        "import sys\nprint('also bad', file=sys.stdout)\n", encoding="utf-8",
+        "import sys\nprint('also bad', file=sys.stdout)\n",
+        encoding="utf-8",
     )
     (root / "buffered.py").write_text(
-        "import sys\nsys.stdout.buffer.write(b'bytes')\n", encoding="utf-8",
+        "import sys\nsys.stdout.buffer.write(b'bytes')\n",
+        encoding="utf-8",
     )
     (root / "fine.py").write_text(
         "import sys\nprint('fine', file=sys.stderr)\nsys.stderr.write('also fine')\n",
@@ -170,7 +175,8 @@ def test_detection_fires_on_a_bare_stdout_name_import(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "shadowed.py").write_text(
-        "from sys import stdout\nstdout.write('sneaky')\n", encoding="utf-8",
+        "from sys import stdout\nstdout.write('sneaky')\n",
+        encoding="utf-8",
     )
     violators = {p.resolve() for p in _find_stdout_writers(root, _allowed_paths(root))}
     assert (root / "shadowed.py").resolve() in violators
@@ -180,7 +186,8 @@ def test_detection_fires_on_writelines(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
     (root / "sneaky.py").write_text(
-        "import sys\nsys.stdout.writelines(['a', 'b'])\n", encoding="utf-8",
+        "import sys\nsys.stdout.writelines(['a', 'b'])\n",
+        encoding="utf-8",
     )
     violators = {p.resolve() for p in _find_stdout_writers(root, _allowed_paths(root))}
     assert (root / "sneaky.py").resolve() in violators

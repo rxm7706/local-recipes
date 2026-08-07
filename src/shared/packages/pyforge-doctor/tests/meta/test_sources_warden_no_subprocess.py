@@ -90,9 +90,7 @@ def _subprocess_violations(tree: ast.Module) -> list[int]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "subprocess" or alias.name.startswith(
-                    "subprocess."
-                ):
+                if alias.name == "subprocess" or alias.name.startswith("subprocess."):
                     violations.append(node.lineno)
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
@@ -159,15 +157,10 @@ def _non_engines_warden_submodule_violations(tree: ast.Module) -> list[int]:
                 # here would launder forbidden names through the
                 # sanctioned module unflagged (review finding,
                 # 2026-07-30). ``*`` is likewise rejected.
-                if any(
-                    alias.name != "run_doctor_checks"
-                    for alias in node.names
-                ):
+                if any(alias.name != "run_doctor_checks" for alias in node.names):
                     violations.append(node.lineno)
                 continue
-            if module == "pyforge.warden" or module.startswith(
-                "pyforge.warden."
-            ):
+            if module == "pyforge.warden" or module.startswith("pyforge.warden."):
                 violations.append(node.lineno)
             # `from pyforge import warden` names the submodule as an alias
             # under the PARENT module ("pyforge") -- the checks above miss
@@ -227,9 +220,7 @@ def test_sources_warden_has_no_subprocess_call_sites():
 
 
 def test_sources_warden_imports_no_submodule_besides_engines():
-    violations = _non_engines_warden_submodule_violations(
-        _parse(WARDEN_SOURCE_PATH)
-    )
+    violations = _non_engines_warden_submodule_violations(_parse(WARDEN_SOURCE_PATH))
     assert not violations, (
         f"sources/warden.py imports a non-engines pyforge.warden submodule "
         f"at line(s) {violations} -- only pyforge.warden.engines is "
@@ -295,17 +286,11 @@ def test_guard_fires_on_synthetic_non_engines_submodule_import():
     plain = "import pyforge.warden.models\n"
     assert _non_engines_warden_submodule_violations(ast.parse(plain)) == [1]
     from_import = "from pyforge.warden import verdict\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(from_import)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(from_import)) == [1]
     from_submodule = "from pyforge.warden.verdict import exit_code_for\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(from_submodule)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(from_submodule)) == [1]
     parent_alias = "from pyforge import warden\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(parent_alias)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(parent_alias)) == [1]
 
 
 def test_guard_fires_on_synthetic_engines_prefixed_sibling_import():
@@ -313,30 +298,22 @@ def test_guard_fires_on_synthetic_engines_prefixed_sibling_import():
     # sanction, and sub-paths of the `engines` module are not sanctioned
     # in either import branch (review finding, 2026-07-30).
     sibling = "import pyforge.warden.engines_evil\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(sibling)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(sibling)) == [1]
     subpath = "import pyforge.warden.engines.sub\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(subpath)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(subpath)) == [1]
     from_sibling = "from pyforge.warden.engines_evil import x\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(from_sibling)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(from_sibling)) == [1]
 
 
 def test_guard_fires_on_synthetic_relative_warden_import():
     # Resolved against sources/warden.py's own package
     # (pyforge.doctor.sources): three dots climb to `pyforge`.
     relative_submodule = "from ...warden import verdict\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(relative_submodule)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(relative_submodule)) == [
+        1
+    ]
     relative_deep = "from ...warden.models import ErrorKind\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(relative_deep)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(relative_deep)) == [1]
     relative_parent_alias = "from ... import warden\n"
     assert _non_engines_warden_submodule_violations(
         ast.parse(relative_parent_alias)
@@ -353,9 +330,7 @@ def test_guard_fires_on_synthetic_symbol_laundering_through_engines():
     shadow = "from pyforge.warden.engines import Finding\n"
     assert _non_engines_warden_submodule_violations(ast.parse(shadow)) == [1]
     laundered = "from pyforge.warden.engines import subprocess as sp\n"
-    assert _non_engines_warden_submodule_violations(
-        ast.parse(laundered)
-    ) == [1]
+    assert _non_engines_warden_submodule_violations(ast.parse(laundered)) == [1]
     star = "from pyforge.warden.engines import *\n"
     assert _non_engines_warden_submodule_violations(ast.parse(star)) == [1]
     mixed = "from pyforge.warden.engines import run_doctor_checks, os\n"

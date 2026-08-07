@@ -72,6 +72,7 @@ def _dataset(client, **over):
 
 # -- D1: literal TIMESTAMP bounds, NOT _PARTITIONDATE ------------------------
 
+
 def test_build_query_uses_literal_timestamp_bounds():
     ds = _dataset(None)
     sql = ds.build_query("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC")
@@ -90,6 +91,7 @@ def test_build_query_rejects_partitiondate_template():
 
 # -- Layer 1: free dry-run preflight + cap abort -----------------------------
 
+
 def test_preflight_estimate_comes_from_dry_run_bytes():
     # 1 TiB scanned -> $6.25 at 6.25 $/TiB
     client = _StubBQClient(dry_bytes=1_000_000_000_000, result_df=pd.DataFrame())
@@ -107,17 +109,22 @@ def test_run_gated_aborts_above_cap(monkeypatch):
     ds = _dataset(client)
     with pytest.raises(PhasePCostAbort) as exc:
         ds.run_gated("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC")
-    assert exc.value.bytes_processed == 9_500_000_000_000  # cites the dry-run, not a literal
+    assert (
+        exc.value.bytes_processed == 9_500_000_000_000
+    )  # cites the dry-run, not a literal
     # aborted at the dry-run -> the real (non-dry) query was NEVER issued
     assert all(c[1]["dry_run"] for c in client.calls)
 
 
 # -- Layer 2: server-side maximum_bytes_billed + job_timeout_ms --------------
 
+
 def test_run_gated_within_cap_sets_hard_cap_and_timeout():
     monkeypatch_env("PHASE_P_ENABLED", "1")
     result = pd.DataFrame({"pypi_name": ["numpy"], "downloads": [123]})
-    client = _StubBQClient(dry_bytes=100_000_000_000, result_df=result)  # ~$0.625, under cap
+    client = _StubBQClient(
+        dry_bytes=100_000_000_000, result_df=result
+    )  # ~$0.625, under cap
     ds = _dataset(client)
     try:
         out = ds.run_gated("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC")
@@ -138,7 +145,9 @@ def test_first_pull_uses_the_higher_cap():
     client = _StubBQClient(dry_bytes=9_500_000_000_000, result_df=result)
     ds = _dataset(client)
     try:
-        out = ds.run_gated("a", "b", first_pull=True)  # first pull -> $100 cap -> allowed
+        out = ds.run_gated(
+            "a", "b", first_pull=True
+        )  # first pull -> $100 cap -> allowed
     finally:
         monkeypatch_env("PHASE_P_ENABLED", None)
     assert not out.empty
@@ -148,10 +157,13 @@ def test_first_pull_uses_the_higher_cap():
 
 # -- AD-6: admin-opt-in, never a default schedule ----------------------------
 
+
 def test_disabled_load_no_ops():
     monkeypatch_env("PHASE_P_ENABLED", None)
     ds = _dataset(_StubBQClient(1, pd.DataFrame()))
-    assert ds.load() is None  # PHASE_P off -> no BigQuery job (mode-machine _phase_p_skip)
+    assert (
+        ds.load() is None
+    )  # PHASE_P off -> no BigQuery job (mode-machine _phase_p_skip)
 
 
 def test_run_gated_raises_when_disabled():
@@ -173,18 +185,23 @@ def test_is_enabled_only_literal_one():
 
 # -- review-hardening: construction + preflight guards -----------------------
 
+
 def test_malformed_env_does_not_crash_construction(monkeypatch):
     # a typo'd PHASE_P_* env must fall back to the default, not raise at construction.
     monkeypatch.setenv("PHASE_P_MAX_COST_USD", "not-a-number")
     monkeypatch.setenv("PHASE_P_JOB_TIMEOUT_MS", "garbage")
-    ds = BigQueryDownloadsDataset(query_template=_QUERY, make_job_config=_make_job_config)
+    ds = BigQueryDownloadsDataset(
+        query_template=_QUERY, make_job_config=_make_job_config
+    )
     assert ds._max_cost_usd == 10.0  # default
     assert ds._job_timeout_ms == 600_000  # default
 
 
 def test_zero_price_rejected_at_construction():
     with pytest.raises(ValueError, match="usd_per_tb must be > 0"):
-        BigQueryDownloadsDataset(query_template=_QUERY, make_job_config=_make_job_config, usd_per_tb=0)
+        BigQueryDownloadsDataset(
+            query_template=_QUERY, make_job_config=_make_job_config, usd_per_tb=0
+        )
 
 
 def test_dry_run_none_bytes_fails_closed():

@@ -26,6 +26,7 @@ from urllib.parse import urljoin
 
 try:
     import requests
+
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
@@ -42,6 +43,7 @@ CHANNEL_URLS = {
 @dataclass
 class Package:
     """Represents a conda package."""
+
     name: str
     version: str
     build: str
@@ -70,25 +72,25 @@ def parse_packages(repodata: dict, channel_url: str, subdir: str) -> list[Packag
     # Handle both .conda and .tar.bz2 formats
     for pkg_dict in [repodata.get("packages", {}), repodata.get("packages.conda", {})]:
         for filename, info in pkg_dict.items():
-            packages.append(Package(
-                name=info["name"],
-                version=info["version"],
-                build=info["build"],
-                subdir=subdir,
-                filename=filename,
-                url=f"{channel_url}/{subdir}/{filename}",
-                sha256=info.get("sha256", ""),
-                size=info.get("size", 0),
-                depends=info.get("depends", [])
-            ))
+            packages.append(
+                Package(
+                    name=info["name"],
+                    version=info["version"],
+                    build=info["build"],
+                    subdir=subdir,
+                    filename=filename,
+                    url=f"{channel_url}/{subdir}/{filename}",
+                    sha256=info.get("sha256", ""),
+                    size=info.get("size", 0),
+                    depends=info.get("depends", []),
+                )
+            )
 
     return packages
 
 
 def resolve_dependencies(
-    packages: list[Package],
-    wanted: set[str],
-    all_packages: dict[str, list[Package]]
+    packages: list[Package], wanted: set[str], all_packages: dict[str, list[Package]]
 ) -> set[str]:
     """Resolve package dependencies recursively."""
     resolved = set()
@@ -160,11 +162,7 @@ def index_channel(dest_dir: Path) -> bool:
     """Create repodata.json for mirrored channel."""
     try:
         # Try conda-index
-        subprocess.run(
-            ["conda-index", str(dest_dir)],
-            check=True,
-            capture_output=True
-        )
+        subprocess.run(["conda-index", str(dest_dir)], check=True, capture_output=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass
@@ -212,7 +210,10 @@ def verify_mirror(dest_dir: Path) -> tuple[int, int]:
         with open(repodata_path) as f:
             repodata = json.load(f)
 
-        for pkg_dict in [repodata.get("packages", {}), repodata.get("packages.conda", {})]:
+        for pkg_dict in [
+            repodata.get("packages", {}),
+            repodata.get("packages.conda", {}),
+        ]:
             for filename, info in pkg_dict.items():
                 pkg_path = subdir_path / filename
                 if not pkg_path.exists():
@@ -245,7 +246,9 @@ def cleanup_old_versions(dest_dir: Path, keep_versions: int = 2) -> int:
         # Group packages by name
         packages_by_name: dict[str, list[Path]] = {}
 
-        for pkg_file in list(subdir_path.glob("*.conda")) + list(subdir_path.glob("*.tar.bz2")):
+        for pkg_file in list(subdir_path.glob("*.conda")) + list(
+            subdir_path.glob("*.tar.bz2")
+        ):
             # Parse name from filename: name-version-build.conda
             parts = pkg_file.stem.rsplit("-", 2)
             if len(parts) >= 2:
@@ -271,7 +274,7 @@ def mirror_channel(
     packages: Optional[list[str]] = None,
     subdirs: Optional[list[str]] = None,
     workers: int = 4,
-    resolve_deps: bool = True
+    resolve_deps: bool = True,
 ) -> tuple[int, int]:
     """Mirror packages from a conda channel."""
     if not REQUESTS_AVAILABLE:
@@ -300,9 +303,7 @@ def mirror_channel(
     # Resolve dependencies
     if resolve_deps and packages:
         print("Resolving dependencies...")
-        wanted_packages = resolve_dependencies(
-            [], wanted_packages, all_packages
-        )
+        wanted_packages = resolve_dependencies([], wanted_packages, all_packages)
         print(f"Total packages to mirror: {len(wanted_packages)}")
 
     # Filter packages to download
@@ -320,8 +321,7 @@ def mirror_channel(
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
-            executor.submit(download_package, pkg, dest): pkg
-            for pkg in to_download
+            executor.submit(download_package, pkg, dest): pkg for pkg in to_download
         }
 
         for future in as_completed(futures):
@@ -356,20 +356,25 @@ def main():
 
     # Mirror command
     mirror_parser = subparsers.add_parser("mirror", help="Mirror packages")
-    mirror_parser.add_argument("--source", "-s", default="conda-forge",
-                               help="Source channel name or URL")
-    mirror_parser.add_argument("--dest", "-d", required=True, type=Path,
-                               help="Destination directory")
-    mirror_parser.add_argument("--packages", "-p", nargs="+",
-                               help="Packages to mirror")
-    mirror_parser.add_argument("--packages-file", "-f", type=Path,
-                               help="File with package list (one per line)")
-    mirror_parser.add_argument("--subdirs", nargs="+", default=SUBDIRS,
-                               help="Subdirs to mirror")
-    mirror_parser.add_argument("--workers", "-w", type=int, default=4,
-                               help="Download workers")
-    mirror_parser.add_argument("--no-deps", action="store_true",
-                               help="Don't resolve dependencies")
+    mirror_parser.add_argument(
+        "--source", "-s", default="conda-forge", help="Source channel name or URL"
+    )
+    mirror_parser.add_argument(
+        "--dest", "-d", required=True, type=Path, help="Destination directory"
+    )
+    mirror_parser.add_argument("--packages", "-p", nargs="+", help="Packages to mirror")
+    mirror_parser.add_argument(
+        "--packages-file", "-f", type=Path, help="File with package list (one per line)"
+    )
+    mirror_parser.add_argument(
+        "--subdirs", nargs="+", default=SUBDIRS, help="Subdirs to mirror"
+    )
+    mirror_parser.add_argument(
+        "--workers", "-w", type=int, default=4, help="Download workers"
+    )
+    mirror_parser.add_argument(
+        "--no-deps", action="store_true", help="Don't resolve dependencies"
+    )
 
     # Verify command
     verify_parser = subparsers.add_parser("verify", help="Verify mirror integrity")
@@ -378,8 +383,13 @@ def main():
     # Cleanup command
     cleanup_parser = subparsers.add_parser("cleanup", help="Remove old versions")
     cleanup_parser.add_argument("path", type=Path, help="Mirror path")
-    cleanup_parser.add_argument("--keep-versions", "-k", type=int, default=2,
-                                help="Versions to keep per package")
+    cleanup_parser.add_argument(
+        "--keep-versions",
+        "-k",
+        type=int,
+        default=2,
+        help="Versions to keep per package",
+    )
 
     # Index command
     index_parser = subparsers.add_parser("index", help="Reindex mirror")
@@ -391,7 +401,8 @@ def main():
         packages = args.packages or []
         if args.packages_file and args.packages_file.exists():
             packages.extend(
-                line.strip() for line in args.packages_file.read_text().splitlines()
+                line.strip()
+                for line in args.packages_file.read_text().splitlines()
                 if line.strip() and not line.startswith("#")
             )
 
@@ -401,7 +412,7 @@ def main():
             packages=packages if packages else None,
             subdirs=args.subdirs,
             workers=args.workers,
-            resolve_deps=not args.no_deps
+            resolve_deps=not args.no_deps,
         )
         print(f"Mirrored: {success} success, {failed} failed")
         sys.exit(1 if failed else 0)

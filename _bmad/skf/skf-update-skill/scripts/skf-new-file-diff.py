@@ -141,7 +141,9 @@ def diff(detect: dict, tracked: set[str]) -> dict:
 
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
-        _fail("usage: skf-new-file-diff.py <provenance-map-path>  (detect JSON on stdin)")
+        _fail(
+            "usage: skf-new-file-diff.py <provenance-map-path>  (detect JSON on stdin)"
+        )
 
     provenance_path = Path(argv[1])
     if not provenance_path.exists():

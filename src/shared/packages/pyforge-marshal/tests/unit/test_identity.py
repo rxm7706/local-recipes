@@ -37,9 +37,7 @@ def test_normalize_dot_feed_key_with_suffix():
 
 
 def test_normalize_hyphen_key_with_trailing_slug():
-    key = normalize(
-        "1-2-story-identity-merge-subject-rendering-and-feed-completeness"
-    )
+    key = normalize("1-2-story-identity-merge-subject-rendering-and-feed-completeness")
     assert key == StoryKey(epic=1, seq=2, suffix="")
 
 

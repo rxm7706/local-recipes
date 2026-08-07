@@ -128,7 +128,9 @@ def load_schema() -> dict:
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
-def scan_json(capsys, target, extra_args: list[str] | None = None) -> tuple[int, dict, str]:
+def scan_json(
+    capsys, target, extra_args: list[str] | None = None
+) -> tuple[int, dict, str]:
     capsys.readouterr()
     rc = main(["scan", str(target), "--format", "json", *(extra_args or [])])
     captured = capsys.readouterr()
@@ -137,7 +139,9 @@ def scan_json(capsys, target, extra_args: list[str] | None = None) -> tuple[int,
     return rc, document, captured.err
 
 
-def scan_text(capsys, target, extra_args: list[str] | None = None) -> tuple[int, str, str]:
+def scan_text(
+    capsys, target, extra_args: list[str] | None = None
+) -> tuple[int, str, str]:
     capsys.readouterr()
     rc = main(["scan", str(target), *(extra_args or [])])
     captured = capsys.readouterr()
@@ -355,9 +359,7 @@ def test_emitted_stanza_committed_and_reingested_suppresses_the_finding(
     rc2, document, _ = scan_json(capsys, tmp_path, ["--baseline", str(baseline_path)])
     assert rc2 == 0
     assert document["status"]["value"] == "bypassed"
-    assert [s["finding_id"] for s in document["suppressions"]] == [
-        _BLOCKING_FINDING_ID
-    ]
+    assert [s["finding_id"] for s in document["suppressions"]] == [_BLOCKING_FINDING_ID]
     assert document["suppressions"][0]["origin"] == "baseline"
 
 

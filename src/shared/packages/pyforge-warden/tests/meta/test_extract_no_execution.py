@@ -203,13 +203,9 @@ def _violations(tree: ast.Module) -> list[str]:
             ):
                 # A star import binds forbidden members as bare names the
                 # call-site checks cannot see: denied wholesale.
-                found.append(
-                    f"from {node.module} import * (line {node.lineno})"
-                )
+                found.append(f"from {node.module} import * (line {node.lineno})")
             if top in FORBIDDEN_MODULES | FORBIDDEN_NETWORK_MODULES:
-                found.append(
-                    f"from {node.module} import ... (line {node.lineno})"
-                )
+                found.append(f"from {node.module} import ... (line {node.lineno})")
             elif top == "os":
                 found.extend(
                     f"from os import {alias.name} (line {node.lineno})"
@@ -240,8 +236,7 @@ def _violations(tree: ast.Module) -> list[str]:
                 )
             elif top == "concurrent":
                 found.extend(
-                    f"from {node.module} import {alias.name} "
-                    f"(line {node.lineno})"
+                    f"from {node.module} import {alias.name} (line {node.lineno})"
                     for alias in node.names
                     if alias.name == "ProcessPoolExecutor"
                 )
@@ -256,9 +251,7 @@ def _violations(tree: ast.Module) -> list[str]:
                 # attribute access included (concurrent.futures.
                 # ProcessPoolExecutor(...)).
                 if func.attr == "ProcessPoolExecutor":
-                    found.append(
-                        f"ProcessPoolExecutor() call (line {node.lineno})"
-                    )
+                    found.append(f"ProcessPoolExecutor() call (line {node.lineno})")
                 elif (
                     func.attr in FORBIDDEN_ASYNCIO_MEMBERS
                     and _attr_root(func) in asyncio_names
@@ -266,18 +259,13 @@ def _violations(tree: ast.Module) -> list[str]:
                     # Chain-rooted: covers both asyncio.create_subprocess_*
                     # and the canonical asyncio.subprocess.create_subprocess_*
                     # spelling (any alias of asyncio as the root).
-                    found.append(
-                        f"asyncio.{func.attr}() call (line {node.lineno})"
-                    )
+                    found.append(f"asyncio.{func.attr}() call (line {node.lineno})")
                 elif isinstance(func.value, ast.Name):
                     base = func.value.id
                     if base in os_names and func.attr in FORBIDDEN_OS_MEMBERS:
-                        found.append(
-                            f"os.{func.attr}() call (line {node.lineno})"
-                        )
+                        found.append(f"os.{func.attr}() call (line {node.lineno})")
                     elif (
-                        base in builtins_names
-                        and func.attr in FORBIDDEN_BUILTIN_CALLS
+                        base in builtins_names and func.attr in FORBIDDEN_BUILTIN_CALLS
                     ):
                         found.append(
                             f"builtins.{func.attr}() call (line {node.lineno})"
@@ -301,8 +289,7 @@ def test_extract_module_has_no_execution_primitives(module_path: Path):
     tree = ast.parse(module_path.read_text(encoding="utf-8"), str(module_path))
     violations = _violations(tree)
     assert not violations, (
-        f"{module_path.name} violates the no-execution zone (NFR-S1): "
-        f"{violations}"
+        f"{module_path.name} violates the no-execution zone (NFR-S1): {violations}"
     )
 
 
@@ -405,15 +392,11 @@ def test_detector_fires_on_subprocess_without_subprocess():
     """asyncio's subprocess API and ProcessPoolExecutor spawn processes
     without any denylisted import — bare, from-imported, aliased, and
     chained-attribute forms all fire."""
-    assert _violations(
-        ast.parse("import asyncio\nasyncio.create_subprocess_exec(x)\n")
-    )
+    assert _violations(ast.parse("import asyncio\nasyncio.create_subprocess_exec(x)\n"))
     assert _violations(
         ast.parse("import asyncio as aio\naio.create_subprocess_shell(x)\n")
     )
-    assert _violations(
-        ast.parse("from asyncio import create_subprocess_exec\n")
-    )
+    assert _violations(ast.parse("from asyncio import create_subprocess_exec\n"))
     assert _violations(ast.parse("create_subprocess_exec(x)\n"))
     assert _violations(
         ast.parse("from concurrent.futures import ProcessPoolExecutor\n")
@@ -421,8 +404,7 @@ def test_detector_fires_on_subprocess_without_subprocess():
     assert _violations(ast.parse("ProcessPoolExecutor()\n"))
     assert _violations(
         ast.parse(
-            "import concurrent.futures\n"
-            "concurrent.futures.ProcessPoolExecutor()\n"
+            "import concurrent.futures\nconcurrent.futures.ProcessPoolExecutor()\n"
         )
     )
     assert not _violations(
@@ -437,27 +419,19 @@ def test_detector_fires_on_asyncio_subprocess_submodule_forms():
     (previously only the top-level asyncio attribute forms did)."""
     assert _violations(ast.parse("import asyncio.subprocess\n"))
     assert _violations(
-        ast.parse(
-            "import asyncio\nasyncio.subprocess.create_subprocess_exec(x)\n"
-        )
+        ast.parse("import asyncio\nasyncio.subprocess.create_subprocess_exec(x)\n")
     )
     assert _violations(
         ast.parse(
-            "import asyncio.subprocess\n"
-            "asyncio.subprocess.create_subprocess_exec(x)\n"
+            "import asyncio.subprocess\nasyncio.subprocess.create_subprocess_exec(x)\n"
         )
     )
     assert _violations(ast.parse("from asyncio import subprocess\n"))
     assert _violations(ast.parse("from asyncio import subprocess as asp\n"))
     assert _violations(
-        ast.parse(
-            "import asyncio as aio\n"
-            "aio.subprocess.create_subprocess_shell(x)\n"
-        )
+        ast.parse("import asyncio as aio\naio.subprocess.create_subprocess_shell(x)\n")
     )
-    assert not _violations(
-        ast.parse("import asyncio\nasyncio.get_event_loop()\n")
-    )
+    assert not _violations(ast.parse("import asyncio\nasyncio.get_event_loop()\n"))
 
 
 def test_detector_fires_on_star_imports_of_sensitive_modules():
@@ -496,4 +470,6 @@ def test_detector_fires_on_network_module_imports():
     # urllib.parse is deliberately overbroad-denied (top-level match).
     assert _violations(ast.parse("from urllib.parse import quote\n"))
     assert not _violations(ast.parse("import json\nimport tomllib\n"))
-    assert not _violations(ast.parse("from packaging.requirements import Requirement\n"))
+    assert not _violations(
+        ast.parse("from packaging.requirements import Requirement\n")
+    )

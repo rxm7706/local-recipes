@@ -209,12 +209,14 @@ def _build_per_file(
         path = entry.get("file")
         if not path:
             return
-        exports_by_file.setdefault(path, []).append({
-            "name": entry.get("name"),
-            "change_type": change_type,
-            "old_line": entry.get("old_line"),
-            "new_line": entry.get("new_line") or entry.get("line"),
-        })
+        exports_by_file.setdefault(path, []).append(
+            {
+                "name": entry.get("name"),
+                "change_type": change_type,
+                "old_line": entry.get("old_line"),
+                "new_line": entry.get("new_line") or entry.get("line"),
+            }
+        )
 
     for e in b_modified:
         _record(e, "MODIFIED_EXPORT")
@@ -228,37 +230,45 @@ def _build_per_file(
     out: list[dict] = []
 
     for path in sorted(a_modified):
-        out.append({
-            "file_path": path,
-            "status": "MODIFIED",
-            "exports_affected": exports_by_file.get(path, []),
-        })
+        out.append(
+            {
+                "file_path": path,
+                "status": "MODIFIED",
+                "exports_affected": exports_by_file.get(path, []),
+            }
+        )
 
     for path in sorted(a_added):
-        out.append({
-            "file_path": path,
-            "status": "ADDED",
-            "exports_affected": exports_by_file.get(path, []),
-        })
+        out.append(
+            {
+                "file_path": path,
+                "status": "ADDED",
+                "exports_affected": exports_by_file.get(path, []),
+            }
+        )
 
     for path in sorted(a_deleted):
-        out.append({
-            "file_path": path,
-            "status": "DELETED",
-            "exports_affected": exports_by_file.get(path, []),
-        })
+        out.append(
+            {
+                "file_path": path,
+                "status": "DELETED",
+                "exports_affected": exports_by_file.get(path, []),
+            }
+        )
 
     # MOVED entries from Category C — emit one record per move with the new path
     for move in sorted(c_renamed_files, key=lambda m: m.get("new_path") or ""):
         new_path = move.get("new_path")
         if new_path is None:
             continue
-        out.append({
-            "file_path": new_path,
-            "status": "MOVED",
-            "old_path": move.get("old_path"),
-            "exports_affected": exports_by_file.get(new_path, []),
-        })
+        out.append(
+            {
+                "file_path": new_path,
+                "status": "MOVED",
+                "old_path": move.get("old_path"),
+                "exports_affected": exports_by_file.get(new_path, []),
+            }
+        )
 
     return out
 

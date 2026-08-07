@@ -23,6 +23,7 @@ from pyforge.atlas.pipelines.core.nodes import (
 
 # -- Phase B ---------------------------------------------------------------
 
+
 def test_enumerate_conda_packages_dedups_to_latest_build_and_seconds():
     repo = pd.DataFrame(
         {
@@ -32,7 +33,9 @@ def test_enumerate_conda_packages_dedups_to_latest_build_and_seconds():
             "timestamp": [1_600_000_000_000, 1_700_000_000_000, 1_650_000_000_000],
         }
     )
-    channel = pd.DataFrame({"conda_name": ["numpy", "pandas"], "subdirs": [["noarch"], ["linux-64"]]})
+    channel = pd.DataFrame(
+        {"conda_name": ["numpy", "pandas"], "subdirs": [["noarch"], ["linux-64"]]}
+    )
     out = enumerate_conda_packages(repo, channel)
     row = out.set_index("conda_name")
     assert row.loc["numpy", "latest_version"] == "2.0"  # newest build wins
@@ -46,6 +49,7 @@ def test_enumerate_empty_repodata_is_empty_frame():
 
 
 # -- Phase B.5 (_pick_feedstock carried-over unit tests, AC-2) --------------
+
 
 def test_pick_feedstock_empty_returns_none():
     assert _pick_feedstock("dbt", []) is None
@@ -65,6 +69,7 @@ def test_pick_feedstock_else_first():
 
 def test_pick_feedstock_survives_nan_and_string_cells():
     import numpy as np
+
     # a missing cell arrives as NaN (truthy) — must NOT crash len(nan)
     assert _pick_feedstock("x", np.nan) is None
     # a bare string is treated as a single-element list
@@ -73,6 +78,7 @@ def test_pick_feedstock_survives_nan_and_string_cells():
 
 def test_attribute_feedstocks_handles_nan_feedstocks_cell():
     import numpy as np
+
     src = pd.DataFrame({"conda_name": ["a", "b"], "feedstocks": [["a"], np.nan]})
     out = attribute_feedstocks(src)
     m = dict(zip(out["conda_name"], out["feedstock_name"]))
@@ -96,6 +102,7 @@ def test_attribute_feedstocks_node():
 
 # -- Phase B.6 (LITE: presence -> active; no yanked scan, AC-6) -------------
 
+
 def test_detect_latest_status_is_lite_presence_active():
     repo = pd.DataFrame({"conda_name": ["a", "a", "b"], "version": ["1", "2", "1"]})
     out = detect_latest_status(repo, pd.DataFrame())
@@ -104,6 +111,7 @@ def test_detect_latest_status_is_lite_presence_active():
 
 
 # -- Phase F provenance discipline (AC-4) ----------------------------------
+
 
 def _s3():
     return pd.DataFrame(
@@ -134,8 +142,8 @@ def test_f_per_row_source_is_never_merged():
     downloads, plat, pyv, chan = compute_downloads(_ana(), _s3())
     src = dict(zip(downloads["conda_name"], downloads["downloads_source"]))
     assert "merged" not in set(downloads["downloads_source"])
-    assert src["numpy"] == "s3-parquet"    # in both → value came from s3
-    assert src["pandas"] == "s3-parquet"   # s3 only
+    assert src["numpy"] == "s3-parquet"  # in both → value came from s3
+    assert src["pandas"] == "s3-parquet"  # s3 only
     assert src["scipy"] == "anaconda-api"  # anaconda only (fallback)
 
 
@@ -164,6 +172,7 @@ def test_f_pkg_python_regex_filter_drops_dirty_rows():
 
 # -- Phase I (explicit declared output, AC-3) ------------------------------
 
+
 def test_compute_version_download_history_is_explicit_per_version():
     hist = compute_version_download_history(_ana())
     m = dict(zip(zip(hist["conda_name"], hist["version"]), hist["downloads"]))
@@ -173,6 +182,7 @@ def test_compute_version_download_history_is_explicit_per_version():
 
 
 # -- Phase J (archived-feedstock skip-set filter at write site) -------------
+
 
 def _cf_graph():
     return pd.DataFrame(
@@ -197,6 +207,7 @@ def test_build_dependency_graph_skips_archived_feedstocks():
 
 
 # -- Phase M (same archived scope filter at write SELECT) -------------------
+
 
 def test_compute_feedstock_health_skips_archived():
     health = compute_feedstock_health(_cf_graph())

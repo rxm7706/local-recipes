@@ -194,9 +194,7 @@ def test_engine_env_vanished_cwd_is_not_misreported_as_missing_binary(
     assert exit_code is None  # the child never ran
 
 
-def test_engine_env_undecodable_output_is_output_unparseable(
-    monkeypatch, tmp_path
-):
+def test_engine_env_undecodable_output_is_output_unparseable(monkeypatch, tmp_path):
     captured: dict = {}
     # Invalid UTF-8 bytes written to the machine-output file.
     monkeypatch.setattr(
@@ -213,9 +211,7 @@ def test_engine_env_undecodable_output_is_output_unparseable(
     assert not os.path.exists(captured["out_path"])
 
 
-def test_engine_env_surfaces_exit_code_on_unreadable_output_file(
-    monkeypatch, tmp_path
-):
+def test_engine_env_surfaces_exit_code_on_unreadable_output_file(monkeypatch, tmp_path):
     """The second post-completion decode-failure path (an OSError reading
     the output file, distinct from UnicodeDecodeError) also carries the
     child's real exit code."""
@@ -255,9 +251,7 @@ def test_engine_env_mkstemp_failure_yields_typed_error_and_no_exit_code(
 # --- extra_env merging (Story 1.5's osv-scanner runner needs this) -----------
 
 
-def test_engine_env_merges_extra_env_over_the_copied_os_environ(
-    monkeypatch, tmp_path
-):
+def test_engine_env_merges_extra_env_over_the_copied_os_environ(monkeypatch, tmp_path):
     captured: dict = {}
     monkeypatch.setattr(subprocess, "run", _fake_run_writing("[]", captured))
     monkeypatch.setenv("PDOS_PREEXISTING", "from-os-environ")
@@ -373,9 +367,7 @@ def test_deptry_engine_timeout_yields_typed_error(monkeypatch, tmp_path):
     assert result.coverage == ()
 
 
-def test_deptry_engine_non_array_output_is_output_unparseable(
-    monkeypatch, tmp_path
-):
+def test_deptry_engine_non_array_output_is_output_unparseable(monkeypatch, tmp_path):
     captured: dict = {}
     monkeypatch.setattr(
         subprocess, "run", _fake_run_writing(json.dumps({"not": "array"}), captured)
@@ -496,9 +488,7 @@ def test_deptry_engine_cleans_up_the_frontdoor_input_file(
     assert not os.path.exists(captured["input_path"])
 
 
-def test_deptry_engine_frontdoor_survives_an_empty_inventory(
-    monkeypatch, tmp_path
-):
+def test_deptry_engine_frontdoor_survives_an_empty_inventory(monkeypatch, tmp_path):
     """No candidates at all: the flag is STILL passed (unconditional), with
     an empty input file — never skipped, never a crash."""
     captured: dict = {}
@@ -687,8 +677,7 @@ def test_deptry_engine_frontdoor_is_a_no_op_when_native_pyproject_present(
     0 with no error when a `[project].dependencies`-bearing pyproject.toml
     is present)."""
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "demo"\nversion = "0.0.1"\n'
-        'dependencies = ["requests"]\n',
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = ["requests"]\n',
         encoding="utf-8",
     )
     captured: dict = {}
@@ -808,9 +797,7 @@ def test_check_engine_version_patch_release_of_the_same_minor_passes(
     assert result is None
 
 
-def test_check_engine_version_out_of_range_is_engine_unavailable(
-    monkeypatch, tmp_path
-):
+def test_check_engine_version_out_of_range_is_engine_unavailable(monkeypatch, tmp_path):
     """A newer, untested minor must fail loud, never silently pass (NFR-C1's
     entire point) -- via the EXISTING ENGINE_UNAVAILABLE kind (no new
     ErrorKind member)."""
@@ -950,7 +937,9 @@ def test_check_engine_version_passes_the_version_check_timeout(monkeypatch, tmp_
 
     def fake_run(argv, **kwargs):
         captured["kwargs"] = kwargs
-        return types.SimpleNamespace(returncode=0, stdout=b"deptry 0.25.1\n", stderr=b"")
+        return types.SimpleNamespace(
+            returncode=0, stdout=b"deptry 0.25.1\n", stderr=b""
+        )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     _check_engine_version(
@@ -969,7 +958,11 @@ def test_check_engine_version_passes_the_version_check_timeout(monkeypatch, tmp_
 
 
 def _fake_run_deptry_version_and_scan(
-    version_stdout: bytes, scan_content: str, captured: dict, *, scan_returncode: int = 0
+    version_stdout: bytes,
+    scan_content: str,
+    captured: dict,
+    *,
+    scan_returncode: int = 0,
 ):
     """A combined ``subprocess.run`` stand-in that answers BOTH the
     ``["deptry", "--version"]`` pre-flight call and the real
@@ -986,9 +979,7 @@ def _fake_run_deptry_version_and_scan(
         captured["kwargs"] = kwargs
         out_path = argv[argv.index("-o") + 1]
         Path(out_path).write_text(scan_content, encoding="utf-8")
-        return types.SimpleNamespace(
-            returncode=scan_returncode, stdout=b"", stderr=b""
-        )
+        return types.SimpleNamespace(returncode=scan_returncode, stdout=b"", stderr=b"")
 
     return fake_run
 

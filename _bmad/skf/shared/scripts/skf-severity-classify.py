@@ -27,7 +27,16 @@ import sys
 
 CRITICAL_RULES = [
     {"type": "removed", "categories": {"export", "module", "class", "interface"}},
-    {"type": "changed", "categories": {"signature", "parameter_count", "return_type", "inheritance", "interface_contract"}},
+    {
+        "type": "changed",
+        "categories": {
+            "signature",
+            "parameter_count",
+            "return_type",
+            "inheritance",
+            "interface_contract",
+        },
+    },
     {"type": "renamed", "categories": {"export", "module"}},
 ]
 
@@ -39,12 +48,24 @@ HIGH_RULES = [
 ]
 
 MEDIUM_RULES = [
-    {"type": "changed", "categories": {"implementation", "optional_parameter", "internal_pattern"}},
+    {
+        "type": "changed",
+        "categories": {"implementation", "optional_parameter", "internal_pattern"},
+    },
     {"type": "added", "categories": {"export"}, "threshold_max": 3},  # 1-3 new exports
     {"type": "moved", "categories": {"export", "function"}},
 ]
 
-LOW_CATEGORIES = {"style", "convention", "comment", "documentation", "whitespace", "test", "internal", "private"}
+LOW_CATEGORIES = {
+    "style",
+    "convention",
+    "comment",
+    "documentation",
+    "whitespace",
+    "test",
+    "internal",
+    "private",
+}
 
 
 def classify_finding(finding, added_export_count=0):
@@ -62,7 +83,11 @@ def classify_finding(finding, added_export_count=0):
         if f_type == rule["type"]:
             if f_category in rule["categories"]:
                 if "threshold" in rule:
-                    if f_type == "added" and f_category == "export" and added_export_count > rule["threshold"]:
+                    if (
+                        f_type == "added"
+                        and f_category == "export"
+                        and added_export_count > rule["threshold"]
+                    ):
                         return "HIGH"
                 else:
                     return "HIGH"
@@ -72,7 +97,11 @@ def classify_finding(finding, added_export_count=0):
         if f_type == rule["type"]:
             if f_category in rule["categories"]:
                 if "threshold_max" in rule:
-                    if f_type == "added" and f_category == "export" and added_export_count <= rule["threshold_max"]:
+                    if (
+                        f_type == "added"
+                        and f_category == "export"
+                        and added_export_count <= rule["threshold_max"]
+                    ):
                         return "MEDIUM"
                 else:
                     return "MEDIUM"
@@ -109,8 +138,10 @@ def classify_all(findings):
 
     # Count added exports for threshold rules
     added_export_count = sum(
-        1 for f in findings
-        if f.get("type", "").lower() == "added" and f.get("category", "").lower() == "export"
+        1
+        for f in findings
+        if f.get("type", "").lower() == "added"
+        and f.get("category", "").lower() == "export"
     )
 
     classified = []
@@ -140,8 +171,13 @@ def classify_all(findings):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 skf-severity-classify.py <findings-json-or-file>", file=sys.stderr)
-        print("       echo '<JSON>' | python3 skf-severity-classify.py -", file=sys.stderr)
+        print(
+            "Usage: python3 skf-severity-classify.py <findings-json-or-file>",
+            file=sys.stderr,
+        )
+        print(
+            "       echo '<JSON>' | python3 skf-severity-classify.py -", file=sys.stderr
+        )
         sys.exit(1)
 
     arg = sys.argv[1]

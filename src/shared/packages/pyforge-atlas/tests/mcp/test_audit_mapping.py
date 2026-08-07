@@ -120,10 +120,6 @@ def test_pipeline_names_mirror_the_real_registry():
         mod = importlib.import_module(f"pyforge.atlas.pipelines.{name}.pipeline")
         assert callable(mod.create_pipeline), name
 
-    pipelines_dir = (
-        MEMBER_DIR / "src" / "pyforge" / "atlas" / "pipelines"
-    )
-    discovered = {
-        p.parent.name for p in pipelines_dir.glob("*/pipeline.py")
-    }
+    pipelines_dir = MEMBER_DIR / "src" / "pyforge" / "atlas" / "pipelines"
+    discovered = {p.parent.name for p in pipelines_dir.glob("*/pipeline.py")}
     assert discovered == set(tools.PIPELINE_NAMES)

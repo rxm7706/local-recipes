@@ -166,9 +166,7 @@ def test_nameless_operator_leading_conda_dep_degrades(tmp_path):
 
 
 def test_pip_range_dep_is_withheld_range_only(tmp_path):
-    path = write_env(
-        tmp_path, "dependencies:\n  - pip:\n      - requests>=2.0\n"
-    )
+    path = write_env(tmp_path, "dependencies:\n  - pip:\n      - requests>=2.0\n")
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.ecosystem is Ecosystem.PYPI
     assert component.version is None

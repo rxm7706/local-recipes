@@ -134,7 +134,12 @@ def test_to_redacted_recurses_into_nested_mappings_and_lists():
         "AKIA" + "0123456789ABCDEF",
         "sk-" + "c" * 25,
     ],
-    ids=["github-pat", "github-fine-grained-pat", "aws-access-key", "generic-sk-prefix"],
+    ids=[
+        "github-pat",
+        "github-fine-grained-pat",
+        "aws-access-key",
+        "generic-sk-prefix",
+    ],
 )
 def test_every_known_token_shape_is_redacted(leaked):
     redacted = to_redacted({"field": f"prefix {leaked} suffix"})
@@ -227,7 +232,9 @@ def test_token_shaped_mapping_key_is_redacted():
 def test_secret_shaped_key_keeps_its_name_and_only_loses_its_value():
     """Key-scanning must not rename a secret-shaped key: the NAME is not the
     secret, and the record stays readable only if the field is still findable."""
-    assert json.loads(to_redacted({"API_TOKEN": "x"}).text) == {"API_TOKEN": REDACTED_SENTINEL}
+    assert json.loads(to_redacted({"API_TOKEN": "x"}).text) == {
+        "API_TOKEN": REDACTED_SENTINEL
+    }
 
 
 def test_ordinary_mapping_keys_are_untouched():
@@ -258,7 +265,13 @@ def test_to_redacted_raises_type_error_for_a_non_json_serializable_value():
 
 def _valid_commands() -> list[dict[str, object]]:
     return [
-        {"command": "pytest -q", "resolvable": True, "returncode": 0, "stdout": "", "stderr": ""},
+        {
+            "command": "pytest -q",
+            "resolvable": True,
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+        },
         {"command": "ruff check .", "resolvable": False, "returncode": None},
     ]
 
@@ -420,13 +433,27 @@ def test_build_gate_record_rejects_malformed_command_entries(entry):
         # unresolvable but carrying a returncode -- "never ran" AND "exited 0"
         {"command": "pytest -q", "resolvable": False, "returncode": 0},
         # unresolvable but carrying captured output
-        {"command": "pytest -q", "resolvable": False, "returncode": None, "stdout": "hi"},
-        {"command": "pytest -q", "resolvable": False, "returncode": None, "stderr": "hi"},
+        {
+            "command": "pytest -q",
+            "resolvable": False,
+            "returncode": None,
+            "stdout": "hi",
+        },
+        {
+            "command": "pytest -q",
+            "resolvable": False,
+            "returncode": None,
+            "stderr": "hi",
+        },
         # resolvable but with no returncode -- ran, yet no exit code
         {"command": "pytest -q", "resolvable": True, "returncode": None},
     ],
-    ids=["unresolvable-with-returncode", "unresolvable-stdout", "unresolvable-stderr",
-         "resolvable-without-returncode"],
+    ids=[
+        "unresolvable-with-returncode",
+        "unresolvable-stdout",
+        "unresolvable-stderr",
+        "resolvable-without-returncode",
+    ],
 )
 def test_build_gate_record_rejects_self_contradictory_command_entries(entry):
     """Regression (follow-up review finding, verified live): the schema
@@ -480,7 +507,12 @@ def test_schema_rejects_a_timestamp_build_gate_record_would_reject(bogus):
 
 
 @pytest.mark.parametrize(
-    "good", ["2026-08-03T00:00:00Z", "2026-08-03T00:00:00+00:00", "2026-08-03T00:00:00.123456Z"]
+    "good",
+    [
+        "2026-08-03T00:00:00Z",
+        "2026-08-03T00:00:00+00:00",
+        "2026-08-03T00:00:00.123456Z",
+    ],
 )
 def test_schema_accepts_every_utc_form_build_gate_record_accepts(good):
     record = build_gate_record(
@@ -559,7 +591,9 @@ def test_schema_rejects_a_command_missing_a_required_key():
 # caller will actually use) --------------------------------------------------
 
 
-def test_end_to_end_pipeline_redacts_a_leaked_token_and_writes_a_schema_valid_file(tmp_path):
+def test_end_to_end_pipeline_redacts_a_leaked_token_and_writes_a_schema_valid_file(
+    tmp_path,
+):
     """``build_gate_record`` -> ``to_redacted`` -> ``RecordPort.
     write_redacted_atomic`` composed exactly as a future real caller would,
     with a leaked token embedded in a command's captured ``stdout`` --
@@ -689,7 +723,11 @@ def test_build_gate_record_rejects_iso_forms_its_own_schema_rejects(timestamp):
 
 @pytest.mark.parametrize(
     "timestamp",
-    ["2026-08-03T00:00:00Z", "2026-08-03T00:00:00+00:00", "2026-08-03T00:00:00.123456Z"],
+    [
+        "2026-08-03T00:00:00Z",
+        "2026-08-03T00:00:00+00:00",
+        "2026-08-03T00:00:00.123456Z",
+    ],
 )
 def test_every_timestamp_the_producer_accepts_validates_against_the_schema(timestamp):
     """The accept direction of the same agreement -- the previous pass only
@@ -727,7 +765,12 @@ def test_schema_scope_check_verdict_enum_matches_the_verdict_vocabulary():
     "entry",
     [
         {"command": "pytest", "returncode": 0, "resolvable": False},
-        {"command": "pytest", "returncode": None, "resolvable": False, "stdout": "all good"},
+        {
+            "command": "pytest",
+            "returncode": None,
+            "resolvable": False,
+            "stdout": "all good",
+        },
         {"command": "pytest", "returncode": None, "resolvable": True},
     ],
 )
@@ -760,7 +803,13 @@ def test_schema_rejects_the_self_contradictory_entries_the_producer_rejects(entr
     "entry",
     [
         {"command": "pytest", "returncode": None, "resolvable": False},
-        {"command": "pytest", "returncode": 0, "resolvable": True, "stdout": "", "stderr": ""},
+        {
+            "command": "pytest",
+            "returncode": 0,
+            "resolvable": True,
+            "stdout": "",
+            "stderr": "",
+        },
         {"command": "pytest", "returncode": 1, "resolvable": True},
     ],
 )
@@ -785,7 +834,15 @@ def test_unknown_command_report_keys_of_mixed_types_still_raise_value_error():
     with pytest.raises(ValueError, match="unknown key"):
         build_gate_record(
             story_key="2.6",
-            commands=[{"command": "x", "returncode": 0, "resolvable": True, "bogus": 1, 7: "z"}],
+            commands=[
+                {
+                    "command": "x",
+                    "returncode": 0,
+                    "resolvable": True,
+                    "bogus": 1,
+                    7: "z",
+                }
+            ],
             scope_check_verdict=None,
             tree_revision="abc123",
             timestamp="2026-08-03T00:00:00Z",
@@ -919,7 +976,9 @@ def test_command_report_diagnostics_do_not_echo_captured_output():
     ],
     ids=["hour-24", "month-13", "day-45", "minute-99", "second-99"],
 )
-def test_out_of_range_timestamp_components_are_rejected_by_producer_and_schema(timestamp):
+def test_out_of_range_timestamp_components_are_rejected_by_producer_and_schema(
+    timestamp,
+):
     """Review finding, verified live: with bare `[0-9]{2}` groups the shared
     pattern green-lit `2026-13-45T99:99:99Z`, and `2026-08-03T24:00:00Z`
     passed BOTH the schema and the producer while `datetime.fromisoformat`

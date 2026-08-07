@@ -103,23 +103,27 @@ def _match_and_apply(
                 if pattern.search(content):
                     new_content = pattern.sub(fix, content)
                     md_file.write_text(new_content, encoding="utf-8")
-                    applied.append({
-                        "fingerprint": fp,
-                        "fix": fix,
-                        "file": md_file.relative_to(target_dir).as_posix(),
-                        "severity": wa.get("severity", "low"),
-                    })
+                    applied.append(
+                        {
+                            "fingerprint": fp,
+                            "fix": fix,
+                            "file": md_file.relative_to(target_dir).as_posix(),
+                            "severity": wa.get("severity", "low"),
+                        }
+                    )
                     matched = True
             else:
                 if fp in content:
                     new_content = content.replace(fp, fix)
                     md_file.write_text(new_content, encoding="utf-8")
-                    applied.append({
-                        "fingerprint": fp,
-                        "fix": fix,
-                        "file": md_file.relative_to(target_dir).as_posix(),
-                        "severity": wa.get("severity", "low"),
-                    })
+                    applied.append(
+                        {
+                            "fingerprint": fp,
+                            "fix": fix,
+                            "file": md_file.relative_to(target_dir).as_posix(),
+                            "severity": wa.get("severity", "low"),
+                        }
+                    )
                     matched = True
 
         if not matched:
@@ -133,22 +137,30 @@ def main(argv: List[str] | None = None) -> None:
         description="Apply known workarounds before pipeline iteration."
     )
     parser.add_argument(
-        "--target-dir", required=True, type=Path,
+        "--target-dir",
+        required=True,
+        type=Path,
         help="Directory to scan for fingerprint matches",
     )
     default_registry = (
         Path(__file__).resolve().parent.parent / "_known-workarounds.yaml"
     )
     parser.add_argument(
-        "--registry", type=Path, default=default_registry,
+        "--registry",
+        type=Path,
+        default=default_registry,
         help="Path to shared seed registry YAML",
     )
     parser.add_argument(
-        "--local-registry", type=Path, default=None,
+        "--local-registry",
+        type=Path,
+        default=None,
         help="Path to project-local override registry YAML",
     )
     parser.add_argument(
-        "--log-dir", type=Path, default=None,
+        "--log-dir",
+        type=Path,
+        default=None,
         help="Directory to write preapply-log.json",
     )
 
@@ -181,9 +193,7 @@ def main(argv: List[str] | None = None) -> None:
     if args.log_dir is not None:
         args.log_dir.mkdir(parents=True, exist_ok=True)
         log_path = args.log_dir / "preapply-log.json"
-        with open(
-            log_path, "w", encoding="utf-8", newline="\n"
-        ) as f:
+        with open(log_path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(result, f, indent=2)
             f.write("\n")
 

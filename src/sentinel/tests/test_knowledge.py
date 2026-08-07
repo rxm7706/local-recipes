@@ -34,19 +34,20 @@ def test_wiki_syncer_successful_push(tmp_path, monkeypatch):
     # Setup mock wiki directory structure
     compiled_dir = tmp_path / "compiled"
     compiled_dir.mkdir(parents=True)
-    
+
     doc1 = compiled_dir / "article1.md"
     doc1.write_text("# Article 1\nContent of article 1", encoding="utf-8")
 
     # Mock client endpoints
     created = []
+
     class MockClient:
         def create_document(self, title, content):
             created.append((title, content))
             return {"id": "doc-123"}
 
     client = MockClient()
-    
+
     # Force mapping file path to be in tmp_path to prevent writing to repo root
     mapping_file = tmp_path / ".lasuite_ids.json"
     monkeypatch.setattr(WikiSyncer, "MAPPING_FILE", mapping_file)
@@ -66,10 +67,12 @@ def test_wiki_syncer_graceful_timeout_recovery(tmp_path, monkeypatch):
     # Setup two markdown files
     compiled_dir = tmp_path / "compiled"
     compiled_dir.mkdir(parents=True)
-    
+
     doc_timeout = compiled_dir / "timeout.md"
-    doc_timeout.write_text("# Timeout doc\nBody that triggers timeout", encoding="utf-8")
-    
+    doc_timeout.write_text(
+        "# Timeout doc\nBody that triggers timeout", encoding="utf-8"
+    )
+
     doc_success = compiled_dir / "success.md"
     doc_success.write_text("# Success doc\nBody that succeeds", encoding="utf-8")
 
@@ -81,7 +84,7 @@ def test_wiki_syncer_graceful_timeout_recovery(tmp_path, monkeypatch):
             return {"id": "success-id"}
 
     client = TimeoutMockClient()
-    
+
     # Mock mapping file to tmp directory
     mapping_file = tmp_path / ".lasuite_ids.json"
     monkeypatch.setattr(WikiSyncer, "MAPPING_FILE", mapping_file)
@@ -92,7 +95,7 @@ def test_wiki_syncer_graceful_timeout_recovery(tmp_path, monkeypatch):
     # Assert that timeout.md failed, but success.md was successfully synced
     assert "timeout.md" in res["failed"]
     assert "success.md" in res["synced"]
-    
+
     # syncer must not abort, mapping contains only success.md
     assert str(doc_success) in syncer.mapping
     assert syncer.mapping[str(doc_success)] == "success-id"

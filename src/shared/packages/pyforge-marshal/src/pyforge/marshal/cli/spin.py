@@ -596,7 +596,9 @@ def _resolve_model_tiering(
     launch proceeds without it."""
     if not preview:
         return False
-    governing, batching_report = _resolve_governing_difficulty(preview, home, slug, findings)
+    governing, batching_report = _resolve_governing_difficulty(
+        preview, home, slug, findings
+    )
     if batching_report is not None:
         data["model_tier_batching"] = batching_report
 
@@ -844,7 +846,9 @@ def _filter_preview(
     return tuple(keys)
 
 
-def _append_entry(fs: FsPort, run_dir: Path, entry: JournalEntry, *, fsync: bool) -> None:
+def _append_entry(
+    fs: FsPort, run_dir: Path, entry: JournalEntry, *, fsync: bool
+) -> None:
     """The one write path every journal append in this module uses:
     ``core.journal.prepare_for_write``'s sidecar decision, then the sidecar
     blob (if any) BEFORE the line that references it -- so a reader can
@@ -854,7 +858,9 @@ def _append_entry(fs: FsPort, run_dir: Path, entry: JournalEntry, *, fsync: bool
     ``phase: outcome``)."""
     prepared = prepare_for_write(entry)
     if prepared.sidecar_relative_path is not None:
-        fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
+        fs.write_text_atomic(
+            run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
+        )
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
 
 
@@ -885,7 +891,9 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
             "process survives this invocation exiting (AD-22)."
         ),
     )
-    spin_parser.add_argument("slug", help="The BMAD project slug whose loop home to launch.")
+    spin_parser.add_argument(
+        "slug", help="The BMAD project slug whose loop home to launch."
+    )
     spin_parser.add_argument(
         "--epic",
         type=_non_negative_int,
@@ -938,7 +946,9 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
             "(4). See core.verdict.relay_exit_code."
         ),
     )
-    attach_parser.add_argument("slug", help="The BMAD project slug whose loop home to attach to.")
+    attach_parser.add_argument(
+        "slug", help="The BMAD project slug whose loop home to attach to."
+    )
     attach_parser.set_defaults(handler=run_attach)
 
     resume_parser = factory_subparsers.add_parser(
@@ -954,7 +964,9 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
             "resume itself rebuilds from state-pinned scope only)."
         ),
     )
-    resume_parser.add_argument("slug", help="The BMAD project slug whose loop home to resume.")
+    resume_parser.add_argument(
+        "slug", help="The BMAD project slug whose loop home to resume."
+    )
     resume_parser.add_argument(
         "--format",
         choices=("text", "json"),
@@ -1092,7 +1104,9 @@ def _spawn_supervisor_sidecar(
                 ),
             )
         )
-    idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
+    idle_threshold_minutes = effective_policy.seed_view()[
+        "idle_threshold_minutes"
+    ].value
     # Story 3.6's 4 budget-ceiling values -- resolved from the SAME
     # `effective_policy` composition idle_threshold_minutes above already
     # reads (never a second `compose()` call), and appended as argv
@@ -1340,7 +1354,11 @@ def run_spin(
     preview = _filter_preview(
         resolution.resolved, epic=args.epic, story=args.story, max_count=args.max_count
     )
-    data["selector"] = {"epic": args.epic, "story": args.story, "max_count": args.max_count}
+    data["selector"] = {
+        "epic": args.epic,
+        "story": args.story,
+        "max_count": args.max_count,
+    }
     data["preview"] = [render_feed_key(key) for key in preview]
 
     # --- Story 3.6 FR-14: preflight advisory (MRS-SPIN-009) -----------------
@@ -1676,13 +1694,17 @@ def _latest_run_dir(home: Path, slug: str) -> Path | None:
     ``_prior_attempt_keys``/``_large_spec_bytes`` precedent, Story 3.6)."""
     runs_dir = _tier3_path(home, slug) / "runs"
     try:
-        candidates = sorted(path for path in runs_dir.glob(f"{slug}-*") if path.is_dir())
+        candidates = sorted(
+            path for path in runs_dir.glob(f"{slug}-*") if path.is_dir()
+        )
     except OSError:
         return None
     return candidates[-1] if candidates else None
 
 
-def _resolve_harness_run_id_for_resume(fs: FsPort, run_dir: Path, run_id: str) -> str | None:
+def _resolve_harness_run_id_for_resume(
+    fs: FsPort, run_dir: Path, run_id: str
+) -> str | None:
     """``run_dir``'s own launch OUTCOME entry's ``harness_run_id`` field --
     the SAME lookup ``supervisor/__main__.py::_resolve_harness_run_id``
     performs, reproduced here rather than imported (this module already
@@ -1889,8 +1911,7 @@ def run_resume(
                 code="MRS-SPIN-011",
                 severity=Severity.ERROR,
                 message=(
-                    f"run {harness_run_id!r} already finished -- nothing to "
-                    "resume"
+                    f"run {harness_run_id!r} already finished -- nothing to resume"
                 ),
             )
         )
@@ -2103,7 +2124,9 @@ def _scalar(value: object) -> str:
 
 
 def _render_text(
-    data: Mapping[str, object], findings: tuple[Finding, ...], command: str = "factory spin"
+    data: Mapping[str, object],
+    findings: tuple[Finding, ...],
+    command: str = "factory spin",
 ) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching every sibling command's
@@ -2147,7 +2170,9 @@ def _render_text(
         feed = data["feed"]
         lines.append(f"feed: resolved {feed['resolved']} of {feed['total']}")
         if feed["unresolved"]:
-            lines.append(f"  unresolved: {', '.join(repr(key) for key in feed['unresolved'])}")
+            lines.append(
+                f"  unresolved: {', '.join(repr(key) for key in feed['unresolved'])}"
+            )
     if "selector" in data:
         selector = data["selector"]
         lines.append(
@@ -2183,11 +2208,15 @@ def _render_text(
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
-def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+def _emit(
+    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+) -> int:
     # `args.factory_command` is the subparsers `dest` (Story 3.7:
     # "spin"/"resume") -- defaulted to "spin" for every test in this module
     # that hand-builds an `argparse.Namespace` and calls `run_spin` directly,
@@ -2211,7 +2240,10 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
     # subclass, so the pre-existing `OSError` catch never saw it.
     try:
         if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+            print(
+                json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True),
+                flush=True,
+            )
         else:
             print(_render_text(envelope.data, envelope.findings, command), flush=True)
     except (OSError, UnicodeEncodeError):

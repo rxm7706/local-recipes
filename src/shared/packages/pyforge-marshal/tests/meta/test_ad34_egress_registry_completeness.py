@@ -139,7 +139,8 @@ def _protocol_classes(tree: ast.Module) -> list[ast.ClassDef]:
     return [
         node
         for node in ast.walk(tree)
-        if isinstance(node, ast.ClassDef) and any(_is_protocol_base(base) for base in node.bases)
+        if isinstance(node, ast.ClassDef)
+        and any(_is_protocol_base(base) for base in node.bases)
     ]
 
 
@@ -159,7 +160,9 @@ def _all_protocol_class_names(root: Path | None = None) -> list[str]:
 def _unclassified_ports(root: Path | None = None) -> list[str]:
     """Guard (1) itself, extracted so both the real test and its synthetic
     self-test exercise the identical code path."""
-    return [name for name in _all_protocol_class_names(root) if name not in EGRESS_PORTS]
+    return [
+        name for name in _all_protocol_class_names(root) if name not in EGRESS_PORTS
+    ]
 
 
 def _is_bare_str_annotation(annotation: ast.expr | None) -> bool:
@@ -201,7 +204,9 @@ def _is_bare_str_annotation(annotation: ast.expr | None) -> bool:
         )
     if isinstance(annotation, ast.Subscript):
         base = annotation.value
-        base_name = base.id if isinstance(base, ast.Name) else getattr(base, "attr", None)
+        base_name = (
+            base.id if isinstance(base, ast.Name) else getattr(base, "attr", None)
+        )
         if base_name in ("Optional", "Union"):
             elements = (
                 annotation.slice.elts
@@ -255,7 +260,9 @@ def _bare_str_param_violations(
     bodies = [cls.body]
     if class_map:
         for base in cls.bases:
-            base_name = base.id if isinstance(base, ast.Name) else getattr(base, "attr", None)
+            base_name = (
+                base.id if isinstance(base, ast.Name) else getattr(base, "attr", None)
+            )
             base_cls = class_map.get(base_name) if base_name else None
             if base_cls is not None and base_cls is not cls:
                 bodies.append(base_cls.body)
@@ -347,7 +354,9 @@ def test_every_protocol_under_ports_has_an_egress_classification():
 @pytest.mark.parametrize("module_path", _port_modules(), ids=_module_id)
 def test_egress_classified_ports_accept_no_bare_str_param(module_path: Path):
     tree = _parse(module_path)
-    class_map = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+    class_map = {
+        node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
+    }
     for cls in _protocol_classes(tree):
         if not EGRESS_PORTS.get(cls.name, False):
             continue
@@ -420,7 +429,9 @@ def test_guard_is_alive_synthetic_bare_str_param_on_egress_port_fires():
     )
     cls = _protocol_classes(ast.parse(synthetic))[0]
     assert EGRESS_PORTS["RecordPort"] is True
-    assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(content)"]
+    assert _bare_str_param_violations(cls) == [
+        "RecordPort.write_redacted_atomic(content)"
+    ]
 
 
 def test_guard_does_not_fire_on_a_typed_sequence_param():
@@ -503,7 +514,9 @@ def test_guard_is_alive_synthetic_any_or_object_param_fires(annotation):
         f"    def write_redacted_atomic(self, path: Path, payload: {annotation}) -> None: ...\n"
     )
     cls = _protocol_classes(ast.parse(synthetic))[0]
-    assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(payload)"]
+    assert _bare_str_param_violations(cls) == [
+        "RecordPort.write_redacted_atomic(payload)"
+    ]
 
 
 def test_port_scan_is_recursive(tmp_path):
@@ -559,11 +572,14 @@ def test_guard_is_alive_synthetic_quoted_str_annotation_fires(annotation):
         f"    def write_redacted_atomic(self, path: Path, payload: {annotation}) -> None: ...\n"
     )
     cls = _protocol_classes(ast.parse(synthetic))[0]
-    assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(payload)"]
+    assert _bare_str_param_violations(cls) == [
+        "RecordPort.write_redacted_atomic(payload)"
+    ]
 
 
 @pytest.mark.parametrize(
-    "annotation", ["Annotated[str, 'meta']", "Annotated[str | None, 1]", "typing.Annotated[str, 1]"]
+    "annotation",
+    ["Annotated[str, 'meta']", "Annotated[str | None, 1]", "typing.Annotated[str, 1]"],
 )
 def test_guard_is_alive_synthetic_annotated_str_param_fires(annotation):
     """Review finding, verified live: `Annotated[str, ...]` IS a `str` at
@@ -577,7 +593,9 @@ def test_guard_is_alive_synthetic_annotated_str_param_fires(annotation):
         f"    def write_redacted_atomic(self, path: Path, payload: {annotation}) -> None: ...\n"
     )
     cls = _protocol_classes(ast.parse(synthetic))[0]
-    assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(payload)"]
+    assert _bare_str_param_violations(cls) == [
+        "RecordPort.write_redacted_atomic(payload)"
+    ]
 
 
 def test_guard_does_not_fire_on_annotated_non_str():
@@ -622,7 +640,9 @@ def test_guard_is_alive_synthetic_method_under_type_checking_fires():
         "        def write_redacted_atomic(self, payload: str) -> None: ...\n"
     )
     cls = _protocol_classes(ast.parse(synthetic))[0]
-    assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(payload)"]
+    assert _bare_str_param_violations(cls) == [
+        "RecordPort.write_redacted_atomic(payload)"
+    ]
 
 
 def test_guard_is_alive_synthetic_inherited_bare_str_method_fires():
@@ -638,7 +658,9 @@ def test_guard_is_alive_synthetic_inherited_bare_str_method_fires():
         "    def other(self) -> None: ...\n"
     )
     tree = ast.parse(synthetic)
-    class_map = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+    class_map = {
+        node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
+    }
     cls = next(c for c in _protocol_classes(tree) if c.name == "RecordPort")
     assert _bare_str_param_violations(cls, class_map) == [
         "RecordPort.write_redacted_atomic(payload)"
@@ -677,7 +699,16 @@ def test_guard_is_alive_synthetic_copied_token_regex_fires():
     # Every prefix in the real vocabulary, incl. the `gh[pousr]_`/`ASIA`
     # spellings a review finding added -- a copy of an omitted prefix would be
     # invisible to the guard that exists to catch copies.
-    for prefix in ("ghs_", "gho_", "ghu_", "ghr_", "github_pat_", "AKIA", "ASIA", "sk-"):
+    for prefix in (
+        "ghs_",
+        "gho_",
+        "ghu_",
+        "ghr_",
+        "github_pat_",
+        "AKIA",
+        "ASIA",
+        "sk-",
+    ):
         source = f'P = "{prefix}[A-Za-z0-9]+"\n'
         assert _token_shape_pattern_references(ast.parse(source)) == [
             (1, "embeds a hand-rolled COPY of the token-shape vocabulary")
@@ -713,15 +744,21 @@ def test_guard_is_alive_synthetic_token_shape_reference_fires():
     assert _token_shape_pattern_references(ast.parse(import_form)) == [(1, reference)]
 
     attribute_form = "import pyforge.marshal.core.egress as egress\nx = egress._TOKEN_SHAPE_PATTERNS\n"
-    assert _token_shape_pattern_references(ast.parse(attribute_form)) == [(2, reference)]
+    assert _token_shape_pattern_references(ast.parse(attribute_form)) == [
+        (2, reference)
+    ]
 
     # An aliased import is still caught -- the ImportFrom node itself names
     # `_TOKEN_SHAPE_PATTERNS` in `alias.name` regardless of `asname` -- even
     # though the guard cannot then also track the alias's later bare-name
     # USES (a stated bound: it recognizes the literal token, not full
     # dataflow through an alias).
-    aliased_import_form = "from pyforge.marshal.core.egress import _TOKEN_SHAPE_PATTERNS as X\nx = X\n"
-    assert _token_shape_pattern_references(ast.parse(aliased_import_form)) == [(1, reference)]
+    aliased_import_form = (
+        "from pyforge.marshal.core.egress import _TOKEN_SHAPE_PATTERNS as X\nx = X\n"
+    )
+    assert _token_shape_pattern_references(ast.parse(aliased_import_form)) == [
+        (1, reference)
+    ]
 
 
 def test_real_record_port_is_classified_egress_true():

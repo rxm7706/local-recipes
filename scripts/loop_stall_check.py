@@ -45,6 +45,7 @@ EXIT
     0  no live run is stalled
     1  at least one live run has gone quiet past the threshold
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `runtime`: reads host state (gitignored Tier-3 sprint feeds / tmux / ~/.bmad-loops), so CI cannot run it.
@@ -87,8 +88,12 @@ def live_state(run: Path) -> tuple[bool, str]:
 
 def tmux_sessions() -> set[str]:
     try:
-        r = subprocess.run(["tmux", "ls", "-F", "#{session_name}"],
-                           capture_output=True, text=True, timeout=10)
+        r = subprocess.run(
+            ["tmux", "ls", "-F", "#{session_name}"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
         return set(r.stdout.split()) if r.returncode == 0 else set()
     except Exception:
         return set()
@@ -96,8 +101,12 @@ def tmux_sessions() -> set[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--minutes", type=int, default=DEFAULT_MIN,
-                    help=f"quiet period that counts as stalled (default {DEFAULT_MIN})")
+    ap.add_argument(
+        "--minutes",
+        type=int,
+        default=DEFAULT_MIN,
+        help=f"quiet period that counts as stalled (default {DEFAULT_MIN})",
+    )
     ap.add_argument("--verbose", action="store_true", help="show every run considered")
     args = ap.parse_args()
 
@@ -108,8 +117,11 @@ def main() -> int:
     now, live_panes, stalled, checked = time.time(), tmux_sessions(), [], 0
 
     for home in sorted(p for p in LOOP_ROOT.iterdir() if (p / ".git").exists()):
-        runs = sorted((home / ".bmad-loop" / "runs").glob("*/"),
-                      key=lambda p: p.stat().st_mtime, reverse=True)
+        runs = sorted(
+            (home / ".bmad-loop" / "runs").glob("*/"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         if not runs:
             continue
         run = runs[0]
@@ -131,15 +143,31 @@ def main() -> int:
     print(f"loop-stall — {checked} live run(s) checked, threshold {args.minutes}m\n")
     if stalled:
         for name, run, quiet, attached in stalled:
-            q = "never produced output" if quiet == float("inf") else f"silent for {quiet:.0f} min"
-            print(f"  ✗ [stalled] {name}: run {run} claims to be running but has been {q}.")
+            q = (
+                "never produced output"
+                if quiet == float("inf")
+                else f"silent for {quiet:.0f} min"
+            )
+            print(
+                f"  ✗ [stalled] {name}: run {run} claims to be running but has been {q}."
+            )
             if attached:
-                print(f"      Its pane is alive — inspect it: tmux attach -t bmad-loop-{run}")
-                print(f"      An interactive dialog does NOT reach the log; only the pane shows it.")
+                print(
+                    f"      Its pane is alive — inspect it: tmux attach -t bmad-loop-{run}"
+                )
+                print(
+                    f"      An interactive dialog does NOT reach the log; only the pane shows it."
+                )
             else:
-                print(f"      No tmux pane named bmad-loop-{run} — the engine is gone; the run")
-                print(f"      state is stale and will read `dev-running` forever. Resume or stop it.")
-        print(f"\n{len(stalled)} run(s) stalled. `bmad-loop status` will NOT show this.")
+                print(
+                    f"      No tmux pane named bmad-loop-{run} — the engine is gone; the run"
+                )
+                print(
+                    f"      state is stale and will read `dev-running` forever. Resume or stop it."
+                )
+        print(
+            f"\n{len(stalled)} run(s) stalled. `bmad-loop status` will NOT show this."
+        )
         return 1
 
     print("OK: every live run is making progress.")

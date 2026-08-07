@@ -62,9 +62,16 @@ from pathlib import Path
 import yaml
 
 # agentskills.io permitted frontmatter fields (matches canonical validator.py)
-ALLOWED_FIELDS = frozenset({
-    "name", "description", "license", "compatibility", "metadata", "allowed-tools",
-})
+ALLOWED_FIELDS = frozenset(
+    {
+        "name",
+        "description",
+        "license",
+        "compatibility",
+        "metadata",
+        "allowed-tools",
+    }
+)
 
 MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
@@ -80,11 +87,13 @@ def parse_frontmatter(content: str) -> tuple[dict | None, list[dict]]:
     issues: list[dict] = []
 
     if not content.startswith("---\n") and not content.startswith("---\r\n"):
-        issues.append({
-            "severity": "high",
-            "field": "frontmatter",
-            "message": "Missing opening --- delimiter",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "frontmatter",
+                "message": "Missing opening --- delimiter",
+            }
+        )
         return None, issues
 
     # Find closing --- on its own line (not a substring inside YAML values)
@@ -92,14 +101,18 @@ def parse_frontmatter(content: str) -> tuple[dict | None, list[dict]]:
     search_start = content.index("\n") + 1  # skip past opening ---\n
     for i, line in enumerate(content[search_start:].split("\n")):
         if line.rstrip("\r") == "---":
-            closing_idx = search_start + sum(len(l) + 1 for l in content[search_start:].split("\n")[:i])
+            closing_idx = search_start + sum(
+                len(l) + 1 for l in content[search_start:].split("\n")[:i]
+            )
             break
     if closing_idx == -1:
-        issues.append({
-            "severity": "high",
-            "field": "frontmatter",
-            "message": "Missing closing --- delimiter",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "frontmatter",
+                "message": "Missing closing --- delimiter",
+            }
+        )
         return None, issues
 
     # Extract text between opening and closing delimiters
@@ -109,11 +122,13 @@ def parse_frontmatter(content: str) -> tuple[dict | None, list[dict]]:
     try:
         fm = yaml.safe_load(fm_text)
     except yaml.YAMLError as exc:
-        issues.append({
-            "severity": "high",
-            "field": "frontmatter",
-            "message": f"Invalid YAML in frontmatter: {exc}",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "frontmatter",
+                "message": f"Invalid YAML in frontmatter: {exc}",
+            }
+        )
         return None, issues
 
     if fm is None:
@@ -121,11 +136,13 @@ def parse_frontmatter(content: str) -> tuple[dict | None, list[dict]]:
         fm = {}
 
     if not isinstance(fm, dict):
-        issues.append({
-            "severity": "high",
-            "field": "frontmatter",
-            "message": "Frontmatter must be a YAML mapping",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "frontmatter",
+                "message": "Frontmatter must be a YAML mapping",
+            }
+        )
         return None, issues
 
     # Normalize metadata sub-dict values to strings (matches canonical parser.py)
@@ -177,7 +194,7 @@ def body_token_estimate(content: str) -> int | None:
             break
     if closing == -1:
         return None
-    body = "\n".join(lines[closing + 1:])
+    body = "\n".join(lines[closing + 1 :])
     char_count = len(body)
     return -(-char_count // 4)  # ceil division
 
@@ -187,59 +204,73 @@ def _validate_name(name: str, skill_dir_name: str | None) -> list[dict]:
     issues: list[dict] = []
 
     if not name or not isinstance(name, str) or not name.strip():
-        issues.append({
-            "severity": "high",
-            "field": "name",
-            "message": "name field missing or empty",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": "name field missing or empty",
+            }
+        )
         return issues
 
     name = unicodedata.normalize("NFKC", name.strip())
 
     if len(name) > MAX_SKILL_NAME_LENGTH:
-        issues.append({
-            "severity": "high",
-            "field": "name",
-            "message": f"name exceeds {MAX_SKILL_NAME_LENGTH} chars ({len(name)} chars)",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": f"name exceeds {MAX_SKILL_NAME_LENGTH} chars ({len(name)} chars)",
+            }
+        )
 
     if name != name.lower():
-        issues.append({
-            "severity": "high",
-            "field": "name",
-            "message": f"name '{name}' must be lowercase",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": f"name '{name}' must be lowercase",
+            }
+        )
 
     if name.startswith("-") or name.endswith("-"):
-        issues.append({
-            "severity": "high",
-            "field": "name",
-            "message": "name cannot start or end with a hyphen",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": "name cannot start or end with a hyphen",
+            }
+        )
 
     if "--" in name:
-        issues.append({
-            "severity": "high",
-            "field": "name",
-            "message": "name cannot contain consecutive hyphens",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": "name cannot contain consecutive hyphens",
+            }
+        )
 
     if not all(c.isalnum() or c == "-" for c in name):
-        issues.append({
-            "severity": "high",
-            "field": "name",
-            "message": f"name '{name}' contains invalid characters (only letters, digits, and hyphens allowed)",
-        })
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": f"name '{name}' contains invalid characters (only letters, digits, and hyphens allowed)",
+            }
+        )
 
     # Directory name match (with Unicode normalization)
     if skill_dir_name:
         dir_name = unicodedata.normalize("NFKC", skill_dir_name)
         if dir_name != name:
-            issues.append({
-                "severity": "high",
-                "field": "name",
-                "message": f"name '{name}' does not match directory name '{skill_dir_name}'",
-            })
+            issues.append(
+                {
+                    "severity": "high",
+                    "field": "name",
+                    "message": f"name '{name}' does not match directory name '{skill_dir_name}'",
+                }
+            )
 
     return issues
 
@@ -263,24 +294,36 @@ def validate_frontmatter(
     fm, issues = parse_frontmatter(content)
 
     body_lines = body_line_count(content)
-    if max_body_lines is not None and body_lines is not None and body_lines > max_body_lines:
-        issues.append({
-            "severity": "high",
-            "field": "body",
-            "message": f"body lines {body_lines} exceeds max {max_body_lines}",
-        })
+    if (
+        max_body_lines is not None
+        and body_lines is not None
+        and body_lines > max_body_lines
+    ):
+        issues.append(
+            {
+                "severity": "high",
+                "field": "body",
+                "message": f"body lines {body_lines} exceeds max {max_body_lines}",
+            }
+        )
 
     body_tokens = body_token_estimate(content)
-    if max_body_tokens is not None and body_tokens is not None and body_tokens > max_body_tokens:
-        issues.append({
-            # skill-check treats body.max_tokens as a non-blocking warning, so
-            # this is advisory (low), not a hard reject; --max-body-lines is the
-            # hard body pre-check. The char/4 estimate also runs high versus
-            # skill-check's own whitespace-split count, so keep it soft.
-            "severity": "low",
-            "field": "body",
-            "message": f"body token estimate {body_tokens} exceeds max {max_body_tokens}",
-        })
+    if (
+        max_body_tokens is not None
+        and body_tokens is not None
+        and body_tokens > max_body_tokens
+    ):
+        issues.append(
+            {
+                # skill-check treats body.max_tokens as a non-blocking warning, so
+                # this is advisory (low), not a hard reject; --max-body-lines is the
+                # hard body pre-check. The char/4 estimate also runs high versus
+                # skill-check's own whitespace-split count, so keep it soft.
+                "severity": "low",
+                "field": "body",
+                "message": f"body token estimate {body_tokens} exceeds max {max_body_tokens}",
+            }
+        )
 
     if fm is not None:
         # Name validation
@@ -290,42 +333,52 @@ def validate_frontmatter(
         # Description: required, non-empty, max 1024 chars
         desc = fm.get("description", "")
         if not desc or not isinstance(desc, str) or not desc.strip():
-            issues.append({
-                "severity": "high",
-                "field": "description",
-                "message": "description field missing or empty",
-            })
+            issues.append(
+                {
+                    "severity": "high",
+                    "field": "description",
+                    "message": "description field missing or empty",
+                }
+            )
         elif len(desc) > MAX_DESCRIPTION_LENGTH:
-            issues.append({
-                "severity": "medium",
-                "field": "description",
-                "message": f"description exceeds {MAX_DESCRIPTION_LENGTH} chars ({len(desc)} chars)",
-            })
+            issues.append(
+                {
+                    "severity": "medium",
+                    "field": "description",
+                    "message": f"description exceeds {MAX_DESCRIPTION_LENGTH} chars ({len(desc)} chars)",
+                }
+            )
 
         # Compatibility: optional, max 500 chars
         compat = fm.get("compatibility")
         if compat is not None:
             if not isinstance(compat, str):
-                issues.append({
-                    "severity": "medium",
-                    "field": "compatibility",
-                    "message": "compatibility must be a string",
-                })
+                issues.append(
+                    {
+                        "severity": "medium",
+                        "field": "compatibility",
+                        "message": "compatibility must be a string",
+                    }
+                )
             elif len(compat) > MAX_COMPATIBILITY_LENGTH:
-                issues.append({
-                    "severity": "medium",
-                    "field": "compatibility",
-                    "message": f"compatibility exceeds {MAX_COMPATIBILITY_LENGTH} chars ({len(compat)} chars)",
-                })
+                issues.append(
+                    {
+                        "severity": "medium",
+                        "field": "compatibility",
+                        "message": f"compatibility exceeds {MAX_COMPATIBILITY_LENGTH} chars ({len(compat)} chars)",
+                    }
+                )
 
         # Unknown fields
         for key in fm:
             if key not in ALLOWED_FIELDS:
-                issues.append({
-                    "severity": "low",
-                    "field": key,
-                    "message": f"Unknown frontmatter field: '{key}'",
-                })
+                issues.append(
+                    {
+                        "severity": "low",
+                        "field": key,
+                        "message": f"Unknown frontmatter field: '{key}'",
+                    }
+                )
 
     # Build summary
     severity_counts = {"high": 0, "medium": 0, "low": 0}
@@ -402,7 +455,8 @@ def main() -> int:
         ),
     )
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         metavar="FILE",
         help="write JSON output to FILE instead of stdout",
     )
@@ -413,7 +467,13 @@ def main() -> int:
     if not skill_md_path.exists():
         result = {
             "status": "fail",
-            "issues": [{"severity": "high", "field": "file", "message": f"File not found: {skill_md_path}"}],
+            "issues": [
+                {
+                    "severity": "high",
+                    "field": "file",
+                    "message": f"File not found: {skill_md_path}",
+                }
+            ],
             "frontmatter": None,
             "body_lines": None,
             "summary": {"total": 1, "high": 1, "medium": 0, "low": 0},
@@ -421,7 +481,9 @@ def main() -> int:
     else:
         content = skill_md_path.read_text(encoding="utf-8")
         skill_dir_name = args.skill_dir_name or skill_md_path.parent.name
-        result = validate_frontmatter(content, skill_dir_name, args.max_body_lines, args.max_body_tokens)
+        result = validate_frontmatter(
+            content, skill_dir_name, args.max_body_lines, args.max_body_tokens
+        )
 
     output_text = json.dumps(result, indent=2)
 

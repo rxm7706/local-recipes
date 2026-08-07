@@ -79,7 +79,9 @@ class FakeFs:
         if self.blobs:
             # FsPort.read_text's own "absent" contract for a blob this test
             # deliberately did not provide.
-            return self.blobs.get(path, self.journal_text if path.suffix != ".json" else None)
+            return self.blobs.get(
+                path, self.journal_text if path.suffix != ".json" else None
+            )
         return self.journal_text
 
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
@@ -157,7 +159,11 @@ class AdvancingClock:
     once per tick and every read within that tick happens back-to-back."""
 
     def __init__(self, *, start: datetime | None = None) -> None:
-        self._now = start if start is not None else datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+        self._now = (
+            start
+            if start is not None
+            else datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+        )
         self.calls = 0
         # Advanced in LOCKSTEP with `_now` by default -- an ordinary host
         # where nothing suspends the process and nothing steps the wall
@@ -308,7 +314,9 @@ class FakeHarness:
         return self.stop_result
 
     def resume(self, project: Path, run_id: str, *, log_path: Path) -> int:
-        self.resume_calls.append({"project": project, "run_id": run_id, "log_path": log_path})
+        self.resume_calls.append(
+            {"project": project, "run_id": run_id, "log_path": log_path}
+        )
         if self.fail_resume:
             raise self.fail_resume
         return self.resume_result
@@ -317,10 +325,14 @@ class FakeHarness:
         self.usage_snapshot_calls.append((project, run_id))
         if self.usage_snapshot_sequence is not None:
             index = len(self.usage_snapshot_calls) - 1
-            return self.usage_snapshot_sequence[min(index, len(self.usage_snapshot_sequence) - 1)]
+            return self.usage_snapshot_sequence[
+                min(index, len(self.usage_snapshot_sequence) - 1)
+            ]
         return self.usage_snapshot_result
 
-    def run_status_snapshot(self, project: Path, run_id: str) -> RunStatusSnapshot | None:
+    def run_status_snapshot(
+        self, project: Path, run_id: str
+    ) -> RunStatusSnapshot | None:
         self.run_status_snapshot_calls.append((project, run_id))
         if self.run_status_snapshot_sequence is not None:
             index = len(self.run_status_snapshot_calls) - 1
@@ -418,7 +430,10 @@ _SESSION_NAME = f"bmad-loop-{_HARNESS_RUN_ID}"
 
 
 def _launch_outcome_line(
-    run_id: str, *, watched_pid: int = 4242, harness_run_id: str | None = _HARNESS_RUN_ID
+    run_id: str,
+    *,
+    watched_pid: int = 4242,
+    harness_run_id: str | None = _HARNESS_RUN_ID,
 ) -> str:
     """A minimal, valid ``phase: outcome, kind: "run-launch"`` journal
     line -- the ONE entry ``run_supervisor``'s own inert-check looks for,
@@ -439,7 +454,10 @@ def _launch_outcome_line(
 
 
 def _resume_outcome_line(
-    run_id: str, *, watched_pid: int = 4242, harness_run_id: str | None = _HARNESS_RUN_ID
+    run_id: str,
+    *,
+    watched_pid: int = 4242,
+    harness_run_id: str | None = _HARNESS_RUN_ID,
 ) -> str:
     """The ``cli/spin.py::run_resume`` counterpart to ``_launch_outcome_line``
     above -- a ``phase: outcome, kind: "run-resume"`` journal line, same
@@ -529,7 +547,11 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
         "acme-run-1",
         4242,
         _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
         process=process,
         clock=clock,
@@ -642,8 +664,20 @@ def test_inert_when_the_journal_does_not_exist_at_all():
     process = FakeProcess(alive_for=5)
 
     rc = run_supervisor(
-        _HOME, "acme", "bogus-run", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "bogus-run",
+        1,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -676,8 +710,20 @@ def test_attaches_when_the_journal_has_only_an_intent_entry_and_no_outcome_yet()
     fs = FakeFs(journal_text=prepare_for_write(intent_entry).line + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=0), clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=0),
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -745,9 +791,21 @@ def test_attaches_when_the_only_run_launch_entry_is_sidecar_referenced():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=0), clock=FakeClock(),
-        observer=FakeObserver(), sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=0),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -776,9 +834,21 @@ def test_inert_when_a_sidecar_referenced_entry_names_a_different_run():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
-        observer=FakeObserver(), sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -792,6 +862,7 @@ def test_sidecar_refs_rejects_any_ref_that_walks_out_of_the_run_directory():
     ``FsPort.read_text``, so a corrupt or forged one must never point the
     read outside the run directory. ``fold`` independently re-validates
     every ref against its owning entry's id; this is the first gate."""
+
     def _line(ref: str) -> str:
         return json.dumps({"payload": {"sidecar_ref": ref}})
 
@@ -835,9 +906,21 @@ def test_a_missing_sidecar_blob_still_leaves_the_supervisor_inert():
     fs.blobs = {Path("/nowhere.json"): "{}"}  # non-empty, but not the real ref
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
-        observer=FakeObserver(), sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -856,9 +939,21 @@ def test_inert_when_the_journal_read_raises_a_plain_value_error():
     fs.fail_read_text = ValueError("embedded null byte")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
-        observer=FakeObserver(), sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        1,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -872,8 +967,20 @@ def test_inert_when_the_outcome_entry_belongs_to_a_different_run_id():
     fs = FakeFs(journal_text=_launch_outcome_line("some-other-run") + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        1,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -898,8 +1005,20 @@ def test_a_run_started_via_resume_is_recognized_and_supervised():
     process = FakeProcess(alive_for=1)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -917,8 +1036,20 @@ def test_inert_when_the_journal_read_itself_fails():
     fs.fail_read_text = FsError("Permission denied")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        1,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -934,8 +1065,20 @@ def test_watched_process_already_dead_journals_attach_then_immediately_detach():
     process = FakeProcess(alive_for=0)  # is_alive() is False on the FIRST call
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -958,8 +1101,20 @@ def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
     process = FakeProcess(alive_for=10)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -981,8 +1136,20 @@ def test_journal_append_failure_prints_a_diagnostic_to_stderr(capsys):
     fs.fail_append_line_on_call = 1  # even the attach entry itself fails
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -1007,8 +1174,20 @@ def test_pane_unavailable_the_tick_proceeds_without_it():
     observer = FakeObserver(pane=None)  # "no session by that name"
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=FakeClock(), observer=observer,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=FakeClock(),
+        observer=observer,
         sleep=_no_sleep,
     )
 
@@ -1043,8 +1222,20 @@ def test_harness_run_id_unavailable_journals_once_and_stays_heartbeat_only():
     observer = FakeObserver(pane="unchanged")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=FakeClock(), observer=observer,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=FakeClock(),
+        observer=observer,
         sleep=_no_sleep,
     )
 
@@ -1072,11 +1263,25 @@ def test_harness_run_id_blank_string_is_also_unavailable():
     """Defense in depth: an empty-string ``harness_run_id`` (a malformed or
     truncated write) is treated identically to ``None`` -- never used as a
     session-name fragment."""
-    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id="") + "\n")
+    fs = FakeFs(
+        journal_text=_launch_outcome_line("acme-run-1", harness_run_id="") + "\n"
+    )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(), observer=FakeObserver(),
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=1),
+        clock=FakeClock(),
+        observer=FakeObserver(),
         sleep=_no_sleep,
     )
 
@@ -1112,9 +1317,22 @@ def test_first_threshold_crossing_fires_a_nudge_intent_then_outcome():
     # never a real `git` subprocess against this test's own fake `_HOME`).
     vcs = FakeVcs()
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
-        vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        2.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1162,14 +1380,28 @@ def test_nudge_send_failure_registers_a_finding_but_still_advances_bookkeeping()
     observer = FakeObserver(pane="idle", send_text_result=False)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        2.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
         sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    nudge_outcomes = [e for e in entries if e["kind"] == "idle-nudge" and e["phase"] == "outcome"]
+    nudge_outcomes = [
+        e for e in entries if e["kind"] == "idle-nudge" and e["phase"] == "outcome"
+    ]
     assert len(nudge_outcomes) == 1  # not retried on tick 5, the same rung
     assert nudge_outcomes[0]["payload"]["sent"] is False
     assert nudge_outcomes[0]["payload"]["finding"]["code"] == "MRS-SUPV-001"
@@ -1204,14 +1436,28 @@ def test_fresh_output_after_nudge_resets_the_window():
     # index beyond its own length, so the harmless extra calls just sample
     # "responded" again.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=9), clock=clock, observer=observer,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        2.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=9),
+        clock=clock,
+        observer=observer,
         sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    nudge_intents = [e for e in entries if e["kind"] == "idle-nudge" and e["phase"] == "intent"]
+    nudge_intents = [
+        e for e in entries if e["kind"] == "idle-nudge" and e["phase"] == "intent"
+    ]
     assert len(nudge_intents) == 2, "the reset must allow a SECOND nudge to fire"
     assert observer.send_text_calls == [
         (_SESSION_NAME, supervisor_main._NUDGE_TEXT),
@@ -1249,9 +1495,22 @@ def test_every_ladder_journal_entry_conforms_to_the_frozen_journal_schema():
     harness.stop_result = False  # forces MRS-SUPV-002 on the retry rung
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=12),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1293,9 +1552,22 @@ def test_the_nudges_own_echo_does_not_re_arm_the_idle_window():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1303,7 +1575,9 @@ def test_the_nudges_own_echo_does_not_re_arm_the_idle_window():
     kinds = [entry["kind"] for entry in entries]
     assert kinds.count("idle-nudge") == 2, "exactly one nudge firing"
     retry_outcome = next(
-        e for e in entries if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
+        e
+        for e in entries
+        if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
     )
     assert retry_outcome["payload"]["new_pid"] == harness.resume_result
     assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
@@ -1328,9 +1602,22 @@ def test_a_short_threshold_never_skips_a_ladder_rung():
     # capped at DEFER. The clamp walks NUDGE -> STOP_AND_RETRY -> DEFER
     # instead, one rung per tick.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 0.25, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        0.25,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=12),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1362,9 +1649,22 @@ def test_an_unobservable_session_is_never_treated_as_idle():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1402,9 +1702,22 @@ def test_a_flaky_pane_capture_never_re_arms_the_idle_window():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1447,9 +1760,22 @@ def test_a_wall_clock_jump_never_escalates_the_ladder():
             clock.jump_wall_clock(3600.0)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 25.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
-        harness=harness, sleep=_sleep_then_suspend,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        25.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=6),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=_sleep_then_suspend,
     )
 
     assert rc == 0
@@ -1479,9 +1805,22 @@ def test_a_resume_that_did_not_take_is_not_a_clean_completion():
     process = FakeProcess(alive_for=10, dead_pids={harness.resume_result})
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1515,9 +1854,22 @@ def test_second_threshold_crossing_fires_stop_and_retry():
     # this budget is exhausted -- `stop`/`resume` are still each called
     # exactly once, which is all this test asserts.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1554,15 +1906,30 @@ def test_stop_and_retry_failure_registers_a_finding_and_keeps_watching_original_
     # (tick 6, see below) must not be the LAST one `FakeProcess` reports
     # alive for.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=7), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=7),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     retry_outcomes = [
-        e for e in entries if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
+        e
+        for e in entries
+        if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
     ]
     assert len(retry_outcomes) == 1
     payload = retry_outcomes[0]["payload"]
@@ -1598,15 +1965,30 @@ def test_stop_and_retry_stop_returns_false_skips_resume():
     harness.stop_result = False
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     retry_outcomes = [
-        e for e in entries if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
+        e
+        for e in entries
+        if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
     ]
     assert len(retry_outcomes) == 1
     payload = retry_outcomes[0]["payload"]
@@ -1644,15 +2026,30 @@ def test_resume_failure_after_a_successful_stop_is_treated_as_unrecoverable_and_
     harness.fail_resume = HarnessError("bmad-loop resume: connection refused")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     retry_outcomes = [
-        e for e in entries if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
+        e
+        for e in entries
+        if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
     ]
     assert len(retry_outcomes) == 1
     payload = retry_outcomes[0]["payload"]
@@ -1689,15 +2086,30 @@ def test_heartbeat_after_a_successful_pid_swap_reports_the_new_pids_fresh_readin
     # answers `False` for. If the heartbeat below shows `True`, the
     # recompute never happened.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     retry_outcome = next(
-        e for e in entries if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
+        e
+        for e in entries
+        if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
     )
     assert retry_outcome["payload"]["new_pid"] == harness.resume_result
     retry_index = entries.index(retry_outcome)
@@ -1738,9 +2150,22 @@ def test_already_retried_bounds_the_ladder_to_one_retry_cycle():
     # alive_for=12 keeps every one of those ticks (plus the post-swap
     # recompute's own extra `is_alive` call) non-terminal.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=12),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1782,9 +2207,22 @@ def test_defer_calls_harness_stop_and_records_success():
     # forbids, and it has its own test below. `defer`'s own stop call is the
     # SECOND one the fake records, and its watched pid is the post-swap one.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=12),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1815,7 +2253,9 @@ def test_ladder_skips_the_tick_where_the_process_exits_naturally():
     appends unconditionally."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    observer = FakeObserver(pane="idle")  # never changes -- would ordinarily idle-escalate
+    observer = FakeObserver(
+        pane="idle"
+    )  # never changes -- would ordinarily idle-escalate
     harness = FakeHarness()
     # threshold_s = 150 (2.5min, the same arithmetic as the first-nudge
     # test above): tick 4 -- 180s elapsed since the first sample -- would
@@ -1825,9 +2265,22 @@ def test_ladder_skips_the_tick_where_the_process_exits_naturally():
     # ladder must be skipped for that tick rather than fire against an
     # already-exited process.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=4), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        2.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=4),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1855,9 +2308,22 @@ def test_third_threshold_crossing_fires_defer_and_detaches():
     harness.fail_stop = HarnessError("unreachable")  # never resets progress
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1930,9 +2396,22 @@ def test_a_channel_that_breaks_mid_run_is_never_treated_as_idle():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -1968,9 +2447,22 @@ def test_a_nudge_reporting_failed_delivery_still_neutralizes_its_own_echo():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=6),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2008,9 +2500,22 @@ def test_history_pruning_preserves_the_idle_anchor():
     # tick whose elapsed idle time first equals one full threshold. A prune
     # that moved the anchor would shift this crossing.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 3.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        3.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2040,9 +2545,22 @@ def test_the_heartbeat_written_when_defer_stops_the_run_is_not_stale():
     process = _AliveUntilStopped(harness, after=2)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2065,9 +2583,22 @@ def test_the_heartbeat_written_when_a_resume_fails_is_not_stale():
     process = _AliveUntilStopped(harness, after=1)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2095,9 +2626,22 @@ def test_the_defer_finding_names_the_run_once_and_reads_as_one_sentence():
     harness.stop_result = False
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1.0,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=8),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2128,9 +2672,22 @@ def test_run_supervisor_rejects_a_threshold_that_overflows_to_infinite_seconds(c
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1e308, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=AdvancingClock(),
-        observer=FakeObserver(pane="idle"), harness=FakeHarness(), sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        1e308,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=AdvancingClock(),
+        observer=FakeObserver(pane="idle"),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
     )
 
     assert rc == 1
@@ -2153,9 +2710,22 @@ def test_run_supervisor_rejects_a_non_numeric_threshold(capsys):
         fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
 
         rc = run_supervisor(
-            _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, bad_threshold, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-            fs=fs, process=FakeProcess(alive_for=3), clock=AdvancingClock(),
-            observer=FakeObserver(pane="idle"), harness=FakeHarness(), sleep=_no_sleep,
+            _HOME,
+            "acme",
+            "acme-run-1",
+            4242,
+            _LOG_PATH,
+            bad_threshold,
+            _MAX_TOKENS_PER_STORY,
+            _MAX_TOKENS_PER_RUN,
+            _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+            _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+            fs=fs,
+            process=FakeProcess(alive_for=3),
+            clock=AdvancingClock(),
+            observer=FakeObserver(pane="idle"),
+            harness=FakeHarness(),
+            sleep=_no_sleep,
         )
 
         assert rc == 1, bad_threshold
@@ -2184,15 +2754,26 @@ def test_run_wall_clock_ceiling_approaching_journals_a_budget_warn():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 2.5,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        2.5,
         # `alive_for=3`: the pre-loop `is_alive` reading is call #1, so only
         # ticks 1-2 (calls #2-#3) see `watched_alive=True` and run the
         # budget block at all -- tick 2's own elapsed (2.0min) is the one
         # that crosses `0.8 * 2.5 = 2.0`.
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2221,11 +2802,22 @@ def test_run_wall_clock_ceiling_breach_stops_and_detaches():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        1.5,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2262,11 +2854,22 @@ def test_run_wall_clock_ceiling_breach_with_a_failed_stop_still_detaches():
     harness.fail_stop = HarnessError("unreachable")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        1.5,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2294,11 +2897,22 @@ def test_story_wall_clock_ceiling_breach_uses_the_story_scope_reason():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        1.5, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        1.5,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2327,11 +2941,22 @@ def test_token_ceiling_breach_on_a_fresh_sample():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, 100.0, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        100.0,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2367,11 +2992,22 @@ def test_stale_usage_sample_skips_both_token_ceilings_but_not_wall_clock():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2407,11 +3043,22 @@ def test_usage_read_failure_with_a_fresh_mtime_also_journals_stale_evidence():
     harness.usage_snapshot_result = None  # the read itself failed
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2440,18 +3087,31 @@ def test_a_breach_on_one_ceiling_suppresses_a_same_tick_warn_on_another():
     harness = FakeHarness()
     # 850 / 1_000 = 0.85 >= the fixed 0.8 approach ratio -- APPROACHING.
     harness.usage_snapshot_result = UsageSnapshot(
-        story_key=None, story_weighted_tokens=None, run_weighted_tokens=850,
+        story_key=None,
+        story_weighted_tokens=None,
+        run_weighted_tokens=850,
         sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
         # A 1-second-scale wall-clock-per-run ceiling breaches on tick 1;
         # the token-per-run ceiling (1_000) is evaluated in the SAME tick.
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, 1_000,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1e-9,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        1_000,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        1e-9,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2485,11 +3145,22 @@ def test_no_single_current_story_skips_per_story_ceilings_only():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, 400.0,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        400.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2523,17 +3194,29 @@ def test_budget_usage_journals_the_canonical_feed_key_not_the_harness_slug():
     harness.usage_snapshot_sequence = [
         UsageSnapshot(
             story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
-            story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            story_weighted_tokens=1_000,
+            run_weighted_tokens=1_000,
             sample_path=sample_path,
         ),
     ]
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=2),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2566,17 +3249,29 @@ def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
     harness.usage_snapshot_sequence = [
         UsageSnapshot(
             story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
-            story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            story_weighted_tokens=1_000,
+            run_weighted_tokens=1_000,
             sample_path=sample_path,
         ),
     ]
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, 500.0, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        500.0,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2602,17 +3297,29 @@ def test_a_per_run_breach_never_attributes_itself_to_a_story():
     harness.usage_snapshot_sequence = [
         UsageSnapshot(
             story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
-            story_weighted_tokens=100, run_weighted_tokens=500,
+            story_weighted_tokens=100,
+            run_weighted_tokens=500,
             sample_path=sample_path,
         ),
     ]
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, 400.0,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        400.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2634,17 +3341,30 @@ def test_budget_usage_falls_back_to_the_raw_key_when_it_cannot_be_normalized():
     sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
     harness.usage_snapshot_sequence = [
         UsageSnapshot(
-            story_key="not-a-story-key", story_weighted_tokens=1_000,
-            run_weighted_tokens=1_000, sample_path=sample_path,
+            story_key="not-a-story-key",
+            story_weighted_tokens=1_000,
+            run_weighted_tokens=1_000,
+            sample_path=sample_path,
         ),
     ]
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=2),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2671,18 +3391,30 @@ def test_no_budget_observation_is_journaled_after_a_terminal_budget_stop():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        1.5,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     kinds = [entry["kind"] for entry in entries]
     stop_outcome_index = max(
-        i for i, e in enumerate(entries)
+        i
+        for i, e in enumerate(entries)
         if e["kind"] == "budget-stop" and e["phase"] == "outcome"
     )
     assert "budget-usage-stale" not in kinds[stop_outcome_index:], (
@@ -2704,25 +3436,42 @@ def test_story_transition_journals_usage_for_the_outgoing_story():
     sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
     harness.usage_snapshot_sequence = [
         UsageSnapshot(
-            story_key="3.6", story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            story_key="3.6",
+            story_weighted_tokens=1_000,
+            run_weighted_tokens=1_000,
             sample_path=sample_path,
         ),
         UsageSnapshot(
-            story_key="3.6", story_weighted_tokens=2_000, run_weighted_tokens=2_000,
+            story_key="3.6",
+            story_weighted_tokens=2_000,
+            run_weighted_tokens=2_000,
             sample_path=sample_path,
         ),
         UsageSnapshot(
-            story_key="3.7", story_weighted_tokens=50, run_weighted_tokens=2_050,
+            story_key="3.7",
+            story_weighted_tokens=50,
+            run_weighted_tokens=2_050,
             sample_path=sample_path,
         ),
     ]
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=4), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=4),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2766,21 +3515,36 @@ def test_story_transition_with_zero_weighted_tokens_journals_a_null_cost_estimat
     sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
     harness.usage_snapshot_sequence = [
         UsageSnapshot(
-            story_key="3.6", story_weighted_tokens=0, run_weighted_tokens=0,
+            story_key="3.6",
+            story_weighted_tokens=0,
+            run_weighted_tokens=0,
             sample_path=sample_path,
         ),
         UsageSnapshot(
-            story_key="3.7", story_weighted_tokens=10, run_weighted_tokens=10,
+            story_key="3.7",
+            story_weighted_tokens=10,
+            run_weighted_tokens=10,
             sample_path=sample_path,
         ),
     ]
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2808,16 +3572,29 @@ def test_single_story_run_with_no_transition_still_journals_one_budget_usage_ent
     harness = FakeHarness()
     sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
     harness.usage_snapshot_result = UsageSnapshot(
-        story_key="3.6", story_weighted_tokens=4_200, run_weighted_tokens=4_200,
+        story_key="3.6",
+        story_weighted_tokens=4_200,
+        run_weighted_tokens=4_200,
         sample_path=sample_path,
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2826,7 +3603,9 @@ def test_single_story_run_with_no_transition_still_journals_one_budget_usage_ent
     assert len(usage_entries) == 1
     assert usage_entries[0]["payload"] == {"story_key": "3.6", "cost_estimate": 4_200}
     # The flush lands BEFORE the final `supervisor-detach`, never after.
-    detach_index = next(i for i, e in enumerate(entries) if e["kind"] == "supervisor-detach")
+    detach_index = next(
+        i for i, e in enumerate(entries) if e["kind"] == "supervisor-detach"
+    )
     usage_index = next(i for i, e in enumerate(entries) if e["kind"] == "budget-usage")
     assert usage_index < detach_index
 
@@ -2835,17 +3614,30 @@ def test_harness_run_id_unavailable_still_evaluates_the_run_wall_clock_ceiling()
     """I/O matrix / AD-32's own rule: the per-run wall-clock ceiling needs
     no ``harness_run_id`` at all -- it must stay evaluable even when the
     idle ladder itself cannot act (``MRS-SUPV-003``'s own scenario)."""
-    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    fs = FakeFs(
+        journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n"
+    )
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        1.5,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2875,17 +3667,30 @@ def test_a_budget_breach_with_no_harness_run_id_never_re_fires_on_later_ticks():
     makes every later tick a no-op, so a breach that could not be acted on
     journals exactly ONE ``budget-stop`` pair rather than one per tick for
     the rest of the run's life."""
-    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    fs = FakeFs(
+        journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n"
+    )
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
-        fs=fs, process=FakeProcess(alive_for=20), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        1.5,
+        fs=fs,
+        process=FakeProcess(alive_for=20),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2959,15 +3764,28 @@ def test_a_deferred_story_is_journaled_once_even_though_observed_every_tick():
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.run_status_snapshot_result = _snapshot(
-        deferred=(_deferred_story("3-6-budget-ceilings-and-the-heaviest-story-advisory"),)
+        deferred=(
+            _deferred_story("3-6-budget-ceilings-and-the-heaviest-story-advisory"),
+        )
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=6),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -2994,15 +3812,29 @@ def test_two_deferred_stories_each_journal_their_own_observation():
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.run_status_snapshot_result = _snapshot(
-        deferred=(_deferred_story("3.5", reason="a plugin veto"), _deferred_story("3.6"))
+        deferred=(
+            _deferred_story("3.5", reason="a plugin veto"),
+            _deferred_story("3.6"),
+        )
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=4), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=4),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3026,11 +3858,22 @@ def test_a_story_deferred_mid_run_is_journaled_starting_the_tick_it_appears():
     ]
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=6),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3046,11 +3889,22 @@ def test_no_deferred_stories_journals_nothing():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3062,18 +3916,31 @@ def test_deferral_capture_is_skipped_when_harness_run_id_never_resolved():
     """Deferral capture needs `state.json`'s own path, which needs
     `harness_run_id` -- gated identically to the idle ladder's own
     `MRS-SUPV-003` scenario."""
-    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    fs = FakeFs(
+        journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n"
+    )
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.run_status_snapshot_result = _snapshot(deferred=(_deferred_story("3.6"),))
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3110,11 +3977,22 @@ def test_a_story_deferred_after_the_last_live_tick_is_still_journaled():
     harness = _DeferredOnlyOnceDead()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3133,16 +4011,25 @@ def test_the_post_loop_deferral_flush_never_repeats_a_story_already_journaled():
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
-    harness.run_status_snapshot_result = _snapshot(
-        deferred=(_deferred_story("3.6"),)
-    )
+    harness.run_status_snapshot_result = _snapshot(deferred=(_deferred_story("3.6"),))
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3159,16 +4046,25 @@ def test_the_post_loop_deferral_flush_still_runs_when_the_idle_ladder_deferred()
     clock = AdvancingClock()
     observer = FakeObserver(pane="frozen")
     harness = FakeHarness()
-    harness.run_status_snapshot_result = _snapshot(
-        deferred=(_deferred_story("3.6"),)
-    )
+    harness.run_status_snapshot_result = _snapshot(deferred=(_deferred_story("3.6"),))
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=40), clock=clock, observer=observer,
-        harness=harness, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=40),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3198,11 +4094,23 @@ def test_an_unresolved_escalation_journals_notifies_and_sets_the_detach_reason()
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3220,7 +4128,10 @@ def test_an_unresolved_escalation_journals_notifies_and_sets_the_detach_reason()
 
     assert len(notify.notify_file_calls) == 1
     marker_path, marker_payload = notify.notify_file_calls[0]
-    assert marker_path == supervisor_main._run_dir(_HOME, "acme", "acme-run-1") / "ESCALATION"
+    assert (
+        marker_path
+        == supervisor_main._run_dir(_HOME, "acme", "acme-run-1") / "ESCALATION"
+    )
     # "story_key" is renamed to "story" for the REDACTED notify payload
     # (mirrors core.egress.build_gate_record's own rename: `to_redacted`
     # treats any "*_key"-suffixed field NAME as secret-shaped and would
@@ -3246,11 +4157,23 @@ def test_ordinary_finish_never_journals_an_escalation():
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3271,11 +4194,23 @@ def test_a_pause_at_a_different_stage_never_journals_an_escalation():
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3302,11 +4237,23 @@ def test_a_resolved_escalation_never_journals_an_escalation():
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3328,11 +4275,23 @@ def test_run_status_snapshot_read_failure_falls_back_to_the_ordinary_detach_reas
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3359,11 +4318,23 @@ def test_an_idle_defer_takes_precedence_over_an_unresolved_escalation():
 
     # threshold_s = 15 against a 60s tick -- reaches `defer` immediately.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        0.25, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        0.25,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=12),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3387,11 +4358,23 @@ def test_a_budget_breach_takes_precedence_over_an_unresolved_escalation():
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
-        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        1.5,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3418,11 +4401,23 @@ def test_a_failed_file_marker_write_registers_a_warn_but_the_detach_still_procee
     notify.fail_notify_file = FsError("disk full")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3451,11 +4446,23 @@ def test_a_desktop_notify_failure_is_fully_swallowed():
     notify.fail_notify_desktop = RuntimeError("notifier crashed")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3481,11 +4488,23 @@ def test_a_desktop_notify_returning_false_never_affects_the_detach():
     notify.notify_desktop_result = False
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3495,22 +4514,38 @@ def test_a_desktop_notify_returning_false_never_affects_the_detach():
 
 
 def test_escalation_never_evaluated_when_harness_run_id_unavailable():
-    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    fs = FakeFs(
+        journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n"
+    )
     process = FakeProcess(alive_for=2)
     clock = FakeClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.run_status_snapshot_result = _snapshot(
-        paused_stage="escalation", paused_story_key="3.7", escalated_task_phase="escalated"
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        escalated_task_phase="escalated",
     )
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3530,10 +4565,22 @@ def test_default_notify_construction_never_touches_the_real_filesystem_when_iner
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer, harness=harness, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -3558,11 +4605,23 @@ def test_escalation_and_deferral_journal_entries_conform_to_the_frozen_journal_s
     notify = FakeNotify()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, notify=notify, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        notify=notify,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -3579,7 +4638,9 @@ def test_escalation_and_deferral_journal_entries_conform_to_the_frozen_journal_s
 
 
 def test_main_parses_argv_and_dispatches_to_run_supervisor(monkeypatch):
-    calls: list[tuple[Path, str, str, int, Path, float, float, float, float, float]] = []
+    calls: list[
+        tuple[Path, str, str, int, Path, float, float, float, float, float]
+    ] = []
 
     def _fake_run_supervisor(
         home,
@@ -3998,10 +5059,21 @@ def test_inert_exit_prints_a_diagnostic_naming_the_run(capsys):
     fs = FakeFs(journal_text=_launch_outcome_line("some-other-run") + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242,
-        _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(),
-        observer=FakeObserver(), sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=1),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -4022,10 +5094,21 @@ def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
     fs = FakeFs(journal_text="{not valid json at all\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242,
-        _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(),
-        observer=FakeObserver(), sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=1),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        sleep=_no_sleep,
     )
 
     assert rc == 0
@@ -4050,11 +5133,23 @@ def test_a_review_verify_boundary_pushes_the_station_branch():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4079,19 +5174,39 @@ def test_a_dev_commit_landing_pushes_both_the_station_and_per_story_branch():
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     harness.run_status_snapshot_sequence = [
-        _snapshot(tasks=(_task_phase("3.8", "committing", commit_sha=None, branch="loop/3.8"),)),
         _snapshot(
-            tasks=(_task_phase("3.8", "committing", commit_sha="abc123", branch="loop/3.8"),)
+            tasks=(
+                _task_phase("3.8", "committing", commit_sha=None, branch="loop/3.8"),
+            )
+        ),
+        _snapshot(
+            tasks=(
+                _task_phase(
+                    "3.8", "committing", commit_sha="abc123", branch="loop/3.8"
+                ),
+            )
         ),
     ]
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4112,11 +5227,23 @@ def test_a_non_isolated_story_pushes_only_the_station_branch():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4137,11 +5264,23 @@ def test_two_boundaries_in_one_tick_fire_two_stage_push_observations():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4162,11 +5301,23 @@ def test_no_run_status_snapshot_attempts_no_stage_boundary_push():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=2),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4186,11 +5337,23 @@ def test_a_push_failure_registers_a_warn_and_the_tick_loop_continues():
     vcs.fail_push = VcsCommandError("no network")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4220,11 +5383,23 @@ def test_a_repo_common_root_failure_also_registers_a_warn():
     vcs.fail_repo_common_root = VcsCommandError("not inside a git repository")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4253,11 +5428,23 @@ def test_an_unexpected_exception_type_from_vcs_push_does_not_crash_the_tick():
     vcs.fail_push = OSError("permission denied")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4286,11 +5473,23 @@ def test_a_story_missing_from_previous_still_fires_on_the_first_observed_tick():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4300,7 +5499,9 @@ def test_a_story_missing_from_previous_still_fires_on_the_first_observed_tick():
     # tick, since the SAME phase persists across the whole constant
     # snapshot).
     review_pushes = [
-        e for e in stage_pushes if e["payload"].get("boundary") == "review-verdict-recorded"
+        e
+        for e in stage_pushes
+        if e["payload"].get("boundary") == "review-verdict-recorded"
     ]
     assert len(review_pushes) == 1
 
@@ -4325,11 +5526,23 @@ def test_a_boundary_crossed_after_the_last_live_tick_is_still_pushed():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4354,11 +5567,23 @@ def test_the_interval_watcher_fires_independent_of_any_stage_boundary():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        0.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        0.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=2),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4376,18 +5601,32 @@ def test_the_interval_watcher_fires_independent_of_any_stage_boundary():
 def test_the_interval_watcher_needs_no_harness_run_id():
     """The station-branch push targets `slug` alone -- runs even when
     `harness_run_id` never resolved (``MRS-SUPV-003``'s own scenario)."""
-    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    fs = FakeFs(
+        journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n"
+    )
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        0.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        0.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=2),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4405,11 +5644,23 @@ def test_the_durability_watcher_never_pushes_after_the_tick_loop_ends():
     vcs = FakeVcs()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        0.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
-        harness=harness, vcs=vcs, sleep=clock.sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        0.5,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=3),
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        vcs=vcs,
+        sleep=clock.sleep,
     )
 
     assert rc == 0
@@ -4434,10 +5685,22 @@ def test_default_vcs_construction_never_crashes_when_no_boundary_or_interval_fir
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
-        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
-        fs=fs, process=process, clock=clock, observer=observer, harness=harness, sleep=_no_sleep,
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=clock,
+        observer=observer,
+        harness=harness,
+        sleep=_no_sleep,
     )
 
     assert rc == 0

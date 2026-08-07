@@ -222,7 +222,9 @@ def test_malformed_slug_refuses_before_any_io(tmp_path, capsys, monkeypatch):
     vcs = _FakeVcs()
     forge = _FakeForge()
 
-    exit_code = land_module.run_land(_args(slug="../evil"), vcs=vcs, fs=LocalFs(), forge=forge)
+    exit_code = land_module.run_land(
+        _args(slug="../evil"), vcs=vcs, fs=LocalFs(), forge=forge
+    )
 
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
@@ -246,7 +248,7 @@ def test_station_branch_missing_refuses(tmp_path, capsys, monkeypatch):
 
 
 def test_malformed_landing_rules_hard_refuses(tmp_path, capsys, monkeypatch):
-    policy_path = _write_project_policy(tmp_path, "landing_rules = \"not-a-list\"\n")
+    policy_path = _write_project_policy(tmp_path, 'landing_rules = "not-a-list"\n')
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
     forge = _FakeForge()
@@ -283,14 +285,18 @@ def test_empty_wave_is_a_clean_noop(tmp_path, capsys, monkeypatch):
     assert forge.find_calls == []
 
 
-def test_already_landed_wave_branch_still_open_reports_warn(tmp_path, capsys, monkeypatch):
+def test_already_landed_wave_branch_still_open_reports_warn(
+    tmp_path, capsys, monkeypatch
+):
     _patch_repo(monkeypatch, tmp_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
     )
-    existing_pr = PrInfo(number=5, url="https://example/pr/5", state="open", base="main")
+    existing_pr = PrInfo(
+        number=5, url="https://example/pr/5", state="open", base="main"
+    )
     forge = _FakeForge(existing=existing_pr)
 
     exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
@@ -358,7 +364,9 @@ def test_happy_path_opens_pr_polls_checks_and_merges(tmp_path, capsys, monkeypat
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("pixi.toml",),
     )
-    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "success"})
+    forge = _FakeForge(
+        existing=None, check_status_map={"environment-yaml-sync": "success"}
+    )
 
     exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
 
@@ -376,7 +384,9 @@ def test_happy_path_opens_pr_polls_checks_and_merges(tmp_path, capsys, monkeypat
     assert delete_branch is True
 
 
-def test_zero_applicable_required_check_rules_makes_no_check_calls(tmp_path, capsys, monkeypatch):
+def test_zero_applicable_required_check_rules_makes_no_check_calls(
+    tmp_path, capsys, monkeypatch
+):
     policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(
@@ -421,7 +431,9 @@ def test_rule_with_both_label_and_required_check_applies_label_once_satisfied(
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("pixi.toml",),
     )
-    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "success"})
+    forge = _FakeForge(
+        existing=None, check_status_map={"environment-yaml-sync": "success"}
+    )
 
     exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
 
@@ -444,7 +456,9 @@ def test_required_check_failure_blocks_merge(tmp_path, capsys, monkeypatch):
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("pixi.toml",),
     )
-    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "failure"})
+    forge = _FakeForge(
+        existing=None, check_status_map={"environment-yaml-sync": "failure"}
+    )
 
     exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
 
@@ -506,7 +520,9 @@ def test_required_check_error_does_not_drop_an_unrelated_rules_pending_warn(
     assert forge.merge_calls == []
 
 
-def test_required_check_pending_blocks_this_run_but_is_warn_tier(tmp_path, capsys, monkeypatch):
+def test_required_check_pending_blocks_this_run_but_is_warn_tier(
+    tmp_path, capsys, monkeypatch
+):
     policy_path = _write_project_policy(tmp_path, _rule_policy())
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(
@@ -569,7 +585,9 @@ def test_required_check_pending_and_acknowledged_proceeds_to_merge(
 # --- merge_pr failure -----------------------------------------------------
 
 
-def test_merge_pr_failure_reports_error_and_leaves_intent_open(tmp_path, capsys, monkeypatch):
+def test_merge_pr_failure_reports_error_and_leaves_intent_open(
+    tmp_path, capsys, monkeypatch
+):
     policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(
@@ -591,9 +609,12 @@ def test_merge_pr_failure_reports_error_and_leaves_intent_open(tmp_path, capsys,
 # --- landing_branch_retirement / landing_resync policy gates -------------
 
 
-def test_branch_retirement_false_merges_without_deleting_branch(tmp_path, capsys, monkeypatch):
+def test_branch_retirement_false_merges_without_deleting_branch(
+    tmp_path, capsys, monkeypatch
+):
     policy_path = _write_project_policy(
-        tmp_path, "landing_branch_retirement = false\n" + _rule_policy(required_check=None)
+        tmp_path,
+        "landing_branch_retirement = false\n" + _rule_policy(required_check=None),
     )
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     vcs = _FakeVcs(
@@ -662,10 +683,14 @@ def test_landing_resync_true_calls_refresh_feed_once(tmp_path, capsys, monkeypat
 # --- re-entrancy: PR open, checks green, merge never issued --------------
 
 
-def test_reentrant_run_with_existing_pr_converges_to_full_landing(tmp_path, capsys, monkeypatch):
+def test_reentrant_run_with_existing_pr_converges_to_full_landing(
+    tmp_path, capsys, monkeypatch
+):
     policy_path = _write_project_policy(tmp_path, _rule_policy())
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
-    existing_pr = PrInfo(number=77, url="https://example/pr/77", state="open", base="main")
+    existing_pr = PrInfo(
+        number=77, url="https://example/pr/77", state="open", base="main"
+    )
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
@@ -855,10 +880,14 @@ def test_deploy_run_write_never_touches_the_new_advisory_lock(tmp_path):
 
     class _LockRefusingFs(LocalFs):
         def acquire_advisory_lock(self, path, *, timeout_s):
-            raise AssertionError("journal writes must never acquire the new advisory lock")
+            raise AssertionError(
+                "journal writes must never acquire the new advisory lock"
+            )
 
         def release_advisory_lock(self, lock):
-            raise AssertionError("journal writes must never release the new advisory lock")
+            raise AssertionError(
+                "journal writes must never release the new advisory lock"
+            )
 
     fs = _LockRefusingFs()
     deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")

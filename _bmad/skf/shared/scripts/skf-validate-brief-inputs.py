@@ -110,9 +110,7 @@ KEBAB_RE = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
 # Loose forms like `1`, `1.2`, `v2` are rejected — the user should write the
 # explicit triple. CalVer (e.g. 2024.04.01) is accepted because it satisfies
 # the X.Y.Z shape.
-SEMVER_RE = re.compile(
-    r"^v?\d+\.\d+\.\d+([.\-+][0-9A-Za-z][0-9A-Za-z.\-+]*)?$"
-)
+SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+([.\-+][0-9A-Za-z][0-9A-Za-z.\-+]*)?$")
 URL_RE = re.compile(r"^https?://", re.IGNORECASE)
 
 
@@ -178,7 +176,11 @@ def validate(inp: dict[str, Any]) -> dict[str, Any]:
             errors.append(_err("skill_name", "missing required argument skill_name"))
 
         # skill_name format
-        if skill_name and isinstance(skill_name, str) and not KEBAB_RE.match(skill_name):
+        if (
+            skill_name
+            and isinstance(skill_name, str)
+            and not KEBAB_RE.match(skill_name)
+        ):
             errors.append(
                 _err(
                     "skill_name",
@@ -273,7 +275,9 @@ def validate(inp: dict[str, Any]) -> dict[str, Any]:
     # Unknown fields → warn
     for key in inp:
         if key not in KNOWN_FIELDS:
-            warnings.append(_err(key, f"unrecognized field {key!r} — passed through unchanged"))
+            warnings.append(
+                _err(key, f"unrecognized field {key!r} — passed through unchanged")
+            )
 
     # Build normalized payload
     normalized: dict[str, Any] = dict(inp)

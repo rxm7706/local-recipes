@@ -201,9 +201,7 @@ def test_meta_v0_extraction_is_a_superset_of_the_conda_build_render():
     extracted_names = {c.name for c in components}
     assert extracted_names, "the fixture must contribute at least one component"
 
-    metas = api.render(
-        str(META_FIXTURE.parent), finalize=False, bypass_env_check=True
-    )
+    metas = api.render(str(META_FIXTURE.parent), finalize=False, bypass_env_check=True)
     assert metas, "the fixture must render to at least one metadata object"
     meta = metas[0][0]
     rendered_run = meta.get_value("requirements/run") or []

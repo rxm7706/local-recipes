@@ -225,9 +225,7 @@ def test_kev_cache_vanishing_between_load_and_provenance_is_unavailable_not_a_cr
     def _raise_missing(**_kwargs):
         raise FileNotFoundError("cache file vanished between read and stat")
 
-    monkeypatch.setattr(
-        "pyforge.warden.engines.feeds.feed_provenance", _raise_missing
-    )
+    monkeypatch.setattr("pyforge.warden.engines.feeds.feed_provenance", _raise_missing)
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=True).run(tmp_path, inventory)

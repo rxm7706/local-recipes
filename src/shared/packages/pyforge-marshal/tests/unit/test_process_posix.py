@@ -323,7 +323,9 @@ def test_spawn_detached_child_does_not_import_from_its_cwd(process, tmp_path):
     )
     log_path = tmp_path / "shadow.log"
 
-    process.spawn_detached([sys.executable, "-c", script], cwd=tmp_path, log_path=log_path)
+    process.spawn_detached(
+        [sys.executable, "-c", script], cwd=tmp_path, log_path=log_path
+    )
 
     deadline = time.monotonic() + 5.0
     while not marker.exists() and time.monotonic() < deadline:
@@ -411,7 +413,9 @@ class _FakeSpawnedProcess:
         self.pid = pid
 
 
-def test_spawn_detached_calls_popen_with_the_detach_recipe(process, tmp_path, monkeypatch):
+def test_spawn_detached_calls_popen_with_the_detach_recipe(
+    process, tmp_path, monkeypatch
+):
     """Mirrors ``adapters/harness_bmadloop.py::BmadLoopHarness.spin``'s own
     argv-shape assertions (``test_harness_bmadloop_spin.py``) -- proving
     THIS generic primitive uses the identical ``Popen`` kwargs rather than a
@@ -427,7 +431,9 @@ def test_spawn_detached_calls_popen_with_the_detach_recipe(process, tmp_path, mo
     monkeypatch.setattr(process_posix_module.subprocess, "Popen", _fake_popen)
     log_path = tmp_path / "spawned.log"
 
-    pid = process.spawn_detached(["some-command", "arg1"], cwd=tmp_path, log_path=log_path)
+    pid = process.spawn_detached(
+        ["some-command", "arg1"], cwd=tmp_path, log_path=log_path
+    )
 
     assert pid == 9999
     [(argv, kwargs)] = calls

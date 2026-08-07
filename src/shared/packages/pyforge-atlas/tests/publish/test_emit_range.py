@@ -64,7 +64,9 @@ EXPECTED_RED = _N // 5 * 3  # 60_000
 def _seed_df() -> pd.DataFrame:
     return pd.DataFrame(
         {
-            "feedstock_name": [f"feedstock-package-name-number-{i:06d}" for i in range(_N)],
+            "feedstock_name": [
+                f"feedstock-package-name-number-{i:06d}" for i in range(_N)
+            ],
             "ci_status": [_PATTERN[i % len(_PATTERN)] for i in range(_N)],
         }
     )
@@ -202,8 +204,8 @@ def emitted_site(tmp_path) -> Path:
     emit_static_site(
         {"core_feedstock_health": _seed_df()},
         target,
-        rows_per_chunk=_N,                   # one chunk (the D1 dataset), but...
-        row_group_size=_ROW_GROUP_SIZE,      # ...many row groups -> partial Range reads are real
+        rows_per_chunk=_N,  # one chunk (the D1 dataset), but...
+        row_group_size=_ROW_GROUP_SIZE,  # ...many row groups -> partial Range reads are real
     )
     return target
 
@@ -245,7 +247,9 @@ def test_emitted_layout_consumed_via_http_range(emitted_site):
             assert red == EXPECTED_RED, f"ci_red={red}, expected {EXPECTED_RED}"
 
             # (a) THE load-bearing proof: consumption was via HTTP Range, NOT a whole-file GET.
-            assert 206 in server.codes, f"no 206 Partial Content served; codes={server.codes}"
+            assert 206 in server.codes, (
+                f"no 206 Partial Content served; codes={server.codes}"
+            )
             assert len(server.ranges) > 1, (
                 f"expected multiple Range reads (footer + row groups), got {server.ranges}"
             )
@@ -288,7 +292,9 @@ def test_host_agnostic_same_dir_two_bases(emitted_site):
     try:
         results = []
         for _ in range(2):
-            with _RangeServer(site) as server:  # a fresh port each time = a different "host"
+            with _RangeServer(
+                site
+            ) as server:  # a fresh port each time = a different "host"
                 results.append(_query_red(con, chunk_url(server.base, rel)))
         assert results == [EXPECTED_RED, EXPECTED_RED], results
     finally:
@@ -297,7 +303,9 @@ def test_host_agnostic_same_dir_two_bases(emitted_site):
 
 def test_chunk_url_is_host_agnostic_and_slash_tolerant():
     rel = "core_feedstock_health/core_feedstock_health-0000.parquet"
-    assert chunk_url("https://u.github.io/repo", rel) == f"https://u.github.io/repo/{rel}"
+    assert (
+        chunk_url("https://u.github.io/repo", rel) == f"https://u.github.io/repo/{rel}"
+    )
     # a mirror base WITH a trailing slash composes identically (AD-2 substitution).
     assert chunk_url("https://mirror.example/prefix/", rel) == chunk_url(
         "https://mirror.example/prefix", rel
@@ -312,8 +320,12 @@ def test_chunk_url_is_host_agnostic_and_slash_tolerant():
 def test_manifest_and_chunks_byte_stable_across_two_emits(tmp_path):
     df = _seed_df()
     a, b = tmp_path / "a", tmp_path / "b"
-    ma = emit_static_site({"core_feedstock_health": df}, a, rows_per_chunk=_N, row_group_size=200)
-    mb = emit_static_site({"core_feedstock_health": df}, b, rows_per_chunk=_N, row_group_size=200)
+    ma = emit_static_site(
+        {"core_feedstock_health": df}, a, rows_per_chunk=_N, row_group_size=200
+    )
+    mb = emit_static_site(
+        {"core_feedstock_health": df}, b, rows_per_chunk=_N, row_group_size=200
+    )
     assert ma == mb
     assert (a / "manifest.json").read_bytes() == (b / "manifest.json").read_bytes()
     rel = ma["datasets"]["core_feedstock_health"]["chunks"][0]["path"]
@@ -324,8 +336,12 @@ def test_manifest_and_chunks_byte_stable_across_two_emits(tmp_path):
 # Edge cases (Reviewer B territory), all offline / no server needed.
 # ---------------------------------------------------------------------------
 def test_empty_dataset_emits_schema_only_chunk(tmp_path):
-    empty = pd.DataFrame({"feedstock_name": pd.Series([], dtype="string"),
-                          "ci_status": pd.Series([], dtype="string")})
+    empty = pd.DataFrame(
+        {
+            "feedstock_name": pd.Series([], dtype="string"),
+            "ci_status": pd.Series([], dtype="string"),
+        }
+    )
     m = emit_static_site({"core_feedstock_health": empty}, tmp_path / "s")
     ds = m["datasets"]["core_feedstock_health"]
     assert ds["row_count"] == 0
@@ -336,10 +352,18 @@ def test_empty_dataset_emits_schema_only_chunk(tmp_path):
 
 
 def test_multichunk_split_when_rows_exceed_chunk(tmp_path):
-    m = emit_static_site({"core_feedstock_health": _seed_df()}, tmp_path / "s",
-                         rows_per_chunk=40_000, row_group_size=_ROW_GROUP_SIZE)
+    m = emit_static_site(
+        {"core_feedstock_health": _seed_df()},
+        tmp_path / "s",
+        rows_per_chunk=40_000,
+        row_group_size=_ROW_GROUP_SIZE,
+    )
     chunks = m["datasets"]["core_feedstock_health"]["chunks"]
-    assert [c["rows"] for c in chunks] == [40_000, 40_000, 20_000]  # 100_000 rows / 40_000
+    assert [c["rows"] for c in chunks] == [
+        40_000,
+        40_000,
+        20_000,
+    ]  # 100_000 rows / 40_000
     assert sum(c["rows"] for c in chunks) == _N
     # chunk paths are zero-padded + ordered (stable, single-owner naming).
     assert [c["path"].rsplit("/", 1)[1] for c in chunks] == [
@@ -403,14 +427,16 @@ def test_range_past_eof_is_clamped_not_crashing(emitted_site):
     size = (site / rel).stat().st_size
     with _RangeServer(site) as server:
         # end past EOF -> clamped 206
-        req = urllib.request.Request(f"{server.base}/{rel}",
-                                     headers={"Range": f"bytes=0-{size + 10_000}"})
+        req = urllib.request.Request(
+            f"{server.base}/{rel}", headers={"Range": f"bytes=0-{size + 10_000}"}
+        )
         with urllib.request.urlopen(req) as resp:
             assert resp.status == 206
             assert len(resp.read()) == size
         # start past EOF -> 416
-        req2 = urllib.request.Request(f"{server.base}/{rel}",
-                                      headers={"Range": f"bytes={size + 5}-{size + 10}"})
+        req2 = urllib.request.Request(
+            f"{server.base}/{rel}", headers={"Range": f"bytes={size + 5}-{size + 10}"}
+        )
         try:
             urllib.request.urlopen(req2)
             got = 200
@@ -431,7 +457,9 @@ def test_traversal_dataset_name_is_rejected_before_any_deletion(tmp_path):
     for bad in ("../precious", "..", "a/b", "/abs", "foo\\bar", "."):
         with pytest.raises(ValueError, match="unsafe dataset name|non-empty"):
             emit_static_site({bad: pd.DataFrame({"x": [1]})}, target)
-    assert (sibling / "important.txt").read_text(encoding="utf-8") == "keep me"  # never touched
+    assert (sibling / "important.txt").read_text(
+        encoding="utf-8"
+    ) == "keep me"  # never touched
 
 
 def test_late_failure_does_not_destroy_a_prior_good_site(tmp_path):
@@ -439,14 +467,20 @@ def test_late_failure_does_not_destroy_a_prior_good_site(tmp_path):
     can't leave the site half-rewritten against a stale manifest — the first dataset's dir is
     never rmtree'd because validation fails before any mutation."""
     target = tmp_path / "site"
-    emit_static_site({"core_feedstock_health": pd.DataFrame({"x": [1, 2, 3]})}, target, rows_per_chunk=2)
+    emit_static_site(
+        {"core_feedstock_health": pd.DataFrame({"x": [1, 2, 3]})},
+        target,
+        rows_per_chunk=2,
+    )
     good_chunks = sorted((target / "core_feedstock_health").glob("*.parquet"))
     assert len(good_chunks) == 2
 
     # a re-emit whose SECOND dataset has a bad type must raise BEFORE touching the first dataset.
     with pytest.raises(TypeError):
         emit_static_site(
-            {"core_feedstock_health": pd.DataFrame({"x": [9]}), "zz": [1, 2, 3]}, target, rows_per_chunk=2
+            {"core_feedstock_health": pd.DataFrame({"x": [9]}), "zz": [1, 2, 3]},
+            target,
+            rows_per_chunk=2,
         )
     # the prior good site is intact (still 2 chunks + a coherent manifest).
     assert sorted((target / "core_feedstock_health").glob("*.parquet")) == good_chunks

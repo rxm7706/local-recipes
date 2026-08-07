@@ -95,7 +95,11 @@ def _as_item_list(value: Any) -> list[Any]:
         # Drop None AND scalar NaN/NA (a NaN from a pandas Series would otherwise become a "nan"
         # query key downstream). ``is_scalar`` guards pd.isna so a nested container element — which
         # pd.isna would reject with an ambiguous-truth error — is still passed through (Gemini #81).
-        return [v for v in value if not (v is None or (pd.api.types.is_scalar(v) and pd.isna(v)))]
+        return [
+            v
+            for v in value
+            if not (v is None or (pd.api.types.is_scalar(v) and pd.isna(v)))
+        ]
     except TypeError:
         return []
 
@@ -195,7 +199,9 @@ class _StaleAwareBasiliskSource(AbstractDataset):
                 self._staleness_path, json.dumps(marker.to_dict(), indent=2)
             )
         except OSError as exc:  # a marker write must never take the run down
-            logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
+            logger.warning(
+                "could not write staleness marker for %s: %s", self._filepath, exc
+            )
         return marker
 
     def _clear_stale(self) -> None:
@@ -257,7 +263,9 @@ class _StaleAwareBasiliskSource(AbstractDataset):
             # fetcher payload (datetime/set/numpy scalar) reaching json.dumps. Both are a
             # write failure of the last-good store — degrade to keep-last-good + mark stale
             # rather than propagate (AD-13 never-fail; module docstring keep-last-good contract).
-            logger.warning("write of %s failed, keeping last-good: %s", self._filepath, exc)
+            logger.warning(
+                "write of %s failed, keeping last-good: %s", self._filepath, exc
+            )
             self._mark_stale(f"write failed: {type(exc).__name__}: {exc}")
             return
         self._clear_stale()
@@ -336,7 +344,9 @@ class BasiliskBatchDataset(_StaleAwareBasiliskSource):
         # must not present "zero advisories, healthy" — the AD-13 false-negative guard).
         last_good = self._read_last_good()
         if not last_good:
-            self._mark_stale("wired fetcher but store not yet populated (attended fan-out pending)")
+            self._mark_stale(
+                "wired fetcher but store not yet populated (attended fan-out pending)"
+            )
         return last_good
 
 
@@ -394,7 +404,9 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
         """
         fetcher = fetcher if fetcher is not None else self._fetcher
         if fetcher is None:
-            self._mark_stale("offline: no Basilisk detail fetcher wired (consumer profile)")
+            self._mark_stale(
+                "offline: no Basilisk detail fetcher wired (consumer profile)"
+            )
             return self._read_last_good()
         # Robust to a Series/array/str/None input (AD-13 never-crash), and dedupe preserving
         # order — one advisory ID can appear for many conda packages; the bounded detail fetch
@@ -422,11 +434,15 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
                             raise
                         wait = parse_retry_after(getattr(exc, "retry_after", None))
                         if wait <= 0:
-                            wait = min(float(2 ** attempt), RETRY_AFTER_CAP_SECONDS)
+                            wait = min(float(2**attempt), RETRY_AFTER_CAP_SECONDS)
                         # Hard-cap the FINAL wait (post-jitter) at the cap — jitter must never
                         # push a Retry-After / backoff past the ceiling ("never hang").
-                        self._sleep(min(_apply_jitter(wait, self._rng), RETRY_AFTER_CAP_SECONDS))
-        except Exception as exc:  # AD-13: never fail the run on an unreachable endpoint.
+                        self._sleep(
+                            min(_apply_jitter(wait, self._rng), RETRY_AFTER_CAP_SECONDS)
+                        )
+        except (
+            Exception
+        ) as exc:  # AD-13: never fail the run on an unreachable endpoint.
             logger.warning("Basilisk detail fetch failed, keeping last-good: %s", exc)
             self._mark_stale(f"detail fetch failed: {type(exc).__name__}: {exc}")
             return self._read_last_good()
@@ -438,9 +454,13 @@ class BasiliskDetailDataset(_StaleAwareBasiliskSource):
         last-good (or ``[]``). The bounded detail fan-out is attended-driven via
         :meth:`fetch_details` (DW-B8-1, AD-11)."""
         if self._fetcher is None:
-            self._mark_stale("offline: no Basilisk detail fetcher wired (consumer profile)")
+            self._mark_stale(
+                "offline: no Basilisk detail fetcher wired (consumer profile)"
+            )
             return self._read_last_good()
         last_good = self._read_last_good()
         if not last_good:
-            self._mark_stale("wired fetcher but store not yet populated (attended fan-out pending)")
+            self._mark_stale(
+                "wired fetcher but store not yet populated (attended fan-out pending)"
+            )
         return last_good

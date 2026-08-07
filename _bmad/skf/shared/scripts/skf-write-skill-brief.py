@@ -144,9 +144,7 @@ import yaml
 
 
 KEBAB_RE = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
-SEMVER_RE = re.compile(
-    r"^v?\d+\.\d+\.\d+([.\-+][0-9A-Za-z][0-9A-Za-z.\-+]*)?$"
-)
+SEMVER_RE = re.compile(r"^v?\d+\.\d+\.\d+([.\-+][0-9A-Za-z][0-9A-Za-z.\-+]*)?$")
 ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 VALID_SOURCE_TYPES = {"source", "docs-only"}
@@ -194,11 +192,21 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
     warnings: list[str] = []
 
     # Required string fields
-    for field in ("name", "source_repo", "language", "description",
-                  "forge_tier", "created", "created_by"):
+    for field in (
+        "name",
+        "source_repo",
+        "language",
+        "description",
+        "forge_tier",
+        "created",
+        "created_by",
+    ):
         v = ctx.get(field)
         if not v or not isinstance(v, str):
-            _die(f"required field {field!r} missing or not a non-empty string", field=field)
+            _die(
+                f"required field {field!r} missing or not a non-empty string",
+                field=field,
+            )
 
     # Name must be kebab
     if not KEBAB_RE.match(ctx["name"]):
@@ -233,16 +241,25 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
     doc_urls = ctx.get("doc_urls")
     if source_type == "docs-only":
         if not doc_urls or not isinstance(doc_urls, list) or len(doc_urls) == 0:
-            _die("source_type=docs-only requires at least one entry in doc_urls", field="doc_urls")
+            _die(
+                "source_type=docs-only requires at least one entry in doc_urls",
+                field="doc_urls",
+            )
     if doc_urls is not None:
         if not isinstance(doc_urls, list):
             _die("doc_urls must be an array of objects", field="doc_urls")
         for i, entry in enumerate(doc_urls):
             if not isinstance(entry, dict):
-                _die(f"doc_urls[{i}] must be an object with at least a 'url' field", field="doc_urls")
+                _die(
+                    f"doc_urls[{i}] must be an object with at least a 'url' field",
+                    field="doc_urls",
+                )
             url = entry.get("url")
             if not url or not isinstance(url, str):
-                _die(f"doc_urls[{i}].url is required and must be a non-empty string", field="doc_urls")
+                _die(
+                    f"doc_urls[{i}].url is required and must be a non-empty string",
+                    field="doc_urls",
+                )
 
     # source_authority (default 'community') with docs-only force rule
     source_authority = ctx.get("source_authority", "community")
@@ -273,7 +290,10 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
     if not isinstance(scope["exclude"], list):
         _die("scope.exclude must be an array of glob strings", field="scope.exclude")
     if not isinstance(scope["notes"], str):
-        _die("scope.notes must be a string (use empty string when no notes)", field="scope.notes")
+        _die(
+            "scope.notes must be a string (use empty string when no notes)",
+            field="scope.notes",
+        )
 
     # scope.rationale — optional authoring-time scope-type decision record.
     # Absent/None → field is simply not present (same null-drop path as
@@ -281,8 +301,17 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
     rationale = scope.get("rationale")
     if rationale is not None:
         if not isinstance(rationale, dict):
-            _die("scope.rationale must be an object when present", field="scope.rationale")
-        _RATIONALE_STR_KEYS = ("recommended", "chosen", "heuristic", "reason", "recorded")
+            _die(
+                "scope.rationale must be an object when present",
+                field="scope.rationale",
+            )
+        _RATIONALE_STR_KEYS = (
+            "recommended",
+            "chosen",
+            "heuristic",
+            "reason",
+            "recorded",
+        )
         for rk in (*_RATIONALE_STR_KEYS, "accepted_recommendation"):
             if rk not in rationale:
                 _die(f"scope.rationale.{rk} is required", field=f"scope.rationale.{rk}")
@@ -313,7 +342,10 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
     tier_a_include = scope.get("tier_a_include")
     if tier_a_include is not None:
         if not isinstance(tier_a_include, list):
-            _die("scope.tier_a_include must be an array of glob strings", field="scope.tier_a_include")
+            _die(
+                "scope.tier_a_include must be an array of glob strings",
+                field="scope.tier_a_include",
+            )
         for i, pat in enumerate(tier_a_include):
             if not isinstance(pat, str) or not pat:
                 _die(
@@ -328,10 +360,15 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
     amendments = scope.get("amendments")
     if amendments is not None:
         if not isinstance(amendments, list):
-            _die("scope.amendments must be an array of amendment objects", field="scope.amendments")
+            _die(
+                "scope.amendments must be an array of amendment objects",
+                field="scope.amendments",
+            )
         for i, entry in enumerate(amendments):
             if not isinstance(entry, dict):
-                _die(f"scope.amendments[{i}] must be an object", field="scope.amendments")
+                _die(
+                    f"scope.amendments[{i}] must be an object", field="scope.amendments"
+                )
 
     # target_ref / source_ref — optional git refs (top-level). target_ref is a
     # remote-monorepo tag escape hatch; source_ref is the auto-resolved ref.
@@ -339,7 +376,9 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
     for ref_field in ("target_ref", "source_ref"):
         ref_val = ctx.get(ref_field)
         if ref_val is not None and (not isinstance(ref_val, str) or not ref_val):
-            _die(f"{ref_field} must be a non-empty string when present", field=ref_field)
+            _die(
+                f"{ref_field} must be a non-empty string when present", field=ref_field
+            )
 
     # target_version semver shape (when present)
     tv = ctx.get("target_version")
@@ -352,7 +391,9 @@ def validate_context(ctx: dict[str, Any]) -> list[str]:
             )
 
     detected = ctx.get("detected_version")
-    if detected is not None and (not isinstance(detected, str) or not SEMVER_RE.match(detected)):
+    if detected is not None and (
+        not isinstance(detected, str) or not SEMVER_RE.match(detected)
+    ):
         # Warn rather than HALT — auto-detection upstream may surface odd shapes
         warnings.append(
             f"detected_version {detected!r} is not full X.Y.Z semver — falling through to default 1.0.0"
@@ -637,8 +678,13 @@ def main() -> int:
         description="Schema-validated atomic writer for skill-brief.yaml.",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
-    p_write = sub.add_parser("write", help="Read brief context JSON on stdin, validate, render YAML, atomic write")
-    p_write.add_argument("--target", type=Path, required=True, help="Absolute path to skill-brief.yaml")
+    p_write = sub.add_parser(
+        "write",
+        help="Read brief context JSON on stdin, validate, render YAML, atomic write",
+    )
+    p_write.add_argument(
+        "--target", type=Path, required=True, help="Absolute path to skill-brief.yaml"
+    )
     p_write.add_argument(
         "--from-flat",
         action="store_true",

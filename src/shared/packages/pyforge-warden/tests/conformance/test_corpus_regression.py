@@ -171,7 +171,8 @@ def test_adversarial_set_degrades_gracefully_and_never_raises():
     meta_extractor = MetaV0Extractor(router)
 
     adversarial_files = [
-        (path, RECIPE_YAML_KIND) for path in sorted(ADVERSARIAL_DIR.rglob("recipe.yaml"))
+        (path, RECIPE_YAML_KIND)
+        for path in sorted(ADVERSARIAL_DIR.rglob("recipe.yaml"))
     ] + [(path, META_YAML_KIND) for path in sorted(ADVERSARIAL_DIR.rglob("meta.yaml"))]
     assert adversarial_files, "the adversarial set must not be empty"
 

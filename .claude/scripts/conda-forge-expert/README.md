@@ -41,9 +41,18 @@ shell. They are thin subprocess wrappers — no logic lives here.
 #!/usr/bin/env python3
 import subprocess, sys
 from pathlib import Path
-_SKILL_SCRIPT = Path(__file__).parent.parent.parent / "skills" / "conda-forge-expert" / "scripts" / "my_script.py"
+
+_SKILL_SCRIPT = (
+    Path(__file__).parent.parent.parent
+    / "skills"
+    / "conda-forge-expert"
+    / "scripts"
+    / "my_script.py"
+)
 if __name__ == "__main__":
-    sys.exit(subprocess.run([sys.executable, str(_SKILL_SCRIPT)] + sys.argv[1:]).returncode)
+    sys.exit(
+        subprocess.run([sys.executable, str(_SKILL_SCRIPT)] + sys.argv[1:]).returncode
+    )
 ```
 
 ## Adding a new script

@@ -88,17 +88,57 @@ DOC_DIR_PREFIXES = ("docs/authoritative/",)  # synthetic namespace from create-s
 # Path-segment names that mark generated/vendored output trees — pruned
 # from the walk so the inverse never reports build-tree artifacts as added.
 EXCLUDED_DIR_NAMES = {
-    "node_modules", "__pycache__", "dist", "build", ".webpack",
-    "target", ".next", ".nuxt", "out", "coverage", ".git",
-    ".venv", "venv", ".tox", ".mypy_cache", ".pytest_cache",
-    ".ruff_cache", ".gradle", ".idea", ".vscode",
+    "node_modules",
+    "__pycache__",
+    "dist",
+    "build",
+    ".webpack",
+    "target",
+    ".next",
+    ".nuxt",
+    "out",
+    "coverage",
+    ".git",
+    ".venv",
+    "venv",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".gradle",
+    ".idea",
+    ".vscode",
 }
 
 BINARY_EXTS = {
-    ".so", ".dll", ".jar", ".wasm", ".exe", ".dylib", ".a", ".o",
-    ".pyc", ".class", ".png", ".jpg", ".jpeg", ".gif", ".ico",
-    ".pdf", ".zip", ".tar", ".gz", ".tgz", ".bz2", ".xz", ".7z",
-    ".woff", ".woff2", ".ttf", ".otf", ".eot",
+    ".so",
+    ".dll",
+    ".jar",
+    ".wasm",
+    ".exe",
+    ".dylib",
+    ".a",
+    ".o",
+    ".pyc",
+    ".class",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ico",
+    ".pdf",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".tgz",
+    ".bz2",
+    ".xz",
+    ".7z",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".eot",
 }
 
 
@@ -166,9 +206,7 @@ def load_file_entries(provenance_path: Path) -> list[dict]:
         if entries is None:
             return []  # provenance with no tracked file_entries is valid
         if not isinstance(entries, list):
-            raise ValueError(
-                f"`file_entries` in {provenance_path} is not an array"
-            )
+            raise ValueError(f"`file_entries` in {provenance_path} is not an array")
         return list(entries)
     raise ValueError(
         f"provenance file {provenance_path} must be an object or array; "
@@ -262,9 +300,11 @@ def compare(source_root: Path, provenance_path: Path) -> dict:
         sf = entry.get("source_file")
         if not isinstance(sf, str) or not sf:
             continue
-        stored[sf.replace("\\", "/")] = entry.get("content_hash") if isinstance(
-            entry.get("content_hash"), str
-        ) else None
+        stored[sf.replace("\\", "/")] = (
+            entry.get("content_hash")
+            if isinstance(entry.get("content_hash"), str)
+            else None
+        )
 
     # Walk the source tree once; track which provenance entries are matched.
     candidates_on_disk = set(candidate_source_files(source_root))
@@ -282,11 +322,13 @@ def compare(source_root: Path, provenance_path: Path) -> dict:
         if normalize_hash(stored_hash) == normalize_hash(current):
             unchanged_count += 1
         else:
-            changed.append({
-                "path": path,
-                "stored_hash": stored_hash,
-                "current_hash": current,
-            })
+            changed.append(
+                {
+                    "path": path,
+                    "stored_hash": stored_hash,
+                    "current_hash": current,
+                }
+            )
 
     # Anything on disk but NOT in the provenance store is "added".
     added = sorted(candidates_on_disk - set(stored.keys()))

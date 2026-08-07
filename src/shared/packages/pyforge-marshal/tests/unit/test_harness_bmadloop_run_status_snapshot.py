@@ -120,7 +120,9 @@ def test_a_finished_run_reports_finished(harness, tmp_path):
     assert snapshot.deferred == ()
 
 
-def test_paused_at_a_different_stage_still_reports_no_deferred_by_default(harness, tmp_path):
+def test_paused_at_a_different_stage_still_reports_no_deferred_by_default(
+    harness, tmp_path
+):
     """``paused_stage`` values other than ``"escalation"`` are reported
     verbatim -- this port's own job is reading the field, never
     classifying it (that is ``core.supervise.evaluate_escalation``'s own
@@ -144,7 +146,9 @@ def test_paused_at_a_different_stage_still_reports_no_deferred_by_default(harnes
 # --- escalation pause fields -------------------------------------------------------
 
 
-def test_escalation_pause_reports_the_paused_storys_own_spec_file_and_phase(harness, tmp_path):
+def test_escalation_pause_reports_the_paused_storys_own_spec_file_and_phase(
+    harness, tmp_path
+):
     _write_state(
         tmp_path,
         "acme-run-1",
@@ -194,7 +198,9 @@ def test_escalation_pause_after_a_human_rearm_reports_the_new_phase(harness, tmp
     assert snapshot.escalated_task_phase == "pending"
 
 
-def test_paused_story_key_naming_no_known_task_reports_no_task_fields(harness, tmp_path):
+def test_paused_story_key_naming_no_known_task_reports_no_task_fields(
+    harness, tmp_path
+):
     _write_state(
         tmp_path,
         "acme-run-1",
@@ -323,7 +329,9 @@ def test_defer_reason_is_redacted_at_capture(harness, tmp_path):
     _write_state(
         tmp_path,
         "acme-run-1",
-        tasks={"3.6": _task("3.6", "deferred", defer_reason=f"token in output: {secret}")},
+        tasks={
+            "3.6": _task("3.6", "deferred", defer_reason=f"token in output: {secret}")
+        },
     )
 
     snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
@@ -402,7 +410,9 @@ def test_result_is_a_frozen_dataclass(harness, tmp_path):
 # --- resolution_reference (AD-3/AD-45) ----------------------------------------------
 
 
-def test_resolution_reference_returns_the_posix_path_when_the_marker_exists(harness, tmp_path):
+def test_resolution_reference_returns_the_posix_path_when_the_marker_exists(
+    harness, tmp_path
+):
     run_dir = tmp_path / ".bmad-loop" / "runs" / "acme-run-1"
     marker_dir = run_dir / "resolve" / "3-7-escalation-deferral-and-resume"
     marker_dir.mkdir(parents=True)
@@ -425,7 +435,9 @@ def test_resolution_reference_returns_none_when_the_marker_is_absent(harness, tm
     assert result is None
 
 
-def test_resolution_reference_never_raises_for_a_path_traversal_shaped_key(harness, tmp_path):
+def test_resolution_reference_never_raises_for_a_path_traversal_shaped_key(
+    harness, tmp_path
+):
     # A story key containing characters that would otherwise need
     # sanitizing -- `safe_segment` (bmad-loop's own) handles it; no marker
     # exists at the sanitized path, so this degrades to None like any
@@ -442,9 +454,7 @@ def test_tasks_carries_commit_sha_and_branch_for_every_task(harness, tmp_path):
         tmp_path,
         "acme-run-1",
         tasks={
-            "3.8": _task(
-                "3.8", "committing", commit_sha="abc123", branch="loop/3.8"
-            ),
+            "3.8": _task("3.8", "committing", commit_sha="abc123", branch="loop/3.8"),
             "3.7": _task("3.7", "deferred", defer_reason="verify exhausted"),
         },
     )

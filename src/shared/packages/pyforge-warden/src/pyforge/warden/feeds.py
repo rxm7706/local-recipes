@@ -300,7 +300,9 @@ def load_endoflife_snapshot(path: Path) -> dict[str, list[object]] | None:
     return snapshot
 
 
-def write_endoflife_cache(cache_dir: str | Path, document: Mapping[str, object]) -> Path:
+def write_endoflife_cache(
+    cache_dir: str | Path, document: Mapping[str, object]
+) -> Path:
     """Atomically write ``document`` (the full ``{product_slug: [cycle-
     record, ...]}`` payload — the SAME on-disk shape ``load_endoflife_
     snapshot`` reads back) to ``endoflife_cache_path(cache_dir)`` — the

@@ -142,7 +142,10 @@ def classify_divergence(captured: str, current: str) -> str:
     if cap_tokens == cur_tokens:
         return "whitespace-only"
     # truncation = cur_tokens is a strict prefix of cap_tokens
-    if len(cur_tokens) < len(cap_tokens) and cap_tokens[: len(cur_tokens)] == cur_tokens:
+    if (
+        len(cur_tokens) < len(cap_tokens)
+        and cap_tokens[: len(cur_tokens)] == cur_tokens
+    ):
         return "truncated"
     return "replaced"
 

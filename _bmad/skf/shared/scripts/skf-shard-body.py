@@ -284,9 +284,10 @@ def _atomic_write(target: Path, content: str) -> None:
         capture_output=True,
     )
     if proc.returncode != 0:
-        detail = proc.stderr.decode("utf-8", "replace").strip() or proc.stdout.decode(
-            "utf-8", "replace"
-        ).strip()
+        detail = (
+            proc.stderr.decode("utf-8", "replace").strip()
+            or proc.stdout.decode("utf-8", "replace").strip()
+        )
         raise OSError(f"atomic write failed for {target}: {detail}")
 
 

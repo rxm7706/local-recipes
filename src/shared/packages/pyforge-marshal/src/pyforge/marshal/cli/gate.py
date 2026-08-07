@@ -495,7 +495,12 @@ def _find_spec_text(root: Path, project_slug: str, story_key: StoryKey) -> str |
     an operator relying on a specific one among several should not rely on
     this tie-break."""
     specs_dir = (
-        root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
+        root
+        / "_bmad-output"
+        / "projects"
+        / project_slug
+        / "planning-artifacts"
+        / "specs"
     )
     stem = f"spec-{render_filename_slug(story_key)}"
     try:
@@ -595,7 +600,9 @@ def _run_scope_check(
 
     policy_surface = effective.epic_surfaces.value.get(str(story_key.epic), ())
     try:
-        spec_surface = parse_declared_surface(spec_text) if spec_text is not None else None
+        spec_surface = (
+            parse_declared_surface(spec_text) if spec_text is not None else None
+        )
     except SurfaceParseError as exc:
         # AD-27 (review finding, Edge Case Hunter): a multi-line YAML
         # `surface:` block is a form this parser does not support -- NOT
@@ -622,7 +629,9 @@ def _run_scope_check(
     fold_for_frozen = (
         fold_result
         if fold_result is not None
-        else journal.FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+        else journal.FoldResult(
+            entries=(), open_intents=(), orphaned_outcomes=(), quarantined=()
+        )
     )
     frozen_paths = fold_for_frozen.live_frozen_surfaces(seed_frozen)
 
@@ -664,7 +673,9 @@ def evaluate_gate(
     # truthiness would otherwise treat an empty flag value as "omitted" and
     # silently fall through to the env var).
     project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
+        args.project
+        if args.project is not None
+        else os.environ.get(ENV_ACTIVE_PROJECT, "")
     )
 
     # The CONVENTIONAL path is the only policy source this command will
@@ -725,7 +736,9 @@ def evaluate_gate(
             # A node that is neither a file, a directory, nor a symlink
             # (fifo, socket) stays "absent" DELIBERATELY: opening a fifo
             # would block forever, and this command has no timeout bound.
-            present = candidate.is_file() or candidate.is_dir() or candidate.is_symlink()
+            present = (
+                candidate.is_file() or candidate.is_dir() or candidate.is_symlink()
+            )
         except OSError:
             present = True
         if present:
@@ -994,7 +1007,10 @@ def evaluate_gate(
 
     verdict_value = compute_verdict(findings)
     return build_envelope(
-        command="gate evaluate", verdict=verdict_value, data=data, findings=tuple(findings)
+        command="gate evaluate",
+        verdict=verdict_value,
+        data=data,
+        findings=tuple(findings),
     )
 
 
@@ -1037,7 +1053,9 @@ def run_evaluate(
         # verdict entirely. --format json needs no such guard (json.dumps
         # defaults to ensure_ascii=True).
         try:
-            print(rendered.encode("ascii", "backslashreplace").decode("ascii"), flush=True)
+            print(
+                rendered.encode("ascii", "backslashreplace").decode("ascii"), flush=True
+            )
         except OSError:
             _suppress_downstream_pipe_close()
     except OSError:
@@ -1105,7 +1123,9 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         lines.append("commands:")
         for entry in commands:
             if entry["resolvable"]:
-                lines.append(f"  {entry['command']!r}: returncode={entry['returncode']}")
+                lines.append(
+                    f"  {entry['command']!r}: returncode={entry['returncode']}"
+                )
                 if entry["stdout"]:
                     lines.append(f"    stdout: {entry['stdout']!r}")
                 if entry["stderr"]:
@@ -1133,5 +1153,7 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)

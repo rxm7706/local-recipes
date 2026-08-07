@@ -72,11 +72,13 @@ def corpora_for(language: str) -> list[dict]:
     out: list[dict] = []
     for e in entries:
         if isinstance(e, dict) and e.get("url"):
-            out.append({
-                "url": e["url"],
-                "label": e.get("label", ""),
-                "source": "language-registry",
-            })
+            out.append(
+                {
+                    "url": e["url"],
+                    "label": e.get("label", ""),
+                    "source": "language-registry",
+                }
+            )
     return out
 
 
@@ -85,7 +87,8 @@ def main(argv: list[str]) -> int:
         description="Look up canonical companion prose corpora for a language.",
     )
     parser.add_argument(
-        "--language", required=True,
+        "--language",
+        required=True,
         help="Lowercase language id (rust, python, go, typescript, ruby, ...)",
     )
     args = parser.parse_args(argv)

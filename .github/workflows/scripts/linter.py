@@ -329,7 +329,9 @@ please add a `maintenance` label to the PR.\n"""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Lint staged recipes.")
-    parser.add_argument("--repo", type=str, required=True, help="the full repo name, e.g. owner/repo")
+    parser.add_argument(
+        "--repo", type=str, required=True, help="the full repo name, e.g. owner/repo"
+    )
     parser.add_argument("--pr-num", type=int, required=True, help="the PR number")
 
     args = parser.parse_args()

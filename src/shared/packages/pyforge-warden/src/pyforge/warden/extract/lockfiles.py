@@ -203,14 +203,11 @@ class PixiLockExtractor:
             packages = []
         if not isinstance(packages, list):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'packages' must be "
-                "a list"
+                f"unparsable manifest {manifest.path}: 'packages' must be a list"
             )
         return tuple(self._component(entry, manifest) for entry in packages)
 
-    def _component(
-        self, entry: object, manifest: ScannedManifest
-    ) -> Component:
+    def _component(self, entry: object, manifest: ScannedManifest) -> Component:
         if not isinstance(entry, dict):
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: a 'packages' entry "
@@ -280,14 +277,11 @@ class CondaLockExtractor:
             entries = []
         if not isinstance(entries, list):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'package' must be "
-                "a list"
+                f"unparsable manifest {manifest.path}: 'package' must be a list"
             )
         return tuple(self._component(entry, manifest) for entry in entries)
 
-    def _component(
-        self, entry: object, manifest: ScannedManifest
-    ) -> Component:
+    def _component(self, entry: object, manifest: ScannedManifest) -> Component:
         if not isinstance(entry, dict):
             raise UnparsableManifestError(
                 f"unparsable manifest {manifest.path}: a 'package' entry "
@@ -296,8 +290,7 @@ class CondaLockExtractor:
         name = _optional_str_field(entry, "name", manifest)
         if not name:
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: a 'package' entry "
-                "has no name"
+                f"unparsable manifest {manifest.path}: a 'package' entry has no name"
             )
         manager = entry.get("manager")
         if manager == "conda":

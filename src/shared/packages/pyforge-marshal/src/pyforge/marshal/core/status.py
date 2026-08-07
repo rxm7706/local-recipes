@@ -204,15 +204,21 @@ def _mismatch_reason(
             "directory or file where a symlink belongs"
         )
     if raw_link_target is not None and link_slug is None:
-        return f"unrecognized planning-artifacts symlink target {str(raw_link_target)!r}"
+        return (
+            f"unrecognized planning-artifacts symlink target {str(raw_link_target)!r}"
+        )
     reasons: list[str] = []
     if marker_slug is not None and link_slug is not None and marker_slug != link_slug:
         reasons.append(f"marker says {marker_slug!r} but symlink says {link_slug!r}")
     if branch_slug is not None:
         if marker_slug is not None and marker_slug != branch_slug:
-            reasons.append(f"marker says {marker_slug!r} but branch says {branch_slug!r}")
+            reasons.append(
+                f"marker says {marker_slug!r} but branch says {branch_slug!r}"
+            )
         if link_slug is not None and link_slug != branch_slug:
-            reasons.append(f"symlink says {link_slug!r} but branch says {branch_slug!r}")
+            reasons.append(
+                f"symlink says {link_slug!r} but branch says {branch_slug!r}"
+            )
     if reasons:
         return "; ".join(reasons)
     return None
@@ -1108,9 +1114,7 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
         "state_readable": facts.state_readable,
         "finished": facts.finished if facts.state_readable else None,
         "paused_stage": facts.paused_stage if facts.state_readable else None,
-        "paused_story_key": (
-            facts.paused_story_key if facts.state_readable else None
-        ),
+        "paused_story_key": (facts.paused_story_key if facts.state_readable else None),
         "paused_reason": facts.paused_reason if facts.state_readable else None,
         "escalated_spec_file": (
             facts.escalated_spec_file if facts.state_readable else None

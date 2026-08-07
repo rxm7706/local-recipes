@@ -78,7 +78,9 @@ def _compute_aggregates(state: Dict[str, Any]) -> Dict[str, Any]:
     failed = [s for s in skills if s.get("status") == "failed"]
     skipped = [s for s in skills if s.get("status") == "skipped"]
 
-    scores = [s["quality_score"] for s in completed if s.get("quality_score") is not None]
+    scores = [
+        s["quality_score"] for s in completed if s.get("quality_score") is not None
+    ]
     quality_min = min(scores) if scores else 0
     quality_max = max(scores) if scores else 0
     quality_avg = round(sum(scores) / len(scores), 1) if scores else 0
@@ -106,7 +108,9 @@ def _compute_aggregates(state: Dict[str, Any]) -> Dict[str, Any]:
     quality_breakdown_rows = []
     for s in completed:
         qs = s.get("quality_score")
-        quality_breakdown_rows.append(f"- **{s['name']}**: {qs if qs is not None else 'N/A'}")
+        quality_breakdown_rows.append(
+            f"- **{s['name']}**: {qs if qs is not None else 'N/A'}"
+        )
 
     if not quality_breakdown_rows:
         quality_breakdown_rows.append("No completed skills with quality scores.")
@@ -123,17 +127,23 @@ def _compute_aggregates(state: Dict[str, Any]) -> Dict[str, Any]:
         s_start_str = s.get("started_at", "N/A") or "N/A"
         s_end_str = s.get("completed_at", "N/A") or "N/A"
         dur = _format_duration(s_start, s_end)
-        duration_table_rows.append(f"| {s.get('name', '')} | {s_start_str} | {s_end_str} | {dur} |")
+        duration_table_rows.append(
+            f"| {s.get('name', '')} | {s_start_str} | {s_end_str} | {dur} |"
+        )
 
     failed_skipped_lines = []
     if failed:
         failed_skipped_lines.append("### Failed Skills\n")
         for s in failed:
-            failed_skipped_lines.append(f"- **{s['name']}** (Tier {s.get('tier', '?')})")
+            failed_skipped_lines.append(
+                f"- **{s['name']}** (Tier {s.get('tier', '?')})"
+            )
     if skipped:
         failed_skipped_lines.append("\n### Skipped Skills\n")
         for s in skipped:
-            failed_skipped_lines.append(f"- **{s['name']}** (Tier {s.get('tier', '?')})")
+            failed_skipped_lines.append(
+                f"- **{s['name']}** (Tier {s.get('tier', '?')})"
+            )
     if not failed and not skipped:
         if skills:
             failed_skipped_lines.append("All skills completed successfully.")
@@ -238,9 +248,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate a campaign report from state and template.",
     )
-    parser.add_argument("--state-file", required=True, help="Path to _campaign-state.yaml")
-    parser.add_argument("--template-file", required=True, help="Path to campaign-report-template.md")
-    parser.add_argument("--output-file", required=True, help="Path to write the generated report")
+    parser.add_argument(
+        "--state-file", required=True, help="Path to _campaign-state.yaml"
+    )
+    parser.add_argument(
+        "--template-file", required=True, help="Path to campaign-report-template.md"
+    )
+    parser.add_argument(
+        "--output-file", required=True, help="Path to write the generated report"
+    )
     args = parser.parse_args()
     return run(args.state_file, args.template_file, args.output_file)
 

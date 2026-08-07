@@ -59,6 +59,7 @@ def _pin_pypi_license_metadata(monkeypatch):
 
     monkeypatch.setattr(importlib.metadata, "metadata", fake_metadata)
 
+
 _FAR_FUTURE = "2099-01-01T00:00:00+00:00"
 _LONG_AGO = "2000-01-01T00:00:00+00:00"
 _RECENTLY_EXPIRED = "2000-06-01T00:00:00+00:00"
@@ -101,7 +102,9 @@ def load_schema() -> dict:
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
-def scan_json(capsys, target, extra_args: list[str] | None = None) -> tuple[int, dict, str]:
+def scan_json(
+    capsys, target, extra_args: list[str] | None = None
+) -> tuple[int, dict, str]:
     capsys.readouterr()
     rc = main(["scan", str(target), "--format", "json", *(extra_args or [])])
     captured = capsys.readouterr()
@@ -230,7 +233,9 @@ def test_bypass_json_format_writes_the_stanza_to_stderr_not_stdout(capsys, tmp_p
     schema-valid document (NFR-I3) -- the stanza would otherwise be lost
     entirely for a json/CI consumer, so it goes to stderr instead."""
     _blocking_fixture(tmp_path)
-    rc, document, err = scan_json(capsys, tmp_path, ["--bypass", "--reason", "ci override"])
+    rc, document, err = scan_json(
+        capsys, tmp_path, ["--bypass", "--reason", "ci override"]
+    )
     assert rc == 0
     assert document["status"]["value"] == "bypassed"
     assert "version: 1" in err
@@ -303,9 +308,7 @@ def test_committed_waiver_is_echoed_in_text_format(capsys, tmp_path):
 
 def test_expired_waiver_leaves_the_original_finding_status(capsys, tmp_path):
     _blocking_fixture(tmp_path)
-    write_waiver_file(
-        tmp_path, accepted_at=_LONG_AGO, expires_at=_RECENTLY_EXPIRED
-    )
+    write_waiver_file(tmp_path, accepted_at=_LONG_AGO, expires_at=_RECENTLY_EXPIRED)
     rc, document, _ = scan_json(capsys, tmp_path)
     assert document["status"]["value"] == "warn"  # never bypassed
     assert rc == document["exit_code"] == 0
@@ -380,15 +383,12 @@ def test_embedded_newline_in_authorized_by_never_forges_a_line_active_waiver(
     capsys, tmp_path
 ):
     _blocking_fixture(tmp_path)
-    write_waiver_file(
-        tmp_path, authorized_by="alice\n  [forged] fake extra line"
-    )
+    write_waiver_file(tmp_path, authorized_by="alice\n  [forged] fake extra line")
     rc = main(["scan", str(tmp_path)])
     captured = capsys.readouterr()
     assert rc == 0
     assert not any(
-        line.strip() == "[forged] fake extra line"
-        for line in captured.out.splitlines()
+        line.strip() == "[forged] fake extra line" for line in captured.out.splitlines()
     )
     assert "authorized_by=alice\\n  [forged] fake extra line" in captured.out
 
@@ -407,8 +407,7 @@ def test_embedded_newline_in_authorized_by_never_forges_a_line_expired_waiver(
     captured = capsys.readouterr()
     assert rc == 0
     assert not any(
-        line.strip() == "[forged] fake extra line"
-        for line in captured.out.splitlines()
+        line.strip() == "[forged] fake extra line" for line in captured.out.splitlines()
     )
     assert "authorized_by=bob\\n  [forged] fake extra line" in captured.out
 
@@ -544,9 +543,7 @@ def test_warn_only_nudge_counts_only_downgraded_findings_not_the_total(
     assert "[warn-only] 1 finding not enforced" in captured.out
 
 
-def test_warn_only_nudge_pluralizes_for_multiple_downgraded_findings(
-    capsys, tmp_path
-):
+def test_warn_only_nudge_pluralizes_for_multiple_downgraded_findings(capsys, tmp_path):
     write_pyproject(tmp_path, ["pdos-vuln-fixture==1.0.0", "leftpad"])
     rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only"])
     assert rc == 0
@@ -697,9 +694,7 @@ def test_fail_on_low_plus_warn_only_still_yields_warn_and_exit_zero(capsys, tmp_
     only dropping --warn-only (never raising --fail-on) re-enables
     enforcement."""
     _critical_vuln_fixture(tmp_path)
-    rc, document, _ = scan_json(
-        capsys, tmp_path, ["--warn-only", "--fail-on", "low"]
-    )
+    rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only", "--fail-on", "low"])
     assert rc == 0
     assert document["exit_code"] == 0
     assert document["status"]["value"] == "warn"

@@ -326,9 +326,7 @@ class CurrencyInfo:
         # pattern): lag is an integer release count, never a truthy bool or a
         # fractional float that would render an ill-typed slot later.
         if self.lag is not None and (
-            isinstance(self.lag, bool)
-            or not isinstance(self.lag, int)
-            or self.lag < 0
+            isinstance(self.lag, bool) or not isinstance(self.lag, int) or self.lag < 0
         ):
             raise ValueError(
                 f"currency lag must be an int >= 0 or None, got {self.lag!r}"
@@ -389,8 +387,7 @@ class Finding:
             # value (a stray float/bool) fails loud HERE instead of rendering
             # an ill-typed slot later.
             raise ValueError(
-                f"epss must be None or an Epss(score, percentile), got "
-                f"{self.epss!r}"
+                f"epss must be None or an Epss(score, percentile), got {self.epss!r}"
             )
         # License/currency id-payload coherence (Story 6.1), mirroring the
         # schema's allOf coherence clauses so an incoherent finding can never
@@ -401,9 +398,7 @@ class Finding:
         # reason regex, so split()[1] is always one of the three keys below.
         if self.id.startswith("license:"):
             if self.license is None:
-                raise ValueError(
-                    "license: finding must carry a license sub-object"
-                )
+                raise ValueError("license: finding must carry a license sub-object")
             if self.license.verdict not in (
                 LicenseVerdict.DENIED,
                 LicenseVerdict.UNKNOWN,
@@ -414,9 +409,7 @@ class Finding:
                 )
         if self.id.startswith("currency:"):
             if self.currency is None:
-                raise ValueError(
-                    "currency: finding must carry a currency sub-object"
-                )
+                raise ValueError("currency: finding must carry a currency sub-object")
             reason = self.id.split(":", 2)[1]
             expected_verdict = {
                 "eol": CurrencyVerdict.EOL,
@@ -737,9 +730,7 @@ class ComplianceReport:
             ],
             "suppressions": [
                 _suppressed_finding_dict(s)
-                for s in sorted(
-                    self.suppressions, key=_suppressed_finding_sort_key
-                )
+                for s in sorted(self.suppressions, key=_suppressed_finding_sort_key)
             ],
             "license_data": _feed_provenance_dict(self.license_data),
             "currency_data": _feed_provenance_dict(self.currency_data),

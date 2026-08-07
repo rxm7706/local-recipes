@@ -54,7 +54,12 @@ def parse_manifest_text(text: str) -> Dict[str, Any]:
         body, sep, deps_part = line.partition(";")
         fields = [f.strip() for f in body.split(",")]
         if len(fields) < 3:
-            errors.append({"line": lineno, "message": f"expected `name,repo_url,tier[,pin]`, got {len(fields)} field(s)"})
+            errors.append(
+                {
+                    "line": lineno,
+                    "message": f"expected `name,repo_url,tier[,pin]`, got {len(fields)} field(s)",
+                }
+            )
             continue
 
         name, repo_url, tier = fields[0], fields[1], fields[2]
@@ -67,17 +72,32 @@ def parse_manifest_text(text: str) -> Dict[str, Any]:
             errors.append({"line": lineno, "message": f"`{name}` has empty `repo_url`"})
             continue
         if tier not in ("A", "B"):
-            errors.append({"line": lineno, "message": f"`{name}` has invalid tier `{tier}` (must be A or B)"})
+            errors.append(
+                {
+                    "line": lineno,
+                    "message": f"`{name}` has invalid tier `{tier}` (must be A or B)",
+                }
+            )
             continue
         if name in seen:
-            errors.append({"line": lineno, "message": f"duplicate target name `{name}`"})
+            errors.append(
+                {"line": lineno, "message": f"duplicate target name `{name}`"}
+            )
             continue
         seen.add(name)
 
-        depends_on = [d.strip() for d in deps_part.split(",") if d.strip()] if sep else []
+        depends_on = (
+            [d.strip() for d in deps_part.split(",") if d.strip()] if sep else []
+        )
 
         targets.append(
-            {"name": name, "repo_url": repo_url, "tier": tier, "pin": pin, "depends_on": depends_on}
+            {
+                "name": name,
+                "repo_url": repo_url,
+                "tier": tier,
+                "pin": pin,
+                "depends_on": depends_on,
+            }
         )
 
     return {"targets": targets, "errors": errors}
@@ -89,13 +109,19 @@ def run(path: str) -> int:
     else:
         p = Path(path)
         if not p.is_file():
-            json.dump({"error": f"Manifest not found: {path}", "code": "MANIFEST_NOT_FOUND"}, sys.stderr)
+            json.dump(
+                {"error": f"Manifest not found: {path}", "code": "MANIFEST_NOT_FOUND"},
+                sys.stderr,
+            )
             sys.stderr.write("\n")
             return 2
         try:
             text = p.read_text(encoding="utf-8")
         except OSError as exc:
-            json.dump({"error": f"Manifest unreadable: {exc}", "code": "MANIFEST_READ_ERROR"}, sys.stderr)
+            json.dump(
+                {"error": f"Manifest unreadable: {exc}", "code": "MANIFEST_READ_ERROR"},
+                sys.stderr,
+            )
             sys.stderr.write("\n")
             return 2
 

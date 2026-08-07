@@ -124,7 +124,9 @@ def default_user_local_root() -> Path:
     return Path.home() / ".claude" / "projects" / encoded / "memory"
 
 
-def classify_and_draft(source_root: Path, memory_root: Path, repo_root: Path) -> PromotionProposal:
+def classify_and_draft(
+    source_root: Path, memory_root: Path, repo_root: Path
+) -> PromotionProposal:
     """Scan every `*.md` in `source_root`, classify it, and draft a
     team-voice rewrite for each `team-relevant` entry.
 
@@ -148,7 +150,9 @@ def classify_and_draft(source_root: Path, memory_root: Path, repo_root: Path) ->
     return PromotionProposal(source_root=source_root, entries=entries)
 
 
-def apply_promotion(memory_root: Path, proposal: PromotionProposal) -> list[CaptureResult]:
+def apply_promotion(
+    memory_root: Path, proposal: PromotionProposal
+) -> list[CaptureResult]:
     """Write every `team-relevant` entry in `proposal` via `capture()` --
     the only write path (AD-2). The source user-local files are never
     touched here (pointer-stub write-back is Story 1.4)."""
@@ -237,7 +241,9 @@ def _classify_one(
         rewrite_team_voice(description or body), _DESCRIPTION_MAX_LEN
     )
     target_path = type_dir / f"{slug}.md"
-    memory_index_line = f"- [{slug}]({capture_type}/{slug}.md) — {rewritten_description}"
+    memory_index_line = (
+        f"- [{slug}]({capture_type}/{slug}.md) — {rewritten_description}"
+    )
 
     return ClassifiedEntry(
         source_path=path,

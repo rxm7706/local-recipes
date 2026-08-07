@@ -59,7 +59,9 @@ def _seed_bmad_config(project, *, valid_config: bool = True) -> None:
 # --- story_feed_keys (AD-38's M, against the REAL bmad_loop) -----------------
 
 
-def test_story_feed_keys_unions_stories_then_unknown_keys_in_file_order(harness, tmp_path):
+def test_story_feed_keys_unions_stories_then_unknown_keys_in_file_order(
+    harness, tmp_path
+):
     _seed_bmad_config(tmp_path)
     feed_dir = tmp_path / "_bmad-output" / "implementation-artifacts"
     feed_dir.mkdir(parents=True)
@@ -85,16 +87,22 @@ def test_story_feed_keys_returns_empty_tuple_for_an_empty_feed(harness, tmp_path
     _seed_bmad_config(tmp_path)
     feed_dir = tmp_path / "_bmad-output" / "implementation-artifacts"
     feed_dir.mkdir(parents=True)
-    (feed_dir / "sprint-status.yaml").write_text("development_status: {}\n", encoding="utf-8")
+    (feed_dir / "sprint-status.yaml").write_text(
+        "development_status: {}\n", encoding="utf-8"
+    )
     assert harness.story_feed_keys(tmp_path) == ()
 
 
-def test_story_feed_keys_raises_harness_error_when_bmad_config_missing(harness, tmp_path):
+def test_story_feed_keys_raises_harness_error_when_bmad_config_missing(
+    harness, tmp_path
+):
     with pytest.raises(HarnessError):
         harness.story_feed_keys(tmp_path)
 
 
-def test_story_feed_keys_raises_harness_error_when_sprint_status_file_missing(harness, tmp_path):
+def test_story_feed_keys_raises_harness_error_when_sprint_status_file_missing(
+    harness, tmp_path
+):
     _seed_bmad_config(tmp_path)
     with pytest.raises(HarnessError):
         harness.story_feed_keys(tmp_path)
@@ -106,7 +114,9 @@ def test_story_feed_keys_raises_harness_error_when_sprint_status_is_invalid_yaml
     _seed_bmad_config(tmp_path)
     feed_dir = tmp_path / "_bmad-output" / "implementation-artifacts"
     feed_dir.mkdir(parents=True)
-    (feed_dir / "sprint-status.yaml").write_text("not: valid: yaml: [", encoding="utf-8")
+    (feed_dir / "sprint-status.yaml").write_text(
+        "not: valid: yaml: [", encoding="utf-8"
+    )
     with pytest.raises(HarnessError):
         harness.story_feed_keys(tmp_path)
 
@@ -119,7 +129,9 @@ class _FakeProcess:
         self.pid = pid
 
 
-def test_spin_builds_the_expected_argv_with_all_selectors(harness, tmp_path, monkeypatch):
+def test_spin_builds_the_expected_argv_with_all_selectors(
+    harness, tmp_path, monkeypatch
+):
     calls: list[tuple[list[str], dict]] = []
 
     def _fake_popen(argv, **kwargs):
@@ -149,7 +161,9 @@ def test_spin_builds_the_expected_argv_with_all_selectors(harness, tmp_path, mon
     assert kwargs["stdin"] == subprocess.DEVNULL
 
 
-def test_spin_builds_the_bare_argv_when_every_selector_is_none(harness, tmp_path, monkeypatch):
+def test_spin_builds_the_bare_argv_when_every_selector_is_none(
+    harness, tmp_path, monkeypatch
+):
     calls: list[list[str]] = []
 
     def _fake_popen(argv, **kwargs):
@@ -158,7 +172,11 @@ def test_spin_builds_the_bare_argv_when_every_selector_is_none(harness, tmp_path
 
     monkeypatch.setattr(module.subprocess, "Popen", _fake_popen)
     harness.spin(
-        tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log"
+        tmp_path,
+        epic=None,
+        story=None,
+        max_count=None,
+        log_path=tmp_path / "harness.log",
     )
     assert calls == [["bmad-loop", "run"]]
 
@@ -178,7 +196,11 @@ def test_spin_recovers_the_harness_run_id_from_its_own_redirected_log(
 
     monkeypatch.setattr(module.subprocess, "Popen", _fake_popen)
     result = harness.spin(
-        tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log"
+        tmp_path,
+        epic=None,
+        story=None,
+        max_count=None,
+        log_path=tmp_path / "harness.log",
     )
     assert result.pid == 999
     assert result.harness_run_id == "acme-20260803T054512123Z-ab12cd"
@@ -198,20 +220,30 @@ def test_spin_harness_run_id_is_none_when_the_poll_window_elapses_unconfirmed(
 
     monkeypatch.setattr(module.subprocess, "Popen", _fake_popen)
     result = harness.spin(
-        tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log"
+        tmp_path,
+        epic=None,
+        story=None,
+        max_count=None,
+        log_path=tmp_path / "harness.log",
     )
     assert result.pid == 555
     assert result.harness_run_id is None
 
 
-def test_spin_raises_harness_error_when_popen_raises_oserror(harness, tmp_path, monkeypatch):
+def test_spin_raises_harness_error_when_popen_raises_oserror(
+    harness, tmp_path, monkeypatch
+):
     def _fake_popen(argv, **kwargs):
         raise FileNotFoundError("no such file: bmad-loop")
 
     monkeypatch.setattr(module.subprocess, "Popen", _fake_popen)
     with pytest.raises(HarnessError, match="cannot launch bmad-loop run"):
         harness.spin(
-            tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log"
+            tmp_path,
+            epic=None,
+            story=None,
+            max_count=None,
+            log_path=tmp_path / "harness.log",
         )
 
 
@@ -241,7 +273,11 @@ def test_spin_forces_pythonunbuffered_on_the_child_env(harness, tmp_path, monkey
     monkeypatch.setattr(module.subprocess, "Popen", _fake_popen)
     monkeypatch.setenv("SOME_UNRELATED_VAR", "kept")
     harness.spin(
-        tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log"
+        tmp_path,
+        epic=None,
+        story=None,
+        max_count=None,
+        log_path=tmp_path / "harness.log",
     )
     assert captured_env["PYTHONUNBUFFERED"] == "1"
     # The rest of the parent's own environment is preserved, not replaced --
@@ -250,7 +286,9 @@ def test_spin_forces_pythonunbuffered_on_the_child_env(harness, tmp_path, monkey
 
 
 @pytest.mark.slow
-def test_spin_recovers_the_run_id_from_a_real_unbuffered_subprocess(harness, tmp_path, monkeypatch):
+def test_spin_recovers_the_run_id_from_a_real_unbuffered_subprocess(
+    harness, tmp_path, monkeypatch
+):
     """The regression test the finding above asked for: a REAL child
     process (not a fake writing synchronously in-process) whose own
     ``print()`` carries no ``flush=True`` -- exactly ``bmad-loop run``'s
@@ -290,7 +328,11 @@ def test_spin_recovers_the_run_id_from_a_real_unbuffered_subprocess(harness, tmp
 
     monkeypatch.setattr(module.subprocess, "Popen", _fake_popen)
     result = harness.spin(
-        tmp_path, epic=None, story=None, max_count=None, log_path=tmp_path / "harness.log"
+        tmp_path,
+        epic=None,
+        story=None,
+        max_count=None,
+        log_path=tmp_path / "harness.log",
     )
     assert result.harness_run_id == "acme-20260803T054512123Z-realpid"
 
@@ -364,7 +406,9 @@ def test_run_foreground_builds_the_expected_argv_and_relays_the_returncode(
     assert "stdin" not in kwargs
 
 
-def test_run_foreground_raises_harness_error_on_launch_failure(harness, tmp_path, monkeypatch):
+def test_run_foreground_raises_harness_error_on_launch_failure(
+    harness, tmp_path, monkeypatch
+):
     def _fake_run(argv, **kwargs):
         raise FileNotFoundError("boom")
 
@@ -373,9 +417,13 @@ def test_run_foreground_raises_harness_error_on_launch_failure(harness, tmp_path
         harness.run_foreground(tmp_path, epic=None, story=None, max_count=None)
 
 
-def test_run_foreground_normalizes_a_negative_signal_returncode(harness, tmp_path, monkeypatch):
+def test_run_foreground_normalizes_a_negative_signal_returncode(
+    harness, tmp_path, monkeypatch
+):
     def _fake_run(argv, **kwargs):
         return subprocess.CompletedProcess(args=argv, returncode=-2)  # SIGINT
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
-    assert harness.run_foreground(tmp_path, epic=None, story=None, max_count=None) == 130
+    assert (
+        harness.run_foreground(tmp_path, epic=None, story=None, max_count=None) == 130
+    )

@@ -51,7 +51,9 @@ import urllib.request
 from typing import Optional
 
 REGISTRY_TIMEOUT_SECONDS = 10.0
-USER_AGENT = "skf-resolve-package/1.0 (+https://github.com/armelhbobdad/bmad-module-skill-forge)"
+USER_AGENT = (
+    "skf-resolve-package/1.0 (+https://github.com/armelhbobdad/bmad-module-skill-forge)"
+)
 
 _GITHUB_URL_RE = re.compile(
     r"https?://(?:www\.)?github\.com/([^/\s]+)/([^/\s.]+?)(?:\.git)?/?$",
@@ -116,7 +118,9 @@ def _http_get_json(url: str, timeout: float) -> tuple[Optional[dict], str]:
       "timeout"  — socket / urlopen timed out
       "error"    — any other transport / parse error
     """
-    req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": USER_AGENT})
+    req = urllib.request.Request(
+        url, headers={"Accept": "application/json", "User-Agent": USER_AGENT}
+    )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
@@ -135,7 +139,9 @@ def _http_get_json(url: str, timeout: float) -> tuple[Optional[dict], str]:
         return None, "error"
 
 
-def try_npm(package_name: str, timeout: float) -> tuple[Optional[tuple[str, str, str]], str]:
+def try_npm(
+    package_name: str, timeout: float
+) -> tuple[Optional[tuple[str, str, str]], str]:
     """Try the npm registry. Returns (parsed_or_None, outcome)."""
     encoded = urllib.parse.quote(package_name, safe="@")
     url = f"https://registry.npmjs.org/{encoded}"
@@ -158,7 +164,9 @@ def try_npm(package_name: str, timeout: float) -> tuple[Optional[tuple[str, str,
     return None, "no-github-link"
 
 
-def try_pypi(package_name: str, timeout: float) -> tuple[Optional[tuple[str, str, str]], str]:
+def try_pypi(
+    package_name: str, timeout: float
+) -> tuple[Optional[tuple[str, str, str]], str]:
     """Try the PyPI registry. Returns (parsed_or_None, outcome)."""
     encoded = urllib.parse.quote(package_name, safe="")
     url = f"https://pypi.org/pypi/{encoded}/json"
@@ -183,7 +191,9 @@ def try_pypi(package_name: str, timeout: float) -> tuple[Optional[tuple[str, str
     return None, "no-github-link"
 
 
-def try_crates(package_name: str, timeout: float) -> tuple[Optional[tuple[str, str, str]], str]:
+def try_crates(
+    package_name: str, timeout: float
+) -> tuple[Optional[tuple[str, str, str]], str]:
     """Try the crates.io registry. Returns (parsed_or_None, outcome)."""
     encoded = urllib.parse.quote(package_name, safe="")
     url = f"https://crates.io/api/v1/crates/{encoded}"
@@ -207,7 +217,9 @@ _RESOLVER_NAMES: tuple[tuple[str, str], ...] = (
 )
 
 
-def resolve_package(package_name: str, timeout: float = REGISTRY_TIMEOUT_SECONDS) -> dict:
+def resolve_package(
+    package_name: str, timeout: float = REGISTRY_TIMEOUT_SECONDS
+) -> dict:
     registries_tried: list[str] = []
     outcomes: dict[str, str] = {}
 

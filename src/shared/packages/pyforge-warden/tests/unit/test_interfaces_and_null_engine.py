@@ -216,7 +216,9 @@ def test_engine_findings_pass_through(component_factory):
         subject="leftpad",
         severity=None,
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
@@ -243,7 +245,9 @@ def test_critical_vuln_finding_feeds_a_policy_violation_rung(component_factory):
             raw="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
         ),
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
@@ -265,7 +269,9 @@ def test_non_critical_vuln_finding_feeds_a_warn_rung(component_factory, tier):
         subject="foo",
         severity=Severity(tier=tier, raw=None),
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
@@ -286,7 +292,9 @@ def test_unknown_tier_vuln_finding_still_feeds_indeterminate(component_factory):
         subject="foo",
         severity=Severity(tier=SeverityTier.UNKNOWN, raw=None),
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
@@ -310,7 +318,9 @@ def test_severity_less_vuln_axis_finding_still_feeds_indeterminate(
         subject="foo",
         severity=None,
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
@@ -640,7 +650,9 @@ def test_hypothetical_future_axis_still_hits_the_backstop(component_factory):
         subject="foo",
         severity=None,
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis="sast")
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis="sast"
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
@@ -663,7 +675,9 @@ def test_findings_only_engine_result_never_feeds_only_clean(component_factory):
         subject="requests",
         severity=None,
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
@@ -672,9 +686,7 @@ def test_findings_only_engine_result_never_feeds_only_clean(component_factory):
     ]
     assert non_clean, "findings-only engine result fed only clean rungs"
     assert all(driver is not None for _, driver in non_clean)
-    assert any(
-        driver.finding_id == engine_finding.id for _, driver in non_clean
-    )
+    assert any(driver.finding_id == engine_finding.id for _, driver in non_clean)
 
 
 def test_assessable_exact_component_feeds_a_clean_rung(component_factory):
@@ -737,7 +749,9 @@ def test_derived_id_colliding_with_an_engine_finding_is_not_duplicated(
         subject="leftpad",
         severity=None,
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
     inventory = make_inventory(
         component_factory(
             name="leftpad",
@@ -769,9 +783,7 @@ def test_engine_error_records_feed_error_rungs():
     record = ErrorRecord(
         kind=ErrorKind.ENGINE_EXECUTION_FAILED, owner="deptry", message="boom"
     )
-    result = EngineResult(
-        findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE
-    )
+    result = EngineResult(findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE)
     findings, rungs = DefaultPolicy().evaluate(make_inventory(), [result])
     assert findings == ()
     ((status, driver),) = rungs
@@ -975,7 +987,9 @@ def test_reused_engine_finding_id_keeps_that_findings_axis(component_factory):
         subject="leftpad",
         severity=None,
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE)
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
     inventory = make_inventory(
         component_factory(
             name="leftpad",
@@ -1135,14 +1149,10 @@ def test_engine_error_owner_segment_is_sanitized():
         owner="dep\ntry:x",
         message="boom",
     )
-    result = EngineResult(
-        findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE
-    )
+    result = EngineResult(findings=(), errors=(record,), coverage=(), axis=AXIS_HYGIENE)
     _, rungs = DefaultPolicy().evaluate(make_inventory(), [result])
     ((_, driver),) = rungs
     assert driver is not None
     assert driver.axis == AXIS_HYGIENE
-    assert driver.finding_id == (
-        "error:engine-execution-failed:dep%0Atry%3Ax"
-    )
+    assert driver.finding_id == ("error:engine-execution-failed:dep%0Atry%3Ax")
     assert "\n" not in driver.finding_id

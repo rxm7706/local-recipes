@@ -98,9 +98,7 @@ class ProcessPort(Protocol):
         reported as ``False``, never as an exception."""
         ...
 
-    def spawn_detached(
-        self, argv: Sequence[str], *, cwd: Path, log_path: Path
-    ) -> int:
+    def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         """Launch ``argv`` as a detached child -- a new session (POSIX
         ``setsid``, never inheriting this process's own controlling
         terminal or process group), stdin closed (``DEVNULL``), stdout AND

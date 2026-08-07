@@ -53,6 +53,7 @@ def _is_missing(v) -> bool:
 # Phase C — parselmouth conda<->PyPI mapping join
 # ---------------------------------------------------------------------------
 
+
 def map_pypi_conda(
     pypi_parselmouth_mapping_raw: pd.DataFrame,
     core_packages_enumerated: pd.DataFrame,
@@ -92,6 +93,7 @@ def map_pypi_conda(
 # Phase C.5 — source-URL-derived matches (extends the Phase C mapping)
 # ---------------------------------------------------------------------------
 
+
 def match_source_urls(
     pypi_conda_mapping_base: pd.DataFrame,
     pypi_json_raw: pd.DataFrame,
@@ -114,13 +116,19 @@ def match_source_urls(
     base = base[[c for c in cols if c in base.columns]].copy()
 
     # already-mapped pypi_names under a protected tier — never clobber these.
-    protected = set(
-        base.loc[base["match_source"].isin(_PROTECTED_MATCH_SOURCES), "pypi_name"]
-    ) if "match_source" in base.columns else set(base.get("pypi_name", pd.Series(dtype=object)))
+    protected = (
+        set(base.loc[base["match_source"].isin(_PROTECTED_MATCH_SOURCES), "pypi_name"])
+        if "match_source" in base.columns
+        else set(base.get("pypi_name", pd.Series(dtype=object)))
+    )
 
     cand = pypi_json_raw
     new_rows = []
-    if cand is not None and not cand.empty and {"pypi_name", "conda_name"} <= set(cand.columns):
+    if (
+        cand is not None
+        and not cand.empty
+        and {"pypi_name", "conda_name"} <= set(cand.columns)
+    ):
         for pypi_name, conda_name in zip(cand["pypi_name"], cand["conda_name"]):
             if pypi_name in protected:
                 continue  # no-clobber
@@ -138,6 +146,7 @@ def match_source_urls(
 # ---------------------------------------------------------------------------
 # Phase D — PyPI universe enumeration
 # ---------------------------------------------------------------------------
+
 
 def enumerate_pypi_universe(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase D  (phase_d_pypi_enumeration CFA:1947)
@@ -164,6 +173,7 @@ def enumerate_pypi_universe(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame
 
 # The 3 serial-gate conditions as SHARED predicates (review-hardening: the node AND the
 # stats split now derive from ONE source of truth — no silent drift, CFA:4177-4189).
+
 
 def _never_fetched(serial_at_fetch) -> bool:
     return _is_missing(serial_at_fetch)
@@ -195,7 +205,9 @@ def _safety_recheck(fetched_at, now: int) -> bool:
     return (now - int(fetched_num)) >= _PHASE_H_SAFETY_RECHECK_SECONDS
 
 
-def _phase_h_eligibility(row_serial_at_fetch, row_last_serial, row_fetched_at, now: int) -> bool:
+def _phase_h_eligibility(
+    row_serial_at_fetch, row_last_serial, row_fetched_at, now: int
+) -> bool:
     """The 3-condition Phase H serial gate (CFA:4177-4189): eligible iff never-fetched
     OR serial-moved OR 30-day safety re-check. NULL-safe (CFA:4223-4231)."""
     return bool(
@@ -205,7 +217,9 @@ def _phase_h_eligibility(row_serial_at_fetch, row_last_serial, row_fetched_at, n
     )
 
 
-def phase_h_eligibility_stats(pypi_json_raw: pd.DataFrame, now: int | None = None) -> dict:
+def phase_h_eligibility_stats(
+    pypi_json_raw: pd.DataFrame, now: int | None = None
+) -> dict:
     """Split the eligible set into its three branches (legacy ``_phase_h_eligibility_stats``
     CFA:4135): ``eligible_never_fetched`` / ``eligible_serial_moved`` /
     ``eligible_safety_recheck`` (+ ``total`` / ``eligible``). Uses the SAME predicates as
@@ -288,14 +302,24 @@ def fetch_pypi_current_versions(
     if df is None or df.empty or "pypi_name" not in getattr(df, "columns", []):
         return pd.DataFrame(columns=cols)
     work = df.copy()
-    for c in ("version", "pypi_last_serial", "pypi_version_serial_at_fetch", "upload_time_iso_8601", "fetched_at"):
+    for c in (
+        "version",
+        "pypi_last_serial",
+        "pypi_version_serial_at_fetch",
+        "upload_time_iso_8601",
+        "fetched_at",
+    ):
         if c not in work.columns:
             work[c] = pd.NA
 
     # authoritative current serial from the universe (left-join; the universe never
     # widens the row set — validate=many_to_one keeps it a pure lookup).
     uni = pypi_universe
-    if uni is not None and not uni.empty and {"pypi_name", "last_serial"} <= set(uni.columns):
+    if (
+        uni is not None
+        and not uni.empty
+        and {"pypi_name", "last_serial"} <= set(uni.columns)
+    ):
         serial_map = dict(zip(uni["pypi_name"], uni["last_serial"]))
         work["pypi_last_serial"] = [
             serial_map.get(n, s)
@@ -328,6 +352,7 @@ def fetch_pypi_current_versions(
 # ---------------------------------------------------------------------------
 # Phase O — serial snapshots (90-day rolling; activity band from deltas)
 # ---------------------------------------------------------------------------
+
 
 def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase O  (phase_o_serial_snapshots CFA:7051)
@@ -367,7 +392,9 @@ def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
             return "low"
         return "dormant"
 
-    out["serial_delta"] = [_delta(l, p) for l, p in zip(out["last_serial"], out["prev_serial"])]
+    out["serial_delta"] = [
+        _delta(l, p) for l, p in zip(out["last_serial"], out["prev_serial"])
+    ]
     out["activity_band"] = [_band(d) for d in out["serial_delta"]]
     out = out.drop_duplicates(subset=["pypi_name"])
     return out[cols].reset_index(drop=True)
@@ -377,6 +404,7 @@ def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:
 # Phase P — monthly download counts (BigQuery; the two-layer cost gate is
 #           DATASET-owned, this node stays PURE)  [AC-4]
 # ---------------------------------------------------------------------------
+
 
 def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase P  (phase_p_pypi_downloads CFA:7352)
@@ -392,7 +420,11 @@ def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFr
     same columns, deduped."""
     cols = ["pypi_name", "month", "downloads"]
     df = pypi_bigquery_downloads_raw
-    if df is None or getattr(df, "empty", True) or "pypi_name" not in getattr(df, "columns", []):
+    if (
+        df is None
+        or getattr(df, "empty", True)
+        or "pypi_name" not in getattr(df, "columns", [])
+    ):
         return pd.DataFrame(columns=cols)
     out = df.copy()
     for c in ("month", "downloads"):
@@ -406,6 +438,7 @@ def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFr
 # ---------------------------------------------------------------------------
 # Phase Q — cross-channel flags
 # ---------------------------------------------------------------------------
+
 
 def flag_cross_channel(pypi_cross_channel_repodata_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase Q  (phase_q_cross_channel CFA:7847)
@@ -438,6 +471,7 @@ def flag_cross_channel(pypi_cross_channel_repodata_raw: pd.DataFrame) -> pd.Data
 # ---------------------------------------------------------------------------
 # Phase R — enrichment (single-write-path helpers shared with add-handoff)
 # ---------------------------------------------------------------------------
+
 
 def _classify_packaging_shape(row) -> str:
     """Deterministic packaging-shape classification (pure; CFA:8330 Phase R). Reads
@@ -483,7 +517,11 @@ def phase_r_upsert_one(existing: pd.DataFrame, new_row: dict) -> pd.DataFrame:
     the existing row for ``pypi_name`` (keeping the new enrichment) and appends a new
     one otherwise."""
     cols = ["pypi_name", "packaging_shape", "license_spdx", "license_raw", "notes"]
-    base = existing if existing is not None and not existing.empty else pd.DataFrame(columns=cols)
+    base = (
+        existing
+        if existing is not None and not existing.empty
+        else pd.DataFrame(columns=cols)
+    )
     base = base[[c for c in cols if c in base.columns]].copy()
     for c in cols:
         if c not in base.columns:
@@ -538,7 +576,11 @@ def _readiness_score(shape: str, license_spdx) -> int:
         score += 40
     elif shape in ("c-extension", "cython", "rust-pyo3"):
         score += 20
-    if license_spdx is not None and not (isinstance(license_spdx, float) and pd.isna(license_spdx)) and str(license_spdx).strip():
+    if (
+        license_spdx is not None
+        and not (isinstance(license_spdx, float) and pd.isna(license_spdx))
+        and str(license_spdx).strip()
+    ):
         score += 20
     return max(0, min(100, score))
 
@@ -554,12 +596,22 @@ def apply_readiness_scores(
     column from ``prior_scored`` (and from the enriched frame) — it NEVER clobbers an
     operator override. Enriched-frame notes take precedence when present; otherwise the
     prior score's notes are preserved."""
-    cols = ["pypi_name", "packaging_shape", "conda_forge_readiness", "recommended_template", "notes"]
+    cols = [
+        "pypi_name",
+        "packaging_shape",
+        "conda_forge_readiness",
+        "recommended_template",
+        "notes",
+    ]
     df = enriched
     if df is None or df.empty or "pypi_name" not in getattr(df, "columns", []):
         return pd.DataFrame(columns=cols)
     prior_notes = {}
-    if prior_scored is not None and not prior_scored.empty and {"pypi_name", "notes"} <= set(prior_scored.columns):
+    if (
+        prior_scored is not None
+        and not prior_scored.empty
+        and {"pypi_name", "notes"} <= set(prior_scored.columns)
+    ):
         prior_notes = dict(zip(prior_scored["pypi_name"], prior_scored["notes"]))
 
     records = []
@@ -580,7 +632,9 @@ def apply_readiness_scores(
                 "pypi_name": name,
                 "packaging_shape": shape,
                 "conda_forge_readiness": _readiness_score(shape, r.get("license_spdx")),
-                "recommended_template": _TEMPLATE_BY_SHAPE.get(shape, _TEMPLATE_BY_SHAPE["unknown"]),
+                "recommended_template": _TEMPLATE_BY_SHAPE.get(
+                    shape, _TEMPLATE_BY_SHAPE["unknown"]
+                ),
                 "notes": note,
             }
         )
@@ -599,6 +653,7 @@ def score_pypi_readiness(pypi_intelligence_enriched: pd.DataFrame) -> pd.DataFra
 # View contracts (query-time-correct read surfaces — documented view-equivalents)
 # ---------------------------------------------------------------------------
 
+
 def v_pypi_intelligence_valid(pypi_intelligence_scored: pd.DataFrame) -> pd.DataFrame:
     """``v_pypi_intelligence_valid`` (CFA:615) — the query-time-correct read surface
     for scored PyPI intelligence. Consumers read the VIEW, never the raw scored table
@@ -612,7 +667,11 @@ def v_pypi_intelligence_valid(pypi_intelligence_scored: pd.DataFrame) -> pd.Data
     # KeyError on a mis-shaped non-empty frame — review-hardening).
     if not {"packaging_shape", "conda_forge_readiness"} <= set(df.columns):
         return df.iloc[0:0].reset_index(drop=True)
-    valid = df["packaging_shape"].notna() & (df["packaging_shape"] != "unknown") & df["conda_forge_readiness"].notna()
+    valid = (
+        df["packaging_shape"].notna()
+        & (df["packaging_shape"] != "unknown")
+        & df["conda_forge_readiness"].notna()
+    )
     return df[valid].reset_index(drop=True)
 
 
@@ -655,12 +714,20 @@ def export_pypi_conda_map(pypi_conda_mapping: pd.DataFrame) -> dict:
     for row in df.itertuples(index=False):
         pypi_name = getattr(row, "pypi_name", None)
         conda_name = getattr(row, "conda_name", None)
-        if _is_missing(pypi_name) or _is_missing(conda_name) or not isinstance(conda_name, str):
+        if (
+            _is_missing(pypi_name)
+            or _is_missing(conda_name)
+            or not isinstance(conda_name, str)
+        ):
             continue
         pypi_name = str(pypi_name)
         match_source = getattr(row, "match_source", None) if has_source else None
         # match_source may be a non-string / unhashable cell (malformed) — default rank 1.
-        rank = _MAP_PROVENANCE_RANK.get(match_source, 1) if isinstance(match_source, str) else 1
+        rank = (
+            _MAP_PROVENANCE_RANK.get(match_source, 1)
+            if isinstance(match_source, str)
+            else 1
+        )
         # no-clobber: replace on STRICTLY higher provenance; on an EQUAL-tier collision with
         # a different conda_name, keep the lexicographically smaller name — a deterministic
         # tie-break so the export is reproducible regardless of Phase C row order.

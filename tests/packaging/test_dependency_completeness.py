@@ -174,7 +174,9 @@ def _pin_set(spec: str) -> frozenset[str]:
 
 
 def _load(package: str, manifest: str) -> dict:
-    return tomllib.loads((PACKAGES_DIR / package / manifest).read_text(encoding="utf-8"))
+    return tomllib.loads(
+        (PACKAGES_DIR / package / manifest).read_text(encoding="utf-8")
+    )
 
 
 def _project_dependencies(package: str) -> dict[str, frozenset[str]]:
@@ -193,8 +195,8 @@ def _project_extras(package: str) -> set[str]:
 
 
 def _run_dependencies(package: str) -> dict[str, frozenset[str]]:
-    run_deps = _load(package, "pixi.toml").get("package", {}).get(
-        "run-dependencies", {}
+    run_deps = (
+        _load(package, "pixi.toml").get("package", {}).get("run-dependencies", {})
     )
     return {_normalize(name): _pin_set(str(spec)) for name, spec in run_deps.items()}
 
@@ -260,7 +262,9 @@ def _scan_imports(source_root: Path) -> tuple[dict[str, set[str]], dict[str, set
                 ancestor = parents[ancestor]
                 if isinstance(
                     ancestor, (ast.Try, ast.FunctionDef, ast.AsyncFunctionDef)
-                ) or (isinstance(ancestor, ast.If) and _is_type_checking_guard(ancestor)):
+                ) or (
+                    isinstance(ancestor, ast.If) and _is_type_checking_guard(ancestor)
+                ):
                     is_deferred = True
                     break
 
@@ -268,9 +272,7 @@ def _scan_imports(source_root: Path) -> tuple[dict[str, set[str]], dict[str, set
                 if module in sys.stdlib_module_names or module == NAMESPACE:
                     continue
                 bucket = deferred if is_deferred else hard
-                bucket.setdefault(module, set()).add(
-                    str(path.relative_to(source_root))
-                )
+                bucket.setdefault(module, set()).add(str(path.relative_to(source_root)))
 
     return hard, deferred
 
@@ -309,9 +311,9 @@ def test_source_tree_is_scannable(package):
     and pass the completeness check vacuously."""
     source_root = PACKAGES_DIR / package / "src"
     assert source_root.is_dir(), f"{package} has no src/ to scan"
-    assert any(
-        p for p in source_root.rglob("*.py") if "__pycache__" not in p.parts
-    ), f"{package}/src contains no Python modules"
+    assert any(p for p in source_root.rglob("*.py") if "__pycache__" not in p.parts), (
+        f"{package}/src contains no Python modules"
+    )
 
 
 def test_baseline_entries_are_still_violated():
@@ -379,8 +381,7 @@ def test_every_hard_import_is_a_declared_dependency(package):
     undeclared = {
         module: sorted(files)
         for module, files in hard.items()
-        if not (_candidate_distributions(module) & declared)
-        and module not in baselined
+        if not (_candidate_distributions(module) & declared) and module not in baselined
     }
     if not undeclared:
         return
@@ -388,7 +389,9 @@ def test_every_hard_import_is_a_declared_dependency(package):
     lines = []
     for module, files in sorted(undeclared.items()):
         candidates = sorted(_candidate_distributions(module))
-        where = "as an EXTRA only" if candidates and set(candidates) & extras else "nowhere"
+        where = (
+            "as an EXTRA only" if candidates and set(candidates) & extras else "nowhere"
+        )
         lines.append(
             f"  {module!r} (imported unconditionally by {files[0]}"
             f"{f' +{len(files) - 1} more' if len(files) > 1 else ''}) "
@@ -416,7 +419,9 @@ def test_every_hard_import_is_a_declared_dependency(package):
 def test_conda_run_deps_cover_every_project_dependency(package):
     """AUD-WARDEN-010: the direction that catches a dep present in the wheel's
     metadata but absent from the conda package's."""
-    missing = sorted(set(_project_dependencies(package)) - set(_run_dependencies(package)))
+    missing = sorted(
+        set(_project_dependencies(package)) - set(_run_dependencies(package))
+    )
     assert not missing, (
         f"{package}: declared in pyproject.toml [project.dependencies] but "
         f"absent from pixi.toml [package.run-dependencies]: {missing} — the "

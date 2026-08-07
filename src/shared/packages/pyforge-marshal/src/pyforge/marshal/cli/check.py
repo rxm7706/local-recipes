@@ -143,7 +143,9 @@ def _unavailable_finding(reason: str) -> Finding:
     )
 
 
-def _render_text_check(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_check(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14)."""
     lines = [f"check -- scope={data.get('scope')}"]
@@ -172,7 +174,9 @@ def _render_text_check(data: Mapping[str, object], findings: tuple[Finding, ...]
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
@@ -229,7 +233,9 @@ def run_check(
             timeout_s=_CHECK_TIMEOUT_S,
         )
     except ProcessError as exc:
-        findings.append(_unavailable_finding(f"the script could not be launched ({exc})"))
+        findings.append(
+            _unavailable_finding(f"the script could not be launched ({exc})")
+        )
         return _emit(args, data, findings)
 
     try:

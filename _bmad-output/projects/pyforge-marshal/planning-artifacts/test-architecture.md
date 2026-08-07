@@ -214,6 +214,7 @@ def verdict_lattice():
     """Closed verdict lattice: ERROR, WARNING, PASS (no invalid transitions)."""
     return VerdiLattice(states=[ERROR, WARNING, PASS], transitions={...})
 
+
 @pytest.fixture
 def loop_home_fixture(tmp_path):
     """Real worktree provisioned at tmp_path. Auto-cleaned up after test."""
@@ -221,20 +222,24 @@ def loop_home_fixture(tmp_path):
     yield home
     home.teardown()  # Safety: refuses if work in progress
 
+
 @pytest.fixture
 def policy_layers(loop_home_fixture):
     """6-layer policy composition: system → project → team → user → run → story."""
     return PolicyComposition.from_home(loop_home_fixture)
 
+
 @pytest.fixture
 def finding_codes():
     """Registry of all valid finding codes (MRS-*, FR-*, AD-*, etc.)."""
-    return FindingCodeRegistry.load_from('_bmad/data/finding-codes.json')
+    return FindingCodeRegistry.load_from("_bmad/data/finding-codes.json")
+
 
 @pytest.fixture
 def run_journal(loop_home_fixture):
     """Append-only journal with deterministic serialization."""
     return RunJournal(store=loop_home_fixture.tier3_store)
+
 
 @pytest.fixture
 def adapter_config(loop_home_fixture):
@@ -275,6 +280,7 @@ def test_determinism_verdict_lattice():
     result2 = verdict_lattice.aggregate(input_verdicts)
     assert result1 == result2
     assert result1.timestamp is None  # No timestamps in verdict logic
+
 
 @pytest.mark.meta
 def test_never_false_green(verdict_lattice):

@@ -84,7 +84,9 @@ def test_write_never_invokes_render_text_for_json_format(monkeypatch):
     """`write` is the sole call site -- `render_text` must not run when
     `fmt == "json"`."""
     calls = []
-    monkeypatch.setattr(render, "render_text", lambda *a, **k: calls.append(a) or "unused")
+    monkeypatch.setattr(
+        render, "render_text", lambda *a, **k: calls.append(a) or "unused"
+    )
     stream = io.StringIO()
     render.write("json", stream, "doctor", "ok", {"message": "hi"}, [])
     assert calls == []
@@ -93,7 +95,9 @@ def test_write_never_invokes_render_text_for_json_format(monkeypatch):
 
 def test_write_never_invokes_render_json_for_text_format(monkeypatch):
     calls = []
-    monkeypatch.setattr(render, "render_json", lambda *a, **k: calls.append(a) or "unused")
+    monkeypatch.setattr(
+        render, "render_json", lambda *a, **k: calls.append(a) or "unused"
+    )
     stream = io.StringIO()
     render.write("text", stream, "doctor", "ok", {"message": "hi"}, [])
     assert calls == []

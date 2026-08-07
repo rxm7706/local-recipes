@@ -30,6 +30,7 @@ entries are reordered.
 Usage:  python scripts/normalize_deferred_ledgers.py [--write]
 Default is a dry run that reports what would change and rewrites nothing.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,7 +39,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-LEDGERS = sorted(REPO_ROOT.glob("_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md"))
+LEDGERS = sorted(
+    REPO_ROOT.glob("_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md")
+)
 
 # An entry heading that already carries an id, at any level the four shapes used.
 RE_ID_HEAD = re.compile(r"^(#{2,4})\s+(DW-[A-Za-z0-9][A-Za-z0-9-]*)\s*[—:-]?\s*(.*)$")
@@ -117,18 +120,20 @@ def normalize(path: Path) -> tuple[str, dict]:
             seq[scope] = seq.get(scope, 0) + 1
             ident = f"DW-{scope}-{seq[scope]}"
             if out and out[-1].strip():
-                out.append("")   # a heading glued to the previous line is not a heading
+                out.append("")  # a heading glued to the previous line is not a heading
             out.append(f"## {ident} — {title_from(body)}")
             out.append("")
             stats["ids_added"] += 1
             has_id = False
-        out.extend(lines[i + 1:j] if has_id else lines[i:j])
+        out.extend(lines[i + 1 : j] if has_id else lines[i:j])
 
         if RE_STATUS.search(body):
             stats["already"] += 1
         else:
             done = bool(RE_RESOLVED.search(body))
-            out.append(f"  status: {'done (resolution recorded inline, date unknown)' if done else 'open'}")
+            out.append(
+                f"  status: {'done (resolution recorded inline, date unknown)' if done else 'open'}"
+            )
             stats["status_added"] += 1
         i = j
     return "\n".join(out) + "\n", stats
@@ -136,7 +141,9 @@ def normalize(path: Path) -> tuple[str, dict]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--write", action="store_true", help="apply changes (default: dry run)")
+    ap.add_argument(
+        "--write", action="store_true", help="apply changes (default: dry run)"
+    )
     args = ap.parse_args()
     total = {"entries": 0, "ids_added": 0, "status_added": 0, "already": 0}
     for f in LEDGERS:
@@ -145,15 +152,23 @@ def main() -> int:
             total[k] += st[k]
         rel = f.relative_to(REPO_ROOT)
         changed = new != f.read_text(encoding="utf-8")
-        print(f"{str(rel.parts[2]):18} entries={st['entries']:>3} "
-              f"+ids={st['ids_added']:>3} +status={st['status_added']:>3} "
-              f"had-status={st['already']:>3} {'CHANGED' if changed else 'unchanged'}")
+        print(
+            f"{str(rel.parts[2]):18} entries={st['entries']:>3} "
+            f"+ids={st['ids_added']:>3} +status={st['status_added']:>3} "
+            f"had-status={st['already']:>3} {'CHANGED' if changed else 'unchanged'}"
+        )
         if args.write and changed:
             f.write_text(new, encoding="utf-8")
-    print(f"\n{'TOTAL':18} entries={total['entries']:>3} "
-          f"+ids={total['ids_added']:>3} +status={total['status_added']:>3} "
-          f"had-status={total['already']:>3}")
-    print("dry run — nothing written; pass --write to apply" if not args.write else "written")
+    print(
+        f"\n{'TOTAL':18} entries={total['entries']:>3} "
+        f"+ids={total['ids_added']:>3} +status={total['status_added']:>3} "
+        f"had-status={total['already']:>3}"
+    )
+    print(
+        "dry run — nothing written; pass --write to apply"
+        if not args.write
+        else "written"
+    )
     return 0
 
 

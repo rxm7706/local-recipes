@@ -20,6 +20,7 @@ backlog, which is why they are derived here rather than hand-listed in a doc.
 
 Deliberately stdlib + PyYAML only, so it runs in bare CI like the other detectors.
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
@@ -61,7 +62,9 @@ PLACEHOLDER = "local-recipes"
 # vestigial Smith-shaped scaffolding around the two Specs below. Their chains now live at
 # docs/governance/spec-<slug>/, not a `_bmad-output/projects/<x>/` tree.
 CONSTITUTIVE = {"pyforge-charter", "pyforge-genesis"}
-GOVERNANCE_PROJECT = "docs/governance"  # sentinel `project` value for CONSTITUTIVE specs
+GOVERNANCE_PROJECT = (
+    "docs/governance"  # sentinel `project` value for CONSTITUTIVE specs
+)
 
 
 def expected_project(owner: str) -> str:
@@ -94,20 +97,28 @@ def collect() -> tuple[dict, list]:
     specs = []
     for sp in sorted(PROJECTS.glob("*/planning-artifacts/specs/*/SPEC.md")):
         fm = frontmatter(sp)
-        specs.append({
-            "project": sp.parts[len(PROJECTS.parts)],
-            "spec": sp.parent.name,
-            "dream": (fm.get("owner-dream") or "").split("/")[-1].removesuffix(".md"),
-            "path": str(sp.relative_to(ROOT)),
-        })
+        specs.append(
+            {
+                "project": sp.parts[len(PROJECTS.parts)],
+                "spec": sp.parent.name,
+                "dream": (fm.get("owner-dream") or "")
+                .split("/")[-1]
+                .removesuffix(".md"),
+                "path": str(sp.relative_to(ROOT)),
+            }
+        )
     for sp in sorted(GOVERNANCE.glob("spec-*/SPEC.md")):
         fm = frontmatter(sp)
-        specs.append({
-            "project": GOVERNANCE_PROJECT,
-            "spec": sp.parent.name,
-            "dream": (fm.get("owner-dream") or "").split("/")[-1].removesuffix(".md"),
-            "path": str(sp.relative_to(ROOT)),
-        })
+        specs.append(
+            {
+                "project": GOVERNANCE_PROJECT,
+                "spec": sp.parent.name,
+                "dream": (fm.get("owner-dream") or "")
+                .split("/")[-1]
+                .removesuffix(".md"),
+                "path": str(sp.relative_to(ROOT)),
+            }
+        )
     return dreams, specs
 
 
@@ -125,39 +136,61 @@ def check() -> list[dict]:
         if not s["dream"]:
             slug = s["spec"].removeprefix("spec-")
             implied = slug if slug in dreams else ""
-            findings.append({
-                "inv": "INV-0", "kind": "spec-without-dream-link", "subject": s["spec"],
-                "owner": dreams.get(implied, {}).get("owner", "") if implied else "",
-                "status": f"in {s['project']}",
-                "remedy": (f"add `owner-dream: docs/dreams/{implied}.md`"
-                           if implied else "add an owner-dream: key"),
-            })
+            findings.append(
+                {
+                    "inv": "INV-0",
+                    "kind": "spec-without-dream-link",
+                    "subject": s["spec"],
+                    "owner": dreams.get(implied, {}).get("owner", "")
+                    if implied
+                    else "",
+                    "status": f"in {s['project']}",
+                    "remedy": (
+                        f"add `owner-dream: docs/dreams/{implied}.md`"
+                        if implied
+                        else "add an owner-dream: key"
+                    ),
+                }
+            )
 
     # A Spec covers a Dream if it DECLARES the link, or (fallback) its slug matches.
     # The fallback keeps INV-1 honest while INV-0 is being closed — otherwise every
     # unlinked Spec would be double-counted as a missing one.
     covered = {s["dream"] for s in specs if s["dream"]}
-    covered |= {s["spec"].removeprefix("spec-") for s in specs
-                if not s["dream"] and s["spec"].removeprefix("spec-") in dreams}
+    covered |= {
+        s["spec"].removeprefix("spec-")
+        for s in specs
+        if not s["dream"] and s["spec"].removeprefix("spec-") in dreams
+    }
 
     # INV-1 — every Dream has a Spec
     for slug, d in sorted(dreams.items()):
         if slug not in covered:
-            findings.append({
-                "inv": "INV-1", "kind": "dream-without-spec", "subject": slug,
-                "owner": d["owner"] or "(none)", "status": d["status"] or "(none)",
-                "remedy": f"author a Spec under {expected_spec_dir(d['owner'] or 'guild', slug)}",
-            })
+            findings.append(
+                {
+                    "inv": "INV-1",
+                    "kind": "dream-without-spec",
+                    "subject": slug,
+                    "owner": d["owner"] or "(none)",
+                    "status": d["status"] or "(none)",
+                    "remedy": f"author a Spec under {expected_spec_dir(d['owner'] or 'guild', slug)}",
+                }
+            )
 
     # INV-2a — a buildable Dream owned by `guild` has no station yet. Resolving it to the
     # placeholder would make an unassigned chain look settled, so it is flagged instead.
     for slug, d in sorted(dreams.items()):
         if d.get("owner") == "guild" and slug not in CONSTITUTIVE:  # a third `guild`
-            findings.append({
-                "inv": "INV-2", "kind": "owner-unassigned", "subject": slug,
-                "owner": "guild", "status": d.get("status", ""),
-                "remedy": "assign a station (guild is intake, not a terminal owner)",
-            })
+            findings.append(
+                {
+                    "inv": "INV-2",
+                    "kind": "owner-unassigned",
+                    "subject": slug,
+                    "owner": "guild",
+                    "status": d.get("status", ""),
+                    "remedy": "assign a station (guild is intake, not a terminal owner)",
+                }
+            )
 
     # INV-2 — the chain lives where its owner lives
     for s in specs:
@@ -167,11 +200,16 @@ def check() -> list[dict]:
         want = expected_project(owner)
         if s["project"] != want:
             slug = s["spec"].removeprefix("spec-")
-            findings.append({
-                "inv": "INV-2", "kind": "spec-location-mismatch", "subject": s["spec"],
-                "owner": owner, "status": f"in {s['project']}",
-                "remedy": f"move to {expected_spec_dir(owner, slug)}",
-            })
+            findings.append(
+                {
+                    "inv": "INV-2",
+                    "kind": "spec-location-mismatch",
+                    "subject": s["spec"],
+                    "owner": owner,
+                    "status": f"in {s['project']}",
+                    "remedy": f"move to {expected_spec_dir(owner, slug)}",
+                }
+            )
 
     # INV-3 — sharded build tree
     for pdir in sorted(PROJECTS.glob("*/planning-artifacts")):
@@ -179,25 +217,40 @@ def check() -> list[dict]:
         names = {p.name for p in pdir.iterdir()}
         if not (pdir / "prds").is_dir():
             flat = "prd.md" in {n.lower() for n in names}
-            findings.append({
-                "inv": "INV-3", "kind": "prd-not-sharded", "subject": project,
-                "owner": "", "status": "flat prd.md" if flat else "absent",
-                "remedy": "regenerate via bmad-prd into prds/prd-<slug>-<date>/",
-            })
+            findings.append(
+                {
+                    "inv": "INV-3",
+                    "kind": "prd-not-sharded",
+                    "subject": project,
+                    "owner": "",
+                    "status": "flat prd.md" if flat else "absent",
+                    "remedy": "regenerate via bmad-prd into prds/prd-<slug>-<date>/",
+                }
+            )
         if not (pdir / "architecture").is_dir():
             flat = any(n.startswith("architecture") for n in names)
-            findings.append({
-                "inv": "INV-3", "kind": "architecture-not-sharded", "subject": project,
-                "owner": "", "status": "flat architecture.md" if flat else "absent",
-                "remedy": "regenerate via bmad-architecture into "
-                          "architecture/architecture-<slug>-<date>/",
-            })
+            findings.append(
+                {
+                    "inv": "INV-3",
+                    "kind": "architecture-not-sharded",
+                    "subject": project,
+                    "owner": "",
+                    "status": "flat architecture.md" if flat else "absent",
+                    "remedy": "regenerate via bmad-architecture into "
+                    "architecture/architecture-<slug>-<date>/",
+                }
+            )
         if "epics.md" not in names:
-            findings.append({
-                "inv": "INV-3", "kind": "epics-missing", "subject": project,
-                "owner": "", "status": "absent",
-                "remedy": "run bmad-create-epics-and-stories",
-            })
+            findings.append(
+                {
+                    "inv": "INV-3",
+                    "kind": "epics-missing",
+                    "subject": project,
+                    "owner": "",
+                    "status": "absent",
+                    "remedy": "run bmad-create-epics-and-stories",
+                }
+            )
     return findings
 
 
@@ -216,8 +269,10 @@ def main() -> int:
         return 1 if findings else 0
 
     dreams, specs = collect()
-    print(f"Dream-to-Code chain — {len(dreams)} dreams, {len(specs)} specs, "
-          f"{len(list(PROJECTS.glob('*/planning-artifacts')))} projects\n")
+    print(
+        f"Dream-to-Code chain — {len(dreams)} dreams, {len(specs)} specs, "
+        f"{len(list(PROJECTS.glob('*/planning-artifacts')))} projects\n"
+    )
     if not findings:
         print("OK: all three invariants hold.")
         return 0
@@ -246,18 +301,23 @@ def main() -> int:
     tally: dict[str, int] = {}
     for f in findings:
         subj = f["subject"]
-        owner = (dream_owner.get(subj)
-                 or spec_owner.get(subj)
-                 or proj_owner.get(subj)
-                 or f.get("owner") or "(unattributed)")
+        owner = (
+            dream_owner.get(subj)
+            or spec_owner.get(subj)
+            or proj_owner.get(subj)
+            or f.get("owner")
+            or "(unattributed)"
+        )
         tally[owner] = tally.get(owner, 0) + 1
 
     print("  by owner (the accountability unit):")
     for owner, n in sorted(tally.items(), key=lambda kv: (-kv[1], kv[0])):
         print(f"     {owner:<18} {n}")
     print()
-    print(f"FINDINGS: {len(findings)}. These are the migration backlog "
-          f"(see _bmad-output/EXEMPLAR-STANDARD.md).")
+    print(
+        f"FINDINGS: {len(findings)}. These are the migration backlog "
+        f"(see _bmad-output/EXEMPLAR-STANDARD.md)."
+    )
     return 1
 
 

@@ -243,9 +243,7 @@ def test_epss_cache_vanishing_between_load_and_provenance_is_unavailable_not_a_c
     def _raise_missing(**_kwargs):
         raise FileNotFoundError("cache file vanished between read and stat")
 
-    monkeypatch.setattr(
-        "pyforge.warden.engines.feeds.feed_provenance", _raise_missing
-    )
+    monkeypatch.setattr("pyforge.warden.engines.feeds.feed_provenance", _raise_missing)
     inventory = _inventory(component_factory)
 
     result = OsvEngine(fail_on_kev=False, min_epss=0.5).run(tmp_path, inventory)
@@ -341,9 +339,7 @@ def test_min_epss_forces_exit_1_regardless_of_cvss_tier(monkeypatch, tmp_path, c
     monkeypatch.setenv(
         feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
     )
-    rc, out, err = run_scan(
-        capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5"
-    )
+    rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5")
     document = parse_report(out)
 
     assert rc == 1
@@ -359,7 +355,9 @@ def test_min_epss_forces_exit_1_regardless_of_cvss_tier(monkeypatch, tmp_path, c
     assert err == ""
 
 
-def test_min_epss_unset_leaves_cvss_only_gating_unaffected(monkeypatch, tmp_path, capsys):
+def test_min_epss_unset_leaves_cvss_only_gating_unaffected(
+    monkeypatch, tmp_path, capsys
+):
     """With no --min-epss flag, the SAME EPSS-matching cache is never
     consulted -- every finding's epss stays null, and the MEDIUM-tier
     match's default warn/exit-0 CVSS-only gating survives untouched (no
@@ -392,9 +390,7 @@ def test_epss_feed_absent_end_to_end_composes_indeterminate(
     indeterminate/exit 1 -- never a silent pass, even though the underlying
     CVSS match would otherwise only warn."""
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path / "no-such-cache"))
-    rc, out, err = run_scan(
-        capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5"
-    )
+    rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5")
     document = parse_report(out)
 
     assert rc == 1

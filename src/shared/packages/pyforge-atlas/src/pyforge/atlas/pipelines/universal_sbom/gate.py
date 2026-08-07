@@ -175,9 +175,12 @@ def run_dependency_hygiene(
     # deptry reads the project's own pyproject.toml natively (FR9). An empty
     # inventory front-door is a documented no-op for a pyproject-native scan; a
     # richer intake-derived front-door is future work (DW-F4-1).
-    result = DeptryEngine().run(target, ResolvedInventory(components=(), resolved_scan_set=()))
+    result = DeptryEngine().run(
+        target, ResolvedInventory(components=(), resolved_scan_set=())
+    )
     findings = [
-        {"id": f.id, "message": f.message, "subject": f.subject} for f in result.findings
+        {"id": f.id, "message": f.message, "subject": f.subject}
+        for f in result.findings
     ]
     errors = [
         {"kind": e.kind.value, "owner": e.owner, "message": e.message}
@@ -265,7 +268,9 @@ def assemble_and_gate(
         for ed in hyg_errors:
             errors.append(
                 models.ErrorRecord(
-                    kind=models.ErrorKind(ed["kind"]), owner=ed["owner"], message=ed["message"]
+                    kind=models.ErrorKind(ed["kind"]),
+                    owner=ed["owner"],
+                    message=ed["message"],
                 )
             )
         if hyg_errors:
@@ -313,7 +318,9 @@ def assemble_and_gate(
                 axis=models.AXIS_VULNERABILITY,
                 message=sd.get("message", "vulnerability"),
                 subject=sd.get("subject"),
-                severity=models.Severity(models.SeverityTier(tier), sd.get("raw", raw_tier)),
+                severity=models.Severity(
+                    models.SeverityTier(tier), sd.get("raw", raw_tier)
+                ),
                 kev=sd.get("kev"),
                 epss=sd.get("epss"),
             )
@@ -333,7 +340,10 @@ def assemble_and_gate(
             breach_id = kev_hit_id
         if breach_id is not None:
             rungs.append(
-                (models.Status.POLICY_VIOLATION, models.StatusDriver(models.AXIS_VULNERABILITY, breach_id))
+                (
+                    models.Status.POLICY_VIOLATION,
+                    models.StatusDriver(models.AXIS_VULNERABILITY, breach_id),
+                )
             )
         else:
             # No breach → WARN (exit 0, no false halt). warden's engines routinely emit ONLY
@@ -345,13 +355,25 @@ def assemble_and_gate(
             # "hygiene:" < "indeterminate:" lexicographically, so a min() over ALL findings could
             # pick a hygiene id as this axis's driver (Gemini #95). The vuln axis is non-empty
             # here (this branch runs because security_findings is applicable).
-            vuln_axis_ids = sorted(f.id for f in findings if f.axis == models.AXIS_VULNERABILITY)
+            vuln_axis_ids = sorted(
+                f.id for f in findings if f.axis == models.AXIS_VULNERABILITY
+            )
             vuln_ids = [i for i in vuln_axis_ids if i.startswith("vuln:")]
             driver_id = vuln_ids[0] if vuln_ids else vuln_axis_ids[0]
-            rungs.append((models.Status.WARN, models.StatusDriver(models.AXIS_VULNERABILITY, driver_id)))
+            rungs.append(
+                (
+                    models.Status.WARN,
+                    models.StatusDriver(models.AXIS_VULNERABILITY, driver_id),
+                )
+            )
         coverage.append(
             models.AxisCoverage(
-                models.AXIS_VULNERABILITY, 1, 1, len(security_findings), len(security_findings), None
+                models.AXIS_VULNERABILITY,
+                1,
+                1,
+                len(security_findings),
+                len(security_findings),
+                None,
             )
         )
         vuln_data = models.VulnData(
@@ -361,7 +383,9 @@ def assemble_and_gate(
         )
     else:
         rungs.append((models.Status.NOT_APPLICABLE, None))
-        coverage.append(models.AxisCoverage(models.AXIS_VULNERABILITY, 0, 0, 0, 0, None))
+        coverage.append(
+            models.AxisCoverage(models.AXIS_VULNERABILITY, 0, 0, 0, 0, None)
+        )
         vuln_data = models.VulnData(None, None, None)
 
     # --- currency axis (atlas-native, from the SBOM behind-upstream match report) ---
@@ -369,7 +393,9 @@ def assemble_and_gate(
     match_components = match.get("components")
     if match_components is not None:
         coverage.append(
-            models.AxisCoverage("currency", 1, 1, len(match_components), len(match_components), None)
+            models.AxisCoverage(
+                "currency", 1, 1, len(match_components), len(match_components), None
+            )
         )
         # Currency is a flag-activated gate (OFF in v1): populated, informational,
         # never blocking — it contributes a clean rung, never a finding.
@@ -390,9 +416,13 @@ def assemble_and_gate(
                 severity=None,
             )
             findings.append(finding)
-            rungs.append((models.Status.WARN, models.StatusDriver("license", finding.id)))
+            rungs.append(
+                (models.Status.WARN, models.StatusDriver("license", finding.id))
+            )
         coverage.append(
-            models.AxisCoverage("license", 1, 1, len(license_findings), len(license_findings), None)
+            models.AxisCoverage(
+                "license", 1, 1, len(license_findings), len(license_findings), None
+            )
         )
     else:
         coverage.append(models.AxisCoverage("license", 0, 0, 0, 0, None))
@@ -401,7 +431,9 @@ def assemble_and_gate(
     # --- compose → project (SOLE-owned by warden) → assemble → validate ---
     status, driver = verdict.compose(rungs)
     exit_code = verdict.exit_code_for(status, driver=driver)
-    inventory_count = len(match_components) if match_components is not None else len(findings)
+    inventory_count = (
+        len(match_components) if match_components is not None else len(findings)
+    )
     compliance = models.ComplianceReport(
         schema_version=report.REPORT_SCHEMA_VERSION,
         tool_name="pyforge-atlas-gate",
@@ -416,7 +448,9 @@ def assemble_and_gate(
         resolved_scan_set=(),
         errors=tuple(errors),
     )
-    report.render_json(compliance)  # validates against warden's packaged four-axis schema
+    report.render_json(
+        compliance
+    )  # validates against warden's packaged four-axis schema
     document = compliance.to_json_dict()
 
     if exit_code == 0:
@@ -436,8 +470,12 @@ def assemble_and_gate(
     )
     sbom_cfg = params.get("sbom")
     sbom_cfg = sbom_cfg if isinstance(sbom_cfg, dict) else {}
-    subject = gate_params.get("subject") or sbom_cfg.get("project_name") or "user-inventory"
-    alert_severity = Severity.critical if status is models.Status.ERROR else Severity.high
+    subject = (
+        gate_params.get("subject") or sbom_cfg.get("project_name") or "user-inventory"
+    )
+    alert_severity = (
+        Severity.critical if status is models.Status.ERROR else Severity.high
+    )
     evidence = {
         "exit_code": exit_code,
         "status": status.value,

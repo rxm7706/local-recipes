@@ -215,8 +215,8 @@ def _build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Example:\n"
             "  uv run aggregate-coherence.py "
-            "'{\"valid_references\":6,\"total_references\":7,"
-            "\"patterns_documented\":5,\"patterns_complete\":4}'"
+            '\'{"valid_references":6,"total_references":7,'
+            '"patterns_documented":5,"patterns_complete":4}\''
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

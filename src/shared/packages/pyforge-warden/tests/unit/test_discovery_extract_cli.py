@@ -108,9 +108,7 @@ def extract_from(directory: Path, deps: list[str]):
 
 
 def load_schema() -> dict:
-    schema_file = (
-        resources.files("pyforge.warden") / "data" / "report-schema.json"
-    )
+    schema_file = resources.files("pyforge.warden") / "data" / "report-schema.json"
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
@@ -131,9 +129,7 @@ def scan_json(capsys, target) -> tuple[int, dict, str]:
 def test_discover_finds_the_single_manifest(tmp_path):
     write_pyproject(tmp_path, [])
     manifests = discover(tmp_path)
-    assert manifests == (
-        ScannedManifest(path="pyproject.toml", kind="pyproject.toml"),
-    )
+    assert manifests == (ScannedManifest(path="pyproject.toml", kind="pyproject.toml"),)
 
 
 def test_discover_records_the_path_relative_to_the_target(tmp_path):
@@ -206,14 +202,18 @@ def test_discover_propagates_unexpected_stat_errors(tmp_path):
 
 
 def test_discover_finds_a_pixi_lock_manifest(tmp_path):
-    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
+    (tmp_path / PIXI_LOCK_KIND).write_text(
+        "version: 6\npackages: []\n", encoding="utf-8"
+    )
     assert discover(tmp_path) == (
         ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
     )
 
 
 def test_discover_finds_a_conda_lock_manifest(tmp_path):
-    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    (tmp_path / CONDA_LOCK_KIND).write_text(
+        "version: 1\npackage: []\n", encoding="utf-8"
+    )
     assert discover(tmp_path) == (
         ScannedManifest(path=CONDA_LOCK_KIND, kind=CONDA_LOCK_KIND),
     )
@@ -221,8 +221,12 @@ def test_discover_finds_a_conda_lock_manifest(tmp_path):
 
 def test_discover_finds_all_three_kinds_together_in_fixed_order(tmp_path):
     write_pyproject(tmp_path, [])
-    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
-    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
+    (tmp_path / PIXI_LOCK_KIND).write_text(
+        "version: 6\npackages: []\n", encoding="utf-8"
+    )
+    (tmp_path / CONDA_LOCK_KIND).write_text(
+        "version: 1\npackage: []\n", encoding="utf-8"
+    )
     assert discover(tmp_path) == (
         ScannedManifest(path=PYPROJECT_KIND, kind=PYPROJECT_KIND),
         ScannedManifest(path=PIXI_LOCK_KIND, kind=PIXI_LOCK_KIND),
@@ -279,10 +283,18 @@ def test_discover_returns_empty_when_no_source_manifest_present(tmp_path):
 
 def test_discover_finds_all_seven_kinds_together_in_fixed_order(tmp_path):
     write_pyproject(tmp_path, [])
-    (tmp_path / PIXI_LOCK_KIND).write_text("version: 6\npackages: []\n", encoding="utf-8")
-    (tmp_path / CONDA_LOCK_KIND).write_text("version: 1\npackage: []\n", encoding="utf-8")
-    (tmp_path / RECIPE_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
-    (tmp_path / META_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
+    (tmp_path / PIXI_LOCK_KIND).write_text(
+        "version: 6\npackages: []\n", encoding="utf-8"
+    )
+    (tmp_path / CONDA_LOCK_KIND).write_text(
+        "version: 1\npackage: []\n", encoding="utf-8"
+    )
+    (tmp_path / RECIPE_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
+    (tmp_path / META_YAML_KIND).write_text(
+        "requirements:\n  run: []\n", encoding="utf-8"
+    )
     (tmp_path / ENVIRONMENT_YML_KIND).write_text("dependencies: []\n", encoding="utf-8")
     (tmp_path / PIXI_TOML_KIND).write_text("[dependencies]\n", encoding="utf-8")
     assert discover(tmp_path) == (
@@ -378,9 +390,7 @@ def test_discover_union_coverage_at_depth(tmp_path):
     (subdir / RECIPE_YAML_KIND).write_text(
         "requirements:\n  run: []\n", encoding="utf-8"
     )
-    (subdir / META_YAML_KIND).write_text(
-        "requirements:\n  run: []\n", encoding="utf-8"
-    )
+    (subdir / META_YAML_KIND).write_text("requirements:\n  run: []\n", encoding="utf-8")
     assert discover(tmp_path) == (
         ScannedManifest(path="sub/recipe.yaml", kind=RECIPE_YAML_KIND),
         ScannedManifest(path="sub/meta.yaml", kind=META_YAML_KIND),
@@ -473,17 +483,13 @@ def test_discover_finds_environment_yaml_spelling(tmp_path):
 def test_discover_finds_both_environment_yml_spellings_together(tmp_path):
     """Both spellings coexisting in one directory scan both (union
     coverage) — mirrors recipe.yaml+meta.yaml's existing precedent."""
-    (tmp_path / ENVIRONMENT_YML_KIND).write_text(
-        "dependencies: []\n", encoding="utf-8"
-    )
+    (tmp_path / ENVIRONMENT_YML_KIND).write_text("dependencies: []\n", encoding="utf-8")
     (tmp_path / ENVIRONMENT_YAML_KIND).write_text(
         "dependencies: []\n", encoding="utf-8"
     )
     assert discover(tmp_path) == (
         ScannedManifest(path=ENVIRONMENT_YML_KIND, kind=ENVIRONMENT_YML_KIND),
-        ScannedManifest(
-            path=ENVIRONMENT_YAML_KIND, kind=ENVIRONMENT_YAML_KIND
-        ),
+        ScannedManifest(path=ENVIRONMENT_YAML_KIND, kind=ENVIRONMENT_YAML_KIND),
     )
 
 
@@ -583,9 +589,7 @@ def test_invalid_requirement_is_kept_raw_malformed(tmp_path):
 
 
 def test_environment_markers_are_ignored(tmp_path):
-    (component,) = extract_from(
-        tmp_path, ["requests==2.31.0; python_version >= '3.8'"]
-    )
+    (component,) = extract_from(tmp_path, ["requests==2.31.0; python_version >= '3.8'"])
     assert component.name == "requests"
     assert component.version == "2.31.0"
     assert component.vuln_matchable is True
@@ -886,9 +890,7 @@ def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
 # --- D2's split (Story 1.9): misconfiguration guard + empty-extraction -------
 
 
-def test_no_manifest_with_python_source_is_a_misconfiguration_error(
-    capsys, tmp_path
-):
+def test_no_manifest_with_python_source_is_a_misconfiguration_error(capsys, tmp_path):
     """D2(a): Python signals exist but the recursive walk found nothing
     recognized anywhere in the tree — never silently 'nothing to scan'
     (exit 0); a fail-closed operational error (exit 2)."""
@@ -929,9 +931,7 @@ def test_empty_extraction_is_indeterminate_by_default(capsys, tmp_path):
     assert "manifest(s) parsed but zero dependencies/components" in err
 
 
-def test_empty_extraction_allow_empty_downgrades_exit_to_zero(
-    capsys, tmp_path
-):
+def test_empty_extraction_allow_empty_downgrades_exit_to_zero(capsys, tmp_path):
     write_pyproject(tmp_path, [])
     capsys.readouterr()
     rc = main(["scan", str(tmp_path), "--format", "json", "--allow-empty"])
@@ -969,9 +969,7 @@ def test_empty_extraction_finding_id_is_invocation_stable(
     assert id_abs in {f["id"] for f in document_abs["findings"]}
 
 
-def test_recipe_yaml_empty_extraction_stderr_is_manifest_agnostic(
-    capsys, tmp_path
-):
+def test_recipe_yaml_empty_extraction_stderr_is_manifest_agnostic(capsys, tmp_path):
     """A non-pyproject D2(c) case: the stderr diagnostic must not claim
     '[project].dependencies' — that wording is pyproject.toml-specific and
     misdescribes 7 of the 8 discovered manifest kinds."""
@@ -985,9 +983,7 @@ def test_recipe_yaml_empty_extraction_stderr_is_manifest_agnostic(
     assert "manifest(s) parsed but zero dependencies/components" in err
 
 
-def test_text_format_for_empty_extraction_shows_indeterminate(
-    capsys, tmp_path
-):
+def test_text_format_for_empty_extraction_shows_indeterminate(capsys, tmp_path):
     """--format text regression for a D2(c) path (Story 1.9 review
     finding: all prior new assertions used --format json only)."""
     write_pyproject(tmp_path, [])
@@ -999,9 +995,7 @@ def test_text_format_for_empty_extraction_shows_indeterminate(
     assert "indeterminate:empty-extraction:scan" in captured.out
 
 
-def test_text_format_for_allow_empty_downgrade_shows_exit_zero(
-    capsys, tmp_path
-):
+def test_text_format_for_allow_empty_downgrade_shows_exit_zero(capsys, tmp_path):
     """--format text regression for the --allow-empty downgrade path."""
     write_pyproject(tmp_path, [])
     rc = main(["scan", str(tmp_path), "--allow-empty"])
@@ -1056,9 +1050,7 @@ def test_pyproject_only_resolution_depth_stays_direct_only(capsys, tmp_path):
     assert rc == document["exit_code"]
 
 
-def test_keyboard_interrupt_during_parse_args_returns_sigint(
-    capsys, monkeypatch
-):
+def test_keyboard_interrupt_during_parse_args_returns_sigint(capsys, monkeypatch):
     """The SIGINT window covers ALL of main — an interrupt while argparse is
     still parsing must return EXIT_SIGINT, never a traceback."""
 
@@ -1091,9 +1083,7 @@ def test_whitespace_path_argument_is_early_fatal(capsys):
     assert captured.err != ""
 
 
-def test_broken_pipe_on_stdout_returns_the_computed_exit_code(
-    monkeypatch, tmp_path
-):
+def test_broken_pipe_on_stdout_returns_the_computed_exit_code(monkeypatch, tmp_path):
     """A vanished stdout consumer (e.g. `| head`) must not traceback: the
     report's already-computed exit code is still returned."""
     write_pyproject(tmp_path, ["requests==2.31.0"])
@@ -1163,9 +1153,7 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
-def test_unreadable_manifest_is_unparsable_manifest_not_a_crash(
-    capsys, tmp_path
-):
+def test_unreadable_manifest_is_unparsable_manifest_not_a_crash(capsys, tmp_path):
     """An OS failure READING the manifest (chmod-000) is a genuine manifest
     problem: kind unparsable-manifest with the OS error in the message,
     report emitted, exit via the error projection. Story 3.1: ConfigLoader
@@ -1203,9 +1191,7 @@ def test_unreadable_manifest_is_unparsable_manifest_not_a_crash(
     # path" concept -- it operates on the whole scan target); the deterministic
     # tie-break (smallest (axis, finding_id), both AXIS_INGESTION) picks it
     # as the driver since "config-parse" < "unparsable-manifest" lexically.
-    assert document["status"]["driver"]["finding_id"].startswith(
-        "error:config-parse:"
-    )
+    assert document["status"]["driver"]["finding_id"].startswith("error:config-parse:")
     assert err != ""
 
 
@@ -1242,9 +1228,7 @@ def test_internal_value_error_from_an_extractor_is_internal_error(
         def extract(self, manifest_path, manifest):
             raise ValueError("sentinel internal failure")
 
-    monkeypatch.setattr(
-        cli, "extractor_for", lambda kind, router: ExplodingExtractor()
-    )
+    monkeypatch.setattr(cli, "extractor_for", lambda kind, router: ExplodingExtractor())
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2
     (error,) = document["errors"]
@@ -1283,9 +1267,7 @@ def test_permission_denied_discovery_is_an_error_report_not_a_false_green(
 # --- exit-path hardening rows --------------------------------------------------
 
 
-def test_unexpected_internal_exception_never_exits_one(
-    capsys, tmp_path, monkeypatch
-):
+def test_unexpected_internal_exception_never_exits_one(capsys, tmp_path, monkeypatch):
     """The last-resort net: an unexpected exception (here render_json's
     fail-loud path) returns exit_code_for(error) with stdout EMPTY — never
     the interpreter's default exit 1, which would read as 'findings found'
@@ -1372,9 +1354,7 @@ def test_system_exit_from_the_scan_region_projects_as_error(
     assert "sole-ownership" in captured.err
 
 
-def test_closed_stderr_does_not_escape_the_exception_nets(
-    monkeypatch, tmp_path
-):
+def test_closed_stderr_does_not_escape_the_exception_nets(monkeypatch, tmp_path):
     """_stderr runs INSIDE the exception handlers; print on a CLOSED
     stderr raises ValueError (not OSError). Unabsorbed, the handler itself
     would escape main() as an uncaught traceback with interpreter exit 1 —
@@ -1507,9 +1487,7 @@ def test_unexpected_extractor_exception_still_emits_the_report(
         def extract(self, manifest_path, manifest):
             raise TypeError("sentinel type failure")
 
-    monkeypatch.setattr(
-        cli, "extractor_for", lambda kind, router: ExplodingExtractor()
-    )
+    monkeypatch.setattr(cli, "extractor_for", lambda kind, router: ExplodingExtractor())
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2
     assert rc == document["exit_code"]

@@ -77,7 +77,9 @@ def resolve_worker_count(aggressive_env: str | None) -> int:
     return SINGLE_WORKER
 
 
-def parse_retry_after(value: str | int | float | None, *, now: float | None = None) -> float:
+def parse_retry_after(
+    value: str | int | float | None, *, now: float | None = None
+) -> float:
     """Parse an HTTP ``Retry-After`` header value into a wait in seconds.
 
     Accepts the two RFC 7231 forms — delta-seconds (``"30"``) or an HTTP-date

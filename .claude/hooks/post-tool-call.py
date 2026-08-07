@@ -15,10 +15,22 @@ WEBSERVER_HOST = "localhost"
 WEBSERVER_ENDPOINT = "/api/provenance/call"
 PORT_FILE_SUFFIX = "-provenance-port.txt"
 
+
 class ProvenanceHookError(RuntimeError):
     pass
 
-def http_request(method, host, port, location, *, body: Optional[bytes] = None, headers={}, timeout=None, wait_for_response=False) -> bytes:
+
+def http_request(
+    method,
+    host,
+    port,
+    location,
+    *,
+    body: Optional[bytes] = None,
+    headers={},
+    timeout=None,
+    wait_for_response=False,
+) -> bytes:
     # AUD-CFE-009: the response was read into a local and thrown away, so this
     # function's `-> bytes` annotation was a lie and every caller got None.
     with closing(HTTPConnection(host, port, timeout=timeout)) as connection:
@@ -28,9 +40,10 @@ def http_request(method, host, port, location, *, body: Optional[bytes] = None, 
             return response.read()
     return b""
 
+
 def get_server_port():
     claude_root = os.getenv("CLAUDE_PROJECT_DIR")
-    path_hash = hashlib.md5(claude_root.encode('utf-8')).hexdigest()
+    path_hash = hashlib.md5(claude_root.encode("utf-8")).hexdigest()
     port_file = Path(tempfile.gettempdir()) / (path_hash + PORT_FILE_SUFFIX)
 
     return int(port_file.read_text("utf-8").strip())
@@ -41,7 +54,8 @@ def send_diff_to_webserver(file_path, timestamp_ms, wait_for_response):
         port = get_server_port()
     except FileNotFoundError as e:
         raise ProvenanceHookError(
-            f"Could not determine API port: {e.filename} does not exist") from e
+            f"Could not determine API port: {e.filename} does not exist"
+        ) from e
     except Exception as e:
         raise ProvenanceHookError("Could not determine API port") from e
 
@@ -55,25 +69,23 @@ def send_diff_to_webserver(file_path, timestamp_ms, wait_for_response):
             port=port,
             location=WEBSERVER_ENDPOINT,
             body=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            headers={'Content-Type': 'application/json'},
+            headers={"Content-Type": "application/json"},
             timeout=0.5,
-            wait_for_response=wait_for_response
+            wait_for_response=wait_for_response,
         )
 
     except (HTTPException, OSError, ConnectionError) as e:
-        raise ProvenanceHookError(
-            f"Network error while sending diff to {url}") from e
+        raise ProvenanceHookError(f"Network error while sending diff to {url}") from e
     except Exception as e:
-        raise ProvenanceHookError(
-            f"Unknown error while sending diff to {url}") from e
+        raise ProvenanceHookError(f"Unknown error while sending diff to {url}") from e
 
 
 def extract_file_path(tool_name, tool_input):
     if tool_name in ["Write", "Edit", "MultiEdit"]:
-        return tool_input.get('file_path', 'unknown')
+        return tool_input.get("file_path", "unknown")
     if tool_name == "NotebookEdit":
-        return tool_input.get('notebook_path', 'unknown')
-    return 'unknown'
+        return tool_input.get("notebook_path", "unknown")
+    return "unknown"
 
 
 def excepthook(type, value, traceback_):
@@ -83,7 +95,7 @@ def excepthook(type, value, traceback_):
 
 def main():
     data = json.load(sys.stdin)
-    tool_name = data.get('tool_name', 'unknown')
+    tool_name = data.get("tool_name", "unknown")
 
     p = argparse.ArgumentParser()
     # AUD-CFE-009: `default=False` without an action made this a value-taking
@@ -92,12 +104,10 @@ def main():
     p.add_argument("--wait_for_response", action="store_true")
     args = p.parse_args()
 
-    modification_tools = [
-        "Write", "Edit", "MultiEdit", "NotebookEdit"
-    ]
+    modification_tools = ["Write", "Edit", "MultiEdit", "NotebookEdit"]
 
     if tool_name in modification_tools:
-        tool_input = data.get('tool_input', {})
+        tool_input = data.get("tool_input", {})
         file_path = extract_file_path(tool_name, tool_input)
         if file_path:
             timestamp_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -109,6 +119,7 @@ def main():
                 print(str(exc), file=sys.stderr)
                 return 1
     return 0
+
 
 if __name__ == "__main__":
     sys.excepthook = excepthook

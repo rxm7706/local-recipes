@@ -81,7 +81,9 @@ def compose(
     return winner
 
 
-def _driver_beats(candidate: StatusDriver | None, incumbent: StatusDriver | None) -> bool:
+def _driver_beats(
+    candidate: StatusDriver | None, incumbent: StatusDriver | None
+) -> bool:
     """Deterministic driver preference for equal-rank rungs: any driver beats
     ``None``; among drivers, the smallest ``(axis, finding_id)`` wins."""
     if candidate is None:

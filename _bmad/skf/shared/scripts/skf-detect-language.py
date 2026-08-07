@@ -229,7 +229,10 @@ def _detected_languages(payload: dict[str, Any], winner: dict[str, Any]) -> list
     tree: list[str] = payload["tree"]  # validated non-empty by _winner()
 
     workspace_signal = payload.get("workspace_signal")
-    if isinstance(workspace_signal, str) and workspace_signal in _WORKSPACE_SIGNAL_LANGUAGE:
+    if (
+        isinstance(workspace_signal, str)
+        and workspace_signal in _WORKSPACE_SIGNAL_LANGUAGE
+    ):
         return [winner["language"]]
 
     langs: list[str] = []
@@ -290,7 +293,10 @@ def _winner(payload: dict[str, Any]) -> dict[str, Any]:
     # skf-detect-workspaces.manifest_kind) wins over any nested package.json +
     # tsconfig.json, which would otherwise be misread as a typescript root.
     workspace_signal = payload.get("workspace_signal")
-    if isinstance(workspace_signal, str) and workspace_signal in _WORKSPACE_SIGNAL_LANGUAGE:
+    if (
+        isinstance(workspace_signal, str)
+        and workspace_signal in _WORKSPACE_SIGNAL_LANGUAGE
+    ):
         return {
             "language": _WORKSPACE_SIGNAL_LANGUAGE[workspace_signal],
             "confidence": "high",

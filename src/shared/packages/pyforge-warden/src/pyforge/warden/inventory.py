@@ -116,9 +116,7 @@ class Component:
             raise ValueError("Component.name must be a non-empty string")
         if self.version == "":
             object.__setattr__(self, "version", None)
-        if self.vuln_matchable and (
-            self.pypi_identity is None or self.version is None
-        ):
+        if self.vuln_matchable and (self.pypi_identity is None or self.version is None):
             raise ValueError(
                 "vuln_matchable=True requires a resolved pypi_identity AND a "
                 "concrete version (the Gap-C predicate) — got "
@@ -282,7 +280,12 @@ def merge_components(components: Iterable[Component]) -> tuple[Component, ...]:
     return tuple(
         sorted(
             result.values(),
-            key=lambda c: (c.ecosystem.value, c.name, c.version is not None, c.version or ""),
+            key=lambda c: (
+                c.ecosystem.value,
+                c.name,
+                c.version is not None,
+                c.version or "",
+            ),
         )
     )
 
@@ -352,9 +355,7 @@ def _merge_group(group: list[Component]) -> Component:
         all(component.vuln_matchable for component in group)
         and pypi_identity is not None
     )
-    provenance_union = {
-        entry for component in group for entry in component.provenance
-    }
+    provenance_union = {entry for component in group for entry in component.provenance}
     return Component(
         name=name,
         version=version,

@@ -42,11 +42,15 @@ def test_load_many_acquires_a_token_per_project_request():
     # DW-B1-2: the scheduler now GATES the live fetch path. Small bucket + advancing
     # clock so throttling is observable and acquire() never spins.
     clk = _AdvancingClock()
-    sched = RateLimitedScheduler(rps=3.0, bucket_capacity=2, clock=clk.now, sleep=clk.sleep)
+    sched = RateLimitedScheduler(
+        rps=3.0, bucket_capacity=2, clock=clk.now, sleep=clk.sleep
+    )
     ds = PyPIJsonRequestDataset(url="https://pypi.org", scheduler=sched)
 
     fetched = []
-    result = ds.load_many(["a", "b", "c"], fetcher=lambda key: fetched.append(key) or {"url": key})
+    result = ds.load_many(
+        ["a", "b", "c"], fetcher=lambda key: fetched.append(key) or {"url": key}
+    )
 
     # 3 requests issued, each through the scheduler (bucket started at 2 -> 3rd waits)
     assert list(result.keys()) == ["a", "b", "c"]
@@ -61,15 +65,21 @@ def test_load_many_acquires_a_token_per_project_request():
 def test_bucket_ge_n_never_spins_even_with_frozen_clock():
     # DW-B1-2 coupling guard: bucket_capacity >= n means no acquire ever needs to wait,
     # so a frozen clock (no advance) is safe. This asserts the documented escape hatch.
-    frozen = RateLimitedScheduler(rps=3.0, bucket_capacity=5, clock=lambda: 0.0, sleep=lambda s: None)
+    frozen = RateLimitedScheduler(
+        rps=3.0, bucket_capacity=5, clock=lambda: 0.0, sleep=lambda s: None
+    )
     ds = PyPIJsonRequestDataset(url="https://pypi.org", scheduler=frozen)
-    result = ds.load_many(["a", "b", "c"], fetcher=lambda key: key)  # would spin if bucket < 3
+    result = ds.load_many(
+        ["a", "b", "c"], fetcher=lambda key: key
+    )  # would spin if bucket < 3
     assert len(result) == 3
 
 
 def test_fetch_one_acquires_before_delegating():
     clk = _AdvancingClock()
-    sched = RateLimitedScheduler(rps=3.0, bucket_capacity=1, clock=clk.now, sleep=clk.sleep)
+    sched = RateLimitedScheduler(
+        rps=3.0, bucket_capacity=1, clock=clk.now, sleep=clk.sleep
+    )
     ds = PyPIJsonRequestDataset(url="https://pypi.org", scheduler=sched)
     ds.fetch_one("k1", fetcher=lambda k: k)  # free (bucket=1)
     ds.fetch_one("k2", fetcher=lambda k: k)  # throttled -> advances clock
@@ -96,7 +106,9 @@ def test_single_load_directs_to_load_many():
 
 
 def test_load_many_skips_missing_names():
-    frozen = RateLimitedScheduler(rps=3.0, bucket_capacity=5, clock=lambda: 0.0, sleep=lambda s: None)
+    frozen = RateLimitedScheduler(
+        rps=3.0, bucket_capacity=5, clock=lambda: 0.0, sleep=lambda s: None
+    )
     ds = PyPIJsonRequestDataset(url="https://pypi.org", scheduler=frozen)
     result = ds.load_many(["a", None, float("nan"), "b"], fetcher=lambda k: k)
     assert set(result.keys()) == {"a", "b"}  # None / NaN skipped, no crash

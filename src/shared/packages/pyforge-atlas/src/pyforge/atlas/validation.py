@@ -156,7 +156,11 @@ def _coerce_json_native(obj: Any) -> Any:
     # numpy scalar/array → native (then recurse in case it became a list/dict). ``__module__``
     # can be None on some dynamically-created / C-extension types, so guard before splitting.
     module = getattr(type(obj), "__module__", None)
-    if isinstance(module, str) and module.split(".")[0] == "numpy" and hasattr(obj, "tolist"):
+    if (
+        isinstance(module, str)
+        and module.split(".")[0] == "numpy"
+        and hasattr(obj, "tolist")
+    ):
         return _coerce_json_native(obj.tolist())
     # scalar pandas/numpy null → JSON null (guard is_scalar so a container doesn't raise).
     import pandas as pd
@@ -166,7 +170,11 @@ def _coerce_json_native(obj: Any) -> Any:
     if isinstance(obj, (int, str)):
         return obj
     if isinstance(obj, float):
-        return obj if (obj == obj and obj not in (float("inf"), float("-inf"))) else str(obj)
+        return (
+            obj
+            if (obj == obj and obj not in (float("inf"), float("-inf")))
+            else str(obj)
+        )
     return str(obj)
 
 
@@ -179,7 +187,11 @@ def _pandera_evidence(exc: pa.errors.SchemaErrors) -> dict[str, Any]:
     cases: list[dict[str, Any]] = []
     try:
         fc = exc.failure_cases
-        cols = [c for c in ("schema_context", "column", "check", "failure_case") if c in fc.columns]
+        cols = [
+            c
+            for c in ("schema_context", "column", "check", "failure_case")
+            if c in fc.columns
+        ]
         for _, row in fc.head(_MAX_EVIDENCE_CASES).iterrows():
             cases.append({c: _coerce_json_native(row[c]) for c in cols})
         total = int(len(fc))
@@ -194,7 +206,9 @@ class PanderaValidator:
     name = "pandera"
 
     def __init__(self, contracts: dict[str, pa.DataFrameSchema] | None = None) -> None:
-        self._contracts = dict(contracts if contracts is not None else DEFAULT_CONTRACTS)
+        self._contracts = dict(
+            contracts if contracts is not None else DEFAULT_CONTRACTS
+        )
 
     def check(self, dataset: str, data: Any) -> list[ContractViolation]:
         schema = self._contracts.get(dataset)
@@ -203,14 +217,23 @@ class PanderaValidator:
         if not _is_dataframe(data):
             # a frame contract cannot validate a non-frame output; skip gracefully rather
             # than crash (Reviewer-B). With an empty shipped registry this is gate-only.
-            logger.debug("pandera: %r output is not a DataFrame; skipping frame validation", dataset)
+            logger.debug(
+                "pandera: %r output is not a DataFrame; skipping frame validation",
+                dataset,
+            )
             return []
         try:
             schema.validate(data, lazy=True)
         except pa.errors.SchemaErrors as exc:
-            return [ContractViolation(dataset, self.name, PANDERA_RULE, _pandera_evidence(exc))]
+            return [
+                ContractViolation(
+                    dataset, self.name, PANDERA_RULE, _pandera_evidence(exc)
+                )
+            ]
         except pa.errors.SchemaError as exc:  # non-lazy single-error path
-            return [ContractViolation(dataset, self.name, PANDERA_RULE, {"error": str(exc)})]
+            return [
+                ContractViolation(dataset, self.name, PANDERA_RULE, {"error": str(exc)})
+            ]
         return []
 
 
@@ -314,7 +337,9 @@ class DataValidationHooks:
         pandas/numpy nulls to ``null`` and unwraps numpy scalars, Gemini #93)."""
         return _coerce_json_native(obj)
 
-    def _build_alert(self, dataset: str, violations: list[ContractViolation], rule: str) -> AtlasAlert:
+    def _build_alert(
+        self, dataset: str, violations: list[ContractViolation], rule: str
+    ) -> AtlasAlert:
         """Build the A2A alert with JSON-native-coerced evidence + a non-empty rule fallback, so
         an ill-behaved backend's evidence can never crash the halt or drop the alert (AD-20)."""
         evidence = self._json_native(
@@ -322,7 +347,8 @@ class DataValidationHooks:
                 "dataset": dataset,
                 "validators": sorted({v.validator for v in violations}),
                 "violations": [
-                    {"validator": v.validator, "rule": v.rule, **v.evidence} for v in violations
+                    {"validator": v.validator, "rule": v.rule, **v.evidence}
+                    for v in violations
                 ],
             }
         )

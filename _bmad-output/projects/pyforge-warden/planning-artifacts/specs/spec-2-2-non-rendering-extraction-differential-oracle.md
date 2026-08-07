@@ -188,12 +188,14 @@ No `bad_spec` loopback occurred during this story's review (all findings were `p
 ```python
 # v1 (recipe.yaml) — rattler_build
 from rattler_build import Stage0Recipe, VariantConfig
+
 rendered = Stage0Recipe.from_yaml(text).render(VariantConfig.from_yaml("{}"))
 rendered[0].recipe.requirements.to_dict()
 # -> {'host': ['python', 'pip'], 'run': ['python', 'numpy >=1.20'], 'run_constraints': [...]}
 
 # v0 (meta.yaml) — conda_build
 from conda_build import api
+
 metas = api.render(recipe_dir, finalize=False, bypass_env_check=True)
 metas[0][0].get_value("requirements/run")  # -> ['python', 'numpy >=1.20']
 ```

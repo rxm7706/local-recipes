@@ -332,7 +332,9 @@ low_frame_rate = false
 _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 
 
-def render_policy_toml(effective: policy.EffectivePolicy, *, difficulty: str | None = None) -> str:
+def render_policy_toml(
+    effective: policy.EffectivePolicy, *, difficulty: str | None = None
+) -> str:
     """Pure string builder (no I/O): parse ``_POLICY_TEMPLATE``, overwrite
     Marshal's 6 mapped keys from ``effective``, apply FR-51 tier-batching,
     and return ``tomlkit.dumps(...)``. Identical ``(effective, difficulty)``
@@ -515,7 +517,9 @@ def harness_version_in_range(text: str) -> bool:
     if parsed is None:
         return False
     padded = parsed + (0, 0, 0)
-    return padded[:3] >= _HARNESS_MIN_VERSION and padded[:2] < _HARNESS_MAX_MINOR_EXCLUSIVE
+    return (
+        padded[:3] >= _HARNESS_MIN_VERSION and padded[:2] < _HARNESS_MAX_MINOR_EXCLUSIVE
+    )
 
 
 def harness_version_is_major_mismatch(text: str | None) -> bool:
@@ -589,7 +593,9 @@ class HarnessError(Exception):
     type)."""
 
 
-def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> subprocess.CompletedProcess[str] | None:
+def _run(
+    args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S
+) -> subprocess.CompletedProcess[str] | None:
     """Mirrors ``vcs_git.py``'s ``_run``: same ``encoding="utf-8"``/
     ``errors="replace"`` decode discipline. Unlike that module's version,
     every failure mode here (missing binary, launch failure, a hung
@@ -667,7 +673,13 @@ class BmadLoopHarness:
         # values with bare float()/int()/.items() (e.g. usage_grace_s = "x"),
         # so a VALID-TOML overlay with a wrong-typed field raises those RAW
         # past ProfileError too -- same class, second review pass.
-        except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError) as exc:
+        except (
+            OSError,
+            UnicodeDecodeError,
+            ValueError,
+            TypeError,
+            AttributeError,
+        ) as exc:
             raise HarnessError(f"cannot read adapter profile overlay: {exc}") from exc
 
     def adapter_binary(self, adapter_name: str, project: Path) -> str:
@@ -1050,9 +1062,12 @@ class BmadLoopHarness:
                 # it simply cannot be attributed to a story.
                 if task.story_key:
                     story_key = task.story_key
-                    story_weighted_tokens = task.tokens.weighted_total(cache_read_weight)
+                    story_weighted_tokens = task.tokens.weighted_total(
+                        cache_read_weight
+                    )
             run_weighted_tokens = sum(
-                task.tokens.weighted_total(cache_read_weight) for task in state.tasks.values()
+                task.tokens.weighted_total(cache_read_weight)
+                for task in state.tasks.values()
             )
         # `ArithmeticError` and `RecursionError` alongside the rest (review
         # finding): neither is a `ValueError`, and both are reachable from a
@@ -1097,7 +1112,9 @@ class BmadLoopHarness:
         except (ValueError, LookupError, TypeError):
             return None
 
-    def run_status_snapshot(self, project: Path, run_id: str) -> RunStatusSnapshot | None:
+    def run_status_snapshot(
+        self, project: Path, run_id: str
+    ) -> RunStatusSnapshot | None:
         # Lazy import, this method's own instance -- see the module
         # docstring's Story 3.7 paragraph. Reads the SAME state.json
         # `usage_snapshot` reads, via the SAME seam.

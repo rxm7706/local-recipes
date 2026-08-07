@@ -95,9 +95,7 @@ def validate_libraries(libraries: object) -> list[dict]:
             )
         files = entry.get("files")
         if not isinstance(files, list):
-            raise ValueError(
-                f"library entry {name!r} missing required `files` array"
-            )
+            raise ValueError(f"library entry {name!r} missing required `files` array")
         norm_files: list[str] = []
         for f_idx, f in enumerate(files):
             if not isinstance(f, str):
@@ -135,12 +133,14 @@ def compute_pairs(libraries: list[dict]) -> list[dict]:
             intersection = sorted(set_a & set_b)
             if not intersection:
                 continue
-            pairs.append({
-                "a": a["name"],
-                "b": b["name"],
-                "intersection_count": len(intersection),
-                "files": intersection,
-            })
+            pairs.append(
+                {
+                    "a": a["name"],
+                    "b": b["name"],
+                    "intersection_count": len(intersection),
+                    "files": intersection,
+                }
+            )
     pairs.sort(key=lambda p: (-p["intersection_count"], p["a"], p["b"]))
     return pairs
 
@@ -173,7 +173,9 @@ def _read_libraries_source(source: str) -> object:
         try:
             text = sys.stdin.read()
         except OSError as exc:
-            raise ValueError(f"failed to read libraries JSON from stdin: {exc}") from exc
+            raise ValueError(
+                f"failed to read libraries JSON from stdin: {exc}"
+            ) from exc
     else:
         path = Path(source)
         if not path.is_file():
@@ -223,7 +225,7 @@ def _build_parser() -> argparse.ArgumentParser:
         required=True,
         help=(
             "path to libraries JSON, or '-' to read from stdin. "
-            "Shape: [{\"name\": \"<lib>\", \"files\": [\"<path>\", ...]}, ...]"
+            'Shape: [{"name": "<lib>", "files": ["<path>", ...]}, ...]'
         ),
     )
     p_int.add_argument(

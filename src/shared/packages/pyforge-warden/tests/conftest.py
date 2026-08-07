@@ -198,9 +198,7 @@ def _denied_sendto(self, data, *args, **kwargs):
 def _denied_sendmsg(self, *args, **kwargs):
     # sendmsg(buffers[, ancdata[, flags[, address]]]): the destination is
     # the optional 4th positional argument (None on a connected socket).
-    raise SocketDenyError(
-        "socket.socket.sendmsg", args[3] if len(args) >= 4 else None
-    )
+    raise SocketDenyError("socket.socket.sendmsg", args[3] if len(args) >= 4 else None)
 
 
 def _denied_create_connection(address, *args, **kwargs):

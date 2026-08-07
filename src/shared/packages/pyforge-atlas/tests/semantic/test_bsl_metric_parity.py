@@ -89,8 +89,20 @@ def test_adoption_stage_matches_legacy_classify(parquet_table):
     # null-age+0-versions unknown branch, and the `age or 99999` falsy-zero quirk).
     df = pd.DataFrame(
         {
-            "conda_name": ["silent", "declin", "bleed", "stable", "mature", "unknown",
-                           "b730", "b365", "zeroage", "twoRel", "newpkg", "nulltv_old"],
+            "conda_name": [
+                "silent",
+                "declin",
+                "bleed",
+                "stable",
+                "mature",
+                "unknown",
+                "b730",
+                "b365",
+                "zeroage",
+                "twoRel",
+                "newpkg",
+                "nulltv_old",
+            ],
             "latest_upload_age_days": pd.array(
                 [800, 400, 10, 100, 200, None, 730, 365, 0, 50, None, None],
                 dtype="Int64",
@@ -98,8 +110,12 @@ def test_adoption_stage_matches_legacy_classify(parquet_table):
             # NULL releases/versions exercise the legacy call-site `... or 0` coalescing:
             #   newpkg     — NULL age + NULL total_versions → "unknown" (new/no-history)
             #   nulltv_old — NULL age + NON-NULL total_versions → age→99999 → "silent"
-            "releases_30d": pd.array([0, 0, 3, 1, 0, 0, 0, 0, 5, 2, None, 0], dtype="Int64"),
-            "total_versions": pd.array([1, 1, 5, 3, 4, 0, 2, 2, 1, 3, None, 5], dtype="Int64"),
+            "releases_30d": pd.array(
+                [0, 0, 3, 1, 0, 0, 0, 0, 5, 2, None, 0], dtype="Int64"
+            ),
+            "total_versions": pd.array(
+                [1, 1, 5, 3, 4, 0, 2, 2, 1, 3, None, 5], dtype="Int64"
+            ),
         }
     )
     t = parquet_table(df, "adoption")
@@ -212,7 +228,13 @@ def test_is_actionable_matches_legacy_view(parquet_table):
         assert bool(got[r["conda_name"]]) == expected, r["conda_name"]
     # a=active/0 → True ; b=archived-status → False ; c=NULL-status(→active) → True ;
     # d=feedstock_archived=1 → False ; e=NULL-archived(→0) → True.
-    assert [bool(got[k]) for k in ["a", "b", "c", "d", "e"]] == [True, False, True, False, True]
+    assert [bool(got[k]) for k in ["a", "b", "c", "d", "e"]] == [
+        True,
+        False,
+        True,
+        False,
+        True,
+    ]
 
     # actionable_count measure agrees with the row-level dimension (3 actionable).
     n = model.query(measures=["actionable_count"]).execute()["actionable_count"].iloc[0]
@@ -269,7 +291,9 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
         "ci_red",
     )
     for _, r in df.iterrows():
-        assert bool(ci[r["feedstock_name"]]) == _legacy_ci_red(r["ci_status"]), r["feedstock_name"]
+        assert bool(ci[r["feedstock_name"]]) == _legacy_ci_red(r["ci_status"]), r[
+            "feedstock_name"
+        ]
 
     prs = _by_key(
         model.query(dimensions=["feedstock_name", "has_open_prs"]).execute(),
@@ -277,7 +301,9 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
         "has_open_prs",
     )
     for _, r in df.iterrows():
-        exp = (0 if pd.isna(r["open_prs"]) else int(r["open_prs"])) > 0  # COALESCE(...,0)>0
+        exp = (
+            0 if pd.isna(r["open_prs"]) else int(r["open_prs"])
+        ) > 0  # COALESCE(...,0)>0
         assert bool(prs[r["feedstock_name"]]) == exp, r["feedstock_name"]
 
     issues = _by_key(
@@ -291,7 +317,12 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
 
     # counts agree with the row-level dimensions.
     counts = model.query(
-        measures=["ci_red_count", "open_prs_count", "open_issues_count", "feedstock_count"]
+        measures=[
+            "ci_red_count",
+            "open_prs_count",
+            "open_issues_count",
+            "feedstock_count",
+        ]
     ).execute()
     assert int(counts["ci_red_count"].iloc[0]) == 2  # failure + error
     assert int(counts["open_prs_count"].iloc[0]) == 1
@@ -308,12 +339,21 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
 # schema (an all-empty object column would round-trip to a null type and break string
 # comparisons — a fixture artifact, not a model bug; real catalog Parquet is typed).
 _PACKAGES_EMPTY_DTYPES = {
-    "conda_name": "string", "latest_status": "string", "feedstock_archived": "Int64",
-    "latest_conda_upload": "Int64", "downloads_total": "Int64", "downloads_30d": "Int64",
-    "latest_upload_age_days": "Int64", "releases_30d": "Int64", "total_versions": "Int64",
+    "conda_name": "string",
+    "latest_status": "string",
+    "feedstock_archived": "Int64",
+    "latest_conda_upload": "Int64",
+    "downloads_total": "Int64",
+    "downloads_30d": "Int64",
+    "latest_upload_age_days": "Int64",
+    "releases_30d": "Int64",
+    "total_versions": "Int64",
 }
 _FHEALTH_EMPTY_DTYPES = {
-    "feedstock_name": "string", "ci_status": "string", "open_prs": "Int64", "open_issues": "Int64",
+    "feedstock_name": "string",
+    "ci_status": "string",
+    "open_prs": "Int64",
+    "open_issues": "Int64",
 }
 
 
@@ -333,7 +373,12 @@ def test_models_build_and_query_on_empty_input(parquet_table, builder, dtypes):
     if builder is models.build_packages_model:
         measures = ["package_count", "actionable_count"]
     else:
-        measures = ["feedstock_count", "ci_red_count", "open_prs_count", "open_issues_count"]
+        measures = [
+            "feedstock_count",
+            "ci_red_count",
+            "open_prs_count",
+            "open_issues_count",
+        ]
     res = model.query(measures=measures).execute()
     for m in measures:
         val = res[m].iloc[0]

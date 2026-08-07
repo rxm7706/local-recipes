@@ -69,7 +69,9 @@ def _require_safe_name(name: str) -> None:
         # An over-long name passes the char checks but fails at mkdir() mid-loop, leaving the
         # site half-rewritten against a stale manifest — reject it UP FRONT so the atomicity
         # property (validate-all-before-any-mutation) holds for it too (independent-review LOW).
-        raise ValueError(f"dataset name too long ({len(name.encode())} bytes > 255): {name[:40]!r}…")
+        raise ValueError(
+            f"dataset name too long ({len(name.encode())} bytes > 255): {name[:40]!r}…"
+        )
     if name in (".", "..") or ".." in name or not _SAFE_NAME_RE.match(name):
         raise ValueError(
             f"unsafe dataset name {name!r}: must be a single path segment with no '/', '\\', "
@@ -143,7 +145,9 @@ def emit_static_site(
         _require_safe_name(name)
         df = datasets[name]
         if not isinstance(df, pd.DataFrame):
-            raise TypeError(f"dataset {name!r} must be a pandas DataFrame, got {type(df).__name__}")
+            raise TypeError(
+                f"dataset {name!r} must be a pandas DataFrame, got {type(df).__name__}"
+            )
 
     root.mkdir(parents=True, exist_ok=True)
     manifest_datasets: dict[str, Any] = {}
@@ -155,7 +159,9 @@ def emit_static_site(
         ds_dir.mkdir(parents=True)
 
         n_rows = len(df)
-        n_chunks = max(1, math.ceil(n_rows / rows_per_chunk))  # empty -> 1 schema-only chunk
+        n_chunks = max(
+            1, math.ceil(n_rows / rows_per_chunk)
+        )  # empty -> 1 schema-only chunk
 
         chunks: list[dict[str, Any]] = []
         schema: list[list[str]] | None = None
@@ -179,7 +185,10 @@ def emit_static_site(
 
     manifest: dict[str, Any] = {
         "layout_version": LAYOUT_VERSION,
-        "chunking": {"rows_per_chunk": rows_per_chunk, "row_group_size": row_group_size},
+        "chunking": {
+            "rows_per_chunk": rows_per_chunk,
+            "row_group_size": row_group_size,
+        },
         "datasets": manifest_datasets,
     }
     # sort_keys + trailing newline => byte-stable manifest across two identical emits.

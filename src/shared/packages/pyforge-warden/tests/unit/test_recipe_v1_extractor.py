@@ -258,11 +258,7 @@ def test_unresolvable_expression_with_recoverable_name_degrades_to_name_only(
 def test_unresolvable_expression_with_no_recoverable_name_is_raw_malformed(
     tmp_path,
 ):
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - ${{ pin_compatible('scipy') }}\n"
-    )
+    body = "requirements:\n  run:\n    - ${{ pin_compatible('scipy') }}\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.extraction_mode is ExtractionMode.RAW_MALFORMED
@@ -368,9 +364,7 @@ def test_oversized_manifest_raises_unparsable(tmp_path, monkeypatch):
 
 def test_oversized_line_raises_unparsable(tmp_path, monkeypatch):
     monkeypatch.setattr(recipe_v1, "_MAX_LINE_BYTES", 16)
-    path = write_recipe(
-        tmp_path, "requirements:\n  run: []\n# " + ("x" * 32) + "\n"
-    )
+    path = write_recipe(tmp_path, "requirements:\n  run: []\n# " + ("x" * 32) + "\n")
     with pytest.raises(UnparsableManifestError, match="length cap"):
         _extractor().extract(path, MANIFEST)
 
@@ -392,11 +386,7 @@ def test_canonical_python_min_pin_degrades_to_a_usable_python_name(tmp_path):
     """End-to-end: the fleet's most common templated shape (`python >=${{
     python_min }}`) must yield a NAME_ONLY component named `python`, never
     `'python >='`."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - python >=${{ python_min }}\n"
-    )
+    body = "requirements:\n  run:\n    - python >=${{ python_min }}\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "python"
@@ -409,11 +399,7 @@ def test_range_specifier_withholds_as_range_only_not_no_version(tmp_path):
     discarded at every conda call site, so a range-declared dep dishonestly
     reported `no-version` (RANGE_ONLY was unreachable for conda
     components)."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - numpy >=1.20\n"
-    )
+    body = "requirements:\n  run:\n    - numpy >=1.20\n"
     path = write_recipe(tmp_path, body)
     (ranged,) = _extractor().extract(path, MANIFEST)
     assert ranged.indeterminate_reason is WithholdReason.RANGE_ONLY
@@ -431,13 +417,7 @@ def test_selector_comment_on_a_bare_brace_line_never_becomes_a_version(
     """The defensive quoting of a bare `{{ ... }}` line used to swallow a
     trailing selector comment INTO the quoted string -- mirrors
     `meta_v0.py`'s identical fix (2026-07-16)."""
-    body = (
-        "context:\n"
-        "  nv: numpy\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - {{ nv }}  # [linux]\n"
-    )
+    body = "context:\n  nv: numpy\nrequirements:\n  run:\n    - {{ nv }}  # [linux]\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "numpy"
@@ -700,7 +680,9 @@ def test_if_else_present_then_missing_degrades_then_side_only(tmp_path):
         "requirements.run[else:linux]",
         ExtractionMode.UNION_MARKED,
     ) in tagged
-    malformed = [c for c in components if c.extraction_mode is ExtractionMode.RAW_MALFORMED]
+    malformed = [
+        c for c in components if c.extraction_mode is ExtractionMode.RAW_MALFORMED
+    ]
     assert len(malformed) == 1
     assert malformed[0].provenance[0].section == "requirements.run[if:linux]"
 
@@ -732,12 +714,7 @@ def test_condition_label_is_truncated_unconditionally(tmp_path):
     unconditionally -- an arbitrarily long condition scalar must never
     embed unbounded into `Provenance.section` (NFR-S5)."""
     long_condition = "x" * 500
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        f"    - if: {long_condition}\n"
-        "      then: posix\n"
-    )
+    body = f"requirements:\n  run:\n    - if: {long_condition}\n      then: posix\n"
     path = write_recipe(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     section = component.provenance[0].section
@@ -751,7 +728,7 @@ def test_deeply_nested_if_then_else_raises_unparsable_not_a_crash(tmp_path):
     never crash the process with a raw RecursionError (Review Pass 1
     correction #2)."""
     depth = 2000
-    opens = "".join(f'{{if: c{i}, then: [\n' for i in range(depth))
+    opens = "".join(f"{{if: c{i}, then: [\n" for i in range(depth))
     closes = "".join("]}\n" for _ in range(depth))
     body = f"requirements:\n  run:\n    - {opens}mypkg{closes}"
     path = write_recipe(tmp_path, body)

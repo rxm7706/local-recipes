@@ -64,7 +64,11 @@ def build_universe_sbom(
         "specVersion": "1.6",
         "version": 1,
         "metadata": {
-            "component": {"type": "application", "name": "conda-forge-universe", "bom-ref": "conda-forge-universe"},
+            "component": {
+                "type": "application",
+                "name": "conda-forge-universe",
+                "bom-ref": "conda-forge-universe",
+            },
             "properties": [{"name": "cfe:atlas_built_at", "value": str(built_at)}],
         },
         "components": components,

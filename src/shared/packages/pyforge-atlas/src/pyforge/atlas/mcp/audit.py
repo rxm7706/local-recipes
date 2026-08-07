@@ -87,7 +87,7 @@ def read_dataset_targets() -> set[str]:
     """The catalog dataset names referenced by ``read_dataset:`` verdicts."""
     prefix = "read_dataset:"
     return {
-        verdict[len(prefix):]
+        verdict[len(prefix) :]
         for verdict in ATLAS_TOOL_AUDIT.values()
         if verdict.startswith(prefix)
     }

@@ -389,8 +389,12 @@ def _validate_wait_seconds(wait_seconds: Any) -> float:
     become the ONE typed error, so a bad value can never silently degrade into reject-fast
     or into an unbounded wait (correctness requirement 7).
     """
-    if isinstance(wait_seconds, bool):  # bool is an int subclass; `True` is not 1 second
-        raise AdmissionConfigError(f"{WAIT_PARAM} must be a number, got bool {wait_seconds!r}")
+    if isinstance(
+        wait_seconds, bool
+    ):  # bool is an int subclass; `True` is not 1 second
+        raise AdmissionConfigError(
+            f"{WAIT_PARAM} must be a number, got bool {wait_seconds!r}"
+        )
     try:
         value = float(wait_seconds)
     except (TypeError, ValueError, OverflowError) as exc:
@@ -399,13 +403,9 @@ def _validate_wait_seconds(wait_seconds: Any) -> float:
             f"got {wait_seconds!r}"
         ) from exc
     if value != value or value in (float("inf"), float("-inf")):
-        raise AdmissionConfigError(
-            f"{WAIT_PARAM} must be finite, got {wait_seconds!r}"
-        )
+        raise AdmissionConfigError(f"{WAIT_PARAM} must be finite, got {wait_seconds!r}")
     if value < 0:
-        raise AdmissionConfigError(
-            f"{WAIT_PARAM} must be >= 0, got {wait_seconds!r}"
-        )
+        raise AdmissionConfigError(f"{WAIT_PARAM} must be >= 0, got {wait_seconds!r}")
     return value
 
 
@@ -442,7 +442,11 @@ def _read_holder(path: Path) -> dict[str, Any]:
     is not an int — degrades to ``None`` for that field. A corrupt sidecar must never turn a
     clean rejection into a ``JSONDecodeError``.
     """
-    blank: dict[str, Any] = {"holder_run_id": None, "holder_pid": None, "held_since": None}
+    blank: dict[str, Any] = {
+        "holder_run_id": None,
+        "holder_pid": None,
+        "held_since": None,
+    }
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -467,7 +471,9 @@ def _read_holder(path: Path) -> dict[str, Any]:
     return {
         "holder_run_id": str(run_id) if isinstance(run_id, (str, int)) else None,
         "holder_pid": (
-            pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None
+            pid
+            if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0
+            else None
         ),
         "held_since": held_since,
     }
@@ -484,7 +490,9 @@ def _write_holder(path: Path, run_id: str) -> None:
     degrades every field to ``None``, which is the "torn sidecar" state :func:`_read_holder`
     and :class:`RunAdmissionRejected` go to such lengths to survive. Better not to author it.
     """
-    payload = json.dumps({"run_id": run_id, "pid": os.getpid(), "started_at": time.time()})
+    payload = json.dumps(
+        {"run_id": run_id, "pid": os.getpid(), "started_at": time.time()}
+    )
     tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     try:
         tmp.write_text(payload, encoding="utf-8")
@@ -692,7 +700,9 @@ def release(ticket: AdmissionTicket) -> None:
         )
         names += [None] * (len(locks) - len(names))
     for name, lock in zip(names, locks):
-        holder_path = None if (root is None or name is None) else root / f"{name}{_HOLDER_SUFFIX}"
+        holder_path = (
+            None if (root is None or name is None) else root / f"{name}{_HOLDER_SUFFIX}"
+        )
         if holder_path is not None:
             try:
                 holder_path.unlink(missing_ok=True)
@@ -858,7 +868,9 @@ class RunAdmissionHooks:
     def on_pipeline_error(self, run_params: dict[str, Any], pipeline: Any) -> None:
         self._release_for(run_params, pipeline)
 
-    def _release_for(self, run_params: dict[str, Any] | None, pipeline: Any = None) -> None:
+    def _release_for(
+        self, run_params: dict[str, Any] | None, pipeline: Any = None
+    ) -> None:
         run_id = self._run_id(run_params)
         stack = self._tickets.get(run_id)
         if not stack:
@@ -904,7 +916,11 @@ class RunAdmissionHooks:
             index = 0
         else:
             index = next(
-                (i for i in range(len(stack) - 1, -1, -1) if stack[i].datasets == wanted),
+                (
+                    i
+                    for i in range(len(stack) - 1, -1, -1)
+                    if stack[i].datasets == wanted
+                ),
                 -1,
             )
             if index < 0:

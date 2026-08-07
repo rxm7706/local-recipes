@@ -84,13 +84,7 @@ def test_strip_jinja_statements_captures_quoted_and_numeric_literals():
 
 
 def test_strip_jinja_statements_blanks_non_set_control_flow_lines():
-    text = (
-        "{% if linux %}\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - python\n"
-        "{% endif %}\n"
-    )
+    text = "{% if linux %}\nrequirements:\n  run:\n    - python\n{% endif %}\n"
     stripped, context = strip_jinja_statements(text)
     assert context == {}
     assert "{%" not in stripped
@@ -119,12 +113,7 @@ def test_jinja_comment_line_never_breaks_yaml_parse(tmp_path):
     """Fix 1: a bare `{# comment #}` line used to crash the WHOLE
     document's yaml.safe_load (a flow-mapping misparse) -- neither
     `_SET_LINE_RE` nor the old `_JINJA_STATEMENT_LINE_RE` recognized it."""
-    body = (
-        "{# a comment #}\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - python\n"
-    )
+    body = "{# a comment #}\nrequirements:\n  run:\n    - python\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "python"
@@ -134,11 +123,7 @@ def test_strip_jinja_statements_captures_both_set_tags_sharing_one_line():
     """Fix 3: two `{% set %}` tags on ONE line -- the old `^...$`-anchored
     regex only matched (or captured) the first, losing the second variable
     or leaving garbled leftover delimiter text. Both must be captured."""
-    text = (
-        '{% set a = "x" %}{% set b = "y" %}\n'
-        "requirements:\n"
-        "  run: []\n"
-    )
+    text = '{% set a = "x" %}{% set b = "y" %}\nrequirements:\n  run: []\n'
     stripped, context = strip_jinja_statements(text)
     assert context == {"a": "x", "b": "y"}
     assert "{%" not in stripped
@@ -184,12 +169,7 @@ def test_unquoted_brace_list_item_never_breaks_yaml_parse(tmp_path):
     misparse as flow-mapping syntax if left as-is -- neutralization must
     make the whole document parse successfully, degrading only that ONE
     entry."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - python\n"
-        "    - {{ pin_compatible('numpy') }}\n"
-    )
+    body = "requirements:\n  run:\n    - python\n    - {{ pin_compatible('numpy') }}\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     by_name = {c.name: c for c in components}
@@ -246,19 +226,11 @@ def test_missing_requirements_key_yields_no_components(tmp_path):
 
 
 def test_outputs_are_walked_with_indexed_provenance(tmp_path):
-    body = (
-        "outputs:\n"
-        "  - name: sub-a\n"
-        "    requirements:\n"
-        "      run:\n"
-        "        - click\n"
-    )
+    body = "outputs:\n  - name: sub-a\n    requirements:\n      run:\n        - click\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "click"
-    assert [p.section for p in component.provenance] == [
-        "outputs[0].requirements.run"
-    ]
+    assert [p.section for p in component.provenance] == ["outputs[0].requirements.run"]
 
 
 # --- NFR-S5 bounds -------------------------------------------------------------
@@ -356,12 +328,7 @@ def test_selector_comment_on_a_templated_dep_line_never_becomes_a_version(
     its content is templated) -- correctly tagged `[sel:linux]` and
     escalated to UNION_MARKED (superseding 2.2's assumption that a
     selector comment has zero semantic effect on the component)."""
-    body = (
-        '{% set nv = "numpy" %}\n'
-        "requirements:\n"
-        "  run:\n"
-        "    - {{ nv }}  # [linux]\n"
-    )
+    body = '{% set nv = "numpy" %}\nrequirements:\n  run:\n    - {{ nv }}  # [linux]\n'
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "numpy"
@@ -374,19 +341,11 @@ def test_per_output_test_requires_is_walked(tmp_path):
     """`outputs[].test.requires` (the multi-output analog of the top-level
     singular `test.requires`) used to produce no components at all while
     its top-level twin was walked."""
-    body = (
-        "outputs:\n"
-        "  - name: sub-a\n"
-        "    test:\n"
-        "      requires:\n"
-        "        - pytest\n"
-    )
+    body = "outputs:\n  - name: sub-a\n    test:\n      requires:\n        - pytest\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.name == "pytest"
-    assert [p.section for p in component.provenance] == [
-        "outputs[0].test.requires"
-    ]
+    assert [p.section for p in component.provenance] == ["outputs[0].test.requires"]
 
 
 # --- numeric {% set %} literals mirror jinja's own coercion (2026-07-16) -----
@@ -399,7 +358,7 @@ def test_numeric_set_literal_is_captured_as_jinja_would_render_it():
     conda-build renderer). Capturing the raw text used to report a
     confident exact version the real render disagrees with."""
     _, ctx = strip_jinja_statements(
-        '{% set version = 2.10 %}{% set build = 3 %}{% set neg = -1.50 %}'
+        "{% set version = 2.10 %}{% set build = 3 %}{% set neg = -1.50 %}"
     )
     assert ctx == {"version": "2.1", "build": "3", "neg": "-1.5"}
 
@@ -521,12 +480,7 @@ def test_build_tool_call_sharing_a_line_with_unrelated_text_degrades(tmp_path):
 
 
 def test_selector_comment_sibling_entries_are_unioned_and_tagged(tmp_path):
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - pywin32  # [win]\n"
-        "    - unixlib  # [unix]\n"
-    )
+    body = "requirements:\n  run:\n    - pywin32  # [win]\n    - unixlib  # [unix]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -553,9 +507,7 @@ def test_uncommented_occurrence_walked_before_commented_is_not_swapped(tmp_path)
     body = "requirements:\n  run:\n    - helper\n    - helper  # [win]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
-    entries = [
-        (c.name, c.provenance[0].section, c.extraction_mode) for c in components
-    ]
+    entries = [(c.name, c.provenance[0].section, c.extraction_mode) for c in components]
     assert entries == [
         ("helper", "requirements.run", ExtractionMode.PARSED),
         ("helper", "requirements.run[sel:win]", ExtractionMode.UNION_MARKED),
@@ -563,13 +515,7 @@ def test_uncommented_occurrence_walked_before_commented_is_not_swapped(tmp_path)
 
 
 def test_same_text_in_two_sections_is_correctly_attributed(tmp_path):
-    body = (
-        "requirements:\n"
-        "  build:\n"
-        "    - helper\n"
-        "  run:\n"
-        "    - helper  # [win]\n"
-    )
+    body = "requirements:\n  build:\n    - helper\n  run:\n    - helper  # [win]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -584,13 +530,7 @@ def test_non_conventional_section_order_still_correctly_attributed(tmp_path):
     still the fixed ``(build, host, run)`` tuple, unaffected) -- proves
     line-based correlation, unlike FIFO, doesn't depend on walk order
     matching document order at all."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - helper  # [win]\n"
-        "  build:\n"
-        "    - helper\n"
-    )
+    body = "requirements:\n  run:\n    - helper  # [win]\n  build:\n    - helper\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -607,12 +547,7 @@ def test_duplicate_pre_comment_text_different_conditions_both_attributed(
     OWN `# [cond]` comment -- both correctly attributed by line number (no
     collision, no "last-wins" needed at all, unlike the superseded
     content-keyed mechanisms)."""
-    body = (
-        "requirements:\n"
-        "  run:\n"
-        "    - helper  # [win]\n"
-        "    - helper  # [osx]\n"
-    )
+    body = "requirements:\n  run:\n    - helper  # [win]\n    - helper  # [osx]\n"
     path = write_meta(tmp_path, body)
     components = _extractor().extract(path, MANIFEST)
     tagged = {(c.name, c.provenance[0].section, c.extraction_mode) for c in components}
@@ -625,13 +560,7 @@ def test_duplicate_pre_comment_text_different_conditions_both_attributed(
 def test_selector_comment_on_a_non_list_item_line_is_never_captured(tmp_path):
     """`skip: true  # [win]` -- a non-list-item line -- must NEVER be
     captured as a selector comment (Boundaries' own "Never" clause)."""
-    body = (
-        "build:\n"
-        "  skip: true  # [win]\n"
-        "requirements:\n"
-        "  run:\n"
-        "    - helper\n"
-    )
+    body = "build:\n  skip: true  # [win]\nrequirements:\n  run:\n    - helper\n"
     path = write_meta(tmp_path, body)
     (component,) = _extractor().extract(path, MANIFEST)
     assert component.extraction_mode is ExtractionMode.PARSED

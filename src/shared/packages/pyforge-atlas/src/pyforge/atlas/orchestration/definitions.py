@@ -331,6 +331,7 @@ def _wiki_layout() -> WikiLayout:
     # exists so a crew never fails on a missing dir (AD-22: only ever creates under the root).
     return scaffold_wiki(resolve_wiki_root())
 
+
 # --------------------------------------------------------------------------- #
 # Bootstrap profiles (AC-2) — named run configs with the guide's override
 # precedence. The profiles set per-phase scoping; the BINDING contract the gate
@@ -399,7 +400,9 @@ def resolve_profile_config(
         The resolved config for the profile.
     """
     if profile not in PROFILES:
-        raise KeyError(f"unknown profile {profile!r}; expected one of {sorted(PROFILES)}")
+        raise KeyError(
+            f"unknown profile {profile!r}; expected one of {sorted(PROFILES)}"
+        )
     env_map: Mapping[str, str] = os.environ if env is None else env
     resolved = dict(PROFILES[profile])  # layer 1: profile defaults
     for key in list(resolved):  # layer 2: explicit env beats profile default
@@ -494,7 +497,9 @@ def build_upstream_sensor(
     def _sensor(context: dg.SensorEvaluationContext):
         try:
             raw = list(event_source())
-            decision = evaluate_events(raw, context.cursor, run_key_prefix=run_key_prefix)
+            decision = evaluate_events(
+                raw, context.cursor, run_key_prefix=run_key_prefix
+            )
         except Exception as exc:  # noqa: BLE001 — degrade, never crash the daemon
             yield dg.SkipReason(f"sensor evaluation error: {type(exc).__name__}: {exc}")
             return
@@ -548,7 +553,9 @@ def compiled_wiki_asset(context) -> list[str]:
 def wiki_lint_report_asset(context) -> list[dict]:
     report = LintCrew().run(_wiki_layout())
     context.add_output_metadata({"violations": len(report.violations)})
-    return [{"doc": v.doc, "rule": v.rule, "detail": v.detail} for v in report.violations]
+    return [
+        {"doc": v.doc, "rule": v.rule, "detail": v.detail} for v in report.violations
+    ]
 
 
 WIKI_CREW_ASSETS = [compiled_wiki_asset, wiki_lint_report_asset]
@@ -636,7 +643,9 @@ def build_definitions(
     # it explicitly rather than by insertion order so an added dagster.yml job can
     # never silently swap the base out from under the cadence derivation.
     base_candidates = [
-        job for name, job in code_location.named_jobs.items() if name.endswith("__default__")
+        job
+        for name, job in code_location.named_jobs.items()
+        if name.endswith("__default__")
     ]
     if len(base_candidates) != 1:
         raise RuntimeError(
@@ -723,7 +732,9 @@ def build_definitions(
     wiki_compile_job = dg.define_asset_job(
         WIKI_COMPILE_JOB_NAME, selection=[compiled_wiki_asset]
     )
-    wiki_lint_job = dg.define_asset_job(WIKI_LINT_JOB_NAME, selection=[wiki_lint_report_asset])
+    wiki_lint_job = dg.define_asset_job(
+        WIKI_LINT_JOB_NAME, selection=[wiki_lint_report_asset]
+    )
     schedules.append(
         dg.ScheduleDefinition(
             name="wiki_lint_schedule",

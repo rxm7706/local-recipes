@@ -91,7 +91,9 @@ def test_no_seed_attribute_access_outside_policy(module_path: Path):
 
 
 def test_policy_module_defines_seed_view():
-    assert hasattr(policy, "EffectivePolicy"), "core/policy.py is missing EffectivePolicy"
+    assert hasattr(policy, "EffectivePolicy"), (
+        "core/policy.py is missing EffectivePolicy"
+    )
     assert hasattr(policy.EffectivePolicy, "seed_view"), (
         "core/policy.py's EffectivePolicy is missing seed_view"
     )

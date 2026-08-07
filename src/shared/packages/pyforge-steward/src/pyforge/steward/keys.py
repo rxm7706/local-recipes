@@ -70,6 +70,7 @@ from _http import auth_headers_for  # noqa: E402  # the delegate target (AD-1/AD
 
 # ── Host-scoped credential resolver (FR-7) ──────────────────────────────────
 
+
 @dataclass(frozen=True)
 class HostScopedCredential:
     """A credential explicitly scoped to a declared host allowlist.
@@ -194,6 +195,7 @@ def resolve_headers(credential: HostScopedCredential, url: str) -> dict[str, str
 # Targets exactly one defect shape — not a pluggable static-analysis
 # framework. See "Design Notes" in this story's spec for the full heuristic;
 # summarized here where the code implements it.
+
 
 @dataclass(frozen=True)
 class DriftFinding:
@@ -348,6 +350,7 @@ def _find_credential_assignments(stmt: ast.stmt, func_name: str) -> list[DriftFi
 # the `KeysDuty` boundary — matching `scan_source`'s `SyntaxError` precedent
 # of not swallowing errors at the primitive level.
 
+
 def _reject_stdio_sentinel(input_path: str | Path, output: str | Path) -> None:
     """Refuse `age`'s `-` stdin/stdout sentinel for either path.
 
@@ -378,7 +381,16 @@ def encrypt_file(input_path: str | Path, *, recipient: str, output: str | Path) 
     """
     _reject_stdio_sentinel(input_path, output)
     subprocess.run(
-        ["age", "--encrypt", "--recipient", recipient, "--output", str(output), "--", str(input_path)],
+        [
+            "age",
+            "--encrypt",
+            "--recipient",
+            recipient,
+            "--output",
+            str(output),
+            "--",
+            str(input_path),
+        ],
         check=True,
         capture_output=True,
         text=True,
@@ -387,7 +399,9 @@ def encrypt_file(input_path: str | Path, *, recipient: str, output: str | Path) 
     )
 
 
-def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | Path) -> None:
+def decrypt_file(
+    input_path: str | Path, *, identity: str | Path, output: str | Path
+) -> None:
     """`age --decrypt` `input_path` to `output` using the identity at `identity`.
 
     Raises `subprocess.CalledProcessError` on a non-zero `age` exit — most
@@ -398,7 +412,16 @@ def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | 
     """
     _reject_stdio_sentinel(input_path, output)
     subprocess.run(
-        ["age", "--decrypt", "--identity", str(identity), "--output", str(output), "--", str(input_path)],
+        [
+            "age",
+            "--decrypt",
+            "--identity",
+            str(identity),
+            "--output",
+            str(output),
+            "--",
+            str(input_path),
+        ],
         check=True,
         capture_output=True,
         text=True,
@@ -418,6 +441,7 @@ def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | 
 # an ungated credential-attachment code path are unrelated defect shapes, and
 # a caller must never conflate them. Story 1.6 wires a CLI verb; this story
 # only proves the primitive (mirrors how 1.2 framed its own drift scan).
+
 
 @dataclass(frozen=True)
 class PlaintextSecretFinding:
@@ -491,13 +515,17 @@ def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFin
     """
     directory = Path(directory)
     if not directory.is_dir():
-        raise NotADirectoryError(f"scan_directory_for_secrets: not a directory: {directory}")
+        raise NotADirectoryError(
+            f"scan_directory_for_secrets: not a directory: {directory}"
+        )
 
     def _propagate(error: OSError) -> None:
         raise error
 
     findings: list[PlaintextSecretFinding] = []
-    for dirpath, dirnames, filenames in directory.walk(on_error=_propagate, follow_symlinks=False):
+    for dirpath, dirnames, filenames in directory.walk(
+        on_error=_propagate, follow_symlinks=False
+    ):
         dirnames.sort()
         for name in sorted(filenames):
             path = dirpath / name

@@ -24,7 +24,9 @@ def observer() -> MultiplexerObserver:
     return MultiplexerObserver()
 
 
-def _list_windows_result(argv, rows: list[tuple[str, str]]) -> subprocess.CompletedProcess:
+def _list_windows_result(
+    argv, rows: list[tuple[str, str]]
+) -> subprocess.CompletedProcess:
     """A well-formed ``tmux list-windows -F "#{window_id}\\t#{window_active}"``
     response for the given ``(window_id, window_active)`` rows."""
     stdout = "\n".join(f"{window_id}\t{active}" for window_id, active in rows)
@@ -33,7 +35,9 @@ def _list_windows_result(argv, rows: list[tuple[str, str]]) -> subprocess.Comple
     return subprocess.CompletedProcess(args=argv, returncode=0, stdout=stdout)
 
 
-def _fake_run_dispatch(*, list_windows_rows=None, list_windows_ok=True, capture_result=None):
+def _fake_run_dispatch(
+    *, list_windows_rows=None, list_windows_ok=True, capture_result=None
+):
     """Builds a ``subprocess.run`` stand-in that dispatches on the tmux
     SUBCOMMAND (``list-windows`` vs. ``capture-pane``/``send-keys``) -- the
     shared window resolver and the method-specific call are two separate
@@ -48,7 +52,11 @@ def _fake_run_dispatch(*, list_windows_rows=None, list_windows_ok=True, capture_
             if not list_windows_ok:
                 return subprocess.CompletedProcess(args=argv, returncode=1, stdout="")
             return _list_windows_result(argv, list_windows_rows or [])
-        return capture_result(argv, **kwargs) if callable(capture_result) else capture_result
+        return (
+            capture_result(argv, **kwargs)
+            if callable(capture_result)
+            else capture_result
+        )
 
     return _fake_run, calls
 
@@ -59,7 +67,9 @@ def _fake_run_dispatch(*, list_windows_rows=None, list_windows_ok=True, capture_
 def test_resolve_window_picks_the_sole_active_window(observer, monkeypatch):
     fake_run, calls = _fake_run_dispatch(
         list_windows_rows=[("%0", "0"), ("%3", "1")],
-        capture_result=subprocess.CompletedProcess(args=[], returncode=0, stdout="pane text"),
+        capture_result=subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="pane text"
+        ),
     )
     monkeypatch.setattr(module.subprocess, "run", fake_run)
     assert observer._resolve_window("acme-session") == "%3"
@@ -86,7 +96,9 @@ def test_resolve_window_returns_none_when_no_session_exists(observer, monkeypatc
     assert observer._resolve_window("no-such-session") is None
 
 
-def test_resolve_window_returns_none_for_more_than_one_active_window(observer, monkeypatch):
+def test_resolve_window_returns_none_for_more_than_one_active_window(
+    observer, monkeypatch
+):
     """A query-level anomaly (more than one row claims active) -- never
     guess among ambiguous candidates."""
     fake_run, _ = _fake_run_dispatch(list_windows_rows=[("%0", "1"), ("%3", "1")])
@@ -126,7 +138,9 @@ def test_pane_content_returns_the_captured_text(observer, monkeypatch):
         if argv[1] == "list-windows":
             return _list_windows_result(argv, [("%3", "1")])
         assert argv == ["tmux", "capture-pane", "-t", "%3", "-p"]
-        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="hello pane\n")
+        return subprocess.CompletedProcess(
+            args=argv, returncode=0, stdout="hello pane\n"
+        )
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     assert observer.pane_content("acme-session") == "hello pane\n"
@@ -171,7 +185,9 @@ def test_pane_content_returns_none_on_capture_timeout(observer, monkeypatch):
     assert observer.pane_content("acme-session") is None
 
 
-def test_pane_content_returns_none_for_an_embedded_null_byte_in_capture(observer, monkeypatch):
+def test_pane_content_returns_none_for_an_embedded_null_byte_in_capture(
+    observer, monkeypatch
+):
     """Review finding (Story 3.4): ``subprocess.run`` raises a plain
     ``ValueError`` -- not an ``OSError`` -- for an embedded NUL byte in an
     argv element, which would otherwise escape this port's own documented
@@ -209,7 +225,9 @@ def test_pane_content_redacts_a_token_shaped_secret(observer, monkeypatch):
 # --- send_text -----------------------------------------------------------------
 
 
-def test_send_text_pastes_then_submits_against_the_resolved_window(observer, monkeypatch):
+def test_send_text_pastes_then_submits_against_the_resolved_window(
+    observer, monkeypatch
+):
     calls: list[list[str]] = []
 
     def _fake_run(argv, **kwargs):
@@ -382,7 +400,9 @@ def test_mtime_returns_none_for_an_embedded_null_byte(observer, monkeypatch):
 # --- timeout / decoding discipline -----------------------------------------------
 
 
-def test_pane_content_passes_the_capture_timeout_to_subprocess_run(observer, monkeypatch):
+def test_pane_content_passes_the_capture_timeout_to_subprocess_run(
+    observer, monkeypatch
+):
     """Follow-up review finding (Story 3.4): every fake in this module used
     to assert only ``argv``, so NOTHING pinned the ``timeout=`` kwarg
     actually reaching ``subprocess.run``. This test pins the constant to

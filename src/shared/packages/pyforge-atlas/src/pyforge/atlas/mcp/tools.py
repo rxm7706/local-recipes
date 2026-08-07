@@ -134,7 +134,9 @@ def read_dataset(
     }
 
 
-def query_vizro_ai(query: str, *, env: Mapping[str, str] | None = None) -> dict[str, Any]:
+def query_vizro_ai(
+    query: str, *, env: Mapping[str, str] | None = None
+) -> dict[str, Any]:
     """Natural-language -> Vizro chart/insight over the BSL knowledge graph (D3, FR-9).
 
     THIN delegation to the ``nl/`` seam (AD-7): the NL/LLM logic — backend resolution from

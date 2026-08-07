@@ -73,14 +73,18 @@ def _classify_lts(
         if pypi_name and pypi_name.lower() in registry_keys:
             continue
         hit: tuple[str, str, str] | None = None  # (slug, confidence, via)
-        for label, value in (("conda_name", conda_name),
-                             ("pypi_name", pypi_name or "")):
+        for label, value in (
+            ("conda_name", conda_name),
+            ("pypi_name", pypi_name or ""),
+        ):
             if value and value.lower() in slug_set:
                 hit = (value.lower(), "exact", f"{label} == slug")
                 break
         if hit is None:
-            for label, value in (("conda_name", conda_name),
-                                 ("pypi_name", pypi_name or "")):
+            for label, value in (
+                ("conda_name", conda_name),
+                ("pypi_name", pypi_name or ""),
+            ):
                 if not value:
                     continue
                 norm = _norm(value)
@@ -88,20 +92,25 @@ def _classify_lts(
                     hit = (norm, "likely", f"{label} normalized (_ -> -)")
                     break
                 for prefix in ("python-", "py-"):
-                    if norm.startswith(prefix) and norm[len(prefix):] in slug_set:
-                        hit = (norm[len(prefix):], "likely",
-                               f"{label} sans '{prefix}' prefix")
+                    if norm.startswith(prefix) and norm[len(prefix) :] in slug_set:
+                        hit = (
+                            norm[len(prefix) :],
+                            "likely",
+                            f"{label} sans '{prefix}' prefix",
+                        )
                         break
                 if hit:
                     break
         if hit:
-            proposals.append({
-                "conda_name": conda_name,
-                "pypi_name": pypi_name,
-                "slug": hit[0],
-                "confidence": hit[1],
-                "matched_via": hit[2],
-            })
+            proposals.append(
+                {
+                    "conda_name": conda_name,
+                    "pypi_name": pypi_name,
+                    "slug": hit[0],
+                    "confidence": hit[1],
+                    "matched_via": hit[2],
+                }
+            )
     return proposals
 
 
@@ -114,17 +123,28 @@ def _lts_candidates(
     LEFT JOIN ``pypi_conda_mapping`` (conda_name ↔ pypi_name). Ordered by
     conda_name (legacy ``ORDER BY conda_name``)."""
     core = core_packages_enumerated
-    if core is None or getattr(core, "empty", True) or "conda_name" not in getattr(core, "columns", []):
+    if (
+        core is None
+        or getattr(core, "empty", True)
+        or "conda_name" not in getattr(core, "columns", [])
+    ):
         return []
     conda_to_pypi: dict[str, str] = {}
     mapping = pypi_conda_mapping
-    if (mapping is not None and not getattr(mapping, "empty", True)
-            and {"conda_name", "pypi_name"} <= set(getattr(mapping, "columns", []))):
+    if (
+        mapping is not None
+        and not getattr(mapping, "empty", True)
+        and {"conda_name", "pypi_name"} <= set(getattr(mapping, "columns", []))
+    ):
         for cn, pn in zip(mapping["conda_name"], mapping["pypi_name"]):
             if cn is None or (isinstance(cn, float) and pd.isna(cn)):
                 continue
             key = str(cn)
-            if key not in conda_to_pypi and pn is not None and not (isinstance(pn, float) and pd.isna(pn)):
+            if (
+                key not in conda_to_pypi
+                and pn is not None
+                and not (isinstance(pn, float) and pd.isna(pn))
+            ):
                 conda_to_pypi[key] = str(pn)
     out: list[tuple[str, str | None]] = []
     for cn in core["conda_name"]:
@@ -147,7 +167,11 @@ def report_lts_registry_gap(
     packages (legacy ``lts_registry_gap.py``). READ-ONLY report; git review
     decides. ``pypi_endoflife_raw`` is the product-slug list; ``seed_lts_registry``
     the (alias-inclusive) exclusion set. Empty feed / candidates → empty report."""
-    slugs = [str(s) for s in pypi_endoflife_raw] if isinstance(pypi_endoflife_raw, (list, tuple)) else []
+    slugs = (
+        [str(s) for s in pypi_endoflife_raw]
+        if isinstance(pypi_endoflife_raw, (list, tuple))
+        else []
+    )
     if not slugs:
         return pd.DataFrame(columns=_LTS_COLS)
     registry = _lts_registry_index(seed_lts_registry)
@@ -163,48 +187,90 @@ def report_lts_registry_gap(
 _CWE_COLS = ["cwe_id", "cwe_name", "category", "confidence", "matched"]
 
 # legacy cwe_seed_gap.py — PRECEDENCE / STRONG / WEAK, ported VERBATIM.
-_PRECEDENCE = ["Memory-Safety", "Traversal", "RCE", "Injection",
-               "Auth-Bypass", "Info-Disclosure", "DoS"]
+_PRECEDENCE = [
+    "Memory-Safety",
+    "Traversal",
+    "RCE",
+    "Injection",
+    "Auth-Bypass",
+    "Info-Disclosure",
+    "DoS",
+]
 
 _STRONG: dict[str, list[str]] = {
     "Memory-Safety": [
-        "buffer overflow", "buffer underflow", "out-of-bounds",
-        "out of bounds", "use after free", "double free", "null pointer",
-        "integer overflow", "integer underflow", "heap-based", "stack-based",
-        "memory corruption", "type confusion", "wild pointer",
+        "buffer overflow",
+        "buffer underflow",
+        "out-of-bounds",
+        "out of bounds",
+        "use after free",
+        "double free",
+        "null pointer",
+        "integer overflow",
+        "integer underflow",
+        "heap-based",
+        "stack-based",
+        "memory corruption",
+        "type confusion",
+        "wild pointer",
         "improper restriction of operations within the bounds",
         "uninitialized",
     ],
     "Traversal": [
-        "path traversal", "directory traversal", "link following",
-        "absolute path traversal", "relative path traversal",
+        "path traversal",
+        "directory traversal",
+        "link following",
+        "absolute path traversal",
+        "relative path traversal",
     ],
     "RCE": [
-        "code execution", "command injection", "os command",
-        "arbitrary code", "code injection", "argument injection",
+        "code execution",
+        "command injection",
+        "os command",
+        "arbitrary code",
+        "code injection",
+        "argument injection",
         "expression language injection",
     ],
     "Injection": [
-        "cross-site scripting", "sql injection", "xml external entity",
-        "ldap injection", "xpath injection", "crlf", "template injection",
-        "format string", "deserialization of untrusted data",
+        "cross-site scripting",
+        "sql injection",
+        "xml external entity",
+        "ldap injection",
+        "xpath injection",
+        "crlf",
+        "template injection",
+        "format string",
+        "deserialization of untrusted data",
     ],
     "Auth-Bypass": [
-        "authentication bypass", "authorization bypass",
-        "improper authentication", "missing authentication",
-        "improper access control", "improper authorization",
-        "incorrect authorization", "privilege management",
-        "incorrect permission", "improper privilege",
+        "authentication bypass",
+        "authorization bypass",
+        "improper authentication",
+        "missing authentication",
+        "improper access control",
+        "improper authorization",
+        "incorrect authorization",
+        "privilege management",
+        "incorrect permission",
+        "improper privilege",
     ],
     "Info-Disclosure": [
-        "information exposure", "sensitive information",
-        "information disclosure", "exposure of", "cleartext storage",
-        "cleartext transmission", "insertion of sensitive information",
+        "information exposure",
+        "sensitive information",
+        "information disclosure",
+        "exposure of",
+        "cleartext storage",
+        "cleartext transmission",
+        "insertion of sensitive information",
     ],
     "DoS": [
-        "denial of service", "resource exhaustion",
-        "uncontrolled resource consumption", "infinite loop",
-        "reachable assertion", "excessive iteration",
+        "denial of service",
+        "resource exhaustion",
+        "uncontrolled resource consumption",
+        "infinite loop",
+        "reachable assertion",
+        "excessive iteration",
         "allocation of resources",
     ],
 }
@@ -214,8 +280,7 @@ _WEAK: dict[str, list[str]] = {
     "Traversal": ["traversal"],
     "RCE": [],
     "Injection": ["injection", "serialization"],
-    "Auth-Bypass": ["authentication", "authorization", "privilege",
-                    "permission"],
+    "Auth-Bypass": ["authentication", "authorization", "privilege", "permission"],
     "Info-Disclosure": ["exposure", "leak"],
     "DoS": ["denial of service"],
 }
@@ -251,13 +316,15 @@ def _classify_cwe_candidates(
         hit = _classify_cwe(cwe_name)
         if hit is None:
             continue
-        proposals.append({
-            "cwe_id": cwe_id,
-            "cwe_name": cwe_name,
-            "category": hit[0],
-            "confidence": hit[1],
-            "matched": hit[2],
-        })
+        proposals.append(
+            {
+                "cwe_id": cwe_id,
+                "cwe_name": cwe_name,
+                "category": hit[0],
+                "confidence": hit[1],
+                "matched": hit[2],
+            }
+        )
     return proposals
 
 
@@ -275,14 +342,26 @@ def report_cwe_seed_gap(
     CWE-rollup dataset yet), so the report ships the proposal rows only."""
     seed: dict[str, str] = {}
     if isinstance(seed_cwe_categories, dict):
-        seed = {k: v for k, v in seed_cwe_categories.items() if not str(k).startswith("_")}
+        seed = {
+            k: v for k, v in seed_cwe_categories.items() if not str(k).startswith("_")
+        }
     df = vulnerability_cwe_categories
-    if df is None or getattr(df, "empty", True) or not {"cwe_id", "category"} <= set(getattr(df, "columns", [])):
+    if (
+        df is None
+        or getattr(df, "empty", True)
+        or not {"cwe_id", "category"} <= set(getattr(df, "columns", []))
+    ):
         return pd.DataFrame(columns=_CWE_COLS)
     others = df[df["category"] == "Other"]
     candidates: list[tuple[str, str]] = []
-    for cwe_id, cwe_name in zip(others["cwe_id"], others.get("cwe_name", [""] * len(others))):
-        name = "" if cwe_name is None or (isinstance(cwe_name, float) and pd.isna(cwe_name)) else str(cwe_name)
+    for cwe_id, cwe_name in zip(
+        others["cwe_id"], others.get("cwe_name", [""] * len(others))
+    ):
+        name = (
+            ""
+            if cwe_name is None or (isinstance(cwe_name, float) and pd.isna(cwe_name))
+            else str(cwe_name)
+        )
         candidates.append((cwe_id, name))
     candidates.sort(key=lambda r: str(r[0]))
     proposals = _classify_cwe_candidates(candidates, seed)
@@ -336,8 +415,11 @@ def _spdx_upstream_ids(seed_spdx_upstream_list_raw: Any) -> list[str]:
     if isinstance(doc, dict):
         lics = doc.get("licenses")
         if isinstance(lics, list):
-            return [str(x["licenseId"]) for x in lics
-                    if isinstance(x, dict) and x.get("licenseId")]
+            return [
+                str(x["licenseId"])
+                for x in lics
+                if isinstance(x, dict) and x.get("licenseId")
+            ]
         return []
     if isinstance(doc, (list, tuple)):
         return [str(s) for s in doc]
@@ -350,7 +432,11 @@ def _spdx_atlas_counts(core_packages_enumerated: Any) -> dict[str, int]:
     so this degrades gracefully to ``{}`` — the upstream-drift partition (below)
     carries the staleness regardless, atlas-independent."""
     df = core_packages_enumerated
-    if df is None or getattr(df, "empty", True) or "conda_license" not in getattr(df, "columns", []):
+    if (
+        df is None
+        or getattr(df, "empty", True)
+        or "conda_license" not in getattr(df, "columns", [])
+    ):
         return {}
     counts: dict[str, int] = {}
     for lic in df["conda_license"]:
@@ -384,7 +470,11 @@ def report_spdx_schema_gap(
     """
     # graceful on a malformed/enum-less schema (AD-13/AD-15: a derived report
     # node degrades, never crashes the per-rebuild run) — .get, not [].
-    vendored = set(seed_spdx_schema.get("enum") or []) if isinstance(seed_spdx_schema, dict) else set()
+    vendored = (
+        set(seed_spdx_schema.get("enum") or [])
+        if isinstance(seed_spdx_schema, dict)
+        else set()
+    )
     upstream = set(_spdx_upstream_ids(seed_spdx_upstream_list_raw))
     if not upstream:
         return pd.DataFrame(columns=_SPDX_COLS)
@@ -392,14 +482,32 @@ def report_spdx_schema_gap(
     result = _classify_spdx(atlas_counts, vendored, upstream)
     records: list[dict[str, Any]] = []
     for r in result["add_to_schema"]:
-        records.append({"license": r["license"], "spdx_id": r["spdx_id"],
-                        "packages": r["packages"], "tier": "add-to-schema"})
+        records.append(
+            {
+                "license": r["license"],
+                "spdx_id": r["spdx_id"],
+                "packages": r["packages"],
+                "tier": "add-to-schema",
+            }
+        )
     for r in result["non_standard"]:
-        records.append({"license": r["license"], "spdx_id": None,
-                        "packages": r["packages"], "tier": "non-standard"})
+        records.append(
+            {
+                "license": r["license"],
+                "spdx_id": None,
+                "packages": r["packages"],
+                "tier": "non-standard",
+            }
+        )
     for spdx_id in sorted(upstream - vendored):
-        records.append({"license": spdx_id, "spdx_id": spdx_id,
-                        "packages": None, "tier": "upstream-drift"})
+        records.append(
+            {
+                "license": spdx_id,
+                "spdx_id": spdx_id,
+                "packages": None,
+                "tier": "upstream-drift",
+            }
+        )
     return pd.DataFrame(records, columns=_SPDX_COLS).reset_index(drop=True)
 
 
@@ -411,7 +519,9 @@ def report_spdx_schema_gap(
 _LICMAP_COLS = ["license_raw", "packages", "candidates", "confidence", "suggested_spdx"]
 
 # legacy license_map_gap.py — IGNORECASE expression matcher (lowercase operators).
-_LICMAP_EXPRESSION_RE = re.compile(r"[()]|(?:^|\s)(?:AND|OR|WITH)(?:\s|$)", re.IGNORECASE)
+_LICMAP_EXPRESSION_RE = re.compile(
+    r"[()]|(?:^|\s)(?:AND|OR|WITH)(?:\s|$)", re.IGNORECASE
+)
 _LICMAP_CANDIDATE_PAT_CACHE: dict[str, "re.Pattern[str]"] = {}
 _LICMAP_MAX_LEN = 60
 _LICMAP_JUNK_SUBSTRINGS = ("see ", "http://", "https://", "copyright", "\n")
@@ -465,13 +575,15 @@ def _classify_licmap(
         if form.lower() in seed or _is_junk(form):
             continue
         cands = _licmap_candidates(form, enum_by_lower)
-        proposals.append({
-            "license_raw": form,
-            "packages": count,
-            "candidates": cands,
-            "confidence": "likely" if len(cands) == 1 else "report",
-            "suggested_spdx": cands[0] if len(cands) == 1 else None,
-        })
+        proposals.append(
+            {
+                "license_raw": form,
+                "packages": count,
+                "candidates": cands,
+                "confidence": "likely" if len(cands) == 1 else "report",
+                "suggested_spdx": cands[0] if len(cands) == 1 else None,
+            }
+        )
     proposals.sort(key=lambda p: (-p["packages"], p["license_raw"].lower()))
     return proposals
 
@@ -482,12 +594,19 @@ def _unmapped_licenses(pypi_intelligence_enriched: Any) -> dict[str, int]:
     NULL/NaN with a non-empty ``license_raw`` (legacy
     ``v_pypi_intelligence_valid WHERE license_spdx IS NULL``)."""
     df = pypi_intelligence_enriched
-    if (df is None or getattr(df, "empty", True)
-            or not {"license_spdx", "license_raw"} <= set(getattr(df, "columns", []))):
+    if (
+        df is None
+        or getattr(df, "empty", True)
+        or not {"license_spdx", "license_raw"} <= set(getattr(df, "columns", []))
+    ):
         return {}
     counts: dict[str, int] = {}
     for spdx, raw in zip(df["license_spdx"], df["license_raw"]):
-        spdx_null = spdx is None or (isinstance(spdx, float) and pd.isna(spdx)) or str(spdx).strip() == ""
+        spdx_null = (
+            spdx is None
+            or (isinstance(spdx, float) and pd.isna(spdx))
+            or str(spdx).strip() == ""
+        )
         if not spdx_null:
             continue
         if raw is None or (isinstance(raw, float) and pd.isna(raw)):
@@ -515,7 +634,11 @@ def report_license_map_gap(
     read-only) would be redundant AND off-package. ``candidates`` is serialized
     as a comma-joined string (ParquetDataset needs serializable cells)."""
     # graceful on a malformed/enum-less schema (AD-13/AD-15) — .get, not [].
-    enum = set(seed_spdx_schema.get("enum") or []) if isinstance(seed_spdx_schema, dict) else set()
+    enum = (
+        set(seed_spdx_schema.get("enum") or [])
+        if isinstance(seed_spdx_schema, dict)
+        else set()
+    )
     unmapped = _unmapped_licenses(pypi_intelligence_enriched)
     if not unmapped:
         return pd.DataFrame(columns=_LICMAP_COLS)

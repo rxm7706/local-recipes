@@ -92,7 +92,9 @@ class NewSignalDataset:
 
 
 NEW_SIGNAL_DATASETS: tuple[NewSignalDataset, ...] = (
-    NewSignalDataset("vulnerability_basilisk_advisories", "FR-19", "B8", "vulnerability"),
+    NewSignalDataset(
+        "vulnerability_basilisk_advisories", "FR-19", "B8", "vulnerability"
+    ),
     NewSignalDataset("vcs_release_velocity", "FR-20", "B9", "vcs_health"),
     NewSignalDataset("vcs_migration_readiness", "FR-21", "B10", "vcs_health"),
 )

@@ -56,9 +56,7 @@ def test_all_healthy_maps_six_ok_findings(monkeypatch, tmp_path: Path):
 # --- one engine missing -----------------------------------------------------
 
 
-def test_one_engine_missing_reports_one_fail_others_ok(
-    monkeypatch, tmp_path: Path
-):
+def test_one_engine_missing_reports_one_fail_others_ok(monkeypatch, tmp_path: Path):
     checks = _checks(
         ("deptry", True, "within tested range"),
         ("osv-scanner", False, "osv-scanner binary not found on PATH"),
@@ -133,17 +131,13 @@ class _RaisingEnginesFinder(importlib.abc.MetaPathFinder):
 
     def find_spec(self, fullname, path=None, target=None):
         if fullname == "pyforge.warden.engines":
-            return importlib.util.spec_from_loader(
-                fullname, _RaisingLoader(self._exc)
-            )
+            return importlib.util.spec_from_loader(fullname, _RaisingLoader(self._exc))
         return None
 
 
 def _simulate_broken_engines_import(monkeypatch, exc: BaseException) -> None:
     monkeypatch.delitem(sys.modules, "pyforge.warden.engines", raising=False)
-    monkeypatch.setattr(
-        sys, "meta_path", [_RaisingEnginesFinder(exc), *sys.meta_path]
-    )
+    monkeypatch.setattr(sys, "meta_path", [_RaisingEnginesFinder(exc), *sys.meta_path])
 
 
 def test_genuine_absence_shape_names_parent_and_gets_install_hint(
@@ -159,9 +153,7 @@ def test_genuine_absence_shape_names_parent_and_gets_install_hint(
     # 2026-07-30).
     _simulate_broken_engines_import(
         monkeypatch,
-        ModuleNotFoundError(
-            "No module named 'pyforge.warden'", name="pyforge.warden"
-        ),
+        ModuleNotFoundError("No module named 'pyforge.warden'", name="pyforge.warden"),
     )
 
     findings = gather(tmp_path)
@@ -202,9 +194,7 @@ def test_non_import_error_during_warden_import_returns_one_fail_finding(
     # A non-ImportError from warden's module body (corrupted install) must
     # degrade to a Finding, not escape gather() (review finding,
     # 2026-07-30).
-    _simulate_broken_engines_import(
-        monkeypatch, OSError("simulated corrupted install")
-    )
+    _simulate_broken_engines_import(monkeypatch, OSError("simulated corrupted install"))
 
     findings = gather(tmp_path)
 
@@ -231,9 +221,7 @@ class _EmptyModuleLoader(importlib.abc.Loader):
 class _EmptyEnginesFinder(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
         if fullname == "pyforge.warden.engines":
-            return importlib.util.spec_from_loader(
-                fullname, _EmptyModuleLoader()
-            )
+            return importlib.util.spec_from_loader(fullname, _EmptyModuleLoader())
         return None
 
 
@@ -246,9 +234,7 @@ def test_renamed_symbol_plain_import_error_reports_broken_not_absent(
     # previously the one documented shape with zero coverage (review
     # finding, 2026-07-30).
     monkeypatch.delitem(sys.modules, "pyforge.warden.engines", raising=False)
-    monkeypatch.setattr(
-        sys, "meta_path", [_EmptyEnginesFinder(), *sys.meta_path]
-    )
+    monkeypatch.setattr(sys, "meta_path", [_EmptyEnginesFinder(), *sys.meta_path])
 
     findings = gather(tmp_path)
 
@@ -314,9 +300,7 @@ def test_malformed_doctor_checks_return_one_fail_finding_no_exception(
     # shape-drifted DoctorCheck (missing fields) degrades to a Finding
     # instead of raising AttributeError out of gather() (review finding,
     # 2026-07-30).
-    monkeypatch.setattr(
-        engines_mod, "run_doctor_checks", lambda target: [object()]
-    )
+    monkeypatch.setattr(engines_mod, "run_doctor_checks", lambda target: [object()])
 
     findings = gather(tmp_path)
 

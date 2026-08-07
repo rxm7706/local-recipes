@@ -28,8 +28,14 @@ from pyforge.marshal.core.supervise import (
 _T0 = datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
 
 
-def _sample(offset_ms: int, *, pane: str | None = "same", mtime: float | None = 1.0) -> Sample:
-    return Sample(moment=_T0 + timedelta(milliseconds=offset_ms), pane_content=pane, log_mtime=mtime)
+def _sample(
+    offset_ms: int, *, pane: str | None = "same", mtime: float | None = 1.0
+) -> Sample:
+    return Sample(
+        moment=_T0 + timedelta(milliseconds=offset_ms),
+        pane_content=pane,
+        log_mtime=mtime,
+    )
 
 
 # --- resting position / degenerate inputs -------------------------------------
@@ -88,7 +94,11 @@ def test_a_changed_pane_content_resets_the_idle_window():
     """Fresh pane output at the LAST sample resets the reference point to
     that sample's own moment -- elapsed collapses back to zero even though
     the sequence as a whole spans well past a threshold."""
-    samples = [_sample(0, pane="idle"), _sample(500, pane="idle"), _sample(520, pane="responded")]
+    samples = [
+        _sample(0, pane="idle"),
+        _sample(500, pane="idle"),
+        _sample(520, pane="responded"),
+    ]
     assert evaluate_idle(samples, threshold_s=0.1) == LadderRung.NONE
 
 
@@ -145,7 +155,12 @@ def test_rung_at_is_rung_index_inverse_and_clamps_out_of_range():
     this one" without reaching into the private ordering tuple -- the
     supervisor uses it to clamp escalation to a single rung per tick. It is
     total: no index can raise or wrap backwards."""
-    for expected in (LadderRung.NONE, LadderRung.NUDGE, LadderRung.STOP_AND_RETRY, LadderRung.DEFER):
+    for expected in (
+        LadderRung.NONE,
+        LadderRung.NUDGE,
+        LadderRung.STOP_AND_RETRY,
+        LadderRung.DEFER,
+    ):
         assert rung_at(rung_index(expected)) is expected
     assert rung_at(-1) is LadderRung.NONE
     assert rung_at(-999) is LadderRung.NONE
@@ -177,11 +192,18 @@ def test_idle_since_and_evaluate_idle_can_never_disagree():
     """``evaluate_idle`` delegates to ``idle_since`` rather than repeating
     the scan, so the rung and the anchor are always derived from the same
     reading of the same sequence."""
-    samples = [_sample(0), _sample(100), _sample(250, pane="fresh"), _sample(450, pane="fresh")]
+    samples = [
+        _sample(0),
+        _sample(100),
+        _sample(250, pane="fresh"),
+        _sample(450, pane="fresh"),
+    ]
     anchor = idle_since(samples)
     elapsed_s = (samples[-1].moment - anchor).total_seconds()
     assert evaluate_idle(samples, threshold_s=elapsed_s) == LadderRung.NUDGE
-    assert evaluate_idle(samples, threshold_s=elapsed_s / 2) == LadderRung.STOP_AND_RETRY
+    assert (
+        evaluate_idle(samples, threshold_s=elapsed_s / 2) == LadderRung.STOP_AND_RETRY
+    )
 
 
 def test_rung_index_orders_the_ladder_ascending():
@@ -322,7 +344,10 @@ def test_wall_clock_is_the_fallback_when_either_endpoint_lacks_a_reading():
     carries only ``moment`` (every synthetic test predating the field, and
     any future caller replaying journalled samples) keeps the previous
     behaviour exactly."""
-    both_missing = [_mono_sample(wall_ms=0, mono_s=None), _mono_sample(wall_ms=120_000, mono_s=None)]
+    both_missing = [
+        _mono_sample(wall_ms=0, mono_s=None),
+        _mono_sample(wall_ms=120_000, mono_s=None),
+    ]
     assert evaluate_idle(both_missing, threshold_s=60.0) == LadderRung.STOP_AND_RETRY
 
     # One endpoint short is still a fallback -- a half-monotonic pair cannot
@@ -429,16 +454,26 @@ def test_paused_at_a_different_stage_is_none():
     """Any pause stage other than ``"escalation"`` -- spec-approval,
     epic-boundary, story-gate, plan/story-checkpoint, or an unrecognized
     future value -- is simply not this kind of pause."""
-    for stage in ("spec-approval", "epic-boundary", "story-gate", "plan-checkpoint", "bogus"):
+    for stage in (
+        "spec-approval",
+        "epic-boundary",
+        "story-gate",
+        "plan-checkpoint",
+        "bogus",
+    ):
         assert (
-            evaluate_escalation(stage, "3-7-escalation-deferral-and-resume", "escalated")
+            evaluate_escalation(
+                stage, "3-7-escalation-deferral-and-resume", "escalated"
+            )
             == EscalationStatus.NONE
         )
 
 
 def test_escalation_paused_with_the_task_still_escalated_is_unresolved():
     assert (
-        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "escalated")
+        evaluate_escalation(
+            "escalation", "3-7-escalation-deferral-and-resume", "escalated"
+        )
         == EscalationStatus.UNRESOLVED
     )
 
@@ -449,7 +484,10 @@ def test_escalation_paused_with_no_story_key_is_resolved():
     (that classification's own definition requires a story key); it falls
     through to `RESOLVED`, this function's own "not this exact unresolved
     shape" catch-all for a stage-escalation pause."""
-    assert evaluate_escalation("escalation", None, "escalated") == EscalationStatus.RESOLVED
+    assert (
+        evaluate_escalation("escalation", None, "escalated")
+        == EscalationStatus.RESOLVED
+    )
 
 
 def test_escalation_paused_with_the_task_no_longer_escalated_is_resolved():
@@ -458,7 +496,9 @@ def test_escalation_paused_with_the_task_no_longer_escalated_is_resolved():
     run separately. This is the one window `RESOLVED` describes: a human
     has re-armed the story, but the run has not yet been resumed."""
     assert (
-        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "pending")
+        evaluate_escalation(
+            "escalation", "3-7-escalation-deferral-and-resume", "pending"
+        )
         == EscalationStatus.RESOLVED
     )
 
@@ -478,8 +518,12 @@ def test_evaluate_escalation_never_raises_on_unexpected_string_values():
     """No type guard beyond ordinary equality (this function's own
     docstring) -- an unexpected string for any of the three inputs simply
     fails the equality checks it needs to, never raising."""
-    assert evaluate_escalation("ESCALATION", "3.7", "escalated") == EscalationStatus.NONE
     assert (
-        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "ESCALATED")
+        evaluate_escalation("ESCALATION", "3.7", "escalated") == EscalationStatus.NONE
+    )
+    assert (
+        evaluate_escalation(
+            "escalation", "3-7-escalation-deferral-and-resume", "ESCALATED"
+        )
         == EscalationStatus.RESOLVED
     )

@@ -80,8 +80,14 @@ warnings: []
 ```python
 def bypass_blocking(rungs):
     return [
-        (Status.BYPASSED if driver is not None and status not in _NON_BLOCKING_STATUSES
-         and _is_finding_family_id(driver.finding_id) else status, driver)
+        (
+            Status.BYPASSED
+            if driver is not None
+            and status not in _NON_BLOCKING_STATUSES
+            and _is_finding_family_id(driver.finding_id)
+            else status,
+            driver,
+        )
         for status, driver in rungs
     ]
 ```

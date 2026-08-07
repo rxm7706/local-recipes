@@ -32,10 +32,14 @@ from typing import Any
 # Try to import yaml, fall back to basic parsing if not available
 try:
     import yaml
+
     HAS_YAML = True
 except ImportError:
     HAS_YAML = False
-    print("Warning: PyYAML not installed. YAML sources will use fallback parsing.", file=sys.stderr)
+    print(
+        "Warning: PyYAML not installed. YAML sources will use fallback parsing.",
+        file=sys.stderr,
+    )
 
 
 SOURCES = {
@@ -69,14 +73,22 @@ CACHE_FILES = {"unified.json", "by_pypi_name.json", "by_conda_name.json"}
 DEFAULT_CACHE_TTL_DAYS = 7
 
 # Default output directory (relative to script location or repo root)
-DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent / ".claude" / "skills" / "conda-forge-expert" / "pypi_conda_mappings"
+DEFAULT_OUTPUT_DIR = (
+    Path(__file__).parent.parent
+    / ".claude"
+    / "skills"
+    / "conda-forge-expert"
+    / "pypi_conda_mappings"
+)
 
 
 def fetch_url(url: str, timeout: int = 30) -> str:
     """Fetch content from a URL."""
     print(f"  Fetching: {url}")
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "conda-forge-expert-sync/1.0"})
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "conda-forge-expert-sync/1.0"}
+        )
         with urllib.request.urlopen(req, timeout=timeout) as response:
             return response.read().decode("utf-8")
     except urllib.error.URLError as e:
@@ -89,36 +101,36 @@ def parse_yaml_simple(content: str) -> Any:
     # This is a very basic parser - only handles simple key-value and lists
     # For full YAML support, install PyYAML
 
-    lines = content.split('\n')
+    lines = content.split("\n")
     result = {}
     current_key = None
     current_list = None
 
     for line in lines:
         stripped = line.strip()
-        if not stripped or stripped.startswith('#'):
+        if not stripped or stripped.startswith("#"):
             continue
 
         # Handle list items
-        if stripped.startswith('- '):
+        if stripped.startswith("- "):
             if current_list is not None:
                 # Try to parse as dict item
                 item_content = stripped[2:].strip()
-                if ':' in item_content:
-                    key, _, value = item_content.partition(':')
+                if ":" in item_content:
+                    key, _, value = item_content.partition(":")
                     if current_list and isinstance(current_list[-1], dict):
-                        current_list[-1][key.strip()] = value.strip().strip('"\'')
+                        current_list[-1][key.strip()] = value.strip().strip("\"'")
                     else:
-                        current_list.append({key.strip(): value.strip().strip('"\'')})
+                        current_list.append({key.strip(): value.strip().strip("\"'")})
                 else:
                     current_list.append(item_content)
             continue
 
         # Handle key: value
-        if ':' in stripped:
-            key, _, value = stripped.partition(':')
+        if ":" in stripped:
+            key, _, value = stripped.partition(":")
             key = key.strip()
-            value = value.strip().strip('"\'')
+            value = value.strip().strip("\"'")
 
             if not value:
                 # This might be a list or nested dict
@@ -275,13 +287,19 @@ def create_indices(mappings: dict[str, dict]) -> tuple[dict, dict, dict]:
             by_conda[normalize_name(conda_name)] = info
 
         # Track where names actually differ
-        if pypi_name and conda_name and normalize_name(pypi_name) != normalize_name(conda_name):
+        if (
+            pypi_name
+            and conda_name
+            and normalize_name(pypi_name) != normalize_name(conda_name)
+        ):
             different_names[normalize_name(pypi_name)] = info
 
     return by_pypi, by_conda, different_names
 
 
-def check_cache_validity(output_dir: Path, ttl_days: int = DEFAULT_CACHE_TTL_DAYS) -> tuple[bool, str]:
+def check_cache_validity(
+    output_dir: Path, ttl_days: int = DEFAULT_CACHE_TTL_DAYS
+) -> tuple[bool, str]:
     """
     Check if the cache is valid (exists and within TTL).
 
@@ -327,8 +345,11 @@ def fetch_parselmouth_direct() -> dict[str, dict]:
     return {}
 
 
-def get_conda_name(pypi_name: str, output_dir: Path = DEFAULT_OUTPUT_DIR,
-                   ttl_days: int = DEFAULT_CACHE_TTL_DAYS) -> str:
+def get_conda_name(
+    pypi_name: str,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    ttl_days: int = DEFAULT_CACHE_TTL_DAYS,
+) -> str:
     """
     Get the conda-forge name for a PyPI package.
 
@@ -380,21 +401,26 @@ def get_conda_name(pypi_name: str, output_dir: Path = DEFAULT_OUTPUT_DIR,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sync PyPI to conda-forge package name mappings")
+    parser = argparse.ArgumentParser(
+        description="Sync PyPI to conda-forge package name mappings"
+    )
     parser.add_argument(
-        "--output-dir", "-o",
+        "--output-dir",
+        "-o",
         type=Path,
         default=DEFAULT_OUTPUT_DIR,
         help=f"Output directory for mapping files (default: {DEFAULT_OUTPUT_DIR})",
     )
     parser.add_argument(
-        "--custom-file", "-c",
+        "--custom-file",
+        "-c",
         type=Path,
         default=None,
         help="Path to custom mappings YAML file (default: OUTPUT_DIR/custom.yaml)",
     )
     parser.add_argument(
-        "--force-refresh", "-f",
+        "--force-refresh",
+        "-f",
         action="store_true",
         help="Force refresh even if cache is valid",
     )
@@ -410,7 +436,8 @@ def main():
         help=f"Cache TTL in days (default: {DEFAULT_CACHE_TTL_DAYS})",
     )
     parser.add_argument(
-        "--quiet", "-q",
+        "--quiet",
+        "-q",
         action="store_true",
         help="Minimal output",
     )
@@ -492,7 +519,9 @@ def main():
 
     # Merge all mappings
     if not args.quiet:
-        print("\nMerging mappings (priority: custom > parselmouth > cf-graph > grayskull)...")
+        print(
+            "\nMerging mappings (priority: custom > parselmouth > cf-graph > grayskull)..."
+        )
     merged = merge_mappings(*all_mappings)
     if not args.quiet:
         print(f"  Total unique mappings: {len(merged)}")
@@ -510,7 +539,9 @@ def main():
     different_file = output_dir / "different_names.json"
     different_file.write_text(json.dumps(different_names, indent=2, sort_keys=True))
     if not args.quiet:
-        print(f"  [TRACKED] {different_file.name}: {len(different_names)} mappings where names differ")
+        print(
+            f"  [TRACKED] {different_file.name}: {len(different_names)} mappings where names differ"
+        )
 
     # Statistics - TRACKED
     stats = {
@@ -576,7 +607,9 @@ def main():
         print(f"Packages with different names: {len(different_names)}")
         print()
         print("Files tracked in git: custom.yaml, different_names.json, stats.json")
-        print("Files cached locally: unified.json, by_pypi_name.json, by_conda_name.json")
+        print(
+            "Files cached locally: unified.json, by_pypi_name.json, by_conda_name.json"
+        )
         print("=" * 60)
 
     return 0

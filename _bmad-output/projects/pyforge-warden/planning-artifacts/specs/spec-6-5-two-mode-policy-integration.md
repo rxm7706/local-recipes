@@ -107,17 +107,25 @@ The escalation seam already exists and is proven for the vulnerability axis — 
 @property
 def currency_policy(self) -> dict[CurrencyVerdict, Status]:
     if self.currency_gating:
-        return {CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
-                CurrencyVerdict.UNKNOWN: Status.INDETERMINATE}
+        return {
+            CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
+            CurrencyVerdict.UNKNOWN: Status.INDETERMINATE,
+        }
     return {CurrencyVerdict.EOL: Status.WARN, CurrencyVerdict.UNKNOWN: Status.WARN}
+
 
 # currency.py — rung defaults stay warn-capped (ceiling test), escalate only via the passed table
 def currency_rung(finding, *, policy=None, max_lag=None):
     info = finding.currency
-    if info is None:                      # provenance/freshness finding
-        return (Status.INDETERMINATE, StatusDriver(axis=finding.axis, finding_id=finding.id))
+    if info is None:  # provenance/freshness finding
+        return (
+            Status.INDETERMINATE,
+            StatusDriver(axis=finding.axis, finding_id=finding.id),
+        )
     table = policy or DEFAULT_CURRENCY_POLICY
-    if info.verdict is CurrencyVerdict.SUPPORTED:   # over-lag (lag truthy); clean-supported never mints a finding
+    if (
+        info.verdict is CurrencyVerdict.SUPPORTED
+    ):  # over-lag (lag truthy); clean-supported never mints a finding
         over = max_lag is not None and info.lag is not None and info.lag > max_lag
         status = Status.POLICY_VIOLATION if over else Status.WARN
     else:

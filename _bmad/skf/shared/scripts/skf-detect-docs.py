@@ -96,7 +96,9 @@ _GITHUB_URL_RE = re.compile(
     re.IGNORECASE,
 )
 
-USER_AGENT = "skf-detect-docs/1.0 (+https://github.com/armelhbobdad/bmad-module-skill-forge)"
+USER_AGENT = (
+    "skf-detect-docs/1.0 (+https://github.com/armelhbobdad/bmad-module-skill-forge)"
+)
 
 _FETCH_TIMEOUT = 15
 
@@ -185,16 +187,19 @@ def _classify_content_type(url: str) -> str:
 # URL helpers
 # ---------------------------------------------------------------------------
 
+
 def _is_excluded(url: str) -> bool:
     return bool(_EXCLUSION_PATTERNS.search(url))
 
 
 def _is_github_self_url(url: str, owner: str, repo: str) -> bool:
-    return bool(re.match(
-        rf"https?://(?:www\.)?github\.com/{re.escape(owner)}/{re.escape(repo)}/?$",
-        url,
-        re.IGNORECASE,
-    ))
+    return bool(
+        re.match(
+            rf"https?://(?:www\.)?github\.com/{re.escape(owner)}/{re.escape(repo)}/?$",
+            url,
+            re.IGNORECASE,
+        )
+    )
 
 
 def _is_doc_url(url: str, link_text: str = "") -> bool:
@@ -212,6 +217,7 @@ def _is_doc_url(url: str, link_text: str = "") -> bool:
 # ---------------------------------------------------------------------------
 # gh CLI helper
 # ---------------------------------------------------------------------------
+
 
 def _run_gh(args: List[str]) -> Optional[str]:
     try:
@@ -242,6 +248,7 @@ def _check_gh_available() -> bool:
 # ---------------------------------------------------------------------------
 # Content hashing
 # ---------------------------------------------------------------------------
+
 
 def _fetch_and_hash(url: str) -> Optional[str]:
     if url.startswith("file://"):
@@ -316,6 +323,7 @@ def _fetch_and_hash_reason(url: str) -> Tuple[Optional[str], Optional[str]]:
 # Detection method 1 — homepageUrl
 # ---------------------------------------------------------------------------
 
+
 def _detect_homepage_url(owner: str, repo: str) -> List[Dict[str, Any]]:
     raw = _run_gh(["api", f"repos/{owner}/{repo}", "--jq", ".homepage"])
     if not raw or raw == "null":
@@ -325,12 +333,19 @@ def _detect_homepage_url(owner: str, repo: str) -> List[Dict[str, Any]]:
         return []
     if _is_github_self_url(url, owner, repo):
         return []
-    return [{"url": url, "detected_via": "homepageUrl", "content_type": _classify_content_type(url)}]
+    return [
+        {
+            "url": url,
+            "detected_via": "homepageUrl",
+            "content_type": _classify_content_type(url),
+        }
+    ]
 
 
 # ---------------------------------------------------------------------------
 # Detection method 2 — README link scanning
 # ---------------------------------------------------------------------------
+
 
 def _detect_readme_links(owner: str, repo: str) -> List[Dict[str, Any]]:
     raw = _run_gh(["api", f"repos/{owner}/{repo}/readme"])
@@ -365,17 +380,20 @@ def _detect_readme_links(owner: str, repo: str) -> List[Dict[str, Any]]:
             continue
         if _is_doc_url(url, text):
             seen.add(url)
-            results.append({
-                "url": url,
-                "detected_via": "readme_link",
-                "content_type": _classify_content_type(url),
-            })
+            results.append(
+                {
+                    "url": url,
+                    "detected_via": "readme_link",
+                    "content_type": _classify_content_type(url),
+                }
+            )
     return results
 
 
 # ---------------------------------------------------------------------------
 # Detection method 3 — Pages API
 # ---------------------------------------------------------------------------
+
 
 def _detect_pages_api(owner: str, repo: str) -> List[Dict[str, Any]]:
     raw = _run_gh(["api", f"repos/{owner}/{repo}/pages", "--jq", ".html_url"])
@@ -384,25 +402,36 @@ def _detect_pages_api(owner: str, repo: str) -> List[Dict[str, Any]]:
     url = raw.strip()
     if not url:
         return []
-    return [{"url": url, "detected_via": "pages_api", "content_type": _classify_content_type(url)}]
+    return [
+        {
+            "url": url,
+            "detected_via": "pages_api",
+            "content_type": _classify_content_type(url),
+        }
+    ]
 
 
 # ---------------------------------------------------------------------------
 # Detection method 4 — docs/ folder
 # ---------------------------------------------------------------------------
 
-def _detect_docs_folder(owner: str, repo: str, local_path: Optional[str] = None) -> List[Dict[str, Any]]:
+
+def _detect_docs_folder(
+    owner: str, repo: str, local_path: Optional[str] = None
+) -> List[Dict[str, Any]]:
     results: List[Dict[str, Any]] = []
     if local_path:
         docs_dir = Path(local_path) / "docs"
         if docs_dir.is_dir():
             for md_file in sorted(docs_dir.rglob("*.md")):
                 file_url = "file://" + md_file.as_posix()
-                results.append({
-                    "url": file_url,
-                    "detected_via": "docs_folder",
-                    "content_type": _classify_content_type(md_file.as_posix()),
-                })
+                results.append(
+                    {
+                        "url": file_url,
+                        "detected_via": "docs_folder",
+                        "content_type": _classify_content_type(md_file.as_posix()),
+                    }
+                )
     else:
         raw = _run_gh(["api", f"repos/{owner}/{repo}/contents/docs"])
         if not raw:
@@ -419,17 +448,20 @@ def _detect_docs_folder(owner: str, repo: str, local_path: Optional[str] = None)
                 continue
             download_url = entry.get("download_url", "")
             if download_url:
-                results.append({
-                    "url": download_url,
-                    "detected_via": "docs_folder",
-                    "content_type": _classify_content_type(download_url),
-                })
+                results.append(
+                    {
+                        "url": download_url,
+                        "detected_via": "docs_folder",
+                        "content_type": _classify_content_type(download_url),
+                    }
+                )
     return results
 
 
 # ---------------------------------------------------------------------------
 # Main detection orchestrator
 # ---------------------------------------------------------------------------
+
 
 def detect(
     repo_url: str,
@@ -467,6 +499,7 @@ def detect(
 # ---------------------------------------------------------------------------
 # compare-hashes subcommand — doc-drift detection for audit-skill
 # ---------------------------------------------------------------------------
+
 
 def _load_doc_sources(raw_text: str, source_label: str) -> List[Any]:
     """Parse a compare-hashes input blob into a list of doc-source entries.
@@ -516,11 +549,13 @@ def compare_doc_hashes(doc_sources: List[Any]) -> Dict[str, Any]:
             continue
         url = entry.get("url")
         if not isinstance(url, str) or not url:
-            fetch_failed.append({
-                "url": url if isinstance(url, str) else "",
-                "old_hash": entry.get("content_hash"),
-                "reason": "invalid entry: missing url",
-            })
+            fetch_failed.append(
+                {
+                    "url": url if isinstance(url, str) else "",
+                    "old_hash": entry.get("content_hash"),
+                    "reason": "invalid entry: missing url",
+                }
+            )
             continue
         stored = entry.get("content_hash")
         if stored is None:
@@ -583,7 +618,10 @@ def _cmd_compare_hashes(argv: List[str]) -> int:
         try:
             raw = path.read_text(encoding="utf-8")
         except OSError as exc:
-            json.dump({"error": f"cannot read {path}: {exc}", "code": "READ_ERROR"}, sys.stderr)
+            json.dump(
+                {"error": f"cannot read {path}: {exc}", "code": "READ_ERROR"},
+                sys.stderr,
+            )
             sys.stderr.write("\n")
             return 2
         label = str(path)
@@ -605,6 +643,7 @@ def _cmd_compare_hashes(argv: List[str]) -> int:
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+
 def main() -> int:
     # Additive subcommand: route `compare-hashes ...` to the doc-drift path
     # before the existing detect parser runs. The default (no subcommand)
@@ -616,8 +655,12 @@ def main() -> int:
         description="Detect documentation URLs for a GitHub repository.",
     )
     parser.add_argument("--repo-url", required=True, help="GitHub repository URL")
-    parser.add_argument("--local-path", default=None, help="Local clone path for docs/ folder scan")
-    parser.add_argument("--skip-pages-api", action="store_true", help="Skip GitHub Pages API detection")
+    parser.add_argument(
+        "--local-path", default=None, help="Local clone path for docs/ folder scan"
+    )
+    parser.add_argument(
+        "--skip-pages-api", action="store_true", help="Skip GitHub Pages API detection"
+    )
     args = parser.parse_args()
 
     if not _check_gh_available():
@@ -627,7 +670,10 @@ def main() -> int:
 
     m = _GITHUB_URL_RE.match(args.repo_url.strip())
     if not m:
-        json.dump({"error": f"Not a GitHub URL: {args.repo_url}", "code": "INVALID_URL"}, sys.stderr)
+        json.dump(
+            {"error": f"Not a GitHub URL: {args.repo_url}", "code": "INVALID_URL"},
+            sys.stderr,
+        )
         sys.stderr.write("\n")
         return 2
 

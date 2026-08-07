@@ -99,7 +99,9 @@ def _scan_lines(numbered, pattern):
     return [(n, text) for (n, text) in numbered if pattern.search(text)]
 
 
-def verify(skill_group: Path, forge_group: Path, old_name: str, new_name: str, versions):
+def verify(
+    skill_group: Path, forge_group: Path, old_name: str, new_name: str, versions
+):
     hard_matches = []
     body_warnings = []
     dir_violations = []
@@ -113,7 +115,9 @@ def verify(skill_group: Path, forge_group: Path, old_name: str, new_name: str, v
         try:
             return path.read_text(encoding="utf-8")
         except OSError as e:
-            skipped.append({"version": version, "file": str(path), "reason": f"read-error: {e}"})
+            skipped.append(
+                {"version": version, "file": str(path), "reason": f"read-error: {e}"}
+            )
             return None
 
     for v in versions:
@@ -126,13 +130,23 @@ def verify(skill_group: Path, forge_group: Path, old_name: str, new_name: str, v
             fm, body = _split_frontmatter_body(content)
             for n, text in _scan_lines(fm, pattern):
                 hard_matches.append(
-                    {"version": v, "file": str(skill_md), "region": "skill-frontmatter",
-                     "line": n, "text": text.strip()}
+                    {
+                        "version": v,
+                        "file": str(skill_md),
+                        "region": "skill-frontmatter",
+                        "line": n,
+                        "text": text.strip(),
+                    }
                 )
             for n, text in _scan_lines(body, pattern):
                 body_warnings.append(
-                    {"version": v, "file": str(skill_md), "region": "skill-body",
-                     "line": n, "text": text.strip()}
+                    {
+                        "version": v,
+                        "file": str(skill_md),
+                        "region": "skill-body",
+                        "line": n,
+                        "text": text.strip(),
+                    }
                 )
 
         # Whole-file hard scans.
@@ -144,10 +158,17 @@ def verify(skill_group: Path, forge_group: Path, old_name: str, new_name: str, v
             content = scan_file(rel, region, v)
             if content is None:
                 continue
-            for n, text in _scan_lines(list(enumerate(content.split("\n"), start=1)), pattern):
+            for n, text in _scan_lines(
+                list(enumerate(content.split("\n"), start=1)), pattern
+            ):
                 hard_matches.append(
-                    {"version": v, "file": str(rel), "region": region,
-                     "line": n, "text": text.strip()}
+                    {
+                        "version": v,
+                        "file": str(rel),
+                        "region": region,
+                        "line": n,
+                        "text": text.strip(),
+                    }
                 )
 
         # Directory listing: must contain {new_name}/, must not contain {old_name}/.
@@ -156,13 +177,21 @@ def verify(skill_group: Path, forge_group: Path, old_name: str, new_name: str, v
         new_dir = version_dir / new_name
         if old_dir.exists():
             dir_violations.append(
-                {"version": v, "path": str(version_dir),
-                 "issue": "old-name-dir-present", "detail": f"{old_name}/"}
+                {
+                    "version": v,
+                    "path": str(version_dir),
+                    "issue": "old-name-dir-present",
+                    "detail": f"{old_name}/",
+                }
             )
         if not new_dir.exists():
             dir_violations.append(
-                {"version": v, "path": str(version_dir),
-                 "issue": "new-name-dir-missing", "detail": f"{new_name}/"}
+                {
+                    "version": v,
+                    "path": str(version_dir),
+                    "issue": "new-name-dir-missing",
+                    "detail": f"{new_name}/",
+                }
             )
 
     clean = not hard_matches and not dir_violations
@@ -183,20 +212,38 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("skill_group", type=Path, help="new_skill_group ({skills_output_folder}/{new_name})")
-    parser.add_argument("--forge-group", type=Path, required=True, help="new_forge_group ({forge_data_folder}/{new_name})")
+    parser.add_argument(
+        "skill_group",
+        type=Path,
+        help="new_skill_group ({skills_output_folder}/{new_name})",
+    )
+    parser.add_argument(
+        "--forge-group",
+        type=Path,
+        required=True,
+        help="new_forge_group ({forge_data_folder}/{new_name})",
+    )
     parser.add_argument("--old-name", required=True, help="Old skill name to scan for")
     parser.add_argument("--new-name", required=True, help="New skill name")
-    parser.add_argument("--versions", required=True, help="Comma-separated version list (affected_versions)")
+    parser.add_argument(
+        "--versions",
+        required=True,
+        help="Comma-separated version list (affected_versions)",
+    )
     parser.add_argument("--verbose", action="store_true", help="Diagnostics to stderr")
     args = parser.parse_args()
 
     versions = [v for v in (s.strip() for s in args.versions.split(",")) if v]
     if not versions:
-        print(json.dumps({"status": "error", "message": "no versions provided"}), file=sys.stderr)
+        print(
+            json.dumps({"status": "error", "message": "no versions provided"}),
+            file=sys.stderr,
+        )
         sys.exit(2)
 
-    result = verify(args.skill_group, args.forge_group, args.old_name, args.new_name, versions)
+    result = verify(
+        args.skill_group, args.forge_group, args.old_name, args.new_name, versions
+    )
 
     if args.verbose:
         print(

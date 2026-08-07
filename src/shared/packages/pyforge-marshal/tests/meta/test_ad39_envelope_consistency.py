@@ -44,7 +44,9 @@ def test_every_lattice_member_produces_a_status_consistent_envelope(member):
 
 def test_status_for_partition_is_exactly_two_valued():
     ok_verdicts = {member for member in Verdict if status_for(member) is Status.OK}
-    error_verdicts = {member for member in Verdict if status_for(member) is Status.ERROR}
+    error_verdicts = {
+        member for member in Verdict if status_for(member) is Status.ERROR
+    }
     assert ok_verdicts == {Verdict.CLEAN, Verdict.WARN}
     assert error_verdicts == set(Verdict) - ok_verdicts
 

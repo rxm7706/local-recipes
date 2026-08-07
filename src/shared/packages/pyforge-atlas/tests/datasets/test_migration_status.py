@@ -24,6 +24,7 @@ from pyforge.atlas.datasets.migration_status import (
 
 # --- migration_names (the pure partition-key derivation) --------------------
 
+
 def test_migration_names_from_dict_keyed_by_name_drops_meta():
     payload = {"_wrote_at": 123, "python314": {"total": 10}, "boost187": {"total": 5}}
     assert migration_names(payload) == ["python314", "boost187"]
@@ -36,7 +37,10 @@ def test_migration_names_from_migrations_subdict():
 
 def test_migration_names_from_list_of_names_and_of_dicts():
     assert migration_names(["python314", "python315"]) == ["python314", "python315"]
-    assert migration_names([{"name": "python314"}, {"name": "numpy2"}]) == ["python314", "numpy2"]
+    assert migration_names([{"name": "python314"}, {"name": "numpy2"}]) == [
+        "python314",
+        "numpy2",
+    ]
 
 
 def test_migration_names_excludes_version_status_queue():
@@ -55,6 +59,7 @@ def test_migration_names_robust_to_junk():
 
 
 # --- MigrationCategoryDataset (fetch + AD-13) -------------------------------
+
 
 def _cat(tmp_path, **kw):
     return MigrationCategoryDataset(
@@ -134,6 +139,7 @@ def test_category_describe_records_exclusion(tmp_path):
 
 # --- MigrationDetailDataset (partitioned by migration + AD-13) --------------
 
+
 def _detail(tmp_path, **kw):
     return MigrationDetailDataset(
         url="https://raw.githubusercontent.com/conda-forge/conda-forge-bot-data/main/status/migration_json",
@@ -169,7 +175,7 @@ def test_detail_fetch_partitions_one_per_active_migration(tmp_path):
 
 def test_detail_url_appends_name_json(tmp_path):
     seen = []
-    ds = _detail(tmp_path, fetcher=lambda url: (seen.append(url) or {"done": []}))
+    ds = _detail(tmp_path, fetcher=lambda url: seen.append(url) or {"done": []})
     ds.fetch_partitions(["python314"])
     assert seen == [
         "https://raw.githubusercontent.com/conda-forge/conda-forge-bot-data/main/status/migration_json/python314.json"
@@ -188,7 +194,7 @@ def test_detail_404_partition_marks_stale_keeps_others(tmp_path):
 
 def test_detail_never_fetches_version_status_queue(tmp_path):
     seen = []
-    ds = _detail(tmp_path, fetcher=lambda url: (seen.append(url) or {"done": []}))
+    ds = _detail(tmp_path, fetcher=lambda url: seen.append(url) or {"done": []})
     # even if the excluded name is passed in, it is never fetched as a partition.
     ds.fetch_partitions(["python314", "version_status.v2.json"])
     assert all("version_status.v2.json" not in u for u in seen)
@@ -235,8 +241,10 @@ def test_detail_corrupt_partition_skipped_not_fatal(tmp_path):
 
 def test_detail_accepts_series_of_names(tmp_path):
     seen = []
-    ds = _detail(tmp_path, fetcher=lambda url: (seen.append(url) or {"done": []}))
-    ds.fetch_partitions(pd.Series(["python314", "numpy2"]))  # must NOT raise on a Series
+    ds = _detail(tmp_path, fetcher=lambda url: seen.append(url) or {"done": []})
+    ds.fetch_partitions(
+        pd.Series(["python314", "numpy2"])
+    )  # must NOT raise on a Series
     assert len(seen) == 2
 
 
@@ -253,8 +261,12 @@ def test_detail_load_includes_orphaned_partitions(tmp_path):
     """
     ds = _detail(tmp_path)
     (tmp_path / "detail").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "detail" / "python314.json").write_text('{"done": ["numpy"]}', encoding="utf-8")
-    (tmp_path / "detail" / "orphaned_old.json").write_text('{"done": ["boost"]}', encoding="utf-8")
+    (tmp_path / "detail" / "python314.json").write_text(
+        '{"done": ["numpy"]}', encoding="utf-8"
+    )
+    (tmp_path / "detail" / "orphaned_old.json").write_text(
+        '{"done": ["boost"]}', encoding="utf-8"
+    )
 
     loaded = ds.load()
     assert "python314" in loaded
@@ -263,9 +275,14 @@ def test_detail_load_includes_orphaned_partitions(tmp_path):
 
 # --- offline construction (kedro-catalog-check parity) ----------------------
 
+
 def test_datasets_construct_offline_no_network():
     # __init__ does NO network (materializes under the catalog gate with stub config).
-    cat = MigrationCategoryDataset(url="https://x/status/regular_status.json", filepath="/tmp/x")
-    det = MigrationDetailDataset(url="https://x/status/migration_json", filepath="/tmp/y")
+    cat = MigrationCategoryDataset(
+        url="https://x/status/regular_status.json", filepath="/tmp/x"
+    )
+    det = MigrationDetailDataset(
+        url="https://x/status/migration_json", filepath="/tmp/y"
+    )
     assert cat._describe()["fetcher_wired"] is False
     assert det._describe()["partitioned_by"] == "active_migration"

@@ -418,7 +418,9 @@ def _registry_feed_provenance(
     AND for tier-1 resolution (see ``currency_findings``)."""
     updated = document.get("updated")
     if isinstance(updated, datetime):
-        snapshot_dt = updated if updated.tzinfo is not None else updated.replace(tzinfo=UTC)
+        snapshot_dt = (
+            updated if updated.tzinfo is not None else updated.replace(tzinfo=UTC)
+        )
     elif isinstance(updated, date):
         snapshot_dt = datetime(updated.year, updated.month, updated.day, tzinfo=UTC)
     elif isinstance(updated, str):
@@ -426,12 +428,16 @@ def _registry_feed_provenance(
             parsed = datetime.fromisoformat(updated)
         except ValueError:
             return None
-        snapshot_dt = parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+        snapshot_dt = (
+            parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+        )
     else:
         return None
     snapshot_at = snapshot_dt.isoformat()
     stale = feeds.is_feed_stale(snapshot_at, _REGISTRY_MAX_AGE_DAYS, now=now)
-    return FeedProvenance(source=_REGISTRY_SOURCE, snapshot_at=snapshot_at, max_age_ok=not stale)
+    return FeedProvenance(
+        source=_REGISTRY_SOURCE, snapshot_at=snapshot_at, max_age_ok=not stale
+    )
 
 
 # --- tier resolution -----------------------------------------------------
@@ -465,7 +471,9 @@ def _as_date(value: object) -> date | None:
     return None
 
 
-def _best_match(entries: Sequence[tuple[str, date, object]], version: str) -> int | None:
+def _best_match(
+    entries: Sequence[tuple[str, date, object]], version: str
+) -> int | None:
     """The index of the entry whose leading identifier (an LTS ``line`` or
     an endoflife.date ``cycle``) is the LONGEST exact-or-prefix match
     against ``version`` (``version == identifier`` or ``version.
@@ -502,7 +510,12 @@ def _resolve_from_lines(
         identifier = entry.get("line")
         released = _as_date(entry.get("released"))
         eol = _as_date(entry.get("eol"))
-        if not isinstance(identifier, str) or not identifier or released is None or eol is None:
+        if (
+            not isinstance(identifier, str)
+            or not identifier
+            or released is None
+            or eol is None
+        ):
             continue
         parsed.append((identifier, released, eol))
     if not parsed:
@@ -694,8 +707,7 @@ def _currency_finding(
         # gets its own accurate tail.
         if version:
             message = (
-                f"{name}: currency could not be resolved "
-                "(no usable registry/feed data)"
+                f"{name}: currency could not be resolved (no usable registry/feed data)"
             )
         else:
             message = (

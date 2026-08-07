@@ -13,32 +13,38 @@ def test_valid_identifier_constructs_and_stores_attributes():
     assert exc.message == "the CFE root could not be found"
 
 
-@pytest.mark.parametrize("identifier", [
-    "cfe:unresolved",
-    "ship:credential-missing",
-    "engine:absent",
-    "a:b",
-    "multi-part-name:multi-part-message",
-])
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "cfe:unresolved",
+        "ship:credential-missing",
+        "engine:absent",
+        "a:b",
+        "multi-part-name:multi-part-message",
+    ],
+)
 def test_valid_identifiers_from_the_architecture_spine(identifier):
     MasonError(identifier, "message")  # must not raise
 
 
-@pytest.mark.parametrize("identifier", [
-    "Bad Id",
-    "NoColon",
-    "cfe:",
-    ":unresolved",
-    "cfe:Unresolved",
-    "CFE:unresolved",
-    "cfe :unresolved",
-    "cfe: unresolved",
-    "cfe:un_resolved",
-    "cfe--bad:unresolved",
-    "cfe:unresolved:extra",
-    "",
-    "cfe:unresolved\n",  # a trailing newline must not slip past `$`-style anchoring
-])
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "Bad Id",
+        "NoColon",
+        "cfe:",
+        ":unresolved",
+        "cfe:Unresolved",
+        "CFE:unresolved",
+        "cfe :unresolved",
+        "cfe: unresolved",
+        "cfe:un_resolved",
+        "cfe--bad:unresolved",
+        "cfe:unresolved:extra",
+        "",
+        "cfe:unresolved\n",  # a trailing newline must not slip past `$`-style anchoring
+    ],
+)
 def test_invalid_identifiers_raise_value_error(identifier):
     with pytest.raises(ValueError):
         MasonError(identifier, "msg")

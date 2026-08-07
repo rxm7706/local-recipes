@@ -152,11 +152,31 @@ def test_valid_advisory_shape_with_ranges_passes():
         {"id": ""},
         {"id": 123, "affected": []},
         {"id": "x", "affected": "not-a-list"},
-        {"id": "x", "affected": [{"package": {"ecosystem": "npm", "name": "foo"}, "versions": ["1"]}]},
-        {"id": "x", "affected": [{"package": {"ecosystem": "PyPI", "name": ""}, "versions": ["1"]}]},
-        {"id": "x", "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": [""]}]},
+        {
+            "id": "x",
+            "affected": [
+                {"package": {"ecosystem": "npm", "name": "foo"}, "versions": ["1"]}
+            ],
+        },
+        {
+            "id": "x",
+            "affected": [
+                {"package": {"ecosystem": "PyPI", "name": ""}, "versions": ["1"]}
+            ],
+        },
+        {
+            "id": "x",
+            "affected": [
+                {"package": {"ecosystem": "PyPI", "name": "foo"}, "versions": [""]}
+            ],
+        },
         {"id": "x", "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}}]},
-        {"id": "x", "affected": [{"package": {"ecosystem": "PyPI", "name": "foo"}, "ranges": [{}]}]},
+        {
+            "id": "x",
+            "affected": [
+                {"package": {"ecosystem": "PyPI", "name": "foo"}, "ranges": [{}]}
+            ],
+        },
         "not-a-dict",
         None,
         123,
@@ -683,8 +703,16 @@ def test_parse_osv_output_deduplicates_by_finding_id():
     raw = json.dumps(
         {
             "results": [
-                {"packages": [_package("foo", "1.0", ids=["GHSA-x"], max_severity="5.0")]},
-                {"packages": [_package("foo", "1.0", ids=["GHSA-x"], max_severity="5.0")]},
+                {
+                    "packages": [
+                        _package("foo", "1.0", ids=["GHSA-x"], max_severity="5.0")
+                    ]
+                },
+                {
+                    "packages": [
+                        _package("foo", "1.0", ids=["GHSA-x"], max_severity="5.0")
+                    ]
+                },
             ]
         }
     )
@@ -782,9 +810,7 @@ _MATCHING_PACKAGE = {"ecosystem": "PyPI", "name": "foo"}
         [
             {
                 "package": _MATCHING_PACKAGE,
-                "ranges": [
-                    {"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}]}
-                ],
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}]}],
             }
         ],
         [
@@ -883,7 +909,7 @@ def test_parse_osv_output_first_well_formed_fixed_event_wins():
                                         {"fixed": "9.9.9"},
                                     ],
                                 },
-                            ]
+                            ],
                         }
                     ],
                 }
@@ -1097,7 +1123,9 @@ def test_vuln_rung_for_each_severity_tier(tier, expected_status):
         axis=AXIS_VULNERABILITY,
         message="foo: GHSA-xxxx",
         subject="foo",
-        severity=Severity(tier=tier, raw="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),
+        severity=Severity(
+            tier=tier, raw="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        ),
     )
     status, driver = vuln_rung(finding)
     assert status is expected_status
@@ -1189,7 +1217,9 @@ def test_vuln_rung_with_no_severity_is_indeterminate():
 # --- Story 6.4 (FR36): vuln_rung's fail_on_kev param --------------------------
 
 
-def _kev_finding(*, kev: bool | None, tier: SeverityTier = SeverityTier.MEDIUM) -> Finding:
+def _kev_finding(
+    *, kev: bool | None, tier: SeverityTier = SeverityTier.MEDIUM
+) -> Finding:
     return Finding(
         id="vuln:PDOS-KEV-FIXTURE-0001:pdos-kev-fixture@1.0.0",
         axis=AXIS_VULNERABILITY,
@@ -1251,16 +1281,14 @@ def test_vuln_rung_fail_on_kev_with_kev_none_does_not_force():
 def test_kev_match_finds_the_advisory_id_itself():
     catalog = {"PDOS-KEV-FIXTURE-0001": "2026-01-01"}
     assert (
-        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog)
-        == "2026-01-01"
+        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog) == "2026-01-01"
     )
 
 
 def test_kev_match_finds_an_alias():
     catalog = {"CVE-1970-00001": "2026-01-01"}
     assert (
-        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog)
-        == "2026-01-01"
+        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog) == "2026-01-01"
     )
 
 
@@ -1312,20 +1340,26 @@ def _epss_finding(
 def test_vuln_rung_min_epss_forces_policy_violation_at_the_threshold():
     """AC: a score exactly AT the threshold escalates (inclusive, not
     strictly-above)."""
-    finding = _epss_finding(epss=Epss(score=0.5, percentile=0.9), tier=SeverityTier.MEDIUM)
+    finding = _epss_finding(
+        epss=Epss(score=0.5, percentile=0.9), tier=SeverityTier.MEDIUM
+    )
     status, driver = vuln_rung(finding, min_epss=0.5)
     assert status is Status.POLICY_VIOLATION
     assert driver == StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id)
 
 
 def test_vuln_rung_min_epss_forces_policy_violation_above_the_threshold():
-    finding = _epss_finding(epss=Epss(score=0.7, percentile=0.9), tier=SeverityTier.MEDIUM)
+    finding = _epss_finding(
+        epss=Epss(score=0.7, percentile=0.9), tier=SeverityTier.MEDIUM
+    )
     status, _ = vuln_rung(finding, min_epss=0.5)
     assert status is Status.POLICY_VIOLATION
 
 
 def test_vuln_rung_min_epss_below_threshold_leaves_cvss_only_gating():
-    finding = _epss_finding(epss=Epss(score=0.2, percentile=0.3), tier=SeverityTier.MEDIUM)
+    finding = _epss_finding(
+        epss=Epss(score=0.2, percentile=0.3), tier=SeverityTier.MEDIUM
+    )
     status, _ = vuln_rung(finding, min_epss=0.5)
     assert status is Status.WARN
 
@@ -1348,7 +1382,9 @@ def test_vuln_rung_default_min_epss_is_none():
     """Every pre-6.7 direct caller (no min_epss kwarg at all) is unaffected:
     a high-scoring finding does NOT force policy-violation unless the
     caller explicitly opts in."""
-    finding = _epss_finding(epss=Epss(score=0.99, percentile=0.99), tier=SeverityTier.LOW)
+    finding = _epss_finding(
+        epss=Epss(score=0.99, percentile=0.99), tier=SeverityTier.LOW
+    )
     status, _ = vuln_rung(finding)
     assert status is Status.WARN
 

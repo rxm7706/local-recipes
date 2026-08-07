@@ -83,7 +83,9 @@ def _parse(path: Path) -> ast.Module:
 
 
 def _formatted_value_indices(values: list[ast.expr]) -> list[int]:
-    return [i for i, value in enumerate(values) if isinstance(value, ast.FormattedValue)]
+    return [
+        i for i, value in enumerate(values) if isinstance(value, ast.FormattedValue)
+    ]
 
 
 def _middle_literal(values: list[ast.expr], start: int, end: int) -> str | None:

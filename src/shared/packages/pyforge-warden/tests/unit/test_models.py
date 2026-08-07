@@ -189,7 +189,9 @@ def _sample_report() -> ComplianceReport:
             deps_assessed=3,
             resolution_depth=None,
         ),
-        ErrorRecord(kind=ErrorKind.ENGINE_TIMEOUT, owner="engines", message="timed out"),
+        ErrorRecord(
+            kind=ErrorKind.ENGINE_TIMEOUT, owner="engines", message="timed out"
+        ),
         ScannedManifest(path="pyproject.toml", kind="pyproject"),
         _sample_component(),
         _sample_report(),
@@ -282,7 +284,9 @@ def test_malformed_finding_id_raises():
         )
 
 
-@pytest.mark.parametrize("bad", [float("nan"), 1.5, -0.1], ids=["nan", "above-one", "below-zero"])
+@pytest.mark.parametrize(
+    "bad", [float("nan"), 1.5, -0.1], ids=["nan", "above-one", "below-zero"]
+)
 def test_epss_object_out_of_range_raises(bad):
     """Story 6.1: epss moved from a bare float to an Epss{score, percentile}
     object; both fields must be finite probabilities in [0, 1]."""
@@ -317,7 +321,6 @@ def test_finding_accepts_epss_object():
     )
     assert finding.epss.score == 0.42
     assert finding.epss.percentile == 0.9
-
 
 
 def test_coverage_parsed_exceeding_found_raises():
@@ -567,9 +570,12 @@ def test_vuln_data_concrete_verdict_requires_provenance():
         VulnData(source=None, snapshot_at=None, max_age_ok=True)
     with pytest.raises(ValueError, match="provenance"):
         VulnData(source="osv-offline", snapshot_at=None, max_age_ok=False)
-    assert VulnData(
-        source="osv-offline", snapshot_at="2026-07-10", max_age_ok=True
-    ).max_age_ok is True
+    assert (
+        VulnData(
+            source="osv-offline", snapshot_at="2026-07-10", max_age_ok=True
+        ).max_age_ok
+        is True
+    )
 
 
 def test_trailing_and_embedded_newlines_rejected():
@@ -782,7 +788,9 @@ def _report_with_all_new_fields() -> ComplianceReport:
             subject="mystery",
             severity=None,
             license=LicenseInfo(
-                expression="unknown", family="permissive", verdict=LicenseVerdict.UNKNOWN
+                expression="unknown",
+                family="permissive",
+                verdict=LicenseVerdict.UNKNOWN,
             ),
         ),
         Finding(

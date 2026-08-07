@@ -45,7 +45,9 @@ CORPUS_RECIPES_DIR = (
     Path(__file__).resolve().parent.parent / "fixtures" / "corpus" / "recipes"
 )
 
-_STRACE_AVAILABLE = sys.platform.startswith("linux") and shutil.which("strace") is not None
+_STRACE_AVAILABLE = (
+    sys.platform.startswith("linux") and shutil.which("strace") is not None
+)
 _WARDEN_AVAILABLE = shutil.which("warden") is not None
 
 

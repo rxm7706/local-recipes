@@ -154,11 +154,15 @@ def assemble(ctx: dict[str, Any]) -> dict[str, Any]:
 
     skill_name = ctx.get("skill_name")
     if not skill_name or not isinstance(skill_name, str):
-        _die(f"skill_name is required and must be a non-empty string; got {skill_name!r}")
+        _die(
+            f"skill_name is required and must be a non-empty string; got {skill_name!r}"
+        )
 
     mode = ctx.get("mode")
     if mode not in VALID_MODES:
-        _die(f"mode must be one of {sorted(m for m in VALID_MODES if m is not None)} or null; got {mode!r}")
+        _die(
+            f"mode must be one of {sorted(m for m in VALID_MODES if m is not None)} or null; got {mode!r}"
+        )
 
     envelope = {
         "status": status,
@@ -200,7 +204,9 @@ def validate(envelope: dict[str, Any]) -> None:
             f"exit_code {envelope.get('exit_code')!r} does not match canonical mapping "
             f"for halt_reason {envelope.get('halt_reason')!r} (expected {expected_exit})"
         )
-    if not envelope.get("skill_name") or not isinstance(envelope.get("skill_name"), str):
+    if not envelope.get("skill_name") or not isinstance(
+        envelope.get("skill_name"), str
+    ):
         _die("skill_name must be a non-empty string")
 
 
@@ -245,7 +251,9 @@ def main() -> int:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_emit = sub.add_parser("emit", help="Read context JSON on stdin, emit prefixed envelope line")
+    p_emit = sub.add_parser(
+        "emit", help="Read context JSON on stdin, emit prefixed envelope line"
+    )
     p_emit.add_argument(
         "--target",
         choices=["stdout", "stderr"],
@@ -253,7 +261,9 @@ def main() -> int:
         help="Output stream for the prefixed envelope line. step 5 §4b uses stdout on success and stderr on HARD HALT.",
     )
 
-    sub.add_parser("validate", help="Read envelope JSON on stdin, exit 0 if schema-valid")
+    sub.add_parser(
+        "validate", help="Read envelope JSON on stdin, exit 0 if schema-valid"
+    )
 
     args = parser.parse_args()
 

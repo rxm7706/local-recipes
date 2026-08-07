@@ -80,6 +80,7 @@ def test_cross_pipeline_cf_graph_edge_resolves_by_name():
 
 # -- B2: pypi_intelligence (9 nodes) + vulnerability (5 nodes) ----------------
 
+
 def test_pypi_intelligence_pipeline_has_ten_nodes():
     # B5 added export_pypi_conda_map (the § 3.4 update-mapping-cache Q6 export shim).
     pypi = pypi_create()

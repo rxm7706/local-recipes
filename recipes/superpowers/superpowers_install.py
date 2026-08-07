@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy superpowers into the current project's .claude/skills/ directory."""
+
 import argparse
 import os
 import shutil

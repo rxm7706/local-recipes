@@ -89,7 +89,9 @@ def _run_promote(source: Path | None) -> None:
     """
     source_root = source if source is not None else default_user_local_root()
     try:
-        proposal = classify_and_draft(source_root, memory_root=_MEMORY_ROOT, repo_root=Path.cwd())
+        proposal = classify_and_draft(
+            source_root, memory_root=_MEMORY_ROOT, repo_root=Path.cwd()
+        )
     except ValueError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
@@ -117,7 +119,9 @@ def _render_proposal(proposal: PromotionProposal) -> str:
     counts: dict[str, int] = {}
     for entry in proposal.entries:
         counts[entry.classification] = counts.get(entry.classification, 0) + 1
-        lines.append(f"  [{entry.classification}] {entry.source_path.name} -- {entry.reason}")
+        lines.append(
+            f"  [{entry.classification}] {entry.source_path.name} -- {entry.reason}"
+        )
         if entry.classification == "team-relevant":
             lines.append(f"      -> {entry.target_path}")
             lines.append(f"      MEMORY.md line: {entry.memory_index_line}")
@@ -126,7 +130,9 @@ def _render_proposal(proposal: PromotionProposal) -> str:
                 lines.append(f"      {content_line}")
             lines.append("      --------------------------")
 
-    summary = ", ".join(f"{count} {classification}" for classification, count in sorted(counts.items()))
+    summary = ", ".join(
+        f"{count} {classification}" for classification, count in sorted(counts.items())
+    )
     noun = "entry" if len(proposal.entries) == 1 else "entries"
     lines.append(f"{len(proposal.entries)} {noun} scanned: {summary or 'none'}.")
     return "\n".join(lines)
@@ -134,7 +140,9 @@ def _render_proposal(proposal: PromotionProposal) -> str:
 
 @graph_app.command("compile")
 def graph_compile(
-    nightly: bool = typer.Option(False, "--nightly", help="Run in unattended nightly mode."),
+    nightly: bool = typer.Option(
+        False, "--nightly", help="Run in unattended nightly mode."
+    ),
 ) -> None:
     """Stub — Epic 2 (Story 2.1+) owns the real graph-compile projection builder."""
     typer.echo("scribe graph compile: not yet implemented", err=True)
@@ -142,7 +150,9 @@ def graph_compile(
 
 @app.command("recall")
 def recall_cmd(
-    query: str = typer.Argument(..., help="Natural-language question to recall an answer for."),
+    query: str = typer.Argument(
+        ..., help="Natural-language question to recall an answer for."
+    ),
 ) -> None:
     """Stub — Epic 2 (Story 2.1+) owns the real, cited recall query path."""
     typer.echo("scribe recall: not yet implemented", err=True)

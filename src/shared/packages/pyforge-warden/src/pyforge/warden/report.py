@@ -199,9 +199,7 @@ _REPORT_AXES = (AXIS_HYGIENE, AXIS_VULNERABILITY, AXIS_LICENSE, AXIS_CURRENCY)
 
 @lru_cache(maxsize=1)
 def _packaged_schema() -> dict[str, object]:
-    schema_file = (
-        resources.files("pyforge.warden") / "data" / "report-schema.json"
-    )
+    schema_file = resources.files("pyforge.warden") / "data" / "report-schema.json"
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
@@ -340,9 +338,7 @@ def assemble_report(
         else (
             ResolutionDepth.LOCKED_CLOSURE.value
             if has_locked_closure
-            else (
-                ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None
-            )
+            else (ResolutionDepth.DIRECT_ONLY.value if manifests_parsed > 0 else None)
         )
     )
     # Highest per-axis deps_assessed any engine claims (honest max coverage).

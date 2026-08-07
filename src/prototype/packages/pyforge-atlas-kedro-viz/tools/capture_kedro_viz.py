@@ -22,6 +22,7 @@ popup after render once blanked the app).
 
 Soft dep: script skips (not fatal) if playwright is absent.
 """
+
 from __future__ import annotations
 
 import json
@@ -31,7 +32,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]        # pyforge-atlas-kedro-viz
+ROOT = Path(__file__).resolve().parents[1]  # pyforge-atlas-kedro-viz
 DOCS = ROOT / "docs"
 HOST = "127.0.0.1"
 PORT = 4243
@@ -101,7 +102,10 @@ def main() -> int:
     env = {**os.environ, "DO_NOT_TRACK": "1"}  # skip kedro telemetry prompt
     srv = subprocess.Popen(
         ["kedro", "viz", "run", "--no-browser", "--host", HOST, "--port", str(PORT)],
-        cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env,
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=env,
     )
     captured: list[dict] = []
     try:
@@ -113,9 +117,10 @@ def main() -> int:
 
         with sync_playwright() as p:
             browser = p.chromium.launch(channel="chrome", headless=True)
-            pg = browser.new_page(viewport={"width": 2600, "height": 1700},
-                                  device_scale_factor=2)
-            pg.add_init_script(_INIT)                 # dark theme + kill feature-tour
+            pg = browser.new_page(
+                viewport={"width": 2600, "height": 1700}, device_scale_factor=2
+            )
+            pg.add_init_script(_INIT)  # dark theme + kill feature-tour
             pg.goto(f"http://{HOST}:{PORT}/", wait_until="networkidle")
             pg.wait_for_selector(GRAPH, timeout=45000)
             pg.wait_for_timeout(2600)
@@ -127,13 +132,22 @@ def main() -> int:
                 out = DOCS / f"kedro-viz-{name}.png"
                 pg.screenshot(path=str(out), full_page=False)
                 t, d, prm = _counts(PORT, pid)
-                captured.append({
-                    "id": pid,
-                    "label": "__default__ (full DAG)" if pid == "__default__" else pid,
-                    "png": out.name, "tasks": t, "data": d, "params": prm,
-                })
-                print(f"captured {out.name}  ({t} tasks / {d} datasets"
-                      f"{f' / {prm} params' if prm else ''})")
+                captured.append(
+                    {
+                        "id": pid,
+                        "label": "__default__ (full DAG)"
+                        if pid == "__default__"
+                        else pid,
+                        "png": out.name,
+                        "tasks": t,
+                        "data": d,
+                        "params": prm,
+                    }
+                )
+                print(
+                    f"captured {out.name}  ({t} tasks / {d} datasets"
+                    f"{f' / {prm} params' if prm else ''})"
+                )
             browser.close()
 
         _write_gallery(captured)
@@ -152,18 +166,18 @@ def _write_gallery(captured: list[dict]) -> None:
     """Emit a self-contained dark pan-zoom viewer over the captured PNGs."""
     buttons = []
     for i, c in enumerate(captured):
-        meta = f'{c["tasks"]} nodes · {c["data"]} datasets'
+        meta = f"{c['tasks']} nodes · {c['data']} datasets"
         if c["params"]:
-            meta += f' · {c["params"]} params'
+            meta += f" · {c['params']} params"
         active = " active" if i == 0 else ""
         buttons.append(
             f'<button class="tab{active}" data-src="{c["png"]}" data-i="{i}">'
             f'{c["label"]}<span class="meta">{meta}</span></button>'
         )
     first = captured[0]["png"] if captured else ""
-    html = (_GALLERY_TEMPLATE
-            .replace("__TABS__", "".join(buttons))
-            .replace("__FIRST__", first))
+    html = _GALLERY_TEMPLATE.replace("__TABS__", "".join(buttons)).replace(
+        "__FIRST__", first
+    )
     (DOCS / "kedro-viz-gallery.html").write_text(html, encoding="utf-8")
 
 

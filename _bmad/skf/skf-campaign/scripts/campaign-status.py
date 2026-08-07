@@ -123,7 +123,9 @@ def _compare_backup(primary: Dict[str, Any], backup: Dict[str, Any]) -> Dict[str
 def run(state_file: str, backup_file: Optional[str]) -> int:
     state = _load_state(Path(state_file))
     if state is None:
-        return _err(f"State not readable as a mapping: {state_file}", "STATE_UNREADABLE")
+        return _err(
+            f"State not readable as a mapping: {state_file}", "STATE_UNREADABLE"
+        )
 
     campaign = state.get("campaign", {}) or {}
     result: Dict[str, Any] = {
@@ -149,7 +151,9 @@ def main(argv: Optional[list] = None) -> int:
         prog="campaign-status",
         description="Summarize campaign state and (optionally) compare it to its backup.",
     )
-    parser.add_argument("--state-file", required=True, help="Path to _campaign-state.yaml")
+    parser.add_argument(
+        "--state-file", required=True, help="Path to _campaign-state.yaml"
+    )
     parser.add_argument(
         "--backup-file",
         help="Path to _campaign-state.yaml.bak; when given, emit backup_comparison",

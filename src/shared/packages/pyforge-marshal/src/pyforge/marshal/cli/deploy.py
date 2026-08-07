@@ -350,7 +350,9 @@ def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
         ),
     )
     recover_parser.add_argument("slug", help="The BMAD project slug.")
-    recover_parser.add_argument("key", help="The story key whose spec to recover, e.g. 4.2.")
+    recover_parser.add_argument(
+        "key", help="The story key whose spec to recover, e.g. 4.2."
+    )
     recover_parser.add_argument(
         "--format",
         choices=("text", "json"),
@@ -475,7 +477,9 @@ def _discover_candidates(fs: FsPort, tier3_dir: Path) -> tuple[SpecCandidate, ..
             text = fs.read_text(spec_path)
         except FsError:
             text = None
-        candidates.append(SpecCandidate(story_key=story_key, path=str(spec_path), text=text))
+        candidates.append(
+            SpecCandidate(story_key=story_key, path=str(spec_path), text=text)
+        )
     return tuple(candidates)
 
 
@@ -542,7 +546,13 @@ class _PromotionScan:
     (``findings`` then carries the ``MRS-DEPLOY-003`` explaining why) --
     every other field is still populated for reporting."""
 
-    __slots__ = ("already_promoted", "combined_subjects", "findings", "plan", "template")
+    __slots__ = (
+        "already_promoted",
+        "combined_subjects",
+        "findings",
+        "plan",
+        "template",
+    )
 
     def __init__(
         self,
@@ -599,8 +609,17 @@ def _scan_promotions(
             plan=None, findings=tuple(findings), combined_subjects=(), template=""
         )
 
-    tier3_dir = root / "_bmad-output" / "projects" / project_slug / "implementation-artifacts"
-    specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
+    tier3_dir = (
+        root / "_bmad-output" / "projects" / project_slug / "implementation-artifacts"
+    )
+    specs_dir = (
+        root
+        / "_bmad-output"
+        / "projects"
+        / project_slug
+        / "planning-artifacts"
+        / "specs"
+    )
 
     candidates = _discover_candidates(fs, tier3_dir)
     already_promoted = _already_promoted_keys(fs, vcs, root, specs_dir, candidates)
@@ -717,7 +736,9 @@ def run_promote(
     # Same is-not-None precedence as cli/gate.py::run_evaluate -- an
     # explicit `--project ""` must win over BMAD_ACTIVE_PROJECT.
     project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
+        args.project
+        if args.project is not None
+        else os.environ.get(ENV_ACTIVE_PROJECT, "")
     )
 
     root = repo_root()
@@ -738,7 +759,14 @@ def run_promote(
     subjects_examined = 0
     subjects_matched = 0
 
-    specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
+    specs_dir = (
+        root
+        / "_bmad-output"
+        / "projects"
+        / project_slug
+        / "planning-artifacts"
+        / "specs"
+    )
     scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs)
     findings.extend(scan.findings)
 
@@ -784,7 +812,9 @@ def run_promote(
             # "nothing to promote" (an empty `plan.to_promote`) never
             # touches the lock at all (I/O matrix).
             try:
-                lock = fs.acquire_advisory_lock(specs_dir, timeout_s=_PROMOTE_LOCK_TIMEOUT_S)
+                lock = fs.acquire_advisory_lock(
+                    specs_dir, timeout_s=_PROMOTE_LOCK_TIMEOUT_S
+                )
             except FsError as exc:
                 data["lock_contended"] = True
                 findings.append(
@@ -851,7 +881,10 @@ def run_promote(
                             findings,
                             kind=_PROMOTE_COMMIT_KIND,
                             phase=Phase.INTENT,
-                            payload={"action": "commit_paths", "story_keys": sorted(promoted)},
+                            payload={
+                                "action": "commit_paths",
+                                "story_keys": sorted(promoted),
+                            },
                         )
                         try:
                             vcs.commit_paths(root, tuple(commit_targets), message)
@@ -915,11 +948,15 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         f"(matched: {data['subjects_matched']})",
     ]
     if data.get("lock_contended"):
-        lines.append("lock contended: promotion lock busy -- nothing promoted, re-run later")
+        lines.append(
+            "lock contended: promotion lock busy -- nothing promoted, re-run later"
+        )
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
@@ -979,7 +1016,11 @@ def _epics_story_section(epics_text: str, story_key: identity.StoryKey) -> str |
         if match.group("key") != target:
             continue
         start = match.start()
-        end = headings[index + 1].start() if index + 1 < len(headings) else len(epics_text)
+        end = (
+            headings[index + 1].start()
+            if index + 1 < len(headings)
+            else len(epics_text)
+        )
         return epics_text[start:end].strip()
     return None
 
@@ -994,7 +1035,9 @@ def _split_intent_and_acceptance_criteria(section_text: str) -> tuple[str, str]:
     AC block, unmodified."""
     ac_index = section_text.find(_AC_MARKER)
     intent_part = section_text if ac_index == -1 else section_text[:ac_index]
-    acceptance_criteria = "" if ac_index == -1 else section_text[ac_index + len(_AC_MARKER) :].strip()
+    acceptance_criteria = (
+        "" if ac_index == -1 else section_text[ac_index + len(_AC_MARKER) :].strip()
+    )
 
     lines = intent_part.splitlines()[1:]  # drop the "### Story ..." heading
     intent_lines: list[str] = []
@@ -1006,7 +1049,9 @@ def _split_intent_and_acceptance_criteria(section_text: str) -> tuple[str, str]:
     return intent, acceptance_criteria
 
 
-def _render_recovered_spec(story_key: identity.StoryKey, intent: str, acceptance_criteria: str) -> str:
+def _render_recovered_spec(
+    story_key: identity.StoryKey, intent: str, acceptance_criteria: str
+) -> str:
     """The reduced, contract-only spec ``recover-spec``'s fallback writes
     (Story 4.2's own Always bullet): frontmatter carries ``status: 'draft'``
     and ``recovery_source: 'epics-derived-contract-only'`` so it is
@@ -1030,14 +1075,23 @@ def _render_recovered_spec(story_key: identity.StoryKey, intent: str, acceptance
     )
 
 
-def _run_snapshot_candidates(root: Path, project_slug: str, story_key: identity.StoryKey) -> list[dict[str, object]]:
+def _run_snapshot_candidates(
+    root: Path, project_slug: str, story_key: identity.StoryKey
+) -> list[dict[str, object]]:
     """Every ``<tier3>/runs/*/spec-<key>*.md`` snapshot for ``story_key``,
     most-recent ``mtime`` first (the story's own Always bullet: "surviving
     run-worktree snapshots first"). Directory enumeration uses plain
     ``pathlib`` (mirrors ``_discover_candidates``'s own established
     precedent, and ``cli/spin.py::_spec_size_bytes``'s own titled-spec glob
     shape) -- read-only, this function never writes."""
-    runs_dir = root / "_bmad-output" / "projects" / project_slug / "implementation-artifacts" / "runs"
+    runs_dir = (
+        root
+        / "_bmad-output"
+        / "projects"
+        / project_slug
+        / "implementation-artifacts"
+        / "runs"
+    )
     stem = f"spec-{render_filename_slug(story_key)}"
     # Boundary anchor (code review, 2026-08-06, P4, both reviewers): a bare
     # `*/{stem}*.md` glob has no boundary after the key's own digits, so a
@@ -1049,7 +1103,9 @@ def _run_snapshot_candidates(root: Path, project_slug: str, story_key: identity.
     _boundary_re = re.compile(re.escape(stem) + r"(?:-.*)?\.md")
     try:
         matches = sorted(
-            path for path in runs_dir.glob(f"*/{stem}*.md") if _boundary_re.fullmatch(path.name)
+            path
+            for path in runs_dir.glob(f"*/{stem}*.md")
+            if _boundary_re.fullmatch(path.name)
         )
     except OSError:
         matches = []
@@ -1094,20 +1150,28 @@ def run_recover_spec(
                 ),
             )
         )
-        return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
+        return _emit(
+            args, "deploy recover-spec", data, findings, _render_text_recover_spec
+        )
 
     try:
         story_key = identity.normalize(raw_key)
     except MalformedStoryKeyError as exc:
-        findings.append(Finding(code="MRS-IDENT-001", severity=Severity.ERROR, message=str(exc)))
-        return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
+        findings.append(
+            Finding(code="MRS-IDENT-001", severity=Severity.ERROR, message=str(exc))
+        )
+        return _emit(
+            args, "deploy recover-spec", data, findings, _render_text_recover_spec
+        )
     data["key"] = str(story_key)
 
     root = repo_root()
     snapshots = _run_snapshot_candidates(root, slug, story_key)
     data["snapshots"] = snapshots
     if snapshots:
-        return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
+        return _emit(
+            args, "deploy recover-spec", data, findings, _render_text_recover_spec
+        )
 
     # --- fallback: epics-derived contract-only regeneration -----------------
     tier3_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
@@ -1124,10 +1188,14 @@ def run_recover_spec(
                 message=f"cannot check whether {dest} already exists: {exc}",
             )
         )
-        return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
+        return _emit(
+            args, "deploy recover-spec", data, findings, _render_text_recover_spec
+        )
     if already_present:
         data["already_present"] = True
-        return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
+        return _emit(
+            args, "deploy recover-spec", data, findings, _render_text_recover_spec
+        )
 
     epics_path = (
         root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "epics.md"
@@ -1150,7 +1218,9 @@ def run_recover_spec(
                 ),
             )
         )
-        return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
+        return _emit(
+            args, "deploy recover-spec", data, findings, _render_text_recover_spec
+        )
 
     intent, acceptance_criteria = _split_intent_and_acceptance_criteria(section)
     content = _render_recovered_spec(story_key, intent, acceptance_criteria)
@@ -1164,7 +1234,9 @@ def run_recover_spec(
                 message=f"cannot write recovered spec {dest}: {exc}",
             )
         )
-        return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
+        return _emit(
+            args, "deploy recover-spec", data, findings, _render_text_recover_spec
+        )
 
     # Code review, 2026-08-06, P5 (Edge Case Hunter): a parsing miss, or a
     # genuinely sparse epics.md section, can leave Intent and/or Acceptance
@@ -1176,7 +1248,10 @@ def run_recover_spec(
     # than reporting success with no caveat.
     empty_parts = [
         name
-        for name, text in (("Intent", intent), ("Acceptance Criteria", acceptance_criteria))
+        for name, text in (
+            ("Intent", intent),
+            ("Acceptance Criteria", acceptance_criteria),
+        )
         if not text.strip()
     ]
     if empty_parts:
@@ -1198,7 +1273,9 @@ def run_recover_spec(
     return _emit(args, "deploy recover-spec", data, findings, _render_text_recover_spec)
 
 
-def _render_text_recover_spec(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_recover_spec(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching ``_render_text``'s own
     convention for ``deploy promote``."""
@@ -1221,7 +1298,9 @@ def _render_text_recover_spec(data: Mapping[str, object], findings: tuple[Findin
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
@@ -1420,7 +1499,13 @@ def _mint_deploy_run(fs: FsPort, root: Path, slug: str) -> tuple[Path, str] | Fi
     moment = datetime.now(timezone.utc)
     run_id = mint_run_id(slug, _land_format_utc_compact(moment), _land_random_token())
     run_dir = (
-        root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
+        root
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
     )
     try:
         fs.ensure_dir(run_dir.parent)
@@ -1476,7 +1561,9 @@ def _fold_deploy_journal(
     this invocation; the caller's own action still proceeds (this finding
     is WARN, never blocking, the same posture MRS-DEPLOY-021 already
     establishes for "no evidence yet")."""
-    runs_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    runs_dir = (
+        root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    )
     all_lines: list[str] = []
     sidecars: dict[str, str | None] = {}
     try:
@@ -1779,7 +1866,9 @@ def run_land_story(
     try:
         story_key = identity.normalize(raw_key)
     except MalformedStoryKeyError as exc:
-        findings.append(Finding(code="MRS-IDENT-001", severity=Severity.ERROR, message=str(exc)))
+        findings.append(
+            Finding(code="MRS-IDENT-001", severity=Severity.ERROR, message=str(exc))
+        )
         return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
     data["key"] = str(story_key)
 
@@ -1835,7 +1924,9 @@ def run_land_story(
                     ),
                 )
             )
-            return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
+            return _emit(
+                args, "deploy land-story", data, findings, _render_text_land_story
+            )
     data["since"] = since_ref
 
     # 4. Resolve the merge-subject template from policy (AD-24) -- moved
@@ -1860,8 +1951,12 @@ def run_land_story(
                 project_data = _read_project_policy(candidate)
             except PolicyIOError as exc:
                 findings.append(exc.finding)
-                return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
-    effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
+                return _emit(
+                    args, "deploy land-story", data, findings, _render_text_land_story
+                )
+    effective, policy_findings = policy.compose(
+        project_slug=slug, project=project_data, flags={}
+    )
     findings.extend(policy_findings)
     template = effective.merge_subject_template.value
 
@@ -2022,7 +2117,10 @@ def run_land_story(
     )
     try:
         merge_sha = vcs.merge_branch(
-            git_repo_root, branch_tip_after_gate, into=_MERGE_BASE_BRANCH, subject=subject
+            git_repo_root,
+            branch_tip_after_gate,
+            into=_MERGE_BASE_BRANCH,
+            subject=subject,
         )
     except VcsCommandError as exc:
         findings.append(
@@ -2073,7 +2171,9 @@ def run_land_story(
     # Never bullet). A read failure here is a reporting gap, not grounds to
     # undo an already-successful landing -- WARN, not ERROR/UNEVALUABLE.
     try:
-        window_subjects = vcs.commit_subjects(git_repo_root, f"{since_ref}..{merge_sha}")
+        window_subjects = vcs.commit_subjects(
+            git_repo_root, f"{since_ref}..{merge_sha}"
+        )
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -2102,7 +2202,9 @@ def run_land_story(
     return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
 
 
-def _render_text_land_story(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_land_story(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching this module's own
     ``_render_text``/``_render_text_recover_spec`` convention."""
@@ -2131,7 +2233,9 @@ def _render_text_land_story(data: Mapping[str, object], findings: tuple[Finding,
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
@@ -2188,7 +2292,11 @@ def _batch_pr_body(wave_keys: list[StoryKey], gate_verdicts: Mapping[str, str]) 
     e.g. a story that landed through the ordinary dev/review flow rather
     than ``marshal deploy land-story``). No AI-attribution or courtesy
     preamble anywhere (FR-35, default-off)."""
-    lines = ["Batch PR opened by `marshal deploy batch-pr`.", "", "Stories in this wave:"]
+    lines = [
+        "Batch PR opened by `marshal deploy batch-pr`.",
+        "",
+        "Stories in this wave:",
+    ]
     for key in wave_keys:
         verdict = gate_verdicts.get(str(key), "unknown")
         lines.append(f"- {key}: gate verdict `{verdict}`")
@@ -2244,11 +2352,14 @@ def _gather_gate_verdicts(fs: FsPort, root: Path, slug: str) -> dict[str, str]:
     skip that ONE run directory, exactly like this function's own docstring
     already promises, never crash the entire ``batch-pr`` command over a
     cosmetic PR-body-enrichment step."""
-    runs_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    runs_dir = (
+        root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    )
     verdicts: dict[str, str] = {}
     try:
         run_dirs = sorted(
-            (path for path in runs_dir.iterdir() if path.is_dir()), key=_run_dir_sort_key
+            (path for path in runs_dir.iterdir() if path.is_dir()),
+            key=_run_dir_sort_key,
         )
     except OSError:
         return verdicts
@@ -2452,8 +2563,12 @@ def run_batch_pr(
                 project_data = _read_project_policy(candidate)
             except PolicyIOError as exc:
                 findings.append(exc.finding)
-                return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
-    effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
+                return _emit(
+                    args, "deploy batch-pr", data, findings, _render_text_batch_pr
+                )
+    effective, policy_findings = policy.compose(
+        project_slug=slug, project=project_data, flags={}
+    )
     findings.extend(policy_findings)
 
     # Code review (2026-08-06, P1, both reviewers' independent top finding):
@@ -2512,7 +2627,9 @@ def run_batch_pr(
         )
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
     try:
-        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_branch}")
+        wave_subjects = vcs.commit_subjects(
+            git_repo_root, f"{merge_base_sha}..{head_branch}"
+        )
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -2794,7 +2911,9 @@ def run_batch_pr(
             data["opened"] = True
             data["updated"] = False
         else:
-            pr = forge.update_pr(repo_ref, existing.number, title_redacted, body_redacted)
+            pr = forge.update_pr(
+                repo_ref, existing.number, title_redacted, body_redacted
+            )
             data["opened"] = False
             data["updated"] = True
     except ForgeCommandError as exc:
@@ -2853,7 +2972,9 @@ def run_batch_pr(
     return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
 
 
-def _render_text_batch_pr(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_batch_pr(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching this module's own
     ``_render_text``/``_render_text_recover_spec``/``_render_text_land_story``
@@ -2864,7 +2985,9 @@ def _render_text_batch_pr(data: Mapping[str, object], findings: tuple[Finding, .
         lines.append(f"branch: {data['branch']!r}")
     wave = data.get("wave")
     if wave is not None:
-        lines.append(f"wave: {len(wave)} stor{'y' if len(wave) == 1 else 'ies'} ({', '.join(wave)})")
+        lines.append(
+            f"wave: {len(wave)} stor{'y' if len(wave) == 1 else 'ies'} ({', '.join(wave)})"
+        )
     if data.get("already_landed"):
         lines.append("already landed -- no-op (no PR write attempted)")
     hygiene_rules = data.get("hygiene_rules")
@@ -2886,7 +3009,9 @@ def _render_text_batch_pr(data: Mapping[str, object], findings: tuple[Finding, .
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
@@ -2961,7 +3086,15 @@ def _gather_claimed_commits(
     # the whole `refresh-feed` invocation.
     try:
         snapshot = harness.run_status_snapshot(home, harness_run_id)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError, RecursionError):
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        AttributeError,
+        ArithmeticError,
+        RecursionError,
+    ):
         return ()
     if snapshot is None:
         return ()
@@ -3111,7 +3244,9 @@ def run_refresh_feed(
     fs = fs if fs is not None else LocalFs()
     process = process if process is not None else PosixProcess()
     harness = harness if harness is not None else BmadLoopHarness()
-    data, findings = reconcile_feed(args, vcs=vcs, fs=fs, process=process, harness=harness)
+    data, findings = reconcile_feed(
+        args, vcs=vcs, fs=fs, process=process, harness=harness
+    )
     return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
 
 
@@ -3137,7 +3272,9 @@ def reconcile_feed(
     from .init import _home_path
 
     project_slug = (
-        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
+        args.project
+        if args.project is not None
+        else os.environ.get(ENV_ACTIVE_PROJECT, "")
     )
     root = repo_root()
     data: dict[str, object] = {"slug": project_slug, "root": str(root)}
@@ -3219,7 +3356,9 @@ def reconcile_feed(
         {
             "story_key": row["story_key"],
             "durable": status.domain_field_to_dict(row["durable"]),
-            "claimed_commit_sha": status.domain_field_to_dict(row["claimed_commit_sha"]),
+            "claimed_commit_sha": status.domain_field_to_dict(
+                row["claimed_commit_sha"]
+            ),
         }
         for row in report.stories
     ]
@@ -3248,7 +3387,9 @@ def reconcile_feed(
     return data, findings
 
 
-def _render_text_refresh_feed(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_refresh_feed(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching this module's own
     ``_render_text``/``_render_text_batch_pr`` convention."""
@@ -3274,5 +3415,7 @@ def _render_text_refresh_feed(data: Mapping[str, object], findings: tuple[Findin
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)

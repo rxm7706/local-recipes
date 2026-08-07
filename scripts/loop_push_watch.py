@@ -39,6 +39,7 @@ This bounds worst-case loss to one interval. It does not eliminate it: the
 durable fix is for the loop to push at its own stage boundaries, and this is the
 stopgap that makes the next dev phase survivable in the meantime.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -50,9 +51,13 @@ import time
 HOMES = pathlib.Path.home() / ".bmad-loops"
 
 
-def sh(args: list[str], cwd: pathlib.Path | None = None, timeout: int = 180) -> tuple[int, str]:
+def sh(
+    args: list[str], cwd: pathlib.Path | None = None, timeout: int = 180
+) -> tuple[int, str]:
     try:
-        p = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(
+            args, cwd=cwd, capture_output=True, text=True, timeout=timeout
+        )
         return p.returncode, (p.stdout + p.stderr).strip()
     except (OSError, subprocess.TimeoutExpired) as exc:
         return 1, f"{type(exc).__name__}: {exc}"
@@ -93,9 +98,14 @@ def push_cycle(verbose: bool) -> tuple[int, int]:
         # the steady-state cost is a single network round trip per home.
         rc, out = sh(["git", "push", "--porcelain", "origin", *refs], cwd=home)
         if rc == 0:
-            moved = [ln for ln in out.splitlines()
-                     if ln and not ln.startswith("=") and "[up to date]" not in ln
-                     and not ln.startswith("Done")]
+            moved = [
+                ln
+                for ln in out.splitlines()
+                if ln
+                and not ln.startswith("=")
+                and "[up to date]" not in ln
+                and not ln.startswith("Done")
+            ]
             pushed += 1
             if verbose and moved:
                 print(f"  {home.name}: {len(moved)} ref(s) advanced")
@@ -103,14 +113,20 @@ def push_cycle(verbose: bool) -> tuple[int, int]:
                     print(f"      {ln}")
         else:
             failed += 1
-            print(f"  {home.name}: PUSH FAILED — {out.splitlines()[-1] if out else 'unknown'}")
+            print(
+                f"  {home.name}: PUSH FAILED — {out.splitlines()[-1] if out else 'unknown'}"
+            )
     return pushed, failed
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--interval", type=int, default=1800,
-                    help="seconds between cycles (default 1800 = 30 min)")
+    ap.add_argument(
+        "--interval",
+        type=int,
+        default=1800,
+        help="seconds between cycles (default 1800 = 30 min)",
+    )
     ap.add_argument("--once", action="store_true", help="one cycle, then exit")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
@@ -136,8 +152,10 @@ def main() -> int:
         stamp = time.strftime("%H:%M:%S")
         p, f = push_cycle(not args.quiet)
         if not args.quiet:
-            print(f"[{stamp}] cycle {cycle} — {p} home(s) pushed"
-                  + (f", {f} FAILED" if f else ""))
+            print(
+                f"[{stamp}] cycle {cycle} — {p} home(s) pushed"
+                + (f", {f} FAILED" if f else "")
+            )
         time.sleep(args.interval)
 
 

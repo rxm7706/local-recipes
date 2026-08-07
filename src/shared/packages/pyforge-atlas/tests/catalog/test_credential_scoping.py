@@ -52,8 +52,7 @@ def test_github_token_scopes_to_the_github_api_host(catalog_config):
     url = catalog_config["vcs_github_api_raw"]["url"]
     host = urlparse(url).netloc.lower()
     assert host == "api.github.com", (
-        "github_token may only attach to the GitHub API destination host "
-        f"(got {host})"
+        f"github_token may only attach to the GitHub API destination host (got {host})"
     )
 
 

@@ -186,8 +186,15 @@ def test_dry_run_plans_without_touching_a_client():
 
 def test_dry_run_with_no_actuatable_findings_has_zero_proposals():
     actuation = run_actuator(
-        [Finding(id="hygiene:DEP001:some-module", axis="hygiene", message="…",
-                 subject="some-module", severity=None)],
+        [
+            Finding(
+                id="hygiene:DEP001:some-module",
+                axis="hygiene",
+                message="…",
+                subject="some-module",
+                severity=None,
+            )
+        ],
         dry_run=True,
     )
     assert actuation.dry_run is True
@@ -231,9 +238,15 @@ def test_real_path_with_no_proposals_never_resolves_a_client():
     # without a client and without credentials (would otherwise be a failed
     # resolution record).
     actuation = run_actuator(
-        [Finding(id="indeterminate:no-version:leftpad@unspecified",
-                 axis="vulnerability", message="…", subject="leftpad",
-                 severity=None)],
+        [
+            Finding(
+                id="indeterminate:no-version:leftpad@unspecified",
+                axis="vulnerability",
+                message="…",
+                subject="leftpad",
+                severity=None,
+            )
+        ],
         dry_run=False,
         env={},
         client=None,
@@ -287,9 +300,7 @@ def test_resolve_forge_raises_when_unresolvable(env):
 
 
 def test_run_actuator_records_a_single_failed_resolution_record():
-    actuation = run_actuator(
-        [_vuln_finding()], dry_run=False, env={}, client=None
-    )
+    actuation = run_actuator([_vuln_finding()], dry_run=False, env={}, client=None)
     (outcome,) = actuation.outcomes
     assert outcome.status == "failed"
     assert outcome.finding_id == ""
@@ -326,9 +337,7 @@ def test_actuator_never_writes_the_tree(tmp_path):
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\n")
     before = _snapshot(tmp_path)
     run_actuator([_vuln_finding(), _dep002_finding()], dry_run=True)
-    run_actuator(
-        [_vuln_finding()], dry_run=False, client=_FakeForge(existing=None)
-    )
+    run_actuator([_vuln_finding()], dry_run=False, client=_FakeForge(existing=None))
     assert _snapshot(tmp_path) == before
 
 

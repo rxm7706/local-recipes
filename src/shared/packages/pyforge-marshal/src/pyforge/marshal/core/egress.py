@@ -293,7 +293,9 @@ def _redact(value: object) -> object:
                 # case this function's own docstring claims is rewritten.
                 redacted_map[_redact_string(key)] = REDACTED_SENTINEL
                 continue
-            redacted_map[_redact_string(key) if isinstance(key, str) else key] = _redact(inner)
+            redacted_map[_redact_string(key) if isinstance(key, str) else key] = (
+                _redact(inner)
+            )
         return redacted_map
     if isinstance(value, (list, tuple)):
         return [_redact(item) for item in value]
@@ -331,11 +333,15 @@ def to_redacted(payload: Mapping[str, object]) -> Redacted:
         # TypeError alongside the unserializable-type case.
         text = json.dumps(redacted, sort_keys=True, allow_nan=False)
     except (TypeError, ValueError) as exc:
-        raise TypeError(f"payload contains a non-JSON-serializable value: {exc}") from exc
+        raise TypeError(
+            f"payload contains a non-JSON-serializable value: {exc}"
+        ) from exc
     return Redacted(text=text)
 
 
-_REQUIRED_COMMAND_KEYS: frozenset[str] = frozenset({"command", "returncode", "resolvable"})
+_REQUIRED_COMMAND_KEYS: frozenset[str] = frozenset(
+    {"command", "returncode", "resolvable"}
+)
 # `stdout`/`stderr` are the only OPTIONAL keys `schemas/gate-record.json`'s
 # `commandReport` names -- matching `core.gate.classify_outcome`'s own report
 # shape, which carries them only when `resolvable` is `True`. Together with
@@ -378,7 +384,9 @@ _TIMESTAMP_PATTERN = re.compile(
 )
 
 
-def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[str, object]:
+def _validate_command_report(
+    entry: Mapping[str, object], index: int
+) -> dict[str, object]:
     """One ``commands`` entry must carry ``command``/``returncode``/
     ``resolvable`` -- mirrors ``core.gate.classify_outcome``'s own report
     shape -- and may additionally carry ``stdout``/``stderr`` (both, if
@@ -393,10 +401,14 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
     # to redact). The index plus the offending key names identify the entry
     # precisely; individual values go through `_safe_repr`.
     if isinstance(entry, str) or not isinstance(entry, Mapping):
-        raise ValueError(f"commands[{index}] must be a Mapping, got {type(entry).__name__}")
+        raise ValueError(
+            f"commands[{index}] must be a Mapping, got {type(entry).__name__}"
+        )
     missing = _REQUIRED_COMMAND_KEYS - set(entry.keys())
     if missing:
-        raise ValueError(f"commands[{index}] is missing required key(s) {sorted(missing)}")
+        raise ValueError(
+            f"commands[{index}] is missing required key(s) {sorted(missing)}"
+        )
     unknown = set(entry.keys()) - _ALL_COMMAND_KEYS
     if unknown:
         # `sorted(map(repr, ...))`, not `sorted(...)` (review finding,
@@ -423,7 +435,9 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
             f"commands[{index}]['resolvable'] must be a bool, got {_safe_repr(resolvable)}"
         )
     returncode = entry["returncode"]
-    if returncode is not None and (isinstance(returncode, bool) or not isinstance(returncode, int)):
+    if returncode is not None and (
+        isinstance(returncode, bool) or not isinstance(returncode, int)
+    ):
         raise ValueError(
             f"commands[{index}]['returncode'] must be an int or None, "
             f"got {_safe_repr(returncode)}"
@@ -528,7 +542,9 @@ def build_gate_record(
     # whitespace-only revision was accepted, so the record identified the
     # evaluated tree state with `"   "`.
     if not isinstance(tree_revision, str) or not tree_revision.strip():
-        raise ValueError(f"tree_revision must be a non-blank str, got {_safe_repr(tree_revision)}")
+        raise ValueError(
+            f"tree_revision must be a non-blank str, got {_safe_repr(tree_revision)}"
+        )
 
     if not isinstance(timestamp, str):
         raise ValueError(f"timestamp must be a str, got {type(timestamp).__name__}")

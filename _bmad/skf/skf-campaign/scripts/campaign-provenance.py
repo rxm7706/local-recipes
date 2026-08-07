@@ -97,9 +97,19 @@ def _default_runner(args: List[str]) -> Tuple[int, str, str]:
 def _classify_error(stderr: str) -> str:
     """Bucket a gh failure so systemic root causes can be detected."""
     low = stderr.lower()
-    if "authentication" in low or "gh auth" in low or "not logged" in low or "401" in low:
+    if (
+        "authentication" in low
+        or "gh auth" in low
+        or "not logged" in low
+        or "401" in low
+    ):
         return "auth"
-    if "could not resolve" in low or "network" in low or "timeout" in low or "dial tcp" in low:
+    if (
+        "could not resolve" in low
+        or "network" in low
+        or "timeout" in low
+        or "dial tcp" in low
+    ):
         return "network"
     if "rate limit" in low or "403" in low:
         return "rate-limit"
@@ -182,7 +192,9 @@ def run(state_file: str, brief_file: str, runner: Runner = _default_runner) -> i
         owner, repo = parsed
         record["owner"], record["repo"] = owner, repo
 
-        rc, _out, err = runner(["gh", "repo", "view", f"{owner}/{repo}", "--json", "name"])
+        rc, _out, err = runner(
+            ["gh", "repo", "view", f"{owner}/{repo}", "--json", "name"]
+        )
         if rc != 0:
             record["error"] = err.strip() or "gh repo view failed"
             error_classes.append(_classify_error(err))
@@ -192,7 +204,16 @@ def run(state_file: str, brief_file: str, runner: Runner = _default_runner) -> i
         ref = skill.get("pin")
         if not ref:
             rc, out, err = runner(
-                ["gh", "repo", "view", f"{owner}/{repo}", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"]
+                [
+                    "gh",
+                    "repo",
+                    "view",
+                    f"{owner}/{repo}",
+                    "--json",
+                    "defaultBranchRef",
+                    "--jq",
+                    ".defaultBranchRef.name",
+                ]
             )
             if rc != 0:
                 record["error"] = err.strip() or "could not resolve default branch"
@@ -202,7 +223,9 @@ def run(state_file: str, brief_file: str, runner: Runner = _default_runner) -> i
             ref = out.strip()
         record["ref"] = ref
 
-        rc, out, err = runner(["gh", "api", f"repos/{owner}/{repo}/commits/{ref}", "--jq", ".sha"])
+        rc, out, err = runner(
+            ["gh", "api", f"repos/{owner}/{repo}/commits/{ref}", "--jq", ".sha"]
+        )
         if rc != 0:
             record["error"] = err.strip() or f"could not resolve commit for ref '{ref}'"
             error_classes.append(_classify_error(err))
@@ -237,8 +260,12 @@ def main(argv: list[str] | None = None) -> int:
         prog="campaign-provenance",
         description="Verify repo access and record commit SHAs for all campaign targets.",
     )
-    parser.add_argument("--state-file", required=True, help="Path to _campaign-state.yaml")
-    parser.add_argument("--brief-file", required=True, help="Path to campaign-brief.yaml")
+    parser.add_argument(
+        "--state-file", required=True, help="Path to _campaign-state.yaml"
+    )
+    parser.add_argument(
+        "--brief-file", required=True, help="Path to campaign-brief.yaml"
+    )
     args = parser.parse_args(argv)
     return run(args.state_file, args.brief_file)
 

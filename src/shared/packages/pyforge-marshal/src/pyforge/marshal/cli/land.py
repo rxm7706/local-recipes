@@ -221,7 +221,11 @@ def _evaluate_required_checks(
             )
         except ForgeCommandError as exc:
             report.append(
-                {"rule": rule.name, "required_check": rule.required_check, "status": None}
+                {
+                    "rule": rule.name,
+                    "required_check": rule.required_check,
+                    "status": None,
+                }
             )
             error_findings.append(
                 Finding(
@@ -376,7 +380,9 @@ def run_land(
             except PolicyIOError as exc:
                 findings.append(exc.finding)
                 return _emit(args, data, findings)
-    effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
+    effective, policy_findings = policy.compose(
+        project_slug=slug, project=project_data, flags={}
+    )
     findings.extend(policy_findings)
 
     # The malformed-landing_rules-hard-refuses precondition -- copied
@@ -427,7 +433,9 @@ def run_land(
         )
         return _emit(args, data, findings)
     try:
-        wave_subjects = vcs.commit_subjects(git_repo_root, f"{merge_base_sha}..{head_branch}")
+        wave_subjects = vcs.commit_subjects(
+            git_repo_root, f"{merge_base_sha}..{head_branch}"
+        )
     except VcsCommandError as exc:
         findings.append(
             Finding(
@@ -580,7 +588,9 @@ def run_land(
     # whole reason to exist, per its own Design Notes) permanently
     # unreachable for any rule that also feeds hygiene: hygiene would
     # always refuse first, before the PR that step 2 gates even exists.
-    label_only_rules = tuple(rule for rule in landing_rules if rule.required_check is None)
+    label_only_rules = tuple(
+        rule for rule in landing_rules if rule.required_check is None
+    )
     hygiene_report, blocking_findings, hygiene_fired_labels = _evaluate_hygiene(
         label_only_rules, changed_paths, forge, repo_ref, head_sha
     )
@@ -605,7 +615,9 @@ def run_land(
         required_errors,
         required_warnings,
         required_fired_labels,
-    ) = _evaluate_required_checks(landing_rules, changed_paths, forge, repo_ref, head_sha, slug)
+    ) = _evaluate_required_checks(
+        landing_rules, changed_paths, forge, repo_ref, head_sha, slug
+    )
     data["required_checks"] = required_report
     fired_labels = hygiene_fired_labels + required_fired_labels
 
@@ -695,10 +707,14 @@ def run_land(
     )
     try:
         if existing is None:
-            pr = forge.create_pr(repo_ref, ForgeRef(base), head_branch_ref, title_redacted, body_redacted)
+            pr = forge.create_pr(
+                repo_ref, ForgeRef(base), head_branch_ref, title_redacted, body_redacted
+            )
             data["opened"] = True
         else:
-            pr = forge.update_pr(repo_ref, existing.number, title_redacted, body_redacted)
+            pr = forge.update_pr(
+                repo_ref, existing.number, title_redacted, body_redacted
+            )
             data["updated"] = True
     except ForgeCommandError as exc:
         findings.append(
@@ -874,7 +890,13 @@ def run_land(
 
 
 def _run_resync_if_enabled(
-    reconcile_feed, args, vcs, fs, resync_enabled: bool, slug: str, findings: list[Finding]
+    reconcile_feed,
+    args,
+    vcs,
+    fs,
+    resync_enabled: bool,
+    slug: str,
+    findings: list[Finding],
 ) -> bool:
     """Gated by ``landing_resync`` (Story 4.7): calls ``cli/deploy.py::
     reconcile_feed`` in-process (the non-printing core ``run_refresh_feed``
@@ -895,12 +917,16 @@ def _run_resync_if_enabled(
     return True
 
 
-def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+def _emit(
+    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+) -> int:
     """The envelope-build-then-print tail every ``cli/deploy.py`` command
     shares, mirrored here for this module's own single command (AD-14: one
     envelope shape per command)."""
     verdict_value = compute_verdict(findings)
-    envelope = build_envelope(command="land", verdict=verdict_value, data=data, findings=tuple(findings))
+    envelope = build_envelope(
+        command="land", verdict=verdict_value, data=data, findings=tuple(findings)
+    )
 
     if args.format == "json":
         rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)
@@ -925,7 +951,9 @@ def _render_text_land(data: Mapping[str, object], findings: tuple[Finding, ...])
         lines.append(f"branch: {data['branch']!r}")
     wave = data.get("wave")
     if wave is not None:
-        lines.append(f"wave: {len(wave)} stor{'y' if len(wave) == 1 else 'ies'} ({', '.join(wave)})")
+        lines.append(
+            f"wave: {len(wave)} stor{'y' if len(wave) == 1 else 'ies'} ({', '.join(wave)})"
+        )
     if data.get("already_landed"):
         lines.append("already landed -- confirming retirement/resync only")
     if data.get("opened"):
@@ -940,5 +968,7 @@ def _render_text_land(data: Mapping[str, object], findings: tuple[Finding, ...])
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)

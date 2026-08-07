@@ -78,7 +78,9 @@ def validate_name(
 ) -> dict:
     skills_dir = Path(skills_output_folder)
     forge_dir = Path(forge_data_folder)
-    manifest = Path(manifest_path) if manifest_path else skills_dir / ".export-manifest.json"
+    manifest = (
+        Path(manifest_path) if manifest_path else skills_dir / ".export-manifest.json"
+    )
 
     export_keys, manifest_error = load_exports(manifest)
 
@@ -91,17 +93,20 @@ def validate_name(
     if new_name in export_keys:
         locations.append({"kind": "manifest.exports", "path": str(manifest)})
     if (skills_dir / new_name).is_dir():
-        locations.append({"kind": "skills_output_folder", "path": str(skills_dir / new_name)})
+        locations.append(
+            {"kind": "skills_output_folder", "path": str(skills_dir / new_name)}
+        )
     if (forge_dir / new_name).is_dir():
-        locations.append({"kind": "forge_data_folder", "path": str(forge_dir / new_name)})
+        locations.append(
+            {"kind": "forge_data_folder", "path": str(forge_dir / new_name)}
+        )
     collision_ok = len(locations) == 0
 
     # Recovery fingerprint: collides on disk only (not manifest) and both
     # old-name directories still exist -> stranded partial rename, not a genuine
     # clash.
-    collides_on_disk_only = (
-        not collision_ok
-        and all(loc["kind"] != "manifest.exports" for loc in locations)
+    collides_on_disk_only = not collision_ok and all(
+        loc["kind"] != "manifest.exports" for loc in locations
     )
     interrupted_rename = bool(
         collides_on_disk_only
@@ -138,7 +143,9 @@ def validate_name(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate a proposed rename target name.")
+    parser = argparse.ArgumentParser(
+        description="Validate a proposed rename target name."
+    )
     parser.add_argument("--old-name", required=True)
     parser.add_argument("--new-name", required=True)
     parser.add_argument("--skills-output-folder", required=True)

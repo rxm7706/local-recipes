@@ -96,7 +96,9 @@ def strip_fences(text):
     if len(non_empty_idx) < 2:
         return text
     first, last = non_empty_idx[0], non_empty_idx[-1]
-    if _FENCE_OPEN.match(lines[first].strip()) and _FENCE_CLOSE.match(lines[last].strip()):
+    if _FENCE_OPEN.match(lines[first].strip()) and _FENCE_CLOSE.match(
+        lines[last].strip()
+    ):
         kept = [ln for i, ln in enumerate(lines) if i != first and i != last]
         return "\n".join(kept)
     return text
@@ -132,9 +134,7 @@ def validate_inventory(raw):
 
     exports = data.get("exports")
     if not isinstance(exports, list):
-        violations.append(
-            "missing/typo: `exports` must be present and a list"
-        )
+        violations.append("missing/typo: `exports` must be present and a list")
         exports = []
 
     cross = data.get("cross_check_mismatches")

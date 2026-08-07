@@ -426,7 +426,9 @@ def test_write_redacted_atomic_raises_fs_error_on_unwritable_target(fs, tmp_path
 
 
 @pytest.mark.parametrize("bogus_payload", ["a bare str", None, {"text": "{}"}, 123])
-def test_write_redacted_atomic_rejects_a_non_redacted_payload(fs, tmp_path, bogus_payload):
+def test_write_redacted_atomic_rejects_a_non_redacted_payload(
+    fs, tmp_path, bogus_payload
+):
     """Regression (review finding, verified live): without a type check,
     a non-``Redacted`` payload crashed with a raw ``AttributeError`` on
     ``payload.text`` instead of the documented ``TypeError`` contract."""
@@ -545,7 +547,9 @@ def test_append_line_raises_fs_error_on_a_short_write(fs, tmp_path, monkeypatch)
     writer's complete line land in the gap) and never silently truncated."""
     target = tmp_path / "journal.jsonl"
     real_write = os.write
-    monkeypatch.setattr(os, "write", lambda fd, data: real_write(fd, data[:1]) if data else 0)
+    monkeypatch.setattr(
+        os, "write", lambda fd, data: real_write(fd, data[:1]) if data else 0
+    )
     with pytest.raises(FsError, match="short write"):
         fs.append_line(target, '{"a": 1}', fsync=False)
 
@@ -578,7 +582,9 @@ def test_directory_already_exists_error_is_an_fs_error(fs, tmp_path):
         fs.create_dir_exclusive(target)
 
 
-def test_create_dir_exclusive_raises_plain_fs_error_when_parent_is_missing(fs, tmp_path):
+def test_create_dir_exclusive_raises_plain_fs_error_when_parent_is_missing(
+    fs, tmp_path
+):
     """No parents=True -- a missing parent is a different failure than a
     collision, and must NOT be misreported as DirectoryAlreadyExistsError."""
     target = tmp_path / "absent-parent" / "run-1"
@@ -624,7 +630,8 @@ def test_append_line_is_safe_under_concurrent_writers(fs, tmp_path):
     for index in range(short_lived_writer_count):
         threads.append(
             threading.Thread(
-                target=write_lines, args=(f"short-lived-{index}", short_lived_line_count)
+                target=write_lines,
+                args=(f"short-lived-{index}", short_lived_line_count),
             )
         )
 
@@ -634,7 +641,9 @@ def test_append_line_is_safe_under_concurrent_writers(fs, tmp_path):
         thread.join()
 
     lines = target.read_text(encoding="utf-8").splitlines()
-    total_expected = long_lived_line_count + short_lived_writer_count * short_lived_line_count
+    total_expected = (
+        long_lived_line_count + short_lived_writer_count * short_lived_line_count
+    )
     assert len(lines) == total_expected
 
     pairs = []
@@ -681,7 +690,9 @@ def test_append_line_is_safe_under_concurrent_writers_near_the_sidecar_threshold
     pairs = []
     for line in lines:
         document = json.loads(line)  # raises if any line is malformed JSON
-        assert document["padding"] == padding  # proves no cross-writer truncation/splicing
+        assert (
+            document["padding"] == padding
+        )  # proves no cross-writer truncation/splicing
         pairs.append((document["writer_id"], document["counter"]))
 
     assert len(pairs) == len(set(pairs)) == total_expected
@@ -690,7 +701,9 @@ def test_append_line_is_safe_under_concurrent_writers_near_the_sidecar_threshold
 # --- acquire_advisory_lock / release_advisory_lock (Story 4.9, AD-42) ------
 
 
-def test_acquire_advisory_lock_returns_a_lock_and_creates_the_sibling_file(fs, tmp_path):
+def test_acquire_advisory_lock_returns_a_lock_and_creates_the_sibling_file(
+    fs, tmp_path
+):
     target = tmp_path / "specs"
     target.mkdir()
     lock = fs.acquire_advisory_lock(target, timeout_s=1.0)

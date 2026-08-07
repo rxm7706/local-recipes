@@ -81,7 +81,9 @@ def make_inventory(*components) -> ResolvedInventory:
 # --- I/O matrix row: conda resolvable, no flags -----------------------------
 
 
-def test_conda_about_license_resolvable_is_allowed_no_finding(tmp_path, component_factory):
+def test_conda_about_license_resolvable_is_allowed_no_finding(
+    tmp_path, component_factory
+):
     (tmp_path / "recipe.yaml").write_text("about:\n  license: MIT\n", encoding="utf-8")
     component = component_factory(
         name="mypkg",
@@ -92,18 +94,24 @@ def test_conda_about_license_resolvable_is_allowed_no_finding(tmp_path, componen
     assert license_findings([component], tmp_path) == ()
 
 
-def test_conda_about_license_normalizes_via_license_expression(tmp_path, component_factory):
+def test_conda_about_license_normalizes_via_license_expression(
+    tmp_path, component_factory
+):
     # Lowercase input -> canonical SPDX id, proving normalization runs (not
     # a bare pass-through) — a denied verdict's Finding carries the
     # normalized form.
-    (tmp_path / "recipe.yaml").write_text("about:\n  license: gpl-3.0-only\n", encoding="utf-8")
+    (tmp_path / "recipe.yaml").write_text(
+        "about:\n  license: gpl-3.0-only\n", encoding="utf-8"
+    )
     component = component_factory(
         name="mypkg",
         version="1.0.0",
         ecosystem=Ecosystem.CONDA,
         provenance=(("recipe.yaml", "requirements.host"),),
     )
-    (finding,) = license_findings([component], tmp_path, deny_licenses=("GPL-3.0-only",))
+    (finding,) = license_findings(
+        [component], tmp_path, deny_licenses=("GPL-3.0-only",)
+    )
     assert finding.license.expression == "GPL-3.0-only"
     assert finding.license.family == "GPL3"
     assert finding.id == "license:GPL-3.0-only:mypkg@1.0.0"
@@ -150,7 +158,9 @@ def test_meta_yaml_v0_about_license_also_resolves(tmp_path, component_factory):
     assert license_findings([component], tmp_path) == ()
 
 
-def test_recipe_yaml_neutralize_pass_tolerates_a_jinja_comment(tmp_path, component_factory):
+def test_recipe_yaml_neutralize_pass_tolerates_a_jinja_comment(
+    tmp_path, component_factory
+):
     """Proves the reused ``strip_jinja_comments``/``neutralize_bare_braces``
     helpers actually ran — a bare ``{# ... #}`` span would otherwise crash
     ``yaml.safe_load`` outright."""
@@ -198,7 +208,9 @@ def test_conda_recipe_yaml_wins_over_meta_yaml_when_both_present(
     )
     # Denying GPL-3.0-only (meta.yaml's value) must NOT match -- meta.yaml
     # was not the source consulted.
-    assert license_findings([component], tmp_path, deny_licenses=("GPL-3.0-only",)) == ()
+    assert (
+        license_findings([component], tmp_path, deny_licenses=("GPL-3.0-only",)) == ()
+    )
     # Denying MIT (recipe.yaml's value) DOES match -- recipe.yaml (v1) is
     # the one actually re-read.
     (finding,) = license_findings([component], tmp_path, deny_licenses=("MIT",))
@@ -220,7 +232,9 @@ def test_pypi_uninstalled_is_unknown_with_warn_finding(tmp_path, component_facto
     assert status is Status.WARN  # never a silent clean
 
 
-def test_pypi_uninstalled_no_version_uses_unspecified_segment(tmp_path, component_factory):
+def test_pypi_uninstalled_no_version_uses_unspecified_segment(
+    tmp_path, component_factory
+):
     component = component_factory(name=_UNINSTALLED, version=None)
     (finding,) = license_findings([component], tmp_path)
     assert finding.id == f"license:unknown:{_UNINSTALLED}@unspecified"
@@ -362,13 +376,17 @@ def test_deny_list_match_is_denied_at_warn(tmp_path, component_factory):
         ecosystem=Ecosystem.CONDA,
         provenance=(("recipe.yaml", "requirements.host"),),
     )
-    (finding,) = license_findings([component], tmp_path, deny_licenses=("GPL-3.0-only",))
+    (finding,) = license_findings(
+        [component], tmp_path, deny_licenses=("GPL-3.0-only",)
+    )
     assert finding.license.verdict is LicenseVerdict.DENIED
     status, _driver = license_rung(finding)
     assert status is Status.WARN  # never higher this story
 
 
-def test_conda_with_exception_license_denied_via_deny_licenses(tmp_path, component_factory):
+def test_conda_with_exception_license_denied_via_deny_licenses(
+    tmp_path, component_factory
+):
     """Fix 1 (review finding, 2026-07-18): a SPDX ``WITH``-exception
     expression is ``isliteral`` but its symbol is a
     ``LicenseWithExceptionSymbol``, which has NO ``.key`` attribute — a
@@ -503,7 +521,9 @@ def test_deny_list_and_expression_any_symbol_denies(
         monkeypatch, _fake_metadata(license_expression="MIT AND GPL-3.0-only")
     )
     component = component_factory(name="fake-pkg", version="1.0.0")
-    (finding,) = license_findings([component], tmp_path, deny_licenses=("GPL-3.0-only",))
+    (finding,) = license_findings(
+        [component], tmp_path, deny_licenses=("GPL-3.0-only",)
+    )
     assert finding.license.verdict is LicenseVerdict.DENIED
 
 
@@ -556,7 +576,9 @@ def test_manifest_invalid_utf8_degrades_to_unknown_never_crashes(
     assert finding.license.verdict is LicenseVerdict.UNKNOWN
 
 
-def test_unreadable_manifest_degrades_to_unknown_never_crashes(tmp_path, component_factory):
+def test_unreadable_manifest_degrades_to_unknown_never_crashes(
+    tmp_path, component_factory
+):
     component = component_factory(
         name="mypkg",
         version="1.0.0",
@@ -681,7 +703,9 @@ def test_license_rung_is_always_warn_for_unknown():
         message="unresolvable",
         subject="foo",
         severity=None,
-        license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
+        license=LicenseInfo(
+            expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN
+        ),
     )
     status, driver = license_rung(finding)
     assert status is Status.WARN
@@ -733,7 +757,9 @@ def test_license_rung_unknown_escalates_to_indeterminate_under_a_gating_policy()
         message="unresolvable",
         subject="foo",
         severity=None,
-        license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
+        license=LicenseInfo(
+            expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN
+        ),
     )
     status, driver = license_rung(finding, policy=_GATING_LICENSE_POLICY)
     assert status is Status.INDETERMINATE
@@ -752,7 +778,9 @@ def test_license_rung_still_warns_with_policy_none():
             subject="foo",
             severity=None,
             license=LicenseInfo(
-                expression="GPL-3.0-only" if verdict is LicenseVerdict.DENIED else "unknown",
+                expression="GPL-3.0-only"
+                if verdict is LicenseVerdict.DENIED
+                else "unknown",
                 family=None,
                 verdict=verdict,
             ),
@@ -770,7 +798,9 @@ def test_license_rung_verdict_absent_from_policy_degrades_to_indeterminate():
         message="m",
         subject="foo",
         severity=None,
-        license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
+        license=LicenseInfo(
+            expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN
+        ),
     )
     # A non-empty table that just lacks a mapping for UNKNOWN: it is used
     # directly (a supplied table always wins over the module default).
@@ -812,7 +842,9 @@ def test_license_rung_empty_policy_table_fails_closed_not_to_warn():
         ("Apache-2.0", "Apache-2.0", "Apache"),
     ],
 )
-def test_parse_spdx_normalizes_and_assigns_family(raw, expected_expression, expected_family):
+def test_parse_spdx_normalizes_and_assigns_family(
+    raw, expected_expression, expected_family
+):
     result = _parse_spdx(raw)
     assert result == (expected_expression, expected_family)
 
@@ -825,7 +857,9 @@ def test_parse_spdx_compound_expression_has_no_family():
     assert family is None
 
 
-@pytest.mark.parametrize("raw", [None, "", "   ", "not-a-real-spdx-id", "(((", "x" * 500])
+@pytest.mark.parametrize(
+    "raw", [None, "", "   ", "not-a-real-spdx-id", "(((", "x" * 500]
+)
 def test_parse_spdx_unresolvable_inputs_are_none(raw):
     assert _parse_spdx(raw) is None
 
@@ -965,9 +999,22 @@ def test_parse_spdx_long_valid_compound_expression_resolves():
     misreported a resolvable — and deny-matching — license as unknown.
     The cap still rejects full-license-text-scale input."""
     ids = (
-        "Apache-2.0", "MIT", "BSD-3-Clause", "GPL-3.0-only", "LGPL-3.0-only",
-        "MPL-2.0", "ISC", "Zlib", "Unlicense", "PSF-2.0", "AGPL-3.0-only",
-        "GPL-2.0-only", "BSD-2-Clause", "0BSD", "Apache-1.1", "LGPL-2.1-only",
+        "Apache-2.0",
+        "MIT",
+        "BSD-3-Clause",
+        "GPL-3.0-only",
+        "LGPL-3.0-only",
+        "MPL-2.0",
+        "ISC",
+        "Zlib",
+        "Unlicense",
+        "PSF-2.0",
+        "AGPL-3.0-only",
+        "GPL-2.0-only",
+        "BSD-2-Clause",
+        "0BSD",
+        "Apache-1.1",
+        "LGPL-2.1-only",
     )
     long_expression = " AND ".join(ids)
     assert len(long_expression) > 200
@@ -1053,9 +1100,7 @@ def test_deeply_nested_manifest_flow_collections_degrade_never_crash(
     on deeply nested flow collections — the degrade-to-unknown contract
     must hold for the license re-read regardless of how the file got past
     extraction (TOCTOU rewrite, direct ``license_findings`` callers)."""
-    (tmp_path / "recipe.yaml").write_text(
-        "[" * 5000 + "]" * 5000, encoding="utf-8"
-    )
+    (tmp_path / "recipe.yaml").write_text("[" * 5000 + "]" * 5000, encoding="utf-8")
     component = component_factory(
         name="mypkg",
         version="1.0.0",

@@ -8,6 +8,7 @@ Permanent Wave-A tests (AD-11): fixture-based, non-credentialed, offline.
 - (d) the Kedro bootstrap/session seam on the dotted `package_name` (Task 2.2).
 - (e) the AUD-ATLAS-011 pandas NULL-identity pin canary (story 10-4).
 """
+
 from pathlib import Path
 
 MEMBER_DIR = Path(__file__).resolve().parents[1]

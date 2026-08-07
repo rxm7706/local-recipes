@@ -200,9 +200,7 @@ def test_ad8_no_combination_of_the_full_lattice_produces_clean_when_any_finding_
             "codes tuple is shorter than the tested length -- zip(active_codes, "
             "combo) would silently truncate and drop tested combinations"
         )
-        monkeypatch.setattr(
-            findings, "REGISTERED_CODES", frozenset(active_codes)
-        )
+        monkeypatch.setattr(findings, "REGISTERED_CODES", frozenset(active_codes))
         for combo in itertools.product(Verdict, repeat=length):
             if Verdict.UNEVALUABLE not in combo:
                 continue

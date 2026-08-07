@@ -89,6 +89,7 @@ def iter_stories(project):
 # Source: sprint-status
 # ---------------------------------------------------------------------------
 
+
 def parse_sprint_status(path):
     """Extract the development_status mapping from a sprint-status.yaml (no YAML lib)."""
     entries = {}
@@ -155,6 +156,7 @@ def sync_from_sprint_status(data):
 # Source: git
 # ---------------------------------------------------------------------------
 
+
 def git_ref():
     """Prefer main; fall back to HEAD (detached CI)."""
     probe = subprocess.run(
@@ -219,6 +221,7 @@ def sync_from_git(data):
 # Dreams scan (both modes, every run)
 # ---------------------------------------------------------------------------
 
+
 def parse_dream_frontmatter(path):
     """Return (title, status, owner) from a dream file's YAML frontmatter."""
     title = status = owner = ""
@@ -276,6 +279,7 @@ def scan_dreams(data):
 # ---------------------------------------------------------------------------
 # Snapshot stamp
 # ---------------------------------------------------------------------------
+
 
 def stamp_snapshot(data, source):
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")

@@ -59,11 +59,13 @@ def test_ms_normalization_and_coercion_created_nan_is_filled(tmp_path):
     needs_fill is computed pre-coercion (junk is not NaN), so the fill must re-check
     AFTER _to_epoch_seconds."""
     ds = IncrementalParquetDataset(filepath=_fp(tmp_path))
-    df = pd.DataFrame({"conda_name": ["ms", "junk"], "fetched_at": [1_700_000_000_000, "oops"]})
+    df = pd.DataFrame(
+        {"conda_name": ["ms", "junk"], "fetched_at": [1_700_000_000_000, "oops"]}
+    )
     ds.save(df)
     back = ds.load().set_index("conda_name")
     assert back.loc["ms", "fetched_at"] == 1_700_000_000  # ms -> s
-    assert pd.notna(back.loc["junk", "fetched_at"])        # coercion-NaN was filled
+    assert pd.notna(back.loc["junk", "fetched_at"])  # coercion-NaN was filled
     assert back.loc["junk", "fetched_at"] > 0
 
 
@@ -150,8 +152,12 @@ def test_two_instances_with_different_ttls_gate_differently(tmp_path):
     df = pd.DataFrame(
         {"conda_name": ["x"], "fetched_at": [now - 3600]}  # 1 h old
     )
-    short = IncrementalParquetDataset(filepath=_fp(tmp_path, "a"), ttl_seconds=60)  # 1 m
-    long = IncrementalParquetDataset(filepath=_fp(tmp_path, "b"), ttl_seconds=86400)  # 1 d
+    short = IncrementalParquetDataset(
+        filepath=_fp(tmp_path, "a"), ttl_seconds=60
+    )  # 1 m
+    long = IncrementalParquetDataset(
+        filepath=_fp(tmp_path, "b"), ttl_seconds=86400
+    )  # 1 d
     assert short.stale_mask(df, now=now).tolist() == [True]  # past 1 m -> stale
     assert long.stale_mask(df, now=now).tolist() == [False]  # within 1 d -> fresh
 
@@ -184,9 +190,7 @@ def test_second_load_over_persisted_parquet_needs_no_refetch(tmp_path):
     # persisted Parquet and reconstructs the freshness verdict with no re-fetch
     resumed = IncrementalParquetDataset(filepath=_fp(tmp_path), ttl_seconds=ttl)
     reloaded = resumed.load()
-    verdict = dict(
-        zip(reloaded["conda_name"], resumed.stale_mask(reloaded, now=now))
-    )
+    verdict = dict(zip(reloaded["conda_name"], resumed.stale_mask(reloaded, now=now)))
     # only the stale row is surfaced for re-fetch; the fresh row is skipped
     assert bool(verdict["fresh"]) is False
     assert bool(verdict["stale"]) is True
@@ -199,7 +203,13 @@ def test_no_phase_state_or_checkpoint_cursor(tmp_path):
     column — no side table, no sqlite cursor, no in-memory state carried between
     loads."""
     ds = IncrementalParquetDataset(filepath=_fp(tmp_path), ttl_seconds=100)
-    for banned in ("phase_state", "_phase_state", "checkpoint", "_checkpoint", "cursor"):
+    for banned in (
+        "phase_state",
+        "_phase_state",
+        "checkpoint",
+        "_checkpoint",
+        "cursor",
+    ):
         assert not hasattr(ds, banned)
     # the module imports no sqlite/DB client (structurally proven by
     # tests/catalog/test_no_inline_io.py; asserted here at the module level too)
@@ -303,7 +313,9 @@ def test_version_is_rejected_with_clear_error(tmp_path):
     with pytest.raises(ValueError, match="does not support outer catalog versioning"):
         IncrementalParquetDataset(filepath=_fp(tmp_path), version=Version(None, None))
     with pytest.raises(ValueError, match="does not support outer catalog versioning"):
-        IncrementalParquetDataset(filepath=_fp(tmp_path), version="2024-01-01T00.00.00.000Z")
+        IncrementalParquetDataset(
+            filepath=_fp(tmp_path), version="2024-01-01T00.00.00.000Z"
+        )
 
 
 def test_remote_filepath_protocol_is_not_mangled():

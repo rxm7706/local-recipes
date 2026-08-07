@@ -85,7 +85,9 @@ def test_classify_team_relevant_flat_frontmatter(
     assert entry.slug == "run-tests-first"
     assert entry.target_path == memory_root / "feedback" / "run-tests-first.md"
     assert "Always run the full test suite" in entry.rewritten_text
-    assert entry.memory_index_line.startswith("- [run-tests-first](feedback/run-tests-first.md)")
+    assert entry.memory_index_line.startswith(
+        "- [run-tests-first](feedback/run-tests-first.md)"
+    )
 
 
 def test_classify_team_relevant_nested_metadata_frontmatter(

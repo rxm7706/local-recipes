@@ -76,7 +76,9 @@ def test_repo_common_root_raises_outside_a_repo(vcs, tmp_path):
         vcs.repo_common_root(outside)
 
 
-def test_repo_common_root_from_linked_worktree_resolves_to_main_checkout(vcs, repo, tmp_path):
+def test_repo_common_root_from_linked_worktree_resolves_to_main_checkout(
+    vcs, repo, tmp_path
+):
     """The whole point of --git-common-dir: a linked worktree's common dir
     still points at the MAIN checkout's .git, regardless of which worktree
     the query runs from."""
@@ -251,7 +253,9 @@ def test_add_worktree_never_checks_out_base_a_second_time(vcs, repo, tmp_path):
     assert result.stdout.strip() == "main"
 
 
-def test_add_worktree_attaches_to_an_existing_branch_without_dash_b(vcs, repo, tmp_path):
+def test_add_worktree_attaches_to_an_existing_branch_without_dash_b(
+    vcs, repo, tmp_path
+):
     _git(repo, "branch", "loop/attach", "main")
     home = tmp_path / "home"
     vcs.add_worktree(repo, home, "loop/attach", base="main")
@@ -519,9 +523,10 @@ def test_is_branch_merged_true_for_a_squash_merged_branch(vcs, repo):
     # Confirms the parent count really is 1 -- the exact live-verified shape
     # this method exists to handle.
     show = _git(repo, "cat-file", "-p", "HEAD")
-    assert show.stdout.count("\nparent ") + (
-        1 if show.stdout.startswith("parent ") else 0
-    ) == 1
+    assert (
+        show.stdout.count("\nparent ") + (1 if show.stdout.startswith("parent ") else 0)
+        == 1
+    )
     # Confirms bare ancestry really would misreport this as unmerged.
     ancestry = subprocess.run(
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", "loop/squash", "main"],
@@ -658,7 +663,9 @@ def test_is_branch_merged_raises_on_empty_cherry_output(vcs, repo, monkeypatch):
 
     def _fake_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
         if "cherry" in args:
-            return _subprocess.CompletedProcess(args, returncode=0, stdout="", stderr="")
+            return _subprocess.CompletedProcess(
+                args, returncode=0, stdout="", stderr=""
+            )
         return real_run(args, timeout_s=timeout_s)
 
     monkeypatch.setattr(vcs_git_module, "_run", _fake_run)
@@ -757,7 +764,9 @@ def test_delete_branch_raises_on_unknown_branch(vcs, repo):
         vcs.delete_branch(repo, "loop/never-existed", force=True)
 
 
-def test_add_worktree_timeout_names_the_cleanup_commands(vcs, repo, tmp_path, monkeypatch):
+def test_add_worktree_timeout_names_the_cleanup_commands(
+    vcs, repo, tmp_path, monkeypatch
+):
     """Review finding: the flat 30s timeout could SIGKILL `git worktree
     add` mid-checkout on a large repo. The add now runs under its own
     (much longer) tier, and a timeout there carries operator cleanup
@@ -801,7 +810,10 @@ def cloned_repo(remote: Path, tmp_path: Path) -> Path:
     it."""
     clone = tmp_path / "clone"
     subprocess.run(
-        ["git", "clone", str(remote), str(clone)], capture_output=True, text=True, check=True
+        ["git", "clone", str(remote), str(clone)],
+        capture_output=True,
+        text=True,
+        check=True,
     )
     _git(clone, "config", "user.email", "test@example.com")
     _git(clone, "config", "user.name", "Test")
@@ -812,7 +824,9 @@ def cloned_repo(remote: Path, tmp_path: Path) -> Path:
     return clone
 
 
-def test_push_first_push_of_a_brand_new_branch_uses_origin_branch(vcs, cloned_repo, remote):
+def test_push_first_push_of_a_brand_new_branch_uses_origin_branch(
+    vcs, cloned_repo, remote
+):
     """No upstream configured yet (the ordinary shape for a fresh
     station/per-story branch) -- falls back to `git push origin <branch>`,
     the branch's first push."""
@@ -1012,7 +1026,9 @@ def test_changed_files_a_rename_reports_only_the_new_path(vcs, repo, tmp_path):
     assert "README.md" not in result
 
 
-def test_changed_files_a_committed_rename_reports_only_the_new_path(vcs, repo, tmp_path):
+def test_changed_files_a_committed_rename_reports_only_the_new_path(
+    vcs, repo, tmp_path
+):
     """Review finding (Edge Case Hunter): unlike the uncommitted-rename case
     above (already handled by the porcelain branch's own " -> " parsing), a
     COMMITTED rename is reported by `git diff`, which without rename
@@ -1063,7 +1079,9 @@ def test_changed_files_a_non_ascii_path_round_trips_literally(vcs, repo, tmp_pat
     assert "café.txt" in result
 
 
-def test_changed_files_git_diff_runs_against_the_worktrees_own_head(vcs, repo, tmp_path):
+def test_changed_files_git_diff_runs_against_the_worktrees_own_head(
+    vcs, repo, tmp_path
+):
     """Review-motivated regression: `HEAD` is per-worktree, and `base`/refs
     are shared across every worktree of one repo -- if `changed_files` ran
     `git diff` against `repo_root`'s own checked-out HEAD instead of
@@ -1132,7 +1150,9 @@ def test_commit_paths_stages_and_commits_only_the_named_paths(vcs, repo):
     (repo / "tracked.txt").write_text("modified but NOT committed\n", encoding="utf-8")
     (repo / "promoted.txt").write_text("promoted content\n", encoding="utf-8")
 
-    sha = vcs.commit_paths(repo, (repo / "promoted.txt",), "marshal: promote 1 story spec(s)")
+    sha = vcs.commit_paths(
+        repo, (repo / "promoted.txt",), "marshal: promote 1 story spec(s)"
+    )
 
     assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
     show = _git(repo, "show", "--name-only", "--format=", "HEAD")
@@ -1147,7 +1167,9 @@ def test_commit_paths_commits_multiple_paths_in_one_commit(vcs, repo):
     (repo / "a.txt").write_text("a\n", encoding="utf-8")
     (repo / "b.txt").write_text("b\n", encoding="utf-8")
 
-    vcs.commit_paths(repo, (repo / "a.txt", repo / "b.txt"), "marshal: promote 2 story spec(s)")
+    vcs.commit_paths(
+        repo, (repo / "a.txt", repo / "b.txt"), "marshal: promote 2 story spec(s)"
+    )
 
     show = _git(repo, "show", "--name-only", "--format=", "HEAD")
     committed_files = sorted(line for line in show.stdout.splitlines() if line.strip())
@@ -1258,7 +1280,9 @@ def test_resolve_ref_raises_on_an_unresolvable_branch(vcs, repo):
         vcs.resolve_ref(repo, "no-such-branch")
 
 
-def test_merge_branch_merges_cleanly_and_returns_the_new_commit_sha(vcs, repo, tmp_path):
+def test_merge_branch_merges_cleanly_and_returns_the_new_commit_sha(
+    vcs, repo, tmp_path
+):
     home = tmp_path / "home"
     vcs.add_worktree(repo, home, "loop/x", base="main")
     (home / "feature.txt").write_text("feature\n", encoding="utf-8")
@@ -1364,10 +1388,14 @@ def test_merge_branch_raises_vcs_command_error_on_conflict(vcs, repo, tmp_path):
 
 def test_merge_branch_raises_on_an_unresolvable_branch(vcs, repo):
     with pytest.raises(VcsCommandError):
-        vcs.merge_branch(repo, "no-such-branch", into="main", subject="Merge 1.2 into main")
+        vcs.merge_branch(
+            repo, "no-such-branch", into="main", subject="Merge 1.2 into main"
+        )
 
 
-def test_merge_branch_refuses_when_into_moves_concurrently(vcs, repo, tmp_path, monkeypatch):
+def test_merge_branch_refuses_when_into_moves_concurrently(
+    vcs, repo, tmp_path, monkeypatch
+):
     """P4: `into` moving between merge_branch's own read of its tip and the
     write that advances it must never be silently overwritten -- the
     three-arg `update-ref` compare-and-swap must refuse instead."""

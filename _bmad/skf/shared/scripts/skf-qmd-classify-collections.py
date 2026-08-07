@@ -149,7 +149,9 @@ def load_registry_names(path: Path) -> list[str]:
         _die(1, f"expected mapping at top of {path}, got {type(data).__name__}")
     entries = data.get("qmd_collections", []) or []
     if not isinstance(entries, list):
-        _die(1, f"qmd_collections in {path} is not a list (got {type(entries).__name__})")
+        _die(
+            1, f"qmd_collections in {path} is not a list (got {type(entries).__name__})"
+        )
     names: list[str] = []
     for entry in entries:
         if isinstance(entry, dict) and isinstance(entry.get("name"), str):
@@ -221,6 +223,7 @@ def fetch_live_names_from_qmd() -> tuple[list[str], str | None]:
     counts as a "live collection name".
     """
     import subprocess
+
     try:
         result = subprocess.run(
             ["qmd", "collection", "list"],
@@ -232,7 +235,10 @@ def fetch_live_names_from_qmd() -> tuple[list[str], str | None]:
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
         return [], f"qmd collection list failed: {e}"
     if result.returncode != 0:
-        return [], f"qmd collection list exited {result.returncode}: {result.stderr.strip() or '<no stderr>'}"
+        return (
+            [],
+            f"qmd collection list exited {result.returncode}: {result.stderr.strip() or '<no stderr>'}",
+        )
     return parse_collection_list_output(result.stdout), None
 
 
@@ -245,15 +251,15 @@ def main() -> None:
         "--live-names",
         default=None,
         help="Comma-separated list of collection names currently in QMD. "
-             "If omitted, the script invokes `qmd collection list` itself. "
-             "Empty string → no live collections.",
+        "If omitted, the script invokes `qmd collection list` itself. "
+        "Empty string → no live collections.",
     )
     parser.add_argument(
         "--registry-from-yaml",
         type=Path,
         required=True,
         help="Path to forge-tier.yaml. Script reads qmd_collections array. "
-             "Missing file → empty registry (first-run state).",
+        "Missing file → empty registry (first-run state).",
     )
     args = parser.parse_args()
 

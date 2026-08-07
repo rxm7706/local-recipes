@@ -227,16 +227,14 @@ GATE_MODE_AUTONOMY_LABELS: Mapping[str, Mapping[str, str]] = {
         "level": "L3",
         "name": "Conditional / Context Gates",
         "meaning": (
-            "Machine-readable boundaries; human at epic seams. The "
-            "production ceiling."
+            "Machine-readable boundaries; human at epic seams. The production ceiling."
         ),
     },
     "none": {
         "level": "L4",
         "name": "Approver",
         "meaning": (
-            "Runs independently; surfaces only at blockers or "
-            "pre-specified conditions."
+            "Runs independently; surfaces only at blockers or pre-specified conditions."
         ),
     },
 }
@@ -341,7 +339,9 @@ DEFAULT_POLICY: Mapping[str, object] = {
 # None of the 14 real fields match today -- proven via a synthetic fixture in
 # tests/unit/test_policy.py, mirroring findings.py/verdict.py's own
 # "empty/unused registry, mechanism proven synthetically" precedent.
-SECRET_KEY_SUFFIXES: frozenset[str] = frozenset({"_TOKEN", "_KEY", "_SECRET", "_PASSWORD"})
+SECRET_KEY_SUFFIXES: frozenset[str] = frozenset(
+    {"_TOKEN", "_KEY", "_SECRET", "_PASSWORD"}
+)
 REDACTED_SENTINEL = "***REDACTED***"
 
 
@@ -468,7 +468,11 @@ def _valid_model_tier_map(value: object) -> dict[str, dict[str, str]] | None:
         return None
     result: dict[str, dict[str, str]] = {}
     for difficulty, stages in value.items():
-        if not isinstance(difficulty, str) or difficulty == "" or not isinstance(stages, Mapping):
+        if (
+            not isinstance(difficulty, str)
+            or difficulty == ""
+            or not isinstance(stages, Mapping)
+        ):
             return None
         stage_map: dict[str, str] = {}
         for stage, model in stages.items():
@@ -632,7 +636,9 @@ def _identify_bad_landing_rule(value: object) -> str:
                 return f"rule {name!r} (index {index}) is malformed"
             return f"the rule at index {index} is malformed"
         if rule.name in seen_names:
-            return f"rule {rule.name!r} (index {index}) duplicates an earlier rule's name"
+            return (
+                f"rule {rule.name!r} (index {index}) duplicates an earlier rule's name"
+            )
         seen_names.add(rule.name)
     return "an unidentified entry is malformed"
 
@@ -791,7 +797,9 @@ def _valid_positive_number(value: object) -> int | float | None:
     return value
 
 
-def _malformed_finding(code: str, key: str, layer_name: str, raw_value: object) -> Finding:
+def _malformed_finding(
+    code: str, key: str, layer_name: str, raw_value: object
+) -> Finding:
     # redact() before formatting -- a secret-shaped key given a malformed
     # value must not leak its raw value into the finding message, the one
     # egress path that read `raw_value` directly instead of `field.value`/
@@ -1035,7 +1043,9 @@ class EffectivePolicy:
             )
         for seed_key, field in self._seed.items():
             if not isinstance(field, PolicyField):
-                raise ValueError(f"_seed[{seed_key!r}] must be a PolicyField, got {field!r}")
+                raise ValueError(
+                    f"_seed[{seed_key!r}] must be a PolicyField, got {field!r}"
+                )
         object.__setattr__(self, "_seed", MappingProxyType(dict(self._seed)))
 
     def __repr__(self) -> str:
@@ -1072,7 +1082,8 @@ class EffectivePolicy:
             )
         )
         seed = ", ".join(
-            f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items())
+            f"{key!r}: {_field_repr(key, field)}"
+            for key, field in sorted(self._seed.items())
         )
         return f"{type(self).__name__}({static}, _seed={{{seed}}})"
 
@@ -1129,7 +1140,11 @@ class EffectivePolicy:
 
 
 def compose(
-    *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
+    *,
+    project_slug: str,
+    repo_defaults: Mapping[str, object] | None = None,
+    project: Mapping[str, object],
+    flags: Mapping[str, object],
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
     wins (AD-16), over Marshal's closed 21-key policy vocabulary. Never reads a

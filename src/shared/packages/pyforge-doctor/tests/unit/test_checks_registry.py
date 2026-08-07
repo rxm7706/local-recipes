@@ -91,8 +91,7 @@ def test_list_checks_unknown_category_returns_empty_tuple_no_exception():
 def test_list_checks_never_invokes_run_doctor_checks(monkeypatch):
     def _boom(target):
         raise AssertionError(
-            "list_checks() must never execute a real check to build its "
-            "catalog"
+            "list_checks() must never execute a real check to build its catalog"
         )
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
@@ -138,9 +137,7 @@ def test_gather_one_unknown_check_name_returns_none(monkeypatch, tmp_path: Path)
     assert gather_one("engines", "not-a-real-check", tmp_path) is None
 
 
-def test_gather_one_unknown_category_raises_value_error(
-    monkeypatch, tmp_path: Path
-):
+def test_gather_one_unknown_category_raises_value_error(monkeypatch, tmp_path: Path):
     # The guard must reject BEFORE gathering: if a refactor ever moves the
     # category check after the gather call, warden's degrade-never-crash
     # wrapper would swallow this sentinel and no ValueError would surface,
@@ -239,9 +236,7 @@ def test_live_catalog_matches_real_warden_gather_check_names(tmp_path: Path):
     # Filtered to "engines" -- unfiltered list_checks() also carries the
     # unrelated "env" category (Story 1.4), which warden's own gather()
     # knows nothing about.
-    catalog_names = tuple(
-        spec.name for spec in list_checks(category="engines")
-    )
+    catalog_names = tuple(spec.name for spec in list_checks(category="engines"))
 
     assert catalog_names == live_names
 

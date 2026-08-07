@@ -44,7 +44,9 @@ def test_fixture_mode_never_signed():
 def test_diff_view_reports_row_count_and_value_drift():
     """AC-1: the comparator detects row-count + value drift on a mismatched
     synthetic pair."""
-    legacy = pd.DataFrame([{"conda_name": "a", "score": 1.0}, {"conda_name": "b", "score": 2.0}])
+    legacy = pd.DataFrame(
+        [{"conda_name": "a", "score": 1.0}, {"conda_name": "b", "score": 2.0}]
+    )
     kedro = pd.DataFrame([{"conda_name": "a", "score": 9.9}])  # value + row-count drift
     rec = diff_view("v_actionable_packages", legacy, kedro, run_mode=RUN_MODE_FIXTURE)
     assert rec.material_drift
@@ -58,8 +60,11 @@ def test_diff_view_benign_timestamp_only_is_not_material():
     legacy = pd.DataFrame([{"conda_name": "a", "n": 1, "fetched_at": "T1"}])
     kedro = pd.DataFrame([{"conda_name": "a", "n": 1, "fetched_at": "T2"}])
     rec = diff_view(
-        "v_actionable_packages", legacy, kedro,
-        run_mode=RUN_MODE_FIXTURE, benign_columns=("fetched_at",),
+        "v_actionable_packages",
+        legacy,
+        kedro,
+        run_mode=RUN_MODE_FIXTURE,
+        benign_columns=("fetched_at",),
     )
     assert not rec.material_drift
     assert rec.benign_diffs

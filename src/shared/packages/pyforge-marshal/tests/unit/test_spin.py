@@ -27,7 +27,12 @@ from pyforge.marshal.adapters.process_posix import ProcessError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
-from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+from pyforge.marshal.core.journal import (
+    JournalEntryId,
+    Phase,
+    build_entry,
+    prepare_for_write,
+)
 from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
 from pyforge.marshal.ports.harness import RunStatusSnapshot, SpinResult
 
@@ -142,7 +147,9 @@ class FakeFs:
         if self.fail_append_line:
             raise self.fail_append_line
         if self.fail_append_line_on_call == self._append_line_call_count:
-            raise FsError(f"simulated failure on append_line call #{self._append_line_call_count}")
+            raise FsError(
+                f"simulated failure on append_line call #{self._append_line_call_count}"
+            )
         self.appended_lines.append((path, line, fsync))
 
     def write_text_atomic(self, path: Path, content: str) -> None:
@@ -283,7 +290,9 @@ class FakeHarness:
         self.run_status_snapshot_calls.append((project, run_id))
         return self.run_status_snapshot_result
 
-    def resolution_reference(self, project: Path, run_id: str, story_key: str) -> str | None:
+    def resolution_reference(
+        self, project: Path, run_id: str, story_key: str
+    ) -> str | None:
         self.calls.append("resolution_reference")
         self.resolution_reference_calls.append((project, run_id, story_key))
         return self.resolution_reference_result
@@ -291,7 +300,9 @@ class FakeHarness:
     def resume(self, project: Path, run_id: str, *, log_path: Path) -> int:
         self.calls.append("resume")
         self._events.append("resume")
-        self.resume_calls.append({"project": project, "run_id": run_id, "log_path": log_path})
+        self.resume_calls.append(
+            {"project": project, "run_id": run_id, "log_path": log_path}
+        )
         if self.fail_resume:
             raise self.fail_resume
         return self.resume_result
@@ -415,9 +426,10 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
 
     # Exactly two journal appends: intent (fsync=True) then outcome (fsync=False).
     assert len(fs.appended_lines) == 2
-    (intent_path, intent_line, intent_fsync), (outcome_path, outcome_line, outcome_fsync) = (
-        fs.appended_lines
-    )
+    (
+        (intent_path, intent_line, intent_fsync),
+        (outcome_path, outcome_line, outcome_fsync),
+    ) = fs.appended_lines
     assert intent_path == outcome_path
     assert intent_fsync is True
     assert outcome_fsync is False
@@ -453,7 +465,14 @@ def test_spin_writes_the_run_directory_under_the_local_tier3_store(home):
     run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
 
     [run_dir] = fs.created_dirs
-    tier3_runs = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs"
+    tier3_runs = (
+        home
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "implementation-artifacts"
+        / "runs"
+    )
     assert run_dir.parent == tier3_runs
     assert fs.ensure_dir_calls == [tier3_runs]
 
@@ -480,7 +499,9 @@ def test_spin_composed_selectors_filter_the_preview_and_pass_through(home):
     harness.feed_keys = ("1-1-a", "1-2-b", "2-1-c")
 
     exit_code = run_spin(
-        _spin_namespace("acme", epic=1, story="1-2", max_count=5), fs=fs, harness=harness
+        _spin_namespace("acme", epic=1, story="1-2", max_count=5),
+        fs=fs,
+        harness=harness,
     )
 
     assert exit_code == EXIT_OK
@@ -518,7 +539,9 @@ def test_spin_unparseable_story_selector_previews_empty_without_raising(home):
 # --- one raw feed key fails normalize() -----------------------------------------
 
 
-def test_spin_unresolved_feed_key_refuses_the_launch_with_no_journal_entries(home, capsys):
+def test_spin_unresolved_feed_key_refuses_the_launch_with_no_journal_entries(
+    home, capsys
+):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-good", "not-a-valid-key-at-all")
@@ -606,7 +629,9 @@ def test_spin_detached_launch_failure_journals_a_failed_outcome(home, capsys):
     assert outcome["payload"]["harness_run_id"] is None
 
 
-def test_spin_uncaught_story_feed_keys_error_exits_cleanly_as_mrs_spin_005(home, capsys):
+def test_spin_uncaught_story_feed_keys_error_exits_cleanly_as_mrs_spin_005(
+    home, capsys
+):
     """Review finding (Edge Case Hunter, verified live): ``story_feed_keys``
     documents it can still raise ``HarnessError`` despite the
     ``story_feed_error`` gate having already passed (a TOCTOU window, or a
@@ -735,7 +760,9 @@ def test_spin_foreground_relays_the_exit_code_and_skips_the_journal(home):
     harness = FakeHarness()
     harness.foreground_result = 1
 
-    exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+    exit_code = run_spin(
+        _spin_namespace("acme", foreground=True), fs=fs, harness=harness
+    )
 
     assert exit_code == 1
     assert harness.calls == ["run_foreground"]
@@ -765,7 +792,9 @@ def test_spin_foreground_launch_failure_still_uses_the_envelope(home, capsys):
     harness = FakeHarness()
     harness.fail_run_foreground = HarnessError("bmad-loop binary not found")
 
-    exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+    exit_code = run_spin(
+        _spin_namespace("acme", foreground=True), fs=fs, harness=harness
+    )
 
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
@@ -779,7 +808,9 @@ def test_spin_foreground_still_checked_the_shared_preconditions(capsys):
     fs = FakeFs()  # home NOT provisioned
     harness = FakeHarness()
 
-    exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+    exit_code = run_spin(
+        _spin_namespace("acme", foreground=True), fs=fs, harness=harness
+    )
 
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
@@ -880,23 +911,31 @@ def test_attach_launch_failure(home, capsys):
 
 
 @pytest.mark.parametrize("passthrough", [0, 1, EXIT_SIGINT])
-def test_spin_foreground_passes_in_domain_exit_codes_through_untouched(home, passthrough):
+def test_spin_foreground_passes_in_domain_exit_codes_through_untouched(
+    home, passthrough
+):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.foreground_result = passthrough
 
-    exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+    exit_code = run_spin(
+        _spin_namespace("acme", foreground=True), fs=fs, harness=harness
+    )
 
     assert exit_code == passthrough
 
 
 @pytest.mark.parametrize("child_code", [2, 3, 4, 5, 7, 128, 137, 143, 255])
-def test_spin_foreground_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_code):
+def test_spin_foreground_projects_out_of_domain_exit_codes_to_the_error_rung(
+    home, child_code
+):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.foreground_result = child_code
 
-    exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+    exit_code = run_spin(
+        _spin_namespace("acme", foreground=True), fs=fs, harness=harness
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
 
@@ -922,7 +961,10 @@ def test_attach_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_
         (3, exit_code_for(Verdict.ERROR)),  # was the GATE_FAILED rung
         (4, exit_code_for(Verdict.ERROR)),
         (5, exit_code_for(Verdict.ERROR)),
-        (137, exit_code_for(Verdict.ERROR)),  # SIGKILL, via _normalize_returncode's 128+N
+        (
+            137,
+            exit_code_for(Verdict.ERROR),
+        ),  # SIGKILL, via _normalize_returncode's 128+N
         (143, exit_code_for(Verdict.ERROR)),  # SIGTERM, likewise
     ],
 )
@@ -946,9 +988,16 @@ def test_foreground_relay_survives_mains_handler_clamp(
 
 @pytest.mark.parametrize(
     ("child_code", "expected"),
-    [(0, EXIT_OK), (1, 1), (5, exit_code_for(Verdict.ERROR)), (137, exit_code_for(Verdict.ERROR))],
+    [
+        (0, EXIT_OK),
+        (1, 1),
+        (5, exit_code_for(Verdict.ERROR)),
+        (137, exit_code_for(Verdict.ERROR)),
+    ],
 )
-def test_attach_relay_survives_mains_handler_clamp(home, monkeypatch, child_code, expected):
+def test_attach_relay_survives_mains_handler_clamp(
+    home, monkeypatch, child_code, expected
+):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.attach_result = child_code
@@ -1009,7 +1058,10 @@ def test_spin_foreground_needs_no_tier3_backlink(home):
     harness = FakeHarness()
     harness.foreground_result = 0
 
-    assert run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness) == EXIT_OK
+    assert (
+        run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+        == EXIT_OK
+    )
     assert harness.calls == ["run_foreground"]
     assert fs.read_symlink_target_calls == []
 
@@ -1272,7 +1324,9 @@ def test_preflight_advisory_only_covers_the_selected_stories(home, capsys):
     )
 
     exit_code = run_spin(
-        _spin_namespace("acme", story="1-1-first-story", fmt="json"), fs=fs, harness=harness
+        _spin_namespace("acme", story="1-1-first-story", fmt="json"),
+        fs=fs,
+        harness=harness,
     )
 
     envelope = json.loads(capsys.readouterr().out)
@@ -1444,7 +1498,9 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
     harness.feed_keys = ("1-1-first-story",)
     process = FakeProcess()
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     [call] = process.spawn_calls
@@ -1490,7 +1546,9 @@ def test_spin_introduces_no_new_argv_surface_for_durability(home):
     harness.feed_keys = ("1-1-first-story",)
     process = FakeProcess()
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     [call] = process.spawn_calls
@@ -1525,7 +1583,9 @@ def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding
     harness.feed_keys = ("1-1-first-story",)
 
     policy_path = tmp_path / "marshal-policy.toml"
-    policy_path.write_text('idle_threshold_minutes = "not-a-number"\n', encoding="utf-8")
+    policy_path.write_text(
+        'idle_threshold_minutes = "not-a-number"\n', encoding="utf-8"
+    )
     monkeypatch.setattr(
         spin_module, "conventional_project_policy_path", lambda slug: policy_path
     )
@@ -1540,7 +1600,9 @@ def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding
     # re-tiered one -- the diagnostic is preserved, only its verdict tier is
     # not inherited.
     assert "MRS-POLICY-003" in findings_by_code["MRS-SPIN-008"]["message"]
-    assert "MRS-POLICY-003" not in findings_by_code, "verbatim splice inverts the verdict"
+    assert "MRS-POLICY-003" not in findings_by_code, (
+        "verbatim splice inverts the verdict"
+    )
     # The launch itself succeeded, so the command succeeds: a malformed
     # supplementary value must never re-classify a live, already-launched,
     # supervised run as a failure.
@@ -1590,7 +1652,9 @@ def test_spin_never_aborts_a_live_launch_over_an_unreadable_project_policy(
     assert harness.spin_calls
 
 
-def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch, capsys):
+def test_the_supervisor_accepts_the_argv_spin_actually_builds(
+    home, monkeypatch, capsys
+):
     """Review finding: the two halves of this story's deliberately-
     unimportable boundary were pinned only by matching LITERALS -- this
     module restates the argv it expects, and ``test_supervisor.py``
@@ -1622,7 +1686,9 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     harness.feed_keys = ("1-1-first-story",)
     process = FakeProcess()
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
     assert exit_code == EXIT_OK
     [call] = process.spawn_calls
     argv = call["argv"]
@@ -1631,7 +1697,9 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     # argv launches must find its own run-launch entry in.
     journal_path = fs.appended_lines[0][0]
 
-    recovered: list[tuple[Path, str, str, int, Path, float, float, float, float, float]] = []
+    recovered: list[
+        tuple[Path, str, str, int, Path, float, float, float, float, float]
+    ] = []
 
     def _fake_run_supervisor(
         home,
@@ -1739,12 +1807,16 @@ def test_spin_reports_the_supervisor_pid_in_json_and_text(home, capsys):
     harness2.feed_keys = ("1-1-first-story",)
     process2 = FakeProcess()
     process2.spawn_result = 555555
-    run_spin(_spin_namespace("acme", fmt="json"), fs=fs2, harness=harness2, process=process2)
+    run_spin(
+        _spin_namespace("acme", fmt="json"), fs=fs2, harness=harness2, process=process2
+    )
     envelope = json.loads(capsys.readouterr().out)
     assert envelope["data"]["supervisor_pid"] == 555555
 
 
-def test_spin_supervisor_spawn_failure_registers_mrs_spin_007_but_still_exits_ok(home, capsys):
+def test_spin_supervisor_spawn_failure_registers_mrs_spin_007_but_still_exits_ok(
+    home, capsys
+):
     """The harness launch already succeeded (a live process exists) --
     losing supervision degrades the run to unsupervised, never invalidates
     the launch: WARN, not error, matching MRS-SPIN-006's own precedent."""
@@ -1754,7 +1826,9 @@ def test_spin_supervisor_spawn_failure_registers_mrs_spin_007_but_still_exits_ok
     process = FakeProcess()
     process.fail_spawn = ProcessError("cannot launch: python not found")
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
@@ -1774,13 +1848,17 @@ def test_spin_supervisor_spawn_failure_omits_supervisor_pid_from_data(home, caps
     process = FakeProcess()
     process.fail_spawn = ProcessError("cannot launch: python not found")
 
-    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+    run_spin(
+        _spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process
+    )
 
     envelope = json.loads(capsys.readouterr().out)
     assert "supervisor_pid" not in envelope["data"]
 
 
-def test_spin_no_supervisor_spawn_attempted_when_the_harness_launch_itself_fails(home, capsys):
+def test_spin_no_supervisor_spawn_attempted_when_the_harness_launch_itself_fails(
+    home, capsys
+):
     """A harness launch failure returns BEFORE the new spawn step is ever
     reached -- there is no live process to supervise."""
     fs = FakeFs(dirs={home})
@@ -1789,7 +1867,9 @@ def test_spin_no_supervisor_spawn_attempted_when_the_harness_launch_itself_fails
     harness.fail_spin = HarnessError("bmad-loop binary not found")
     process = FakeProcess()
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code != EXIT_OK
     assert process.spawn_calls == []
@@ -1803,7 +1883,12 @@ def test_spin_foreground_never_spawns_a_supervisor(home):
     harness = FakeHarness()
     process = FakeProcess()
 
-    run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness, process=process)
+    run_spin(
+        _spin_namespace("acme", foreground=True),
+        fs=fs,
+        harness=harness,
+        process=process,
+    )
 
     assert process.spawn_calls == []
 
@@ -1853,7 +1938,10 @@ def test_render_text_quotes_a_newline_injected_selector(home, capsys):
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
 
-    assert run_spin(_spin_namespace("acme", story=forged), fs=fs, harness=harness) == EXIT_OK
+    assert (
+        run_spin(_spin_namespace("acme", story=forged), fs=fs, harness=harness)
+        == EXIT_OK
+    )
 
     out = capsys.readouterr().out
     # The run really did launch, so a `findings:` header is a pure forgery.
@@ -1862,7 +1950,9 @@ def test_render_text_quotes_a_newline_injected_selector(home, capsys):
     # injected header (the substring survives, escaped, inside the quoted
     # value -- that is the whole point of quoting it).
     assert not any(line.startswith("findings:") for line in out.splitlines())
-    assert not any("FORGED" in line for line in out.splitlines() if "story=" not in line)
+    assert not any(
+        "FORGED" in line for line in out.splitlines() if "story=" not in line
+    )
     # The value is still REPORTED -- quoted, so the newline is visible as an
     # escape rather than structural, on one line.
     assert repr(forged) in out
@@ -1933,7 +2023,9 @@ def test_spin_non_utf8_story_selector_does_not_crash_after_the_spawn(home, monke
 
     monkeypatch.setattr(builtins, "print", _strict_utf8_print)
 
-    exit_code = run_spin(_spin_namespace("acme", story="\udcff"), fs=fs, harness=harness)
+    exit_code = run_spin(
+        _spin_namespace("acme", story="\udcff"), fs=fs, harness=harness
+    )
 
     assert exit_code == EXIT_OK
     assert harness.spin_calls != []
@@ -1950,7 +2042,9 @@ def test_spin_non_utf8_story_selector_does_not_crash_after_the_spawn(home, monke
     ],
     ids=["recursion", "value"],
 )
-def test_spin_story_feed_error_that_raises_exits_cleanly_as_mrs_spin_005(home, capsys, exc):
+def test_spin_story_feed_error_that_raises_exits_cleanly_as_mrs_spin_005(
+    home, capsys, exc
+):
     """Review finding (Blind Hunter + Edge Case Hunter, each reproduced
     independently against a real feed): ``story_feed_error``'s own port
     docstring promises "never raises", but its adapter's catch tuples are
@@ -1970,7 +2064,9 @@ def test_spin_story_feed_error_that_raises_exits_cleanly_as_mrs_spin_005(home, c
     assert "create_dir_exclusive" not in fs.calls
 
 
-def test_spin_story_feed_error_that_raises_never_escapes_through_main(home, monkeypatch):
+def test_spin_story_feed_error_that_raises_never_escapes_through_main(
+    home, monkeypatch
+):
     """The same defect at the level it was observable: ``main()``'s own
     documented "never raises" contract (it catches only
     ``SystemExit``/``KeyboardInterrupt``)."""
@@ -2065,7 +2161,9 @@ def test_spin_run_directory_creation_failure_is_mrs_spin_003(home, capsys):
     ``fail_create_dir_exclusive`` hook since this module's first pass and NO
     test ever assigned it, leaving this branch entirely unpinned."""
     fs = FakeFs(dirs={home})
-    fs.fail_create_dir_exclusive = FsError("cannot create run directory: Read-only file system")
+    fs.fail_create_dir_exclusive = FsError(
+        "cannot create run directory: Read-only file system"
+    )
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
 
@@ -2097,7 +2195,9 @@ def test_spin_intent_journal_write_failure_never_spawns(home, capsys):
 
 
 @pytest.mark.parametrize("command", ["spin", "attach"], ids=["spin", "attach"])
-def test_loop_home_root_resolution_failure_is_mrs_spin_002(monkeypatch, capsys, command):
+def test_loop_home_root_resolution_failure_is_mrs_spin_002(
+    monkeypatch, capsys, command
+):
     """The ``except (RuntimeError, OSError)`` arm around ``_home_path`` exists
     in BOTH ``run_spin`` and ``run_attach`` and neither was covered (review
     finding, Blind Hunter, grep-verified)."""
@@ -2140,7 +2240,9 @@ def test_spin_still_spawns_the_supervisor_when_the_outcome_append_fails(home, ca
     harness.feed_keys = ("1-1-first-story",)
     process = FakeProcess()
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
@@ -2167,7 +2269,9 @@ def test_spin_reports_both_mrs_spin_006_and_mrs_spin_007_together(home, capsys):
     process = FakeProcess()
     process.fail_spawn = ProcessError("cannot launch: python not found")
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
@@ -2189,7 +2293,9 @@ def test_spin_reports_the_supervisor_log_path_even_when_the_spawn_fails(home, ca
     process = FakeProcess()
     process.fail_spawn = ProcessError("cannot launch: python not found")
 
-    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+    run_spin(
+        _spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process
+    )
 
     envelope = json.loads(capsys.readouterr().out)
     supervisor_log = envelope["data"]["supervisor_log"]
@@ -2210,7 +2316,9 @@ def test_spin_reports_the_supervisor_log_path_on_success_too(home, capsys):
     harness.feed_keys = ("1-1-first-story",)
     process = FakeProcess()
 
-    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+    run_spin(
+        _spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process
+    )
 
     envelope = json.loads(capsys.readouterr().out)
     assert envelope["data"]["supervisor_log"].endswith("supervisor.log")
@@ -2239,7 +2347,9 @@ def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
     process = FakeProcess()
     process.fail_spawn = ProcessError("cannot launch: python not found")
 
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_spin(
+        _spin_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     # The launch genuinely SUCCEEDED -- MRS-SPIN-007 is a WARN.
     assert exit_code == EXIT_OK
@@ -2269,7 +2379,11 @@ def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
 
 
 def _outcome_line(
-    run_id: str, *, kind: str = "run-launch", harness_run_id: str | None, watched_pid: int = 4242
+    run_id: str,
+    *,
+    kind: str = "run-launch",
+    harness_run_id: str | None,
+    watched_pid: int = 4242,
 ) -> str:
     """A minimal, valid ``phase: outcome`` journal line for a PRIOR run --
     the one entry ``_resolve_harness_run_id_for_resume`` looks for. Mirrors
@@ -2297,14 +2411,26 @@ def _seed_prior_run(home: Path, slug: str, run_id: str) -> Path:
     for the journal ``run_resume`` reads back through the injected
     ``fs``."""
     run_dir = (
-        home / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
+        home
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
     )
     run_dir.mkdir(parents=True)
     return run_dir
 
 
 def _seed_resolvable_prior_run(
-    home: Path, slug: str, fs: FakeFs, *, run_id: str, harness_run_id: str, kind: str = "run-launch"
+    home: Path,
+    slug: str,
+    fs: FakeFs,
+    *,
+    run_id: str,
+    harness_run_id: str,
+    kind: str = "run-launch",
 ) -> Path:
     prior_dir = _seed_prior_run(home, slug, run_id)
     fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = (
@@ -2320,7 +2446,11 @@ def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
@@ -2335,7 +2465,9 @@ def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
     harness.resolution_reference_result = "/home/acme-loop/.bmad-loop/runs/acme-hh01/resolve/3-7-escalation-deferral-and-resume/resolution.json"
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
@@ -2349,7 +2481,9 @@ def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
     assert intent["payload"]["story_key"] == "3.7"
     assert intent["payload"]["reason"] == "the frozen spec contradicts itself"
     assert intent["payload"]["spec_file"] == "spec-3-7.md"
-    assert intent["payload"]["resolution_reference"] == harness.resolution_reference_result
+    assert (
+        intent["payload"]["resolution_reference"] == harness.resolution_reference_result
+    )
     assert intent["payload"]["resolver"]
     assert outcome["payload"]["pid"] == harness.resume_result
     assert outcome["payload"]["harness_run_id"] == "acme-hh01"
@@ -2379,13 +2513,19 @@ def test_resume_proceeds_with_a_null_resolution_reference_when_no_marker_exists(
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.resolution_reference_result = None
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     intent = json.loads(fs.appended_lines[0][1])
@@ -2404,13 +2544,19 @@ def test_resume_omits_resolution_reference_from_the_report_when_there_is_none(
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.resolution_reference_result = None
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
@@ -2424,12 +2570,18 @@ def test_resume_picks_the_most_recent_prior_run_when_several_exist(home):
     fs = FakeFs(dirs={home})
     _seed_prior_run(home, slug, "acme-20260801T000000000Z-aaaa")
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260802T000000000Z-bbbb", harness_run_id="acme-hh-newer"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260802T000000000Z-bbbb",
+        harness_run_id="acme-hh-newer",
     )
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     intent = json.loads(fs.appended_lines[0][1])
@@ -2454,7 +2606,9 @@ def test_resume_resolves_harness_run_id_from_a_chained_prior_resume(home):
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     assert harness.resume_calls[0]["run_id"] == "acme-hh02"
@@ -2465,7 +2619,11 @@ def test_resume_resolver_attribution_uses_getpass_getuser(home, monkeypatch):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     process = FakeProcess()
@@ -2491,12 +2649,18 @@ def test_resume_resolver_falls_back_to_none_when_getpass_fails(home, monkeypatch
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     intent = json.loads(fs.appended_lines[0][1])
@@ -2514,7 +2678,11 @@ def test_resume_does_not_populate_ad45_fields_for_a_non_escalation_pause(home):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
@@ -2528,7 +2696,9 @@ def test_resume_does_not_populate_ad45_fields_for_a_non_escalation_pause(home):
     harness.resolution_reference_result = "should-never-be-read"
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     intent = json.loads(fs.appended_lines[0][1])
@@ -2548,24 +2718,36 @@ def test_resume_warns_and_proceeds_when_live_status_read_fails(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.run_status_snapshot_result = None
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     assert "MRS-SPIN-012" in capsys.readouterr().out
-    assert process.spawn_calls, "an unconfirmed (not positively-refused) status must not block resume"
+    assert process.spawn_calls, (
+        "an unconfirmed (not positively-refused) status must not block resume"
+    )
 
 
 def test_resume_text_output_labels_itself_factory_resume(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     process = FakeProcess()
@@ -2581,12 +2763,18 @@ def test_resume_json_envelope_command_is_factory_resume(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     process = FakeProcess()
 
-    run_resume(_resume_namespace(slug, fmt="json"), fs=fs, harness=harness, process=process)
+    run_resume(
+        _resume_namespace(slug, fmt="json"), fs=fs, harness=harness, process=process
+    )
 
     envelope = json.loads(capsys.readouterr().out)
     assert envelope["command"] == "factory resume"
@@ -2599,7 +2787,11 @@ def test_resume_refuses_when_escalation_is_unresolved(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
@@ -2612,7 +2804,9 @@ def test_resume_refuses_when_escalation_is_unresolved(home, capsys):
     )
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     out = capsys.readouterr().out
@@ -2629,7 +2823,11 @@ def test_resume_refusal_never_raises(home):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
@@ -2652,7 +2850,9 @@ def test_resume_refuses_when_no_prior_run_exists(home, capsys):
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     out = capsys.readouterr().out
@@ -2672,7 +2872,11 @@ def test_resume_refuses_an_already_finished_run(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
@@ -2686,7 +2890,9 @@ def test_resume_refuses_an_already_finished_run(home, capsys):
     )
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     out = capsys.readouterr().out
@@ -2706,7 +2912,11 @@ def test_resume_proceeds_for_a_run_that_is_not_finished(home):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.run_status_snapshot_result = RunStatusSnapshot(
@@ -2720,7 +2930,9 @@ def test_resume_proceeds_for_a_run_that_is_not_finished(home):
     )
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     assert harness.resume_calls
@@ -2736,7 +2948,9 @@ def test_resume_refuses_when_harness_run_id_cannot_be_resolved(home, capsys):
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     out = capsys.readouterr().out
@@ -2752,7 +2966,9 @@ def test_resume_refuses_when_the_prior_journal_read_fails(home, capsys):
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     assert "MRS-SPIN-011" in capsys.readouterr().out
@@ -2780,7 +2996,9 @@ def test_resume_rejects_an_unprovisioned_loop_home(capsys):
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace("acme"), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     assert "MRS-SPIN-002" in capsys.readouterr().out
@@ -2805,13 +3023,19 @@ def test_resume_launch_failure_journals_a_failed_outcome(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     harness.fail_resume = HarnessError("cannot launch: bmad-loop not found")
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == exit_code_for(Verdict.ERROR)
     assert "MRS-SPIN-003" in capsys.readouterr().out
@@ -2827,14 +3051,20 @@ def test_resume_outcome_write_failure_registers_a_warn_but_still_spawns(home, ca
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     # Call #1 is the intent append; call #2 is the outcome append.
     fs.fail_append_line_on_call = 2
     harness = FakeHarness()
     process = FakeProcess()
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     assert "MRS-SPIN-006" in capsys.readouterr().out
@@ -2845,13 +3075,19 @@ def test_resume_supervisor_spawn_failure_registers_a_warn(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
     _seed_resolvable_prior_run(
-        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh01",
     )
     harness = FakeHarness()
     process = FakeProcess()
     process.fail_spawn = ProcessError("cannot launch: python not found")
 
-    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+    exit_code = run_resume(
+        _resume_namespace(slug), fs=fs, harness=harness, process=process
+    )
 
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
@@ -3004,7 +3240,9 @@ def test_spin_declared_difficulty_absent_from_map_resolves_no_override(
     """A declared difficulty NOT present in `model_tier_map` is treated
     identically to undeclared -- never an error (`model_tier_map` is this
     project's own declared vocabulary, per the spec's own I/O matrix)."""
-    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: nonexistent-tier\n")
+    _write_story_spec(
+        home, "1-1", difficulty_frontmatter="difficulty: nonexistent-tier\n"
+    )
     monkeypatch.setattr(
         spin_module,
         "conventional_project_policy_path",
@@ -3083,7 +3321,9 @@ def test_spin_valid_sibling_spec_file_is_not_masked_by_an_earlier_malformed_one(
     assert outcome["payload"]["resolved_models"] == {"dev": "opus", "review": "opus"}
 
 
-def test_spin_homogeneous_batch_declares_no_batching_report(home, tmp_path, monkeypatch):
+def test_spin_homogeneous_batch_declares_no_batching_report(
+    home, tmp_path, monkeypatch
+):
     """Multiple in-scope stories all declaring the SAME difficulty: one
     render, no batching report (the I/O matrix's own explicit row)."""
     _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
@@ -3213,7 +3453,9 @@ def test_spin_unknown_adapter_refuses_before_any_spawn_or_journal_write(home, ca
     assert "MRS-SPIN-014" in findings_by_code
     assert findings_by_code["MRS-SPIN-014"]["severity"] == "error"
     assert not harness.spin_calls, "an unresolvable adapter must never launch bmad-loop"
-    assert not fs.appended_lines, "an unresolvable adapter must produce no journal entries"
+    assert not fs.appended_lines, (
+        "an unresolvable adapter must produce no journal entries"
+    )
 
 
 def test_spin_empty_preview_skips_model_tiering_entirely(home):

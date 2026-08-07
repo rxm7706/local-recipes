@@ -59,7 +59,9 @@ def test_round_trip_reproduces_the_original_bytes_exactly(tmp_path, identity):
     assert decrypted.read_bytes() == plaintext.read_bytes()
 
 
-def test_encrypted_output_is_real_ciphertext_and_hides_the_plaintext(tmp_path, identity):
+def test_encrypted_output_is_real_ciphertext_and_hides_the_plaintext(
+    tmp_path, identity
+):
     _key_path, pubkey = identity
     plaintext = tmp_path / "plaintext.txt"
     plaintext.write_bytes(b"a synthetic secret value")
@@ -72,7 +74,9 @@ def test_encrypted_output_is_real_ciphertext_and_hides_the_plaintext(tmp_path, i
     assert b"a synthetic secret value" not in data
 
 
-def test_decrypt_with_wrong_identity_raises_calledprocesserror(tmp_path, identity, other_identity):
+def test_decrypt_with_wrong_identity_raises_calledprocesserror(
+    tmp_path, identity, other_identity
+):
     _key_path, pubkey = identity
     other_key_path, _ = other_identity
     plaintext = tmp_path / "plaintext.txt"
@@ -92,13 +96,29 @@ def test_keysduty_encrypt_then_decrypt_round_trips_via_the_cli(tmp_path, identit
     decrypted = tmp_path / "back.txt"
 
     rc = main(
-        ["keys", "encrypt", str(plaintext), "--recipient", pubkey, "--output", str(encrypted)]
+        [
+            "keys",
+            "encrypt",
+            str(plaintext),
+            "--recipient",
+            pubkey,
+            "--output",
+            str(encrypted),
+        ]
     )
     assert rc == EXIT_OK
     assert encrypted.read_bytes().startswith(AGE_MAGIC)
 
     rc = main(
-        ["keys", "decrypt", str(encrypted), "--identity", str(key_path), "--output", str(decrypted)]
+        [
+            "keys",
+            "decrypt",
+            str(encrypted),
+            "--identity",
+            str(key_path),
+            "--output",
+            str(decrypted),
+        ]
     )
     assert rc == EXIT_OK
     assert decrypted.read_bytes() == plaintext.read_bytes()
@@ -116,9 +136,13 @@ def test_keysduty_decrypt_with_wrong_identity_projects_to_exit_failed(
 
     rc = main(
         [
-            "keys", "decrypt", str(encrypted),
-            "--identity", str(other_key_path),
-            "--output", str(tmp_path / "back.txt"),
+            "keys",
+            "decrypt",
+            str(encrypted),
+            "--identity",
+            str(other_key_path),
+            "--output",
+            str(tmp_path / "back.txt"),
         ]
     )
 
@@ -149,7 +173,9 @@ def test_dash_sentinel_via_the_cli_projects_to_exit_failed(tmp_path, identity):
     plaintext = tmp_path / "plaintext.txt"
     plaintext.write_bytes(b"synthetic payload")
 
-    rc = main(["keys", "encrypt", str(plaintext), "--recipient", pubkey, "--output", "-"])
+    rc = main(
+        ["keys", "encrypt", str(plaintext), "--recipient", pubkey, "--output", "-"]
+    )
 
     assert rc == EXIT_FAILED
 
@@ -175,4 +201,6 @@ def test_cli_module_import_does_not_trigger_the_keys_bridge():
         "import sys; import pyforge.steward.cli; "
         "assert 'pyforge.steward.keys' not in sys.modules"
     )
-    subprocess.run([_sys.executable, "-c", code], check=True, capture_output=True, text=True)
+    subprocess.run(
+        [_sys.executable, "-c", code], check=True, capture_output=True, text=True
+    )

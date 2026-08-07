@@ -153,10 +153,13 @@ def epss_stale_finding(*, unavailable: bool) -> Finding:
     reason = "unavailable" if unavailable else "stale"
     return Finding(
         id=f"indeterminate:epss-data-{reason}:epss-feed",
-        axis=AXIS_VULNERABILITY, subject="epss-feed", severity=None,
+        axis=AXIS_VULNERABILITY,
+        subject="epss-feed",
+        severity=None,
         message=f"the FIRST EPSS feed is {reason} while --min-epss is active — "
-                 "the vulnerability axis cannot be trusted for this scan",
+        "the vulnerability axis cannot be trusted for this scan",
     )
+
 
 # vuln.py — vuln_rung gains one more escalate-only branch, same shape as fail_on_kev
 if min_epss is not None and finding.epss is not None and finding.epss.score >= min_epss:

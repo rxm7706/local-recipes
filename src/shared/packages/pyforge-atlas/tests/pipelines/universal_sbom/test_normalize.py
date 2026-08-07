@@ -25,7 +25,10 @@ def test_cfe_namespace_and_channel_qualifier_are_never_stripped():
                 "purl": "pkg:conda/numpy@1.26.0?channel=conda-forge",
                 "properties": [
                     {"name": "cfe:gap_status", "value": "CURRENT"},
-                    {"name": "cfe:conda_purl", "value": "pkg:conda/numpy@1.26.0?channel=conda-forge"},
+                    {
+                        "name": "cfe:conda_purl",
+                        "value": "pkg:conda/numpy@1.26.0?channel=conda-forge",
+                    },
                 ],
             }
         ],
@@ -43,13 +46,31 @@ def test_cfe_namespace_and_channel_qualifier_are_never_stripped():
 
 def test_fresh_conda_dep_gains_channel_qualifier():
     """A freshly-parsed conda dep (no incoming purl) gets ?channel=conda-forge added."""
-    intake = {"deps": [{"name": "scipy", "version": "1.13.0", "ecosystem": "conda", "manifest": "environment.yml"}]}
+    intake = {
+        "deps": [
+            {
+                "name": "scipy",
+                "version": "1.13.0",
+                "ecosystem": "conda",
+                "manifest": "environment.yml",
+            }
+        ]
+    }
     bom = normalize_intake_to_cyclonedx(intake, {"resolution": "unresolved"}, {})
     assert bom["components"][0]["purl"] == "pkg:conda/scipy@1.13.0?channel=conda-forge"
 
 
 def test_pypi_dep_purl_has_no_channel_qualifier():
-    intake = {"deps": [{"name": "rich", "version": "13.7.0", "ecosystem": "pypi", "manifest": "requirements.txt"}]}
+    intake = {
+        "deps": [
+            {
+                "name": "rich",
+                "version": "13.7.0",
+                "ecosystem": "pypi",
+                "manifest": "requirements.txt",
+            }
+        ]
+    }
     bom = normalize_intake_to_cyclonedx(intake, {"resolution": "unresolved"}, {})
     assert bom["components"][0]["purl"] == "pkg:pypi/rich@13.7.0"
 
@@ -57,12 +78,31 @@ def test_pypi_dep_purl_has_no_channel_qualifier():
 def test_resolved_transitive_deps_are_merged_with_depth_and_fanout():
     """AC-1: a bare requirements.txt resolves to a full transitive set; depth +
     fan-out are recorded as cfe:* metadata."""
-    intake = {"deps": [{"name": "flask", "version": None, "ecosystem": "pypi", "manifest": "requirements.txt"}]}
+    intake = {
+        "deps": [
+            {
+                "name": "flask",
+                "version": None,
+                "ecosystem": "pypi",
+                "manifest": "requirements.txt",
+            }
+        ]
+    }
     resolution = {
         "resolution": "resolved",
         "deps": [
-            {"name": "jinja2", "version": "3.1.4", "ecosystem": "pypi", "manifest": "resolved"},
-            {"name": "werkzeug", "version": "3.0.3", "ecosystem": "pypi", "manifest": "resolved"},
+            {
+                "name": "jinja2",
+                "version": "3.1.4",
+                "ecosystem": "pypi",
+                "manifest": "resolved",
+            },
+            {
+                "name": "werkzeug",
+                "version": "3.0.3",
+                "ecosystem": "pypi",
+                "manifest": "resolved",
+            },
         ],
         "depth": 2,
         "fanout": 2,
@@ -79,10 +119,21 @@ def test_resolved_transitive_deps_are_merged_with_depth_and_fanout():
 def test_nameless_dep_row_never_crashes_normalize():
     """AD-13 / Edge-MEDIUM: a malformed (injected) resolution row with no name is
     skipped, never a KeyError. The named base dep still normalizes."""
-    intake = {"deps": [{"name": "numpy", "version": "1.26.0", "ecosystem": "pypi", "manifest": "requirements.txt"}]}
+    intake = {
+        "deps": [
+            {
+                "name": "numpy",
+                "version": "1.26.0",
+                "ecosystem": "pypi",
+                "manifest": "requirements.txt",
+            }
+        ]
+    }
     resolution = {
         "resolution": "resolved",
-        "deps": [{"version": "1.0", "ecosystem": "pypi", "manifest": "resolved"}],  # NO name
+        "deps": [
+            {"version": "1.0", "ecosystem": "pypi", "manifest": "resolved"}
+        ],  # NO name
         "depth": 1,
         "fanout": 1,
     }
@@ -92,8 +143,21 @@ def test_nameless_dep_row_never_crashes_normalize():
 
 def test_offline_unresolved_marker_recorded_on_the_bom():
     """AC-1 / AD-13: offline -> the BOM is marked unresolved (never a crash)."""
-    intake = {"deps": [{"name": "numpy", "version": None, "ecosystem": "pypi", "manifest": "requirements.txt"}]}
-    resolution = {"resolution": "unresolved", "reason": "offline: no transitive resolver injected", "deps": []}
+    intake = {
+        "deps": [
+            {
+                "name": "numpy",
+                "version": None,
+                "ecosystem": "pypi",
+                "manifest": "requirements.txt",
+            }
+        ]
+    }
+    resolution = {
+        "resolution": "unresolved",
+        "reason": "offline: no transitive resolver injected",
+        "deps": [],
+    }
     bom = normalize_intake_to_cyclonedx(intake, resolution, {})
     meta = {p["name"]: p["value"] for p in bom["metadata"]["properties"]}
     assert meta["cfe:resolution"] == "unresolved"

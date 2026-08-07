@@ -9,6 +9,7 @@ across all releases. This script is the cross-platform conda-side workaround tha
 keeps the wheel's bundled dist-info version in sync with the conda recipe.
 Becomes a no-op the day upstream resumes bumping the version field properly.
 """
+
 from __future__ import annotations
 
 import os
@@ -37,7 +38,9 @@ def main() -> int:
     )
 
     if n == 0:
-        print("ERROR: no `version = \"...\"` line found in pyproject.toml", file=sys.stderr)
+        print(
+            'ERROR: no `version = "..."` line found in pyproject.toml', file=sys.stderr
+        )
         return 2
 
     target.write_text(new_content, encoding="utf-8")

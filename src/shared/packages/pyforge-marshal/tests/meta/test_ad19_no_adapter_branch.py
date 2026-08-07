@@ -129,12 +129,16 @@ def test_no_adapter_name_branch_outside_adapters_package(module_path: Path):
 
 
 def test_detector_fires_on_synthetic_adapter_name_branch():
-    synthetic_violation = 'adapter_name = "claude"\nif adapter_name == "claude":\n    pass\n'
+    synthetic_violation = (
+        'adapter_name = "claude"\nif adapter_name == "claude":\n    pass\n'
+    )
     assert _adapter_branch_violations(ast.parse(synthetic_violation)) == [2]
 
 
 def test_detector_fires_on_synthetic_branch_with_reversed_operand_order():
-    synthetic_violation = 'adapter_name = "claude"\nif "claude" == adapter_name:\n    pass\n'
+    synthetic_violation = (
+        'adapter_name = "claude"\nif "claude" == adapter_name:\n    pass\n'
+    )
     assert _adapter_branch_violations(ast.parse(synthetic_violation)) == [2]
 
 

@@ -190,7 +190,9 @@ _MRS_STATUS_009 = "MRS-STATUS-009"
 # The tracked ledger's own conventional, fixed path (Story 5.4) -- NEVER
 # the gitignored Tier-3 feed AD-5 forbids this command's other views from
 # ever reading (see this module's own docstring's closing paragraph).
-_LEDGER_RELPATH = "_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER_RELPATH = (
+    "_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
+)
 
 # The base branch git's own durable-merge evidence reads against -- the
 # SAME hardcoded `"main"` every other `merged_story_keys` caller in this
@@ -735,9 +737,7 @@ def run_status(
         return _reconcile_ledger(args, vcs=vcs, harness=harness)
 
     if run_id is not None:
-        return _run_detail(
-            args, run_id=run_id, vcs=vcs, fs=fs, harness=harness
-        )
+        return _run_detail(args, run_id=run_id, vcs=vcs, fs=fs, harness=harness)
 
     findings: list[Finding] = []
     data: dict[str, object] = {"project": args.project, "homes": []}
@@ -949,8 +949,9 @@ def _run_detail(
     # if the journal's own entry never recorded one.
     snapshot = None
     if home is not None:
-        harness_run_id = journal_facts.harness_run_id or _resolve_harness_run_id_for_resume(
-            fs, run_dir, run_id
+        harness_run_id = (
+            journal_facts.harness_run_id
+            or _resolve_harness_run_id_for_resume(fs, run_dir, run_id)
         )
         if harness_run_id:
             snapshot = harness.run_status_snapshot(home, harness_run_id)
@@ -962,9 +963,7 @@ def _run_detail(
         state_readable=snapshot is not None,
         finished=snapshot.finished if snapshot is not None else False,
         paused_stage=snapshot.paused_stage if snapshot is not None else None,
-        paused_story_key=(
-            snapshot.paused_story_key if snapshot is not None else None
-        ),
+        paused_story_key=(snapshot.paused_story_key if snapshot is not None else None),
         paused_reason=snapshot.paused_reason if snapshot is not None else None,
         escalated_spec_file=(
             snapshot.escalated_spec_file if snapshot is not None else None
@@ -1090,8 +1089,7 @@ def _reconcile_ledger(
         return _emit(args, data, findings, _render_text_reconcile, data_version=2)
 
     merged_keys = frozenset(
-        str(key)
-        for key in promotion.merged_story_keys(main_subjects, template, slug)
+        str(key) for key in promotion.merged_story_keys(main_subjects, template, slug)
     )
 
     discrepancies = status_core.reconcile_ledger_vs_git(
@@ -1250,7 +1248,9 @@ def _emit(
     args: argparse.Namespace,
     data: dict[str, object],
     findings: list[Finding],
-    render: Callable[[Mapping[str, object], tuple[Finding, ...]], str] = _render_text_status,
+    render: Callable[
+        [Mapping[str, object], tuple[Finding, ...]], str
+    ] = _render_text_status,
     *,
     data_version: int = 1,
 ) -> int:

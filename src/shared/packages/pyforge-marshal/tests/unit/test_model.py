@@ -226,9 +226,7 @@ def test_envelope_rejects_bare_str_assumptions():
     passing the str member check -- a bare str must be rejected at
     construction, never silently exploded into characters."""
     with pytest.raises(ValueError):
-        build_envelope(
-            command="x", verdict=Verdict.CLEAN, assumptions="assumed x"
-        )
+        build_envelope(command="x", verdict=Verdict.CLEAN, assumptions="assumed x")
 
 
 def test_envelope_data_is_defensively_copied(registered_code):
@@ -314,9 +312,7 @@ def test_envelope_rejects_non_deepcopyable_data():
     value (generator, open file, lock) surfaces as this module's ValueError
     convention, not a raw 'cannot pickle' TypeError from inside copy."""
     with pytest.raises(ValueError):
-        build_envelope(
-            command="x", verdict=Verdict.CLEAN, data={"g": (i for i in ())}
-        )
+        build_envelope(command="x", verdict=Verdict.CLEAN, data={"g": (i for i in ())})
 
 
 @pytest.mark.parametrize("bad_data_version", [0, -1, True])

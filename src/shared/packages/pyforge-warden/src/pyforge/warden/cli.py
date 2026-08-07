@@ -358,8 +358,7 @@ from .waiver import (
 # stderr notice and the paired Finding below — kept as ONE literal so a
 # future wording edit can't silently drift the two apart.
 _EMPTY_EXTRACTION_MESSAGE = (
-    "manifest(s) parsed but zero dependencies/components extracted under "
-    "{path!r}"
+    "manifest(s) parsed but zero dependencies/components extracted under {path!r}"
 )
 
 # Story 3.2: the one waiver-file name this tool ever reads, relative to the
@@ -803,27 +802,19 @@ def _resolve_scan_target(args: argparse.Namespace) -> Path | int:
     try:
         target_stat = target.stat()
     except (FileNotFoundError, NotADirectoryError):
-        _stderr(
-            f"{TOOL_NAME}: scan target {args.path!r} is not an existing "
-            "directory"
-        )
+        _stderr(f"{TOOL_NAME}: scan target {args.path!r} is not an existing directory")
         return exit_code_for(Status.ERROR)
     except ValueError as exc:
         # A path with an embedded NUL (or otherwise unrepresentable to the OS)
         # raises ValueError, not OSError — a user-input error, not an internal
         # defect. Diagnose it here, not via main's last-resort traceback net.
-        _stderr(
-            f"{TOOL_NAME}: scan target {args.path!r} is not a valid path: {exc}"
-        )
+        _stderr(f"{TOOL_NAME}: scan target {args.path!r} is not a valid path: {exc}")
         return exit_code_for(Status.ERROR)
     except OSError as exc:
         _stderr(f"{TOOL_NAME}: cannot stat scan target {args.path!r}: {exc}")
         return exit_code_for(Status.ERROR)
     if not stat_module.S_ISDIR(target_stat.st_mode):
-        _stderr(
-            f"{TOOL_NAME}: scan target {args.path!r} exists but is not a "
-            "directory"
-        )
+        _stderr(f"{TOOL_NAME}: scan target {args.path!r} exists but is not a directory")
         return exit_code_for(Status.ERROR)
     return target
 
@@ -862,9 +853,7 @@ def _run_doctor(args: argparse.Namespace) -> int:
             if dest not in honored and getattr(args, dest, default) != default
         )
         if ignored:
-            flags = ", ".join(
-                "--" + dest.replace("_", "-") for dest in ignored
-            )
+            flags = ", ".join("--" + dest.replace("_", "-") for dest in ignored)
             _stderr(
                 f"{TOOL_NAME}: --doctor runs an environment self-check "
                 f"only -- ignoring scan/policy flags: {flags}"
@@ -894,9 +883,7 @@ def _run_doctor(args: argparse.Namespace) -> int:
         }
         rendered = json.dumps(document, sort_keys=True, indent=2) + "\n"
     else:
-        lines = [
-            f"{TOOL_NAME}: doctor status={status_word} checks={len(checks)}"
-        ]
+        lines = [f"{TOOL_NAME}: doctor status={status_word} checks={len(checks)}"]
         for check in checks:
             outcome = "ok" if check.ok else "problem"
             # _single_line (review finding 2026-07-24): a future check
@@ -904,8 +891,7 @@ def _run_doctor(args: argparse.Namespace) -> int:
             # forge extra [doctor] lines under the checks=N header -- the
             # same invariant render_text enforces on every free-text field.
             lines.append(
-                f"  [doctor] {check.name} {outcome} -- "
-                f"{_single_line(check.message)}"
+                f"  [doctor] {check.name} {outcome} -- {_single_line(check.message)}"
             )
         rendered = "\n".join(lines) + "\n"
     try:
@@ -992,8 +978,7 @@ def _instantiate_and_run_engine(
             "owner": "engines",
             "subject": factory_name,
             "message": (
-                f"engine factory {factory_name!r} crashed at "
-                f"instantiation: {exc!r}"
+                f"engine factory {factory_name!r} crashed at instantiation: {exc!r}"
             ),
             "axis": factory_axis,
         }
@@ -1267,9 +1252,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     # though the location data is present.
     manifest_locations: dict[str, tuple[str, ...]] = {}
     for component in inventory.components:
-        locations = tuple(
-            f"{p.manifest} [{p.section}]" for p in component.provenance
-        )
+        locations = tuple(f"{p.manifest} [{p.section}]" for p in component.provenance)
         # Keys canonicalized (review finding 2026-07-24) so a manifest's
         # non-normalized spelling (Foo_Bar) still matches osv-scanner's
         # normalized echo -- _manifest_clause canonicalizes its lookup with
@@ -1575,9 +1558,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             )
             actuation_payload = actuation.to_json_dict()
             failed = [
-                outcome
-                for outcome in actuation.outcomes
-                if outcome.status == "failed"
+                outcome for outcome in actuation.outcomes if outcome.status == "failed"
             ]
             if failed:
                 _stderr(

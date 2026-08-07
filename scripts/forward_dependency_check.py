@@ -51,6 +51,7 @@ EXIT
     0  every station with a parseable epics doc has no unmarked forward dependency
     1  at least one forward-dependent story is still actionable (backlog/ready-for-dev)
 """
+
 from __future__ import annotations
 
 # Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
@@ -72,7 +73,9 @@ PROJECTS = ROOT / "_bmad-output" / "projects"
 # and was confirmed clean by direct read, so the coverage gap here is
 # low-risk; a future station adding this heading shape should extend this
 # pattern deliberately, not by loosening it blindly.
-STORY_HEADING_RE = re.compile(r"^### Story (\d+)\.(\d+[a-z]?): ?(.*?)(?:\s*\*\(.*?\)\*)?\s*$", re.M)
+STORY_HEADING_RE = re.compile(
+    r"^### Story (\d+)\.(\d+[a-z]?): ?(.*?)(?:\s*\*\(.*?\)\*)?\s*$", re.M
+)
 # `**Deps:**` (marshal, mason's satellite) or `**Depends on:**` (atlas's field
 # name, though atlas's headings never reach this point — see above), searched
 # within the story's own block, not anchored to a line start: the field
@@ -88,8 +91,10 @@ LEDGER_STORY_RE = re.compile(r"^  (\d+)-(\d+)([a-z]?)-\S+: (\S+)$", re.M)
 try:
     from bmad_loop.sprintstatus import ACTIONABLE_STATUSES
 except ImportError:
-    print("UNKNOWN: bmad_loop is not importable in this environment "
-          "(run under `pixi run -e local-recipes`) — cannot judge actionability.")
+    print(
+        "UNKNOWN: bmad_loop is not importable in this environment "
+        "(run under `pixi run -e local-recipes`) — cannot judge actionability."
+    )
     sys.exit(2)
 
 
@@ -98,7 +103,8 @@ def find_epics_files(project_dir: Path) -> list[Path]:
     if not pa.is_dir():
         return []
     return sorted(
-        p for p in pa.glob("epics*.md")
+        p
+        for p in pa.glob("epics*.md")
         if p.name != "epics-with-stories.md"  # derived summary, no Deps field
     )
 
@@ -115,7 +121,7 @@ def story_deps(epics_file: Path) -> list[tuple[int, str, str, str]]:
     out: list[tuple[int, str, str, str]] = []
     for i, m in enumerate(headings):
         block_end = headings[i + 1].start() if i + 1 < len(headings) else len(text)
-        block = text[m.end():block_end]
+        block = text[m.end() : block_end]
         dm = DEPS_FIELD_RE.search(block)
         deps = dm.group(1).strip() if dm else ""
         out.append((int(m.group(1)), m.group(2), m.group(3).strip(), deps))
@@ -133,10 +139,14 @@ def ledger_statuses(ledger_path: Path) -> dict[str, str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--verbose", action="store_true", help="show every measured station")
+    ap.add_argument(
+        "--verbose", action="store_true", help="show every measured station"
+    )
     args = ap.parse_args()
 
-    findings: list[tuple[str, str, str, str, str]] = []  # slug, key, title, deps, status
+    findings: list[
+        tuple[str, str, str, str, str]
+    ] = []  # slug, key, title, deps, status
     unmeasured: list[str] = []
     measured = 0
 
@@ -145,7 +155,9 @@ def main() -> int:
         epics_files = find_epics_files(project_dir)
         if not epics_files:
             continue
-        ledger = ledger_statuses(project_dir / "planning-artifacts" / "sprint-status-ledger.yaml")
+        ledger = ledger_statuses(
+            project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
+        )
 
         station_stories: list[tuple[int, str, str, str]] = []
         for ef in epics_files:
@@ -170,28 +182,40 @@ def main() -> int:
             key = f"{epic}-{num}"
             status = ledger.get(key)
             if status in ACTIONABLE_STATUSES or status is None:
-                findings.append((slug, key, title, deps, status or "MISSING FROM LEDGER"))
+                findings.append(
+                    (slug, key, title, deps, status or "MISSING FROM LEDGER")
+                )
             elif args.verbose:
-                print(f"  ok  {slug}/{key} (forward dep on epic {forward}, "
-                      f"status={status!r}, already non-actionable)")
+                print(
+                    f"  ok  {slug}/{key} (forward dep on epic {forward}, "
+                    f"status={status!r}, already non-actionable)"
+                )
 
-    print(f"forward-dependency -- {measured} station(s) measured "
-          f"({len(unmeasured)} unmeasurable: format has no structured **Deps:** field)\n")
+    print(
+        f"forward-dependency -- {measured} station(s) measured "
+        f"({len(unmeasured)} unmeasurable: format has no structured **Deps:** field)\n"
+    )
 
     if unmeasured:
         for slug in unmeasured:
-            print(f"  ? [unmeasured] {slug}: epics doc has no structured **Deps:** field "
-                  "— coverage unknown, not asserted clean.")
+            print(
+                f"  ? [unmeasured] {slug}: epics doc has no structured **Deps:** field "
+                "— coverage unknown, not asserted clean."
+            )
         print()
 
     if findings:
         for slug, key, title, deps, status in findings:
-            print(f"  ✗ [forward-dep] {slug}/{key} ({title[:50]!r}): deps={deps!r} "
-                  f"names a later epic, but ledger status is {status!r} (actionable). "
-                  "Set to `blocked` in the loop-home's live Tier-3 feed, then "
-                  "`python3 scripts/promote_sprint_status.py`.")
-        print(f"\n{len(findings)} forward-dependent story(s) are still actionable — "
-              "a plain `bmad-loop run` would dispatch them prematurely.")
+            print(
+                f"  ✗ [forward-dep] {slug}/{key} ({title[:50]!r}): deps={deps!r} "
+                f"names a later epic, but ledger status is {status!r} (actionable). "
+                "Set to `blocked` in the loop-home's live Tier-3 feed, then "
+                "`python3 scripts/promote_sprint_status.py`."
+            )
+        print(
+            f"\n{len(findings)} forward-dependent story(s) are still actionable — "
+            "a plain `bmad-loop run` would dispatch them prematurely."
+        )
         return 1
 
     print("OK: every forward-dependent story found is already non-actionable.")

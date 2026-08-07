@@ -103,7 +103,9 @@ def _bsl_query_or_empty(
 # ---------------------------------------------------------------------------
 
 
-def load_feedstock_health(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+def load_feedstock_health(
+    parquet: str | os.PathLike[str] | None = None,
+) -> pd.DataFrame:
     """`feedstock-health` — build_feedstock_health_model over core_feedstock_health."""
     return _bsl_query_or_empty(
         parquet,

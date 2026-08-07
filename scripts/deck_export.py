@@ -20,6 +20,7 @@ Usage (run inside the local-recipes pixi env, which carries marp + Chrome)::
 With no targets it regenerates all three. ``--pptx`` needs Chrome at
 ``/usr/bin/google-chrome`` (auto-wired here); ``html`` is pure Node.
 """
+
 from __future__ import annotations
 
 import argparse

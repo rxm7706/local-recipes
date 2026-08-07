@@ -178,7 +178,9 @@ def test_db_absent_never_reports_clean(monkeypatch, tmp_path, component_factory)
     assert result.vuln_data is None
 
 
-def test_db_present_but_empty_zip_never_reports_clean(monkeypatch, tmp_path, component_factory):
+def test_db_present_but_empty_zip_never_reports_clean(
+    monkeypatch, tmp_path, component_factory
+):
     """The empty/hollow-DB false-green (decision record H1): a present-but-
     EMPTY all.zip must fail the content pre-flight exactly like an absent
     one -- never a namelist-only check that a 0-entry zip would pass."""
@@ -499,9 +501,7 @@ def test_version_gate_failure_preserves_purity_guard_and_name_level_findings(
     safe = component_factory(
         name=FIXTURE_PACKAGE,
         version=FIXTURE_CLEAN_VERSION,
-        pypi_identity=PypiIdentity(
-            name=FIXTURE_PACKAGE, version=FIXTURE_CLEAN_VERSION
-        ),
+        pypi_identity=PypiIdentity(name=FIXTURE_PACKAGE, version=FIXTURE_CLEAN_VERSION),
     )
     inventory = ResolvedInventory(
         components=(unsafe, safe), resolved_scan_set=(MANIFEST,)
@@ -517,9 +517,7 @@ def test_version_gate_failure_preserves_purity_guard_and_name_level_findings(
     assert result.coverage == ()
 
 
-def test_zero_candidates_never_calls_the_version_check_or_osv(
-    monkeypatch, tmp_path
-):
+def test_zero_candidates_never_calls_the_version_check_or_osv(monkeypatch, tmp_path):
     """Skip regression: no vuln-matchable/name-level candidates at all --
     the version check never runs, matching pre-story behavior (osv-scanner
     was never invoked here either)."""
@@ -615,9 +613,7 @@ def test_purity_guard_excludes_everything_never_calls_the_version_check_or_osv(
         version="1.0",
         pypi_identity=PypiIdentity(name="-rf", version="1.0"),
     )
-    inventory = ResolvedInventory(
-        components=(unsafe,), resolved_scan_set=(MANIFEST,)
-    )
+    inventory = ResolvedInventory(components=(unsafe,), resolved_scan_set=(MANIFEST,))
 
     result = OsvEngine().run(tmp_path, inventory)
 

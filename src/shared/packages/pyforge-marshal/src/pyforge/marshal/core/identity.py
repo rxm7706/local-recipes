@@ -104,7 +104,11 @@ class StoryKey:
     suffix: str = ""
 
     def __post_init__(self) -> None:
-        if not isinstance(self.epic, int) or isinstance(self.epic, bool) or self.epic < 0:
+        if (
+            not isinstance(self.epic, int)
+            or isinstance(self.epic, bool)
+            or self.epic < 0
+        ):
             raise ValueError(f"epic must be a non-negative int, got {self.epic!r}")
         if not isinstance(self.seq, int) or isinstance(self.seq, bool) or self.seq < 0:
             raise ValueError(f"seq must be a non-negative int, got {self.seq!r}")
@@ -247,8 +251,7 @@ def parse_merge_subject(subject: str, template: str) -> StoryKey:
         return normalize(subject[middle_start:middle_end])
     except ValueError as exc:
         message = (
-            f"subject {subject!r} does not conform to template {template!r}: "
-            f"{exc}"
+            f"subject {subject!r} does not conform to template {template!r}: {exc}"
         )
         error = MergeSubjectConformanceError(message)
         error.finding = Finding(
@@ -345,8 +348,7 @@ def resolve_feed(raw_keys: Sequence[str]) -> FeedResolution:
             else:
                 display = repr(raw)
                 message = (
-                    f"unresolved story reference: {display} "
-                    f"({type(raw).__name__})"
+                    f"unresolved story reference: {display} ({type(raw).__name__})"
                 )
             unresolved.append(display)
             findings.append(

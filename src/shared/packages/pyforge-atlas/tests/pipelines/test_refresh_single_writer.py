@@ -39,7 +39,9 @@ def test_stores_are_consumed_read_only_never_a_non_refresh_output():
     consumer (G / G', scan-project offline) references it as an INPUT only."""
     nodes = _all_nodes()
     for store, expected_writer in _STORE_TO_REFRESH_ASSET.items():
-        offenders = [n.name for n in nodes if store in n.outputs and n.name != expected_writer]
+        offenders = [
+            n.name for n in nodes if store in n.outputs and n.name != expected_writer
+        ]
         assert not offenders, (store, offenders)
 
 

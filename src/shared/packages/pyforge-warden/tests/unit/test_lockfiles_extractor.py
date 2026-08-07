@@ -243,9 +243,7 @@ def test_oversized_lockfile_raises_unparsable(tmp_path, monkeypatch):
 
 def test_oversized_line_raises_unparsable(tmp_path, monkeypatch):
     monkeypatch.setattr(lockfiles, "_MAX_LINE_BYTES", 16)
-    path = write_pixi_lock(
-        tmp_path, "version: 6\n# " + ("x" * 32) + "\npackages: []\n"
-    )
+    path = write_pixi_lock(tmp_path, "version: 6\n# " + ("x" * 32) + "\npackages: []\n")
     with pytest.raises(UnparsableManifestError, match="length cap"):
         _pixi_lock_extractor().extract(path, PIXI_LOCK_MANIFEST)
 
@@ -299,13 +297,7 @@ def test_conda_lock_manager_pip_row_is_vuln_matchable():
 
 
 def test_conda_lock_unrecognized_manager_raises_unparsable(tmp_path):
-    body = (
-        "version: 1\n"
-        "package:\n"
-        "- name: mystery\n"
-        "  version: '1.0'\n"
-        "  manager: rpm\n"
-    )
+    body = "version: 1\npackage:\n- name: mystery\n  version: '1.0'\n  manager: rpm\n"
     path = write_conda_lock(tmp_path, body)
     with pytest.raises(UnparsableManifestError):
         _conda_lock_extractor().extract(path, CONDA_LOCK_MANIFEST)
@@ -339,13 +331,10 @@ def test_lockfile_exact_version_folds_over_pyproject_range(tmp_path):
     Design Notes)."""
     pyproject_path = tmp_path / "pyproject.toml"
     pyproject_path.write_text(
-        '[project]\nname = "demo"\nversion = "0.0.1"\n'
-        'dependencies = ["numpy>=1"]\n',
+        '[project]\nname = "demo"\nversion = "0.0.1"\ndependencies = ["numpy>=1"]\n',
         encoding="utf-8",
     )
-    pyproject_manifest = ScannedManifest(
-        path="pyproject.toml", kind="pyproject.toml"
-    )
+    pyproject_manifest = ScannedManifest(path="pyproject.toml", kind="pyproject.toml")
     (range_component,) = PyprojectExtractor(DefaultRouter()).extract(
         pyproject_path, pyproject_manifest
     )

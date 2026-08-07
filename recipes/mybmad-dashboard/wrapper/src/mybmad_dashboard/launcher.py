@@ -77,7 +77,10 @@ def _data_dir() -> Path:
     if override:
         base = Path(override).expanduser()
     elif sys.platform.startswith("win"):
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "mybmad"
+        base = (
+            Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+            / "mybmad"
+        )
     else:
         xdg = os.environ.get("XDG_DATA_HOME")
         base = (Path(xdg) if xdg else Path.home() / ".local" / "share") / "mybmad"
@@ -219,9 +222,12 @@ def _start_pg(data_dir: Path, db_port: int) -> None:
     res = _run(
         [
             pg_ctl,
-            "-D", str(pgdata),
-            "-l", str(log),
-            "-o", f"-p {db_port} -c listen_addresses=127.0.0.1",
+            "-D",
+            str(pgdata),
+            "-l",
+            str(log),
+            "-o",
+            f"-p {db_port} -c listen_addresses=127.0.0.1",
             "-w",  # wait for startup
             "start",
         ],
@@ -251,8 +257,16 @@ def _ensure_database(db_port: int) -> None:
     psql = _which("psql")
     check = subprocess.run(
         [
-            psql, "-h", "127.0.0.1", "-p", str(db_port), "-U", DB_USER,
-            "-d", "postgres", "-tAc",
+            psql,
+            "-h",
+            "127.0.0.1",
+            "-p",
+            str(db_port),
+            "-U",
+            DB_USER,
+            "-d",
+            "postgres",
+            "-tAc",
             f"SELECT 1 FROM pg_database WHERE datname='{DB_NAME}'",
         ],
         capture_output=True,
@@ -296,11 +310,16 @@ def _migrations_dir() -> Path:
 def _psql_base(db_port: int) -> list[str]:
     return [
         _which("psql"),
-        "-h", "127.0.0.1",
-        "-p", str(db_port),
-        "-U", DB_USER,
-        "-d", DB_NAME,
-        "-v", "ON_ERROR_STOP=1",
+        "-h",
+        "127.0.0.1",
+        "-p",
+        str(db_port),
+        "-U",
+        DB_USER,
+        "-d",
+        DB_NAME,
+        "-v",
+        "ON_ERROR_STOP=1",
     ]
 
 
@@ -309,11 +328,16 @@ def _apply_migrations(db_port: int) -> None:
 
     # Ensure the tracking table exists.
     res = subprocess.run(
-        base + ["-c", (
-            f"CREATE TABLE IF NOT EXISTS {_MIGRATIONS_TABLE} "
-            "(name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())"
-        )],
-        capture_output=True, text=True,
+        base
+        + [
+            "-c",
+            (
+                f"CREATE TABLE IF NOT EXISTS {_MIGRATIONS_TABLE} "
+                "(name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())"
+            ),
+        ],
+        capture_output=True,
+        text=True,
     )
     if res.returncode != 0:
         sys.stderr.write(res.stdout + res.stderr)
@@ -322,7 +346,8 @@ def _apply_migrations(db_port: int) -> None:
     # Which migrations are already applied?
     res = subprocess.run(
         base + ["-tAc", f"SELECT name FROM {_MIGRATIONS_TABLE}"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     applied = {line.strip() for line in res.stdout.splitlines() if line.strip()}
 
@@ -372,8 +397,12 @@ def _server_env(data_dir: Path, web_port: int, db_port: int) -> dict:
             "REVALIDATE_SECRET": cfg["revalidate_secret"],
             # Local self-host: enable local-folder import by default (the
             # primary "develop projects on this machine" use case).
-            "ENABLE_LOCAL_FS": "true" if _bool_env("MYBMAD_ENABLE_LOCAL_FS", True) else "false",
-            "ALLOW_REGISTRATION": "true" if _bool_env("MYBMAD_ALLOW_REGISTRATION", True) else "false",
+            "ENABLE_LOCAL_FS": "true"
+            if _bool_env("MYBMAD_ENABLE_LOCAL_FS", True)
+            else "false",
+            "ALLOW_REGISTRATION": "true"
+            if _bool_env("MYBMAD_ALLOW_REGISTRATION", True)
+            else "false",
         }
     )
     # Point Prisma directly at the bundled native query engine. Flattening the
@@ -462,8 +491,16 @@ def cmd_promote_admin(args: argparse.Namespace) -> int:
     email = args.email.replace("'", "''")  # minimal SQL-literal escaping
     res = _run(
         [
-            psql, "-h", "127.0.0.1", "-p", str(db_port), "-U", DB_USER,
-            "-d", DB_NAME, "-tAc",
+            psql,
+            "-h",
+            "127.0.0.1",
+            "-p",
+            str(db_port),
+            "-U",
+            DB_USER,
+            "-d",
+            DB_NAME,
+            "-tAc",
             f"UPDATE users SET role='admin' WHERE email='{email}' RETURNING email",
         ],
         capture_output=True,
@@ -523,8 +560,12 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
 
     p_up = sub.add_parser("up", help="Start the database and web server (default).")
-    p_up.add_argument("--port", type=int, help=f"Web server port (default {DEFAULT_PORT}).")
-    p_up.add_argument("--db-port", type=int, help=f"Local Postgres port (default {DEFAULT_DB_PORT}).")
+    p_up.add_argument(
+        "--port", type=int, help=f"Web server port (default {DEFAULT_PORT})."
+    )
+    p_up.add_argument(
+        "--db-port", type=int, help=f"Local Postgres port (default {DEFAULT_DB_PORT})."
+    )
     p_up.add_argument(
         "--keep-db-running",
         action="store_true",
@@ -539,14 +580,22 @@ def _build_parser() -> argparse.ArgumentParser:
     p_mig.add_argument("--db-port", type=int)
     p_mig.set_defaults(func=cmd_migrate)
 
-    p_adm = sub.add_parser("promote-admin", help="Grant admin role to a registered user.")
+    p_adm = sub.add_parser(
+        "promote-admin", help="Grant admin role to a registered user."
+    )
     p_adm.add_argument("--email", required=True, help="Email of the user to promote.")
     p_adm.add_argument("--db-port", type=int)
     p_adm.set_defaults(func=cmd_promote_admin)
 
     p_info = sub.add_parser("info", help="Print resolved paths and settings.")
-    p_info.add_argument("--print-app-dir", action="store_true", help="Print the bundled app dir and exit.")
-    p_info.add_argument("--print-server-js", action="store_true", help="Print server.js path and exit.")
+    p_info.add_argument(
+        "--print-app-dir",
+        action="store_true",
+        help="Print the bundled app dir and exit.",
+    )
+    p_info.add_argument(
+        "--print-server-js", action="store_true", help="Print server.js path and exit."
+    )
     p_info.set_defaults(func=cmd_info)
 
     return parser

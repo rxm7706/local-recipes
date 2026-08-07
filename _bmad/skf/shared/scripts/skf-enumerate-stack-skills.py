@@ -213,7 +213,9 @@ def _normalize_exports(raw) -> list[str]:
     return out
 
 
-def _resolve_from_metadata(skill_dir: Path) -> tuple[list[str] | None, str | None, list[str], list[str]]:
+def _resolve_from_metadata(
+    skill_dir: Path,
+) -> tuple[list[str] | None, str | None, list[str], list[str]]:
     """Try to resolve exports from metadata.json.
 
     Returns (exports, metadata_hash, composes, warnings).
@@ -252,7 +254,11 @@ def _resolve_from_metadata(skill_dir: Path) -> tuple[list[str] | None, str | Non
         return None, metadata_hash, [], warnings
 
     composes_raw = data.get("composes")
-    composes = [c for c in composes_raw if isinstance(c, str)] if isinstance(composes_raw, list) else []
+    composes = (
+        [c for c in composes_raw if isinstance(c, str)]
+        if isinstance(composes_raw, list)
+        else []
+    )
 
     if "exports" not in data:
         # metadata.json exists and is valid JSON but lacks an exports
@@ -342,7 +348,9 @@ def _resolve_from_skill_md(skill_dir: Path) -> list[str]:
 # --------------------------------------------------------------------------
 
 
-def resolve_skill(skill_dir: Path, skill_name: str) -> tuple[dict, list[str], list[str]]:
+def resolve_skill(
+    skill_dir: Path, skill_name: str
+) -> tuple[dict, list[str], list[str]]:
     """Build the result entry for a single skill directory.
 
     Returns (entry, composes, warnings).
@@ -374,7 +382,9 @@ def resolve_skill(skill_dir: Path, skill_name: str) -> tuple[dict, list[str], li
                 # 4. None found
                 exports = []
                 source = SOURCE_UNKNOWN
-                warnings.append(f"{skill_name}: no exports found via any resolution path")
+                warnings.append(
+                    f"{skill_name}: no exports found via any resolution path"
+                )
 
     entry = {
         "name": skill_name,
@@ -496,12 +506,12 @@ def _resolve_package_dir(child: Path) -> Path | None:
 
     # Fallback — highest version directory.
     try:
-        version_dirs = [
-            d for d in child.iterdir() if d.is_dir() and d.name != "active"
-        ]
+        version_dirs = [d for d in child.iterdir() if d.is_dir() and d.name != "active"]
     except OSError:
         return None
-    for vdir in sorted(version_dirs, key=lambda d: _version_sort_key(d.name), reverse=True):
+    for vdir in sorted(
+        version_dirs, key=lambda d: _version_sort_key(d.name), reverse=True
+    ):
         pkg = _inner_package(vdir)
         if pkg is not None:
             return pkg
@@ -539,14 +549,10 @@ def enumerate_stack_skills(skills_root: Path) -> dict:
             try:
                 target = child.resolve(strict=True)
             except (FileNotFoundError, RuntimeError, OSError) as exc:
-                result["warnings"].append(
-                    f"{name}: symlink target unreadable ({exc})"
-                )
+                result["warnings"].append(f"{name}: symlink target unreadable ({exc})")
                 continue
             if not target.is_dir():
-                result["warnings"].append(
-                    f"{name}: symlink target is not a directory"
-                )
+                result["warnings"].append(f"{name}: symlink target is not a directory")
                 continue
         elif not child.is_dir():
             continue
@@ -582,9 +588,7 @@ def enumerate_stack_skills(skills_root: Path) -> dict:
 
     result["cycles"] = detect_cycles(compose_graph)
     for cycle_node in result["cycles"]:
-        result["warnings"].append(
-            f"{cycle_node}: composes cycle detected"
-        )
+        result["warnings"].append(f"{cycle_node}: composes cycle detected")
     return result
 
 
@@ -606,8 +610,7 @@ def compute_pairs(skills: list[dict]) -> list[dict]:
     """
     names = sorted({e["name"] for e in skills})
     return [
-        {"library_a": a, "library_b": b}
-        for a, b in itertools.combinations(names, 2)
+        {"library_a": a, "library_b": b} for a, b in itertools.combinations(names, 2)
     ]
 
 

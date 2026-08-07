@@ -538,39 +538,45 @@ Actors:
 ```python
 # tests/fixtures/cli_fixtures.py
 
+
 @pytest.fixture
 def herald_cli_runner():
     """Return Click CliRunner for CLI testing."""
     from click.testing import CliRunner
+
     return CliRunner()
+
 
 @pytest.fixture
 def mock_auth_context():
     """Return mock auth context (operator role)."""
     return {
-        'token': 'test-token-xyz',
-        'actor': 'test-operator',
-        'role': 'operator',  # 'operator' or 'viewer'
+        "token": "test-token-xyz",
+        "actor": "test-operator",
+        "role": "operator",  # 'operator' or 'viewer'
     }
+
 
 @pytest.fixture
 def mock_auth_context_viewer():
     """Return mock auth context (viewer role, read-only)."""
     return {
-        'token': 'test-token-viewer',
-        'actor': 'test-viewer',
-        'role': 'viewer',
+        "token": "test-token-viewer",
+        "actor": "test-viewer",
+        "role": "viewer",
     }
+
 
 @pytest.fixture
 def mock_auth_missing():
     """Return mock auth context (missing token)."""
     return None
 
+
 @pytest.fixture
 def herald_cli_with_auth(herald_cli_runner, mock_auth_context, monkeypatch):
     """Return CliRunner + inject auth context into environment."""
-    monkeypatch.setenv('HERALD_TOKEN', mock_auth_context['token'])
+    monkeypatch.setenv("HERALD_TOKEN", mock_auth_context["token"])
     return herald_cli_runner
 ```
 
@@ -581,32 +587,35 @@ def herald_cli_with_auth(herald_cli_runner, mock_auth_context, monkeypatch):
 ```python
 # tests/fixtures/db_fixtures.py
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture(scope="function")
 def test_db():
     """Create in-memory SQLite database for testing."""
-    engine = create_engine('sqlite:///:memory:')
+    engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     return Session()
 
+
 @pytest.fixture
 def progress_record_factory(test_db):
     """Factory to create Progress records."""
+
     def make_progress(
-        station='warden',
+        station="warden",
         date=None,
         shipped_capabilities=None,
         compute_hours=10.5,
         token_spend=50000,
         wall_clock_hours=4.2,
-        unblock_narrative='Test narrative',
-        status='draft',
+        unblock_narrative="Test narrative",
+        status="draft",
     ):
         if date is None:
             date = datetime.utcnow()
         if shipped_capabilities is None:
-            shipped_capabilities = ['Feature A', 'Feature B']
-        
+            shipped_capabilities = ["Feature A", "Feature B"]
+
         record = Progress(
             station=station,
             date=date,
@@ -620,16 +629,18 @@ def progress_record_factory(test_db):
         test_db.add(record)
         test_db.commit()
         return record
-    
+
     return make_progress
+
 
 @pytest.fixture
 def claim_record_factory(test_db):
     """Factory to create Claim records."""
+
     def make_claim(
-        project_name='Marshal S-1.10',
+        project_name="Marshal S-1.10",
         thesis=None,
-        status='draft',
+        status="draft",
         evidence=None,
         shipped_date=None,
     ):
@@ -638,14 +649,14 @@ def claim_record_factory(test_db):
         if evidence is None:
             evidence = [
                 {
-                    'type': 'test_results',
-                    'url': 'https://ci.example.com/jobs/123',
-                    'label': 'CI job #123',
-                    'is_valid': True,
-                    'last_validated_at': datetime.utcnow().isoformat(),
+                    "type": "test_results",
+                    "url": "https://ci.example.com/jobs/123",
+                    "label": "CI job #123",
+                    "is_valid": True,
+                    "last_validated_at": datetime.utcnow().isoformat(),
                 }
             ]
-        
+
         record = Claim(
             project_name=project_name,
             thesis=thesis,
@@ -656,7 +667,7 @@ def claim_record_factory(test_db):
         test_db.add(record)
         test_db.commit()
         return record
-    
+
     return make_claim
 ```
 
@@ -667,43 +678,47 @@ def claim_record_factory(test_db):
 ```python
 # tests/fixtures/webhook_fixtures.py
 
+
 @pytest.fixture
 def on_ship_webhook_payload():
     """Valid on-ship webhook from CI."""
     return {
-        'pr_url': 'https://github.com/rxm7706/local-recipes/pull/123',
-        'commit_sha': 'abc123def456',
-        'test_job_url': 'https://ci.example.com/jobs/456',
-        'merged_at': '2026-08-02T15:00:00Z',
-        'station_tag': 'marshal',
+        "pr_url": "https://github.com/rxm7706/local-recipes/pull/123",
+        "commit_sha": "abc123def456",
+        "test_job_url": "https://ci.example.com/jobs/456",
+        "merged_at": "2026-08-02T15:00:00Z",
+        "station_tag": "marshal",
     }
+
 
 @pytest.fixture
 def on_pr_close_webhook_payload():
     """Valid on-PR-close webhook from CI."""
     return {
-        'pr_url': 'https://github.com/rxm7706/local-recipes/pull/123',
-        'commit_sha': 'abc123def456',
-        'test_job_url': 'https://ci.example.com/jobs/456',
-        'close_at': '2026-08-02T15:30:00Z',
-        'gates_passed': True,
+        "pr_url": "https://github.com/rxm7706/local-recipes/pull/123",
+        "commit_sha": "abc123def456",
+        "test_job_url": "https://ci.example.com/jobs/456",
+        "close_at": "2026-08-02T15:30:00Z",
+        "gates_passed": True,
     }
+
 
 @pytest.fixture
 def on_pr_close_webhook_gates_failed():
     """on-PR-close webhook with failed gates."""
     return {
-        'pr_url': 'https://github.com/rxm7706/local-recipes/pull/124',
-        'commit_sha': 'xyz789',
-        'close_at': '2026-08-02T16:00:00Z',
-        'gates_passed': False,
+        "pr_url": "https://github.com/rxm7706/local-recipes/pull/124",
+        "commit_sha": "xyz789",
+        "close_at": "2026-08-02T16:00:00Z",
+        "gates_passed": False,
     }
+
 
 @pytest.fixture
 def webhook_payload_missing_field():
     """Invalid webhook payload (missing required field)."""
     return {
-        'pr_url': 'https://github.com/...',
+        "pr_url": "https://github.com/...",
         # missing: commit_sha, merged_at, etc.
     }
 ```
@@ -715,49 +730,51 @@ def webhook_payload_missing_field():
 ```python
 # tests/fixtures/http_fixtures.py
 
+
 @pytest.fixture
 def mock_http_responses(requests_mock):
     """Mock HTTP responses for evidence validation + dashboard queries."""
     # CI job URL (test results)
     requests_mock.head(
-        'https://ci.example.com/jobs/456',
+        "https://ci.example.com/jobs/456",
         status_code=200,
-        headers={'Content-Length': '1000'},
+        headers={"Content-Length": "1000"},
     )
-    
+
     # Dashboard metrics API
     requests_mock.get(
-        'https://dashboard.example.com/api/metrics/marshal-s-1-10',
-        json={'error_rate': 0.01, 'latency_p99': 250},
+        "https://dashboard.example.com/api/metrics/marshal-s-1-10",
+        json={"error_rate": 0.01, "latency_p99": 250},
     )
-    
+
     # Broken link (404)
     requests_mock.head(
-        'https://old-ci.example.com/jobs/deleted',
+        "https://old-ci.example.com/jobs/deleted",
         status_code=404,
     )
-    
+
     # Redirect chain
     requests_mock.head(
-        'https://example.com/old-path',
+        "https://example.com/old-path",
         status_code=302,
-        headers={'Location': 'https://example.com/new-path'},
+        headers={"Location": "https://example.com/new-path"},
     )
     requests_mock.head(
-        'https://example.com/new-path',
+        "https://example.com/new-path",
         status_code=200,
     )
-    
+
     return requests_mock
+
 
 @pytest.fixture
 def mock_ci_job_api():
     """Mock CI job API for extracting test results."""
     return {
-        'status': 'passed',
-        'tests_passed': 456,
-        'tests_failed': 0,
-        'duration': 120,  # seconds
+        "status": "passed",
+        "tests_passed": 456,
+        "tests_failed": 0,
+        "duration": 120,  # seconds
     }
 ```
 
@@ -768,23 +785,26 @@ def mock_ci_job_api():
 ```python
 # tests/fixtures/time_fixtures.py
 
+
 @pytest.fixture
 def mock_time(freezegun):
     """Freeze time to a known date (2026-08-02 15:00:00 UTC)."""
-    with freezegun.freeze_time('2026-08-02 15:00:00'):
+    with freezegun.freeze_time("2026-08-02 15:00:00"):
         yield freezegun.freeze_time
+
 
 @pytest.fixture
 def time_advanced_7_days(freezegun):
     """Advance time 7 days forward (for stale-link detection)."""
-    with freezegun.freeze_time('2026-08-09 15:00:00'):  # 7 days later
+    with freezegun.freeze_time("2026-08-09 15:00:00"):  # 7 days later
         yield freezegun.freeze_time
+
 
 @pytest.fixture
 def time_thursday_2300_utc(freezegun):
     """Mock time to Thursday 23:00 UTC (for weekly cron)."""
     # 2026-08-06 is a Thursday
-    with freezegun.freeze_time('2026-08-06 23:00:00'):
+    with freezegun.freeze_time("2026-08-06 23:00:00"):
         yield freezegun.freeze_time
 ```
 
@@ -795,34 +815,49 @@ def time_thursday_2300_utc(freezegun):
 ```python
 # tests/fixtures/assertion_helpers.py
 
+
 @pytest.fixture
 def assert_progress_record():
     """Assert Progress record has expected state."""
+
     def _assert(record, **kwargs):
         for key, expected_value in kwargs.items():
             actual = getattr(record, key)
-            assert actual == expected_value, f"Progress.{key}: expected {expected_value}, got {actual}"
+            assert actual == expected_value, (
+                f"Progress.{key}: expected {expected_value}, got {actual}"
+            )
+
     return _assert
+
 
 @pytest.fixture
 def assert_claim_published():
     """Assert Claim is published with valid evidence."""
+
     def _assert(claim):
-        assert claim.status == 'published', f"Claim status: expected 'published', got {claim.status}"
+        assert claim.status == "published", (
+            f"Claim status: expected 'published', got {claim.status}"
+        )
         assert claim.published_at is not None, "Claim.published_at is None"
-        assert claim.thesis is not None and len(claim.thesis) > 0, "Claim.thesis is empty"
+        assert claim.thesis is not None and len(claim.thesis) > 0, (
+            "Claim.thesis is empty"
+        )
         assert len(claim.evidence) > 0, "Claim.evidence is empty"
         for link in claim.evidence:
-            assert link['is_valid'] == True, f"Evidence link invalid: {link['url']}"
+            assert link["is_valid"] == True, f"Evidence link invalid: {link['url']}"
+
     return _assert
+
 
 @pytest.fixture
 def assert_evidence_link_validated():
     """Assert evidence link has validation metadata."""
+
     def _assert(link):
-        assert 'url' in link, "Evidence link missing 'url'"
-        assert 'is_valid' in link, "Evidence link missing 'is_valid'"
-        assert 'last_validated_at' in link, "Evidence link missing 'last_validated_at'"
+        assert "url" in link, "Evidence link missing 'url'"
+        assert "is_valid" in link, "Evidence link missing 'is_valid'"
+        assert "last_validated_at" in link, "Evidence link missing 'last_validated_at'"
+
     return _assert
 ```
 
@@ -835,70 +870,77 @@ def assert_evidence_link_validated():
 ```python
 # tests/builders/test_data_builders.py
 
+
 class ProgressBuilder:
     """Builder for Progress records with fluent API."""
+
     def __init__(self):
         self.data = {
-            'station': 'warden',
-            'date': datetime.utcnow(),
-            'shipped_capabilities': ['Feature A'],
-            'compute_hours': 10.0,
-            'token_spend': 50000,
-            'wall_clock_hours': 4.0,
-            'unblock_narrative': None,
-            'status': 'draft',
+            "station": "warden",
+            "date": datetime.utcnow(),
+            "shipped_capabilities": ["Feature A"],
+            "compute_hours": 10.0,
+            "token_spend": 50000,
+            "wall_clock_hours": 4.0,
+            "unblock_narrative": None,
+            "status": "draft",
         }
-    
+
     def with_station(self, station):
-        self.data['station'] = station
+        self.data["station"] = station
         return self
-    
+
     def with_narrative(self, narrative):
-        self.data['unblock_narrative'] = narrative
+        self.data["unblock_narrative"] = narrative
         return self
-    
+
     def published(self):
-        self.data['status'] = 'published'
+        self.data["status"] = "published"
         return self
-    
+
     def with_capabilities(self, *capabilities):
-        self.data['shipped_capabilities'] = list(capabilities)
+        self.data["shipped_capabilities"] = list(capabilities)
         return self
-    
+
     def build(self):
         return Progress(**self.data)
 
+
 class ClaimBuilder:
     """Builder for Claim records."""
+
     def __init__(self):
         self.data = {
-            'project_name': 'Test Project',
-            'thesis': None,
-            'status': 'draft',
-            'evidence': [],
-            'shipped_date': datetime.utcnow(),
+            "project_name": "Test Project",
+            "thesis": None,
+            "status": "draft",
+            "evidence": [],
+            "shipped_date": datetime.utcnow(),
         }
-    
+
     def with_evidence_link(self, link_type, url, label):
-        self.data['evidence'].append({
-            'type': link_type,
-            'url': url,
-            'label': label,
-            'is_valid': True,
-            'last_validated_at': datetime.utcnow().isoformat(),
-        })
+        self.data["evidence"].append(
+            {
+                "type": link_type,
+                "url": url,
+                "label": label,
+                "is_valid": True,
+                "last_validated_at": datetime.utcnow().isoformat(),
+            }
+        )
         return self
-    
+
     def with_thesis(self, thesis):
-        self.data['thesis'] = thesis
+        self.data["thesis"] = thesis
         return self
-    
+
     def published(self):
-        self.data['status'] = 'published'
+        self.data["status"] = "published"
         return self
-    
+
     def build(self):
         return Claim(**self.data)
+
 
 # Usage:
 # claim = ClaimBuilder() \
@@ -2029,10 +2071,12 @@ pyforge-testing-kit/
 # tests/fixtures/conftest.py
 from pyforge_testing_kit.pytest import db_fixtures, auth_fixtures
 
+
 # Reuse shared fixtures
 @pytest.fixture
 def test_db():
     return db_fixtures.create_test_db()
+
 
 @pytest.fixture
 def mock_auth():

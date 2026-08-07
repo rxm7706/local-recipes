@@ -108,6 +108,7 @@ def test_no_subprocess_import_outside_the_allowlist():
 # #4): synthetic trees, not the real package, so these assert the scanner's
 # behavior independent of what src/pyforge/mason/ currently contains. ------
 
+
 def test_detection_fires_on_a_violation_and_permits_allowed_files(tmp_path):
     root = tmp_path / "mason"
     root.mkdir()
@@ -123,7 +124,9 @@ def test_detection_fires_on_a_violation_and_permits_allowed_files(tmp_path):
     # exempted by a filename-only allowlist (review finding #3).
     (nested / "cli.py").write_text("import subprocess\n", encoding="utf-8")
 
-    violators = {p.resolve() for p in _find_subprocess_importers(root, _allowed_paths(root))}
+    violators = {
+        p.resolve() for p in _find_subprocess_importers(root, _allowed_paths(root))
+    }
 
     assert (root / "recipe.py").resolve() in violators
     assert (root / "other.py").resolve() in violators

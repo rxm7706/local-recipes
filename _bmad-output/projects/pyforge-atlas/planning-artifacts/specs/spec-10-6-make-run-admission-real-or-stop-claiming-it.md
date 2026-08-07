@@ -452,7 +452,10 @@ needs the project cwd" — i.e. the flagship "MCP trigger racing a `kedro run`" 
 have stayed completely unguarded. Required resolution, mirroring kedro's own semantics:
 
 ```python
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]   # src/pyforge/atlas/ -> project root
+_PROJECT_ROOT = (
+    Path(__file__).resolve().parents[3]
+)  # src/pyforge/atlas/ -> project root
+
 
 def default_lock_root(project_path: Any = None) -> Path:
     base = Path(project_path) if project_path is not None else _PROJECT_ROOT

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy bmad-builder skills into the current project's .claude/skills/ directory."""
+
 import argparse
 import os
 import shutil
@@ -28,7 +29,10 @@ def main():
 
     prefix = os.environ.get("CONDA_PREFIX", "")
     if not prefix:
-        print("Error: CONDA_PREFIX is not set. Activate your pixi/conda environment first.", file=sys.stderr)
+        print(
+            "Error: CONDA_PREFIX is not set. Activate your pixi/conda environment first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     source = os.path.join(prefix, "share", "bmad-builder", "skills")

@@ -202,10 +202,7 @@ def _private_verdict_references(tree: ast.Module) -> list[str]:
             if isinstance(node.value, ast.Name) and node.value.id in verdict_names:
                 references.append(node.attr)
             # ... or pkg.verdict._priv via a plain `import pkg.verdict`.
-            elif (
-                isinstance(node.value, ast.Attribute)
-                and node.value.attr == "verdict"
-            ):
+            elif isinstance(node.value, ast.Attribute) and node.value.attr == "verdict":
                 references.append(node.attr)
     return references
 
@@ -217,9 +214,7 @@ def test_package_scan_surface_is_not_empty():
     assert "verdict.py" in names, "verdict.py missing from the installed package"
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=lambda p: p.name)
 def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     violations = _exit_literal_violations(_parse(module_path))
     assert not violations, (
@@ -229,9 +224,7 @@ def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     )
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=lambda p: p.name)
 def test_no_private_verdict_import_outside_verdict(module_path: Path):
     references = _private_verdict_references(_parse(module_path))
     assert not references, (
@@ -264,13 +257,10 @@ def test_private_detector_sees_verdict_module_aliases():
     aliased = "from pyforge.doctor import verdict as v\nx = v._SOME_PRIVATE\n"
     assert _private_verdict_references(ast.parse(aliased)) == ["_SOME_PRIVATE"]
     plain_import = (
-        "import pyforge.doctor.verdict\n"
-        "x = pyforge.doctor.verdict._SOME_PRIVATE\n"
+        "import pyforge.doctor.verdict\nx = pyforge.doctor.verdict._SOME_PRIVATE\n"
     )
     assert _private_verdict_references(ast.parse(plain_import)) == ["_SOME_PRIVATE"]
-    public_only = (
-        "from pyforge.doctor import verdict\ncode = verdict.exit_code_for\n"
-    )
+    public_only = "from pyforge.doctor import verdict\ncode = verdict.exit_code_for\n"
     assert _private_verdict_references(ast.parse(public_only)) == []
 
 

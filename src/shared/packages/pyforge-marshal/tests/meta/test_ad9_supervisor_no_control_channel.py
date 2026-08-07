@@ -168,8 +168,8 @@ def test_supervisor_imports_no_socket_or_multiprocessing_module():
 @pytest.mark.parametrize(
     "snippet",
     [
-        'import socket',
-        'from multiprocessing import Process',
+        "import socket",
+        "from multiprocessing import Process",
         'import importlib\nimportlib.import_module("socket")',
         'from importlib import import_module\nimport_module("multiprocessing")',
         '__import__("socket")',

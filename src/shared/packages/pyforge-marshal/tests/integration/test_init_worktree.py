@@ -75,9 +75,13 @@ def test_init_end_to_end_provision_then_idempotent_rerun(tmp_path, monkeypatch, 
     repo_marker.parent.mkdir(parents=True)
     repo_marker.write_text("some-other-project\n", encoding="utf-8")
     repo_planning_link = repo / "_bmad-output" / "planning-artifacts"
-    repo_planning_link.symlink_to(Path("projects/some-other-project/planning-artifacts"))
+    repo_planning_link.symlink_to(
+        Path("projects/some-other-project/planning-artifacts")
+    )
     repo_impl_link = repo / "_bmad-output" / "implementation-artifacts"
-    repo_impl_link.symlink_to(Path("projects/some-other-project/implementation-artifacts"))
+    repo_impl_link.symlink_to(
+        Path("projects/some-other-project/implementation-artifacts")
+    )
     repo_marker_before = repo_marker.read_text(encoding="utf-8")
     repo_planning_link_target_before = repo_planning_link.readlink()
     repo_impl_link_target_before = repo_impl_link.readlink()
@@ -97,15 +101,18 @@ def test_init_end_to_end_provision_then_idempotent_rerun(tmp_path, monkeypatch, 
     link = home / "_bmad-output" / "planning-artifacts"
     assert marker.read_text(encoding="utf-8").strip() == slug
     assert link.is_symlink()
-    assert link.resolve() == (
-        home / "_bmad-output" / "projects" / slug / "planning-artifacts"
-    ).resolve()
+    assert (
+        link.resolve()
+        == (home / "_bmad-output" / "projects" / slug / "planning-artifacts").resolve()
+    )
 
     # Story 1.5: the home's Tier-3 store resolves to the SAME real
     # directory as the repo's own canonical copy -- one canonical store,
     # not a per-worktree fork.
     home_tier3 = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
-    canonical_tier3 = repo / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    canonical_tier3 = (
+        repo / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    )
     assert home_tier3.is_symlink()
     assert canonical_tier3.is_dir()
     assert home_tier3.resolve() == canonical_tier3.resolve()
@@ -143,7 +150,9 @@ def test_init_end_to_end_provision_then_idempotent_rerun(tmp_path, monkeypatch, 
 
 
 @pytest.mark.slow
-def test_init_refuses_a_real_nonempty_local_tier3_directory(tmp_path, monkeypatch, capsys):
+def test_init_refuses_a_real_nonempty_local_tier3_directory(
+    tmp_path, monkeypatch, capsys
+):
     """The headline new capability (MRS-INIT-005), proven against the REAL
     adapters -- not just the FakeFs coverage in tests/unit/test_init.py."""
     slug = "acme"
@@ -180,7 +189,9 @@ def test_init_refuses_a_real_nonempty_local_tier3_directory(tmp_path, monkeypatc
 
 
 @pytest.mark.slow
-def test_homes_end_to_end_two_clean_worktrees_then_a_real_desync(tmp_path, monkeypatch, capsys):
+def test_homes_end_to_end_two_clean_worktrees_then_a_real_desync(
+    tmp_path, monkeypatch, capsys
+):
     """Story 1.6: real ``git worktree list`` auto-discovery against two
     real ``marshal init``-provisioned worktrees, then a hand-edited marker
     (exactly the kind of external tampering ``marshal homes`` exists to
@@ -252,11 +263,15 @@ def _seed_bmad_config_and_sprint_status(project: Path) -> None:
     )
     feed_dir = project / "_bmad-output" / "implementation-artifacts"
     feed_dir.mkdir(parents=True, exist_ok=True)
-    (feed_dir / "sprint-status.yaml").write_text("development_status: {}\n", encoding="utf-8")
+    (feed_dir / "sprint-status.yaml").write_text(
+        "development_status: {}\n", encoding="utf-8"
+    )
 
 
 @pytest.mark.slow
-def test_preflight_end_to_end_converges_seeds_and_acknowledges(tmp_path, monkeypatch, capsys):
+def test_preflight_end_to_end_converges_seeds_and_acknowledges(
+    tmp_path, monkeypatch, capsys
+):
     """Story 1.7: a real end-to-end ``marshal preflight`` pass -- the real
     ``bmad-loop --version`` subprocess call, the real installed
     ``bmad_loop.adapters.profile``/``multiplexer``/``bmadconfig``/
@@ -387,7 +402,9 @@ def test_teardown_end_to_end_removes_a_clean_merged_home(tmp_path, monkeypatch, 
 
 
 @pytest.mark.slow
-def test_teardown_end_to_end_refuses_dirty_then_force_removes(tmp_path, monkeypatch, capsys):
+def test_teardown_end_to_end_refuses_dirty_then_force_removes(
+    tmp_path, monkeypatch, capsys
+):
     slug = "acme"
     repo = _build_repo(tmp_path, slug)
     _seed_real_gitignore(repo)
@@ -415,7 +432,9 @@ def test_teardown_end_to_end_refuses_dirty_then_force_removes(tmp_path, monkeypa
 
 
 @pytest.mark.slow
-def test_teardown_end_to_end_recognizes_a_real_squash_merge(tmp_path, monkeypatch, capsys):
+def test_teardown_end_to_end_recognizes_a_real_squash_merge(
+    tmp_path, monkeypatch, capsys
+):
     """The story's own headline scenario, live-verified during planning and
     now pinned as a regression test: a branch landed via THIS REPO's own
     single-parent squash-merge convention removes cleanly with NO --force,
@@ -442,9 +461,11 @@ def test_teardown_end_to_end_recognizes_a_real_squash_merge(tmp_path, monkeypatc
     _git(repo, "merge", "--squash", f"loop/{slug}")
     _git(repo, "commit", "-m", f"Merge loop/{slug} into main")
     squash_commit = _git(repo, "cat-file", "-p", "HEAD").stdout
-    assert squash_commit.count("\nparent ") + (
-        1 if squash_commit.startswith("parent ") else 0
-    ) == 1
+    assert (
+        squash_commit.count("\nparent ")
+        + (1 if squash_commit.startswith("parent ") else 0)
+        == 1
+    )
 
     ancestry = subprocess.run(
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", f"loop/{slug}", "main"],

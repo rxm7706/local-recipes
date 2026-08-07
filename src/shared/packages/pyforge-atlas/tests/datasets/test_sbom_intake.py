@@ -33,12 +33,17 @@ def test_normalize_ws_folds_nbsp_and_narrow_nbsp():
 
 
 def test_nbsp_pip_list_parses_identically_to_ascii():
-    ascii_text = "Package    Version\n-------    -------\nnumpy      1.26.0\nrich       13.7.0\n"
+    ascii_text = (
+        "Package    Version\n-------    -------\nnumpy      1.26.0\nrich       13.7.0\n"
+    )
     nbsp_text = ascii_text.replace(" ", NBSP)
     assert parse_pip_list_text(nbsp_text) == parse_pip_list_text(ascii_text)
     # and the content is what we expect
     parsed = parse_pip_list_text(ascii_text)
-    assert {(d["name"], d["version"]) for d in parsed} == {("numpy", "1.26.0"), ("rich", "13.7.0")}
+    assert {(d["name"], d["version"]) for d in parsed} == {
+        ("numpy", "1.26.0"),
+        ("rich", "13.7.0"),
+    }
 
 
 def test_nbsp_conda_list_parses_identically_to_ascii():
@@ -48,7 +53,9 @@ def test_nbsp_conda_list_parses_identically_to_ascii():
     parsed = parse_conda_list_text(ascii_text)
     by_name = {d["name"]: d for d in parsed}
     assert by_name["numpy"]["ecosystem"] == "conda"
-    assert by_name["requests"]["ecosystem"] == "pypi"  # channel == pypi -> pip-installed
+    assert (
+        by_name["requests"]["ecosystem"] == "pypi"
+    )  # channel == pypi -> pip-installed
 
 
 # ── AC-2: per-format parse + passthrough preservation ─────────────────────────
@@ -92,7 +99,12 @@ def test_parse_cyclonedx_preserves_cfe_properties_and_channel_purl():
 
 
 def test_parse_intake_detects_cyclonedx_json_string():
-    raw = json.dumps({"bomFormat": "CycloneDX", "components": [{"name": "rich", "version": "13.7.0"}]})
+    raw = json.dumps(
+        {
+            "bomFormat": "CycloneDX",
+            "components": [{"name": "rich", "version": "13.7.0"}],
+        }
+    )
     out = parse_intake(raw, filename="scan.cdx.json")
     assert out["format"] == "cyclonedx"
     assert out["passthrough"] is True
@@ -108,7 +120,9 @@ def test_parse_intake_requirements_by_filename():
 def test_parse_intake_malformed_sbom_never_crashes():
     """Edge-HIGH: a truncated CycloneDX file resolved by filename must NOT raise
     (json.loads was previously uncaught on the SBOM branch)."""
-    out = parse_intake('{"bomFormat":"CycloneDX",', filename="scan.cdx.json")  # truncated JSON
+    out = parse_intake(
+        '{"bomFormat":"CycloneDX",', filename="scan.cdx.json"
+    )  # truncated JSON
     assert out["format"] == "cyclonedx"
     assert out["deps"] == []
     out2 = parse_intake("{not json", filename="thing.spdx.json")
@@ -173,9 +187,24 @@ def test_resolver_resolved_records_depth_and_fanout(tmp_path):
         # a bare `requirements.txt` resolves to a full transitive set
         return {
             "deps": [
-                {"name": "flask", "version": "3.0.0", "ecosystem": "pypi", "manifest": "resolved"},
-                {"name": "jinja2", "version": "3.1.4", "ecosystem": "pypi", "manifest": "resolved"},
-                {"name": "werkzeug", "version": "3.0.3", "ecosystem": "pypi", "manifest": "resolved"},
+                {
+                    "name": "flask",
+                    "version": "3.0.0",
+                    "ecosystem": "pypi",
+                    "manifest": "resolved",
+                },
+                {
+                    "name": "jinja2",
+                    "version": "3.1.4",
+                    "ecosystem": "pypi",
+                    "manifest": "resolved",
+                },
+                {
+                    "name": "werkzeug",
+                    "version": "3.0.3",
+                    "ecosystem": "pypi",
+                    "manifest": "resolved",
+                },
             ],
             "depth": 2,
             "fanout": 3,
@@ -223,20 +252,26 @@ def test_requirements_extras_and_url_yield_no_garbage_version():
     extras spec or a direct-URL ref must yield version=None, never a garbage
     version that becomes an invalid purl (pkg:pypi/requests@[security]>=2.0)."""
     from pyforge.atlas.datasets.sbom_intake import parse_requirements_txt
-    txt = "\n".join([
-        "requests[security]>=2.0",
-        "uvicorn[standard]",
-        "black[d]==23.1.0",
-        "foo @ https://example.com/foo.whl",
-        "numpy>=1.20,<2.0",
-        "plain==1.2.3",
-    ])
-    deps = {d["name"]: d.get("version") for d in parse_requirements_txt(txt, "requirements.txt")}
-    assert deps["requests"] is None          # extras, no valid version captured
+
+    txt = "\n".join(
+        [
+            "requests[security]>=2.0",
+            "uvicorn[standard]",
+            "black[d]==23.1.0",
+            "foo @ https://example.com/foo.whl",
+            "numpy>=1.20,<2.0",
+            "plain==1.2.3",
+        ]
+    )
+    deps = {
+        d["name"]: d.get("version")
+        for d in parse_requirements_txt(txt, "requirements.txt")
+    }
+    assert deps["requests"] is None  # extras, no valid version captured
     assert deps["uvicorn"] is None
-    assert deps["black"] is None             # black[d]==... → extras before operator
-    assert deps["foo"] is None               # direct URL ref
-    assert deps["numpy"] == "1.20"           # legacy captures the first pin
+    assert deps["black"] is None  # black[d]==... → extras before operator
+    assert deps["foo"] is None  # direct URL ref
+    assert deps["numpy"] == "1.20"  # legacy captures the first pin
     assert deps["plain"] == "1.2.3"
     # and no dep carries a version starting with a non-digit
     for v in deps.values():

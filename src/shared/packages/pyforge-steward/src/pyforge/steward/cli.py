@@ -17,10 +17,10 @@ from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
 
 EXIT_OK = 0
-EXIT_FAILED = 1          # a duty ran and reported ok=False — the ONLY legitimate 1
-EXIT_USAGE = 2           # argparse convention
-EXIT_INTERRUPTED = 130   # 128 + SIGINT
-EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
+EXIT_FAILED = 1  # a duty ran and reported ok=False — the ONLY legitimate 1
+EXIT_USAGE = 2  # argparse convention
+EXIT_INTERRUPTED = 130  # 128 + SIGINT
+EXIT_INTERNAL = 70  # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 
 # The four duties. `keys` lands first (Epic 1); the rest accept no verbs yet, but
 # are declared so `steward --help` states the whole surface from the start.
@@ -53,17 +53,29 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
-    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt}")
+    keys_subs = keys_parser.add_subparsers(
+        dest="keys_verb", metavar="{encrypt,decrypt}"
+    )
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
     encrypt.add_argument("file", help="the plaintext file to encrypt")
-    encrypt.add_argument("--recipient", "-r", required=True, help="the age public key to encrypt to")
-    encrypt.add_argument("--output", "-o", required=True, help="path to write the encrypted file")
+    encrypt.add_argument(
+        "--recipient", "-r", required=True, help="the age public key to encrypt to"
+    )
+    encrypt.add_argument(
+        "--output", "-o", required=True, help="path to write the encrypted file"
+    )
 
-    decrypt = keys_subs.add_parser("decrypt", help="age-decrypt a file with an identity")
+    decrypt = keys_subs.add_parser(
+        "decrypt", help="age-decrypt a file with an identity"
+    )
     decrypt.add_argument("file", help="the age-encrypted file to decrypt")
-    decrypt.add_argument("--identity", "-i", required=True, help="the age identity (secret key) file")
-    decrypt.add_argument("--output", "-o", required=True, help="path to write the decrypted file")
+    decrypt.add_argument(
+        "--identity", "-i", required=True, help="the age identity (secret key) file"
+    )
+    decrypt.add_argument(
+        "--output", "-o", required=True, help="path to write the decrypted file"
+    )
 
 
 def resolve_duty(name: str) -> Duty:
@@ -104,11 +116,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if code is None:
             return EXIT_OK
         return code if isinstance(code, int) else EXIT_USAGE
-    except Exception:                              # noqa: BLE001 — deliberate boundary
+    except Exception:  # noqa: BLE001 — deliberate boundary
         import traceback
+
         traceback.print_exc()
         return EXIT_INTERNAL
 
 
-if __name__ == "__main__":                          # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())

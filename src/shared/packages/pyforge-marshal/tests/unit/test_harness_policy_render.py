@@ -25,7 +25,9 @@ from pyforge.marshal.core.policy import compose
 
 
 def _compose(**project_overrides):
-    effective, findings = compose(project_slug="acme", project=project_overrides, flags={})
+    effective, findings = compose(
+        project_slug="acme", project=project_overrides, flags={}
+    )
     assert findings == ()
     return effective
 
@@ -286,10 +288,17 @@ def test_cli_writes_the_harness_policy_via_the_convention_layer(tmp_path):
     that project's OWN verify command -- with no --project-policy passed."""
     from pyforge.marshal.cli.main import main
 
-    rc = main([
-        "config", "--project", "pyforge-marshal",
-        "--write-harness-policy", str(tmp_path), "--format", "json",
-    ])
+    rc = main(
+        [
+            "config",
+            "--project",
+            "pyforge-marshal",
+            "--write-harness-policy",
+            str(tmp_path),
+            "--format",
+            "json",
+        ]
+    )
     assert rc == 0, "a clean composition must exit 0"
 
     written = tmp_path / ".bmad-loop" / "policy.toml"
@@ -316,11 +325,19 @@ def test_cli_refuses_to_write_a_policy_from_an_error_composition(tmp_path):
     not determine the intent of must not become the harness's policy."""
     from pyforge.marshal.cli.main import main
 
-    rc = main([
-        "config", "--project", "pyforge-marshal",
-        "--set", "max_review_cycles=not-an-int",
-        "--write-harness-policy", str(tmp_path), "--format", "json",
-    ])
+    rc = main(
+        [
+            "config",
+            "--project",
+            "pyforge-marshal",
+            "--set",
+            "max_review_cycles=not-an-int",
+            "--write-harness-policy",
+            str(tmp_path),
+            "--format",
+            "json",
+        ]
+    )
     assert not (tmp_path / ".bmad-loop" / "policy.toml").exists(), (
         "a policy was written despite error-severity findings"
     )

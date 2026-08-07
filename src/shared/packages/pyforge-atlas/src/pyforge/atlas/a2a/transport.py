@@ -31,7 +31,12 @@ import a2a.types as a2a_types
 from google.protobuf import json_format, struct_pb2
 from pydantic_core import PydanticSerializationError
 
-from pyforge.atlas.a2a.schema import A2ADecodeError, AtlasPayload, _BasePayload, decode_payload
+from pyforge.atlas.a2a.schema import (
+    A2ADecodeError,
+    AtlasPayload,
+    _BasePayload,
+    decode_payload,
+)
 
 # The single DataPart field carrying the canonical payload JSON, and the metadata keys
 # that mirror the discriminator + stamp for envelope-level inspection (never the source of
@@ -50,7 +55,9 @@ def _deterministic_message_id(payload_json: str) -> str:
     return f"atlas-a2a-{digest}"
 
 
-def to_message(payload: AtlasPayload, *, message_id: str | None = None) -> a2a_types.Message:
+def to_message(
+    payload: AtlasPayload, *, message_id: str | None = None
+) -> a2a_types.Message:
     """Serialize a payload into a genuine ``a2a.types.Message`` (role = AGENT).
 
     The payload's canonical JSON rides in one ``DataPart``; ``kind``/``schema_version``/
@@ -82,7 +89,9 @@ def to_message(payload: AtlasPayload, *, message_id: str | None = None) -> a2a_t
                 "(likely built via model_construct, bypassing field validation)"
             )
     except A2ADecodeError as exc:
-        raise A2ATransportError(f"payload failed the serialization self-check: {exc}") from exc
+        raise A2ATransportError(
+            f"payload failed the serialization self-check: {exc}"
+        ) from exc
 
     data_value = struct_pb2.Value()
     json_format.ParseDict({_PAYLOAD_KEY: payload_json}, data_value)

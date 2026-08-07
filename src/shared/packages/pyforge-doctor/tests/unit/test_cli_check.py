@@ -75,9 +75,7 @@ class _ForbiddenGatherError(BaseException):
 
 def _forbid_warden_gather(monkeypatch) -> None:
     def _boom(target):
-        raise _ForbiddenGatherError(
-            "must never gather/run the 'engines' category here"
-        )
+        raise _ForbiddenGatherError("must never gather/run the 'engines' category here")
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
@@ -207,14 +205,9 @@ def test_clean_env_named_check_reports_zero_findings_and_exits_zero(
     assert document["findings"] == []
 
 
-def test_env_named_check_with_a_real_match_forwards_the_path(
-    tmp_path: Path, capsys
-):
+def test_env_named_check_with_a_real_match_forwards_the_path(tmp_path: Path, capsys):
     (tmp_path / "leaky.py").write_text(
-        "import os\n"
-        "\n"
-        "def handler():\n"
-        '    headers["X"] = os.environ.get("SECRET")\n',
+        'import os\n\ndef handler():\n    headers["X"] = os.environ.get("SECRET")\n',
         encoding="utf-8",
     )
 
@@ -278,9 +271,7 @@ def test_unknown_check_name_that_is_also_a_real_path_hints_at_ordering(
     assert "doctor check" in captured.err
 
 
-def test_empty_check_name_is_usage_error_without_the_path_hint(
-    monkeypatch, capsys
-):
+def test_empty_check_name_is_usage_error_without_the_path_hint(monkeypatch, capsys):
     # Review finding: `--engines=` yields the empty string, and Path("")
     # normalizes to Path(".") which exists -- without the truthiness guard
     # the error asserted '' "looks like a path" and suggested the nonsense
@@ -316,9 +307,7 @@ def test_path_hint_shell_quotes_a_path_containing_whitespace(
 # --- --list --------------------------------------------------------------
 
 
-def test_list_prints_full_catalog_and_exits_zero_without_gathering(
-    monkeypatch, capsys
-):
+def test_list_prints_full_catalog_and_exits_zero_without_gathering(monkeypatch, capsys):
     _forbid_warden_gather(monkeypatch)
 
     exit_code = main(["check", "--list"])
@@ -333,9 +322,7 @@ def test_list_prints_full_catalog_and_exits_zero_without_gathering(
 def test_list_ignores_engines_and_env_and_json_flags(monkeypatch, capsys):
     _forbid_warden_gather(monkeypatch)
 
-    exit_code = main(
-        ["check", "--list", "--engines", "--env", "--json"]
-    )
+    exit_code = main(["check", "--list", "--engines", "--env", "--json"])
 
     captured = capsys.readouterr()
     assert exit_code == 0
@@ -353,9 +340,7 @@ def test_list_ignores_an_unknown_engines_check_name_and_a_path(
     # --engines/--env/--json/path" unconditionally.
     _forbid_warden_gather(monkeypatch)
 
-    exit_code = main(
-        ["check", str(tmp_path), "--list", "--engines", "bogus-name"]
-    )
+    exit_code = main(["check", str(tmp_path), "--list", "--engines", "bogus-name"])
 
     captured = capsys.readouterr()
     assert exit_code == 0

@@ -63,7 +63,13 @@ from ..adapters.harness_bmadloop import BmadLoopHarness
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy
 from ..core.identity import MalformedStoryKeyError
-from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
+from ..core.journal import (
+    JournalEntryId,
+    Phase,
+    build_entry,
+    mint_run_id,
+    prepare_for_write,
+)
 from ..core.model import Finding, Severity, build_envelope
 from ..core.retire import (
     InsufficientEvidence,
@@ -178,7 +184,9 @@ def _journal_retirement(
     ALREADY been removed, so a journal-write failure is reported, never
     grounds to undo anything."""
     moment = datetime.now(timezone.utc)
-    run_id = mint_run_id(slug, _retire_format_utc_compact(moment), _retire_random_token())
+    run_id = mint_run_id(
+        slug, _retire_format_utc_compact(moment), _retire_random_token()
+    )
     run_dir = (
         root
         / "_bmad-output"
@@ -366,7 +374,9 @@ def run_retire(
             )
 
             try:
-                merged_by_patch_id = vcs.is_branch_merged(git_repo_root, branch, into=base)
+                merged_by_patch_id = vcs.is_branch_merged(
+                    git_repo_root, branch, into=base
+                )
             except VcsCommandError as exc:
                 findings.append(
                     Finding(
@@ -482,7 +492,9 @@ def run_retire(
     return _emit(args, data, findings)
 
 
-def _render_text_retire(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text_retire(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching every other command's
     own ``_render_text*`` convention."""
@@ -514,11 +526,15 @@ def _render_text_retire(data: Mapping[str, object], findings: tuple[Finding, ...
     if findings:
         lines.append("findings:")
         for finding in findings:
-            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
     return "\n".join(lines)
 
 
-def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+def _emit(
+    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+) -> int:
     """The envelope-build-then-print tail every ``cli/*.py`` command shares
     (AD-14: one envelope shape per command)."""
     verdict_value = compute_verdict(findings)

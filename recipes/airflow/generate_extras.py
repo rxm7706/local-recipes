@@ -97,7 +97,11 @@ def generate_output_block(extra, deps):
         # core extra
         core_extra = deps[0].split("[", 1)[1].split("]", 1)[0]
         req = f"apache-airflow-core-with-{core_extra}"
-    elif deps and isinstance(deps, list) and deps[0].startswith("apache-airflow-providers-"):
+    elif (
+        deps
+        and isinstance(deps, list)
+        and deps[0].startswith("apache-airflow-providers-")
+    ):
         # provider extra
         req = deps[0]
         if ">=" in req and not re.search(r"\s>=", req):
@@ -157,7 +161,10 @@ def replace_bracket_extras_with_with_extra(dep):
     replace '[<extra>]' in dependency strings with '-with-<extra>'.
     E.g., 'apache-airflow-providers-common-sql[pandas]' -> 'apache-airflow-providers-common-sql-with-pandas'
     """
-    for base in ("apache-airflow-providers-common-sql", "apache-airflow-providers-amazon"):
+    for base in (
+        "apache-airflow-providers-common-sql",
+        "apache-airflow-providers-amazon",
+    ):
         m = re.match(rf"({base})\[(.*?)\](.*)", dep)
         if m:
             extras = m.group(2).replace(",", "-")
@@ -188,7 +195,9 @@ def main():
     meta_text_clean = remove_with_extra_outputs(meta_text)
 
     # Find where to insert outputs (after the last main output)
-    outputs_match = re.search(r"(?ms)^outputs:\n(.*?)(?=^about:|^extra:|^\Z)", meta_text_clean)
+    outputs_match = re.search(
+        r"(?ms)^outputs:\n(.*?)(?=^about:|^extra:|^\Z)", meta_text_clean
+    )
     if not outputs_match:
         print("Could not find outputs section in meta.yaml")
         sys.exit(1)
@@ -197,10 +206,8 @@ def main():
     # Parse extras from pyproject.toml
     optional_deps = parse_optional_deps(pyproject_path)
     new_outputs = ""
-    extras_to_keep = ['all-core', 'all']
-    deps_to_keep = {
-        k: v for k, v in optional_deps.items() if k in extras_to_keep
-    }
+    extras_to_keep = ["all-core", "all"]
+    deps_to_keep = {k: v for k, v in optional_deps.items() if k in extras_to_keep}
 
     expand_airflow_extras(deps_to_keep, optional_deps)
 

@@ -65,7 +65,9 @@ def test_fetch_kev_document_returns_the_parsed_document(monkeypatch, refresh_kev
     assert refresh_kev_feed.fetch_kev_document() == _VALID_DOCUMENT
 
 
-def test_fetch_kev_document_rejects_a_non_object_top_level(monkeypatch, refresh_kev_feed):
+def test_fetch_kev_document_rejects_a_non_object_top_level(
+    monkeypatch, refresh_kev_feed
+):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps([1, 2, 3]).encode("utf-8")),
@@ -79,7 +81,9 @@ def test_fetch_kev_document_rejects_a_missing_vulnerabilities_list(
 ):
     monkeypatch.setattr(
         "urllib.request.urlopen",
-        lambda *a, **k: _FakeResponse(json.dumps({"unexpected": "shape"}).encode("utf-8")),
+        lambda *a, **k: _FakeResponse(
+            json.dumps({"unexpected": "shape"}).encode("utf-8")
+        ),
     )
     with pytest.raises(ValueError, match="expected shape"):
         refresh_kev_feed.fetch_kev_document()
@@ -97,7 +101,9 @@ def test_fetch_kev_document_propagates_a_network_failure(monkeypatch, refresh_ke
 # --- refresh -----------------------------------------------------------------
 
 
-def test_refresh_writes_the_cache_and_reports_stats(monkeypatch, tmp_path, refresh_kev_feed):
+def test_refresh_writes_the_cache_and_reports_stats(
+    monkeypatch, tmp_path, refresh_kev_feed
+):
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_DOCUMENT).encode("utf-8")),
@@ -129,7 +135,9 @@ def test_main_exits_2_when_no_cache_dir_is_available(
     assert "no cache dir given" in capsys.readouterr().err
 
 
-def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_kev_feed, capsys):
+def test_main_exits_1_when_refresh_fails(
+    monkeypatch, tmp_path, refresh_kev_feed, capsys
+):
     def _raise(*_a, **_k):
         raise urllib.error.URLError("network unreachable")
 

@@ -62,9 +62,7 @@ CONFIG_PRECEDENCE = FIXTURES / "config_precedence"
 
 
 def load_schema() -> dict:
-    schema_file = (
-        resources.files("pyforge.warden") / "data" / "report-schema.json"
-    )
+    schema_file = resources.files("pyforge.warden") / "data" / "report-schema.json"
     return json.loads(schema_file.read_text(encoding="utf-8"))
 
 
@@ -293,9 +291,7 @@ def test_malformed_toml_still_emits_an_error_report(capsys, tmp_path):
     # verdict.compose's deterministic tie-break (smallest (axis, finding_id);
     # both share AXIS_INGESTION) picks config-parse, since "config-parse" <
     # "unparsable-manifest" lexically.
-    assert document["status"]["driver"]["finding_id"].startswith(
-        "error:config-parse:"
-    )
+    assert document["status"]["driver"]["finding_id"].startswith("error:config-parse:")
     assert {e["kind"] for e in document["errors"]} == {
         "config-parse",
         "unparsable-manifest",
@@ -539,9 +535,7 @@ def test_crashing_engine_factory_still_emits_the_report(capsys, monkeypatch):
     assert err != ""
 
 
-def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(
-    capsys, tmp_path
-):
+def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(capsys, tmp_path):
     """Hostile nesting overflows tomllib's recursive parser with
     RecursionError (not TOMLDecodeError): still a structurally-broken
     manifest — unparsable-manifest, report emitted, error exit; never a
@@ -590,9 +584,7 @@ def test_erroring_engine_still_surfaces_its_findings(capsys, monkeypatch):
     document = parse_report(out)
     assert rc == 2
     assert document["status"]["value"] == "error"
-    assert [e["kind"] for e in document["errors"]] == [
-        "engine-output-unparseable"
-    ]
+    assert [e["kind"] for e in document["errors"]] == ["engine-output-unparseable"]
     assert "hygiene:DEP002:requests" in {f["id"] for f in document["findings"]}
 
 
@@ -648,9 +640,7 @@ def test_two_engines_failing_on_different_axes_both_surface(capsys, monkeypatch)
     assert any(e["owner"] == "crashing" for e in document["errors"])
 
 
-def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(
-    capsys, tmp_path
-):
+def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(capsys, tmp_path):
     """D2(c) (Story 1.9): a manifest that PARSES but yields zero components/
     findings/errors is ambiguous/partial discovery, never a silent
     not-applicable — the previous 1.2-era not-applicable/exit-0 reading for
@@ -685,9 +675,7 @@ def test_zero_dependency_manifest_is_indeterminate_not_not_applicable(
         assert block["resolution_depth"] is None  # coverage: none
 
 
-def test_zero_dependency_manifest_allow_empty_downgrades_exit_only(
-    capsys, tmp_path
-):
+def test_zero_dependency_manifest_allow_empty_downgrades_exit_only(capsys, tmp_path):
     """``--allow-empty`` downgrades D2(c)'s exit to 0 while ``status`` stays
     ``indeterminate`` (never ``clean``) — the flag only widens the exit
     projection, never the verdict itself."""
@@ -734,9 +722,7 @@ def test_deptry_missing_dependency_blocks_by_default(capsys):
     assert rc == 1
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "policy-violation"
-    finding = _one_hygiene_finding(
-        document, "hygiene:DEP001:totally_absent_pkg_xyz"
-    )
+    finding = _one_hygiene_finding(document, "hygiene:DEP001:totally_absent_pkg_xyz")
     assert finding["subject"] == "totally_absent_pkg_xyz"
     driver = document["status"]["driver"]
     assert driver["axis"] == "hygiene"
@@ -865,9 +851,7 @@ def test_deptry_frontdoor_flag_is_a_genuine_no_op_against_real_deptry(capsys):
     assert with_frontdoor_ids == without_frontdoor_ids == {"hygiene:DEP002:requests"}
 
 
-def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
-    capsys, tmp_path
-):
+def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(capsys, tmp_path):
     """Follow-up review (2026-07-16), real deptry, no mocks:
     ``--requirements-files`` REPLACES deptry's own native default
     requirements source (``requirements.txt``) rather than merging with it
@@ -886,9 +870,7 @@ def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
     (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
     rc, out, _err = run_scan(capsys, tmp_path)
     document = parse_report(out)
-    hygiene_ids = {
-        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
-    }
+    hygiene_ids = {f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE}
     # requests is declared by the project's OWN requirements.txt -- merged,
     # so no false DEP001; numpy (declared via the conda front-door, never
     # imported) still surfaces deptry's real signal for this fixture.
@@ -896,9 +878,7 @@ def test_deptry_frontdoor_merges_the_projects_own_requirements_txt(
     assert "hygiene:DEP002:numpy" in hygiene_ids
 
 
-def test_deptry_frontdoor_merges_config_declared_requirements_files(
-    capsys, tmp_path
-):
+def test_deptry_frontdoor_merges_config_declared_requirements_files(capsys, tmp_path):
     """Second review pass (2026-07-16), real deptry, no mocks: deptry's
     requirements source is its ``[tool.deptry].requirements_files`` config
     when declared -- the flag REPLACES that setting too, not just the
@@ -919,9 +899,7 @@ def test_deptry_frontdoor_merges_config_declared_requirements_files(
     (tmp_path / "main.py").write_text("import requests\n", encoding="utf-8")
     rc, out, _err = run_scan(capsys, tmp_path)
     document = parse_report(out)
-    hygiene_ids = {
-        f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE
-    }
+    hygiene_ids = {f["id"] for f in document["findings"] if f["axis"] == AXIS_HYGIENE}
     # requests is declared by the config-declared reqs/base.txt -- merged,
     # so no false DEP001; numpy (declared via the conda front-door, never
     # imported) still surfaces deptry's real signal.
@@ -1101,16 +1079,16 @@ def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     # withhold -- both must coexist on the same package name.
     _one_hygiene_finding(document, "hygiene:DEP002:leftpad")
     indeterminate_finding_id = "indeterminate:no-version:leftpad"
-    matches = [
-        f for f in document["findings"] if f["id"] == indeterminate_finding_id
-    ]
+    matches = [f for f in document["findings"] if f["id"] == indeterminate_finding_id]
     assert len(matches) == 1
     assert matches[0]["axis"] == "vulnerability"
     # leftpad is not an installed package -> license axis withholds it too
     # (requests resolves to a deterministic, pinned resolvable license --
     # Fix 9 -- so it contributes no license finding).
     license_matches = [
-        f for f in document["findings"] if f["id"] == "license:unknown:leftpad@unspecified"
+        f
+        for f in document["findings"]
+        if f["id"] == "license:unknown:leftpad@unspecified"
     ]
     assert len(license_matches) == 1
     assert license_matches[0]["axis"] == "license"
@@ -1365,13 +1343,23 @@ def test_invalid_spdx_deny_licenses_flag_is_a_clean_config_error_not_a_crash(cap
 
 def _clean_cycle(version: str) -> list[dict[str, str]]:
     return [
-        {"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}
+        {
+            "cycle": version,
+            "releaseDate": "2020-01-01",
+            "eol": "2099-01-01",
+            "latest": version,
+        }
     ]
 
 
 def _eol_cycle(version: str) -> list[dict[str, str]]:
     return [
-        {"cycle": version, "releaseDate": "2015-01-01", "eol": "2016-01-01", "latest": version}
+        {
+            "cycle": version,
+            "releaseDate": "2015-01-01",
+            "eol": "2016-01-01",
+            "latest": version,
+        }
     ]
 
 
@@ -1380,7 +1368,12 @@ def _behind_cycles(version: str, *, behind: int) -> list[dict[str, str]]:
     the newest entry, all still supported -- resolves to an over-lag
     (SUPPORTED, lag=behind) finding."""
     cycles = [
-        {"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}
+        {
+            "cycle": version,
+            "releaseDate": "2020-01-01",
+            "eol": "2099-01-01",
+            "latest": version,
+        }
     ]
     for index in range(behind):
         newer = f"999.{index}"
@@ -1418,7 +1411,9 @@ def _license_block(document: dict) -> list:
     )
 
 
-def test_currency_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path, capsys):
+def test_currency_two_mode_diff_escalates_status_and_exit(
+    monkeypatch, tmp_path, capsys
+):
     """Story 6.5 AC (currency): the SAME fixtures run unconfigured vs
     --fail-on-eol emit BYTE-IDENTICAL currency findings (ids/verdicts/tiers),
     but the gate escalates the composed status/exit (warn/exit-0 ->
@@ -1479,7 +1474,9 @@ def test_license_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path, 
 
     rc_unconfigured, out_unconfigured, _ = run_scan(capsys, project)
     doc_unconfigured = parse_report(out_unconfigured)
-    rc_gated, out_gated, _ = run_scan(capsys, project, "--deny-licenses", "GPL-3.0-only")
+    rc_gated, out_gated, _ = run_scan(
+        capsys, project, "--deny-licenses", "GPL-3.0-only"
+    )
     doc_gated = parse_report(out_gated)
 
     assert _license_block(doc_unconfigured) == _license_block(doc_gated)
@@ -1502,7 +1499,9 @@ def test_warn_as_error_makes_a_warn_scan_exit_nonzero(capsys):
     assert doc_default["status"]["value"] == "warn"
     assert rc_default == 0
 
-    rc_strict, out_strict, err_strict = run_scan(capsys, DEPTRY_UNUSED, "--warn-as-error")
+    rc_strict, out_strict, err_strict = run_scan(
+        capsys, DEPTRY_UNUSED, "--warn-as-error"
+    )
     doc_strict = parse_report(out_strict)
     assert doc_strict["status"]["value"] == "warn"  # status unchanged
     assert doc_strict["exit_code"] == 1
@@ -1768,7 +1767,9 @@ def test_hygiene_not_applicable_never_leaks_a_hygiene_axis_finding(capsys):
 def test_retired_clean_at_phrasing_never_appears_in_source():
     """Ratchet: the retired 'clean at N%' phrasing (outlawed by FR16) must
     never appear anywhere under the package's own source."""
-    package_root = Path(__file__).resolve().parent.parent.parent / "src" / "pyforge" / "warden"
+    package_root = (
+        Path(__file__).resolve().parent.parent.parent / "src" / "pyforge" / "warden"
+    )
     offenders = []
     for path in package_root.rglob("*.py"):
         text = path.read_text(encoding="utf-8")

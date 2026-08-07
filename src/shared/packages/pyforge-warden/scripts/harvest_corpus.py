@@ -304,15 +304,21 @@ def write_sources_md(
     empty-state message previously always said "last fetch attempt failed"
     even on a fresh checkout run with ``--skip-upstream-fetch``, where no
     fetch was attempted at all."""
-    upstream_present = sorted(
-        p.name for p in _UPSTREAM_OUT.iterdir() if p.is_dir()
-    ) if _UPSTREAM_OUT.is_dir() else []
+    upstream_present = (
+        sorted(p.name for p in _UPSTREAM_OUT.iterdir() if p.is_dir())
+        if _UPSTREAM_OUT.is_dir()
+        else []
+    )
     if upstream_present:
         upstream_lines = [f"- {name}" for name in upstream_present]
     elif upstream_skipped:
-        upstream_lines = ["- (none -- --skip-upstream-fetch was passed, no fetch attempted)"]
+        upstream_lines = [
+            "- (none -- --skip-upstream-fetch was passed, no fetch attempted)"
+        ]
     else:
-        upstream_lines = ["- (none -- last fetch attempt failed; see stderr from the harvest run)"]
+        upstream_lines = [
+            "- (none -- last fetch attempt failed; see stderr from the harvest run)"
+        ]
     lines = [
         "# Adversarial corpus provenance",
         "",
@@ -346,7 +352,9 @@ def write_sources_md(
         "tags combined with `# [cond]` selector comments.",
         "",
     ]
-    (_ADVERSARIAL_OUT / "SOURCES.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (_ADVERSARIAL_OUT / "SOURCES.md").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
     del handauthored  # documented by the fixed bullet list above, not enumerated
 
 
@@ -377,7 +385,9 @@ def main() -> None:
         # empty-source guard is the second line of defense; this one
         # catches the mistake before any work happens, with the marker
         # predicate _find_repo_root already uses).
-        if not ((repo_root / "pixi.toml").is_file() and (repo_root / "recipes").is_dir()):
+        if not (
+            (repo_root / "pixi.toml").is_file() and (repo_root / "recipes").is_dir()
+        ):
             raise SystemExit(
                 f"harvest_corpus: --repo-root {repo_root} does not look "
                 "like the repo root (needs recipes/ + pixi.toml)"

@@ -280,7 +280,9 @@ class EffectiveConfig:
         if (
             isinstance(self.waiver_default_expiry_days, bool)
             or not isinstance(self.waiver_default_expiry_days, int)
-            or not (0 < self.waiver_default_expiry_days <= _MAX_WAIVER_DEFAULT_EXPIRY_DAYS)
+            or not (
+                0 < self.waiver_default_expiry_days <= _MAX_WAIVER_DEFAULT_EXPIRY_DAYS
+            )
         ):
             raise ValueError(
                 "waiver_default_expiry_days must be a positive int <= "
@@ -288,9 +290,7 @@ class EffectiveConfig:
                 f"{self.waiver_default_expiry_days!r}"
             )
         if not isinstance(self.fail_on_kev, bool):
-            raise ValueError(
-                f"fail_on_kev must be a bool, got {self.fail_on_kev!r}"
-            )
+            raise ValueError(f"fail_on_kev must be a bool, got {self.fail_on_kev!r}")
         for field_name in ("allow_licenses", "deny_licenses"):
             value = getattr(self, field_name)
             # item.strip(), not bare item (follow-up review pass,
@@ -302,8 +302,7 @@ class EffectiveConfig:
                 isinstance(item, str) and item.strip() for item in value
             ):
                 raise ValueError(
-                    f"{field_name} must be a tuple of non-blank strings, got "
-                    f"{value!r}"
+                    f"{field_name} must be a tuple of non-blank strings, got {value!r}"
                 )
         if self.max_lag is not None and (
             isinstance(self.max_lag, bool)
@@ -314,13 +313,9 @@ class EffectiveConfig:
                 f"max_lag must be an int >= 0 or None, got {self.max_lag!r}"
             )
         if not isinstance(self.require_lts, bool):
-            raise ValueError(
-                f"require_lts must be a bool, got {self.require_lts!r}"
-            )
+            raise ValueError(f"require_lts must be a bool, got {self.require_lts!r}")
         if not isinstance(self.fail_on_eol, bool):
-            raise ValueError(
-                f"fail_on_eol must be a bool, got {self.fail_on_eol!r}"
-            )
+            raise ValueError(f"fail_on_eol must be a bool, got {self.fail_on_eol!r}")
         if not isinstance(self.warn_as_error, bool):
             raise ValueError(
                 f"warn_as_error must be a bool, got {self.warn_as_error!r}"
@@ -331,8 +326,7 @@ class EffectiveConfig:
             or not (0.0 <= self.min_epss <= 1.0)
         ):
             raise ValueError(
-                f"min_epss must be a number in [0, 1] or None, got "
-                f"{self.min_epss!r}"
+                f"min_epss must be a number in [0, 1] or None, got {self.min_epss!r}"
             )
 
     @classmethod
@@ -378,7 +372,9 @@ class EffectiveConfig:
         pattern as ``cli_max_lag``."""
         defaults = cls.default()
         fail_on = (
-            _coerce_fail_on(cli_fail_on) if cli_fail_on is not None else defaults.fail_on
+            _coerce_fail_on(cli_fail_on)
+            if cli_fail_on is not None
+            else defaults.fail_on
         )
         fail_under_coverage = (
             _coerce_fail_under_coverage(cli_fail_under_coverage)
@@ -396,7 +392,9 @@ class EffectiveConfig:
             else defaults.deny_licenses
         )
         max_lag = (
-            _coerce_max_lag(cli_max_lag) if cli_max_lag is not None else defaults.max_lag
+            _coerce_max_lag(cli_max_lag)
+            if cli_max_lag is not None
+            else defaults.max_lag
         )
         require_lts = (
             _coerce_require_lts(cli_require_lts)
@@ -447,9 +445,7 @@ class EffectiveConfig:
         DEFAULT_VULN_SEVERITY_POLICY``."""
         threshold_rank = _SEVERITY_ORDER.index(self.fail_on)
         return {
-            tier: (
-                Status.POLICY_VIOLATION if rank <= threshold_rank else Status.WARN
-            )
+            tier: (Status.POLICY_VIOLATION if rank <= threshold_rank else Status.WARN)
             for rank, tier in enumerate(_SEVERITY_ORDER)
         }
 
@@ -599,25 +595,19 @@ def _coerce_max_lag(value: object) -> int:
     CLI flag itself (a malformed ``--max-lag`` is a usage error, exit 2,
     never reaching this function)."""
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise ConfigValidationError(
-            f"'max-lag' must be an int >= 0, got {value!r}"
-        )
+        raise ConfigValidationError(f"'max-lag' must be an int >= 0, got {value!r}")
     return value
 
 
 def _coerce_require_lts(value: object) -> bool:
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'require-lts' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'require-lts' must be a bool, got {value!r}")
     return value
 
 
 def _coerce_fail_on_eol(value: object) -> bool:
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'fail-on-eol' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'fail-on-eol' must be a bool, got {value!r}")
     return value
 
 
@@ -626,9 +616,7 @@ def _coerce_warn_as_error(value: object) -> bool:
     shape exactly — a plain bool, malformed is a typed
     ``ConfigValidationError``."""
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'warn-as-error' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'warn-as-error' must be a bool, got {value!r}")
     return value
 
 
@@ -645,9 +633,7 @@ def _coerce_min_epss(value: object) -> float:
         )
     numeric = float(value)
     if not (0.0 <= numeric <= 1.0):
-        raise ConfigValidationError(
-            f"'min-epss' must be in [0, 1], got {value!r}"
-        )
+        raise ConfigValidationError(f"'min-epss' must be in [0, 1], got {value!r}")
     return numeric
 
 
@@ -691,9 +677,7 @@ def _coerce_waiver_default_expiry_days(value: object) -> int:
 
 def _coerce_fail_on_kev(value: object) -> bool:
     if not isinstance(value, bool):
-        raise ConfigValidationError(
-            f"'fail-on-kev' must be a bool, got {value!r}"
-        )
+        raise ConfigValidationError(f"'fail-on-kev' must be a bool, got {value!r}")
     return value
 
 

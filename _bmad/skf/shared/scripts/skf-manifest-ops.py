@@ -129,7 +129,11 @@ def cmd_get(manifest_path, skill_name):
         return {"status": "error", "error": err}
     exports = data.get("exports", {})
     if skill_name not in exports:
-        return {"status": "not_found", "skill": skill_name, "available": sorted(exports.keys())}
+        return {
+            "status": "not_found",
+            "skill": skill_name,
+            "available": sorted(exports.keys()),
+        }
     return {"status": "ok", "skill": skill_name, "entry": exports[skill_name]}
 
 
@@ -157,7 +161,9 @@ def cmd_set(manifest_path, skill_name, version, ides=None):
     # existing ides/platforms list verbatim (backward-compatible). When
     # --ides is supplied, union it in (dedupe, keep sorted).
     existing_version = versions.get(version, {})
-    merged_ides = list(existing_version.get("ides", existing_version.get("platforms", [])))
+    merged_ides = list(
+        existing_version.get("ides", existing_version.get("platforms", []))
+    )
     if ides:
         for ide in ides:
             if ide not in merged_ides:
@@ -186,7 +192,12 @@ def cmd_remove(manifest_path, skill_name):
         return {"status": "not_found", "skill": skill_name}
     removed = exports.pop(skill_name)
     write_manifest(manifest_path, data)
-    return {"status": "ok", "action": "removed", "skill": skill_name, "removed_entry": removed}
+    return {
+        "status": "ok",
+        "action": "removed",
+        "skill": skill_name,
+        "removed_entry": removed,
+    }
 
 
 def cmd_deprecate(manifest_path, skill_name, version=None):
@@ -199,14 +210,22 @@ def cmd_deprecate(manifest_path, skill_name, version=None):
     versions = exports[skill_name].get("versions", {})
     if version:
         if version not in versions:
-            return {"status": "error", "error": f"Version '{version}' not found for '{skill_name}'"}
+            return {
+                "status": "error",
+                "error": f"Version '{version}' not found for '{skill_name}'",
+            }
         versions[version]["status"] = "deprecated"
     else:
         # Deprecate all versions
         for v in versions.values():
             v["status"] = "deprecated"
     write_manifest(manifest_path, data)
-    return {"status": "ok", "action": "deprecated", "skill": skill_name, "version": version}
+    return {
+        "status": "ok",
+        "action": "deprecated",
+        "skill": skill_name,
+        "version": version,
+    }
 
 
 def cmd_rename(manifest_path, old_name, new_name):
@@ -217,7 +236,10 @@ def cmd_rename(manifest_path, old_name, new_name):
     if old_name not in exports:
         return {"status": "not_found", "skill": old_name}
     if new_name in exports:
-        return {"status": "error", "error": f"Target name '{new_name}' already exists in manifest"}
+        return {
+            "status": "error",
+            "error": f"Target name '{new_name}' already exists in manifest",
+        }
     exports[new_name] = exports.pop(old_name)
     write_manifest(manifest_path, data)
     return {"status": "ok", "action": "renamed", "from": old_name, "to": new_name}
@@ -267,7 +289,11 @@ def cmd_affected_versions(manifest_path, skills_folder, skill_name):
             if child.is_dir():
                 on_disk_versions.append(child.name)
 
-    union = sorted(set(manifest_versions) | set(on_disk_versions), key=_version_sort_key, reverse=True)
+    union = sorted(
+        set(manifest_versions) | set(on_disk_versions),
+        key=_version_sort_key,
+        reverse=True,
+    )
 
     return {
         "status": "ok",
@@ -275,16 +301,26 @@ def cmd_affected_versions(manifest_path, skills_folder, skill_name):
         "affected_versions": union,
         "count": len(union),
         "sources": {
-            "manifest": sorted(set(manifest_versions), key=_version_sort_key, reverse=True),
-            "on_disk": sorted(set(on_disk_versions), key=_version_sort_key, reverse=True),
+            "manifest": sorted(
+                set(manifest_versions), key=_version_sort_key, reverse=True
+            ),
+            "on_disk": sorted(
+                set(on_disk_versions), key=_version_sort_key, reverse=True
+            ),
         },
     }
 
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python3 skf-manifest-ops.py <skills-folder> <command> [args]", file=sys.stderr)
-        print("Commands: read, get <name>, set <name> <version> [--ides a,b], remove <name>, deprecate <name> [version], rename <old> <new>, affected-versions <name>", file=sys.stderr)
+        print(
+            "Usage: python3 skf-manifest-ops.py <skills-folder> <command> [args]",
+            file=sys.stderr,
+        )
+        print(
+            "Commands: read, get <name>, set <name> <version> [--ides a,b], remove <name>, deprecate <name> [version], rename <old> <new>, affected-versions <name>",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     skills_folder = Path(sys.argv[1])
@@ -312,7 +348,10 @@ def main():
     elif command == "affected-versions" and len(sys.argv) >= 4:
         result = cmd_affected_versions(manifest_path, skills_folder, sys.argv[3])
     else:
-        result = {"status": "error", "error": f"Unknown command or missing args: {command}"}
+        result = {
+            "status": "error",
+            "error": f"Unknown command or missing args: {command}",
+        }
 
     print(json.dumps(result, indent=2))
     sys.exit(0 if result["status"] == "ok" else 1)

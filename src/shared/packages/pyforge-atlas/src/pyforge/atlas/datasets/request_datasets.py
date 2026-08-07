@@ -88,7 +88,9 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
         # single-worker 3-RPS by default (Phase K contract); the concrete fan-out
         # acquires a token per request. Injectable clock/sleep keep it fixture-safe;
         # an injected scheduler lets a fixture supply an advancing fake clock.
-        self.scheduler = scheduler if scheduler is not None else RateLimitedScheduler(rps=rps)
+        self.scheduler = (
+            scheduler if scheduler is not None else RateLimitedScheduler(rps=rps)
+        )
         # Compose the physical HTTP IO lazily (no network at __init__).
         self._inner = APIDataset(
             url=url,
@@ -109,7 +111,9 @@ class _RequestParameterizedAPIDataset(AbstractDataset):
         self.scheduler.acquire()
         return self._inner.load()
 
-    def fetch_one(self, request_key: str, *, fetcher: Callable[[str], Any] | None = None) -> Any:
+    def fetch_one(
+        self, request_key: str, *, fetcher: Callable[[str], Any] | None = None
+    ) -> Any:
         """Fetch ONE parameterized request, acquiring a rate-limit token first
         (DW-B1-2). This is the per-{package,query} fan-out primitive the concrete
         subclasses loop over (Phase H per-project JSON, Phase R enrichment). The
@@ -162,7 +166,9 @@ class GitHubRequestDataset(_RequestParameterizedAPIDataset):
     in the node body. ``vcs_github_api_raw``.
     """
 
-    def with_query(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
+    def with_query(
+        self, query: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Build the GraphQL POST body for a single query — dataset-owned request
         parameterization (AC-2). Returns the ``load_args.json`` payload; the concrete
         POST fan-out through :attr:`scheduler` is dataset-owned and deferred."""
@@ -247,7 +253,9 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
 # Do NOT "correct" _BYTES_PER_TB to 2^40 on the strength of the TiB price label — that
 # would LOOSEN both caps ~10%. The conservative decimal unit is the safe choice.
 _DEFAULT_USD_PER_TB = 6.25
-_BYTES_PER_TB = 1_000_000_000_000  # decimal TB (conservative vs the 2^40 TiB unit — see note
+_BYTES_PER_TB = (
+    1_000_000_000_000  # decimal TB (conservative vs the 2^40 TiB unit — see note
+)
 
 
 def _env_float(key: str, default: float) -> float:
@@ -259,7 +267,9 @@ def _env_float(key: str, default: float) -> float:
     try:
         return float(raw)
     except (TypeError, ValueError):
-        logger.warning("%s=%r is not a valid float — using default %s", key, raw, default)
+        logger.warning(
+            "%s=%r is not a valid float — using default %s", key, raw, default
+        )
         return default
 
 
@@ -272,6 +282,7 @@ def _env_int(key: str, default: int) -> int:
     except (TypeError, ValueError):
         logger.warning("%s=%r is not a valid int — using default %s", key, raw, default)
         return default
+
 
 # AD-6 admin-opt-in defaults (env-overridable). Phase P NEVER runs on a default
 # schedule; unless PHASE_P_ENABLED=1 the dataset no-ops (mode-machine _phase_p_skip).
@@ -345,22 +356,30 @@ class BigQueryDownloadsDataset(AbstractDataset):
         self._make_job_config = make_job_config
         self.metadata = metadata
         self._usd_per_tb = (
-            usd_per_tb if usd_per_tb is not None else _env_float("PHASE_P_USD_PER_TB", _DEFAULT_USD_PER_TB)
+            usd_per_tb
+            if usd_per_tb is not None
+            else _env_float("PHASE_P_USD_PER_TB", _DEFAULT_USD_PER_TB)
         )
         # A non-positive price would make every cost 0 (bypassing the abort) and blow up
         # maximum_bytes_billed with a ZeroDivisionError — reject it at construction.
         if self._usd_per_tb <= 0:
             raise ValueError(f"usd_per_tb must be > 0 (got {self._usd_per_tb!r})")
         self._max_cost_usd = (
-            max_cost_usd if max_cost_usd is not None else _env_float("PHASE_P_MAX_COST_USD", _DEFAULT_MAX_COST_USD)
+            max_cost_usd
+            if max_cost_usd is not None
+            else _env_float("PHASE_P_MAX_COST_USD", _DEFAULT_MAX_COST_USD)
         )
         self._max_cost_first_pull_usd = (
             max_cost_first_pull_usd
             if max_cost_first_pull_usd is not None
-            else _env_float("PHASE_P_MAX_COST_FIRST_PULL_USD", _DEFAULT_MAX_COST_FIRST_PULL_USD)
+            else _env_float(
+                "PHASE_P_MAX_COST_FIRST_PULL_USD", _DEFAULT_MAX_COST_FIRST_PULL_USD
+            )
         )
         self._job_timeout_ms = (
-            job_timeout_ms if job_timeout_ms is not None else _env_int("PHASE_P_JOB_TIMEOUT_MS", _DEFAULT_JOB_TIMEOUT_MS)
+            job_timeout_ms
+            if job_timeout_ms is not None
+            else _env_int("PHASE_P_JOB_TIMEOUT_MS", _DEFAULT_JOB_TIMEOUT_MS)
         )
 
     # -- helpers (pure) ------------------------------------------------------

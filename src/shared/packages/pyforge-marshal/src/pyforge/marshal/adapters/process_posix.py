@@ -165,9 +165,7 @@ class PosixProcess:
             return False
         return True
 
-    def spawn_detached(
-        self, argv: Sequence[str], *, cwd: Path, log_path: Path
-    ) -> int:
+    def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         if not argv:
             # Same guard as run() above, and for the identical reason: there
             # is no argv[0] to exec, and this Protocol's "raises ProcessError

@@ -164,12 +164,16 @@ def _assemble_warnings(payload: dict) -> list[str]:
         suggestion = payload.get("tier_override_invalid_suggestion")
         bad_text = bad if bad is not None else "<unknown>"
         if suggestion:
-            warnings.append(f"tier_override_invalid: {bad_text} (did you mean {suggestion}?)")
+            warnings.append(
+                f"tier_override_invalid: {bad_text} (did you mean {suggestion}?)"
+            )
         else:
             warnings.append(f"tier_override_invalid: {bad_text}")
     if payload.get("tier_override_unsafe"):
         missing = payload.get("tier_override_unsafe_missing", []) or []
-        warnings.append(f"tier_override_unsafe: missing {', '.join(missing) if missing else '<none>'}")
+        warnings.append(
+            f"tier_override_unsafe: missing {', '.join(missing) if missing else '<none>'}"
+        )
     for w in payload.get("ccc_exclusion_warnings", []) or []:
         warnings.append(str(w))
     for p in payload.get("ccc_registry_stale_removed", []) or []:
@@ -233,8 +237,8 @@ def _normalize_error(maybe_error) -> dict | None:
     if missing:
         _die(1, f"error object missing required keys: {sorted(missing)}")
     return {
-        "phase":  str(maybe_error["phase"]),
-        "path":   str(maybe_error["path"]),
+        "phase": str(maybe_error["phase"]),
+        "path": str(maybe_error["path"]),
         "reason": str(maybe_error["reason"]),
     }
 
@@ -250,7 +254,10 @@ def assemble_envelope(payload: dict) -> dict:
 
     previous_tier = payload.get("previous_tier")
     if previous_tier is not None and previous_tier not in VALID_TIERS:
-        _die(1, f"previous_tier must be one of {VALID_TIERS} or null, got {previous_tier!r}")
+        _die(
+            1,
+            f"previous_tier must be one of {VALID_TIERS} or null, got {previous_tier!r}",
+        )
     tier_changed = previous_tier is not None and previous_tier != tier
 
     tools = _normalize_tools(payload.get("tools"))
@@ -264,11 +271,19 @@ def assemble_envelope(payload: dict) -> dict:
 
     ccc_index = _normalize_ccc_index(payload.get("ccc_index"))
     if ccc_index["status"] not in VALID_CCC_STATUS:
-        _die(1, f"ccc_index.status must be one of {VALID_CCC_STATUS}, got {ccc_index['status']!r}")
+        _die(
+            1,
+            f"ccc_index.status must be one of {VALID_CCC_STATUS}, got {ccc_index['status']!r}",
+        )
 
     require_tier_satisfied = payload.get("require_tier_satisfied")
-    if require_tier_satisfied is not None and not isinstance(require_tier_satisfied, bool):
-        _die(1, f"require_tier_satisfied must be bool or null, got {type(require_tier_satisfied).__name__}")
+    if require_tier_satisfied is not None and not isinstance(
+        require_tier_satisfied, bool
+    ):
+        _die(
+            1,
+            f"require_tier_satisfied must be bool or null, got {type(require_tier_satisfied).__name__}",
+        )
 
     error = _normalize_error(payload.get("error"))
     status = _compute_status(error, require_tier_satisfied)
@@ -304,7 +319,11 @@ def _compute_status(error: dict | None, require_tier_satisfied) -> str:
     """
     if error is not None:
         phase = (error.get("phase") or "").lower()
-        if "write" in phase or phase.endswith("forge-tier.yaml") or phase.endswith("preferences.yaml"):
+        if (
+            "write" in phase
+            or phase.endswith("forge-tier.yaml")
+            or phase.endswith("preferences.yaml")
+        ):
             return "write_failure"
         return "blocked"
     if require_tier_satisfied is False:
@@ -314,9 +333,13 @@ def _compute_status(error: dict | None, require_tier_satisfied) -> str:
 
 def emit_envelope_line(envelope: dict) -> str:
     """Serialize the envelope as one prefixed line. No embedded newlines, sort_keys=True for determinism."""
-    body = json.dumps(envelope, separators=(",", ":"), sort_keys=True, ensure_ascii=False)
+    body = json.dumps(
+        envelope, separators=(",", ":"), sort_keys=True, ensure_ascii=False
+    )
     if "\n" in body:
-        _die(2, "envelope serialization produced embedded newline (should be impossible)")
+        _die(
+            2, "envelope serialization produced embedded newline (should be impossible)"
+        )
     return ENVELOPE_PREFIX + body
 
 
@@ -340,15 +363,23 @@ def _validate_against_schema(value, schema: dict, path: str = "$") -> list[str]:
     errors: list[str] = []
 
     if "oneOf" in schema:
-        matches = sum(1 for sub in schema["oneOf"] if not _validate_against_schema(value, sub, path))
+        matches = sum(
+            1
+            for sub in schema["oneOf"]
+            if not _validate_against_schema(value, sub, path)
+        )
         if matches != 1:
-            errors.append(f"{path}: matched {matches} of {len(schema['oneOf'])} oneOf branches (expected exactly 1)")
+            errors.append(
+                f"{path}: matched {matches} of {len(schema['oneOf'])} oneOf branches (expected exactly 1)"
+            )
         return errors
 
     expected_type = schema.get("type")
     if expected_type is not None:
         if not _matches_type(value, expected_type):
-            errors.append(f"{path}: expected type {expected_type}, got {type(value).__name__}")
+            errors.append(
+                f"{path}: expected type {expected_type}, got {type(value).__name__}"
+            )
             return errors
 
     if "enum" in schema:
@@ -373,15 +404,23 @@ def _validate_against_schema(value, schema: dict, path: str = "$") -> list[str]:
     if isinstance(value, list):
         if "items" in schema:
             for i, item in enumerate(value):
-                errors.extend(_validate_against_schema(item, schema["items"], f"{path}[{i}]"))
+                errors.extend(
+                    _validate_against_schema(item, schema["items"], f"{path}[{i}]")
+                )
         if schema.get("uniqueItems") and len(value) != len(set(map(_freeze, value))):
             errors.append(f"{path}: items not unique")
 
     if isinstance(value, str) and "minLength" in schema:
         if len(value) < schema["minLength"]:
-            errors.append(f"{path}: string shorter than minLength {schema['minLength']}")
+            errors.append(
+                f"{path}: string shorter than minLength {schema['minLength']}"
+            )
 
-    if isinstance(value, (int, float)) and not isinstance(value, bool) and "minimum" in schema:
+    if (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and "minimum" in schema
+    ):
         if value < schema["minimum"]:
             errors.append(f"{path}: value {value} below minimum {schema['minimum']}")
 
@@ -425,7 +464,9 @@ def cmd_emit() -> None:
     schema = _load_schema()
     errors = _validate_against_schema(envelope, schema)
     if errors:
-        _die(2, f"assembled envelope failed schema validation (this is a bug): {errors}")
+        _die(
+            2, f"assembled envelope failed schema validation (this is a bug): {errors}"
+        )
     print(emit_envelope_line(envelope))
 
 
@@ -502,9 +543,12 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = parser.add_subparsers(dest="cmd")
-    sub.add_parser("emit",          help="Build envelope from context payload (default).")
-    sub.add_parser("emit-blocked",  help="Emit minimal status='blocked' envelope for early-halt paths.")
-    sub.add_parser("validate",      help="Validate an envelope payload against the schema.")
+    sub.add_parser("emit", help="Build envelope from context payload (default).")
+    sub.add_parser(
+        "emit-blocked",
+        help="Emit minimal status='blocked' envelope for early-halt paths.",
+    )
+    sub.add_parser("validate", help="Validate an envelope payload against the schema.")
     args = parser.parse_args()
 
     cmd = args.cmd or "emit"

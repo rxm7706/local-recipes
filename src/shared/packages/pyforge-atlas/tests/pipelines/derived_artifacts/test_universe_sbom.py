@@ -31,7 +31,9 @@ def test_universe_bom_shape_and_channel_qualifiers():
     assert bom["bomFormat"] == "CycloneDX"
     by_name = {c["name"]: c for c in bom["components"]}
     assert by_name["numpy"]["purl"] == "pkg:conda/numpy@1.26.0?channel=conda-forge"
-    assert by_name["noversion"]["purl"] == "pkg:conda/noversion?channel=conda-forge"  # no version -> bare
+    assert (
+        by_name["noversion"]["purl"] == "pkg:conda/noversion?channel=conda-forge"
+    )  # no version -> bare
     # every conda purl carries the qualifier
     assert all("?channel=conda-forge" in c["purl"] for c in bom["components"])
 
@@ -57,5 +59,11 @@ def test_atlas_built_at_stamp_enables_the_freshness_gate():
 def test_built_at_defaults_to_now_when_no_param():
     before = int(time.time())
     bom = build_universe_sbom(_core(), _mapping(), {})
-    stamp = int(next(p["value"] for p in bom["metadata"]["properties"] if p["name"] == "cfe:atlas_built_at"))
+    stamp = int(
+        next(
+            p["value"]
+            for p in bom["metadata"]["properties"]
+            if p["name"] == "cfe:atlas_built_at"
+        )
+    )
     assert stamp >= before

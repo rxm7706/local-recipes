@@ -255,8 +255,14 @@ def spawn(tmp_path):
         stderr_file = stderr_path.open("w", encoding="utf-8")
         proc = subprocess.Popen(
             [
-                sys.executable, "-c", _CHILD_PROGRAM,
-                str(lock_root), run_id, str(wait_seconds), str(hold), *datasets,
+                sys.executable,
+                "-c",
+                _CHILD_PROGRAM,
+                str(lock_root),
+                run_id,
+                str(wait_seconds),
+                str(hold),
+                *datasets,
             ],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -320,7 +326,11 @@ def catalog_filepath_root() -> Path:
 
     bootstrap_project(MEMBER_DIR)
     with KedroSession.create(project_path=MEMBER_DIR) as session:
-        filepath = session.load_context().catalog["core_feedstock_health"]._describe()["filepath"]
+        filepath = (
+            session.load_context()
+            .catalog["core_feedstock_health"]
+            ._describe()["filepath"]
+        )
     # <root>/data/primary/core_feedstock_health/core_feedstock_health.parquet -> <root>
     return Path(str(filepath)).resolve().parents[3]
 
@@ -355,7 +365,9 @@ def _seed_stub_credentials() -> None:
     )
 
 
-def test_default_lock_root_is_project_anchored_not_cwd_relative(monkeypatch, tmp_path, catalog_filepath_root):
+def test_default_lock_root_is_project_anchored_not_cwd_relative(
+    monkeypatch, tmp_path, catalog_filepath_root
+):
     """THE regression test for review pass 1's high finding.
 
     From a CWD that is not the project root, the lock root must still land under the same
@@ -398,7 +410,9 @@ def test_default_lock_root_honors_an_absolute_data_root_verbatim(monkeypatch, tm
     assert default_lock_root() == (tmp_path / "elsewhere.locks").resolve()
 
 
-def test_default_lock_root_resolves_a_relative_data_root_against_the_project(monkeypatch, tmp_path):
+def test_default_lock_root_resolves_a_relative_data_root_against_the_project(
+    monkeypatch, tmp_path
+):
     monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
     monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", "var/store")
     monkeypatch.chdir(tmp_path)
@@ -437,7 +451,9 @@ def test_a_whitespace_only_env_var_is_treated_as_unset(monkeypatch, tmp_path):
     assert not any(part.strip() == "" for part in root.parts), f"whitespace path {root}"
 
 
-@pytest.mark.parametrize("relative", ["relative/path", "data", ".", "../elsewhere", Path("rel")])
+@pytest.mark.parametrize(
+    "relative", ["relative/path", "data", ".", "../elsewhere", Path("rel")]
+)
 def test_a_relative_project_path_is_refused(relative):
     """A relative ``project_path`` would quietly restore the CWD-anchoring review pass 1
     reverted. Kedro always supplies an absolute ``run_params["project_path"]``, but a Dagster
@@ -447,7 +463,9 @@ def test_a_relative_project_path_is_refused(relative):
         default_lock_root(relative)
 
 
-@pytest.mark.parametrize("relative", ["locks", "data/.locks", ".", "../locks", Path("rel")])
+@pytest.mark.parametrize(
+    "relative", ["locks", "data/.locks", ".", "../locks", Path("rel")]
+)
 def test_a_relative_lock_root_is_refused(relative, tmp_path, monkeypatch):
     """The guard ``_resolve_base`` applies to ``project_path``, on the input path that used to
     skip it. ``acquire(lock_root="locks")`` — or ``RunAdmissionHooks(lock_root="locks")`` —
@@ -459,7 +477,9 @@ def test_a_relative_lock_root_is_refused(relative, tmp_path, monkeypatch):
     assert list(tmp_path.iterdir()) == [], "a config error must take no locks"
 
 
-def test_an_empty_project_path_falls_back_to_the_package_derived_root(monkeypatch, tmp_path):
+def test_an_empty_project_path_falls_back_to_the_package_derived_root(
+    monkeypatch, tmp_path
+):
     """``""`` means "not supplied", not "anchor here": it falls through to the
     ``__file__``-derived project root — still absolute, still the tree the guarded Parquet
     lives in — and never to the CWD."""
@@ -479,7 +499,9 @@ def test_default_lock_root_uses_the_run_params_project_path(monkeypatch, tmp_pat
     assert default_lock_root(str(tmp_path)) == (tmp_path / "data.locks").resolve()
 
 
-def test_shipped_settings_hooks_lock_under_the_project_anchored_default(monkeypatch, tmp_path):
+def test_shipped_settings_hooks_lock_under_the_project_anchored_default(
+    monkeypatch, tmp_path
+):
     """The wiring that actually ships is what this exercises: the real ``settings.HOOKS``,
     kedro's real hook manager, and NO injected ``lock_root`` — run from a foreign CWD."""
     from pyforge.atlas import settings
@@ -502,8 +524,12 @@ def test_shipped_settings_hooks_lock_under_the_project_anchored_default(monkeypa
             run_params=run_params, pipeline=pipe, catalog=catalog
         )
         try:
-            assert expected.is_file(), f"no lock at the project-anchored default {expected}"
-            assert not _is_free(expected.parent, name), "the shipped wiring took no real lock"
+            assert expected.is_file(), (
+                f"no lock at the project-anchored default {expected}"
+            )
+            assert not _is_free(expected.parent, name), (
+                "the shipped wiring took no real lock"
+            )
         finally:
             hook_manager.hook.after_pipeline_run(
                 run_params=run_params, run_result={}, pipeline=pipe, catalog=catalog
@@ -545,7 +571,9 @@ def test_the_default_store_is_a_sibling_of_the_data_tree_never_a_child(
     monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
     if data_root_env is not None:
-        value = str(tmp_path / "relocated") if data_root_env == "@ABS@" else data_root_env
+        value = (
+            str(tmp_path / "relocated") if data_root_env == "@ABS@" else data_root_env
+        )
         monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", value)
 
     data_root = admission._data_root()
@@ -556,7 +584,9 @@ def test_the_default_store_is_a_sibling_of_the_data_tree_never_a_child(
     assert root.parent == data_root.parent, "the store must be the data root's SIBLING"
 
 
-def test_clearing_the_data_tree_leaves_a_held_lock_still_excluding(monkeypatch, tmp_path):
+def test_clearing_the_data_tree_leaves_a_held_lock_still_excluding(
+    monkeypatch, tmp_path
+):
     """The operator action that motivated the deferral, executed for real.
 
     ``rm -rf data/`` mid-run used to delete the lock file out from under its live holder, and
@@ -570,7 +600,9 @@ def test_clearing_the_data_tree_leaves_a_held_lock_still_excluding(monkeypatch, 
     (data_root / "primary").mkdir(parents=True)
     (data_root / "primary" / "core.parquet").write_bytes(b"not really parquet")
 
-    ticket = acquire(["core"], run_id="holder")  # no injected lock_root: the shipped default
+    ticket = acquire(
+        ["core"], run_id="holder"
+    )  # no injected lock_root: the shipped default
     try:
         shutil.rmtree(data_root)
         assert not data_root.exists()
@@ -604,7 +636,9 @@ def test_a_lock_root_outside_the_data_tree_is_still_honored(monkeypatch, tmp_pat
     assert default_lock_root() == (tmp_path / "locks" / ".locks").resolve()
 
 
-def test_one_shared_data_root_yields_one_store_across_two_project_roots(monkeypatch, tmp_path):
+def test_one_shared_data_root_yields_one_store_across_two_project_roots(
+    monkeypatch, tmp_path
+):
     """Why the store is derived from the DATA root and not pinned to the project.
 
     Two checkouts pointed at one ``PYFORGE_ATLAS_DATA_ROOT`` write the same Parquet and must
@@ -621,7 +655,9 @@ def test_one_shared_data_root_yields_one_store_across_two_project_roots(monkeypa
     assert checkout_a == checkout_b == (tmp_path / "shared-data.locks").resolve()
 
 
-def test_unlinking_the_lock_file_itself_still_admits_a_second_writer(monkeypatch, tmp_path):
+def test_unlinking_the_lock_file_itself_still_admits_a_second_writer(
+    monkeypatch, tmp_path
+):
     """The residual boundary, pinned so it is not mistaken for something the fix closed.
 
     ``flock`` belongs to the inode, so deleting the lock file lets the next acquirer create a
@@ -636,7 +672,9 @@ def test_unlinking_the_lock_file_itself_still_admits_a_second_writer(monkeypatch
     ticket = acquire(["core"], run_id="holder")
     try:
         (ticket.lock_root / "core.lock").unlink()
-        second = acquire(["core"], run_id="second")  # NOT a guarantee — a known limitation
+        second = acquire(
+            ["core"], run_id="second"
+        )  # NOT a guarantee — a known limitation
         release(second)
     finally:
         release(ticket)
@@ -652,7 +690,9 @@ def test_hook_registered_in_settings_beside_the_others():
 
     kinds = [type(h).__name__ for h in settings.HOOKS]
     assert "RunAdmissionHooks" in kinds
-    assert {"ProjectHooks", "AtlasObservabilityHooks", "DataValidationHooks"} <= set(kinds)
+    assert {"ProjectHooks", "AtlasObservabilityHooks", "DataValidationHooks"} <= set(
+        kinds
+    )
 
 
 def _dispatch_order(hook_manager, hook_name: str) -> list[str]:
@@ -682,7 +722,11 @@ def test_admission_is_dispatched_first_on_a_real_session_not_merely_last_in_the_
     bootstrap_project(MEMBER_DIR)
     with KedroSession.create(project_path=MEMBER_DIR) as session:
         hook_manager = session._hook_manager
-        for hook_name in ("before_pipeline_run", "after_pipeline_run", "on_pipeline_error"):
+        for hook_name in (
+            "before_pipeline_run",
+            "after_pipeline_run",
+            "on_pipeline_error",
+        ):
             order = _dispatch_order(hook_manager, hook_name)
             assert order[0] == "RunAdmissionHooks", (
                 f"{hook_name} dispatch order is {order} — admission must acquire before, and "
@@ -700,10 +744,12 @@ def test_deepcopy_is_a_working_hook_with_empty_per_run_state(tmp_path):
     try:
         dup = copy.deepcopy(original)
         assert isinstance(dup, RunAdmissionHooks)
-        assert dup._tickets == {}          # per-run state is fresh, never a copied handle
+        assert dup._tickets == {}  # per-run state is fresh, never a copied handle
         assert dup._lock_root == tmp_path  # configuration carries over
     finally:
-        original.after_pipeline_run(run_params={"run_id": "r1"}, pipeline=_pipeline("a"))
+        original.after_pipeline_run(
+            run_params={"run_id": "r1"}, pipeline=_pipeline("a")
+        )
     # and the copy is still a working hook
     dup.before_pipeline_run(run_params={"run_id": "r2"}, pipeline=_pipeline("a"))
     assert not _is_free(tmp_path, "a")
@@ -720,7 +766,9 @@ def test_pickle_roundtrip_drops_tickets_and_still_works(tmp_path):
     try:
         dup = pickle.loads(pickle.dumps(original))
     finally:
-        original.after_pipeline_run(run_params={"run_id": "r1"}, pipeline=_pipeline("a"))
+        original.after_pipeline_run(
+            run_params={"run_id": "r1"}, pipeline=_pipeline("a")
+        )
     assert dup._tickets == {}
     assert dup._wait_seconds == 2
     dup.before_pipeline_run(run_params={"run_id": "r3"}, pipeline=_pipeline("b"))
@@ -751,7 +799,9 @@ def test_the_hooks_are_callable_on_both_the_kedro_and_the_dagster_plane(tmp_path
         assert _is_free(tmp_path, "a"), f"not released on the {plane_kwargs} plane"
 
 
-def test_admission_releases_before_the_observability_hookcallerror_on_the_dagster_plane(tmp_path):
+def test_admission_releases_before_the_observability_hookcallerror_on_the_dagster_plane(
+    tmp_path,
+):
     """DW-AD23-2, pinned. kedro-dagster's after-op omits kedro's ``run_result``; pluggy's
     missing-argument check is per-IMPL, so ``AtlasObservabilityHooks`` (which still declares
     it) raises ``HookCallError``. Admission is dispatched FIRST — bought by
@@ -824,7 +874,9 @@ def test_gate_sigkilled_holder_is_reclaimed_and_recorded(tmp_path, spawn):
 
     holder.proc.kill()
     holder.proc.wait(timeout=_CHILD_TIMEOUT)
-    assert sidecar.is_file(), "the holder record must survive the kill (that is the point)"
+    assert sidecar.is_file(), (
+        "the holder record must survive the kill (that is the point)"
+    )
 
     successor = spawn(tmp_path, "run-D", ["a"])
     verdict = successor.verdict()
@@ -847,7 +899,9 @@ def test_gate_release_then_readmit_across_processes(tmp_path, spawn):
     assert verdict["reclaimed"] == [], "a clean release is not a reclaim"
 
 
-def test_gate_opt_in_wait_admits_only_after_the_holder_actually_releases(tmp_path, spawn):
+def test_gate_opt_in_wait_admits_only_after_the_holder_actually_releases(
+    tmp_path, spawn
+):
     """AC D3, second half: the opt-in wait is a REAL wait — the contender blocks on a lock it
     cannot take and is admitted only once the holder lets go.
 
@@ -882,7 +936,9 @@ def test_gate_opt_in_wait_admits_only_after_the_holder_actually_releases(tmp_pat
 
     assert verdict["verdict"] == "admitted"
     assert verdict["datasets"] == ["a"]
-    assert verdict["reclaimed"] == [], "a live holder that releases cleanly is not a reclaim"
+    assert verdict["reclaimed"] == [], (
+        "a live holder that releases cleanly is not a reclaim"
+    )
     # `_BLOCKED_WINDOW` of proven silence, then admission only after the release. (There used
     # to be an `admitted_at > released_at > spawned_at + _BLOCKED_WINDOW` line here; it read
     # as independent corroboration but was true by construction — `released_at` is sampled
@@ -913,7 +969,9 @@ def test_gate_opt_in_wait_rejects_when_the_deadline_expires(tmp_path, spawn):
     )
 
 
-def test_gate_partial_overlap_rejects_and_leaves_the_uncontended_lock_free(tmp_path, spawn):
+def test_gate_partial_overlap_rejects_and_leaves_the_uncontended_lock_free(
+    tmp_path, spawn
+):
     """A holds ``{b}``; B requests ``{a, b}`` → B takes ``a``, hits ``b``, rolls ``a`` back."""
     holder = spawn(tmp_path, "run-A", ["b"])
     assert holder.verdict()["verdict"] == "admitted"
@@ -949,12 +1007,16 @@ def test_gate_a_rejected_run_leaves_no_holder_record_to_be_mistaken_for_a_corpse
     assert contender.verdict()["verdict"] == "rejected"
     contender.proc.wait(timeout=_CHILD_TIMEOUT)  # its pid now reads as dead
 
-    assert not (tmp_path / "a.holder.json").exists(), "rollback left a self-named record"
+    assert not (tmp_path / "a.holder.json").exists(), (
+        "rollback left a self-named record"
+    )
 
     with caplog.at_level("WARNING", logger=admission.logger.name):
         successor = acquire(["a"], run_id="run-next", lock_root=tmp_path)
     try:
-        assert successor.reclaimed == (), "an orderly rejection was reported as a corpse"
+        assert successor.reclaimed == (), (
+            "an orderly rejection was reported as a corpse"
+        )
         assert "reclaimed" not in caplog.text
     finally:
         release(successor)
@@ -965,7 +1027,10 @@ def test_the_harness_fails_fast_when_a_child_hangs(tmp_path):
     stderr_file = (tmp_path / "hang.stderr").open("w")
     proc = subprocess.Popen(
         [sys.executable, "-c", "import time; time.sleep(600)"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr_file, text=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=stderr_file,
+        text=True,
     )
     child = _Child(proc, tmp_path / "hang.stderr", stderr_file)
     try:
@@ -983,12 +1048,15 @@ def test_the_harness_survives_a_child_that_floods_stderr(tmp_path):
     undrained pipe. It is a file, so it cannot."""
     program = (
         "import sys; sys.stderr.write('x' * 512 * 1024); sys.stderr.flush();"
-        "print('{\"verdict\": \"admitted\"}', flush=True)"
+        'print(\'{"verdict": "admitted"}\', flush=True)'
     )
     stderr_file = (tmp_path / "flood.stderr").open("w")
     proc = subprocess.Popen(
         [sys.executable, "-c", program],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr_file, text=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=stderr_file,
+        text=True,
     )
     child = _Child(proc, tmp_path / "flood.stderr", stderr_file)
     try:
@@ -1011,7 +1079,11 @@ def test_uncontended_run_takes_every_lock_in_order_and_releases(tmp_path):
     for name in ("a", "b"):
         assert (tmp_path / f"{name}.lock").is_file()
         record = json.loads((tmp_path / f"{name}.holder.json").read_text())
-        assert record == {"run_id": "r1", "pid": os.getpid(), "started_at": record["started_at"]}
+        assert record == {
+            "run_id": "r1",
+            "pid": os.getpid(),
+            "started_at": record["started_at"],
+        }
         assert not _is_free(tmp_path, name)
 
     release(ticket)
@@ -1085,7 +1157,9 @@ def test_transcoded_names_collapse_to_one_lock(tmp_path):
         release(ticket)
 
 
-@pytest.mark.parametrize("payload", ["", "{not json", "[]", '{"run_id": null, "pid": "x"}'])
+@pytest.mark.parametrize(
+    "payload", ["", "{not json", "[]", '{"run_id": null, "pid": "x"}']
+)
 def test_a_corrupt_or_missing_holder_record_still_rejects_cleanly(tmp_path, payload):
     """Never a ``JSONDecodeError`` — the unknown fields report as ``None``."""
     held = acquire(["a"], run_id="r1", lock_root=tmp_path)
@@ -1147,7 +1221,9 @@ def test_the_opt_in_wait_is_one_deadline_shared_across_all_locks(tmp_path):
         releaser.join(timeout=10.0)
         release(second)
 
-    assert excinfo.value.conflicting == "b", "the contender never got past the freed lock"
+    assert excinfo.value.conflicting == "b", (
+        "the contender never got past the freed lock"
+    )
     # It waited out the whole shared budget...
     assert elapsed >= budget * 0.9, f"rejected early at {elapsed:.3f}s"
     # ...and did NOT restart the clock at `b` (which would land near free_at + budget).
@@ -1159,7 +1235,9 @@ def test_the_opt_in_wait_is_one_deadline_shared_across_all_locks(tmp_path):
 
 def test_release_without_acquire_is_a_no_op(tmp_path):
     hooks = RunAdmissionHooks(lock_root=tmp_path)
-    hooks.after_pipeline_run(run_params={"run_id": "never-started"}, pipeline=_pipeline("a"))
+    hooks.after_pipeline_run(
+        run_params={"run_id": "never-started"}, pipeline=_pipeline("a")
+    )
     hooks.on_pipeline_error(
         run_params={"run_id": "never-started"},
         pipeline=_pipeline("a"),
@@ -1188,7 +1266,9 @@ def test_locks_are_not_thread_local_so_a_cross_thread_release_really_releases(tm
     release(successor)
 
 
-def test_any_exception_inside_acquire_rolls_back_the_locks_already_taken(monkeypatch, tmp_path):
+def test_any_exception_inside_acquire_rolls_back_the_locks_already_taken(
+    monkeypatch, tmp_path
+):
     """Not just ``filelock.Timeout``: an ``OSError`` from the sidecar write (ENOSPC, EACCES,
     EROFS) is precisely the failure with no recovery path."""
     real_write = admission._write_holder
@@ -1227,7 +1307,9 @@ def test_a_torn_holder_record_is_rolled_back_too(monkeypatch, tmp_path):
     with pytest.raises(OSError):
         acquire(["a", "b"], run_id="r1", lock_root=tmp_path)
 
-    assert not (tmp_path / "b.holder.json").exists(), "rollback left a torn record behind"
+    assert not (tmp_path / "b.holder.json").exists(), (
+        "rollback left a torn record behind"
+    )
     assert not (tmp_path / "a.holder.json").exists()
     assert _is_free(tmp_path, "a") and _is_free(tmp_path, "b")
 
@@ -1287,7 +1369,9 @@ def test_release_does_not_abort_mid_loop_when_one_handle_raises(tmp_path):
     assert _is_free(tmp_path, "b"), "the loop aborted at the raising handle"
 
 
-def test_release_frees_the_tail_when_a_ticket_has_fewer_names_than_locks(tmp_path, caplog):
+def test_release_frees_the_tail_when_a_ticket_has_fewer_names_than_locks(
+    tmp_path, caplog
+):
     """A ticket with `len(datasets) < len(locks)` must still release EVERY lock.
 
     `release()` zips `datasets` against `locks`, so a short `datasets` would truncate the
@@ -1330,7 +1414,9 @@ def test_a_second_ticket_under_one_run_id_is_stacked_not_overwritten(tmp_path, c
     with caplog.at_level("WARNING", logger=admission.logger.name):
         hooks.before_pipeline_run(run_params=run_params, pipeline=second)
 
-    assert "already has 1 outstanding ticket" in caplog.text, "the collision must be loud"
+    assert "already has 1 outstanding ticket" in caplog.text, (
+        "the collision must be loud"
+    )
     assert len(hooks._tickets["shared"]) == 2
     assert not _is_free(tmp_path, "a") and not _is_free(tmp_path, "b")
 
@@ -1341,7 +1427,9 @@ def test_a_second_ticket_under_one_run_id_is_stacked_not_overwritten(tmp_path, c
     assert _is_free(tmp_path, "a")
 
 
-def test_tickets_pair_by_dataset_set_so_the_run_that_started_first_may_finish_first(tmp_path):
+def test_tickets_pair_by_dataset_set_so_the_run_that_started_first_may_finish_first(
+    tmp_path,
+):
     """Correctness requirement 4 — the half a LIFO pop gets WRONG.
 
     The test above finishes the MOST RECENT pipeline, which a bare ``stack.pop()`` also gets
@@ -1368,7 +1456,9 @@ def test_tickets_pair_by_dataset_set_so_the_run_that_started_first_may_finish_fi
     assert _is_free(tmp_path, "b")
 
 
-def test_an_ambiguous_no_match_release_frees_nothing_rather_than_guessing(tmp_path, caplog):
+def test_an_ambiguous_no_match_release_frees_nothing_rather_than_guessing(
+    tmp_path, caplog
+):
     """The no-match fallback used to release ``stack[-1]`` — the bare LIFO pop the block five
     lines above it forbids by name, and which
     ``test_tickets_pair_by_dataset_set_...`` exists to prove wrong.
@@ -1431,7 +1521,9 @@ def test_the_ticket_registry_does_not_grow_one_dead_key_per_run(tmp_path):
     hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
     assert list(hooks._tickets) == ["shared"], "dropped a key that still holds a lock"
 
-    hooks.on_pipeline_error(run_params=run_params, pipeline=_pipeline("b"),
+    hooks.on_pipeline_error(
+        run_params=run_params,
+        pipeline=_pipeline("b"),
     )
     assert hooks._tickets == {}
     assert _is_free(tmp_path, "a") and _is_free(tmp_path, "b")
@@ -1451,14 +1543,20 @@ def test_locks_never_silently_downgrade_to_a_soft_lock(tmp_path):
         assert len(ticket.locks) == 2
         for lock in ticket.locks:
             # `fallback_to_soft` is filelock's own public property (3.30+) — no internals.
-            assert lock.fallback_to_soft is False, "an ENOSYS mount would downgrade silently"
+            assert lock.fallback_to_soft is False, (
+                "an ENOSYS mount would downgrade silently"
+            )
             assert not isinstance(lock, filelock.SoftFileLock)
             # Platform-conditional: `win-64` is a declared workspace platform (root
             # pixi.toml), which is why `_pid_alive` is POSIX-gated at all. Asserting
             # `UnixFileLock` unconditionally would red this gate on the one platform the
             # module goes out of its way to support. The invariant is "a kernel lock, not
             # filelock's userspace marker-file emulation" — which is what both names mean.
-            kernel_lock = filelock.UnixFileLock if os.name == "posix" else filelock.WindowsFileLock
+            kernel_lock = (
+                filelock.UnixFileLock
+                if os.name == "posix"
+                else filelock.WindowsFileLock
+            )
             assert isinstance(lock, kernel_lock), "not a kernel-enforced lock"
     finally:
         release(ticket)
@@ -1472,6 +1570,7 @@ def test_pid_liveness_probe_is_posix_gated(monkeypatch):
     ``admission.os`` *is* the stdlib module, so patching the name through it would tell every
     other library in the process it is running on Windows for the duration of this test.
     """
+
     def forbidden(*args, **kwargs):
         raise AssertionError("os.kill must never be called off POSIX")
 
@@ -1481,7 +1580,9 @@ def test_pid_liveness_probe_is_posix_gated(monkeypatch):
     assert admission._pid_alive(999_999) is True  # conservative: treat as alive
 
 
-def test_a_pid_wider_than_a_c_int_does_not_crash_an_otherwise_successful_admission(tmp_path):
+def test_a_pid_wider_than_a_c_int_does_not_crash_an_otherwise_successful_admission(
+    tmp_path,
+):
     """``os.kill(10**20, 0)`` raises ``OverflowError`` — neither ``OSError`` nor
     ``ValueError``, so it escaped ``_pid_alive`` and propagated.
 
@@ -1524,7 +1625,9 @@ def test_a_non_positive_pid_is_not_a_holder(tmp_path, pid, caplog):
 def test_pid_liveness_treats_a_permission_error_as_alive(monkeypatch):
     monkeypatch.setattr(admission, "_IS_POSIX", True)
     monkeypatch.setattr(
-        admission.os, "kill", lambda *_: (_ for _ in ()).throw(PermissionError(1, "EPERM"))
+        admission.os,
+        "kill",
+        lambda *_: (_ for _ in ()).throw(PermissionError(1, "EPERM")),
     )
 
     assert admission._pid_alive(1) is True
@@ -1552,7 +1655,8 @@ def test_an_out_of_range_hold_start_does_not_break_the_rejection(tmp_path):
     torn sidecar can carry one (correctness requirement 7)."""
     held = acquire(["a"], run_id="r1", lock_root=tmp_path)
     (tmp_path / "a.holder.json").write_text(
-        json.dumps({"run_id": "r1", "pid": os.getpid(), "started_at": 1e300}), encoding="utf-8"
+        json.dumps({"run_id": "r1", "pid": os.getpid(), "started_at": 1e300}),
+        encoding="utf-8",
     )
     try:
         with pytest.raises(RunAdmissionRejected) as excinfo:
@@ -1634,12 +1738,16 @@ def test_a_real_runner_failure_releases_through_on_pipeline_error(tmp_path):
     catalog = DataCatalog({"raw_in": MemoryDataset(1)})
     run_params = {"run_id": "r1"}
 
-    hook_manager.hook.before_pipeline_run(run_params=run_params, pipeline=pipe, catalog=catalog)
+    hook_manager.hook.before_pipeline_run(
+        run_params=run_params, pipeline=pipe, catalog=catalog
+    )
     with pytest.raises(Exception):
         SequentialRunner().run(pipe, catalog, hook_manager=hook_manager)
     hook_manager.hook.on_pipeline_error(
-        error=RuntimeError("node blew up"), run_params=run_params,
-        pipeline=pipe, catalog=catalog,
+        error=RuntimeError("node blew up"),
+        run_params=run_params,
+        pipeline=pipe,
+        catalog=catalog,
     )
 
     assert _is_free(tmp_path, "a")
@@ -1655,7 +1763,10 @@ def test_the_runtime_param_is_the_live_wait_channel(tmp_path):
     try:
         with pytest.raises(RunAdmissionRejected):
             hooks.before_pipeline_run(
-                run_params={"run_id": "r1", "runtime_params": {"admission_wait_seconds": 0.4}},
+                run_params={
+                    "run_id": "r1",
+                    "runtime_params": {"admission_wait_seconds": 0.4},
+                },
                 pipeline=_pipeline("a"),
             )
     finally:
@@ -1667,7 +1778,10 @@ def test_an_invalid_runtime_param_refuses_the_run(tmp_path):
     hooks = RunAdmissionHooks(lock_root=tmp_path)
     with pytest.raises(AdmissionConfigError):
         hooks.before_pipeline_run(
-            run_params={"run_id": "r1", "runtime_params": {"admission_wait_seconds": "soon"}},
+            run_params={
+                "run_id": "r1",
+                "runtime_params": {"admission_wait_seconds": "soon"},
+            },
             pipeline=_pipeline("a"),
         )
 
@@ -1770,12 +1884,16 @@ def test_the_holder_record_is_replaced_atomically_not_truncated_in_place(tmp_pat
     assert not list(tmp_path.glob("*.tmp")), "the temp file was left behind"
 
 
-def test_an_absolute_lock_root_env_var_needs_no_derivable_project_root(monkeypatch, tmp_path):
+def test_an_absolute_lock_root_env_var_needs_no_derivable_project_root(
+    monkeypatch, tmp_path
+):
     """Installed from the built ``.conda`` artifact, ``_PROJECT_ROOT`` lands in
     ``site-packages`` and the guard refuses to guess — while its own message names an absolute
     ``PYFORGE_ATLAS_LOCK_ROOT`` as the remedy. Resolving the base BEFORE reading the env made
     that remedy unreachable: the guard fired before the override was ever read."""
-    monkeypatch.setattr(admission, "_PROJECT_ROOT", tmp_path / "site-packages" / "pyforge")
+    monkeypatch.setattr(
+        admission, "_PROJECT_ROOT", tmp_path / "site-packages" / "pyforge"
+    )
     monkeypatch.setenv("PYFORGE_ATLAS_LOCK_ROOT", str(tmp_path / "elsewhere"))
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
 
@@ -1788,11 +1906,15 @@ def test_the_derived_project_root_is_refused_when_it_is_not_a_kedro_project(
     """The other half of the same guard: with no absolute override there IS no anchor, and
     guessing would anchor the locks away from the Parquet they guard — the defect the first
     implementation of this story shipped and was reverted for."""
-    monkeypatch.setattr(admission, "_PROJECT_ROOT", tmp_path / "site-packages" / "pyforge")
+    monkeypatch.setattr(
+        admission, "_PROJECT_ROOT", tmp_path / "site-packages" / "pyforge"
+    )
     monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
 
-    with pytest.raises(AdmissionConfigError, match="cannot locate the Kedro project root"):
+    with pytest.raises(
+        AdmissionConfigError, match="cannot locate the Kedro project root"
+    ):
         default_lock_root()
 
 
@@ -1824,7 +1946,9 @@ def test_the_hooks_declare_only_the_arguments_they_read(tmp_path):
     import inspect
 
     for name in ("before_pipeline_run", "after_pipeline_run", "on_pipeline_error"):
-        params = set(inspect.signature(getattr(RunAdmissionHooks, name)).parameters) - {"self"}
+        params = set(inspect.signature(getattr(RunAdmissionHooks, name)).parameters) - {
+            "self"
+        }
         assert params == {"run_params", "pipeline"}, f"{name} declares {params}"
 
     hooks = RunAdmissionHooks(lock_root=tmp_path)
@@ -1835,15 +1959,21 @@ def test_the_hooks_declare_only_the_arguments_they_read(tmp_path):
     # Every call shape below omits at least one hookspec argument.
     hook_manager.hook.before_pipeline_run(run_params=run_params, pipeline=pipe)
     assert not _is_free(tmp_path, "a")
-    hook_manager.hook.after_pipeline_run(run_params=run_params, pipeline=pipe, run_result={})
-    assert _is_free(tmp_path, "a"), "a HookCallError from our own impl stranded the lock"
+    hook_manager.hook.after_pipeline_run(
+        run_params=run_params, pipeline=pipe, run_result={}
+    )
+    assert _is_free(tmp_path, "a"), (
+        "a HookCallError from our own impl stranded the lock"
+    )
 
     hook_manager.hook.before_pipeline_run(run_params=run_params, pipeline=pipe)
     hook_manager.hook.on_pipeline_error(run_params=run_params, pipeline=pipe)
     assert _is_free(tmp_path, "a")
 
 
-def test_a_release_with_no_usable_pipeline_and_two_tickets_frees_nothing(tmp_path, caplog):
+def test_a_release_with_no_usable_pipeline_and_two_tickets_frees_nothing(
+    tmp_path, caplog
+):
     """The ambiguity guard covered the no-MATCH case but not the no-PIPELINE one, so
     ``_release_for(run_params, None)`` fell through to the bare LIFO pop the same function
     forbids by name — freeing a run that is still writing. Measured: with ``{x}`` and ``{y}``
@@ -1865,7 +1995,9 @@ def test_a_release_with_no_usable_pipeline_and_two_tickets_frees_nothing(tmp_pat
     assert _is_free(tmp_path, "x") and _is_free(tmp_path, "y")
 
 
-def test_a_pipeline_whose_outputs_cannot_be_read_does_not_fail_a_successful_run(tmp_path):
+def test_a_pipeline_whose_outputs_cannot_be_read_does_not_fail_a_successful_run(
+    tmp_path,
+):
     """``release()`` promises never to raise, but ``_release_for`` computed
     ``_lock_names(pipeline.all_outputs())`` outside every guard — and kedro calls
     ``after_pipeline_run`` OUTSIDE its ``try``. So an ``AdmissionConfigError`` or an
@@ -1880,7 +2012,11 @@ def test_a_pipeline_whose_outputs_cannot_be_read_does_not_fail_a_successful_run(
     run_params = {"run_id": "solo"}
     hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
 
-    hooks.after_pipeline_run(run_params=run_params, pipeline=_Broken())  # must not raise
+    hooks.after_pipeline_run(
+        run_params=run_params, pipeline=_Broken()
+    )  # must not raise
 
-    assert _is_free(tmp_path, "a"), "the single unambiguous ticket must still be released"
+    assert _is_free(tmp_path, "a"), (
+        "the single unambiguous ticket must still be released"
+    )
     assert hooks._tickets == {}

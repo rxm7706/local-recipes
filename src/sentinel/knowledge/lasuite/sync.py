@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 class WikiSyncer:
     """Syncs compiled wiki markdown files → La Suite Docs.
-    
-    Maintains a local mapping file so we know which La Suite 
+
+    Maintains a local mapping file so we know which La Suite
     document ID corresponds to each local markdown file.
     This lets us UPDATE articles instead of creating duplicates.
     """
@@ -23,7 +23,7 @@ class WikiSyncer:
 
     def sync_file(self, md_path: Path) -> bool:
         """Push a single markdown file to La Suite Docs.
-        
+
         Returns True on success, or False if a connection timeout/error occurs.
         """
         content = md_path.read_text()
@@ -45,12 +45,14 @@ class WikiSyncer:
                 self._save_mapping()
             return True
         except (httpx.TimeoutException, httpx.ConnectError) as exc:
-            logger.error("Connection timeout/error syncing %s to La Suite: %s", md_path, exc)
+            logger.error(
+                "Connection timeout/error syncing %s to La Suite: %s", md_path, exc
+            )
             return False
 
     def sync_all(self, compiled_dir: Path) -> dict[str, list[str]]:
         """Sync all compiled wiki files to La Suite Docs.
-        
+
         Returns a dict summarizing synced and failed files.
         """
         results = {"synced": [], "failed": []}

@@ -63,7 +63,9 @@ def _ensure_json_native(obj: Any, path: str) -> Any:
     if isinstance(obj, dict):
         for key, val in obj.items():
             if not isinstance(key, str):
-                raise ValueError(f"{path}: JSON object keys must be strings, got {type(key).__name__}")
+                raise ValueError(
+                    f"{path}: JSON object keys must be strings, got {type(key).__name__}"
+                )
             _ensure_json_native(val, f"{path}.{key}")
         return obj
     if isinstance(obj, list):
@@ -107,14 +109,18 @@ class _BasePayload(BaseModel):
     @classmethod
     def _stamp_present(cls, v: str) -> str:
         if not v or not v.strip():
-            raise ValueError("build_stamp is required (AD-17) — an empty stamp is no stamp")
+            raise ValueError(
+                "build_stamp is required (AD-17) — an empty stamp is no stamp"
+            )
         return v
 
     @field_validator("subject")
     @classmethod
     def _subject_present(cls, v: str) -> str:
         if not v or not v.strip():
-            raise ValueError("subject is required — the payload must name what it is about")
+            raise ValueError(
+                "subject is required — the payload must name what it is about"
+            )
         return v
 
 

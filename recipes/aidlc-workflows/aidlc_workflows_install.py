@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy an AI-DLC harness distribution tree into the current project."""
+
 import argparse
 import os
 import shutil
@@ -58,7 +59,9 @@ def main():
     print(f"Installed AI-DLC {args.harness} distribution into '{dest}':")
     for s in installed:
         print(f"  - {s}")
-    print("NOTE: the workflows' hooks run through bun (https://bun.sh) — install it separately.")
+    print(
+        "NOTE: the workflows' hooks run through bun (https://bun.sh) — install it separately."
+    )
     if not installed:
         print("Nothing was installed.", file=sys.stderr)
         sys.exit(1)

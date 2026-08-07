@@ -18,12 +18,20 @@ DAY = 86400
 
 
 def _universe_built_at(epoch):
-    return {"metadata": {"properties": [{"name": "cfe:atlas_built_at", "value": str(int(epoch))}]}, "components": []}
+    return {
+        "metadata": {
+            "properties": [{"name": "cfe:atlas_built_at", "value": str(int(epoch))}]
+        },
+        "components": [],
+    }
 
 
 def test_fresh_universe_passes():
     now = time.time()
-    assert check_universe_freshness(_universe_built_at(now - 3 * DAY), 14, now=now) is not None
+    assert (
+        check_universe_freshness(_universe_built_at(now - 3 * DAY), 14, now=now)
+        is not None
+    )
 
 
 def test_stale_universe_is_refused():
@@ -41,8 +49,18 @@ def test_missing_built_at_is_fail_closed():
 
 def test_allow_stale_overrides_both():
     now = time.time()
-    assert check_universe_freshness(_universe_built_at(now - 30 * DAY), 14, now=now, allow_stale=True) is not None
-    assert check_universe_freshness({"metadata": {}, "components": []}, 14, allow_stale=True) is None
+    assert (
+        check_universe_freshness(
+            _universe_built_at(now - 30 * DAY), 14, now=now, allow_stale=True
+        )
+        is not None
+    )
+    assert (
+        check_universe_freshness(
+            {"metadata": {}, "components": []}, 14, allow_stale=True
+        )
+        is None
+    )
 
 
 def test_matcher_refuses_a_stale_universe_via_params():

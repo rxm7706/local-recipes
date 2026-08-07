@@ -221,7 +221,9 @@ def load_file_entries(provenance_path: Path) -> list[dict]:
     try:
         data = json.loads(provenance_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
-        raise ValueError(f"failed to read provenance file {provenance_path}: {exc}") from exc
+        raise ValueError(
+            f"failed to read provenance file {provenance_path}: {exc}"
+        ) from exc
 
     if isinstance(data, list):
         return list(data)
@@ -232,9 +234,7 @@ def load_file_entries(provenance_path: Path) -> list[dict]:
                 f"provenance file {provenance_path} has no `file_entries` field"
             )
         if not isinstance(entries, list):
-            raise ValueError(
-                f"`file_entries` in {provenance_path} is not an array"
-            )
+            raise ValueError(f"`file_entries` in {provenance_path} is not an array")
         return list(entries)
     raise ValueError(
         f"provenance file {provenance_path} must be an object or array; "
@@ -364,12 +364,14 @@ def find_manual_blocks(data: bytes) -> list[dict]:
         if close_start is None:
             continue  # unclosed opening marker — malformed, skip
         content = data[open_end:close_start]
-        blocks.append({
-            "name": name,
-            "content_hash": sha256_of_bytes(content),
-            "byte_offset": om.start(),
-            "parent_heading": _parent_heading(data, om.start()),
-        })
+        blocks.append(
+            {
+                "name": name,
+                "content_hash": sha256_of_bytes(content),
+                "byte_offset": om.start(),
+                "parent_heading": _parent_heading(data, om.start()),
+            }
+        )
     blocks.sort(key=lambda b: b["byte_offset"])
     return blocks
 
@@ -403,11 +405,15 @@ def classify_manual_blocks(inv_blocks: list[dict], cur_blocks: list[dict]) -> di
         if not candidates:
             missing.append(name)
             continue
-        hash_matches = [c for c in candidates if c["content_hash"] == inv.get("content_hash")]
+        hash_matches = [
+            c for c in candidates if c["content_hash"] == inv.get("content_hash")
+        ]
         if not hash_matches:
             modified.append(name)
             continue
-        if any(c.get("parent_heading") == inv.get("parent_heading") for c in hash_matches):
+        if any(
+            c.get("parent_heading") == inv.get("parent_heading") for c in hash_matches
+        ):
             preserved.append(name)
         else:
             moved.append(name)
@@ -445,13 +451,9 @@ def load_inventory_blocks(inventory_path: Path) -> list[dict]:
     if isinstance(data, dict):
         blocks = data.get("blocks")
         if blocks is None:
-            raise ValueError(
-                f"inventory file {inventory_path} has no `blocks` field"
-            )
+            raise ValueError(f"inventory file {inventory_path} has no `blocks` field")
         if not isinstance(blocks, list):
-            raise ValueError(
-                f"`blocks` in {inventory_path} is not an array"
-            )
+            raise ValueError(f"`blocks` in {inventory_path} is not an array")
         return list(blocks)
     raise ValueError(
         f"inventory file {inventory_path} must be an object or array; "
@@ -503,9 +505,7 @@ def load_constituents(provenance_path: Path) -> list[dict]:
         if constituents is None:
             return []  # single skill — no constituents to verify
         if not isinstance(constituents, list):
-            raise ValueError(
-                f"`constituents` in {provenance_path} is not an array"
-            )
+            raise ValueError(f"`constituents` in {provenance_path} is not an array")
         return list(constituents)
     raise ValueError(
         f"provenance file {provenance_path} must be an object or array; "
@@ -513,7 +513,9 @@ def load_constituents(provenance_path: Path) -> list[dict]:
     )
 
 
-def _constituent_metadata_path(skills_root: Path, skill_path: str, skill_name: str) -> Path:
+def _constituent_metadata_path(
+    skills_root: Path, skill_path: str, skill_name: str
+) -> Path:
     """Resolve a constituent's live metadata.json path.
 
     Mirrors init.md's Stack Skill Detection prose:
@@ -542,25 +544,35 @@ def compare_constituents(provenance_path: Path, skills_root: Path) -> dict:
 
     for entry in constituents:
         if not isinstance(entry, dict):
-            missing.append({
-                "skill_name": None,
-                "skill_path": None,
-                "stored_hash": None,
-                "reason": "incomplete-record",
-            })
+            missing.append(
+                {
+                    "skill_name": None,
+                    "skill_path": None,
+                    "stored_hash": None,
+                    "reason": "incomplete-record",
+                }
+            )
             continue
         skill_name = entry.get("skill_name")
         skill_path = entry.get("skill_path")
         stored_hash = entry.get("metadata_hash")
 
-        if not isinstance(skill_name, str) or not skill_name or \
-                not isinstance(skill_path, str) or not skill_path:
-            missing.append({
-                "skill_name": skill_name if isinstance(skill_name, str) else None,
-                "skill_path": skill_path if isinstance(skill_path, str) else None,
-                "stored_hash": stored_hash if isinstance(stored_hash, str) else None,
-                "reason": "incomplete-record",
-            })
+        if (
+            not isinstance(skill_name, str)
+            or not skill_name
+            or not isinstance(skill_path, str)
+            or not skill_path
+        ):
+            missing.append(
+                {
+                    "skill_name": skill_name if isinstance(skill_name, str) else None,
+                    "skill_path": skill_path if isinstance(skill_path, str) else None,
+                    "stored_hash": stored_hash
+                    if isinstance(stored_hash, str)
+                    else None,
+                    "reason": "incomplete-record",
+                }
+            )
             continue
 
         if not isinstance(stored_hash, str) or not stored_hash:
@@ -571,29 +583,33 @@ def compare_constituents(provenance_path: Path, skills_root: Path) -> dict:
 
         meta_path = _constituent_metadata_path(skills_root, skill_path, skill_name)
         if not meta_path.is_file():
-            missing.append({
-                "skill_name": skill_name,
-                "skill_path": skill_path,
-                "stored_hash": stored_hash,
-                "reason": "metadata-not-found",
-            })
+            missing.append(
+                {
+                    "skill_name": skill_name,
+                    "skill_path": skill_path,
+                    "stored_hash": stored_hash,
+                    "reason": "metadata-not-found",
+                }
+            )
             continue
 
         current_hash = sha256_of_file(meta_path)
         if normalize_hash(stored_hash) == normalize_hash(current_hash):
             fresh.append({"skill_name": skill_name})
         else:
-            drifted.append({
-                "skill_name": skill_name,
-                "skill_path": skill_path,
-                "stored_hash": stored_hash,
-                "current_hash": current_hash,
-            })
+            drifted.append(
+                {
+                    "skill_name": skill_name,
+                    "skill_path": skill_path,
+                    "stored_hash": stored_hash,
+                    "current_hash": current_hash,
+                }
+            )
 
-    drifted.sort(key=lambda r: (r.get("skill_name") or ""))
-    fresh.sort(key=lambda r: (r.get("skill_name") or ""))
-    missing.sort(key=lambda r: (r.get("skill_name") or ""))
-    skipped_null_hash.sort(key=lambda r: (r.get("skill_name") or ""))
+    drifted.sort(key=lambda r: r.get("skill_name") or "")
+    fresh.sort(key=lambda r: r.get("skill_name") or "")
+    missing.sort(key=lambda r: r.get("skill_name") or "")
+    skipped_null_hash.sort(key=lambda r: r.get("skill_name") or "")
 
     return {
         "drifted": drifted,
@@ -733,7 +749,9 @@ def _build_parser() -> argparse.ArgumentParser:
         "manual-verify",
         help="verify a file against a captured [MANUAL] inventory",
     )
-    p_ver.add_argument("path", help="path to the post-merge SKILL.md (or reference file)")
+    p_ver.add_argument(
+        "path", help="path to the post-merge SKILL.md (or reference file)"
+    )
     p_ver.add_argument(
         "--inventory",
         required=True,

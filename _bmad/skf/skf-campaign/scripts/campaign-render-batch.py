@@ -73,7 +73,9 @@ def _target_line(repo_url: str, pin: Any, target: Dict[str, Any]) -> str:
     return line
 
 
-def build_batch(state: Dict[str, Any], brief: Dict[str, Any]) -> Tuple[List[str], Dict[str, Any]]:
+def build_batch(
+    state: Dict[str, Any], brief: Dict[str, Any]
+) -> Tuple[List[str], Dict[str, Any]]:
     """Filter Tier B pending skills and render batch lines.
 
     Returns (lines, summary). `summary["unmatched"]` lists any pending Tier B
@@ -190,7 +192,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--state-file", required=True)
     parser.add_argument("--brief-file", required=True)
-    parser.add_argument("-o", "--output", dest="output", help="batch file path (default: stdout)")
+    parser.add_argument(
+        "-o", "--output", dest="output", help="batch file path (default: stdout)"
+    )
     args = parser.parse_args(argv)
     return run(args.state_file, args.brief_file, args.output)
 

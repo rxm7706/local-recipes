@@ -111,13 +111,15 @@ Core types:
 ```python
 # deckcraft.types
 class HardwareTier(str, Enum):
-    SMALL = "small"      # ≤32 GB RAM
-    MEDIUM = "medium"    # 32–48 GB RAM
-    LARGE = "large"      # ≥48 GB RAM
+    SMALL = "small"  # ≤32 GB RAM
+    MEDIUM = "medium"  # 32–48 GB RAM
+    LARGE = "large"  # ≥48 GB RAM
+
 
 class Color(BaseModel):
-    rgb: str             # "#RRGGBB"
-    name: str | None     # optional symbolic name (accent1, etc.)
+    rgb: str  # "#RRGGBB"
+    name: str | None  # optional symbolic name (accent1, etc.)
+
 
 class Theme(BaseModel):
     primary: Color
@@ -128,18 +130,31 @@ class Theme(BaseModel):
     body_font: str
     monospace_font: str | None
 
+
 class LayoutHint(BaseModel):
     """Semantic layout type: title, content, two_column, section, blank, etc."""
-    semantic_type: Literal["title", "content", "two_column", "comparison",
-                            "section_header", "blank", "title_only", "image_with_caption"]
+
+    semantic_type: Literal[
+        "title",
+        "content",
+        "two_column",
+        "comparison",
+        "section_header",
+        "blank",
+        "title_only",
+        "image_with_caption",
+    ]
     template_layout_name: str | None  # set after layout_mapper resolves
+
 
 class Asset(BaseModel):
     """A non-text element on a slide."""
+
     kind: Literal["image", "chart", "diagram", "table"]
-    spec: dict             # type-specific payload (chart spec, mermaid src, image path/prompt)
-    cache_key: str         # content-hash for deduplication
+    spec: dict  # type-specific payload (chart spec, mermaid src, image path/prompt)
+    cache_key: str  # content-hash for deduplication
     rendered_path: Path | None = None  # set after asset_pipeline renders
+
 
 class Slide(BaseModel):
     title: str | None
@@ -148,16 +163,20 @@ class Slide(BaseModel):
     layout: LayoutHint
     assets: list[Asset] = []
 
+
 class Style(BaseModel):
     """FR-52: common JSON shape across all extractors. Integration contract for V∞."""
+
     schema_version: Literal["1.0"] = "1.0"
-    source_kind: Literal["potx", "pptx", "pptx_sample", "docx", "pdf",
-                          "odp", "odt", "default"]
+    source_kind: Literal[
+        "potx", "pptx", "pptx_sample", "docx", "pdf", "odp", "odt", "default"
+    ]
     source_path: Path | None = None
     theme: Theme
-    layouts: list[LayoutDescriptor] = []   # PPTX-only; empty for non-PPTX sources
-    masters: list[MasterDescriptor] = []   # PPTX-only
-    brand_assets: list[BrandAsset] = []    # logos, footers, page-number formats
+    layouts: list[LayoutDescriptor] = []  # PPTX-only; empty for non-PPTX sources
+    masters: list[MasterDescriptor] = []  # PPTX-only
+    brand_assets: list[BrandAsset] = []  # logos, footers, page-number formats
+
 
 class Deck(BaseModel):
     title: str
@@ -633,6 +652,7 @@ P-01 through P-10 have enforcement (lint rule, test, or code review) defined. `t
 # Pseudocode — runs on the requester's Framework laptop
 import time
 from deckcraft.adapters.llm import LlamaServerAdapter
+
 PROMPT = """Generate a 10-slide outline for a Q3 product status presentation.
 Topic: deckcraft V1 launch. Audience: engineering leadership."""
 adapter = LlamaServerAdapter(model="qwen3:30b-instruct-q4_k_m")
@@ -640,8 +660,10 @@ adapter.start_server()
 t0 = time.time()
 result = adapter.complete(PROMPT, max_tokens=2000, format="json")
 t1 = time.time()
-print(f"Outline gen: {t1-t0:.1f}s; tokens={result.eval_count}; "
-      f"throughput={result.eval_count/(t1-t0):.1f} tok/s")
+print(
+    f"Outline gen: {t1 - t0:.1f}s; tokens={result.eval_count}; "
+    f"throughput={result.eval_count / (t1 - t0):.1f} tok/s"
+)
 adapter.stop_server()
 # Pass criterion: t1-t0 < 480s (8 min) — leaves headroom under SC-02's 10-min target
 ```

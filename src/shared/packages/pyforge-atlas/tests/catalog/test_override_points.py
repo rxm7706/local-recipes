@@ -145,7 +145,9 @@ def test_catalog_never_hardcodes_a_host(catalog_config):
         content = stripped.split(" #", 1)[0]
         if _SCHEME_RE.search(content):
             hardcoded.append((i + 1, stripped))
-    assert not hardcoded, f"literal scheme://host in catalog.yml (non-comment): {hardcoded}"
+    assert not hardcoded, (
+        f"literal scheme://host in catalog.yml (non-comment): {hardcoded}"
+    )
 
     import yaml
 
@@ -157,13 +159,17 @@ def test_catalog_never_hardcodes_a_host(catalog_config):
         and "url" in spec
         and not str(spec["url"]).startswith("${globals:")
     }
-    assert not bad_urls, f"catalog url values must begin with ${{globals:...}}: {bad_urls}"
+    assert not bad_urls, (
+        f"catalog url values must begin with ${{globals:...}}: {bad_urls}"
+    )
 
 
 def test_env_override_reaches_resolved_catalog(monkeypatch):
     """End-to-end: an explicit env var beats the public default (spine
     Config row — os.environ.setdefault semantics)."""
-    monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://mirror.corp/artifactory/conda-forge")
+    monkeypatch.setenv(
+        "CONDA_FORGE_BASE_URL", "https://mirror.corp/artifactory/conda-forge"
+    )
     loader = make_config_loader()
     url = dict(loader["catalog"])["core_repodata_raw"]["url"]
     assert url.startswith("https://mirror.corp/artifactory/conda-forge")
@@ -180,5 +186,10 @@ def test_empty_string_env_var_falls_back_to_default(monkeypatch):
 def test_runtime_parameterized_entry_dataset(monkeypatch):
     """§ 3.4: user-supplied intake is an entry-scoped, runtime-parameterized
     dataset — `kedro run --params sbom_intake_path=...` re-points it."""
-    loader = make_config_loader(runtime_params={"sbom_intake_path": "/tmp/my-intake.json"})
-    assert dict(loader["catalog"])["sbom_intake_entry"]["filepath"] == "/tmp/my-intake.json"
+    loader = make_config_loader(
+        runtime_params={"sbom_intake_path": "/tmp/my-intake.json"}
+    )
+    assert (
+        dict(loader["catalog"])["sbom_intake_entry"]["filepath"]
+        == "/tmp/my-intake.json"
+    )

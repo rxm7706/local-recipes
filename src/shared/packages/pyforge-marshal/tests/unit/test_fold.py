@@ -167,10 +167,20 @@ def test_pairing_is_by_id_alone_not_position_or_adjacency():
     though it appears first in the line order -- proves pairing reads
     ``intent_id`` exclusively, never positional/ordinal adjacency."""
     first_intent = build_entry(
-        id=_valid_id(counter=0), ts=_ts(0), run_id="run-1", kind="k", phase=Phase.INTENT, payload={}
+        id=_valid_id(counter=0),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="k",
+        phase=Phase.INTENT,
+        payload={},
     )
     second_intent = build_entry(
-        id=_valid_id(counter=1), ts=_ts(1), run_id="run-1", kind="k", phase=Phase.INTENT, payload={}
+        id=_valid_id(counter=1),
+        ts=_ts(1),
+        run_id="run-1",
+        kind="k",
+        phase=Phase.INTENT,
+        payload={},
     )
     outcome = build_entry(
         id=_valid_id(counter=2),
@@ -283,7 +293,12 @@ def test_quarantined_finding_carries_path_back_to_the_raw_line():
 
 def test_fold_quarantines_a_non_str_element_without_aborting_the_fold():
     good = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="run-started", phase=Phase.INTENT, payload={}
+        id=_valid_id(),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="run-started",
+        phase=Phase.INTENT,
+        payload={},
     )
     result = fold([123, _line(good)])  # type: ignore[list-item]
     assert good in result.entries
@@ -516,7 +531,12 @@ def test_small_payload_shaped_exactly_like_the_placeholder_round_trips():
 
 def test_by_kind_and_for_story_return_empty_tuple_when_nothing_matches():
     entry = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="run-started", phase=Phase.INTENT, payload={}
+        id=_valid_id(),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="run-started",
+        phase=Phase.INTENT,
+        payload={},
     )
     result = fold([_line(entry)])
     assert result.by_kind("nope") == ()
@@ -589,7 +609,9 @@ def test_quarantined_record_rejects_only_one_of_story_kind_set():
             raw="{}",
             story=StoryKey(epic=1, seq=1),
             kind=None,
-            finding=Finding(code="MRS-JOURNAL-001", severity=Severity.ERROR, message="x"),
+            finding=Finding(
+                code="MRS-JOURNAL-001", severity=Severity.ERROR, message="x"
+            ),
         )
 
 
@@ -599,7 +621,9 @@ def test_quarantined_record_rejects_non_str_raw():
             raw=123,  # type: ignore[arg-type]
             story=None,
             kind=None,
-            finding=Finding(code="MRS-JOURNAL-001", severity=Severity.ERROR, message="x"),
+            finding=Finding(
+                code="MRS-JOURNAL-001", severity=Severity.ERROR, message="x"
+            ),
         )
 
 
@@ -641,15 +665,30 @@ def test_fold_result_rejects_a_non_intent_entry_in_open_intents():
         payload={},
     )
     with pytest.raises(ValueError, match="open_intents"):
-        FoldResult(entries=(outcome,), open_intents=(outcome,), orphaned_outcomes=(), quarantined=())
+        FoldResult(
+            entries=(outcome,),
+            open_intents=(outcome,),
+            orphaned_outcomes=(),
+            quarantined=(),
+        )
 
 
 def test_fold_result_rejects_a_non_outcome_entry_in_orphaned_outcomes():
     intent = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="k", phase=Phase.INTENT, payload={}
+        id=_valid_id(),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="k",
+        phase=Phase.INTENT,
+        payload={},
     )
     with pytest.raises(ValueError, match="orphaned_outcomes"):
-        FoldResult(entries=(intent,), open_intents=(), orphaned_outcomes=(intent,), quarantined=())
+        FoldResult(
+            entries=(intent,),
+            open_intents=(),
+            orphaned_outcomes=(intent,),
+            quarantined=(),
+        )
 
 
 # --- registry/verdict integration ------------------------------------------
@@ -919,7 +958,12 @@ def test_fold_result_rejects_a_generator_for_a_tuple_field():
     leaving an exhausted iterator every query method then read as empty --
     a silently wrong FoldResult with no error anywhere."""
     entry = build_entry(
-        id=_valid_id(), ts=_ts(0), run_id="run-1", kind="k", phase=Phase.OBSERVATION, payload={}
+        id=_valid_id(),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="k",
+        phase=Phase.OBSERVATION,
+        payload={},
     )
     with pytest.raises(ValueError, match="entries must be a tuple"):
         FoldResult(
@@ -948,10 +992,20 @@ def test_fold_result_rejects_entries_out_of_ad28_total_order():
     An out-of-order `entries` used to construct cleanly, and that consumer
     silently got the earliest instead."""
     early = build_entry(
-        id=_valid_id(counter=0), ts=_ts(0), run_id="r", kind="k", phase=Phase.OBSERVATION, payload={}
+        id=_valid_id(counter=0),
+        ts=_ts(0),
+        run_id="r",
+        kind="k",
+        phase=Phase.OBSERVATION,
+        payload={},
     )
     late = build_entry(
-        id=_valid_id(counter=1), ts=_ts(1), run_id="r", kind="k", phase=Phase.OBSERVATION, payload={}
+        id=_valid_id(counter=1),
+        ts=_ts(1),
+        run_id="r",
+        kind="k",
+        phase=Phase.OBSERVATION,
+        payload={},
     )
     with pytest.raises(ValueError, match="AD-28 total order"):
         FoldResult(

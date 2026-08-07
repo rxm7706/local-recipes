@@ -109,9 +109,7 @@ def test_journal_entry_id_valid_construction():
     assert entry_id.counter == 0
 
 
-@pytest.mark.parametrize(
-    "writer_id", ["", "-cli", "CLI", "cli 1", "cli.1"]
-)
+@pytest.mark.parametrize("writer_id", ["", "-cli", "CLI", "cli 1", "cli.1"])
 def test_journal_entry_id_rejects_invalid_writer_id(writer_id):
     with pytest.raises(ValueError, match="writer_id"):
         JournalEntryId(writer_id=writer_id, counter=0)
@@ -486,7 +484,10 @@ def test_prepare_for_write_small_payload_inlines():
 
 def test_prepare_for_write_oversized_payload_uses_sidecar():
     payload = {"data": "x" * 5000}
-    assert len(json.dumps(payload, sort_keys=True).encode("utf-8")) > SIDECAR_THRESHOLD_BYTES
+    assert (
+        len(json.dumps(payload, sort_keys=True).encode("utf-8"))
+        > SIDECAR_THRESHOLD_BYTES
+    )
     entry = build_entry(
         id=_valid_id(writer_id="cli-1", counter=7),
         ts="2026-08-03T05:45:12.123Z",
@@ -505,7 +506,10 @@ def test_prepare_for_write_oversized_payload_uses_sidecar():
 def test_prepare_for_write_threshold_boundary_inlines_at_exactly_4096_bytes():
     overhead = len(json.dumps({"k": ""}, sort_keys=True).encode("utf-8"))
     payload = {"k": "x" * (SIDECAR_THRESHOLD_BYTES - overhead)}
-    assert len(json.dumps(payload, sort_keys=True).encode("utf-8")) == SIDECAR_THRESHOLD_BYTES
+    assert (
+        len(json.dumps(payload, sort_keys=True).encode("utf-8"))
+        == SIDECAR_THRESHOLD_BYTES
+    )
     entry = build_entry(
         id=_valid_id(),
         ts="2026-08-03T05:45:12.123Z",
@@ -544,7 +548,9 @@ def test_prepare_for_write_rejects_non_journal_entry():
 
 def test_prepared_write_rejects_only_one_sidecar_field_set():
     with pytest.raises(ValueError, match="both None or both set together"):
-        PreparedWrite(line="{}", sidecar_relative_path="blobs/x.json", sidecar_content=None)
+        PreparedWrite(
+            line="{}", sidecar_relative_path="blobs/x.json", sidecar_content=None
+        )
 
 
 def test_prepared_write_rejects_non_str_line():
@@ -705,14 +711,18 @@ def _ts_frozen(n: int) -> str:
 
 
 def _fold_of(*entries: JournalEntry) -> FoldResult:
-    return FoldResult(entries=tuple(entries), open_intents=(), orphaned_outcomes=(), quarantined=())
+    return FoldResult(
+        entries=tuple(entries), open_intents=(), orphaned_outcomes=(), quarantined=()
+    )
 
 
 def test_live_frozen_surfaces_empty_fold_returns_the_seed_alone_as_policy_owned():
     """AD-26/F-3's own standalone-evaluation case: an EMPTY synthetic
     FoldResult still routes the seed through this one accessor, never a
     direct read."""
-    empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+    empty = FoldResult(
+        entries=(), open_intents=(), orphaned_outcomes=(), quarantined=()
+    )
     result = empty.live_frozen_surfaces(("a.yaml", "b.yaml"))
     assert set(result) == {
         FrozenPath(path="a.yaml", story_key=None),
@@ -721,7 +731,9 @@ def test_live_frozen_surfaces_empty_fold_returns_the_seed_alone_as_policy_owned(
 
 
 def test_live_frozen_surfaces_rejects_a_non_tuple_seed():
-    empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+    empty = FoldResult(
+        entries=(), open_intents=(), orphaned_outcomes=(), quarantined=()
+    )
     with pytest.raises(TypeError):
         empty.live_frozen_surfaces(["a.yaml"])  # type: ignore[arg-type]
 
@@ -826,7 +838,9 @@ def test_live_frozen_surfaces_meta_never_reads_effective_policy_seed_directly():
         project_slug="acme", project={"frozen_surfaces": ["a.yaml"]}, flags={}
     )
     seed_value = effective.seed_view()["frozen_surfaces"].value
-    empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
+    empty = FoldResult(
+        entries=(), open_intents=(), orphaned_outcomes=(), quarantined=()
+    )
     live = empty.live_frozen_surfaces(seed_value)
     assert live == (FrozenPath(path="a.yaml", story_key=None),)
 
@@ -859,7 +873,10 @@ def test_intent_reconciles_false_when_evidence_is_empty():
 
 
 def test_intent_reconciles_false_on_missing_story_keys():
-    assert intent_reconciles({"action": "merge_branch"}, {"confirmed_story_keys": ["4.3"]}) is False
+    assert (
+        intent_reconciles({"action": "merge_branch"}, {"confirmed_story_keys": ["4.3"]})
+        is False
+    )
 
 
 def test_intent_reconciles_false_on_empty_story_keys():

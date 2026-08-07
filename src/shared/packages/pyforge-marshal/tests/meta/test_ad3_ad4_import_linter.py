@@ -114,9 +114,9 @@ def test_ad3_source_modules_cover_every_submodule_except_adapters():
         if path.name != "__init__.py"
     }
     contract = _contract_forbidding("bmad_loop")
-    assert set(contract["source_modules"]) == (
-        subpackages | top_level_modules
-    ) - {"pyforge.marshal.adapters"}
+    assert set(contract["source_modules"]) == (subpackages | top_level_modules) - {
+        "pyforge.marshal.adapters"
+    }
 
 
 def test_root_package_init_carries_no_imports():

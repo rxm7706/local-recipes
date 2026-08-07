@@ -30,10 +30,20 @@ def test_serial_gate_three_conditions():
             # safety: equal serial but fetched_at is stale (>30d) -> eligible
             # fresh: equal serial AND fetched_at recent -> NOT eligible
             "pypi_version_serial_at_fetch": [pd.NA, 15, 30, 40],
-            "fetched_at": [pd.NA, _NOW, _NOW - _PHASE_H_SAFETY_RECHECK_SECONDS - 1, _NOW - 10],
+            "fetched_at": [
+                pd.NA,
+                _NOW,
+                _NOW - _PHASE_H_SAFETY_RECHECK_SECONDS - 1,
+                _NOW - 10,
+            ],
         }
     )
-    uni = pd.DataFrame({"pypi_name": ["never", "moved", "safety", "fresh"], "last_serial": [10, 20, 30, 40]})
+    uni = pd.DataFrame(
+        {
+            "pypi_name": ["never", "moved", "safety", "fresh"],
+            "last_serial": [10, 20, 30, 40],
+        }
+    )
     out = fetch_pypi_current_versions(df, uni, now=_NOW)
     assert set(out["pypi_name"]) == {"never", "moved", "safety"}  # 'fresh' skipped
 
@@ -52,8 +62,12 @@ def test_serial_gate_stamps_serial_at_fetch_and_retains_upload_time():
     uni = pd.DataFrame({"pypi_name": ["pkg"], "last_serial": [777]})
     out = fetch_pypi_current_versions(df, uni, now=_NOW)
     row = out.iloc[0]
-    assert row["pypi_version_serial_at_fetch"] == 777  # stamped to current serial on fetch
-    assert row["upload_time_iso_8601"] == "2026-07-01T00:00:00Z"  # RETAINED for B9/FR-20
+    assert (
+        row["pypi_version_serial_at_fetch"] == 777
+    )  # stamped to current serial on fetch
+    assert (
+        row["upload_time_iso_8601"] == "2026-07-01T00:00:00Z"
+    )  # RETAINED for B9/FR-20
 
 
 def test_denominator_never_re_includes_pypi_only_rows():
@@ -70,7 +84,10 @@ def test_denominator_never_re_includes_pypi_only_rows():
         }
     )
     universe = pd.DataFrame(
-        {"pypi_name": ["mapped", "pypi-only-a", "pypi-only-b"], "last_serial": [5, 1, 2]}
+        {
+            "pypi_name": ["mapped", "pypi-only-a", "pypi-only-b"],
+            "last_serial": [5, 1, 2],
+        }
     )
     out = fetch_pypi_current_versions(actionable, universe, now=_NOW)
     assert set(out["pypi_name"]) == {"mapped"}  # pypi-only-* never re-included
@@ -100,7 +117,12 @@ def test_eligibility_stats_split_sums_to_eligible():
             "pypi_name": ["never", "moved", "safety", "fresh"],
             "pypi_last_serial": [10, 20, 30, 40],
             "pypi_version_serial_at_fetch": [pd.NA, 15, 30, 40],
-            "fetched_at": [pd.NA, _NOW, _NOW - _PHASE_H_SAFETY_RECHECK_SECONDS - 1, _NOW - 10],
+            "fetched_at": [
+                pd.NA,
+                _NOW,
+                _NOW - _PHASE_H_SAFETY_RECHECK_SECONDS - 1,
+                _NOW - 10,
+            ],
         }
     )
     stats = phase_h_eligibility_stats(df, now=_NOW)

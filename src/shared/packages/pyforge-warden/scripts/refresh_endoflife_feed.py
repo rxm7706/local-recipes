@@ -235,10 +235,7 @@ def _build_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--cache-dir",
         default=os.environ.get(FEED_CACHE_DIR_ENV_VAR),
-        help=(
-            "feed cache root to write into (default: "
-            f"${FEED_CACHE_DIR_ENV_VAR})"
-        ),
+        help=(f"feed cache root to write into (default: ${FEED_CACHE_DIR_ENV_VAR})"),
     )
     parser.add_argument(
         "--product",
@@ -271,7 +268,9 @@ def main() -> None:
         )
         raise SystemExit(2)
     try:
-        result = refresh(args.cache_dir, product_slugs=args.products, timeout=args.timeout)
+        result = refresh(
+            args.cache_dir, product_slugs=args.products, timeout=args.timeout
+        )
     except (urllib.error.URLError, ValueError, OSError) as exc:
         print(
             f"refresh-endoflife-feed FAILED: {type(exc).__name__}: {exc}",
@@ -289,7 +288,9 @@ def main() -> None:
             "registry set",
             file=sys.stderr,
         )
-    print(f"fetched {result['product_count']} product(s): {', '.join(result['products'])}")
+    print(
+        f"fetched {result['product_count']} product(s): {', '.join(result['products'])}"
+    )
     print(f"  wrote: {result['cache_path']}")
 
 

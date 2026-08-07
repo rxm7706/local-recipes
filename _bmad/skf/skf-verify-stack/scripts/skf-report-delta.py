@@ -90,7 +90,11 @@ def _validate_side(side, name):
                 f"{', '.join(COVERAGE_VERDICTS)}"
             )
     for i, row in enumerate(integ):
-        if not isinstance(row, dict) or not isinstance(row.get("libA"), str) or not isinstance(row.get("libB"), str):
+        if (
+            not isinstance(row, dict)
+            or not isinstance(row.get("libA"), str)
+            or not isinstance(row.get("libB"), str)
+        ):
             return f"`{name}.integration[{i}]` requires string `libA` and `libB`"
         if row.get("verdict") not in INTEGRATION_VERDICTS:
             return (
@@ -130,7 +134,11 @@ def _index(side):
 
 
 def _rank(domain, verdict):
-    return COVERAGE_RANK.get(verdict) if domain == "coverage" else INTEGRATION_RANK.get(verdict)
+    return (
+        COVERAGE_RANK.get(verdict)
+        if domain == "coverage"
+        else INTEGRATION_RANK.get(verdict)
+    )
 
 
 def compute(inp):
@@ -142,7 +150,10 @@ def compute(inp):
     prev = _index(inp["previous"])
     curr = _index(inp["current"])
 
-    buckets = {k: [] for k in ("improved", "regressed", "unchanged", "new", "dropped", "replaced")}
+    buckets = {
+        k: []
+        for k in ("improved", "regressed", "unchanged", "new", "dropped", "replaced")
+    }
 
     for key, (label, domain, verdict) in curr.items():
         if key not in prev:
@@ -180,7 +191,9 @@ def compute(inp):
         if pr is None or cr is None:
             continue
         if cr < pr:
-            tier_downgrades.append({"skill": skill, "from": prev_tiers[skill], "to": curr_tiers[skill]})
+            tier_downgrades.append(
+                {"skill": skill, "from": prev_tiers[skill], "to": curr_tiers[skill]}
+            )
 
     result = {}
     for name, items in buckets.items():
@@ -206,14 +219,20 @@ def _build_parser():
         epilog=(
             "Example:\n"
             "  uv run skf-report-delta.py "
-            "'{\"previous\":{\"coverage\":[{\"technology\":\"react\",\"verdict\":\"Missing\"}]},"
-            "\"current\":{\"coverage\":[{\"technology\":\"react\",\"verdict\":\"Covered\"}]}}'"
+            '\'{"previous":{"coverage":[{"technology":"react","verdict":"Missing"}]},'
+            '"current":{"coverage":[{"technology":"react","verdict":"Covered"}]}}\''
         ),
     )
     src = parser.add_mutually_exclusive_group()
-    src.add_argument("json_input", nargs="?", help="JSON object as a positional argument.")
-    src.add_argument("--json-input", dest="json_input_flag", help="JSON object passed via flag.")
-    src.add_argument("--stdin", action="store_true", help="Read the JSON object from stdin.")
+    src.add_argument(
+        "json_input", nargs="?", help="JSON object as a positional argument."
+    )
+    src.add_argument(
+        "--json-input", dest="json_input_flag", help="JSON object passed via flag."
+    )
+    src.add_argument(
+        "--stdin", action="store_true", help="Read the JSON object from stdin."
+    )
     return parser
 
 

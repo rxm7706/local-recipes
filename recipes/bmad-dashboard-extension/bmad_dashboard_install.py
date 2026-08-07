@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Install the bundled BMAD Dashboard .vsix into VS Code (or a compatible editor)."""
+
 import argparse
 import glob
 import os

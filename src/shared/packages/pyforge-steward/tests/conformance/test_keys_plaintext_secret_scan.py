@@ -50,14 +50,19 @@ def test_nonexistent_directory_raises_instead_of_silently_reporting_clean(tmp_pa
         scan_directory_for_secrets(tmp_path / "does-not-exist")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="chmod 000 does not restrict Windows")
 @pytest.mark.skipif(
-    hasattr(os, "geteuid") and os.geteuid() == 0, reason="chmod 000 does not restrict root"
+    sys.platform == "win32", reason="chmod 000 does not restrict Windows"
+)
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="chmod 000 does not restrict root",
 )
 def test_unreadable_subdirectory_raises_instead_of_silently_reporting_clean(tmp_path):
     locked = tmp_path / "locked"
     locked.mkdir()
-    (locked / "leaked.txt").write_text("sk-ant-api03-SYNTHETIC0000000000000000000000TEST\n")
+    (locked / "leaked.txt").write_text(
+        "sk-ant-api03-SYNTHETIC0000000000000000000000TEST\n"
+    )
     locked.chmod(0o000)
     try:
         with pytest.raises(PermissionError):
@@ -91,11 +96,16 @@ def test_age_identity_and_pem_header_patterns_are_each_detected(tmp_path):
 
     findings = scan_directory_for_secrets(tmp_path)
 
-    assert {f.pattern_name for f in findings} == {"age-identity", "pem-private-key-header"}
+    assert {f.pattern_name for f in findings} == {
+        "age-identity",
+        "pem-private-key-header",
+    }
 
 
 def test_single_file_scan_agrees_with_the_directory_scan_for_the_fixture():
-    assert scan_file_for_secrets(FIXTURE_FILE) == scan_directory_for_secrets(FIXTURE_DIR)
+    assert scan_file_for_secrets(FIXTURE_FILE) == scan_directory_for_secrets(
+        FIXTURE_DIR
+    )
 
 
 def test_utf16_encoded_secret_is_still_detected(tmp_path):
@@ -113,7 +123,9 @@ def test_utf16_encoded_secret_is_still_detected(tmp_path):
     assert [f.pattern_name for f in findings] == ["anthropic-api-key"]
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation needs privileges on Windows")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="symlink creation needs privileges on Windows"
+)
 def test_dangling_symlink_raises_instead_of_silently_reporting_clean(tmp_path):
     """`is_file()` swallowed the OSError from an unresolvable symlink, letting
     it scan as clean; the stat()-based walk must raise instead."""

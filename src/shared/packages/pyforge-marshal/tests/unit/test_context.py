@@ -16,12 +16,16 @@ from pyforge.marshal.core.policy import EffectivePolicy
 
 
 def _effective_policy() -> EffectivePolicy:
-    effective, _findings = policy_core.compose(project_slug="acme", project={}, flags={})
+    effective, _findings = policy_core.compose(
+        project_slug="acme", project={}, flags={}
+    )
     return effective
 
 
 def test_marshal_context_is_frozen():
-    context = MarshalContext(slug="acme", loop_home=None, policy=_effective_policy(), story=None)
+    context = MarshalContext(
+        slug="acme", loop_home=None, policy=_effective_policy(), story=None
+    )
     with pytest.raises(AttributeError):
         context.slug = "other"  # type: ignore[misc]
 
@@ -150,7 +154,9 @@ def test_resolve_context_permission_error_on_probe_never_crashes(tmp_path, monke
     def _raises_permission_error(self):
         raise PermissionError("simulated unsearchable ancestor directory")
 
-    monkeypatch.setattr(type(tmp_path), "is_file", _raises_permission_error, raising=False)
+    monkeypatch.setattr(
+        type(tmp_path), "is_file", _raises_permission_error, raising=False
+    )
 
     context = _resolve_context(_args(project="acme"))
 

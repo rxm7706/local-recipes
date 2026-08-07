@@ -78,7 +78,9 @@ def test_default_classmethod_matches_the_plain_constructor():
         ),
     ],
 )
-def test_vuln_severity_policy_threshold_for_each_fail_on(fail_on, policy_violation_tiers):
+def test_vuln_severity_policy_threshold_for_each_fail_on(
+    fail_on, policy_violation_tiers
+):
     policy = EffectiveConfig(fail_on=fail_on).vuln_severity_policy
     assert set(policy) == {
         SeverityTier.CRITICAL,
@@ -99,7 +101,10 @@ def test_vuln_severity_policy_threshold_for_each_fail_on(fail_on, policy_violati
     [tier for tier in SeverityTier if tier is not SeverityTier.UNKNOWN],
 )
 def test_vuln_severity_policy_never_contains_unknown(fail_on):
-    assert SeverityTier.UNKNOWN not in EffectiveConfig(fail_on=fail_on).vuln_severity_policy
+    assert (
+        SeverityTier.UNKNOWN
+        not in EffectiveConfig(fail_on=fail_on).vuln_severity_policy
+    )
 
 
 def test_default_fail_on_reproduces_the_module_vuln_default_table():
@@ -115,9 +120,10 @@ def test_default_fail_on_reproduces_the_module_vuln_default_table():
 
 def test_is_confidence_trusted_none_is_always_trusted():
     assert EffectiveConfig().is_confidence_trusted(None) is True
-    assert EffectiveConfig(dep001_block_confidence="likely").is_confidence_trusted(
-        None
-    ) is True
+    assert (
+        EffectiveConfig(dep001_block_confidence="likely").is_confidence_trusted(None)
+        is True
+    )
 
 
 def test_is_confidence_trusted_verified_threshold_distrusts_likely():
@@ -259,11 +265,14 @@ def test_out_of_range_fail_under_coverage_raises_config_validation_error(
 
 
 def test_fail_under_coverage_accepts_boundary_values(tmp_path):
-    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 0\n")
+    _write(
+        tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 0\n"
+    )
     config, _ = ConfigLoader().load(tmp_path)
     assert config.fail_under_coverage == 0.0
     _write(
-        tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 100\n"
+        tmp_path / "pyproject.toml",
+        "[tool.pyforge-warden]\nfail-under-coverage = 100\n",
     )
     config, _ = ConfigLoader().load(tmp_path)
     assert config.fail_under_coverage == 100.0
@@ -312,7 +321,9 @@ def test_cli_fail_on_overrides_both_files(tmp_path):
 
 
 def test_cli_fail_under_coverage_overrides_both_files(tmp_path):
-    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 50\n")
+    _write(
+        tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-under-coverage = 50\n"
+    )
     _write(tmp_path / "pixi.toml", "[tool.pyforge-warden]\nfail-under-coverage = 75\n")
     config, _ = ConfigLoader().load(tmp_path, cli_fail_under_coverage=10.0)
     assert config.fail_under_coverage == 10.0
@@ -353,9 +364,7 @@ def test_waiver_default_expiry_days_default_and_toml_override(tmp_path):
     assert config.waiver_default_expiry_days == 30
 
 
-@pytest.mark.parametrize(
-    "toml_value", ["0", "-1", '"30"', "30.0", "true", "3651"]
-)
+@pytest.mark.parametrize("toml_value", ["0", "-1", '"30"', "30.0", "true", "3651"])
 def test_wrong_or_out_of_range_waiver_default_expiry_days_raises_config_validation_error(
     tmp_path, toml_value
 ):
@@ -474,7 +483,10 @@ def test_effective_config_rejects_invalid_waiver_default_expiry_days_at_construc
 
 
 def test_effective_config_accepts_waiver_default_expiry_days_upper_boundary():
-    assert EffectiveConfig(waiver_default_expiry_days=3650).waiver_default_expiry_days == 3650
+    assert (
+        EffectiveConfig(waiver_default_expiry_days=3650).waiver_default_expiry_days
+        == 3650
+    )
 
 
 def test_effective_config_fail_on_kev_defaults_true():
@@ -607,14 +619,18 @@ def test_cli_allow_licenses_blank_raises_config_validation_error(tmp_path):
 
 
 def test_cli_allow_licenses_overrides_both_files(tmp_path):
-    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nallow-licenses = "MIT"\n')
+    _write(
+        tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nallow-licenses = "MIT"\n'
+    )
     _write(tmp_path / "pixi.toml", '[tool.pyforge-warden]\nallow-licenses = "ISC"\n')
     config, _ = ConfigLoader().load(tmp_path, cli_allow_licenses="Apache-2.0")
     assert config.allow_licenses == ("Apache-2.0",)
 
 
 def test_cli_deny_licenses_overrides_both_files(tmp_path):
-    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\ndeny-licenses = "MIT"\n')
+    _write(
+        tmp_path / "pyproject.toml", '[tool.pyforge-warden]\ndeny-licenses = "MIT"\n'
+    )
     _write(tmp_path / "pixi.toml", '[tool.pyforge-warden]\ndeny-licenses = "ISC"\n')
     config, _ = ConfigLoader().load(tmp_path, cli_deny_licenses="GPL-3.0-only")
     assert config.deny_licenses == ("GPL-3.0-only",)
@@ -917,7 +933,9 @@ def test_toml_warn_as_error_override(tmp_path):
 
 
 def test_wrong_typed_warn_as_error_raises_config_validation_error(tmp_path):
-    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nwarn-as-error = "yes"\n')
+    _write(
+        tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nwarn-as-error = "yes"\n'
+    )
     with pytest.raises(ConfigValidationError):
         ConfigLoader().load(tmp_path)
 
@@ -933,7 +951,9 @@ def test_underscore_spelled_warn_as_error_is_unrecognized(tmp_path):
 def test_cli_warn_as_error_overrides_toml(tmp_path):
     """CLI wins over either TOML file (last-applied precedence), mirroring
     fail-on-eol's tri-state."""
-    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = false\n")
+    _write(
+        tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = false\n"
+    )
     config, _ = ConfigLoader().load(tmp_path, cli_warn_as_error=True)
     assert config.warn_as_error is True
 

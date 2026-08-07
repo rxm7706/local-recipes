@@ -42,9 +42,7 @@ def _load_osv_db_builder():
     return module
 
 
-def _fake_version_run(
-    *, missing: str | None = None, out_of_range: str | None = None
-):
+def _fake_version_run(*, missing: str | None = None, out_of_range: str | None = None):
     """A ``subprocess.run`` stand-in answering ONLY the ``--version``
     pre-flight calls ``engines.run_doctor_checks`` makes — distinguished by
     ``argv[0]`` (mirrors ``test_engine_env_deptry.py``'s own
@@ -122,9 +120,7 @@ def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(
     assert rc == 2
     assert rc != 1
     assert "warden: doctor status=problem checks=6" in captured.out
-    matches = [
-        line for line in captured.out.splitlines() if "osv-scanner" in line
-    ]
+    matches = [line for line in captured.out.splitlines() if "osv-scanner" in line]
     assert any(
         "problem -- " in line and "not found on PATH" in line for line in matches
     )
@@ -153,12 +149,9 @@ def test_doctor_unconfigured_osv_db_env_exits_2_naming_the_problem(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    problem_lines = [
-        line for line in captured.out.splitlines() if "osv-db" in line
-    ]
+    problem_lines = [line for line in captured.out.splitlines() if "osv-db" in line]
     assert any(
-        "problem -- " in line and "unset or empty" in line
-        for line in problem_lines
+        "problem -- " in line and "unset or empty" in line for line in problem_lines
     )
 
 
@@ -176,18 +169,14 @@ def test_doctor_absent_osv_db_under_configured_dir_exits_2(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    problem_lines = [
-        line for line in captured.out.splitlines() if "osv-db" in line
-    ]
+    problem_lines = [line for line in captured.out.splitlines() if "osv-db" in line]
     assert any(
         "problem -- " in line and "no usable offline OSV database" in line
         for line in problem_lines
     )
 
 
-def test_doctor_stale_osv_db_exits_2_naming_the_problem(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_stale_osv_db_exits_2_naming_the_problem(monkeypatch, capsys, tmp_path):
     """Review finding (2026-07-24): the pre-existing suite only ever
     exercised the DB-ABSENT branch of ``_doctor_check_osv_db`` -- the
     equally real "present but stale" branch (``is_db_stale`` -- FR12) was
@@ -208,17 +197,11 @@ def test_doctor_stale_osv_db_exits_2_naming_the_problem(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    problem_lines = [
-        line for line in captured.out.splitlines() if "osv-db" in line
-    ]
-    assert any(
-        "problem -- " in line and "stale" in line for line in problem_lines
-    )
+    problem_lines = [line for line in captured.out.splitlines() if "osv-db" in line]
+    assert any("problem -- " in line and "stale" in line for line in problem_lines)
 
 
-def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(
-    monkeypatch, capsys, tmp_path
-):
+def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(monkeypatch, capsys, tmp_path):
     """Absent KEV/EPSS feeds are never a doctor failure — NFR-U2's air-gap
     framing — so the overall exit stays 0 as long as the engine/DB checks
     are healthy. Review finding (2026-07-24): the message must name the
@@ -233,12 +216,8 @@ def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(
     assert "operating air-gapped: kev feed not present" in captured.out
     assert "operating air-gapped: epss feed not present" in captured.out
     assert "operating air-gapped: endoflife feed not present" in captured.out
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
-    epss_line = next(
-        line for line in captured.out.splitlines() if "epss-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
+    epss_line = next(line for line in captured.out.splitlines() if "epss-feed" in line)
     endoflife_line = next(
         line for line in captured.out.splitlines() if "endoflife-feed" in line
     )
@@ -268,9 +247,7 @@ def test_doctor_stale_kev_feed_exits_2_naming_the_consequence(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
     assert "problem -- " in kev_line
     assert "stale" in kev_line
     assert "fail-on-kev" in kev_line
@@ -294,9 +271,7 @@ def test_doctor_stale_epss_feed_stays_exit_0_with_informational_line(
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
-    epss_line = next(
-        line for line in captured.out.splitlines() if "epss-feed" in line
-    )
+    epss_line = next(line for line in captured.out.splitlines() if "epss-feed" in line)
     assert " ok -- " in epss_line
     assert "stale" in epss_line
     assert "--min-epss" in epss_line
@@ -315,9 +290,7 @@ def test_doctor_directory_at_feed_path_exits_2_never_air_gapped(
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 2
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
     assert "problem -- " in kev_line
     assert "unreadable or invalid" in kev_line
     assert "not present" not in kev_line
@@ -364,9 +337,7 @@ def test_doctor_present_but_corrupt_kev_feed_exits_2_naming_the_file(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    kev_line = next(
-        line for line in captured.out.splitlines() if "kev-feed" in line
-    )
+    kev_line = next(line for line in captured.out.splitlines() if "kev-feed" in line)
     assert "problem -- " in kev_line
     assert "present" in kev_line
     assert "unreadable or invalid" in kev_line
@@ -401,9 +372,7 @@ def test_doctor_names_ignored_scan_flags_on_stderr(capsys, tmp_path):
     assert "--path" not in flags_list
 
 
-def test_doctor_ignored_flags_trace_survives_an_invalid_target(
-    capsys, tmp_path
-):
+def test_doctor_ignored_flags_trace_survives_an_invalid_target(capsys, tmp_path):
     """The ignored-flags trace emits BEFORE target resolution (follow-up
     review finding 2026-07-24): ``warden scan /typo --doctor --warn-only``
     previously exited 2 with NO trace of the silently-dropped gate flags —
@@ -435,9 +404,7 @@ def test_doctor_check_messages_are_neutralized_to_one_line(
             message="line one\n  [doctor] forged ok -- line two",
         ),
     )
-    monkeypatch.setattr(
-        cli_module, "run_doctor_checks", lambda target: crafted
-    )
+    monkeypatch.setattr(cli_module, "run_doctor_checks", lambda target: crafted)
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 2

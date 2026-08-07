@@ -163,7 +163,9 @@ def validate_input(inp):
         return "Input must be a JSON object"
 
     if not inp.get("mode") or inp["mode"] not in ("contextual", "naive"):
-        return 'Missing or invalid required field: mode (must be "contextual" or "naive")'
+        return (
+            'Missing or invalid required field: mode (must be "contextual" or "naive")'
+        )
 
     valid_tiers = ["Quick", "Forge", "Forge+", "Deep"]
     if not inp.get("tier") or inp["tier"] not in valid_tiers:
@@ -225,7 +227,9 @@ def compute_score(inp):
     state2 = inp.get("state2") is True
     stack_skill = inp.get("stackSkill") is True
     reference_app = inp.get("referenceApp") is True
-    threshold = inp.get("threshold") if inp.get("threshold") is not None else DEFAULT_THRESHOLD
+    threshold = (
+        inp.get("threshold") if inp.get("threshold") is not None else DEFAULT_THRESHOLD
+    )
     scores = inp["scores"]
 
     # 2. Select base weight table
@@ -233,7 +237,9 @@ def compute_score(inp):
 
     # 3. Determine skip set
     skip_reasons = {}
-    skip_sig_type = tier == "Quick" or docs_only or state2 or stack_skill or reference_app
+    skip_sig_type = (
+        tier == "Quick" or docs_only or state2 or stack_skill or reference_app
+    )
 
     if skip_sig_type:
         reasons = []
@@ -285,7 +291,9 @@ def compute_score(inp):
         if adjusted_weights[cat] == 0:
             final_weights[cat] = 0
         else:
-            final_weights[cat] = round2((adjusted_weights[cat] / sum_active_weights) * 100)
+            final_weights[cat] = round2(
+                (adjusted_weights[cat] / sum_active_weights) * 100
+            )
 
     # 5. Compute weighted scores
     weighted_scores = {}
@@ -333,9 +341,12 @@ def compute_score(inp):
         ]
         # All other active categories have a zero score => Export Coverage is
         # the sole real contributor.
-        if active_categories and "exportCoverage" in active_categories and all(
-            (s == 0) for s in non_export_active_scores
-        ) and non_export_active_scores:
+        if (
+            active_categories
+            and "exportCoverage" in active_categories
+            and all((s == 0) for s in non_export_active_scores)
+            and non_export_active_scores
+        ):
             floor_reasons.append(
                 "Quick tier: Export Coverage is the sole scoring contributor "
                 "(other active categories scored 0) — insufficient evidence"
@@ -456,9 +467,9 @@ def _build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Example:\n"
             "  uv run compute-score.py "
-            "'{\"mode\":\"contextual\",\"tier\":\"Deep\","
-            "\"scores\":{\"exportCoverage\":92,\"signatureAccuracy\":85,"
-            "\"typeCoverage\":100,\"coherence\":80,\"externalValidation\":78}}'"
+            '\'{"mode":"contextual","tier":"Deep",'
+            '"scores":{"exportCoverage":92,"signatureAccuracy":85,'
+            '"typeCoverage":100,"coherence":80,"externalValidation":78}}\''
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -497,7 +508,10 @@ def main(argv: list[str] | None = None) -> int:
     raw = _resolve_input(args)
     if not raw.strip():
         parser.print_usage(file=sys.stderr)
-        print("error: no input provided (positional arg, --json-input, or --stdin)", file=sys.stderr)
+        print(
+            "error: no input provided (positional arg, --json-input, or --stdin)",
+            file=sys.stderr,
+        )
         return 1
 
     try:

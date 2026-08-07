@@ -1,4 +1,5 @@
 """Story A1 `kedro-test` gate: scaffold-layout invariants (AC-5/AC-6/AC-7)."""
+
 import tomllib
 from pathlib import Path
 

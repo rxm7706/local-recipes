@@ -190,7 +190,13 @@ def _cyclonedx_envelope(
     project_name: str,
     metadata_props: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
-    meta: dict[str, Any] = {"component": {"type": "application", "name": project_name, "bom-ref": project_name}}
+    meta: dict[str, Any] = {
+        "component": {
+            "type": "application",
+            "name": project_name,
+            "bom-ref": project_name,
+        }
+    }
     if metadata_props:
         meta["properties"] = metadata_props
     return {
@@ -218,11 +224,18 @@ def normalize_intake_to_cyclonedx(
 
     deps = list(base_deps)
     seen = {(d.get("ecosystem"), fold_name(d.get("name", ""))) for d in deps}
-    meta_props: list[dict[str, str]] = [{"name": "cfe:resolution", "value": str(resolution.get("resolution", "unresolved"))}]
+    meta_props: list[dict[str, str]] = [
+        {
+            "name": "cfe:resolution",
+            "value": str(resolution.get("resolution", "unresolved")),
+        }
+    ]
 
     if resolution.get("resolution") == "resolved":
         for td in resolution.get("deps") or []:
-            if not td.get("name"):  # a malformed injected resolution dep never crashes the run (AD-13)
+            if not td.get(
+                "name"
+            ):  # a malformed injected resolution dep never crashes the run (AD-13)
                 continue
             key = (td.get("ecosystem"), fold_name(td.get("name", "")))
             if key in seen:
@@ -230,11 +243,17 @@ def normalize_intake_to_cyclonedx(
             seen.add(key)
             deps.append(td)
         if resolution.get("depth") is not None:
-            meta_props.append({"name": "cfe:resolution_depth", "value": str(resolution["depth"])})
+            meta_props.append(
+                {"name": "cfe:resolution_depth", "value": str(resolution["depth"])}
+            )
         if resolution.get("fanout") is not None:
-            meta_props.append({"name": "cfe:resolution_fanout", "value": str(resolution["fanout"])})
+            meta_props.append(
+                {"name": "cfe:resolution_fanout", "value": str(resolution["fanout"])}
+            )
     elif resolution.get("reason"):
-        meta_props.append({"name": "cfe:resolution_reason", "value": str(resolution["reason"])})
+        meta_props.append(
+            {"name": "cfe:resolution_reason", "value": str(resolution["reason"])}
+        )
 
     # A malformed row (base OR injected transitive) missing a name never crashes the
     # run (AD-13) — _component would KeyError on dep["name"] (Edge-MEDIUM).
@@ -260,9 +279,15 @@ def _build_indexes(
             continue
         rec = {
             "conda_name": cname,
-            "cf_latest": (None if pd.isna(r.get("latest_version")) else r.get("latest_version")),
+            "cf_latest": (
+                None if pd.isna(r.get("latest_version")) else r.get("latest_version")
+            ),
             # DW-B7-1: upstream_version is graceful — missing column → None
-            "upstream_version": (None if pd.isna(r.get("upstream_version")) else r.get("upstream_version"))
+            "upstream_version": (
+                None
+                if pd.isna(r.get("upstream_version"))
+                else r.get("upstream_version")
+            )
             if "upstream_version" in core_packages_enumerated.columns
             else None,
         }
@@ -277,7 +302,11 @@ def _build_indexes(
         pname, cname = r.get("pypi_name"), r.get("conda_name")
         if not pname or pd.isna(pname) or not cname or pd.isna(cname):
             continue
-        rec = conda_by_name.get(str(cname).lower()) or {"conda_name": cname, "cf_latest": None, "upstream_version": None}
+        rec = conda_by_name.get(str(cname).lower()) or {
+            "conda_name": cname,
+            "cf_latest": None,
+            "upstream_version": None,
+        }
         mapping_by_fold.setdefault(fold_name(str(pname)), rec)
         conda_to_pypifold.setdefault(str(cname).lower(), fold_name(str(pname)))
 
@@ -286,7 +315,9 @@ def _build_indexes(
     # there but unmatched to conda is ADD (not UNKNOWN). Unioned with the mapped folds
     # + any standalone pkg:pypi/ components the universe BOM carries (DW-B7-3).
     universe_folds: set[str] = set()
-    if pypi_universe is not None and "pypi_name" in getattr(pypi_universe, "columns", []):
+    if pypi_universe is not None and "pypi_name" in getattr(
+        pypi_universe, "columns", []
+    ):
         for v in pypi_universe["pypi_name"].dropna():
             universe_folds.add(fold_name(str(v)))
     for comp in (derived_universe_sbom or {}).get("components") or []:
@@ -320,19 +351,29 @@ def match_against_universe(
     then bucket each component against the atlas indexes. Emits a security INPUT —
     a match report — NEVER a ComplianceReport (AD-12)."""
     params = parameters or {}
-    stale_after = int(params.get("freshness", {}).get("stale_after_days", STALE_AFTER_DAYS_DEFAULT))
+    stale_after = int(
+        params.get("freshness", {}).get("stale_after_days", STALE_AFTER_DAYS_DEFAULT)
+    )
     allow_stale = bool(params.get("sbom", {}).get("allow_stale", False))
     now = params.get("sbom", {}).get("now")
 
     built_at = check_universe_freshness(  # RAISES StaleUniverseError when stale (AC-3)
-        derived_universe_sbom, stale_after_days=stale_after, now=now, allow_stale=allow_stale
+        derived_universe_sbom,
+        stale_after_days=stale_after,
+        now=now,
+        allow_stale=allow_stale,
     )
     # MEDIUM-2: report the TRUE staleness even when allow_stale bypassed the gate —
     # never tell a downstream consumer the atlas is fresh when it is not.
     now_epoch = time.time() if now is None else now
     stale = built_at is None or ((now_epoch - built_at) / 86400 > stale_after)
 
-    idx = _build_indexes(core_packages_enumerated, pypi_conda_mapping, derived_universe_sbom, pypi_universe)
+    idx = _build_indexes(
+        core_packages_enumerated,
+        pypi_conda_mapping,
+        derived_universe_sbom,
+        pypi_universe,
+    )
 
     rows: list[dict[str, Any]] = []
     for comp in (sbom_normalized_bom_entry or {}).get("components") or []:
@@ -340,13 +381,17 @@ def match_against_universe(
         version = comp.get("version") or None
         purl = comp.get("purl") or ""
         m = re.match(r"^pkg:([A-Za-z0-9.+-]+)/", purl)
-        eco = {"pypi": "pypi", "conda": "conda"}.get(m.group(1).lower() if m else "", "generic")
+        eco = {"pypi": "pypi", "conda": "conda"}.get(
+            m.group(1).lower() if m else "", "generic"
+        )
         inv = {"name": name, "ecosystem": eco, "pinned": version}
         fold = fold_name(name)
 
         conda_rec: dict[str, Any] | None = None
         if eco == "conda":
-            conda_rec = idx["conda_by_name"].get(name.lower()) or idx["conda_by_fold"].get(fold)
+            conda_rec = idx["conda_by_name"].get(name.lower()) or idx[
+                "conda_by_fold"
+            ].get(fold)
         elif eco == "pypi":
             conda_rec = idx["mapping_by_fold"].get(fold)
             if conda_rec is None:
@@ -355,7 +400,9 @@ def match_against_universe(
                 # a same-named conda pkg mapped to a DIFFERENT pypi project is a name
                 # coincidence — reject the bare match, fall through to ADD/universe.
                 if cand is not None:
-                    mapped_fold = idx["conda_to_pypifold"].get(str(cand.get("conda_name", "")).lower())
+                    mapped_fold = idx["conda_to_pypifold"].get(
+                        str(cand.get("conda_name", "")).lower()
+                    )
                     if mapped_fold is not None and mapped_fold != fold:
                         cand = None
                 conda_rec = cand
@@ -363,7 +410,9 @@ def match_against_universe(
             conda_rec = idx["conda_by_fold"].get(fold)
 
         upstream = conda_rec.get("upstream_version") if conda_rec else None
-        bucket = classify_bucket(inv, conda_rec, upstream, fold in idx["universe_folds"])
+        bucket = classify_bucket(
+            inv, conda_rec, upstream, fold in idx["universe_folds"]
+        )
         row: dict[str, Any] = {
             "name": name,
             "ecosystem": eco,
@@ -373,14 +422,18 @@ def match_against_universe(
             "cf_latest": (conda_rec or {}).get("cf_latest"),
         }
         if conda_rec and conda_rec.get("conda_name"):
-            row["conda_purl"] = conda_purl(str(conda_rec["conda_name"]), conda_rec.get("cf_latest"))
+            row["conda_purl"] = conda_purl(
+                str(conda_rec["conda_name"]), conda_rec.get("cf_latest")
+            )
             # Surface the legacy version_comparison reliability flag (Edge-MEDIUM) —
             # the bucketing itself stays verbatim (legacy acts on the verdict either way).
             cf_latest = conda_rec.get("cf_latest")
             if cf_latest is not None:
                 _, ok1 = cmp_versions(cf_latest, upstream)
                 _, ok2 = cmp_versions(version, cf_latest)
-                row["version_comparison"] = "unreliable" if (not ok1 or not ok2) else "reliable"
+                row["version_comparison"] = (
+                    "unreliable" if (not ok1 or not ok2) else "reliable"
+                )
         rows.append(row)
 
     counts = {b: sum(1 for r in rows if r["bucket"] == b) for b in BUCKETS}

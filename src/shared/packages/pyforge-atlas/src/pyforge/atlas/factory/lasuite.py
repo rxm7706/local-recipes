@@ -46,7 +46,9 @@ class LaSuiteConfig:
     api_token: str
 
 
-def resolve_lasuite_config(env: Mapping[str, str] | None = None) -> LaSuiteConfig | None:
+def resolve_lasuite_config(
+    env: Mapping[str, str] | None = None,
+) -> LaSuiteConfig | None:
     """Resolve the CMS endpoint from env, or ``None`` if not configured (both a base URL AND a
     token are required — a partial config resolves to ``None`` so the caller degrades instead of
     pushing at a half-configured or public endpoint). The live bring-up (DW-H3) supplies these."""
@@ -109,7 +111,9 @@ class LaSuiteClient:
     wire to the injected ``opener``. Every non-2xx response becomes a clear :class:`LaSuiteError`.
     """
 
-    def __init__(self, config: LaSuiteConfig, *, opener: Opener = _unconfigured_opener) -> None:
+    def __init__(
+        self, config: LaSuiteConfig, *, opener: Opener = _unconfigured_opener
+    ) -> None:
         self._config = config
         self._opener = opener
 
@@ -119,11 +123,15 @@ class LaSuiteClient:
             "Content-Type": "application/json",
         }
 
-    def _call(self, method: str, path: str, payload: dict[str, Any] | None = None) -> Any:
+    def _call(
+        self, method: str, path: str, payload: dict[str, Any] | None = None
+    ) -> Any:
         # rstrip so a base_url with OR without a trailing slash composes identically (a raw
         # LaSuiteConfig may carry one; resolve_lasuite_config already strips it).
         url = f"{self._config.base_url.rstrip('/')}{path}"
-        resp = self._opener(Request(method=method, url=url, headers=self._headers(), json=payload))
+        resp = self._opener(
+            Request(method=method, url=url, headers=self._headers(), json=payload)
+        )
         if not (200 <= resp.status_code < 300):
             raise LaSuiteError(
                 f"{method} {url} -> HTTP {resp.status_code}: {resp.body!r} "
@@ -131,7 +139,9 @@ class LaSuiteClient:
             )
         return resp.body
 
-    def create_document(self, title: str, content: str, parent_id: str | None = None) -> dict:
+    def create_document(
+        self, title: str, content: str, parent_id: str | None = None
+    ) -> dict:
         payload: dict[str, Any] = {"title": title, "content": content}
         if parent_id:
             payload["parent"] = parent_id
@@ -139,7 +149,9 @@ class LaSuiteClient:
 
     def update_document(self, doc_id: str, title: str, content: str) -> dict:
         return self._call(
-            "PATCH", f"/api/v1/documents/{doc_id}/", {"title": title, "content": content}
+            "PATCH",
+            f"/api/v1/documents/{doc_id}/",
+            {"title": title, "content": content},
         )
 
     def get_document(self, doc_id: str) -> dict:
@@ -189,7 +201,11 @@ class WikiSyncer:
     """
 
     def __init__(
-        self, client: LaSuiteClient, layout: WikiLayout, *, source_stage: str = "outputs"
+        self,
+        client: LaSuiteClient,
+        layout: WikiLayout,
+        *,
+        source_stage: str = "outputs",
     ) -> None:
         self._client = client
         self._layout = layout
@@ -278,7 +294,9 @@ class WikiSyncer:
                 "every page)."
             ) from exc
         if not isinstance(data, dict):
-            raise LaSuiteError(f"the wiki sync mapping {self._map_path} is not a JSON object")
+            raise LaSuiteError(
+                f"the wiki sync mapping {self._map_path} is not a JSON object"
+            )
         return data
 
     def _save_mapping(self) -> None:

@@ -87,7 +87,14 @@ class MultiplexerObserver:
         more than one row claiming active). Never raises."""
         try:
             result = subprocess.run(
-                ["tmux", "list-windows", "-t", f"={session}", "-F", "#{window_id}\t#{window_active}"],
+                [
+                    "tmux",
+                    "list-windows",
+                    "-t",
+                    f"={session}",
+                    "-F",
+                    "#{window_id}\t#{window_active}",
+                ],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",

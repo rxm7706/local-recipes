@@ -116,18 +116,58 @@ EXTENSION_LANGS = {
 }
 
 BINARY_EXTS = {
-    ".so", ".dll", ".jar", ".wasm", ".exe", ".dylib", ".a", ".o",
-    ".pyc", ".class", ".png", ".jpg", ".jpeg", ".gif", ".ico",
-    ".pdf", ".zip", ".tar", ".gz", ".tgz", ".bz2", ".xz", ".7z",
-    ".woff", ".woff2", ".ttf", ".otf", ".eot",
+    ".so",
+    ".dll",
+    ".jar",
+    ".wasm",
+    ".exe",
+    ".dylib",
+    ".a",
+    ".o",
+    ".pyc",
+    ".class",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ico",
+    ".pdf",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".tgz",
+    ".bz2",
+    ".xz",
+    ".7z",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".eot",
 }
 
 # Path-segment names that mark generated/vendored output trees.
 EXCLUDED_DIR_NAMES = {
-    "node_modules", "__pycache__", "dist", "build", ".webpack",
-    "target", ".next", ".nuxt", "out", "coverage", ".git",
-    ".venv", "venv", ".tox", ".mypy_cache", ".pytest_cache",
-    ".ruff_cache", ".gradle", ".idea", ".vscode",
+    "node_modules",
+    "__pycache__",
+    "dist",
+    "build",
+    ".webpack",
+    "target",
+    ".next",
+    ".nuxt",
+    "out",
+    "coverage",
+    ".git",
+    ".venv",
+    "venv",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".gradle",
+    ".idea",
+    ".vscode",
 }
 
 ASSET_TYPE_SCHEMA = "schema"
@@ -325,7 +365,9 @@ def _parse_pyproject_scripts(source_root: Path) -> Iterable[Path]:
     return ()
 
 
-def is_script(path: Path, source_root: Path, *, entry_points: set[Path]) -> tuple[bool, str | None]:
+def is_script(
+    path: Path, source_root: Path, *, entry_points: set[Path]
+) -> tuple[bool, str | None]:
     """Decide whether `path` is a script. Returns (is_script, shebang_lang)."""
     if path.resolve() in entry_points:
         return True, detect_shebang_language(path)
@@ -384,9 +426,7 @@ def asset_type(path: Path, source_root: Path) -> str | None:
 # --------------------------------------------------------------------------
 
 
-_HEADER_COMMENT_RE = re.compile(
-    r"^\s*(?:#|//|/\*|\*)\s*(.{3,})$"
-)
+_HEADER_COMMENT_RE = re.compile(r"^\s*(?:#|//|/\*|\*)\s*(.{3,})$")
 
 
 def extract_purpose(path: Path, *, asset_type_hint: str | None) -> str:
@@ -504,8 +544,10 @@ def detect(
                 if is_scr:
                     scripts_inventory.append(
                         build_script_record(
-                            path, source_root,
-                            shebang_lang=shebang_lang, max_lines=max_lines,
+                            path,
+                            source_root,
+                            shebang_lang=shebang_lang,
+                            max_lines=max_lines,
                         )
                     )
                     continue  # a script can't also be an asset
@@ -515,7 +557,10 @@ def detect(
                 if atype is not None:
                     assets_inventory.append(
                         build_asset_record(
-                            path, source_root, atype=atype, max_lines=max_lines,
+                            path,
+                            source_root,
+                            atype=atype,
+                            max_lines=max_lines,
                         )
                     )
 

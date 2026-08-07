@@ -42,6 +42,7 @@ Cost controls (https://ai.google.dev/gemini-api/docs/batch-api):
                     FAILED_PRECONDITION. Use a concrete model ID (not a *-latest alias).
   Model choice      prefer Flash over Pro; use a *-lite model for simple high-volume calls.
 """
+
 import json
 import os
 import urllib.request
@@ -91,6 +92,7 @@ def _post_requests(path: str, payload: dict, timeout: int = 60) -> dict:
     response.raise_for_status()
     return response.json()
 
+
 def _get_requests(path: str, timeout: int = 30) -> dict:
     headers = _auth_headers()
     url = f"{_BASE}/{path}"
@@ -98,6 +100,7 @@ def _get_requests(path: str, timeout: int = 30) -> dict:
     response = requests.get(url, headers=headers, timeout=timeout)
     response.raise_for_status()
     return response.json()
+
 
 def _post_urllib(path: str, payload: dict, timeout: int = 60) -> dict:
     headers = _auth_headers(json_body=True)
@@ -107,12 +110,14 @@ def _post_urllib(path: str, payload: dict, timeout: int = 60) -> dict:
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
+
 def _get_urllib(path: str, timeout: int = 30) -> dict:
     headers = _auth_headers()
     url = f"{_BASE}/{path}"
     req = urllib.request.Request(url, headers=headers, method="GET")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
+
 
 # Choose implementation based on availability
 _post = _post_requests if requests else _post_urllib
@@ -134,8 +139,14 @@ def _format_error(e: Exception) -> str:
 _SAFETY_SETTINGS = [
     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE",
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE",
+    },
 ]
 
 
@@ -292,7 +303,9 @@ def gemini_batch_submit(
         resp = _post(f"models/{model}:batchGenerateContent", payload)
         name = resp.get("name")
         if name:
-            return f'Submitted batch job: {name}\nPoll it with gemini_batch_get("{name}").'
+            return (
+                f'Submitted batch job: {name}\nPoll it with gemini_batch_get("{name}").'
+            )
         return json.dumps(resp)
     except Exception as e:
         return _format_error(e)
@@ -323,8 +336,10 @@ def gemini_batch_get(batch_name: str) -> str:
     if not inlined:
         fname = dest.get("fileName") or dest.get("file_name")
         if fname:
-            return (f"Batch {batch_name} SUCCEEDED; results are in file '{fname}' "
-                    f"(fetch via the Files API — not auto-downloaded here).")
+            return (
+                f"Batch {batch_name} SUCCEEDED; results are in file '{fname}' "
+                f"(fetch via the Files API — not auto-downloaded here)."
+            )
         return f"Batch {batch_name} state: {state or 'unknown'}; no inline results.\n{json.dumps(resp)[:500]}"
     lines = []
     for item in inlined:

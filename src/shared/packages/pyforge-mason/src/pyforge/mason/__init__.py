@@ -18,7 +18,7 @@ def _version() -> str:
 
     try:
         return version("pyforge-mason")
-    except PackageNotFoundError:      # running from a source tree, not installed
+    except PackageNotFoundError:  # running from a source tree, not installed
         return "0.1.0+source"
 
 

@@ -29,7 +29,8 @@ def _fixture_wiki(tmp_path: Path):
         encoding="utf-8",
     )
     (raw / "kedro.md").write_text(
-        "# Kedro\nKedro resolves the pipeline DAG for the migration.\n", encoding="utf-8"
+        "# Kedro\nKedro resolves the pipeline DAG for the migration.\n",
+        encoding="utf-8",
     )
     return layout
 
@@ -82,12 +83,16 @@ def test_compile_is_deterministic(tmp_path: Path):
     CompileCrew().run(layout)
     first = layout.stage_path("compiled", "duckdb.md").read_text(encoding="utf-8")
     CompileCrew().run(layout)  # recompile
-    assert layout.stage_path("compiled", "duckdb.md").read_text(encoding="utf-8") == first
+    assert (
+        layout.stage_path("compiled", "duckdb.md").read_text(encoding="utf-8") == first
+    )
 
 
 def test_compile_runs_the_injected_enricher(tmp_path: Path):
     layout = _fixture_wiki(tmp_path)
-    CompileCrew(enricher=lambda title, body: body + f"\n<!-- enriched:{title} -->").run(layout)
+    CompileCrew(enricher=lambda title, body: body + f"\n<!-- enriched:{title} -->").run(
+        layout
+    )
     out = layout.stage_path("compiled", "duckdb.md").read_text(encoding="utf-8")
     assert "<!-- enriched:DuckDB -->" in out
 
@@ -124,7 +129,9 @@ def test_compile_forwards_source_staleness(tmp_path: Path):
 def test_unreadable_staleness_sidecar_degrades_to_stale(tmp_path: Path):
     layout = _fixture_wiki(tmp_path)
     raw_doc = layout.stage_dir("raw") / "duckdb.md"
-    raw_doc.with_name(raw_doc.name + STALENESS_SUFFIX).write_text("{not json", encoding="utf-8")
+    raw_doc.with_name(raw_doc.name + STALENESS_SUFFIX).write_text(
+        "{not json", encoding="utf-8"
+    )
     result = CompileCrew().run(layout)
     # AD-13: degrade toward stale, never silently toward fresh.
     assert "duckdb.md" in result.stale_forwarded
@@ -155,7 +162,9 @@ def test_compile_forwards_inline_frontmatter_staleness(tmp_path: Path):
     )
     result = CompileCrew().run(layout)
     assert "x.md" in result.stale_forwarded
-    meta, body = parse_frontmatter(layout.stage_path("compiled", "x.md").read_text("utf-8"))
+    meta, body = parse_frontmatter(
+        layout.stage_path("compiled", "x.md").read_text("utf-8")
+    )
     assert meta["stale"] is True
     assert meta["stale_reason"] == "refresh skipped upstream"
     assert meta["stale_marked_at"] == 42
@@ -189,7 +198,9 @@ def test_lint_clean_wiki_has_no_violations(tmp_path: Path):
 
 def test_lint_reports_missing_frontmatter_and_empty_body(tmp_path: Path):
     layout = scaffold_wiki(tmp_path / "wiki")
-    layout.stage_path("compiled", "bare.md").write_text("no frontmatter here\n", encoding="utf-8")
+    layout.stage_path("compiled", "bare.md").write_text(
+        "no frontmatter here\n", encoding="utf-8"
+    )
     layout.stage_path("compiled", "empty.md").write_text(
         "---\ntitle: Empty\n---\n", encoding="utf-8"
     )
@@ -201,7 +212,8 @@ def test_lint_reports_missing_frontmatter_and_empty_body(tmp_path: Path):
 def test_lint_reports_broken_internal_link(tmp_path: Path):
     layout = scaffold_wiki(tmp_path / "wiki")
     layout.stage_path("compiled", "a.md").write_text(
-        "---\ntitle: A\n---\nSee [B](missing.md) and [ext](https://x/y.md).\n", encoding="utf-8"
+        "---\ntitle: A\n---\nSee [B](missing.md) and [ext](https://x/y.md).\n",
+        encoding="utf-8",
     )
     report = LintCrew().run(layout)
     broken = report.by_rule("broken-link")
@@ -257,7 +269,8 @@ def test_lint_catches_laundered_staleness(tmp_path: Path):
     # A page whose frontmatter says stale but whose body dropped the banner = laundered freshness.
     layout = scaffold_wiki(tmp_path / "wiki")
     layout.stage_path("compiled", "laundered.md").write_text(
-        "---\nstale: true\ntitle: Laundered\n---\nlooks fresh but is not\n", encoding="utf-8"
+        "---\nstale: true\ntitle: Laundered\n---\nlooks fresh but is not\n",
+        encoding="utf-8",
     )
     report = LintCrew().run(layout)
     assert report.by_rule("laundered-staleness")
@@ -326,5 +339,8 @@ def test_keyword_retriever_ranks_by_overlap_deterministically():
         ("c.md", "duckdb engine vector similarity"),  # all 3 query terms
     ]
     got = keyword_retriever("duckdb vector engine", docs)
-    assert [g.doc for g in got] == ["c.md", "a.md"]  # c has more overlap; b (zero) is dropped
+    assert [g.doc for g in got] == [
+        "c.md",
+        "a.md",
+    ]  # c has more overlap; b (zero) is dropped
     assert got[0].score == 3.0 and got[1].score == 2.0

@@ -159,7 +159,7 @@ def resolve_repo_relative(raw_value: str, project_root: Path) -> str:
         return ""
     value = str(raw_value).strip()
     if value.startswith("{project-root}/"):
-        value = value[len("{project-root}/"):]
+        value = value[len("{project-root}/") :]
     elif value == "{project-root}":
         value = ""
     return value
@@ -208,8 +208,9 @@ def validate_config_value(key: str, raw_value: str) -> tuple[str | None, str | N
 # ─── Pattern assembly ───────────────────────────────────────────────────────
 
 
-def assemble_patterns(skills_output_folder: str, forge_data_folder: str
-                      ) -> tuple[list[str], list[str]]:
+def assemble_patterns(
+    skills_output_folder: str, forge_data_folder: str
+) -> tuple[list[str], list[str]]:
     """Return (validated_patterns_to_add, warnings).
 
     Validated patterns include the 4 unconditional ones plus any of the
@@ -255,8 +256,9 @@ def read_settings_yml(path: Path) -> tuple[dict, bool]:
     return data, True
 
 
-def merge_patterns(existing_patterns: list[str], to_add: list[str]
-                   ) -> tuple[list[str], list[str]]:
+def merge_patterns(
+    existing_patterns: list[str], to_add: list[str]
+) -> tuple[list[str], list[str]]:
     """Append `to_add` entries to `existing_patterns` if not already present.
 
     Returns (merged_patterns, newly_added_patterns). Order of existing
@@ -285,10 +287,14 @@ def render_settings_yml(data: dict, original_text: str | None) -> str:
     exclude_patterns entries are preserved (set-union, not overwrite);
     other top-level keys (if any) are also preserved.
     """
-    return yaml.safe_dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    return yaml.safe_dump(
+        data, default_flow_style=False, sort_keys=False, allow_unicode=True
+    )
 
 
-def cmd_merge(project_root: Path, skills_output_folder: str, forge_data_folder: str) -> None:
+def cmd_merge(
+    project_root: Path, skills_output_folder: str, forge_data_folder: str
+) -> None:
     target = project_root / ".cocoindex_code" / "settings.yml"
 
     # Resolve `{project-root}/...` template strings here so callers can
@@ -297,13 +303,18 @@ def cmd_merge(project_root: Path, skills_output_folder: str, forge_data_folder: 
     skills_output_folder = resolve_repo_relative(skills_output_folder, project_root)
     forge_data_folder = resolve_repo_relative(forge_data_folder, project_root)
 
-    patterns_to_add, warnings = assemble_patterns(skills_output_folder, forge_data_folder)
+    patterns_to_add, warnings = assemble_patterns(
+        skills_output_folder, forge_data_folder
+    )
     data, existed = read_settings_yml(target)
 
     existing_excludes = data.get("exclude_patterns", []) or []
     if not isinstance(existing_excludes, list):
-        _die(1, f"exclude_patterns in {target} is not a list "
-                f"(got {type(existing_excludes).__name__})")
+        _die(
+            1,
+            f"exclude_patterns in {target} is not a list "
+            f"(got {type(existing_excludes).__name__})",
+        )
     # Normalize entries to strings (cocoindex tolerates non-string entries
     # but we want byte-identical comparison)
     existing_excludes = [str(p) for p in existing_excludes]
@@ -313,32 +324,36 @@ def cmd_merge(project_root: Path, skills_output_folder: str, forge_data_folder: 
 
     if not newly_added:
         # Idempotent re-run — no write, no mtime change.
-        _ok({
-            "settings_yml_existed":     existed,
-            "settings_yml_path":        str(target),
-            "patterns_added":           0,
-            "patterns_added_list":      [],
-            "patterns_already_present": patterns_already_present,
-            "effective_patterns":       sorted(set(patterns_to_add)),
-            "written":                  False,
-            "warnings":                 warnings,
-        })
+        _ok(
+            {
+                "settings_yml_existed": existed,
+                "settings_yml_path": str(target),
+                "patterns_added": 0,
+                "patterns_added_list": [],
+                "patterns_already_present": patterns_already_present,
+                "effective_patterns": sorted(set(patterns_to_add)),
+                "written": False,
+                "warnings": warnings,
+            }
+        )
         return
 
     data["exclude_patterns"] = merged
     rendered = render_settings_yml(data, None)
     _atomic_write(target, rendered)
 
-    _ok({
-        "settings_yml_existed":     existed,
-        "settings_yml_path":        str(target),
-        "patterns_added":           len(newly_added),
-        "patterns_added_list":      newly_added,
-        "patterns_already_present": patterns_already_present,
-        "effective_patterns":       sorted(set(patterns_to_add)),
-        "written":                  True,
-        "warnings":                 warnings,
-    })
+    _ok(
+        {
+            "settings_yml_existed": existed,
+            "settings_yml_path": str(target),
+            "patterns_added": len(newly_added),
+            "patterns_added_list": newly_added,
+            "patterns_already_present": patterns_already_present,
+            "effective_patterns": sorted(set(patterns_to_add)),
+            "written": True,
+            "warnings": warnings,
+        }
+    )
 
 
 def main() -> None:
@@ -347,20 +362,24 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--project-root", type=Path, required=True,
+        "--project-root",
+        type=Path,
+        required=True,
         help="Absolute path to the project root. Script writes/reads "
-             "{project-root}/.cocoindex_code/settings.yml.",
+        "{project-root}/.cocoindex_code/settings.yml.",
     )
     parser.add_argument(
-        "--skills-output-folder", default="",
+        "--skills-output-folder",
+        default="",
         help="Raw value of skills_output_folder from {project-root}/_bmad/skf/config.yaml. "
-             "Validated before being interpolated into `**/{value}`. Empty/absolute/glob-meta "
-             "values are rejected with a warning.",
+        "Validated before being interpolated into `**/{value}`. Empty/absolute/glob-meta "
+        "values are rejected with a warning.",
     )
     parser.add_argument(
-        "--forge-data-folder", default="",
+        "--forge-data-folder",
+        default="",
         help="Raw value of forge_data_folder from {project-root}/_bmad/skf/config.yaml. "
-             "Same validation as --skills-output-folder.",
+        "Same validation as --skills-output-folder.",
     )
     args = parser.parse_args()
 

@@ -56,7 +56,9 @@ VALIDATE_PINS_PATH = SHARED_SCRIPTS / "skf-validate-pins.py"
 
 
 def _load_validate_pin():
-    spec = importlib.util.spec_from_file_location("skf_validate_pins", VALIDATE_PINS_PATH)
+    spec = importlib.util.spec_from_file_location(
+        "skf_validate_pins", VALIDATE_PINS_PATH
+    )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.validate_pin
@@ -164,8 +166,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate all version pins in a campaign state file.",
     )
-    parser.add_argument("--state-file", required=True, help="Path to _campaign-state.yaml")
-    parser.add_argument("--brief-file", required=True, help="Path to campaign-brief.yaml")
+    parser.add_argument(
+        "--state-file", required=True, help="Path to _campaign-state.yaml"
+    )
+    parser.add_argument(
+        "--brief-file", required=True, help="Path to campaign-brief.yaml"
+    )
     args = parser.parse_args()
     return run(args.state_file, args.brief_file)
 

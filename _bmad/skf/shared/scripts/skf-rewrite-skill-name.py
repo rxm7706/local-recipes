@@ -221,7 +221,9 @@ def rewrite_context_snippet(content: str, old_name: str, new_name: str):
 # --- CLI orchestration --------------------------------------------------------
 
 
-def process(target: Path, kind: str, old_name: str, new_name: str, dry_run: bool) -> dict:
+def process(
+    target: Path, kind: str, old_name: str, new_name: str, dry_run: bool
+) -> dict:
     original = target.read_text(encoding="utf-8")
 
     result = {
@@ -243,7 +245,9 @@ def process(target: Path, kind: str, old_name: str, new_name: str, dry_run: bool
         result["matched"] = matched
         result["old_value"] = old_value
     elif kind == "provenance-json":
-        new_content, old_value, matched = rewrite_json_field(original, "skill_name", new_name)
+        new_content, old_value, matched = rewrite_json_field(
+            original, "skill_name", new_name
+        )
         result["field"] = "skill_name"
         result["matched"] = matched
         result["old_value"] = old_value
@@ -274,11 +278,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("target", type=Path, help="File to rewrite (SKILL.md, metadata.json, ...)")
-    parser.add_argument("--kind", required=True, choices=KINDS, help="File kind / transform to apply")
+    parser.add_argument(
+        "target", type=Path, help="File to rewrite (SKILL.md, metadata.json, ...)"
+    )
+    parser.add_argument(
+        "--kind", required=True, choices=KINDS, help="File kind / transform to apply"
+    )
     parser.add_argument("--old-name", required=True, help="Current skill name")
     parser.add_argument("--new-name", required=True, help="New skill name (kebab-case)")
-    parser.add_argument("--dry-run", action="store_true", help="Compute without writing; emit new_content")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Compute without writing; emit new_content",
+    )
     parser.add_argument("--verbose", action="store_true", help="Diagnostics to stderr")
     args = parser.parse_args()
 
@@ -291,14 +303,19 @@ def main() -> None:
         _die(1, f"target not found: {args.target}")
 
     try:
-        result = process(args.target, args.kind, args.old_name, args.new_name, args.dry_run)
+        result = process(
+            args.target, args.kind, args.old_name, args.new_name, args.dry_run
+        )
     except ValueError as e:
         _die(2, f"{args.kind} transform failed for {args.target}: {e}")
     except OSError as e:
         _die(2, f"atomic write failed for {args.target}: {e}")
 
     if args.verbose:
-        print(f"[skf-rewrite-skill-name] {args.kind} changed={result['changed']}", file=sys.stderr)
+        print(
+            f"[skf-rewrite-skill-name] {args.kind} changed={result['changed']}",
+            file=sys.stderr,
+        )
 
     print(json.dumps(result, indent=2))
     sys.exit(0)

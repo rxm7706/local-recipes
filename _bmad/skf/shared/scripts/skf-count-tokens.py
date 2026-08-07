@@ -131,17 +131,25 @@ def count_package(skill_dir: Path, target_files: list[Path] | None = None) -> di
             metrics = measure(_read_text(path))
             files.append({"path": name, "role": role, "exists": True, **metrics})
         else:
-            files.append({"path": name, "role": role, "exists": False, "words": 0, "tokens": 0})
+            files.append(
+                {"path": name, "role": role, "exists": False, "words": 0, "tokens": 0}
+            )
 
     # references/ — per-file rows + summed total.
     ref_rows, references_total = measure_reference_files(skill_dir / "references")
     files.extend(ref_rows)
 
     # package_total = snippet + SKILL.md + metadata + references_total; EXCLUDES managed section.
-    core_by_role = {row["role"]: row for row in files if row["role"] in {"context-snippet", "skill-md", "metadata"}}
+    core_by_role = {
+        row["role"]: row
+        for row in files
+        if row["role"] in {"context-snippet", "skill-md", "metadata"}
+    }
     package_total = {
-        "words": sum(core_by_role[r]["words"] for r in core_by_role) + references_total["words"],
-        "tokens": sum(core_by_role[r]["tokens"] for r in core_by_role) + references_total["tokens"],
+        "words": sum(core_by_role[r]["words"] for r in core_by_role)
+        + references_total["words"],
+        "tokens": sum(core_by_role[r]["tokens"] for r in core_by_role)
+        + references_total["tokens"],
     }
 
     # Managed section — first --target-file that actually contains a block wins.
@@ -191,8 +199,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Context file (CLAUDE.md / AGENTS.md / .cursorrules) to extract the managed "
         "section from; repeatable — the first file with a BEGIN..END block is measured.",
     )
-    parser.add_argument("-o", "--output", metavar="PATH", help="Write JSON here (default: stdout)")
-    parser.add_argument("--verbose", action="store_true", help="Emit diagnostics to stderr")
+    parser.add_argument(
+        "-o", "--output", metavar="PATH", help="Write JSON here (default: stdout)"
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="Emit diagnostics to stderr"
+    )
     args = parser.parse_args(argv)
 
     skill_dir = Path(args.skill_package)

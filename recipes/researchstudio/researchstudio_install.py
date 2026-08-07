@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Copy ResearchStudio skills into a project's .claude/skills/ or .codex/skills/."""
+
 import argparse
 import os
 import shutil
@@ -22,8 +23,12 @@ def main():
         default=None,
         help="Destination directory (default: .claude/skills, or .codex/skills with --codex)",
     )
-    parser.add_argument("--idea", action="store_true", help="install only the Idea bundle")
-    parser.add_argument("--reel", action="store_true", help="install only the Reel bundle")
+    parser.add_argument(
+        "--idea", action="store_true", help="install only the Idea bundle"
+    )
+    parser.add_argument(
+        "--reel", action="store_true", help="install only the Reel bundle"
+    )
     parser.add_argument(
         "--codex",
         action="store_true",
@@ -49,14 +54,20 @@ def main():
 
     dest = args.dest
     if dest is None:
-        dest = os.path.join(".codex", "skills") if args.codex else os.path.join(".claude", "skills")
+        dest = (
+            os.path.join(".codex", "skills")
+            if args.codex
+            else os.path.join(".claude", "skills")
+        )
     os.makedirs(dest, exist_ok=True)
 
     installed = []
     for key in wanted:
         source = os.path.join(root, BUNDLES[key], "skills")
         if not os.path.isdir(source):
-            print(f"Error: bundle {BUNDLES[key]} not found at {source}", file=sys.stderr)
+            print(
+                f"Error: bundle {BUNDLES[key]} not found at {source}", file=sys.stderr
+            )
             sys.exit(1)
         for name in sorted(os.listdir(source)):
             src = os.path.join(source, name)
@@ -78,7 +89,9 @@ def main():
     if "idea" in wanted:
         tmpl = os.path.join(root, "ResearchStudio-Idea", ".env.template")
         if os.path.isfile(tmpl):
-            print(f"\nResearchStudio-Idea needs connector credentials. Copy and fill in:\n  {tmpl}")
+            print(
+                f"\nResearchStudio-Idea needs connector credentials. Copy and fill in:\n  {tmpl}"
+            )
 
 
 if __name__ == "__main__":

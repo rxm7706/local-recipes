@@ -303,9 +303,7 @@ def _indeterminate_finding(reason: str, component: Component, message: str) -> F
     does: two components sharing a name but differing by version must not
     collide onto one finding id."""
     version_segment = (
-        _sanitize_id_segment(component.version)
-        if component.version
-        else "unspecified"
+        _sanitize_id_segment(component.version) if component.version else "unspecified"
     )
     return Finding(
         id=(
@@ -463,8 +461,7 @@ def parse_deptry_output(raw: str) -> DeptryParse:
                     kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
                     owner=_OWNER,
                     message=(
-                        "deptry output is not a JSON array "
-                        f"(got {type(data).__name__})"
+                        f"deptry output is not a JSON array (got {type(data).__name__})"
                     ),
                 ),
             ),

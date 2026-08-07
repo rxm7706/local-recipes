@@ -78,7 +78,9 @@ _INVALID_SPEC_CODE = "MRS-DEPLOY-002"
 # lands on the final path segment (e.g. "marshal/2-3-title" contributes
 # just "2-3-title") without this regex needing to know how many slashes a
 # real branch name carries.
-_GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+/(?P<branch>\S+)$")
+_GITHUB_MERGE_SUBJECT_RE = re.compile(
+    r"^Merge pull request #\d+ from \S+/(?P<branch>\S+)$"
+)
 
 # bmad-loop's own native merge-commit shape -- "Merge bmad-loop/<run-id>/
 # <key>-<description> into <branch> (bmad-loop)" -- the shape every
@@ -158,7 +160,9 @@ def extract_story_key_from_github_merge_subject(subject: str) -> StoryKey | None
         return None
 
 
-def _classify_merge_subject(subject: str, template: str, project_slug: str) -> StoryKey | None:
+def _classify_merge_subject(
+    subject: str, template: str, project_slug: str
+) -> StoryKey | None:
     """Try all three merge-subject patterns ``merged_story_keys`` recognizes,
     in order, returning the first match or ``None`` if none conform.
     Factored out so ``merged_story_keys`` (deduplicated by key) and
@@ -200,7 +204,9 @@ def merged_story_keys(
     return frozenset(keys)
 
 
-def count_conforming_subjects(subjects: tuple[str, ...], template: str, project_slug: str) -> int:
+def count_conforming_subjects(
+    subjects: tuple[str, ...], template: str, project_slug: str
+) -> int:
     """Diagnostic-only (Story 4.1 review fix): how many of ``subjects``
     conform to ANY merge-subject pattern ``merged_story_keys`` tries --
     a raw per-subject count, deliberately NOT deduplicated by key the way

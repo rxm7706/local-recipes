@@ -81,15 +81,17 @@ from pathlib import Path
 # Closed exclusion set — governing H1/H2 headers that normalise to one of
 # these drop their paragraphs from co-mention analysis (they typically
 # enumerate all libraries without describing an integration).
-EXCLUDED_HEADERS = frozenset({
-    "introduction",
-    "overview",
-    "glossary",
-    "table of contents",
-    "references",
-    "appendix",
-    "index",
-})
+EXCLUDED_HEADERS = frozenset(
+    {
+        "introduction",
+        "overview",
+        "glossary",
+        "table of contents",
+        "references",
+        "appendix",
+        "index",
+    }
+)
 
 # ATX header line: 1-6 leading hashes followed by at least one space/tab.
 # A line like `#foo` (no space) is NOT a header per CommonMark and is treated
@@ -181,8 +183,7 @@ def analyze(doc_text: str, skill_names: list[str]) -> dict:
     """
     names = sorted(set(skill_names))
     patterns = {
-        n: re.compile(r"\b" + re.escape(n) + r"\b", re.IGNORECASE)
-        for n in names
+        n: re.compile(r"\b" + re.escape(n) + r"\b", re.IGNORECASE) for n in names
     }
     paragraphs = parse_body_paragraphs(doc_text)
 
@@ -210,12 +211,14 @@ def analyze(doc_text: str, skill_names: list[str]) -> dict:
     pairs: list[dict] = []
     for (a, b), evidence in pair_evidence.items():
         if len(evidence) >= 2:
-            pairs.append({
-                "a": a,
-                "b": b,
-                "paragraph_count": len(evidence),
-                "evidence": evidence,
-            })
+            pairs.append(
+                {
+                    "a": a,
+                    "b": b,
+                    "paragraph_count": len(evidence),
+                    "evidence": evidence,
+                }
+            )
     pairs.sort(key=lambda p: (-p["paragraph_count"], p["a"], p["b"]))
 
     return {
@@ -253,24 +256,19 @@ def parse_skills(raw_text: str) -> list[str]:
         raise UserError(f"malformed JSON in --skills input: {exc}") from exc
     if not isinstance(data, list):
         raise UserError(
-            "--skills input must be a JSON array of strings; "
-            f"got {type(data).__name__}"
+            f"--skills input must be a JSON array of strings; got {type(data).__name__}"
         )
     names: list[str] = []
     for idx, item in enumerate(data):
         if not isinstance(item, str) or not item:
-            raise UserError(
-                f"--skills[{idx}] must be a non-empty string; got {item!r}"
-            )
+            raise UserError(f"--skills[{idx}] must be a non-empty string; got {item!r}")
         names.append(item)
     return names
 
 
 def _cmd_comention(args: argparse.Namespace) -> int:
     if args.doc == "-" and args.skills == "-":
-        raise UserError(
-            "--doc and --skills cannot both read from stdin ('-')"
-        )
+        raise UserError("--doc and --skills cannot both read from stdin ('-')")
     # Read the file-backed input first so a single stdin source stays intact.
     if args.doc == "-":
         skills_text = _read_source(args.skills, "--skills")
@@ -320,7 +318,7 @@ def _build_parser() -> argparse.ArgumentParser:
         required=True,
         help=(
             "path to a JSON array of loaded skill names, or '-' for stdin. "
-            "Shape: [\"<skill>\", ...]"
+            'Shape: ["<skill>", ...]'
         ),
     )
     p_cm.add_argument(

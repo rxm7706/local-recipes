@@ -52,9 +52,7 @@ _GH_READ_TIMEOUT_S = 30.0
 _GH_WRITE_TIMEOUT_S = 120.0
 
 
-def _run(
-    args: list[str], *, timeout_s: float
-) -> subprocess.CompletedProcess[str]:
+def _run(args: list[str], *, timeout_s: float) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
             args,
@@ -83,7 +81,9 @@ def _parse_json(text: str, *, context: str) -> object:
 
 def _pr_info_from_json(entry: object, *, context: str) -> PrInfo:
     if not isinstance(entry, Mapping):
-        raise ForgeCommandError(f"{context}: gh returned a non-object PR entry: {entry!r}")
+        raise ForgeCommandError(
+            f"{context}: gh returned a non-object PR entry: {entry!r}"
+        )
     number = entry.get("number")
     url = entry.get("url")
     state = entry.get("state")
@@ -112,7 +112,9 @@ def _require_redacted(title: object, body: object) -> None:
     ``str`` -- the last line of defense at this port's own boundary (AD-34),
     mirroring ``FileDesktopNotifier``'s identical type-guard convention."""
     if not isinstance(title, Redacted):
-        raise TypeError(f"title must be a Redacted instance, got {type(title).__name__}")
+        raise TypeError(
+            f"title must be a Redacted instance, got {type(title).__name__}"
+        )
     if not isinstance(body, Redacted):
         raise TypeError(f"body must be a Redacted instance, got {type(body).__name__}")
 
@@ -148,13 +150,20 @@ class GhForge:
         context = f"gh pr list --repo {repo_value} --head {head_branch_value}"
         data = _parse_json(result.stdout, context=context)
         if not isinstance(data, list):
-            raise ForgeCommandError(f"{context}: gh returned a non-list payload: {data!r}")
+            raise ForgeCommandError(
+                f"{context}: gh returned a non-list payload: {data!r}"
+            )
         if not data:
             return None
         return _pr_info_from_json(data[0], context=context)
 
     def create_pr(
-        self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted
+        self,
+        repo: ForgeRef,
+        base: ForgeRef,
+        head: ForgeRef,
+        title: Redacted,
+        body: Redacted,
     ) -> PrInfo:
         _require_redacted(title, body)
         repo_value, base_value, head_value = repo.value, base.value, head.value
@@ -257,7 +266,11 @@ class GhForge:
     def check_run_status(
         self, repo: ForgeRef, ref: ForgeRef, check_name: ForgeRef
     ) -> str | None:
-        repo_value, ref_value, check_name_value = repo.value, ref.value, check_name.value
+        repo_value, ref_value, check_name_value = (
+            repo.value,
+            ref.value,
+            check_name.value,
+        )
         result = _run(
             ["gh", "api", f"repos/{repo_value}/commits/{ref_value}/check-runs"],
             timeout_s=_GH_READ_TIMEOUT_S,
@@ -270,13 +283,20 @@ class GhForge:
         context = f"gh api repos/{repo_value}/commits/{ref_value}/check-runs"
         data = _parse_json(result.stdout, context=context)
         if not isinstance(data, Mapping):
-            raise ForgeCommandError(f"{context}: gh returned a non-object payload: {data!r}")
+            raise ForgeCommandError(
+                f"{context}: gh returned a non-object payload: {data!r}"
+            )
         runs = data.get("check_runs")
         if not isinstance(runs, list):
             return None
-        matching = [run for run in runs if isinstance(run, Mapping) and run.get("name") == check_name_value]
+        matching = [
+            run
+            for run in runs
+            if isinstance(run, Mapping) and run.get("name") == check_name_value
+        ]
         if not matching:
             return None
+
         # Code review (2026-08-06, P3, both reviewers independently): GitHub
         # can report multiple runs under the same check name (reruns), and
         # this endpoint's own response order is NOT documented/guaranteed

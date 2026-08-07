@@ -46,10 +46,12 @@ class MockSupervisor:
         """Send escalation signal."""
         if not self.attached:
             return False
-        self.escalations.append({
-            "type": escalation_type,
-            "data": data,
-        })
+        self.escalations.append(
+            {
+                "type": escalation_type,
+                "data": data,
+            }
+        )
         return True
 
     def get_escalations(self) -> list:

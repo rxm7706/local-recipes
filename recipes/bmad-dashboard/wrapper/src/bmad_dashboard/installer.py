@@ -31,9 +31,7 @@ DEFAULT_EDITORS: tuple[str, ...] = (
 def _bundled_vsix() -> Path:
     data_dir = files(__package__) / "data"
     candidates = [
-        Path(str(entry))
-        for entry in data_dir.iterdir()
-        if entry.name.endswith(".vsix")
+        Path(str(entry)) for entry in data_dir.iterdir() if entry.name.endswith(".vsix")
     ]
     if not candidates:
         raise FileNotFoundError(
@@ -85,9 +83,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--editor",
         help=(
             "Name of the VS Code CLI to use (looked up on PATH). "
-            "Default: auto-detect among "
-            + ", ".join(DEFAULT_EDITORS)
-            + "."
+            "Default: auto-detect among " + ", ".join(DEFAULT_EDITORS) + "."
         ),
     )
     parser.add_argument(

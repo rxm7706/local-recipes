@@ -25,6 +25,7 @@ under `dreamt`.
 Local refresh:  python docs/dashboard/generate.py            (or: pixi run dashboard-gen)
 CI (in-workflow): python docs/dashboard/generate.py --source git
 """
+
 from __future__ import annotations
 
 import argparse
@@ -85,7 +86,9 @@ _LOOP_TARGET_LEGACY = (("warden-epic", "warden"), ("claude/pdos", "warden"))
 # the published board while reading done locally. Two shapes exist on main:
 #   Merge pull request #53 from rxm7706/claude/pdos-1-2-interfaces-null-engine
 #   Merge pull request #115 from rxm7706/build/pyforge-doctor-1-1
-_PR_BUILD_DONE = re.compile(r"Merge pull request #\d+ from \S+/build/pyforge-([a-z0-9]+)-(\d+)-(\d+)")
+_PR_BUILD_DONE = re.compile(
+    r"Merge pull request #\d+ from \S+/build/pyforge-([a-z0-9]+)-(\d+)-(\d+)"
+)
 _PR_PDOS_DONE = re.compile(r"Merge pull request #\d+ from \S+/claude/pdos-(\d+)-(\d+)")
 # RETIRED convention, warden-only: warden's Epic-1 landed as bare `story N.N: …`
 # subjects before any loop/PR branch convention existed. All six such subjects on
@@ -119,6 +122,7 @@ _SNAP_TS = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC")
 
 
 # ---- source: sprint-status (local) ------------------------------------------
+
 
 def parse_sprint_status(path: Path) -> dict[str, str]:
     """Return {sprint_key: status} from the `development_status:` block."""
@@ -159,8 +163,17 @@ def sprint_to_dashboard_status(sprint_status: str, current: str) -> str:
 
 # Editorial metadata only. Everything STRUCTURAL (epics, stories, titles) is
 # derived from epics.md by scan_projects() — see its docstring for why.
-_EDITORIAL = ("label", "accentVar", "branch", "contract", "seglabels",
-              "inflight", "velocity", "timing", "lineState")
+_EDITORIAL = (
+    "label",
+    "accentVar",
+    "branch",
+    "contract",
+    "seglabels",
+    "inflight",
+    "velocity",
+    "timing",
+    "lineState",
+)
 
 # Dashboard key -> BMAD project slug, where they differ.
 _KEY_SLUG_OVERRIDE = {"regen": "local-recipes"}
@@ -189,11 +202,14 @@ def scan_projects(existing: dict) -> dict:
     rather than a silent omission.
     """
     out: dict = {}
-    for ep in sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-            "*/planning-artifacts/epics.md")):
+    for ep in sorted(
+        (REPO_ROOT / "_bmad-output" / "projects").glob("*/planning-artifacts/epics.md")
+    ):
         slug = ep.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
-        key = next((k for k, s in _KEY_SLUG_OVERRIDE.items() if s == slug),
-                   slug.removeprefix("pyforge-"))
+        key = next(
+            (k for k, s in _KEY_SLUG_OVERRIDE.items() if s == slug),
+            slug.removeprefix("pyforge-"),
+        )
         prev = existing.get(key, {})
         if key in _DERIVE_EXCLUDE:
             if prev:
@@ -203,13 +219,18 @@ def scan_projects(existing: dict) -> dict:
         for line in ep.read_text(encoding="utf-8").splitlines():
             m = re.match(r"^## Epic (\d+)\s*[:—-]\s*(.+)$", line)
             if m:
-                cur = {"badge": f"E{m.group(1)}", "title": m.group(2).strip(), "stories": []}
+                cur = {
+                    "badge": f"E{m.group(1)}",
+                    "title": m.group(2).strip(),
+                    "stories": [],
+                }
                 epics.append(cur)
                 continue
             m = re.match(r"^### Story (\d+)\.(\d+)\s*[:—-]\s*(.+)$", line)
             if m and cur and m.group(1) == cur["badge"][1:]:
                 epics[-1]["stories"].append(
-                    [f"{m.group(1)}.{m.group(2)}", "pending", m.group(3).strip()])
+                    [f"{m.group(1)}.{m.group(2)}", "pending", m.group(3).strip()]
+                )
         # Guard on STORIES, not just epics. pyforge-atlas parses to 10 epics with
         # ZERO stories because its story headings are `A1`/`B1`/`0.1`, not
         # `Story 1.1` — and a naive `if not epics` guard let that through and
@@ -228,11 +249,17 @@ def scan_projects(existing: dict) -> dict:
         # defect to chase.
         if sum(len(e["stories"]) for e in epics) == 0:
             if prev:
-                extra = (" — EXPECTED for this project, see the note above; the "
-                         "hand-authored line is correct" if slug == "pyforge-atlas" else "")
-                print(f"[projects] WARN {slug}: epics.md parsed {len(epics)} epic(s) "
-                      f"but NO stories (unrecognised story-heading convention) — "
-                      f"keeping the existing hand-authored line, NOT overwriting it{extra}")
+                extra = (
+                    " — EXPECTED for this project, see the note above; the "
+                    "hand-authored line is correct"
+                    if slug == "pyforge-atlas"
+                    else ""
+                )
+                print(
+                    f"[projects] WARN {slug}: epics.md parsed {len(epics)} epic(s) "
+                    f"but NO stories (unrecognised story-heading convention) — "
+                    f"keeping the existing hand-authored line, NOT overwriting it{extra}"
+                )
             continue
         row = {k: prev[k] for k in _EDITORIAL if k in prev}
         row.setdefault("label", key.capitalize())
@@ -246,11 +273,13 @@ def scan_projects(existing: dict) -> dict:
         row.setdefault("lineState", {"state": "ready", "at": ""})
         row["epics"] = epics
         out[key] = row
-    for key, row in existing.items():          # keep anything not epics-backed
+    for key, row in existing.items():  # keep anything not epics-backed
         out.setdefault(key, row)
     added = [k for k in out if k not in existing]
-    print(f"[projects] {len(out)} lines derived from epics.md"
-          + (f" · NEW: {', '.join(added)}" if added else ""))
+    print(
+        f"[projects] {len(out)} lines derived from epics.md"
+        + (f" · NEW: {', '.join(added)}" if added else "")
+    )
     return out
 
 
@@ -260,15 +289,22 @@ def check_project_coverage(projects: dict) -> None:
     The silent-omission guard. Without it, "this project is missing from In
     Build" is invisible — which is how four lines went unrendered.
     """
-    slugs = {p.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
-             for p in (REPO_ROOT / "_bmad-output" / "projects").glob(
-                 "*/planning-artifacts/epics.md")}
-    covered = {_KEY_SLUG_OVERRIDE.get(k, f"pyforge-{k}" if f"pyforge-{k}" in slugs else k)
-               for k in projects}
+    slugs = {
+        p.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+        for p in (REPO_ROOT / "_bmad-output" / "projects").glob(
+            "*/planning-artifacts/epics.md"
+        )
+    }
+    covered = {
+        _KEY_SLUG_OVERRIDE.get(k, f"pyforge-{k}" if f"pyforge-{k}" in slugs else k)
+        for k in projects
+    }
     missing = sorted(slugs - covered)
     if missing:
-        print(f"[projects] WARN {len(missing)} project(s) have epics.md but NO "
-              f"build line: {', '.join(missing)}")
+        print(
+            f"[projects] WARN {len(missing)} project(s) have epics.md but NO "
+            f"build line: {', '.join(missing)}"
+        )
 
 
 def apply_sprint_status(projects: dict) -> None:
@@ -292,8 +328,10 @@ def apply_sprint_status(projects: dict) -> None:
                 story[1] = sprint_to_dashboard_status(sstat, story[1])
                 matched += 1
         note = f"  unmatched: {', '.join(unmatched)}" if unmatched else ""
-        print(f"[{pkey}] {matched} matched / {len(unmatched)} unmatched "
-              f"(of {matched + len(unmatched)}){note}")
+        print(
+            f"[{pkey}] {matched} matched / {len(unmatched)} unmatched "
+            f"(of {matched + len(unmatched)}){note}"
+        )
 
 
 # dashboard project-key -> its bmad-loop loop-home dir (sibling of the repo).
@@ -308,8 +346,10 @@ def apply_sprint_status(projects: dict) -> None:
 # longer resolve. Marshal's first run was live and unrendered for exactly this
 # reason (2026-07-25). Both roots are searched; legacy siblings still work.
 def _discover_loop_homes() -> dict[str, Path]:
-    roots = [Path(os.environ.get("BMAD_LOOP_HOME_ROOT", Path.home() / ".bmad-loops")),
-             REPO_ROOT.parent]
+    roots = [
+        Path(os.environ.get("BMAD_LOOP_HOME_ROOT", Path.home() / ".bmad-loops")),
+        REPO_ROOT.parent,
+    ]
     homes: dict[str, Path] = {}
     for root in roots:
         if not root.is_dir():
@@ -320,31 +360,36 @@ def _discover_loop_homes() -> dict[str, Path]:
             slug = d.name
             for prefix in (f"{REPO_ROOT.name}-loop-", ""):
                 if prefix and slug.startswith(prefix):
-                    slug = slug[len(prefix):]
+                    slug = slug[len(prefix) :]
                     break
             key = slug.removeprefix("pyforge-")
-            homes.setdefault(key, d)      # short root wins over a legacy sibling
+            homes.setdefault(key, d)  # short root wins over a legacy sibling
     return homes
 
 
 LOOP_HOMES = _discover_loop_homes()
 _WT_STORY = re.compile(r"^(\d+-\d+)-")
-_RUN_FRESH_SECS = 30 * 60   # a run dir older than this is NOT in flight (was 12h — a
-                            # 8.5h-dead run still read "in flight", i.e. the console
-                            # claimed motion it had not measured)
+_RUN_FRESH_SECS = 30 * 60  # a run dir older than this is NOT in flight (was 12h — a
+# 8.5h-dead run still read "in flight", i.e. the console
+# claimed motion it had not measured)
 
 
 def _live_loop_sessions() -> set[str]:
     """Run ids with a live tmux session — the only positive proof a line is running."""
     try:
         r = subprocess.run(["tmux", "ls"], capture_output=True, text=True, timeout=10)
-        return {m for m in re.findall(r"bmad-loop-(\S+?):", r.stdout)} if r.returncode == 0 else set()
+        return (
+            {m for m in re.findall(r"bmad-loop-(\S+?):", r.stdout)}
+            if r.returncode == 0
+            else set()
+        )
     except Exception:
         return set()
 
 
 def apply_loop_inflight(projects: dict) -> None:
     import time
+
     for pkey, home in LOOP_HOMES.items():
         proj = projects.get(pkey)
         runs_dir = Path(home) / ".bmad-loop" / "runs"
@@ -368,7 +413,10 @@ def apply_loop_inflight(projects: dict) -> None:
             phases: dict[str, str] = {}
             try:
                 st = json.loads((runs[0] / "state.json").read_text())
-                phases = {k: (v or {}).get("phase", "") for k, v in (st.get("tasks") or {}).items()}
+                phases = {
+                    k: (v or {}).get("phase", "")
+                    for k, v in (st.get("tasks") or {}).items()
+                }
             except Exception:
                 phases = {}  # unreadable state -> fall back to presence, as before
             wts = runs[0] / "worktrees"
@@ -395,7 +443,9 @@ def apply_loop_inflight(projects: dict) -> None:
                     story[1] = "active"
                     marked.append(story[0])
         if marked:
-            print(f"[{pkey}] loop-home in-flight: {', '.join(marked)} (run {runs[0].name})")
+            print(
+                f"[{pkey}] loop-home in-flight: {', '.join(marked)} (run {runs[0].name})"
+            )
         _set_inflight_card(proj, pkey, runs[0], active_ids)
 
 
@@ -413,6 +463,7 @@ def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -
     board down with it. Emit every field or leave it None.
     """
     import time
+
     jf = run / "journal.jsonl"
     if not jf.is_file():
         return
@@ -424,7 +475,7 @@ def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -
             continue
         kind, ts = e.get("kind"), e.get("ts")
         if kind == "story-start" and isinstance(ts, (int, float)):
-            start_ts = ts                      # a re-drive restarts the clock, as it should
+            start_ts = ts  # a re-drive restarts the clock, as it should
         elif kind == "session-start" and e.get("task_id"):
             last_task = e["task_id"]
     if start_ts is None or not last_task:
@@ -436,7 +487,9 @@ def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -
     phase, attempt = (m.group(1), m.group(2)) if m else ("dev", "1")
 
     sid = sorted(active_ids)[0]
-    title = next((s[2] for e in proj["epics"] for s in e["stories"] if s[0] == sid), sid)
+    title = next(
+        (s[2] for e in proj["epics"] for s in e["stories"] if s[0] == sid), sid
+    )
 
     # Baseline for the progress bar + ETA: this line's OWN measured stories. Using
     # another line's numbers would compare unlike metrics (warden measures active
@@ -445,8 +498,11 @@ def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -
     mins = sorted(v for v in per.values() if isinstance(v, (int, float)) and v > 0)
     if not mins:
         return
-    median = mins[len(mins) // 2] if len(mins) % 2 else \
-        round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+    median = (
+        mins[len(mins) // 2]
+        if len(mins) % 2
+        else round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+    )
 
     proj["inflight"] = {
         "key": sid,
@@ -456,16 +512,21 @@ def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -
         "startEpoch": int(start_ts),
         "median": int(median),
         "lo": int(mins[0]),
-        "hi": int(max(mins[-1], median + 1)),   # hi is a divisor in the renderer
+        "hi": int(max(mins[-1], median + 1)),  # hi is a divisor in the renderer
         "phaseAsOf": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()),
     }
-    print(f"[{pkey}] in-flight card: {sid} · {phase} attempt {attempt} · "
-          f"started {int((time.time() - start_ts) / 60)} min ago · median {median}m")
+    print(
+        f"[{pkey}] in-flight card: {sid} · {phase} attempt {attempt} · "
+        f"started {int((time.time() - start_ts) / 60)} min ago · median {median}m"
+    )
 
 
 # ---- source: git (hands-off / CI) -------------------------------------------
 
-def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[str, set[str]]:
+
+def done_ids_from_git(
+    branch: str, project_keys: tuple[str, ...] = ()
+) -> dict[str, set[str]]:
     """PER-PROJECT done story ids from `branch`'s commit subjects.
 
     Numeric story ids collide across projects (the regen program's rf(5.1)
@@ -476,9 +537,12 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
     literal, so a newly provisioned smith is never missing one.
     """
     ref = branch
-    if subprocess.run(
-        ["git", "rev-parse", "--verify", "--quiet", branch], capture_output=True
-    ).returncode != 0:
+    if (
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", branch], capture_output=True
+        ).returncode
+        != 0
+    ):
         ref = "HEAD"  # detached checkout (e.g. some CI) — HEAD is the branch tip
     log = subprocess.run(
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
@@ -495,7 +559,9 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
             if slug and slug.group(1) in done:
                 pkey = slug.group(1)
             else:
-                pkey = next((p for frag, p in _LOOP_TARGET_LEGACY if frag in target), None)
+                pkey = next(
+                    (p for frag, p in _LOOP_TARGET_LEGACY if frag in target), None
+                )
             if pkey is None:
                 # No target at all = pre-convention subject, historically warden's.
                 # A target that exists but resolves to no known project is NOT
@@ -525,15 +591,17 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
             for tok in qm.group(1).split("+"):
                 key = tok.strip().lower()
                 if key.startswith("pyforge-"):
-                    key = key[len("pyforge-"):]
-                if key in done:          # validated against the live project set
+                    key = key[len("pyforge-") :]
+                if key in done:  # validated against the live project set
                     done[key].add(sid)
         for a in _RF_STORY.finditer(line):
             done["regen"].add(a.group(1))  # 1.1, 4.R ...
     if unattributed:
-        print(f"[git] WARN {len(unattributed)} bmad-loop merge target(s) matched no "
-              f"known project — their stories are NOT counted (previously they were "
-              f"silently credited to warden): {', '.join(sorted(unattributed))}")
+        print(
+            f"[git] WARN {len(unattributed)} bmad-loop merge target(s) matched no "
+            f"known project — their stories are NOT counted (previously they were "
+            f"silently credited to warden): {', '.join(sorted(unattributed))}"
+        )
     return done
 
 
@@ -560,8 +628,14 @@ def apply_tracked_ledger(projects: dict) -> None:
     """
     for pkey in sorted(projects):
         slug = _KEY_SLUG_OVERRIDE.get(pkey, f"pyforge-{pkey}")
-        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
-                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        ledger = (
+            REPO_ROOT
+            / "_bmad-output"
+            / "projects"
+            / slug
+            / "planning-artifacts"
+            / "sprint-status-ledger.yaml"
+        )
         if not ledger.is_file():
             continue
         statuses = parse_sprint_status(ledger)
@@ -576,8 +650,10 @@ def apply_tracked_ledger(projects: dict) -> None:
                 if dashboard_id_to_status(story[0], statuses) == "done":
                     story[1] = "done"
                     upgraded += 1
-        print(f"[{pkey}] tracked ledger: {len(statuses)} status(es), "
-              f"{upgraded} story(ies) upgraded to done")
+        print(
+            f"[{pkey}] tracked ledger: {len(statuses)} status(es), "
+            f"{upgraded} story(ies) upgraded to done"
+        )
 
 
 def apply_git(projects: dict) -> None:
@@ -595,8 +671,10 @@ def apply_git(projects: dict) -> None:
                 if story[1] == "done":  # after upgrade (incl. baseline dones)
                     done += 1
         total = sum(len(e["stories"]) for e in proj["epics"])
-        print(f"[{pkey}] {done}/{total} done (+{upgraded} upgraded from git; "
-              f"baseline dones preserved, never downgraded)")
+        print(
+            f"[{pkey}] {done}/{total} done (+{upgraded} upgraded from git; "
+            f"baseline dones preserved, never downgraded)"
+        )
 
 
 # ---- dreams (both modes) -----------------------------------------------------
@@ -618,8 +696,16 @@ DREAM_TYPES = ("dream", "practice")
 # §§1-8). `owner:` on a Dream names the station accountable for carrying it all
 # the way Dream -> code; the station is the POST, not the product, so owning a
 # Dream does not mean it becomes that Smith's package.
-STATIONS = ("herald", "marshal", "atlas", "warden",
-            "mason", "doctor", "scribe", "steward")
+STATIONS = (
+    "herald",
+    "marshal",
+    "atlas",
+    "warden",
+    "mason",
+    "doctor",
+    "scribe",
+    "steward",
+)
 # The Dreams that may name no station, because they PRECEDE them: the Charter, which
 # constitutes the stations, and pyforge-genesis, the operating-model seed. `guild` is NOT
 # a ninth station and never renders as one — it marks a Dream sitting above the roster,
@@ -645,7 +731,7 @@ GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
 DREAM_DECK_ALIASES = {
     "packaging-factory": "pyforge-mason",
     "agentic-sdlc-autonomy": "agentic-sdlc",
-    "pyforge-charter": "pyforge-genesis",   # the master vision deck
+    "pyforge-charter": "pyforge-genesis",  # the master vision deck
 }
 # Dreams whose build runs as a console program (chip shows live done/total).
 DREAM_PROGRAM = {
@@ -663,8 +749,11 @@ def dream_chain(slug: str) -> dict:
     deck = DREAM_DECK_ALIASES.get(slug, slug)
     if (REPO_ROOT / "presentations" / deck).is_dir():
         chain["deck"] = f"presentations/{deck}"
-    hits = sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-        f"*/planning-artifacts/specs/spec-{slug}"))
+    hits = sorted(
+        (REPO_ROOT / "_bmad-output" / "projects").glob(
+            f"*/planning-artifacts/specs/spec-{slug}"
+        )
+    )
     if hits:
         chain["spec"] = str(hits[0].relative_to(REPO_ROOT))
     if (REPO_ROOT / "_bmad-output" / "projects" / slug).is_dir():
@@ -700,40 +789,63 @@ def scan_dreams() -> list[dict]:
                 elif line.startswith("blocked-on:"):
                     blocked_on = line.split(":", 1)[1].strip()
         if status not in DREAM_STATUSES:
-            print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
-                  " — passed through; board shows it under 'dreamt'")
+            print(
+                f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
+                " — passed through; board shows it under 'dreamt'"
+            )
         if not owner:
             print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
         elif owner == "guild" and f.stem not in GUILD_DREAMS:
-            print(f"[dreams] WARN {f.name}: owner 'guild' is reserved for "
-                  f"{GUILD_DREAMS} — every other Dream must name a station")
+            print(
+                f"[dreams] WARN {f.name}: owner 'guild' is reserved for "
+                f"{GUILD_DREAMS} — every other Dream must name a station"
+            )
         elif owner not in STATIONS and owner != "guild":
-            print(f"[dreams] WARN {f.name}: owner {owner!r} is not one of the "
-                  f"eight Smiths {STATIONS}")
+            print(
+                f"[dreams] WARN {f.name}: owner {owner!r} is not one of the "
+                f"eight Smiths {STATIONS}"
+            )
         if dtype and dtype not in DREAM_TYPES:
             print(f"[dreams] WARN {f.name}: type {dtype!r} not in {DREAM_TYPES}")
-        dream = {"slug": f.stem, "title": title or f.stem,
-                 "status": status or "", "owner": owner or "",
-                 "type": dtype or "dream",
-                 "chain": dream_chain(f.stem)}
+        dream = {
+            "slug": f.stem,
+            "title": title or f.stem,
+            "status": status or "",
+            "owner": owner or "",
+            "type": dtype or "dream",
+            "chain": dream_chain(f.stem),
+        }
         if blocked_on:
             dream["blockedOn"] = blocked_on
         if archived_reason:
             dream["archived_reason"] = archived_reason
         dreams.append(dream)
     by_status = {s: sum(1 for d in dreams if d["status"] == s) for s in DREAM_STATUSES}
-    print(f"[dreams] {len(dreams)} scanned: "
-          + " / ".join(f"{n} {s}" for s, n in by_status.items()))
+    print(
+        f"[dreams] {len(dreams)} scanned: "
+        + " / ".join(f"{n} {s}" for s, n in by_status.items())
+    )
     return dreams
 
 
 # ---- specs roster (all BMAD Specs; docs/specs legacy is deliberately out) --
 
+
 def _git_date(path: Path) -> str:
     r = subprocess.run(
-        ["git", "log", "-1", "--format=%ad", "--date=format:%Y-%m-%d", "--",
-         str(path.relative_to(REPO_ROOT))],
-        capture_output=True, text=True, cwd=REPO_ROOT)
+        [
+            "git",
+            "log",
+            "-1",
+            "--format=%ad",
+            "--date=format:%Y-%m-%d",
+            "--",
+            str(path.relative_to(REPO_ROOT)),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
     return r.stdout.strip()
 
 
@@ -745,19 +857,24 @@ def scan_specs() -> list[dict]:
     dissolved; see GOVERNANCE_DIR).
     """
     rows: list[dict] = []
-    spec_dirs = (sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-            "*/planning-artifacts/specs/spec-*"))
-        + sorted((REPO_ROOT / GOVERNANCE_DIR).glob("spec-*")))
+    spec_dirs = sorted(
+        (REPO_ROOT / "_bmad-output" / "projects").glob(
+            "*/planning-artifacts/specs/spec-*"
+        )
+    ) + sorted((REPO_ROOT / GOVERNANCE_DIR).glob("spec-*"))
     for spec_dir in spec_dirs:
         smd = spec_dir / "SPEC.md"
         if not smd.is_file():
             continue
         text = smd.read_text(encoding="utf-8")
         slug = spec_dir.name.removeprefix("spec-")
-        project = (GOVERNANCE_DIR if spec_dir.parent == REPO_ROOT / GOVERNANCE_DIR
-                   else spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0])
+        project = (
+            GOVERNANCE_DIR
+            if spec_dir.parent == REPO_ROOT / GOVERNANCE_DIR
+            else spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+        )
         m = re.search(r"^#\s+(.+)$", text, re.M)
-        title = (m.group(1).strip() if m else slug)
+        title = m.group(1).strip() if m else slug
         title = re.sub(r"^SPEC\s*[—–-]\s*", "", title)
         caps = len(set(re.findall(r"\bCAP-\d+\b", text)))
         comp = 0
@@ -770,12 +887,22 @@ def scan_specs() -> list[dict]:
             if inline and inline.group(1).strip():
                 comp = len(inline.group(1).split(","))
         dream = slug if (DREAMS_DIR / f"{slug}.md").exists() else ""
-        rows.append({"slug": slug, "project": project, "title": title,
-                     "caps": caps, "companions": comp,
-                     "updated": _git_date(spec_dir), "dream": dream,
-                     "path": str(spec_dir.relative_to(REPO_ROOT))})
-    print(f"[specs] {len(rows)} Specs scanned "
-          f"({', '.join(sorted({r['project'] for r in rows}))})")
+        rows.append(
+            {
+                "slug": slug,
+                "project": project,
+                "title": title,
+                "caps": caps,
+                "companions": comp,
+                "updated": _git_date(spec_dir),
+                "dream": dream,
+                "path": str(spec_dir.relative_to(REPO_ROOT)),
+            }
+        )
+    print(
+        f"[specs] {len(rows)} Specs scanned "
+        f"({', '.join(sorted({r['project'] for r in rows}))})"
+    )
     return rows
 
 
@@ -818,17 +945,21 @@ def scan_story_specs() -> list[dict]:
 
         gap = max(0, done_count - tracked_count)  # clamp; spec-first is healthy surplus
         project_slug = project_dir.name
-        rows.append({
-            "station": project_slug,
-            "done": done_count,
-            "tracked": tracked_count,
-            "gap": gap
-        })
+        rows.append(
+            {
+                "station": project_slug,
+                "done": done_count,
+                "tracked": tracked_count,
+                "gap": gap,
+            }
+        )
 
     total_done = sum(r["done"] for r in rows)
     total_tracked = sum(r["tracked"] for r in rows)
     total_gap = sum(r["gap"] for r in rows)
-    print(f"[story-specs] {len(rows)} station(s), {total_done} done, {total_tracked} tracked, {total_gap} gap(s)")
+    print(
+        f"[story-specs] {len(rows)} station(s), {total_done} done, {total_tracked} tracked, {total_gap} gap(s)"
+    )
     return rows
 
 
@@ -836,16 +967,76 @@ def scan_story_specs() -> list[dict]:
 
 CAMPAIGN_ROSTER = [
     # wave · project · agent model · depth (epics = full chain; prd+arch stops early) · seed state
-    {"wave": "1a", "slug": "pyforge-doctor",       "model": "sonnet", "depth": "epics",    "state": "running"},
-    {"wave": "1b", "slug": "pyforge-steward",      "model": "sonnet", "depth": "epics",    "state": "running"},
-    {"wave": "1c", "slug": "pyforge-scribe",       "model": "sonnet", "depth": "epics",    "state": "running"},
-    {"wave": "1d", "slug": "pyforge-herald",       "model": "sonnet", "depth": "epics",    "state": "running"},
-    {"wave": "1e", "slug": "pyforge-marshal",      "model": "opus",   "depth": "epics",    "state": "running"},
-    {"wave": "1f", "slug": "pyforge-mason",        "model": "opus",   "depth": "epics",    "state": "running"},
-    {"wave": "2a", "slug": "presenton-pixi-image", "model": "sonnet", "depth": "epics",    "state": "running"},
-    {"wave": "2b", "slug": "wasm-analytics-stack", "model": "sonnet", "depth": "prd+arch", "state": "running"},
-    {"wave": "2c", "slug": "unity-data-stack",     "model": "opus",   "depth": "prd+arch", "state": "running"},
-    {"wave": "2d", "slug": "pyforge-genesis",      "model": "opus",   "depth": "epics",    "state": "queued"},
+    {
+        "wave": "1a",
+        "slug": "pyforge-doctor",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+    },
+    {
+        "wave": "1b",
+        "slug": "pyforge-steward",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+    },
+    {
+        "wave": "1c",
+        "slug": "pyforge-scribe",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+    },
+    {
+        "wave": "1d",
+        "slug": "pyforge-herald",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+    },
+    {
+        "wave": "1e",
+        "slug": "pyforge-marshal",
+        "model": "opus",
+        "depth": "epics",
+        "state": "running",
+    },
+    {
+        "wave": "1f",
+        "slug": "pyforge-mason",
+        "model": "opus",
+        "depth": "epics",
+        "state": "running",
+    },
+    {
+        "wave": "2a",
+        "slug": "presenton-pixi-image",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+    },
+    {
+        "wave": "2b",
+        "slug": "wasm-analytics-stack",
+        "model": "sonnet",
+        "depth": "prd+arch",
+        "state": "running",
+    },
+    {
+        "wave": "2c",
+        "slug": "unity-data-stack",
+        "model": "opus",
+        "depth": "prd+arch",
+        "state": "running",
+    },
+    {
+        "wave": "2d",
+        "slug": "pyforge-genesis",
+        "model": "opus",
+        "depth": "epics",
+        "state": "queued",
+    },
 ]
 
 CAMPAIGN_STAGES = ("research", "brief", "prd", "architecture", "epics")
@@ -875,28 +1066,54 @@ def scan_campaign() -> dict:
     rows: list[dict] = []
     for e in CAMPAIGN_ROSTER:
         real_project = CAMPAIGN_PROJECT_OVERRIDE.get(e["slug"], e["slug"])
-        pa = REPO_ROOT / "_bmad-output" / "projects" / real_project / "planning-artifacts"
+        pa = (
+            REPO_ROOT
+            / "_bmad-output"
+            / "projects"
+            / real_project
+            / "planning-artifacts"
+        )
         have = {
-            "research": bool(list((pa / "research").glob("*.md"))) if (pa / "research").is_dir() else False,
-            "brief": bool(list(pa.glob("product-brief*")) or list(pa.glob("*/product-brief*"))
-                          or list(pa.glob("briefs/**/brief*.md"))),
+            "research": bool(list((pa / "research").glob("*.md")))
+            if (pa / "research").is_dir()
+            else False,
+            "brief": bool(
+                list(pa.glob("product-brief*"))
+                or list(pa.glob("*/product-brief*"))
+                or list(pa.glob("briefs/**/brief*.md"))
+            ),
             "prd": (pa / "prd.md").is_file() or bool(list(pa.glob("prds/*/prd.md"))),
-            "architecture": ((pa / "architecture.md").is_file()
-                             or bool(list(pa.glob("architecture/*/*.md")))),
+            "architecture": (
+                (pa / "architecture.md").is_file()
+                or bool(list(pa.glob("architecture/*/*.md")))
+            ),
             "epics": (pa / "epics.md").is_file(),
         }
-        target = [s for s in CAMPAIGN_STAGES
-                  if not (s == "epics" and e["depth"] == "prd+arch")]
+        target = [
+            s
+            for s in CAMPAIGN_STAGES
+            if not (s == "epics" and e["depth"] == "prd+arch")
+        ]
         n = sum(have[s] for s in target)
         status = "landed" if n == len(target) else ("partial" if n else e["state"])
-        rows.append({**e, "have": have, "n": n, "of": len(target), "status": status,
-                     "planning_project": real_project})
+        rows.append(
+            {
+                **e,
+                "have": have,
+                "n": n,
+                "of": len(target),
+                "status": status,
+                "planning_project": real_project,
+            }
+        )
     landed = sum(1 for r in rows if r["status"] == "landed")
     running = sum(1 for r in rows if r["status"] == "running")
     print(f"[campaign] {len(rows)} chains · {running} running · {landed} landed")
-    return {"launched": "2026-07-25",
-            "chain": "research → brief → PRD → architecture → epics",
-            "rows": rows}
+    return {
+        "launched": "2026-07-25",
+        "chain": "research → brief → PRD → architecture → epics",
+        "rows": rows,
+    }
 
 
 # ---- build campaign (implementation lines across all bmad-projects) ----------
@@ -910,30 +1127,80 @@ IMPL_CAMPAIGN = [
     # hardcoded to 0 forever for every non-pkey row -- marshal read "0/40" the whole
     # time it was actually 10/50, same bug on mason (0/38, actually 4/48) and
     # steward (0/18, actually 3/26). Never derived, so it never caught up.
-    {"slug": "pyforge-herald",       "pkey": "herald", "stories": 17, "state": "running",
-     "note": "line 1 — smallest full product, spec settled 0 OQs"},
-    {"slug": "pyforge-doctor",       "pkey": "doctor", "stories": 12, "state": "running",
-     "note": "line 2 — consolidative wrap"},
-    {"slug": "pyforge-scribe",       "pkey": "scribe", "stories": 9,  "state": "running",
-     "note": "line 3 — team memory + graph"},
-    {"slug": "pyforge-steward",      "pkey": None, "stories": 18, "state": "queued",
-     "note": "next free slot"},
-    {"slug": "pyforge-mason",        "pkey": None, "stories": 38, "state": "queued",
-     "note": "longest persona line; CFE Rule-2 retro at closeout"},
-    {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
-     "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
-     "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md"},
-    {"slug": "pyforge-marshal",      "pkey": None, "stories": 40, "state": "held",
-     "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)"},
-    {"slug": "genesis-installer",    "pkey": None, "stories": 36, "state": "held",
-     "note": "epics 7-12 (same ledger as pyforge-marshal, split by epic) — last, model stability + consumes marshal-owned scripts",
-     "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md"},
-    {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
-     "note": "PRD+arch only by design; stories decompose when scheduled",
-     "epics_path": None},
-    {"slug": "unity-data-stack",     "pkey": None, "stories": 0,  "state": "future",
-     "note": "PRD+arch only by design; stories decompose when scheduled",
-     "epics_path": None},
+    {
+        "slug": "pyforge-herald",
+        "pkey": "herald",
+        "stories": 17,
+        "state": "running",
+        "note": "line 1 — smallest full product, spec settled 0 OQs",
+    },
+    {
+        "slug": "pyforge-doctor",
+        "pkey": "doctor",
+        "stories": 12,
+        "state": "running",
+        "note": "line 2 — consolidative wrap",
+    },
+    {
+        "slug": "pyforge-scribe",
+        "pkey": "scribe",
+        "stories": 9,
+        "state": "running",
+        "note": "line 3 — team memory + graph",
+    },
+    {
+        "slug": "pyforge-steward",
+        "pkey": None,
+        "stories": 18,
+        "state": "queued",
+        "note": "next free slot",
+    },
+    {
+        "slug": "pyforge-mason",
+        "pkey": None,
+        "stories": 38,
+        "state": "queued",
+        "note": "longest persona line; CFE Rule-2 retro at closeout",
+    },
+    {
+        "slug": "presenton-pixi-image",
+        "pkey": None,
+        "stories": 30,
+        "state": "held",
+        "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
+        "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md",
+    },
+    {
+        "slug": "pyforge-marshal",
+        "pkey": None,
+        "stories": 40,
+        "state": "held",
+        "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
+    },
+    {
+        "slug": "genesis-installer",
+        "pkey": None,
+        "stories": 36,
+        "state": "held",
+        "note": "epics 7-12 (same ledger as pyforge-marshal, split by epic) — last, model stability + consumes marshal-owned scripts",
+        "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md",
+    },
+    {
+        "slug": "wasm-analytics-stack",
+        "pkey": None,
+        "stories": 0,
+        "state": "future",
+        "note": "PRD+arch only by design; stories decompose when scheduled",
+        "epics_path": None,
+    },
+    {
+        "slug": "unity-data-stack",
+        "pkey": None,
+        "stories": 0,
+        "state": "future",
+        "note": "PRD+arch only by design; stories decompose when scheduled",
+        "epics_path": None,
+    },
 ]
 
 # Live ledger source for the non-`pkey` rows above: (ledger path, epic_min, epic_max),
@@ -946,15 +1213,33 @@ IMPL_CAMPAIGN = [
 # ledger, and it's independently confirmed still Phase-0-blocked (0 done) -- left on
 # its static fallback rather than guessing a partition.
 IMPL_CAMPAIGN_LEDGER: dict[str, tuple[str, int | None, int | None]] = {
-    "pyforge-marshal": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", None, 6),
-    "genesis-installer": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", 7, None),
-    "pyforge-mason": ("_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml", None, None),
-    "pyforge-steward": ("_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml", None, None),
+    "pyforge-marshal": (
+        "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+        None,
+        6,
+    ),
+    "genesis-installer": (
+        "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+        7,
+        None,
+    ),
+    "pyforge-mason": (
+        "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+        None,
+        None,
+    ),
+    "pyforge-steward": (
+        "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+        None,
+        None,
+    ),
 }
 _LEDGER_STORY_KEY = re.compile(r"^(\d+)-\d+-")
 
 
-def _ledger_done_total(rel_path: str, epic_min: int | None, epic_max: int | None) -> tuple[int, int] | None:
+def _ledger_done_total(
+    rel_path: str, epic_min: int | None, epic_max: int | None
+) -> tuple[int, int] | None:
     """`(done, total)` for a ledger's story-shaped keys, optionally epic-filtered.
 
     Non-story keys (`epic-N`, `epic-N-retrospective`) are excluded -- they aren't
@@ -1009,8 +1294,13 @@ def scan_impl_campaign(projects: dict) -> dict:
 
 # ---- build-line state (every In Build / Realized row carries a chip) ---------
 
-LINE_HOMES = {"herald": "pyforge-herald", "doctor": "pyforge-doctor",
-              "scribe": "pyforge-scribe", "warden": "pyforge-warden", "atlas": "pyforge-atlas"}
+LINE_HOMES = {
+    "herald": "pyforge-herald",
+    "doctor": "pyforge-doctor",
+    "scribe": "pyforge-scribe",
+    "warden": "pyforge-warden",
+    "atlas": "pyforge-atlas",
+}
 _STORY_KEY = re.compile(r"^\s*(\d+-\d+-[a-z0-9-]+):\s*backlog", re.M)
 
 
@@ -1031,7 +1321,10 @@ def apply_line_state(projects: dict) -> None:
             # parked: name the resume point from the sprint feed, else the first pending story
             nxt = ""
             if slug:
-                feed = REPO_ROOT / f"_bmad-output/projects/{slug}/implementation-artifacts/sprint-status.yaml"
+                feed = (
+                    REPO_ROOT
+                    / f"_bmad-output/projects/{slug}/implementation-artifacts/sprint-status.yaml"
+                )
                 if feed.is_file():
                     m = _STORY_KEY.search(feed.read_text(encoding="utf-8"))
                     if m:
@@ -1042,9 +1335,14 @@ def apply_line_state(projects: dict) -> None:
         proj["lineState"] = {"state": state, "at": at}
     counts: dict[str, int] = {}
     for proj in projects.values():
-        counts[proj["lineState"]["state"]] = counts.get(proj["lineState"]["state"], 0) + 1
-    print("[lines] " + " · ".join(f"{v} {k}" for k, v in sorted(counts.items()))
-          + (f" · live sessions: {len(live)}" if live else " · no live sessions"))
+        counts[proj["lineState"]["state"]] = (
+            counts.get(proj["lineState"]["state"], 0) + 1
+        )
+    print(
+        "[lines] "
+        + " · ".join(f"{v} {k}" for k, v in sorted(counts.items()))
+        + (f" · live sessions: {len(live)}" if live else " · no live sessions")
+    )
 
 
 # ---- sync & health (the standing detectors + reconciliation state) -----------
@@ -1054,13 +1352,22 @@ def apply_line_state(projects: dict) -> None:
 # "unknown" — the strip never claims green it did not measure.
 
 DETECTORS = [
-    ("drift-check",  "bmad-drift-check",   "BMAD artifacts vs the live factory",
-     "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"),
-    ("spec-surface", "spec-surface-check", "every tracked file under a Spec surface", ""),
-    ("llms-full",    "llms-full-check",    "library catalog freshness", ""),
+    (
+        "drift-check",
+        "bmad-drift-check",
+        "BMAD artifacts vs the live factory",
+        "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
+    ),
+    (
+        "spec-surface",
+        "spec-surface-check",
+        "every tracked file under a Spec surface",
+        "",
+    ),
+    ("llms-full", "llms-full-check", "library catalog freshness", ""),
 ]
 _FINDING_RE = re.compile(r"(\d+)\s+(?:integrity|currency|finding)")
-_FINDINGS_HDR = re.compile(r"^FINDINGS \((\d+)\)")   # spec-surface-check's form
+_FINDINGS_HDR = re.compile(r"^FINDINGS \((\d+)\)")  # spec-surface-check's form
 
 
 def _task_cmd(task: str) -> list[str] | None:
@@ -1097,13 +1404,17 @@ def _run_detector(task: str):
     pixi remains the fallback for any detector whose task is not a plain
     `python script.py` invocation.
     """
-    for cmd in (_task_cmd(task), ["pixi", "run", "--frozen", "-e", "local-recipes", task]):
+    for cmd in (
+        _task_cmd(task),
+        ["pixi", "run", "--frozen", "-e", "local-recipes", task],
+    ):
         if not cmd:
             continue
         try:
-            return subprocess.run(cmd, capture_output=True, text=True,
-                                  cwd=REPO_ROOT, timeout=120)
-        except Exception:                      # interpreter/pixi absent, timeout, anything
+            return subprocess.run(
+                cmd, capture_output=True, text=True, cwd=REPO_ROOT, timeout=120
+            )
+        except Exception:  # interpreter/pixi absent, timeout, anything
             continue
     return None
 
@@ -1117,14 +1428,40 @@ def scan_health() -> dict:
             state, verdict_line, n = "unknown", "detector could not run here", 0
         else:
             out = (r.stdout + r.stderr).strip().splitlines()
-            verdict_line = next((l.strip() for l in reversed(out)
-                                 if l.strip().startswith(("OK:", "DRIFT:", "FAIL:", "FINDINGS ("))), "")
-            state = "green" if r.returncode == 0 else ("fail" if verdict_line.startswith("FAIL") else "drift")
+            verdict_line = next(
+                (
+                    l.strip()
+                    for l in reversed(out)
+                    if l.strip().startswith(("OK:", "DRIFT:", "FAIL:", "FINDINGS ("))
+                ),
+                "",
+            )
+            state = (
+                "green"
+                if r.returncode == 0
+                else ("fail" if verdict_line.startswith("FAIL") else "drift")
+            )
             hdr = _FINDINGS_HDR.match(verdict_line)
-            n = int(hdr.group(1)) if hdr else (
-                sum(int(m) for m in _FINDING_RE.findall(verdict_line)) if verdict_line else 0)
-        rows.append({"name": name, "task": task, "guards": guards, "state": state,
-                     "findings": n, "verdict": verdict_line[:120], "runbook": runbook})
+            n = (
+                int(hdr.group(1))
+                if hdr
+                else (
+                    sum(int(m) for m in _FINDING_RE.findall(verdict_line))
+                    if verdict_line
+                    else 0
+                )
+            )
+        rows.append(
+            {
+                "name": name,
+                "task": task,
+                "guards": guards,
+                "state": state,
+                "findings": n,
+                "verdict": verdict_line[:120],
+                "runbook": runbook,
+            }
+        )
 
     # Baseline state: compare the recorded FACTORY FINGERPRINT to live, not commit
     # counts — the baseline commit often isn't on main's first-parent chain (this repo
@@ -1136,13 +1473,17 @@ def scan_health() -> dict:
         try:
             base = json.loads(bp.read_text(encoding="utf-8"))
             live = {}
-            g = _run_detector("bmad-groundtruth")   # direct-first, same as the detectors
+            g = _run_detector("bmad-groundtruth")  # direct-first, same as the detectors
             if g is not None and g.returncode == 0:
-                s = g.stdout[g.stdout.find("{"):g.stdout.rfind("}") + 1]
+                s = g.stdout[g.stdout.find("{") : g.stdout.rfind("}") + 1]
                 live = json.loads(s) if s else {}
-            for key, label in (("skill_version", "skill"), ("pixi_envs", "pixi envs"),
-                               ("mcp_tools", "MCP tools"), ("atlas_phases", "phases"),
-                               ("schema_version", "schema")):
+            for key, label in (
+                ("skill_version", "skill"),
+                ("pixi_envs", "pixi envs"),
+                ("mcp_tools", "MCP tools"),
+                ("atlas_phases", "phases"),
+                ("schema_version", "schema"),
+            ):
                 b, l = base.get(key), live.get(key)
                 if b is not None and l is not None and str(b) != str(l):
                     deltas.append({"what": label, "baseline": str(b), "live": str(l)})
@@ -1159,10 +1500,15 @@ def scan_health() -> dict:
     else:
         fingerprint = "fingerprint matches baseline"
     print(f"[health] {green}/{len(rows)} detectors green · " + fingerprint)
-    return {"detectors": rows,
-            "baseline": {"skill": base.get("skill_version", ""), "head": (base.get("git_head") or "")[:10],
-                         "deltas": deltas,
-                         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"}}
+    return {
+        "detectors": rows,
+        "baseline": {
+            "skill": base.get("skill_version", ""),
+            "head": (base.get("git_head") or "")[:10],
+            "deltas": deltas,
+            "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
+        },
+    }
 
 
 # ---- fleet view (Dream -> Code, per project: stage, recency, version) --------
@@ -1180,8 +1526,24 @@ FLEET_LABELS = {
 # disciplines, `deck` is the six-artifact family contract, `epics` and `code` each hid a
 # second question (is it drivable? does it verify?), and `ux` / `context` / `gates` /
 # `retro` are real chain artifacts that had no dot at all.
-FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "ux", "arch",
-                "context", "epics", "sprint", "tea", "gates", "code", "verify", "retro")
+FLEET_STAGES = (
+    "dream",
+    "deck",
+    "spec",
+    "research",
+    "brief",
+    "prd",
+    "ux",
+    "arch",
+    "context",
+    "epics",
+    "sprint",
+    "tea",
+    "gates",
+    "code",
+    "verify",
+    "retro",
+)
 # Where a guild-owned (constitutive, `owner: guild`) chain's Spec kernel lives — NOT a
 # `_bmad-output/projects/<x>/` tree, because it ships no product and owns no Smith-shaped
 # scaffolding (2026-08-02: pyforge-genesis dissolved, Charter/Lexicon specs moved here).
@@ -1197,10 +1559,19 @@ FLEET_SUBSCORE = {"research": RESEARCH_TYPES, "deck": DECK_FAMILY}
 # wasm-analytics-stack both reported a complete 9/9 chain while owning neither epics nor
 # code. `ux` is n/a everywhere except chains that declare a UI surface.
 FLEET_NA = {
-    "pyforge-genesis": {"research", "brief", "context"},  # constitutive (Charter §5), precedes stations
+    "pyforge-genesis": {
+        "research",
+        "brief",
+        "context",
+    },  # constitutive (Charter §5), precedes stations
     "unity-data-stack": {"epics"},
     "wasm-analytics-stack": {"epics"},
-    "regenerable-factory": {"prd", "arch", "brief", "context"},  # shipped practice-type, no brief/UX by design
+    "regenerable-factory": {
+        "prd",
+        "arch",
+        "brief",
+        "context",
+    },  # shipped practice-type, no brief/UX by design
 }
 FLEET_UX = {"presenton-pixi-image", "unity-data-stack", "wasm-analytics-stack"}
 # Verify gate task-name aliases: chains whose test task doesn't follow {slug}-test pattern.
@@ -1213,6 +1584,7 @@ _STALE_DAYS = 30
 # stale-by-dependency check is for.
 _SHELF_LIFE_DEFAULT = 90
 _SHELF_LIFE = {"dream": None, "spec": None, "context": None, "tea": None, "retro": None}
+
 
 def _frontmatter_scalars(path: Path, keys: tuple[str, ...]) -> dict[str, str]:
     """The named top-level scalars from a file's `---` frontmatter, comments stripped."""
@@ -1248,10 +1620,12 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
     """
     spec_project: dict[str, str] = {}
     owner_dream: dict[str, str] = {}
-    for d in sorted(REPO_ROOT.glob("_bmad-output/projects/*/planning-artifacts/specs/spec-*")):
+    for d in sorted(
+        REPO_ROOT.glob("_bmad-output/projects/*/planning-artifacts/specs/spec-*")
+    ):
         if not (d / "SPEC.md").is_file():
             continue
-        slug = d.name[len("spec-"):]
+        slug = d.name[len("spec-") :]
         spec_project.setdefault(slug, d.parts[-4])
         # A chain need not have a Dream FILE of its own. Charter §5: one Dream can spawn
         # several Specs, and such a Spec names its parent in `owner-dream:`. Reading that
@@ -1259,19 +1633,26 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
         # without it, bmad-loop-governance and multi-loop-isolation read as ownerless and
         # tripped the Charter §7 accountability gate, which refuses to publish a row it
         # cannot attribute.
-        od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get("owner-dream", "")
+        od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get(
+            "owner-dream", ""
+        )
         if od:
             owner_dream.setdefault(slug, Path(od.strip("'\"")).stem)
     for d in sorted(REPO_ROOT.glob(f"{GOVERNANCE_DIR}/spec-*")):
         if not (d / "SPEC.md").is_file():
             continue
-        slug = d.name[len("spec-"):]
+        slug = d.name[len("spec-") :]
         spec_project.setdefault(slug, GOVERNANCE_DIR)
-        od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get("owner-dream", "")
+        od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get(
+            "owner-dream", ""
+        )
         if od:
             owner_dream.setdefault(slug, Path(od.strip("'\"")).stem)
-    dreams = {f.stem: _frontmatter_scalars(f, ("owner", "status"))
-              for f in sorted(DREAMS_DIR.glob("*.md")) if f.name != "README.md"}
+    dreams = {
+        f.stem: _frontmatter_scalars(f, ("owner", "status"))
+        for f in sorted(DREAMS_DIR.glob("*.md"))
+        if f.name != "README.md"
+    }
     out = []
     for slug in sorted(set(spec_project) | set(dreams)):
         meta = dreams.get(slug, {})
@@ -1282,11 +1663,15 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
         if not project and owner and owner != "guild":
             project = f"pyforge-{owner}"
         if not project:
-            print(f"[fleet] WARN chain {slug!r}: no spec directory and no station owner — "
-                  f"its artifact lookups have nowhere to look")
+            print(
+                f"[fleet] WARN chain {slug!r}: no spec directory and no station owner — "
+                f"its artifact lookups have nowhere to look"
+            )
         if not owner:
-            print(f"[fleet] WARN chain {slug!r}: no owner — no Dream of its own and no "
-                  f"`owner-dream:` in its SPEC.md; the Charter §7 gate will refuse it")
+            print(
+                f"[fleet] WARN chain {slug!r}: no owner — no Dream of its own and no "
+                f"`owner-dream:` in its SPEC.md; the Charter §7 gate will refuse it"
+            )
         out.append((slug, project or "", owner, meta.get("status", ""), parent))
     # Stations first (a chain whose slug names its own project), then satellites grouped
     # under the station that owns them — the reading order the hand-written roster had.
@@ -1294,8 +1679,13 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
 
 
 _ISO = re.compile(r"(\d{4}-\d{2}-\d{2})")
-_GIT_SCOPES = ("docs/dreams", "docs/governance", "_bmad-output", "presentations",
-               "src/shared/packages")
+_GIT_SCOPES = (
+    "docs/dreams",
+    "docs/governance",
+    "_bmad-output",
+    "presentations",
+    "src/shared/packages",
+)
 _GIT_FIRST: dict[str, str] = {}
 _GIT_LAST: dict[str, str] = {}
 
@@ -1311,9 +1701,20 @@ def _build_git_index() -> None:
     """
     if _GIT_FIRST:
         return
-    r = subprocess.run(["git", "log", "--format=%x00%ad", "--date=short", "--name-only",
-                        "--", *_GIT_SCOPES],
-                       capture_output=True, text=True, cwd=REPO_ROOT)
+    r = subprocess.run(
+        [
+            "git",
+            "log",
+            "--format=%x00%ad",
+            "--date=short",
+            "--name-only",
+            "--",
+            *_GIT_SCOPES,
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
     when = ""
     for line in r.stdout.splitlines():
         if line.startswith("\0"):
@@ -1354,15 +1755,22 @@ def _artifact_dates(rel: str) -> tuple[str, str]:
         except OSError:
             fm = {}
     fm = {k: v.strip("'\"") for k, v in fm.items()}
-    created = path_date or fm.get("created") or fm.get("date") or _GIT_FIRST.get(rel, "")
+    created = (
+        path_date or fm.get("created") or fm.get("date") or _GIT_FIRST.get(rel, "")
+    )
     # STRICT precedence, never max(). An explicit `updated:` is the only field that can
     # express a refresh, so it leads; the path date is next per the adopted convention;
     # git is the last resort. Taking the max let git's last-touched win, and a bulk commit
     # is not a refresh: the 2026-07-29 spec-recovery wave re-committed most of the tree in
     # one go, which made 41 of 45 currency findings report that wave rather than any real
     # staleness. If an artifact declares a date, that date IS its currency.
-    updated = (fm.get("updated") or path_date or fm.get("date")
-               or _GIT_LAST.get(rel, "") or created)
+    updated = (
+        fm.get("updated")
+        or path_date
+        or fm.get("date")
+        or _GIT_LAST.get(rel, "")
+        or created
+    )
     return created, updated
 
 
@@ -1470,8 +1878,16 @@ def _spec_open_questions(project: str, dream: str) -> int:
     while the local board reported 5. A dependency that exists only locally is worse than
     no dependency: it makes the two boards disagree with neither one erroring.
     """
-    smd = (REPO_ROOT / "_bmad-output" / "projects" / project / "planning-artifacts" /
-           "specs" / f"spec-{dream}" / "SPEC.md")
+    smd = (
+        REPO_ROOT
+        / "_bmad-output"
+        / "projects"
+        / project
+        / "planning-artifacts"
+        / "specs"
+        / f"spec-{dream}"
+        / "SPEC.md"
+    )
     if not smd.is_file():
         return 0
     lines = smd.read_text(encoding="utf-8").splitlines()
@@ -1490,14 +1906,16 @@ def _spec_open_questions(project: str, dream: str) -> int:
         if not (inline.startswith("[") and inline.endswith("]")):
             # Anything else (an anchor, a folded scalar) is a shape this reader does not
             # understand. Say so — silently answering 0 is the defect being removed.
-            print(f"[fleet] WARN {smd}: unrecognised open_questions value {inline!r} "
-                  f"— reporting 0")
+            print(
+                f"[fleet] WARN {smd}: unrecognised open_questions value {inline!r} "
+                f"— reporting 0"
+            )
             return 0
         return len([x for x in inline[1:-1].split(",") if x.strip()])
     # Block list. Count only items at the FIRST item's indent, so a wrapped continuation
     # line and any nested list are not miscounted as questions of their own.
     count, indent = 0, None
-    for ln in fm[key + 1:]:
+    for ln in fm[key + 1 :]:
         if ln.strip() and not ln.startswith((" ", "\t")):
             break  # the next top-level key ends the list
         m = _FM_ITEM.match(ln)
@@ -1536,48 +1954,67 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
             "dream": [f"docs/dreams/{slug}.md"],
             "deck": [f"presentations/{slug}/project/*.html"],
             "spec": [f"{gdir}/SPEC.md", f"{gdir}/.memlog.md"],
-            "research": empty, "brief": empty, "prd": empty, "ux": empty, "arch": empty,
-            "context": empty, "epics": empty, "sprint": empty, "tea": empty, "gates": empty,
-            "code": empty, "verify": empty, "retro": empty,
+            "research": empty,
+            "brief": empty,
+            "prd": empty,
+            "ux": empty,
+            "arch": empty,
+            "context": empty,
+            "epics": empty,
+            "sprint": empty,
+            "tea": empty,
+            "gates": empty,
+            "code": empty,
+            "verify": empty,
+            "retro": empty,
         }
     pa = f"_bmad-output/projects/{project}/planning-artifacts"
     proj = f"_bmad-output/projects/{project}"
     g: dict[str, list[str]] = {
-        "dream":    [f"docs/dreams/{slug}.md"],
-        "deck":     [f"presentations/{slug}/project/*.html"],
+        "dream": [f"docs/dreams/{slug}.md"],
+        "deck": [f"presentations/{slug}/project/*.html"],
         # The memlog joins the spec stage on purpose. `SPEC.md` carries no path date and no
         # `updated:`, so its currency fell through to git last-touched — which the 2026-07-29
         # promotion wave set for nearly every spec at once, producing 11 identical and
         # meaningless `spec newer than prd` findings. The sibling `.memlog.md` IS the spec's
         # change log and does carry `updated:`, so it answers the question honestly.
-        "spec":     [f"{pa}/specs/spec-{slug}/SPEC.md", f"{pa}/specs/spec-{slug}/.memlog.md"],
+        "spec": [
+            f"{pa}/specs/spec-{slug}/SPEC.md",
+            f"{pa}/specs/spec-{slug}/.memlog.md",
+        ],
         # Station research is INHERITED by its satellites, and marked as such (see
         # `_subscore`). The three disciplines were commissioned once per station and the
         # satellite chains genuinely draw on them; calling that a gap on 23 chains would
         # invent work that was already done. A chain that commissions its own research
         # names itself in the filename and stops being marked inherited.
         "research": [f"{pa}/research/*{slug}*.md", f"{pa}/research/*.md"],
-        "brief":    [f"{pa}/product-brief-{slug}*.md",
-                     f"{pa}/briefs/brief-{slug}-*/brief*.md"],
-        "prd":      [f"{pa}/prds/prd-{slug}-*/prd.md"],
-        "ux":       [f"{pa}/ux-{slug}*.md", f"{pa}/ux/{slug}*.md"],
-        "arch":     [f"{pa}/architecture/architecture-{slug}-*/*.md"],
-        "context":  [f"{proj}/project-context-{slug}.md"],
-        "epics":    [f"{pa}/epics-{slug}.md"],
-        "sprint":   [f"{pa}/sprint-status-ledger-{slug}.yaml"],
+        "brief": [
+            f"{pa}/product-brief-{slug}*.md",
+            f"{pa}/briefs/brief-{slug}-*/brief*.md",
+        ],
+        "prd": [f"{pa}/prds/prd-{slug}-*/prd.md"],
+        "ux": [f"{pa}/ux-{slug}*.md", f"{pa}/ux/{slug}*.md"],
+        "arch": [f"{pa}/architecture/architecture-{slug}-*/*.md"],
+        "context": [f"{proj}/project-context-{slug}.md"],
+        "epics": [f"{pa}/epics-{slug}.md"],
+        "sprint": [f"{pa}/sprint-status-ledger-{slug}.yaml"],
         # CAP-1, spec-pyforge-testing-charter (2026-08-02): real tests live at the
         # canonical src/shared/packages/pyforge-<slug>/tests/ location per
         # project-context.md's workspace-package convention -- NOT under
         # _bmad-output/projects/<slug>/tests/, which holds only planning-scaffold
         # mocks/fixtures (or, for 6 of 8 stations, nothing but empty __init__.py
         # stubs). The old glob undercounted every station's real coverage.
-        "tea":      [f"src/shared/packages/{slug}/tests/**/test_*.py",
-                     f"src/shared/packages/{slug}/tests/**/*.spec.ts"],
-        "gates":    [f"{pa}/implementation-readiness-report*{slug}*.md",
-                     f"{pa}/validation-report-PRD*{slug}*.md"],
-        "code":     [f"src/shared/packages/{slug}/pyproject.toml"],
-        "verify":   [],   # not a file — a declared gate; resolved in scan_fleet
-        "retro":    [f"{pa}/retros/*{slug}*.md"],
+        "tea": [
+            f"src/shared/packages/{slug}/tests/**/test_*.py",
+            f"src/shared/packages/{slug}/tests/**/*.spec.ts",
+        ],
+        "gates": [
+            f"{pa}/implementation-readiness-report*{slug}*.md",
+            f"{pa}/validation-report-PRD*{slug}*.md",
+        ],
+        "code": [f"src/shared/packages/{slug}/pyproject.toml"],
+        "verify": [],  # not a file — a declared gate; resolved in scan_fleet
+        "retro": [f"{pa}/retros/*{slug}*.md"],
     }
     if primary:
         g["deck"] += [f"presentations/{project}/project/*.html"]
@@ -1589,50 +2026,66 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         g["context"] += [f"{proj}/project-context.md", f"{pa}/project-context.md"]
         g["epics"] += [f"{pa}/epics.md"]
         g["sprint"] += [f"{pa}/sprint-status-ledger.yaml"]
-        g["gates"] += [f"{pa}/implementation-readiness-report*.md",
-                       f"{pa}/validation-report-PRD*.md"]
+        g["gates"] += [
+            f"{pa}/implementation-readiness-report*.md",
+            f"{pa}/validation-report-PRD*.md",
+        ]
         g["retro"] += [f"{pa}/retros/*.md"]
     return g
 
 
-def _subscore(stage: str, slug: str, project: str, primary: bool,
-              paths: list[str], pitch: dict) -> dict | None:
+def _subscore(
+    stage: str, slug: str, project: str, primary: bool, paths: list[str], pitch: dict
+) -> dict | None:
     """`{have, of, missing}` for a stage whose dot stands for a SET, else None.
 
     A single green dot for `research` hid five projects missing an entire discipline, and a
     single green dot for `deck` hid a partial family. A set-valued stage reports partial.
     """
     if stage == "research":
-        have = {t: any(Path(p).name.startswith(t + "-") for p in paths)
-                for t in RESEARCH_TYPES}
+        have = {
+            t: any(Path(p).name.startswith(t + "-") for p in paths)
+            for t in RESEARCH_TYPES
+        }
         own = [p for p in paths if slug in Path(p).name]
-        return {"have": have, "n": sum(have.values()), "of": len(have),
-                "missing": sorted(k for k, v in have.items() if not v),
-                "inherited": bool(paths) and not own and not primary}
+        return {
+            "have": have,
+            "n": sum(have.values()),
+            "of": len(have),
+            "missing": sorted(k for k, v in have.items() if not v),
+            "inherited": bool(paths) and not own and not primary,
+        }
     elif stage == "deck":
         card = pitch.get(slug) or (pitch.get(project) if primary else None)
         have = dict(card["have"]) if card else {k: False for k in DECK_FAMILY}
     else:
         return None
-    return {"have": have, "n": sum(have.values()), "of": len(have),
-            "missing": sorted(k for k, v in have.items() if not v)}
+    return {
+        "have": have,
+        "n": sum(have.values()),
+        "of": len(have),
+        "missing": sorted(k for k, v in have.items() if not v),
+    }
 
 
 def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
     """Per-CHAIN Dream-to-Code state: stages, sub-scores, currency, gaps, version."""
     from datetime import date
+
     today = date.today()
     pitch = {c["slug"]: c for c in (pitch_cards or [])}
     tasks = _pixi_tasks()
     rows, unattributed = [], []
     for slug, project, owner, dstatus, parent in _fleet_chains():
-        primary = (slug == project)
+        primary = slug == project
         globs = _stage_globs(slug, project, primary)
         stages, updated_at, files = {}, {}, {}
         for st in FLEET_STAGES:
             if st == "verify":
                 # Not a file. A chain verifies when the workspace declares a gate for it.
-                candidates = [f"{slug}-test", f"{project}-test"] + list(FLEET_VERIFY_ALIAS.get(slug, ()))
+                candidates = [f"{slug}-test", f"{project}-test"] + list(
+                    FLEET_VERIFY_ALIAS.get(slug, ())
+                )
                 gate = next((t for t in candidates if t in tasks), "")
                 stages[st] = stages.get("code", "") if gate else ""
                 updated_at[st] = updated_at.get("code", "")
@@ -1644,8 +2097,11 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
         na = set(FLEET_NA.get(slug, set())) | (set() if slug in FLEET_UX else {"ux"})
         if parent:
             na |= {"dream"}
-        sub = {st: s for st in FLEET_SUBSCORE
-               if (s := _subscore(st, slug, project, primary, files[st], pitch))}
+        sub = {
+            st: s
+            for st in FLEET_SUBSCORE
+            if (s := _subscore(st, slug, project, primary, files[st], pitch))
+        }
         reached = [s for s in FLEET_STAGES if stages[s]]
         furthest = reached[-1] if reached else "dream"
         # REQUIRED = every stage up to and including the furthest one reached. A chain that
@@ -1653,14 +2109,22 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
         # on dream/deck/spec alone. That turns the row from "how far along" into "is this
         # chain sound", and it self-scales instead of showing a dreamt chain 13 red dots.
         cut = FLEET_STAGES.index(furthest)
-        required = [s for s in FLEET_STAGES[:cut + 1] if s not in na]
+        required = [s for s in FLEET_STAGES[: cut + 1] if s not in na]
         gaps = [s for s in required if not stages[s]]
         partial = [st for st, s in sub.items() if s["n"] and s["n"] < s["of"]]
-        project_path = (f"{GOVERNANCE_DIR}/spec-{slug}" if project == GOVERNANCE_DIR
-                        else f"_bmad-output/projects/{project}")
-        updated = _last_touched([f"docs/dreams/{slug}.md", project_path]
-                                + ([f"presentations/{project}", f"src/shared/packages/{project}"]
-                                   if primary else [f"presentations/{slug}"]))
+        project_path = (
+            f"{GOVERNANCE_DIR}/spec-{slug}"
+            if project == GOVERNANCE_DIR
+            else f"_bmad-output/projects/{project}"
+        )
+        updated = _last_touched(
+            [f"docs/dreams/{slug}.md", project_path]
+            + (
+                [f"presentations/{project}", f"src/shared/packages/{project}"]
+                if primary
+                else [f"presentations/{slug}"]
+            )
+        )
         age = ""
         if updated:
             try:
@@ -1682,48 +2146,79 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
         backfilled = seq != sorted(seq)
         open_q = _spec_open_questions(project, slug)
         overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
-        stale_by = _currency(slug, stages, updated_at, na, today,
-                             realized=(dstatus == "realized"))
+        stale_by = _currency(
+            slug, stages, updated_at, na, today, realized=(dstatus == "realized")
+        )
         if (sub.get("research") or {}).get("inherited"):
             unattributed.append(slug)
-        rows.append({
-            "label": FLEET_LABELS.get(slug) or slug.removeprefix("pyforge-"),
-            "slug": slug, "project": project, "dream": slug, "owner": owner,
-            "stages": stages, "updatedAt": updated_at, "sub": sub,
-            "archived": dstatus == "archived", "dreamStatus": dstatus,
-            # A chain without its OWN Dream file is only a Dream-first violation when it
-            # also names no parent. Charter §5 lets one Dream spawn several Specs, and such
-            # a Spec declares `owner-dream:` — that is a sub-chain, not unattributed work.
-            "ownerDream": parent, "noDream": not stages["dream"] and not parent,
-            "unowned": not owner,
-            "backfilled": backfilled, "openQuestions": open_q, "overtaken": overtaken,
-            "na": sorted(na), "required": required, "gaps": gaps, "partial": sorted(partial),
-            "staleBy": stale_by, "furthest": furthest, "updated": updated, "age": age,
-            "stale": isinstance(age, int) and age > _STALE_DAYS,
-            "version": _pkg_version(project) if primary else "", "progress": prog,
-            "complete": len(required) - len(gaps), "of": len(required),
-        })
+        rows.append(
+            {
+                "label": FLEET_LABELS.get(slug) or slug.removeprefix("pyforge-"),
+                "slug": slug,
+                "project": project,
+                "dream": slug,
+                "owner": owner,
+                "stages": stages,
+                "updatedAt": updated_at,
+                "sub": sub,
+                "archived": dstatus == "archived",
+                "dreamStatus": dstatus,
+                # A chain without its OWN Dream file is only a Dream-first violation when it
+                # also names no parent. Charter §5 lets one Dream spawn several Specs, and such
+                # a Spec declares `owner-dream:` — that is a sub-chain, not unattributed work.
+                "ownerDream": parent,
+                "noDream": not stages["dream"] and not parent,
+                "unowned": not owner,
+                "backfilled": backfilled,
+                "openQuestions": open_q,
+                "overtaken": overtaken,
+                "na": sorted(na),
+                "required": required,
+                "gaps": gaps,
+                "partial": sorted(partial),
+                "staleBy": stale_by,
+                "furthest": furthest,
+                "updated": updated,
+                "age": age,
+                "stale": isinstance(age, int) and age > _STALE_DAYS,
+                "version": _pkg_version(project) if primary else "",
+                "progress": prog,
+                "complete": len(required) - len(gaps),
+                "of": len(required),
+            }
+        )
     live = [r for r in rows if not r["archived"]]
     sound = [r for r in live if not r["gaps"] and not r["partial"] and not r["staleBy"]]
-    flags = {k: [r["slug"] for r in live if r[k]]
-             for k in ("noDream", "unowned", "overtaken", "backfilled")}
+    flags = {
+        k: [r["slug"] for r in live if r[k]]
+        for k in ("noDream", "unowned", "overtaken", "backfilled")
+    }
     reached = sum(1 for r in live if not r["gaps"])
-    print(f"[fleet] {len(rows)} chains ({len(live)} live, {len(rows) - len(live)} archived) · "
-          f"{len(sound)} sound · {reached} no-gap · {sum(len(r['gaps']) for r in live)} gap(s) · "
-          f"{sum(len(r['partial']) for r in live)} partial set(s) · "
-          f"{sum(len(r['staleBy']) for r in live)} currency finding(s)")
+    print(
+        f"[fleet] {len(rows)} chains ({len(live)} live, {len(rows) - len(live)} archived) · "
+        f"{len(sound)} sound · {reached} no-gap · {sum(len(r['gaps']) for r in live)} gap(s) · "
+        f"{sum(len(r['partial']) for r in live)} partial set(s) · "
+        f"{sum(len(r['staleBy']) for r in live)} currency finding(s)"
+    )
     for k, v in flags.items():
         if v:
             print(f"[fleet]   {k}: {', '.join(v)}")
     if unattributed:
-        print(f"[fleet]   research inherited from the station (no chain-scoped research of "
-              f"its own): {len(unattributed)} chain(s)")
-    return {"stages": list(FLEET_STAGES), "staleDays": _STALE_DAYS,
-            "shelfLife": {s: _SHELF_LIFE.get(s, _SHELF_LIFE_DEFAULT) for s in FLEET_STAGES},
-            "sound": len(sound), "live": len(live), "reached": reached,
-            "gaps": sum(len(r["gaps"]) for r in live),
-            "findings": sum(len(r["staleBy"]) for r in live),
-            "rows": rows}
+        print(
+            f"[fleet]   research inherited from the station (no chain-scoped research of "
+            f"its own): {len(unattributed)} chain(s)"
+        )
+    return {
+        "stages": list(FLEET_STAGES),
+        "staleDays": _STALE_DAYS,
+        "shelfLife": {s: _SHELF_LIFE.get(s, _SHELF_LIFE_DEFAULT) for s in FLEET_STAGES},
+        "sound": len(sound),
+        "live": len(live),
+        "reached": reached,
+        "gaps": sum(len(r["gaps"]) for r in live),
+        "findings": sum(len(r["staleBy"]) for r in live),
+        "rows": rows,
+    }
 
 
 # Which stage must not be older than which. A chain is a pipeline: research feeds the
@@ -1732,8 +2227,15 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
 # re-derived — the live defect `backfilled` deliberately does not cover, because
 # `backfilled` describes true history (a chain retro-fitted after the fact) while this
 # describes a contract that has quietly gone out of date.
-_FEEDS = (("research", "brief"), ("brief", "prd"), ("prd", "arch"), ("spec", "prd"),
-          ("arch", "epics"), ("epics", "sprint"), ("code", "retro"))
+_FEEDS = (
+    ("research", "brief"),
+    ("brief", "prd"),
+    ("prd", "arch"),
+    ("spec", "prd"),
+    ("arch", "epics"),
+    ("epics", "sprint"),
+    ("code", "retro"),
+)
 # `("prd", "gates")` deliberately excluded: a readiness report is a point-in-time snapshot
 # of a check that ran once, not a living document meant to track the PRD's every touch --
 # an administrative PRD bump does not mean the check needs re-running. `_SHELF_LIFE_DEFAULT`
@@ -1747,10 +2249,12 @@ _FEEDS = (("research", "brief"), ("brief", "prd"), ("prd", "arch"), ("spec", "pr
 _FEEDS_GRACE_DAYS = 2
 
 
-def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
-              realized: bool = False) -> list[dict]:
+def _currency(
+    slug: str, stages: dict, updated_at: dict, na: set, today, realized: bool = False
+) -> list[dict]:
     """Every way this chain's artifacts are out of date. Empty list when current."""
     from datetime import date
+
     out = []
     for up, down in _FEEDS:
         u, d = updated_at.get(up, ""), updated_at.get(down, "")
@@ -1760,9 +2264,13 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
                 dy, dm, dd = (int(x) for x in d[:10].split("-"))
                 gap_days = (date(uy, um, ud) - date(dy, dm, dd)).days
             except ValueError:
-                gap_days = _FEEDS_GRACE_DAYS + 1  # unparseable date: don't silently suppress
+                gap_days = (
+                    _FEEDS_GRACE_DAYS + 1
+                )  # unparseable date: don't silently suppress
             if gap_days > _FEEDS_GRACE_DAYS:
-                out.append({"kind": "feeds", "stage": up, "than": down, "at": u, "other": d})
+                out.append(
+                    {"kind": "feeds", "stage": up, "than": down, "at": u, "other": d}
+                )
     for st in FLEET_STAGES:
         life = _SHELF_LIFE.get(st, _SHELF_LIFE_DEFAULT)
         when = updated_at.get(st, "")
@@ -1774,7 +2282,9 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
             continue
         days = (today - date(y, m, dd)).days
         if days > life:
-            out.append({"kind": "shelf", "stage": st, "at": when, "days": days, "life": life})
+            out.append(
+                {"kind": "shelf", "stage": st, "at": when, "days": days, "life": life}
+            )
     # The contract has fallen behind the implementation: a spec/PRD/architecture older than
     # the last change to the code it governs.
     #
@@ -1790,7 +2300,9 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
         for st in ("spec", "prd", "arch"):
             when = updated_at.get(st, "")
             if code and when and when < code and st not in na:
-                out.append({"kind": "behind-code", "stage": st, "at": when, "other": code})
+                out.append(
+                    {"kind": "behind-code", "stage": st, "at": when, "other": code}
+                )
     return out
 
 
@@ -1807,33 +2319,56 @@ def scan_pitch() -> list[dict]:
         if not deck_dir.is_dir():
             continue
         slug = deck_dir.name
-        proj, marp, pptx = deck_dir / "project", deck_dir / "src" / "marp", deck_dir / "src" / "pptx"
+        proj, marp, pptx = (
+            deck_dir / "project",
+            deck_dir / "src" / "marp",
+            deck_dir / "src" / "pptx",
+        )
         names = [f.name for f in proj.glob("*.html")] if proj.is_dir() else []
         marp_md = list(marp.glob("*.md")) if marp.is_dir() else []
         pptx_files = list(pptx.glob("*.pptx")) if pptx.is_dir() else []
         have = {
-            "prototype": any(n.endswith(".dc.html") and "Executive Summary" not in n
-                             and "Infographic" not in n for n in names),
+            "prototype": any(
+                n.endswith(".dc.html")
+                and "Executive Summary" not in n
+                and "Infographic" not in n
+                for n in names
+            ),
             "exec": any("Executive Summary" in n for n in names),
-            "infographic": (any(n.endswith("- Infographic.dc.html") for n in names)
-                            and any("Infographic Deck" in n for n in names)
-                            and any("Infographic standalone" in n for n in names)),
+            "infographic": (
+                any(n.endswith("- Infographic.dc.html") for n in names)
+                and any("Infographic Deck" in n for n in names)
+                and any("Infographic standalone" in n for n in names)
+            ),
             "marp": len(marp_md) >= 3,
-            "standalone": bool(list(marp.glob("*standalone*.html"))) if marp.is_dir() else False,
+            "standalone": bool(list(marp.glob("*standalone*.html")))
+            if marp.is_dir()
+            else False,
             "pptx": len(pptx_files) >= 2,
         }
         dates = re.findall(r"(\d{4}-\d{2}-\d{2})", " ".join(f.name for f in pptx_files))
-        title = PITCH_TITLES.get(slug) or "PyForge " + slug.removeprefix("pyforge-").capitalize()
-        cards.append({"slug": slug, "title": title, "have": have,
-                      "n": sum(have.values()), "of": len(_PITCH_CHECK),
-                      "export": max(dates) if dates else "",
-                      "path": f"presentations/{slug}"})
+        title = (
+            PITCH_TITLES.get(slug)
+            or "PyForge " + slug.removeprefix("pyforge-").capitalize()
+        )
+        cards.append(
+            {
+                "slug": slug,
+                "title": title,
+                "have": have,
+                "n": sum(have.values()),
+                "of": len(_PITCH_CHECK),
+                "export": max(dates) if dates else "",
+                "path": f"presentations/{slug}",
+            }
+        )
     full = sum(1 for c in cards if c["n"] == c["of"])
     print(f"[pitch] {len(cards)} decks scanned ({full} with the full family)")
     return cards
 
 
 # ---- command center (SDLC phase-grouped view) --------------------------------
+
 
 def scan_command_center(fleet: dict) -> dict:
     """PyForge Guild Fleet view grouped by SDLC phases.
@@ -1848,11 +2383,20 @@ def scan_command_center(fleet: dict) -> dict:
         "analysis": ["dream", "research", "brief", "deck"],
         "planning": ["prd"],
         "solutioning": ["arch", "epics", "context"],
-        "implementation": ["sprint", "code", "verify", "retro"]
+        "implementation": ["sprint", "code", "verify", "retro"],
     }
 
     # Station info: emoji + full name mapping (in display order)
-    station_order = ["herald", "marshal", "atlas", "warden", "mason", "doctor", "scribe", "steward"]
+    station_order = [
+        "herald",
+        "marshal",
+        "atlas",
+        "warden",
+        "mason",
+        "doctor",
+        "scribe",
+        "steward",
+    ]
     station_info = {
         "herald": ("🎺", "Herald"),
         "marshal": ("⚔️", "Marshal"),
@@ -1877,7 +2421,7 @@ def scan_command_center(fleet: dict) -> dict:
         "sprint": "sprint-status",
         "code": "code",
         "verify": "tests",
-        "retro": "retro"
+        "retro": "retro",
     }
 
     # Build per-station fleet summary (one row per station, aggregating all chains)
@@ -1896,27 +2440,34 @@ def scan_command_center(fleet: dict) -> dict:
         "analysis": {
             "name": "ANALYSIS Phase",
             "flow": "Dream → Pitch deck",
-            "artifacts": ["DREAMS", "res-domain", "res-market", "res-tech", "prod-brief", "PITCH-DECKS"],
-            "gate": "All 8 stations complete analysis"
+            "artifacts": [
+                "DREAMS",
+                "res-domain",
+                "res-market",
+                "res-tech",
+                "prod-brief",
+                "PITCH-DECKS",
+            ],
+            "gate": "All 8 stations complete analysis",
         },
         "planning": {
             "name": "PLANNING Phase",
             "flow": "PRD requirements",
             "artifacts": ["PRD"],
-            "gate": "All 8 stations have PRD"
+            "gate": "All 8 stations have PRD",
         },
         "solutioning": {
             "name": "SOLUTIONING Phase",
             "flow": "Architecture → specs",
             "artifacts": ["arch", "epics", "specs"],
-            "gate": "All 8 stations complete solutioning"
+            "gate": "All 8 stations complete solutioning",
         },
         "implementation": {
             "name": "IMPLEMENTATION Phase",
             "flow": "Code → ship + retro",
             "artifacts": ["sprint-status", "code", "tests", "retro"],
-            "gate": "Herald coding; others queued or ready"
-        }
+            "gate": "Herald coding; others queued or ready",
+        },
     }
 
     for phase_id, phase_config in phase_info.items():
@@ -1948,20 +2499,18 @@ def scan_command_center(fleet: dict) -> dict:
                 label = artifact_labels.get(stage, stage)
                 statuses[label] = status
 
-            stations.append({
-                "name": name,
-                "emoji": emoji,
-                "statuses": statuses
-            })
+            stations.append({"name": name, "emoji": emoji, "statuses": statuses})
 
-        phases.append({
-            "id": phase_id,
-            "name": phase_config["name"],
-            "flow": phase_config["flow"],
-            "artifacts": phase_config["artifacts"],
-            "gate": phase_config["gate"],
-            "stations": stations
-        })
+        phases.append(
+            {
+                "id": phase_id,
+                "name": phase_config["name"],
+                "flow": phase_config["flow"],
+                "artifacts": phase_config["artifacts"],
+                "gate": phase_config["gate"],
+                "stations": stations,
+            }
+        )
 
     return {"phases": phases}
 
@@ -1998,42 +2547,65 @@ def scan_deferred() -> dict:
     """
     projects, totals = [], {"open": 0, "done": 0, "triaged": 0}
     by_sev: dict[str, int] = {s: 0 for s in _SEVERITIES}
-    for led in sorted(REPO_ROOT.glob(
-            "_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md")):
+    for led in sorted(
+        REPO_ROOT.glob(
+            "_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md"
+        )
+    ):
         slug = led.parts[-3]
         text = led.read_text(encoding="utf-8")
         marks = [(m.start(), m.group(1), m.group(2)) for m in _DW_HEAD.finditer(text)]
         rows = []
         for i, (pos, ident, title) in enumerate(marks):
-            body = text[pos:marks[i + 1][0] if i + 1 < len(marks) else len(text)]
+            body = text[pos : marks[i + 1][0] if i + 1 < len(marks) else len(text)]
             sm = _DW_STATUS.search(body)
             status = (sm.group(1) if sm else "open").strip()
-            done = status.lower().startswith(("done", "closed", "superseded", "resolved"))
-            sev = (_DW_SEVERITY.search(body) or _DW_SEV_HEAD.search(title))
-            sev = (sev.group(1).lower() if sev else "unspecified")
+            done = status.lower().startswith(
+                ("done", "closed", "superseded", "resolved")
+            )
+            sev = _DW_SEVERITY.search(body) or _DW_SEV_HEAD.search(title)
+            sev = sev.group(1).lower() if sev else "unspecified"
             if sev not in by_sev:
                 sev = "unspecified"
             triaged = bool(_DW_RESOLUTION.search(body)) or status.lower() != "open"
-            rows.append({"id": ident, "title": title.strip()[:120],
-                         "status": "done" if done else "open",
-                         "severity": sev, "triaged": triaged})
+            rows.append(
+                {
+                    "id": ident,
+                    "title": title.strip()[:120],
+                    "status": "done" if done else "open",
+                    "severity": sev,
+                    "triaged": triaged,
+                }
+            )
             totals["done" if done else "open"] += 1
             if not done:
                 by_sev[sev] += 1
                 totals["triaged"] += bool(triaged)
-        projects.append({
-            "project": slug, "path": str(led.relative_to(REPO_ROOT)),
-            "open": sum(1 for r in rows if r["status"] == "open"),
-            "done": sum(1 for r in rows if r["status"] == "done"),
-            "triaged": sum(1 for r in rows if r["status"] == "open" and r["triaged"]),
-            "entries": rows,
-        })
+        projects.append(
+            {
+                "project": slug,
+                "path": str(led.relative_to(REPO_ROOT)),
+                "open": sum(1 for r in rows if r["status"] == "open"),
+                "done": sum(1 for r in rows if r["status"] == "done"),
+                "triaged": sum(
+                    1 for r in rows if r["status"] == "open" and r["triaged"]
+                ),
+                "entries": rows,
+            }
+        )
     projects.sort(key=lambda p: -p["open"])
-    print(f"[open-work] {totals['open']} open · {totals['done']} done across "
-          f"{len(projects)} ledger(s) · {totals['triaged']} of the open entries have been "
-          f"verified against the code, {totals['open'] - totals['triaged']} have not")
-    return {"open": totals["open"], "done": totals["done"],
-            "triaged": totals["triaged"], "bySeverity": by_sev, "projects": projects}
+    print(
+        f"[open-work] {totals['open']} open · {totals['done']} done across "
+        f"{len(projects)} ledger(s) · {totals['triaged']} of the open entries have been "
+        f"verified against the code, {totals['open'] - totals['triaged']} have not"
+    )
+    return {
+        "open": totals["open"],
+        "done": totals["done"],
+        "triaged": totals["triaged"],
+        "bySeverity": by_sev,
+        "projects": projects,
+    }
 
 
 # ---- archived (absorbed / retired / terminal / blocked) ----------------------
@@ -2051,23 +2623,31 @@ def build_archived(dreams: list[dict]) -> list[dict]:
     out: list[dict] = []
     for d in dreams:
         if d["status"] == "archived":
-            out.append({"name": d["title"],
-                        "reason": d.get("archived_reason") or "retired",
-                        "owner": d.get("owner", ""),
-                        "note": d["title"],
-                        "link": f"docs/dreams/{d['slug']}.md"})
+            out.append(
+                {
+                    "name": d["title"],
+                    "reason": d.get("archived_reason") or "retired",
+                    "owner": d.get("owner", ""),
+                    "note": d["title"],
+                    "link": f"docs/dreams/{d['slug']}.md",
+                }
+            )
     by_reason: dict[str, int] = {}
     for e in out:
         by_reason[e["reason"]] = by_reason.get(e["reason"], 0) + 1
-    print(f"[archived] {len(out)} entries — "
-          + " / ".join(f"{v} {k}" for k, v in sorted(by_reason.items())))
+    print(
+        f"[archived] {len(out)} entries — "
+        + " / ".join(f"{v} {k}" for k, v in sorted(by_reason.items()))
+    )
     return out
 
 
 # ---- the Guild (every station, every Dream it owns) -------------------------
 
-def scan_guild(dreams: list[dict], projects: dict | None = None,
-               backlog: dict | None = None) -> dict:
+
+def scan_guild(
+    dreams: list[dict], projects: dict | None = None, backlog: dict | None = None
+) -> dict:
     """One row per Smith — all eight, always, including empty ones.
 
     Grouping by station is the accountability view the `owner:` through-line
@@ -2081,8 +2661,10 @@ def scan_guild(dreams: list[dict], projects: dict | None = None,
     rows = []
     for st in STATIONS:
         mine = [d for d in dreams if d.get("owner") == st]
-        counts = {s: sum(1 for d in mine if d["status"] == s and d.get("type") != "practice")
-                  for s in DREAM_STATUSES}
+        counts = {
+            s: sum(1 for d in mine if d["status"] == s and d.get("type") != "practice")
+            for s in DREAM_STATUSES
+        }
         counts["practice"] = sum(1 for d in mine if d.get("type") == "practice")
         # G1 — what this station is actually DOING. The Guild counted Dreams and
         # said nothing about activity: a station could own four Dreams and have
@@ -2100,30 +2682,55 @@ def scan_guild(dreams: list[dict], projects: dict | None = None,
         # G2 — backlog load. Makes a thin station meaningful: warden owns one
         # Dream AND has zero pending, which is a different fact from being small.
         load = ((backlog or {}).get("byOwner") or {}).get(st, 0)
-        blocked = sum(1 for r in (backlog or {}).get("rows", [])
-                      if r.get("owner") == st and r.get("blockedOn"))
-        rows.append({
-            "station": st, "total": len(mine), "counts": counts,
-            "line": line, "load": load, "blocked": blocked,
-            "dreams": [{"slug": d["slug"], "title": d["title"], "status": d["status"],
+        blocked = sum(
+            1
+            for r in (backlog or {}).get("rows", [])
+            if r.get("owner") == st and r.get("blockedOn")
+        )
+        rows.append(
+            {
+                "station": st,
+                "total": len(mine),
+                "counts": counts,
+                "line": line,
+                "load": load,
+                "blocked": blocked,
+                "dreams": [
+                    {
+                        "slug": d["slug"],
+                        "title": d["title"],
+                        "status": d["status"],
                         "type": d.get("type", "dream"),
-                        "blockedOn": d.get("blockedOn", "")}
-                       for d in sorted(mine, key=lambda x: (x["status"], x["slug"]))],
-        })
-    constitutive = [{"slug": d["slug"], "title": d["title"], "status": d["status"]}
-                    for d in dreams if d.get("owner") == "guild"]
+                        "blockedOn": d.get("blockedOn", ""),
+                    }
+                    for d in sorted(mine, key=lambda x: (x["status"], x["slug"]))
+                ],
+            }
+        )
+    constitutive = [
+        {"slug": d["slug"], "title": d["title"], "status": d["status"]}
+        for d in dreams
+        if d.get("owner") == "guild"
+    ]
     idle = [r["station"] for r in rows if not r["line"] and not r["load"]]
-    print(f"[guild] {sum(r['total'] for r in rows)} dreams across {len(rows)} stations"
-          f" · {len(constitutive)} constitutive"
-          + (f" · idle (no line, no backlog): {', '.join(idle)}" if idle else ""))
+    print(
+        f"[guild] {sum(r['total'] for r in rows)} dreams across {len(rows)} stations"
+        f" · {len(constitutive)} constitutive"
+        + (f" · idle (no line, no backlog): {', '.join(idle)}" if idle else "")
+    )
     # `practice` sits with the ACTIVE states, before `archived` — archived is the
     # terminal state and belongs last. A practice is tended, not ended.
     order = [s for s in DREAM_STATUSES if s != "archived"] + ["practice", "archived"]
-    return {"stations": list(STATIONS), "order": order,
-            "rows": rows, "constitutive": constitutive}
+    return {
+        "stations": list(STATIONS),
+        "order": order,
+        "rows": rows,
+        "constitutive": constitutive,
+    }
 
 
 # ---- backlog (what a station owns that is not building and not done) --------
+
 
 def scan_backlog(dreams: list[dict], projects: dict) -> dict:
     """Dreams a station owns that are neither building nor finished.
@@ -2143,34 +2750,62 @@ def scan_backlog(dreams: list[dict], projects: dict) -> dict:
     `blocked-on:` splits backlog into WAITING vs AVAILABLE — backlog implies
     pickup-ready, and work held on an external gate is not.
     """
-    building = {PROGRAM_DREAM[k] for k, v in projects.items()
-                if k in PROGRAM_DREAM and (v.get("lineState") or {}).get("state")
-                in ("in flight", "paused")}
+    building = {
+        PROGRAM_DREAM[k]
+        for k, v in projects.items()
+        if k in PROGRAM_DREAM
+        and (v.get("lineState") or {}).get("state") in ("in flight", "paused")
+    }
     rows = []
     for d in dreams:
         if d.get("type") == "practice" or d["status"] in ("realized", "archived"):
             continue
         if d.get("owner") == "guild":
-            continue          # constitutive — not any station's pending work
+            continue  # constitutive — not any station's pending work
         if d["slug"] in building:
             continue
-        rows.append({"slug": d["slug"], "title": d["title"], "status": d["status"],
-                     "owner": d["owner"], "blockedOn": d.get("blockedOn", ""),
-                     "chain": d.get("chain", {})})
+        rows.append(
+            {
+                "slug": d["slug"],
+                "title": d["title"],
+                "status": d["status"],
+                "owner": d["owner"],
+                "blockedOn": d.get("blockedOn", ""),
+                "chain": d.get("chain", {}),
+            }
+        )
     order = {s: i for i, s in enumerate(DREAM_STATUSES)}
-    rows.sort(key=lambda r: (bool(r["blockedOn"]), order.get(r["status"], 9), r["slug"]))
+    rows.sort(
+        key=lambda r: (bool(r["blockedOn"]), order.get(r["status"], 9), r["slug"])
+    )
     blocked = sum(1 for r in rows if r["blockedOn"])
     by_owner: dict[str, int] = {}
     for r in rows:
         by_owner[r["owner"]] = by_owner.get(r["owner"], 0) + 1
-    practices = [{"slug": d["slug"], "title": d["title"], "owner": d["owner"],
-                  "status": d["status"]} for d in dreams if d.get("type") == "practice"]
-    print(f"[backlog] {len(rows)} open ({len(rows) - blocked} available / {blocked} blocked)"
-          f" · {len(practices)} standing practices")
-    return {"rows": rows, "blocked": blocked, "byOwner": by_owner, "practices": practices}
+    practices = [
+        {
+            "slug": d["slug"],
+            "title": d["title"],
+            "owner": d["owner"],
+            "status": d["status"],
+        }
+        for d in dreams
+        if d.get("type") == "practice"
+    ]
+    print(
+        f"[backlog] {len(rows)} open ({len(rows) - blocked} available / {blocked} blocked)"
+        f" · {len(practices)} standing practices"
+    )
+    return {
+        "rows": rows,
+        "blocked": blocked,
+        "byOwner": by_owner,
+        "practices": practices,
+    }
 
 
 # ---- delivery timing / velocity (derived from bmad-loop run journals) -------
+
 
 def scan_timing(projects: dict) -> None:
     """Per-story active agent-compute, derived from every loop home's journals.
@@ -2212,9 +2847,14 @@ def scan_timing(projects: dict) -> None:
         # 0-H ran in a web session with no journals) but NO `velocity` at all, could
         # never gain a velocity graph even once it had real loop journals. Warden is
         # unaffected: both of its fields are curated, so there is nothing to fill.
-        timing_curated = (not broken) and isinstance(existing_t, dict) \
+        timing_curated = (
+            (not broken)
+            and isinstance(existing_t, dict)
             and not existing_t.get("derived")
-        velocity_curated = isinstance(existing_v, dict) and not existing_v.get("derived")
+        )
+        velocity_curated = isinstance(existing_v, dict) and not existing_v.get(
+            "derived"
+        )
         if timing_curated and velocity_curated:
             continue
         runs = Path(home) / ".bmad-loop" / "runs"
@@ -2253,8 +2893,11 @@ def scan_timing(projects: dict) -> None:
         # `timing.perStory` did. Enumerated from the render rather than guessed,
         # after fixing the same class of bug twice in a row.
         mins = sorted(b[1] for b in bars)
-        median = mins[len(mins) // 2] if len(mins) % 2 else \
-            round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+        median = (
+            mins[len(mins) // 2]
+            if len(mins) % 2
+            else round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+        )
         st = [s for e in proj["epics"] for s in e["stories"]]
         done_n = sum(1 for s in st if s[1] == "done")
         velocity_obj = {
@@ -2268,20 +2911,28 @@ def scan_timing(projects: dict) -> None:
             # have journals: atlas's waves 0-H ran in a web session and were never
             # measured for active compute, and their wall-clock numbers (PR timestamps,
             # gate waits included) are a DIFFERENT metric that must not share this axis.
-            "sub": (f"Active agent-compute per story (dev + review; excludes "
-                    f"gate-pause wait) — derived from this line's bmad-loop journals. "
-                    f"{len(bars)} of {len(st)} stories measured"
-                    + ("" if len(bars) == len(st) else
-                       "; the rest predate loop instrumentation and carry wall-clock "
-                       "only (a different metric — see the timing strip), so they are "
-                       "deliberately absent rather than plotted on this axis")
-                    + ". A story still in flight contributes only its CLOSED sessions, "
-                      "so its bar is a floor, not a total."),
+            "sub": (
+                f"Active agent-compute per story (dev + review; excludes "
+                f"gate-pause wait) — derived from this line's bmad-loop journals. "
+                f"{len(bars)} of {len(st)} stories measured"
+                + (
+                    ""
+                    if len(bars) == len(st)
+                    else "; the rest predate loop instrumentation and carry wall-clock "
+                    "only (a different metric — see the timing strip), so they are "
+                    "deliberately absent rather than plotted on this axis"
+                )
+                + ". A story still in flight contributes only its CLOSED sessions, "
+                "so its bar is a floor, not a total."
+            ),
             "bars": bars,
             "foot": [
                 [f"~{median} min", "median / story", "var(--done)"],
-                [f"{mins[0]}–{mins[-1]} min" if len(mins) > 1 else f"{mins[0]} min",
-                 "observed range", ""],
+                [
+                    f"{mins[0]}–{mins[-1]} min" if len(mins) > 1 else f"{mins[0]} min",
+                    "observed range",
+                    "",
+                ],
                 [f"{done_n}/{len(st)}", "stories complete", "var(--done)"],
                 [f"{len(st) - done_n}", "remaining", ""],
             ],
@@ -2295,17 +2946,22 @@ def scan_timing(projects: dict) -> None:
         per_story = {sid: mins for sid, mins in bars}
         epic_min: dict[str, int] = {}
         for sid, mins in bars:
-            epic_min[f"E{sid.split('.')[0]}"] = epic_min.get(f"E{sid.split('.')[0]}", 0) + mins
+            epic_min[f"E{sid.split('.')[0]}"] = (
+                epic_min.get(f"E{sid.split('.')[0]}", 0) + mins
+            )
         timing_obj = {
             "derived": True,
             "metric": "active agent-compute per story (dev + review; excludes "
-                      "gate-pause wait) — from bmad-loop run journals",
+            "gate-pause wait) — from bmad-loop run journals",
             "total": sum(b[1] for b in bars),
-            "totalLabel": (f"~{total_h:.1f} h active compute" if total_h >= 1
-                           else f"~{sum(b[1] for b in bars)} min active compute"),
+            "totalLabel": (
+                f"~{total_h:.1f} h active compute"
+                if total_h >= 1
+                else f"~{sum(b[1] for b in bars)} min active compute"
+            ),
             "note": f"Derived from {len(bars)} measured "
-                    f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
-                    f"flight contributes only its closed sessions.",
+            f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
+            f"flight contributes only its closed sessions.",
             "perStory": per_story,
             "epicMin": epic_min,
         }
@@ -2320,21 +2976,30 @@ def scan_timing(projects: dict) -> None:
             wrote.append("timing")
         if not wrote:
             continue
-        print(f"[{pkey}] {'+'.join(wrote)} derived: {len(bars)} stories, "
-              f"{sum(b[1] for b in bars)} min active compute"
-              + (" (curated timing preserved)" if timing_curated else ""))
+        print(
+            f"[{pkey}] {'+'.join(wrote)} derived: {len(bars)} stories, "
+            f"{sum(b[1] for b in bars)} min active compute"
+            + (" (curated timing preserved)" if timing_curated else "")
+        )
 
 
 # ---- station ownership (the Dream -> code through-line) ----------------------
 
 # Console program key -> the Dream whose owner is accountable for that build line.
-PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
-                 "herald": "pyforge-herald", "doctor": "pyforge-doctor",
-                 "scribe": "pyforge-scribe", "regen": "regenerable-factory",
-                 "marshal": "pyforge-marshal", "mason": "pyforge-mason",
-                 "steward": "pyforge-steward", "genesis": "pyforge-genesis",
-                 # auto-discovered lines whose Dream slug is NOT pyforge-prefixed
-                 "presenton-pixi-image": "presenton-pixi-image"}
+PROGRAM_DREAM = {
+    "warden": "pyforge-warden",
+    "atlas": "pyforge-atlas",
+    "herald": "pyforge-herald",
+    "doctor": "pyforge-doctor",
+    "scribe": "pyforge-scribe",
+    "regen": "regenerable-factory",
+    "marshal": "pyforge-marshal",
+    "mason": "pyforge-mason",
+    "steward": "pyforge-steward",
+    "genesis": "pyforge-genesis",
+    # auto-discovered lines whose Dream slug is NOT pyforge-prefixed
+    "presenton-pixi-image": "presenton-pixi-image",
+}
 
 
 def apply_owner(data: dict) -> None:
@@ -2352,17 +3017,19 @@ def apply_owner(data: dict) -> None:
     deck_to_dream = {v: k for k, v in DREAM_DECK_ALIASES.items()}
     missing: list[str] = []
 
-    for row in data["fleet"]["rows"]:                    # carries `dream` already
+    for row in data["fleet"]["rows"]:  # carries `dream` already
         # A sub-chain has no Dream FILE of its own; its SPEC names the parent in
         # `owner-dream:` (Charter §5 — one Dream can spawn several Specs). Resolving
         # through the parent keeps the single source of truth this function exists to
         # enforce: the owner still comes from Dream frontmatter, just the parent's.
-        row["owner"] = by_slug.get(row["dream"], "") or by_slug.get(row.get("ownerDream", ""), "")
+        row["owner"] = by_slug.get(row["dream"], "") or by_slug.get(
+            row.get("ownerDream", ""), ""
+        )
         if not row["owner"]:
             missing.append(f"fleet:{row['slug']}")
 
     by_type = {d["slug"]: d.get("type", "dream") for d in data["dreams"]}
-    for key, proj in data["projects"].items():           # In Build / Realized
+    for key, proj in data["projects"].items():  # In Build / Realized
         dream = PROGRAM_DREAM.get(key, "")
         proj["owner"] = by_slug.get(dream, "")
         # A line whose Dream is a PRACTICE is not a product line: it is a
@@ -2376,11 +3043,13 @@ def apply_owner(data: dict) -> None:
 
     for card in data["pitch"]:
         slug = card["slug"]
-        card["owner"] = by_slug.get(slug) or by_slug.get(deck_to_dream.get(slug, ""), "")
+        card["owner"] = by_slug.get(slug) or by_slug.get(
+            deck_to_dream.get(slug, ""), ""
+        )
         if not card["owner"]:
             missing.append(f"pitch:{slug}")
 
-    for entry in data["archived"]:                       # seeds carry their own
+    for entry in data["archived"]:  # seeds carry their own
         entry.setdefault("owner", "")
         if not entry["owner"]:
             missing.append(f"archived:{entry['name']}")
@@ -2388,12 +3057,18 @@ def apply_owner(data: dict) -> None:
     # Campaigns are deliberately NOT owned: a campaign spans many stations
     # (spec-completion touched all eight), so a single owner would be a lie.
     owned = sum(1 for r in data["fleet"]["rows"] if r["owner"])
-    print(f"[owner] {owned}/{len(data['fleet']['rows'])} fleet rows attributed"
-          + (f" · UNOWNED: {', '.join(missing)}" if missing else " · all sections attributed"))
-
+    print(
+        f"[owner] {owned}/{len(data['fleet']['rows'])} fleet rows attributed"
+        + (
+            f" · UNOWNED: {', '.join(missing)}"
+            if missing
+            else " · all sections attributed"
+        )
+    )
 
 
 # ---- the accountability gate (Charter §7, amended 2026-07-28) ----------------
+
 
 def gate_ownership(data: dict) -> list[str]:
     """Refuse to publish a hall that cannot say who is accountable for a row.
@@ -2435,6 +3110,7 @@ def gate_ownership(data: dict) -> list[str]:
 
 # ---- shared ------------------------------------------------------------------
 
+
 def load_data() -> dict:
     inner = DATA_JS.read_text(encoding="utf-8").strip()
     inner = re.sub(r"^window\.DASHBOARD_DATA\s*=\s*", "", inner).rstrip().rstrip(";")
@@ -2443,6 +3119,7 @@ def load_data() -> dict:
 
 def now_utc() -> str:
     from datetime import datetime, timezone
+
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
@@ -2480,22 +3157,27 @@ def build_status(data: dict, source: str) -> dict:
     # one layer up: the feed reports intent, the run reports fact.
     running = []
     projects = data.get("projects") or {}
-    for proj in (projects.values() if isinstance(projects, dict) else projects):
+    for proj in projects.values() if isinstance(projects, dict) else projects:
         if not isinstance(proj, dict):
             continue
         infl = proj.get("inflight") or {}
         if infl.get("key"):
-            running.append({
-                "station": proj.get("label", "?"),
-                "story": infl.get("key", ""),
-                "phase": infl.get("phase", ""),
-                "startEpoch": infl.get("startEpoch"),
-            })
+            running.append(
+                {
+                    "station": proj.get("label", "?"),
+                    "story": infl.get("key", ""),
+                    "phase": infl.get("phase", ""),
+                    "startEpoch": infl.get("startEpoch"),
+                }
+            )
 
     shipped = None
     out = subprocess.run(
         ["git", "log", MAIN_BRANCH, "--format=%H%x1f%ct%x1f%s", "-n", "400"],
-        capture_output=True, text=True, cwd=REPO_ROOT).stdout
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    ).stdout
     for line in out.splitlines():
         parts = line.split("\x1f")
         if len(parts) != 3:
@@ -2516,18 +3198,29 @@ def build_status(data: dict, source: str) -> dict:
                         key, slug = f"{m2.group(1)}.{m2.group(2)}", cand
                         break
         if key and slug:
-            shipped = {"station": slug, "story": key, "epoch": int(when),
-                       "sha": sha[:9], "subject": subject[:120]}
+            shipped = {
+                "station": slug,
+                "story": key,
+                "epoch": int(when),
+                "sha": sha[:9],
+                "subject": subject[:120],
+            }
             break
 
-    return {"source": source, "running": running, "lastShipped": shipped,
-            "runningAvailable": source == "sprint-status"}
+    return {
+        "source": source,
+        "running": running,
+        "lastShipped": shipped,
+        "runningAvailable": source == "sprint-status",
+    }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
-        "--source", choices=["sprint-status", "git"], default="sprint-status",
+        "--source",
+        choices=["sprint-status", "git"],
+        default="sprint-status",
         help="sprint-status (default, local, richest) | git (hands-off, CI, done-only)",
     )
     args = ap.parse_args()
@@ -2572,12 +3265,22 @@ def main() -> int:
     data["fleet"] = scan_fleet(data["projects"], data["pitch"])
     data["commandCenter"] = scan_command_center(data["fleet"])
     data["campaigns"] = [
-        {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
-         "kind": "planning", "status": "completed", "completed": "2026-07-25",
-         "record": "_bmad-output/projects/local-recipes/planning-artifacts/campaign-spec-completion-2026-07-25.md",
-         **spec_c},
-        {"id": "build-2026-07-25", "title": "The Build", "kind": "build",
-         "status": "active", **build_c},
+        {
+            "id": "spec-completion-2026-07-25",
+            "title": "Spec Completion",
+            "kind": "planning",
+            "status": "completed",
+            "completed": "2026-07-25",
+            "record": "_bmad-output/projects/local-recipes/planning-artifacts/campaign-spec-completion-2026-07-25.md",
+            **spec_c,
+        },
+        {
+            "id": "build-2026-07-25",
+            "title": "The Build",
+            "kind": "build",
+            "status": "active",
+            **build_c,
+        },
     ]
     data["openwork"] = scan_deferred()
     data["archived"] = build_archived(data["dreams"])
@@ -2593,10 +3296,14 @@ def main() -> int:
 
     violations = gate_ownership(data)
     if violations:
-        print(f"\n[GATE] ACCOUNTABILITY — {len(violations)} violation(s); NOT publishing:")
+        print(
+            f"\n[GATE] ACCOUNTABILITY — {len(violations)} violation(s); NOT publishing:"
+        )
         for x in violations:
             print(f"     ✗ {x}")
-        print("  Charter §7: the hall does not put a row on the wall it cannot attribute.")
+        print(
+            "  Charter §7: the hall does not put a row on the wall it cannot attribute."
+        )
         return 1
 
     ts = now_utc()
@@ -2607,7 +3314,9 @@ def main() -> int:
     # a UTC string alone forces mental arithmetic on every glance.
     data["status"]["generatedEpoch"] = int(time.time())
     DATA_JS.write_text(
-        "window.DASHBOARD_DATA = " + json.dumps(data, indent=2, ensure_ascii=False) + ";\n",
+        "window.DASHBOARD_DATA = "
+        + json.dumps(data, indent=2, ensure_ascii=False)
+        + ";\n",
         encoding="utf-8",
     )
     print(f"\nsnapshot -> {ts}  ·  source: {args.source}  ·  data.js rewritten")

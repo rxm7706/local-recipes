@@ -1,4 +1,6 @@
-from django.conf import settings; settings.configure(DEBUG=True)
+from django.conf import settings
+
+settings.configure(DEBUG=True)
 
 import graphene_django
 import graphene_django.debug

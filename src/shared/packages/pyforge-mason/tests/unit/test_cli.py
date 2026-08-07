@@ -135,20 +135,26 @@ def test_recipe_help_works(capsys):
     assert "recipe" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("argv", [
-    ["--format", "json", "recipe"],
-    ["recipe", "--format", "json"],
-])
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--format", "json", "recipe"],
+        ["recipe", "--format", "json"],
+    ],
+)
 def test_global_flag_parses_before_or_after_the_noun(argv):
     ns = build_parser().parse_args(argv)
     assert ns.format == "json"
     assert ns.noun == "recipe"
 
 
-@pytest.mark.parametrize("flag,attr", [
-    ("--cfe-root", "cfe_root"),
-    ("--cfe-python", "cfe_python"),
-])
+@pytest.mark.parametrize(
+    "flag,attr",
+    [
+        ("--cfe-root", "cfe_root"),
+        ("--cfe-python", "cfe_python"),
+    ],
+)
 def test_global_string_flags_accepted_at_either_position(flag, attr):
     before = build_parser().parse_args([flag, "/tmp/x", "package"])
     after = build_parser().parse_args(["package", flag, "/tmp/x"])
@@ -157,10 +163,13 @@ def test_global_string_flags_accepted_at_either_position(flag, attr):
     assert getattr(after, attr) == "/tmp/x"
 
 
-@pytest.mark.parametrize("flag,attr", [
-    ("--verbose", "verbose"),
-    ("--quiet", "quiet"),
-])
+@pytest.mark.parametrize(
+    "flag,attr",
+    [
+        ("--verbose", "verbose"),
+        ("--quiet", "quiet"),
+    ],
+)
 def test_global_boolean_flags_accepted_at_either_position(flag, attr):
     before = build_parser().parse_args([flag, "environment"])
     after = build_parser().parse_args(["environment", flag])
@@ -170,17 +179,23 @@ def test_global_boolean_flags_accepted_at_either_position(flag, attr):
 
 
 def test_keyboard_interrupt_projects_to_130(monkeypatch):
-    monkeypatch.setattr("pyforge.mason.cli.build_parser",
-                        lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
+    monkeypatch.setattr(
+        "pyforge.mason.cli.build_parser",
+        lambda: (_ for _ in ()).throw(KeyboardInterrupt()),
+    )
     assert main([]) == EXIT_INTERRUPTED
 
 
-def test_unanticipated_exception_projects_to_exit_failed_with_traceback(monkeypatch, capsys):
+def test_unanticipated_exception_projects_to_exit_failed_with_traceback(
+    monkeypatch, capsys
+):
     """A crash must project to the documented EXIT_FAILED (AD-7), with the
     full traceback on stderr -- not the interpreter's bare default and not a
     silent failure."""
-    monkeypatch.setattr("pyforge.mason.cli.build_parser",
-                        lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(
+        "pyforge.mason.cli.build_parser",
+        lambda: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
     rc = main([])
     assert rc == EXIT_FAILED
     err = capsys.readouterr().err
@@ -189,7 +204,9 @@ def test_unanticipated_exception_projects_to_exit_failed_with_traceback(monkeypa
     assert "boom" in err
 
 
-def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monkeypatch, capsys):
+def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(
+    monkeypatch, capsys
+):
     """A MasonError raised inside main()'s try block is an anticipated
     failure (AD-7): its `identifier: message` goes to stderr, no traceback,
     and the process exits EXIT_FAILED -- same monkeypatch pattern as the
@@ -217,6 +234,7 @@ def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monke
 # render.py in Story 1.4, --cfe-root/--cfe-python feed the resolution chain
 # in Stories 1.5-1.6, --verbose/--quiet feed logging in Story 1.10), so the
 # precedence contract is proven against the helpers directly.
+
 
 class TestResolveStr:
     def test_flag_wins_over_env(self, monkeypatch):
@@ -265,7 +283,9 @@ class TestResolveBool:
         monkeypatch.delenv("MASON_QUIET", raising=False)
         assert _resolve_bool(None, "MASON_QUIET", False) is False
 
-    @pytest.mark.parametrize("raw", ["", "0", "false", "FALSE", "no", "No", "  false  "])
+    @pytest.mark.parametrize(
+        "raw", ["", "0", "false", "FALSE", "no", "No", "  false  "]
+    )
     def test_falsy_env_spellings(self, raw, monkeypatch):
         monkeypatch.setenv("MASON_QUIET", raw)
         assert _resolve_bool(None, "MASON_QUIET", True) is False

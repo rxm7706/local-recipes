@@ -213,10 +213,7 @@ def _private_verdict_references(tree: ast.Module) -> list[str]:
             if isinstance(node.value, ast.Name) and node.value.id in verdict_names:
                 references.append(node.attr)
             # ... or pkg.verdict._priv via a plain `import pkg...verdict`.
-            elif (
-                isinstance(node.value, ast.Attribute)
-                and node.value.attr == "verdict"
-            ):
+            elif isinstance(node.value, ast.Attribute) and node.value.attr == "verdict":
                 references.append(node.attr)
     return references
 
@@ -278,9 +275,7 @@ def test_package_scan_surface_is_not_empty():
     assert "verdict.py" in names, "verdict.py missing from the installed package"
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=_module_id
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=_module_id)
 def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     violations = _exit_literal_violations(_parse(module_path))
     assert not violations, (
@@ -290,9 +285,7 @@ def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     )
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=_module_id
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=_module_id)
 def test_no_private_verdict_import_outside_verdict(module_path: Path):
     references = _private_verdict_references(_parse(module_path))
     assert not references, (
@@ -300,9 +293,7 @@ def test_no_private_verdict_import_outside_verdict(module_path: Path):
     )
 
 
-@pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=_module_id
-)
+@pytest.mark.parametrize("module_path", _non_verdict_modules(), ids=_module_id)
 def test_no_lattice_ordering_outside_verdict(module_path: Path):
     violations = _lattice_ordering_literals(_parse(module_path))
     assert not violations, (
@@ -395,8 +386,7 @@ def test_private_detector_sees_verdict_module_aliases():
     aliased = "from pyforge.marshal.core import verdict as v\nx = v._RANK\n"
     assert _private_verdict_references(ast.parse(aliased)) == ["_RANK"]
     plain_import = (
-        "import pyforge.marshal.core.verdict\n"
-        "x = pyforge.marshal.core.verdict._RANK\n"
+        "import pyforge.marshal.core.verdict\nx = pyforge.marshal.core.verdict._RANK\n"
     )
     assert _private_verdict_references(ast.parse(plain_import)) == ["_RANK"]
     public_only = (

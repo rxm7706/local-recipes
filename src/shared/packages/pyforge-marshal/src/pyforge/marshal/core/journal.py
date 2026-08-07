@@ -90,6 +90,7 @@ from . import policy
 from .identity import StoryKey, normalize
 from .model import Finding, Severity
 
+
 # AD-28's three-valued phase vocabulary. The earlier two-valued set forced
 # gate verdicts, story transitions, and other non-outcome facts into
 # `outcome`, which then required a mandatory `intent_id` that does not exist
@@ -178,7 +179,9 @@ def mint_run_id(slug: str, utc_compact: str, random_token: str) -> str:
             "utc_compact must match the compact millisecond-UTC pattern "
             f"YYYYMMDDTHHMMSSmmmZ (e.g. '20260803T054512123Z'), got {utc_compact!r}"
         )
-    if not isinstance(random_token, str) or not _RANDOM_TOKEN_PATTERN.match(random_token):
+    if not isinstance(random_token, str) or not _RANDOM_TOKEN_PATTERN.match(
+        random_token
+    ):
         raise ValueError(
             "random_token must be a non-empty lowercase-alphanumeric str, "
             f"got {random_token!r}"
@@ -205,7 +208,9 @@ class JournalEntryId:
     counter: int
 
     def __post_init__(self) -> None:
-        if not isinstance(self.writer_id, str) or not _WRITER_ID_PATTERN.match(self.writer_id):
+        if not isinstance(self.writer_id, str) or not _WRITER_ID_PATTERN.match(
+            self.writer_id
+        ):
             raise ValueError(
                 f"writer_id must match {_WRITER_ID_PATTERN.pattern!r} "
                 f"(non-empty, filesystem-safe), got {self.writer_id!r}"
@@ -215,7 +220,9 @@ class JournalEntryId:
             or isinstance(self.counter, bool)
             or self.counter < 0
         ):
-            raise ValueError(f"counter must be a non-negative int, got {self.counter!r}")
+            raise ValueError(
+                f"counter must be a non-negative int, got {self.counter!r}"
+            )
 
 
 def _id_to_json_dict(entry_id: JournalEntryId) -> dict[str, object]:
@@ -278,7 +285,9 @@ class JournalEntry:
         try:
             datetime.fromisoformat(self.ts)
         except ValueError as exc:
-            raise ValueError(f"ts is not a valid calendar date/time: {self.ts!r}") from exc
+            raise ValueError(
+                f"ts is not a valid calendar date/time: {self.ts!r}"
+            ) from exc
 
         if not isinstance(self.run_id, str) or not self.run_id.strip():
             raise ValueError(f"run_id must be a non-blank str, got {self.run_id!r}")
@@ -289,7 +298,9 @@ class JournalEntry:
 
         if self.story is not None and not isinstance(self.story, StoryKey):
             raise ValueError(f"story must be a StoryKey or None, got {self.story!r}")
-        if self.intent_id is not None and not isinstance(self.intent_id, JournalEntryId):
+        if self.intent_id is not None and not isinstance(
+            self.intent_id, JournalEntryId
+        ):
             raise ValueError(
                 f"intent_id must be a JournalEntryId or None, got {self.intent_id!r}"
             )
@@ -320,9 +331,7 @@ class JournalEntry:
         # (sorted or not) in agreement, and gives a clear ValueError instead
         # of a crash two functions away from the actual cause.
         if not all(isinstance(key, str) for key in copied_payload):
-            raise ValueError(
-                f"payload keys must all be str, got {copied_payload!r}"
-            )
+            raise ValueError(f"payload keys must all be str, got {copied_payload!r}")
         try:
             json.dumps(copied_payload)
         except (TypeError, ValueError) as exc:
@@ -632,7 +641,9 @@ class FoldResult:
         if not all(entry.phase is Phase.INTENT for entry in self.open_intents):
             raise ValueError("open_intents must contain only Phase.INTENT entries")
         if not all(entry.phase is Phase.OUTCOME for entry in self.orphaned_outcomes):
-            raise ValueError("orphaned_outcomes must contain only Phase.OUTCOME entries")
+            raise ValueError(
+                "orphaned_outcomes must contain only Phase.OUTCOME entries"
+            )
 
     def by_kind(self, kind: str) -> tuple[JournalEntry, ...]:
         """Every evaluable entry whose ``kind`` equals ``kind``, in
@@ -735,7 +746,9 @@ class FoldResult:
         malformed domain-specific payload for THIS kind is this method's
         own concern, not the generic fold's -- skipping it is the same
         "never abort on one bad entry" posture ``fold`` itself keeps."""
-        if not isinstance(seed, tuple) or not all(isinstance(path, str) for path in seed):
+        if not isinstance(seed, tuple) or not all(
+            isinstance(path, str) for path in seed
+        ):
             raise TypeError(f"seed must be a tuple of str, got {seed!r}")
 
         live: dict[str, FrozenPath] = {
@@ -829,7 +842,9 @@ def fold(
         except _SidecarUnresolved as exc:
             story, kind = _best_effort_recover(raw_line)
             quarantined.append(
-                _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-002", str(exc))
+                _quarantine(
+                    _display_line(raw_line), story, kind, "MRS-JOURNAL-002", str(exc)
+                )
             )
         except (ValueError, TypeError, RecursionError) as exc:
             # RecursionError too (review finding, verified live): `json.loads`
@@ -840,7 +855,9 @@ def fold(
             # function's docstring makes, for a distinct exception type.
             story, kind = _best_effort_recover(raw_line)
             quarantined.append(
-                _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-001", str(exc))
+                _quarantine(
+                    _display_line(raw_line), story, kind, "MRS-JOURNAL-001", str(exc)
+                )
             )
         else:
             parsed.append(entry)
@@ -985,7 +1002,9 @@ def _parse_entry(raw_line: str, sidecars: Mapping[str, str | None]) -> JournalEn
         # JSONDecodeError -- which escaped to `fold`'s outer catch and was
         # reported as MRS-JOURNAL-001, a LINE parse failure, defeating the
         # same code discrimination the RecursionError fix below restores.
-        raise _SidecarUnresolved(f"sidecar blob {ref!r} is not valid JSON: {exc}") from exc
+        raise _SidecarUnresolved(
+            f"sidecar blob {ref!r} is not valid JSON: {exc}"
+        ) from exc
     try:
         return replace(entry, payload=resolved_payload)
     except (ValueError, TypeError, RecursionError) as exc:
@@ -1097,7 +1116,9 @@ def _quarantine(
         raw=raw_line,
         story=story,
         kind=kind,
-        finding=Finding(code=code, severity=Severity.ERROR, message=message, path=raw_line),
+        finding=Finding(
+            code=code, severity=Severity.ERROR, message=message, path=raw_line
+        ),
     )
 
 
@@ -1138,10 +1159,16 @@ def intent_reconciles(
     gathering is the caller's job" split this module's own docstring
     already establishes for ``build_entry``/``prepare_for_write``."""
     keys = intent_payload.get("story_keys")
-    if not isinstance(keys, list) or not keys or not all(isinstance(key, str) for key in keys):
+    if (
+        not isinstance(keys, list)
+        or not keys
+        or not all(isinstance(key, str) for key in keys)
+    ):
         return False
     confirmed = evidence.get("confirmed_story_keys")
-    if not isinstance(confirmed, list) or not all(isinstance(key, str) for key in confirmed):
+    if not isinstance(confirmed, list) or not all(
+        isinstance(key, str) for key in confirmed
+    ):
         return False
     confirmed_set = set(confirmed)
     return all(key in confirmed_set for key in keys)

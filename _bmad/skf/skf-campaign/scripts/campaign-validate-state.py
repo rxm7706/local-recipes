@@ -45,7 +45,9 @@ from typing import Any
 import yaml
 from jsonschema import Draft7Validator
 
-DEFAULT_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "assets" / "campaign-state-schema.json"
+DEFAULT_SCHEMA_PATH = (
+    Path(__file__).resolve().parent.parent / "assets" / "campaign-state-schema.json"
+)
 
 
 def _emit(envelope: dict) -> None:
@@ -130,7 +132,9 @@ def validate_state(state: dict, schema: dict) -> dict:
     validator = Draft7Validator(schema)
     errors = [
         _translate(err)
-        for err in sorted(validator.iter_errors(state), key=lambda e: list(e.absolute_path))
+        for err in sorted(
+            validator.iter_errors(state), key=lambda e: list(e.absolute_path)
+        )
     ]
     return {"valid": not errors, "errors": errors}
 
@@ -141,7 +145,12 @@ def run(state_file: str, schema_file: str | None = None) -> int:
         _emit(
             {
                 "valid": False,
-                "errors": [{"field": "(schema)", "message": f"Schema not found at `{schema_path}`."}],
+                "errors": [
+                    {
+                        "field": "(schema)",
+                        "message": f"Schema not found at `{schema_path}`.",
+                    }
+                ],
                 "halt_reason": "state-invalid",
             }
         )
@@ -152,7 +161,9 @@ def run(state_file: str, schema_file: str | None = None) -> int:
         _emit(
             {
                 "valid": False,
-                "errors": [{"field": "(schema)", "message": f"Schema unreadable: {exc}"}],
+                "errors": [
+                    {"field": "(schema)", "message": f"Schema unreadable: {exc}"}
+                ],
                 "halt_reason": "state-invalid",
             }
         )
@@ -163,7 +174,12 @@ def run(state_file: str, schema_file: str | None = None) -> int:
         _emit(
             {
                 "valid": False,
-                "errors": [{"field": "(file)", "message": f"State not found at `{state_path}`."}],
+                "errors": [
+                    {
+                        "field": "(file)",
+                        "message": f"State not found at `{state_path}`.",
+                    }
+                ],
                 "halt_reason": "state-missing",
             }
         )
@@ -194,7 +210,9 @@ def main(argv: list[str] | None = None) -> int:
         prog="campaign-validate-state",
         description="Validate _campaign-state.yaml against the campaign state schema.",
     )
-    parser.add_argument("--state-file", required=True, help="Path to _campaign-state.yaml")
+    parser.add_argument(
+        "--state-file", required=True, help="Path to _campaign-state.yaml"
+    )
     parser.add_argument(
         "--schema-file",
         help="Path to campaign-state-schema.json (defaults to the bundled schema)",

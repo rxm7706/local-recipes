@@ -65,7 +65,9 @@ for txt_file in glob.glob(os.path.join(symbols_dir, "symbols_*.txt")):
             # don't use [-1] because some demangled symbols contain `operator|`
             symbol = line.split("|")[1].strip().split()[0]
             # skip labels and metadata
-            if "Label" in line or any(symbol.startswith(x) for x in [".", "$", "@", "??", "?$", "__"]):
+            if "Label" in line or any(
+                symbol.startswith(x) for x in [".", "$", "@", "??", "?$", "__"]
+            ):
                 continue
             # skip opencensus for now; re-evaluate together with #220
             if "opencensus" in symbol.lower():

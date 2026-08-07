@@ -42,7 +42,9 @@ def _dm_get(key: str):
 
 @pytest.fixture()
 def dashboard():
-    return app.build_dashboard(build_stamp=STAMP, data_root="/nonexistent-data-root", now=NOW)
+    return app.build_dashboard(
+        build_stamp=STAMP, data_root="/nonexistent-data-root", now=NOW
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -55,7 +57,9 @@ def test_dashboard_builds_offline(dashboard):
     assert dashboard.id == app.DASHBOARD_ID
     # Vizro can build the Dash app object OFFLINE (no server, no data touched at build).
     Vizro._reset()
-    d2 = app.build_dashboard(build_stamp=STAMP, data_root="/nonexistent-data-root", now=NOW, reset=False)
+    d2 = app.build_dashboard(
+        build_stamp=STAMP, data_root="/nonexistent-data-root", now=NOW, reset=False
+    )
     built = Vizro().build(d2)
     assert built is not None
 
@@ -103,7 +107,9 @@ def test_feedstock_health_page_is_bsl_driven(feedstock_health_parquet):
     table = models.duckdb_table_from_parquet(feedstock_health_parquet)
     expected = (
         models.build_feedstock_health_model(table)
-        .query(dimensions=["feedstock_name", "ci_red", "has_open_prs", "has_open_issues"])
+        .query(
+            dimensions=["feedstock_name", "ci_red", "has_open_prs", "has_open_issues"]
+        )
         .execute()
     )
     pd.testing.assert_frame_equal(
@@ -145,7 +151,12 @@ def test_packages_shell_pages_are_bsl_wired_and_light_up_with_data(packages_parq
     )
     # query-atlas + detail also go through build_packages_model without raising.
     qa = dash_data.load_query_atlas(packages_parquet, now=NOW)
-    assert set(qa.columns) == {"conda_name", "is_actionable", "adoption_stage", "downloads_total"}
+    assert set(qa.columns) == {
+        "conda_name",
+        "is_actionable",
+        "adoption_stage",
+        "downloads_total",
+    }
     detail = dash_data.load_detail(packages_parquet, now=NOW)
     assert not detail.empty
 
@@ -170,9 +181,18 @@ def test_data_loaders_offline_return_empty_typed_frames_not_fabricated():
     """Missing Parquet (the store's real state today) → empty frame with the declared
     columns; NO fabricated rows."""
     fh = dash_data.load_feedstock_health("/nope.parquet")
-    assert fh.empty and list(fh.columns) == ["feedstock_name", "ci_red", "has_open_prs", "has_open_issues"]
+    assert fh.empty and list(fh.columns) == [
+        "feedstock_name",
+        "ci_red",
+        "has_open_prs",
+        "has_open_issues",
+    ]
     st = dash_data.load_staleness("/nope.parquet", now=NOW)
-    assert st.empty and list(st.columns) == ["conda_name", "staleness_age_days", "adoption_stage"]
+    assert st.empty and list(st.columns) == [
+        "conda_name",
+        "staleness_age_days",
+        "adoption_stage",
+    ]
     mf = dash_data.load_my_feedstocks("/nope.parquet")
     assert mf.empty and list(mf.columns) == ["maintainer", "conda_name"]
 
@@ -187,13 +207,28 @@ def test_present_but_untyped_parquet_degrades_not_crash(write_parquet):
     # 0-row, object-typed columns (no pyarrow schema) → the crash the migration's typed
     # schemas avoid, but a first sparse store could hit.
     untyped = pd.DataFrame(
-        {c: pd.Series([], dtype="object") for c in
-         ("conda_name", "latest_status", "feedstock_archived", "latest_conda_upload",
-          "downloads_total", "downloads_30d", "latest_upload_age_days", "releases_30d", "total_versions")}
+        {
+            c: pd.Series([], dtype="object")
+            for c in (
+                "conda_name",
+                "latest_status",
+                "feedstock_archived",
+                "latest_conda_upload",
+                "downloads_total",
+                "downloads_30d",
+                "latest_upload_age_days",
+                "releases_30d",
+                "total_versions",
+            )
+        }
     )
     path = write_parquet(untyped, "untyped_packages")
     st = dash_data.load_staleness(path, now=NOW)
-    assert st.empty and list(st.columns) == ["conda_name", "staleness_age_days", "adoption_stage"]
+    assert st.empty and list(st.columns) == [
+        "conda_name",
+        "staleness_age_days",
+        "adoption_stage",
+    ]
 
 
 def test_registered_data_functions_are_callable_and_return_frames(dashboard):
@@ -330,7 +365,9 @@ def test_grounded_page_carries_file_mtime_not_render_time(tmp_path):
     page = next(p for p in d.pages if p.id == "feedstock-health")
     card = next(c for c in page.components if isinstance(c, vm.Card))
 
-    expected_stamp = datetime.datetime.fromtimestamp(old_ts, tz=datetime.UTC).isoformat()
+    expected_stamp = datetime.datetime.fromtimestamp(
+        old_ts, tz=datetime.UTC
+    ).isoformat()
     assert expected_stamp in card.text
     assert "AD-17" in card.text
     # NOT the dashboard's own render-time stand-ins.

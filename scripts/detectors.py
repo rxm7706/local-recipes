@@ -46,6 +46,7 @@ Declarations are read with `ast`, never by importing: a detector's module body
 may open files, spawn a browser, or shell out, and discovery must be free of
 side effects.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -77,7 +78,9 @@ def _declared_scope(path: pathlib.Path) -> str | None:
     for node in tree.body:
         if not isinstance(node, ast.Assign):
             continue
-        if not any(isinstance(t, ast.Name) and t.id == "DETECTOR" for t in node.targets):
+        if not any(
+            isinstance(t, ast.Name) and t.id == "DETECTOR" for t in node.targets
+        ):
             continue
         try:
             value = ast.literal_eval(node.value)
@@ -92,8 +95,8 @@ def _declared_scope(path: pathlib.Path) -> str | None:
 def _pixi_tasks() -> dict[str, str]:
     try:
         import tomllib
-    except ModuleNotFoundError:                      # pragma: no cover
-        import tomli as tomllib                      # type: ignore
+    except ModuleNotFoundError:  # pragma: no cover
+        import tomli as tomllib  # type: ignore
     cfg = tomllib.loads((ROOT / "pixi.toml").read_text(encoding="utf-8"))
     out: dict[str, str] = {}
     for feat in cfg.get("feature", {}).values():
@@ -118,15 +121,21 @@ def discover() -> tuple[list[dict], list[str]]:
                 findings.append(
                     f"{rel}: looks like a detector but declares no valid "
                     f'DETECTOR = {{"scope": "repo"|"runtime"}} — it would be invisible '
-                    f"to CI, the board and the loop")
+                    f"to CI, the board and the loop"
+                )
                 continue
-            task = next((t for t, c in tasks.items()
-                         if path.name in c and "--json" not in c), None)
+            task = next(
+                (t for t, c in tasks.items() if path.name in c and "--json" not in c),
+                None,
+            )
             if task is None:
                 findings.append(
                     f"{rel}: declares scope={scope} but has no pixi task — "
-                    f"nothing can invoke it by name")
-            detectors.append({"path": rel, "name": path.stem, "scope": scope, "task": task})
+                    f"nothing can invoke it by name"
+                )
+            detectors.append(
+                {"path": rel, "name": path.stem, "scope": scope, "task": task}
+            )
     return detectors, findings
 
 
@@ -135,21 +144,34 @@ def run_one(det: dict, timeout: int) -> dict:
     try:
         proc = subprocess.run(
             [sys.executable, str(ROOT / det["path"])],
-            cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
         rc, out = proc.returncode, (proc.stdout or "") + (proc.stderr or "")
     except subprocess.TimeoutExpired:
         rc, out = 2, f"UNKNOWN: exceeded {timeout}s"
     status = {0: "pass", 1: "FINDINGS"}.get(rc, "unknown")
     tail = [ln for ln in out.strip().splitlines() if ln.strip()]
-    return {**det, "rc": rc, "status": status,
-            "secs": round(time.monotonic() - started, 1),
-            "summary": tail[-1][:200] if tail else "", "output": out}
+    return {
+        **det,
+        "rc": rc,
+        "status": status,
+        "secs": round(time.monotonic() - started, 1),
+        "summary": tail[-1][:200] if tail else "",
+        "output": out,
+    }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--scope", choices=(*SCOPES, "all"), default="all",
-                    help="repo = CI-safe subset; runtime = host-state detectors")
+    ap.add_argument(
+        "--scope",
+        choices=(*SCOPES, "all"),
+        default="all",
+        help="repo = CI-safe subset; runtime = host-state detectors",
+    )
     ap.add_argument("--list", action="store_true", help="show the registry and exit")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--timeout", type=int, default=300)
@@ -160,7 +182,11 @@ def main() -> int:
 
     if args.list:
         if args.json:
-            print(json.dumps({"detectors": detectors, "registry": registry_findings}, indent=1))
+            print(
+                json.dumps(
+                    {"detectors": detectors, "registry": registry_findings}, indent=1
+                )
+            )
         else:
             for d in detectors:
                 print(f"  {d['scope']:7} {d['name']:22} task={d['task'] or '(NONE)'}")
@@ -178,7 +204,9 @@ def main() -> int:
         print(f"detectors — scope={args.scope}, {len(selected)} selected\n")
         for r in results:
             mark = {"pass": "✔", "FINDINGS": "✗", "unknown": "?"}[r["status"]]
-            print(f"  {mark} {r['name']:22} {r['status']:9} {r['secs']:5.1f}s  {r['summary']}")
+            print(
+                f"  {mark} {r['name']:22} {r['status']:9} {r['secs']:5.1f}s  {r['summary']}"
+            )
         for f in registry_findings:
             print(f"\n  ✗ registry: {f}")
         bad = [r for r in results if r["status"] == "FINDINGS"]

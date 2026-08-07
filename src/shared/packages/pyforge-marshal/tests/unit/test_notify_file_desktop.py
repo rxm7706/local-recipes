@@ -107,7 +107,9 @@ def test_notify_desktop_returns_true_on_success(notifier, monkeypatch):
     assert calls[0][0] == "notify-send"
 
 
-def test_notify_desktop_carries_the_payloads_text_as_the_call_body(notifier, monkeypatch):
+def test_notify_desktop_carries_the_payloads_text_as_the_call_body(
+    notifier, monkeypatch
+):
     captured: list[list[str]] = []
 
     def _fake_run(argv, **kwargs):

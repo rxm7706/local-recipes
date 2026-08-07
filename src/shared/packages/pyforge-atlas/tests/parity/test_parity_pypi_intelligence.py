@@ -43,4 +43,6 @@ def test_pypi_fixtures_are_flagged_shape_only():
 
     for path in _PYPI:
         spec = json.loads(path.read_text(encoding="utf-8"))
-        assert spec.get("provenance") == "shape-only-seed-B2-needs-B4-recapture", path.name
+        assert spec.get("provenance") == "shape-only-seed-B2-needs-B4-recapture", (
+            path.name
+        )

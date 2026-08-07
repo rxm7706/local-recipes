@@ -58,7 +58,9 @@ class ProjectHooks:
         # P8: guard the catalog interface. kedro 1.5.0 hands a DataCatalog that
         # exposes keys()/__getitem__; a classic pre-1.x catalog (only .list())
         # would silently inject nothing — fail clearly instead.
-        if not (callable(getattr(catalog, "keys", None)) and hasattr(catalog, "__getitem__")):
+        if not (
+            callable(getattr(catalog, "keys", None)) and hasattr(catalog, "__getitem__")
+        ):
             raise TypeError(
                 "after_catalog_created received a catalog without the expected "
                 "keys()/__getitem__ interface (kedro 1.5.0 DataCatalog); got "

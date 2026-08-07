@@ -310,8 +310,7 @@ def _validate_entry(raw_entry: object, *, path: Path, index: int) -> WaiverEntry
     entry_id = raw_entry["id"]
     if not isinstance(entry_id, str) or not entry_id:
         raise WaiverValidationError(
-            f"{path}: waivers[{index}].id must be a non-empty string, got "
-            f"{entry_id!r}"
+            f"{path}: waivers[{index}].id must be a non-empty string, got {entry_id!r}"
         )
     if not _is_finding_family_id(entry_id):
         raise WaiverValidationError(
@@ -327,8 +326,7 @@ def _validate_entry(raw_entry: object, *, path: Path, index: int) -> WaiverEntry
         )
     if len(reason) > _MAX_REASON_LENGTH:
         raise WaiverValidationError(
-            f"{path}: waivers[{index}].reason exceeds {_MAX_REASON_LENGTH} "
-            "characters"
+            f"{path}: waivers[{index}].reason exceeds {_MAX_REASON_LENGTH} characters"
         )
     authorized_by = raw_entry["authorized_by"]
     if not isinstance(authorized_by, str) or not authorized_by:
@@ -423,8 +421,7 @@ def _validate_baseline_entry(
     entry_id = raw_entry["id"]
     if not isinstance(entry_id, str) or not entry_id:
         raise BaselineValidationError(
-            f"{path}: baseline[{index}].id must be a non-empty string, got "
-            f"{entry_id!r}"
+            f"{path}: baseline[{index}].id must be a non-empty string, got {entry_id!r}"
         )
     if not _is_finding_family_id(entry_id):
         raise BaselineValidationError(
@@ -440,8 +437,7 @@ def _validate_baseline_entry(
         )
     if len(reason) > _MAX_REASON_LENGTH:
         raise BaselineValidationError(
-            f"{path}: baseline[{index}].reason exceeds {_MAX_REASON_LENGTH} "
-            "characters"
+            f"{path}: baseline[{index}].reason exceeds {_MAX_REASON_LENGTH} characters"
         )
     _, expires_at_str = _parse_timestamp(
         raw_entry["expires_at"],
@@ -464,8 +460,7 @@ def _validate_baseline_document(document: object, *, path: Path) -> BaselineFile
         document = {}
     if not isinstance(document, dict):
         raise BaselineValidationError(
-            f"{path}: baseline file must be a mapping, got "
-            f"{type(document).__name__}"
+            f"{path}: baseline file must be a mapping, got {type(document).__name__}"
         )
     version = document.get("version")
     # Mirrors _validate_document's own literal-int-1 check (see its
@@ -626,9 +621,7 @@ def _baseline_notice(entry: BaselineEntry) -> BaselineNotice:
     """Factor the ``BaselineNotice`` construction shared between
     ``apply_waivers``'s applied and expired baseline branches (Story 6.8,
     mirrors ``_waiver_notice``)."""
-    return BaselineNotice(
-        id=entry.id, reason=entry.reason, expires_at=entry.expires_at
-    )
+    return BaselineNotice(id=entry.id, reason=entry.reason, expires_at=entry.expires_at)
 
 
 def apply_waivers(

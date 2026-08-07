@@ -125,8 +125,14 @@ def test_fetch_epss_scores_tolerates_an_extra_column(monkeypatch, refresh_epss_f
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(
             _gzip_csv(
-                [{"cve": "CVE-1970-00001", "epss": "0.7", "percentile": "0.9",
-                  "model_version": "v1"}],
+                [
+                    {
+                        "cve": "CVE-1970-00001",
+                        "epss": "0.7",
+                        "percentile": "0.9",
+                        "model_version": "v1",
+                    }
+                ],
                 header=["cve", "epss", "percentile", "model_version"],
             )
         ),
@@ -136,7 +142,9 @@ def test_fetch_epss_scores_tolerates_an_extra_column(monkeypatch, refresh_epss_f
     ]
 
 
-def test_fetch_epss_scores_skips_a_row_with_an_empty_cve(monkeypatch, refresh_epss_feed):
+def test_fetch_epss_scores_skips_a_row_with_an_empty_cve(
+    monkeypatch, refresh_epss_feed
+):
     """Review finding: an empty ``cve`` must be skipped like any other
     malformed row -- never silently cached with a useless empty key, which
     would inflate the reported score_count without any usable data behind
@@ -239,7 +247,9 @@ def test_main_exits_2_when_no_cache_dir_is_available(
     assert "no cache dir given" in capsys.readouterr().err
 
 
-def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_epss_feed, capsys):
+def test_main_exits_1_when_refresh_fails(
+    monkeypatch, tmp_path, refresh_epss_feed, capsys
+):
     def _raise(*_a, **_k):
         raise urllib.error.URLError("network unreachable")
 

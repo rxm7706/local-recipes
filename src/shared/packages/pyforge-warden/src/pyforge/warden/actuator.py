@@ -280,9 +280,7 @@ class GitHubForgeClient:
         self._timeout = timeout
 
     @classmethod
-    def from_env(
-        cls, env: Mapping[str, str] | None = None
-    ) -> GitHubForgeClient:
+    def from_env(cls, env: Mapping[str, str] | None = None) -> GitHubForgeClient:
         token, repo, api_url = resolve_forge(env)
         return cls(token, repo, api_url)
 
@@ -306,9 +304,7 @@ class GitHubForgeClient:
         }
         if data is not None:
             headers["Content-Type"] = "application/json"
-        request = urllib.request.Request(
-            url, data=data, headers=headers, method=method
-        )
+        request = urllib.request.Request(url, data=data, headers=headers, method=method)
         # The sole authorized egress: mark it so the test harness's carve-out
         # permits the loopback connect, and reset it the instant the call
         # returns (deny is the default again immediately after).
@@ -391,9 +387,7 @@ class GitHubForgeClient:
                 return str(url)
         # A 2xx with no url is not a real success -- fail loudly rather than
         # record an ``opened`` outcome carrying no evidence of the PR.
-        raise ForgeResponseError(
-            "the forge accepted the PR open but returned no url"
-        )
+        raise ForgeResponseError("the forge accepted the PR open but returned no url")
 
 
 def run_actuator(

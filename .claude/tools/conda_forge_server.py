@@ -4,6 +4,7 @@
 Allows Claude Code to programmatically validate recipes and check dependencies
 without needing to parse bash output.
 """
+
 import json
 import platform
 import re
@@ -19,7 +20,9 @@ from fastmcp import FastMCP, Context
 mcp = FastMCP("conda-forge-expert")
 
 # Paths to the scripts relative to this file
-SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "skills" / "conda-forge-expert" / "scripts"
+SCRIPTS_DIR = (
+    Path(__file__).resolve().parent.parent / "skills" / "conda-forge-expert" / "scripts"
+)
 
 # Path confinement shared with submit_pr.py / recipe_editor.py (AUD-CFE-006).
 sys.path.insert(0, str(SCRIPTS_DIR))
@@ -27,6 +30,7 @@ from _path_guard import (  # noqa: E402
     resolve_under_recipes,
     validate_recipe_file_path,
 )
+
 VALIDATE_SCRIPT = SCRIPTS_DIR / "validate_recipe.py"
 CHECKER_SCRIPT = SCRIPTS_DIR / "dependency-checker.py"
 GENERATOR_SCRIPT = SCRIPTS_DIR / "recipe-generator.py"
@@ -87,7 +91,12 @@ def _extract_json_from_stdout(stdout: str) -> Any:
     return json.loads(stdout[start:])
 
 
-def _run_script(script_path: Path, args: List[str], input_text: str | None = None, timeout: int = 120) -> Dict[str, Any]:
+def _run_script(
+    script_path: Path,
+    args: List[str],
+    input_text: str | None = None,
+    timeout: int = 120,
+) -> Dict[str, Any]:
     """Run a Python script that outputs JSON and parse the result."""
     if not script_path.exists():
         return {"error": f"Script not found at {script_path}"}
@@ -112,7 +121,10 @@ def _run_script(script_path: Path, args: List[str], input_text: str | None = Non
                 "exit_code": result.returncode,
             }
     except subprocess.TimeoutExpired:
-        return {"error": f"Script timed out after {timeout}s", "script": str(script_path)}
+        return {
+            "error": f"Script timed out after {timeout}s",
+            "script": str(script_path),
+        }
     except Exception as e:
         return {"error": str(e)}
 
@@ -162,7 +174,7 @@ def check_dependencies(
 
 
 _GRAYSKULL_PYTHON_VERSION_RE = re.compile(
-    r'^(?P<indent>[ \t]+)python_version:[ \t]+(?P<value>\$\{\{[ \t]*python_min[ \t]*\}\}\.\*)[ \t]*$',
+    r"^(?P<indent>[ \t]+)python_version:[ \t]+(?P<value>\$\{\{[ \t]*python_min[ \t]*\}\}\.\*)[ \t]*$",
     re.MULTILINE,
 )
 
@@ -223,11 +235,7 @@ def _normalize_grayskull_test_matrix(recipe_path: Path) -> bool:
         value = match.group("value")
         # Canonical YAML: list items indented 2 spaces deeper than the parent key.
         # See recipe_optimizer.py FMT-001 for the enforcement check.
-        return (
-            f'{indent}python_version:\n'
-            f'{indent}  - {value}\n'
-            f'{indent}  - "*"'
-        )
+        return f'{indent}python_version:\n{indent}  - {value}\n{indent}  - "*"'
 
     new_text, n = _GRAYSKULL_PYTHON_VERSION_RE.subn(_expand, text)
     if n == 0:
@@ -249,8 +257,13 @@ _BELT_AND_SUSPENDERS_HOST_DEPS = ("wheel", "setuptools")
 # PEP-517 backends — when one of these is present in host, the host pair above
 # is redundant and should be stripped.
 _PEP517_BACKENDS = (
-    "poetry-core", "hatchling", "flit-core", "pdm-backend",
-    "scikit-build-core", "maturin", "meson-python",
+    "poetry-core",
+    "hatchling",
+    "flit-core",
+    "pdm-backend",
+    "scikit-build-core",
+    "maturin",
+    "meson-python",
 )
 
 
@@ -275,7 +288,12 @@ def _strip_belt_and_suspenders_host(recipe_path: Path) -> bool:
             for j in range(host_start, len(lines)):
                 stripped = lines[j].lstrip(" ")
                 # blank line ends nothing; sibling key (e.g. "  run:", "  build:") ends host
-                if stripped and not stripped.startswith("-") and lines[j][:4] == "  " and lines[j][2] != " ":
+                if (
+                    stripped
+                    and not stripped.startswith("-")
+                    and lines[j][:4] == "  "
+                    and lines[j][2] != " "
+                ):
                     host_end = j
                     break
             else:
@@ -333,14 +351,18 @@ def _clamp_run_python_floor(recipe_path: Path) -> bool:
     except OSError:
         return False
 
-    has_python_min_ctx = bool(re.search(r"^context:\s*\n(?:[ \t]+[^\n]*\n)*?[ \t]+python_min:", text, re.MULTILINE))
+    has_python_min_ctx = bool(
+        re.search(
+            r"^context:\s*\n(?:[ \t]+[^\n]*\n)*?[ \t]+python_min:", text, re.MULTILINE
+        )
+    )
     replacement = "${{ python_min }}" if has_python_min_ctx else "3.10"
 
     def _sub(m: re.Match[str]) -> str:
         minor = int(m.group("minor"))
         if minor >= 10:
             return m.group(0)  # already at/above floor
-        return f'{m.group("indent")}- python >={replacement}'
+        return f"{m.group('indent')}- python >={replacement}"
 
     new_text, n = _RUN_PYTHON_LOW_FLOOR_RE.subn(_sub, text)
     if n == 0 or new_text == text:
@@ -354,7 +376,8 @@ _SUMMARY_TRAILING_VERSION_RE = re.compile(
     re.MULTILINE,
 )
 _GRAYSKULL_README_COMMENT_RE = re.compile(
-    r"^[ \t]*#[ \t]*readme[ \t]*\r?\n", re.MULTILINE | re.IGNORECASE,
+    r"^[ \t]*#[ \t]*readme[ \t]*\r?\n",
+    re.MULTILINE | re.IGNORECASE,
 )
 
 
@@ -371,7 +394,9 @@ def _normalize_summary(recipe_path: Path) -> bool:
     except OSError:
         return False
 
-    new_text, n1 = _SUMMARY_TRAILING_VERSION_RE.subn(lambda m: m.group("head").rstrip(), text)
+    new_text, n1 = _SUMMARY_TRAILING_VERSION_RE.subn(
+        lambda m: m.group("head").rstrip(), text
+    )
     new_text, n2 = _GRAYSKULL_README_COMMENT_RE.subn("", new_text)
     if n1 == 0 and n2 == 0:
         return False
@@ -405,6 +430,7 @@ def _add_missing_repository(recipe_path: Path, package_name: str) -> bool:
     # Pull project_urls from PyPI; pick the first matching key.
     try:
         import urllib.request
+
         with urllib.request.urlopen(
             f"https://pypi.org/pypi/{package_name}/json", timeout=10
         ) as resp:
@@ -422,7 +448,7 @@ def _add_missing_repository(recipe_path: Path, package_name: str) -> bool:
         return False
 
     inject = f"{indent}repository: {repo_url}\n"
-    new_text = text[:homepage_m.end() + 1] + inject + text[homepage_m.end() + 1:]
+    new_text = text[: homepage_m.end() + 1] + inject + text[homepage_m.end() + 1 :]
     recipe_path.write_text(new_text, encoding="utf-8")
     return True
 
@@ -437,9 +463,7 @@ _PINNING_PYTHON_MIN_RE = re.compile(
     r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(?P<value>\d+\.\d+)['\"]?",
     re.MULTILINE,
 )
-_PINNING_CONFIG_PATH = (
-    ".pixi/envs/local-recipes/conda_build_config.yaml"
-)
+_PINNING_CONFIG_PATH = ".pixi/envs/local-recipes/conda_build_config.yaml"
 
 
 def _read_conda_forge_python_floor() -> str:
@@ -514,7 +538,7 @@ def _clamp_or_drop_context_python_min(
         return False
     if value_tuple > floor_tuple:
         return False  # legitimate override; keep
-    new_text = text[:match.start()] + text[match.end():]
+    new_text = text[: match.start()] + text[match.end() :]
     if new_text == text:
         return False
     recipe_path.write_text(new_text, encoding="utf-8")
@@ -555,6 +579,7 @@ def _add_missing_description(
     if info is None:
         try:
             import urllib.request
+
             with urllib.request.urlopen(
                 f"https://pypi.org/pypi/{package_name}/json", timeout=10
             ) as resp:
@@ -573,7 +598,9 @@ def _add_missing_description(
         return False
 
     # Anchor: the local summary line
-    summary_m = re.search(r"^(?P<indent>[ \t]*)summary:[ \t]+.*\r?\n", text, re.MULTILINE)
+    summary_m = re.search(
+        r"^(?P<indent>[ \t]*)summary:[ \t]+.*\r?\n", text, re.MULTILINE
+    )
     if summary_m is None:
         return False
     indent = summary_m.group("indent")
@@ -616,9 +643,7 @@ _CLASSIFIER_TO_SPDX = {
 }
 
 
-def _strip_grayskull_placeholders(
-    recipe_path: Path, info: dict | None = None
-) -> bool:
+def _strip_grayskull_placeholders(recipe_path: Path, info: dict | None = None) -> bool:
     """v8.13.0 — flag/repair grayskull placeholder literals in ``about:`` fields.
 
     Closes C3 from the S3 retro: grayskull emits the literal placeholder
@@ -663,12 +688,14 @@ def _strip_grayskull_placeholders(
                 f"{indent}# TODO: review — grayskull placeholder; replace with meaningful summary\n"
                 f"{m.group(0)}"
             )
-            new_text = new_text[:m.start()] + replacement + new_text[m.end():]
+            new_text = new_text[: m.start()] + replacement + new_text[m.end() :]
             fired = True
             break  # only one summary line
 
     # Pattern 2: empty license + classifier-derived inference
-    license_m = re.search(r"^(?P<indent>[ \t]*)license:[ \t]*\r?\n", new_text, re.MULTILINE)
+    license_m = re.search(
+        r"^(?P<indent>[ \t]*)license:[ \t]*\r?\n", new_text, re.MULTILINE
+    )
     if license_m:
         local_info = info
         if local_info is None:
@@ -684,7 +711,11 @@ def _strip_grayskull_placeholders(
         if inferred:
             indent = license_m.group("indent")
             replacement = f"{indent}license: {inferred}\n"
-            new_text = new_text[:license_m.start()] + replacement + new_text[license_m.end():]
+            new_text = (
+                new_text[: license_m.start()]
+                + replacement
+                + new_text[license_m.end() :]
+            )
             fired = True
 
     # Pattern 3: license_file placeholder
@@ -700,7 +731,7 @@ def _strip_grayskull_placeholders(
                 f"{indent}# TODO: vendor LICENSE per SKILL.md pattern (2) — sdist may have none\n"
                 f"{m.group(0)}"
             )
-            new_text = new_text[:m.start()] + replacement + new_text[m.end():]
+            new_text = new_text[: m.start()] + replacement + new_text[m.end() :]
             fired = True
             break
 
@@ -748,7 +779,7 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
             cwd=str(repo_root),
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
 
         recipe_dir = repo_root / "recipes" / package_name
@@ -774,42 +805,51 @@ def generate_recipe_from_pypi(package_name: str, version: str | None = None) -> 
                 _pypi_info: dict | None = None
                 try:
                     import urllib.request
+
                     with urllib.request.urlopen(
                         f"https://pypi.org/pypi/{package_name}/json", timeout=10
                     ) as resp:
                         _pypi_info = (json.loads(resp.read()) or {}).get("info") or {}
                 except Exception:
                     _pypi_info = None
-                context_python_min_dropped = _clamp_or_drop_context_python_min(recipe_path)
+                context_python_min_dropped = _clamp_or_drop_context_python_min(
+                    recipe_path
+                )
                 description_added = _add_missing_description(
                     recipe_path, package_name, info=_pypi_info
                 )
                 placeholders_stripped = _strip_grayskull_placeholders(
                     recipe_path, info=_pypi_info
                 )
-            return json.dumps({
-                "success": True,
-                "message": f"Recipe generated at {recipe_dir}",
-                "post_processing": {
-                    "python_version_list_form": normalized,
-                    "yaml_language_server_header": schema_header_added,
-                    "host_belt_and_suspenders_stripped": host_stripped,
-                    "run_python_floor_clamped": run_floor_clamped,
-                    "summary_normalized": summary_normalized,
-                    "about_repository_added": repository_added,
-                    "context_python_min_dropped": context_python_min_dropped,
-                    "about_description_added": description_added,
-                    "grayskull_placeholders_stripped": placeholders_stripped,
+            return json.dumps(
+                {
+                    "success": True,
+                    "message": f"Recipe generated at {recipe_dir}",
+                    "post_processing": {
+                        "python_version_list_form": normalized,
+                        "yaml_language_server_header": schema_header_added,
+                        "host_belt_and_suspenders_stripped": host_stripped,
+                        "run_python_floor_clamped": run_floor_clamped,
+                        "summary_normalized": summary_normalized,
+                        "about_repository_added": repository_added,
+                        "context_python_min_dropped": context_python_min_dropped,
+                        "about_description_added": description_added,
+                        "grayskull_placeholders_stripped": placeholders_stripped,
+                    },
+                    "stdout": result.stdout,
                 },
-                "stdout": result.stdout
-            }, indent=2)
+                indent=2,
+            )
         else:
-            return json.dumps({
-                "success": False,
-                "error": "Failed to generate recipe.",
-                "stdout": result.stdout,
-                "stderr": result.stderr
-            }, indent=2)
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": "Failed to generate recipe.",
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                },
+                indent=2,
+            )
 
     except Exception as e:
         return json.dumps({"success": False, "error": str(e)}, indent=2)
@@ -834,8 +874,12 @@ async def update_cve_database(force: bool = False, ctx: Context | None = None) -
     result = _run_script(CVE_MANAGER_SCRIPT, args, timeout=600)
     if ctx:
         success = result.get("success", not result.get("error"))
-        msg = result.get("message", "done") if success else result.get("error", "failed")
-        await ctx.info(f"CVE database update {'succeeded' if success else 'failed'}: {msg}")
+        msg = (
+            result.get("message", "done") if success else result.get("error", "failed")
+        )
+        await ctx.info(
+            f"CVE database update {'succeeded' if success else 'failed'}: {msg}"
+        )
     return json.dumps(result, indent=2)
 
 
@@ -909,10 +953,14 @@ async def trigger_build(
 
     # Guard against concurrent builds
     if _active_build is not None and _active_build.poll() is None:
-        return json.dumps({"error": "A build is already running.", "pid": _active_build.pid})
+        return json.dumps(
+            {"error": "A build is already running.", "pid": _active_build.pid}
+        )
 
     if mode not in ("native", "docker"):
-        return json.dumps({"error": f"Invalid mode '{mode}'. Use 'native' or 'docker'."})
+        return json.dumps(
+            {"error": f"Invalid mode '{mode}'. Use 'native' or 'docker'."}
+        )
 
     for f in (SUMMARY_FILE, BUILD_PID_FILE):
         if f.exists():
@@ -928,8 +976,12 @@ async def trigger_build(
             except RuntimeError as e:
                 return json.dumps({"error": str(e)})
         if recipe is None:
-            return json.dumps({"error": "mode='native' requires a recipe path. "
-                                        "Pass `recipe=` pointing to recipe.yaml or its directory."})
+            return json.dumps(
+                {
+                    "error": "mode='native' requires a recipe path. "
+                    "Pass `recipe=` pointing to recipe.yaml or its directory."
+                }
+            )
 
         recipe_path = Path(recipe)
         if not recipe_path.is_absolute():
@@ -949,7 +1001,9 @@ async def trigger_build(
                     recipe_path = recipe_path / cand
                     break
             else:
-                return json.dumps({"error": f"No recipe.yaml or meta.yaml in {recipe_path}"})
+                return json.dumps(
+                    {"error": f"No recipe.yaml or meta.yaml in {recipe_path}"}
+                )
         else:
             try:
                 recipe_path = validate_recipe_file_path(recipe_path)
@@ -966,45 +1020,67 @@ async def trigger_build(
         # local-recipes pixi env; pass it as an additional --variant-config so
         # ${{ python_min }} and the python matrix resolve like upstream CI.
         # See SKILL.md § Recipe Authoring Gotchas + v6.2.2 CHANGELOG entry.
-        pinning_overlay = repo_root / ".pixi" / "envs" / "local-recipes" / "conda_build_config.yaml"
+        pinning_overlay = (
+            repo_root / ".pixi" / "envs" / "local-recipes" / "conda_build_config.yaml"
+        )
 
         cmd: List[str] = [
-            "pixi", "run", "-e", "local-recipes",
-            "rattler-build", "build",
-            "--recipe", str(recipe_path),
-            "--variant-config", str(variant),
+            "pixi",
+            "run",
+            "-e",
+            "local-recipes",
+            "rattler-build",
+            "build",
+            "--recipe",
+            str(recipe_path),
+            "--variant-config",
+            str(variant),
         ]
         if pinning_overlay.exists():
             cmd.extend(["--variant-config", str(pinning_overlay)])
         cmd.extend(["--output-dir", str(repo_root / "build_artifacts" / config)])
 
         _active_build = subprocess.Popen(cmd, cwd=str(repo_root))
-        invocation_label = f"native rattler-build (config={config}, recipe={recipe_path.parent.name})"
+        invocation_label = (
+            f"native rattler-build (config={config}, recipe={recipe_path.parent.name})"
+        )
 
     else:  # docker
         if config is None:
-            return json.dumps({"error": "mode='docker' requires an explicit config "
-                                        "(e.g., 'linux64'). No auto-detection in Docker mode."})
+            return json.dumps(
+                {
+                    "error": "mode='docker' requires an explicit config "
+                    "(e.g., 'linux64'). No auto-detection in Docker mode."
+                }
+            )
         build_script = repo_root / "build-locally.py"
         if not build_script.exists():
-            return json.dumps({"error": f"build-locally.py not found at {build_script}"})
-        _active_build = subprocess.Popen([_PYTHON, str(build_script), config], cwd=str(repo_root))
+            return json.dumps(
+                {"error": f"build-locally.py not found at {build_script}"}
+            )
+        _active_build = subprocess.Popen(
+            [_PYTHON, str(build_script), config], cwd=str(repo_root)
+        )
         invocation_label = f"Docker build via build-locally.py (config={config})"
 
     BUILD_PID_FILE.write_text(str(_active_build.pid))
 
     started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     if ctx:
-        await ctx.info(f"Build started: {invocation_label} (PID {_active_build.pid}). "
-                       f"Poll get_build_summary() to check progress.")
-    return json.dumps({
-        "status": "Build triggered",
-        "mode": mode,
-        "config": config,
-        "recipe": str(recipe_path) if recipe_path is not None else None,
-        "pid": _active_build.pid,
-        "started_at": started_at,
-    })
+        await ctx.info(
+            f"Build started: {invocation_label} (PID {_active_build.pid}). "
+            f"Poll get_build_summary() to check progress."
+        )
+    return json.dumps(
+        {
+            "status": "Build triggered",
+            "mode": mode,
+            "config": config,
+            "recipe": str(recipe_path) if recipe_path is not None else None,
+            "pid": _active_build.pid,
+            "started_at": started_at,
+        }
+    )
 
 
 @mcp.tool()
@@ -1015,9 +1091,15 @@ def get_build_summary() -> str:
     if not SUMMARY_FILE.exists():
         still_running = _active_build is not None and _active_build.poll() is None
         pid = _active_build.pid if _active_build else None
-        return json.dumps({"status": "in_progress" if still_running else "unknown",
-                           "message": "Build still running." if still_running else "No build summary found — build may have crashed.",
-                           "pid": pid})
+        return json.dumps(
+            {
+                "status": "in_progress" if still_running else "unknown",
+                "message": "Build still running."
+                if still_running
+                else "No build summary found — build may have crashed.",
+                "pid": pid,
+            }
+        )
 
     with open(SUMMARY_FILE) as f:
         summary = json.load(f)
@@ -1088,7 +1170,9 @@ def enrich_from_feedstock(recipe_path: str, dry_run: bool = False) -> str:
 
 
 @mcp.tool()
-def get_feedstock_context(pkg_name: str, max_open: int = 50, max_closed: int = 10, no_cache: bool = False) -> str:
+def get_feedstock_context(
+    pkg_name: str, max_open: int = 50, max_closed: int = 10, no_cache: bool = False
+) -> str:
     """Surface open and recent-closed issues from an existing conda-forge feedstock as planning context.
 
     v6.4 implementation of item 3c. Non-blocking — returns issues for the agent
@@ -1347,7 +1431,9 @@ def update_recipe_from_github(
 
 
 @mcp.tool()
-def check_github_version(recipe_path: str | None = None, github_repo: str | None = None) -> str:
+def check_github_version(
+    recipe_path: str | None = None, github_repo: str | None = None
+) -> str:
     """Check the latest GitHub release for a recipe or a specific GitHub repo.
 
     Complements update_recipe (PyPI-only) for packages whose canonical source is GitHub.
@@ -1391,26 +1477,32 @@ def migrate_to_v1(recipe_path: str) -> str:
     recipe_yaml = recipe_dir / "recipe.yaml"
 
     if not meta_yaml.exists():
-        return json.dumps({
-            "success": False,
-            "error": f"No meta.yaml found at {meta_yaml}. This tool only converts meta.yaml (v0) recipes.",
-        })
+        return json.dumps(
+            {
+                "success": False,
+                "error": f"No meta.yaml found at {meta_yaml}. This tool only converts meta.yaml (v0) recipes.",
+            }
+        )
 
     if recipe_yaml.exists():
-        return json.dumps({
-            "success": False,
-            "error": (
-                f"recipe.yaml already exists at {recipe_yaml}. "
-                "Remove it first if you want to regenerate from meta.yaml."
-            ),
-        })
+        return json.dumps(
+            {
+                "success": False,
+                "error": (
+                    f"recipe.yaml already exists at {recipe_yaml}. "
+                    "Remove it first if you want to regenerate from meta.yaml."
+                ),
+            }
+        )
 
     feedrattler_bin = shutil.which("feedrattler")
     if not feedrattler_bin:
-        return json.dumps({
-            "success": False,
-            "error": "feedrattler not found on PATH. Ensure the local-recipes pixi environment is active.",
-        })
+        return json.dumps(
+            {
+                "success": False,
+                "error": "feedrattler not found on PATH. Ensure the local-recipes pixi environment is active.",
+            }
+        )
 
     try:
         result = subprocess.run(
@@ -1421,62 +1513,70 @@ def migrate_to_v1(recipe_path: str) -> str:
             timeout=60,
         )
     except subprocess.TimeoutExpired:
-        return json.dumps({"success": False, "error": "feedrattler timed out after 60s."})
+        return json.dumps(
+            {"success": False, "error": "feedrattler timed out after 60s."}
+        )
     except Exception as e:
         return json.dumps({"success": False, "error": str(e)})
 
     if recipe_yaml.exists():
-        return json.dumps({
-            "success": True,
-            "message": (
-                f"Converted {meta_yaml} → {recipe_yaml}. "
-                "Run validate_recipe and optimize_recipe to verify quality. "
-                "Remove meta.yaml only after review."
-            ),
-            "recipe_yaml": str(recipe_yaml),
-            "meta_yaml_preserved": str(meta_yaml),
+        return json.dumps(
+            {
+                "success": True,
+                "message": (
+                    f"Converted {meta_yaml} → {recipe_yaml}. "
+                    "Run validate_recipe and optimize_recipe to verify quality. "
+                    "Remove meta.yaml only after review."
+                ),
+                "recipe_yaml": str(recipe_yaml),
+                "meta_yaml_preserved": str(meta_yaml),
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+            },
+            indent=2,
+        )
+
+    return json.dumps(
+        {
+            "success": False,
+            "error": "feedrattler ran but recipe.yaml was not created. Check stdout/stderr.",
             "stdout": result.stdout,
             "stderr": result.stderr,
-        }, indent=2)
-
-    return json.dumps({
-        "success": False,
-        "error": "feedrattler ran but recipe.yaml was not created. Check stdout/stderr.",
-        "stdout": result.stdout,
-        "stderr": result.stderr,
-        "exit_code": result.returncode,
-    }, indent=2)
+            "exit_code": result.returncode,
+        },
+        indent=2,
+    )
 
 
 # ── cf_atlas tool surface (v6.9 / v6.10 phases) ──────────────────────────────
 # Each MCP tool below thin-wraps the corresponding canonical CLI in
 # .claude/skills/conda-forge-expert/scripts/. The CLIs all accept --json.
 
-ATLAS_STALENESS_SCRIPT     = SCRIPTS_DIR / "staleness_report.py"
-ATLAS_FEEDSTOCK_HEALTH     = SCRIPTS_DIR / "feedstock_health.py"
-ATLAS_WHODEPENDS_SCRIPT    = SCRIPTS_DIR / "whodepends.py"
-ATLAS_BEHIND_UPSTREAM      = SCRIPTS_DIR / "behind_upstream.py"
-ATLAS_CVE_WATCHER          = SCRIPTS_DIR / "cve_watcher.py"
-ATLAS_VERSION_DOWNLOADS    = SCRIPTS_DIR / "version_downloads.py"
-ATLAS_RELEASE_CADENCE      = SCRIPTS_DIR / "release_cadence.py"
-ATLAS_FIND_ALTERNATIVE     = SCRIPTS_DIR / "find_alternative.py"
-ATLAS_ADOPTION_STAGE       = SCRIPTS_DIR / "adoption_stage.py"
-ATLAS_DETAIL_CF_ATLAS      = SCRIPTS_DIR / "detail_cf_atlas.py"
+ATLAS_STALENESS_SCRIPT = SCRIPTS_DIR / "staleness_report.py"
+ATLAS_FEEDSTOCK_HEALTH = SCRIPTS_DIR / "feedstock_health.py"
+ATLAS_WHODEPENDS_SCRIPT = SCRIPTS_DIR / "whodepends.py"
+ATLAS_BEHIND_UPSTREAM = SCRIPTS_DIR / "behind_upstream.py"
+ATLAS_CVE_WATCHER = SCRIPTS_DIR / "cve_watcher.py"
+ATLAS_VERSION_DOWNLOADS = SCRIPTS_DIR / "version_downloads.py"
+ATLAS_RELEASE_CADENCE = SCRIPTS_DIR / "release_cadence.py"
+ATLAS_FIND_ALTERNATIVE = SCRIPTS_DIR / "find_alternative.py"
+ATLAS_ADOPTION_STAGE = SCRIPTS_DIR / "adoption_stage.py"
+ATLAS_DETAIL_CF_ATLAS = SCRIPTS_DIR / "detail_cf_atlas.py"
 ATLAS_PYPI_ONLY_CANDIDATES = SCRIPTS_DIR / "pypi_only_candidates.py"
 ATLAS_PYPI_INTELLIGENCE = SCRIPTS_DIR / "pypi_intelligence.py"
 # cyclonedx-universe-inventory Wave A/S1 — purl + mapping exporter.
-ATLAS_EXPORT_PURLS         = SCRIPTS_DIR / "export_purls.py"
+ATLAS_EXPORT_PURLS = SCRIPTS_DIR / "export_purls.py"
 # cyclonedx-universe-inventory Wave B/S3 — full-universe SBOM emitter.
-ATLAS_UNIVERSE_SBOM        = SCRIPTS_DIR / "universe_sbom.py"
+ATLAS_UNIVERSE_SBOM = SCRIPTS_DIR / "universe_sbom.py"
 # cyclonedx-universe-inventory Wave C/S5 — inventory gap/version-lag matcher.
-ATLAS_INVENTORY_MATCH      = SCRIPTS_DIR / "inventory_match.py"
+ATLAS_INVENTORY_MATCH = SCRIPTS_DIR / "inventory_match.py"
 # cyclonedx-universe-inventory Wave D/S8 — the 2027-2030 window scorecard.
-ATLAS_RECOMMEND_2027       = SCRIPTS_DIR / "recommend_2027.py"
-ATLAS_SCAN_PROJECT         = SCRIPTS_DIR / "scan_project.py"
+ATLAS_RECOMMEND_2027 = SCRIPTS_DIR / "recommend_2027.py"
+ATLAS_SCAN_PROJECT = SCRIPTS_DIR / "scan_project.py"
 # v8.19.0 Phase F+ Wave 3 — per-platform / per-Python / per-channel breakdowns.
-ATLAS_PLATFORM_BREAKDOWN   = SCRIPTS_DIR / "platform_breakdown.py"
-ATLAS_PYVER_BREAKDOWN      = SCRIPTS_DIR / "pyver_breakdown.py"
-ATLAS_CHANNEL_SPLIT        = SCRIPTS_DIR / "channel_split.py"
+ATLAS_PLATFORM_BREAKDOWN = SCRIPTS_DIR / "platform_breakdown.py"
+ATLAS_PYVER_BREAKDOWN = SCRIPTS_DIR / "pyver_breakdown.py"
+ATLAS_CHANNEL_SPLIT = SCRIPTS_DIR / "channel_split.py"
 
 
 @mcp.tool()
@@ -1731,8 +1831,13 @@ def cve_watcher(
     'K' (KEV-listed), 'T' (Total)}. only_increases=True to filter to
     packages where the count went up."""
     args = [
-        "--json", "--since-days", str(since_days), "--severity", severity,
-        "--limit", str(limit),
+        "--json",
+        "--since-days",
+        str(since_days),
+        "--severity",
+        severity,
+        "--limit",
+        str(limit),
     ]
     if maintainer:
         args.extend(["--maintainer", maintainer])
@@ -1877,19 +1982,27 @@ def universe_sbom(
     vuln-count properties. Returns the run summary (counts, path, bytes,
     wall time). Regenerate after every atlas rebuild."""
     if format not in ("cyclonedx", "spdx"):
-        return json.dumps({"error": f"format must be cyclonedx or spdx, got {format!r}"})
+        return json.dumps(
+            {"error": f"format must be cyclonedx or spdx, got {format!r}"}
+        )
     if (conda_only and pypi_only) or (mapped_only and pypi_only):
-        return json.dumps({"error": "contradictory slice flags: "
-                           "conda_only/mapped_only cannot combine with pypi_only"})
+        return json.dumps(
+            {
+                "error": "contradictory slice flags: "
+                "conda_only/mapped_only cannot combine with pypi_only"
+            }
+        )
     args = ["--json", "--format", format]
     if out:
         args += ["--out", out]
-    for flag, on in (("--actionable-only", actionable_only),
-                     ("--mapped-only", mapped_only),
-                     ("--conda-only", conda_only),
-                     ("--pypi-only", pypi_only),
-                     ("--with-vulns", with_vulns),
-                     ("--allow-stale", allow_stale)):
+    for flag, on in (
+        ("--actionable-only", actionable_only),
+        ("--mapped-only", mapped_only),
+        ("--conda-only", conda_only),
+        ("--pypi-only", pypi_only),
+        ("--with-vulns", with_vulns),
+        ("--allow-stale", allow_stale),
+    ):
         if on:
             args.append(flag)
     # A full-universe emit (hundreds of thousands of components — measured
@@ -1946,8 +2059,7 @@ def inventory_match(
     # rc 2 is the policy-gate FAIL verdict, not an execution error —
     # _run_script parses the stdout JSON regardless of return code, and the
     # result carries `policy.violations` either way.
-    return json.dumps(_run_script(ATLAS_INVENTORY_MATCH, args, timeout=600),
-                      indent=2)
+    return json.dumps(_run_script(ATLAS_INVENTORY_MATCH, args, timeout=600), indent=2)
 
 
 @mcp.tool()
@@ -1997,8 +2109,7 @@ def recommend_2027(
     if allow_stale:
         args.append("--allow-stale")
     # scoring a large inventory re-queries the atlas per package
-    return json.dumps(_run_script(ATLAS_RECOMMEND_2027, args, timeout=600),
-                      indent=2)
+    return json.dumps(_run_script(ATLAS_RECOMMEND_2027, args, timeout=600), indent=2)
 
 
 @mcp.tool()
@@ -2160,7 +2271,7 @@ def _validate_atlas_fragments(
 def query_atlas(
     where: str | None = None,
     select: str = "conda_name, latest_conda_version, total_downloads, "
-                  "vuln_critical_affecting_current, latest_status",
+    "vuln_critical_affecting_current, latest_status",
     order_by: str = "total_downloads DESC",
     limit: int = 25,
 ) -> str:
@@ -2184,7 +2295,9 @@ def query_atlas(
 
     db_path = (
         Path(__file__).resolve().parent.parent
-        / "data" / "conda-forge-expert" / "cf_atlas.db"
+        / "data"
+        / "conda-forge-expert"
+        / "cf_atlas.db"
     )
     if not db_path.exists():
         return json.dumps({"error": f"cf_atlas.db missing at {db_path}"})
@@ -2304,7 +2417,11 @@ def env_inspect(
             return json.dumps({"error": "mode=diff requires diff_to=OTHER_ENV"})
         args.extend(["--diff", diff_to])
     else:
-        return json.dumps({"error": f"unknown mode '{mode}'. Valid: default/audit/freshness/security/bus_factor/licenses/sbom/diff"})
+        return json.dumps(
+            {
+                "error": f"unknown mode '{mode}'. Valid: default/audit/freshness/security/bus_factor/licenses/sbom/diff"
+            }
+        )
 
     if include:
         args.extend(["--include", include])
@@ -2368,8 +2485,7 @@ def scan_project(
             args.extend(["--target-license", target_license])
     if enrich_vulns_from_atlas:
         args.append("--enrich-vulns-from-atlas")
-    return json.dumps(_run_script(ATLAS_SCAN_PROJECT, args, timeout=600),
-                      indent=2)
+    return json.dumps(_run_script(ATLAS_SCAN_PROJECT, args, timeout=600), indent=2)
 
 
 if __name__ == "__main__":

@@ -255,6 +255,7 @@ class LicenseVerdict(StrEnum):
     DENIED = "denied"
     UNKNOWN = "unknown"
 
+
 class CurrencyVerdict(StrEnum):
     SUPPORTED = "supported"
     EOL = "eol"
@@ -413,17 +414,25 @@ loop with two new parallel blocks:
 
 ```python
 if not component.license_covered:
-    derived.append((
-        Status.INDETERMINATE, "uncovered-license", AXIS_LICENSE,
-        f"{component.name}: not license-covered -- "
-        "license-axis cleanliness cannot be claimed",
-    ))
+    derived.append(
+        (
+            Status.INDETERMINATE,
+            "uncovered-license",
+            AXIS_LICENSE,
+            f"{component.name}: not license-covered -- "
+            "license-axis cleanliness cannot be claimed",
+        )
+    )
 if not component.currency_covered:
-    derived.append((
-        Status.INDETERMINATE, "uncovered-currency", AXIS_CURRENCY,
-        f"{component.name}: not currency-covered -- "
-        "currency-axis cleanliness cannot be claimed",
-    ))
+    derived.append(
+        (
+            Status.INDETERMINATE,
+            "uncovered-currency",
+            AXIS_CURRENCY,
+            f"{component.name}: not currency-covered -- "
+            "currency-axis cleanliness cannot be claimed",
+        )
+    )
 ```
 
 **Critical: the reason token must be axis-qualified (`uncovered-license`/
@@ -648,9 +657,9 @@ shipped precedent, re-verified this session inside
 
 ```python
 if finding.id.startswith("vuln:") and finding.axis != AXIS_VULNERABILITY:
-    raise ValueError(...)          # models.py:432-436
+    raise ValueError(...)  # models.py:432-436
 if finding.id.startswith("hygiene:") and finding.axis != AXIS_HYGIENE:
-    raise ValueError(...)          # models.py:437-441
+    raise ValueError(...)  # models.py:437-441
 ```
 
 extends with two new parallel clauses (new `AXIS_LICENSE = "license"` /

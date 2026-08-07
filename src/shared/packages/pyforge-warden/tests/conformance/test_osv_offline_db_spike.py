@@ -69,6 +69,7 @@ FIXTURE_ADVISORY_ID = "PDOS-FIXTURE-0001"
 FIXTURE_PACKAGE = "pdos-vuln-fixture"
 FIXTURE_CVSS_VECTOR = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
 
+
 def _osv_scanner_bin() -> str:
     """Return the ``osv-scanner`` path, HARD-FAILING (never skipping) if it is
     not on PATH — the engine is a provisioned conda run-dep (NFR-C1)."""
@@ -120,7 +121,9 @@ class OsvRun:
         ]
 
     def vulnerabilities(self) -> list[dict]:
-        return [vuln for pkg in self._packages() for vuln in pkg.get("vulnerabilities", [])]
+        return [
+            vuln for pkg in self._packages() for vuln in pkg.get("vulnerabilities", [])
+        ]
 
     def vulnerability_ids(self) -> list[str]:
         return [vuln["id"] for vuln in self.vulnerabilities()]
@@ -180,7 +183,9 @@ def _run_osv_offline(
             check=False,  # exit code is content, never a raise.
         )
     except subprocess.TimeoutExpired:  # pragma: no cover - safety net
-        pytest.fail("osv-scanner exceeded the 120s bound (should be sub-second offline)")
+        pytest.fail(
+            "osv-scanner exceeded the 120s bound (should be sub-second offline)"
+        )
 
     raw_output: str | None = None
     document: dict | None = None
@@ -396,7 +401,10 @@ def test_present_but_empty_db_false_greens_and_a_nonemptiness_preflight_catches_
     [
         (b"{}", "empty object (no id, no affected)"),
         (b"{ not valid json ]", "malformed JSON"),
-        (b'{"id": "PDOS-FIXTURE-0001"}', "valid JSON but no affected[] (truncated advisory)"),
+        (
+            b'{"id": "PDOS-FIXTURE-0001"}',
+            "valid JSON but no affected[] (truncated advisory)",
+        ),
     ],
 )
 def test_present_but_content_corrupt_db_false_greens_and_a_content_preflight_catches_it(
@@ -553,7 +561,10 @@ def test_builder_rejects_case_variant_json_extension(tmp_path):
     records = tmp_path / "records"
     records.mkdir()
     # A valid record the exact glob WOULD pick up...
-    shutil.copy(OSV_RECORDS_DIR / f"{FIXTURE_ADVISORY_ID}.json", records / f"{FIXTURE_ADVISORY_ID}.json")
+    shutil.copy(
+        OSV_RECORDS_DIR / f"{FIXTURE_ADVISORY_ID}.json",
+        records / f"{FIXTURE_ADVISORY_ID}.json",
+    )
     # ...plus a case-variant one it would silently skip.
     (records / "PDOS-0002.JSON").write_text("{}", encoding="utf-8")
     with pytest.raises(ValueError, match="non-canonical .json"):

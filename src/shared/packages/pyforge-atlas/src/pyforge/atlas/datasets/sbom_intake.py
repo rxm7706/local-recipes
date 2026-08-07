@@ -80,10 +80,14 @@ def _dep(
 # the operator is REQUIRED to capture a version and the version MUST start with a
 # digit — so an extras spec (`requests[security]>=2.0`) or a direct-URL ref
 # (`foo @ https://…`) yields version=None, never a garbage purl (Gemini/indep B7).
-_REQ_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:(?:==|>=|<=|~=|!=|<|>)\s*([0-9][^\s;,#]*))?")
+_REQ_RE = re.compile(
+    r"^([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:(?:==|>=|<=|~=|!=|<|>)\s*([0-9][^\s;,#]*))?"
+)
 
 
-def parse_requirements_txt(text: str, manifest: str = "requirements.txt") -> list[dict[str, Any]]:
+def parse_requirements_txt(
+    text: str, manifest: str = "requirements.txt"
+) -> list[dict[str, Any]]:
     """``requirements.txt`` — PEP 508 lines (pypi). Editable/URL/option lines skipped."""
     deps: list[dict[str, Any]] = []
     for raw in normalize_ws(text).splitlines():
@@ -96,7 +100,9 @@ def parse_requirements_txt(text: str, manifest: str = "requirements.txt") -> lis
     return deps
 
 
-def parse_pip_list_text(text: str, manifest: str = "pip-list.txt") -> list[dict[str, Any]]:
+def parse_pip_list_text(
+    text: str, manifest: str = "pip-list.txt"
+) -> list[dict[str, Any]]:
     """``pip list`` / ``pip freeze`` / ``pip list --format=json`` (pypi). S5a intake."""
     stripped = normalize_ws(text).lstrip()
     if stripped.startswith("["):
@@ -114,7 +120,9 @@ def parse_pip_list_text(text: str, manifest: str = "pip-list.txt") -> list[dict[
         line = raw.strip()
         if not line or line.startswith(("#", "-")):
             continue
-        if re.match(r"^Package\s+Version", line, re.IGNORECASE) or re.match(r"^-+(\s+-+)*$", line):
+        if re.match(r"^Package\s+Version", line, re.IGNORECASE) or re.match(
+            r"^-+(\s+-+)*$", line
+        ):
             continue
         m = re.match(r"^([A-Za-z0-9._-]+)==([^\s;]+)", line)  # freeze
         if m:
@@ -126,7 +134,9 @@ def parse_pip_list_text(text: str, manifest: str = "pip-list.txt") -> list[dict[
     return deps
 
 
-def parse_conda_list_text(text: str, manifest: str = "conda-list.txt") -> list[dict[str, Any]]:
+def parse_conda_list_text(
+    text: str, manifest: str = "conda-list.txt"
+) -> list[dict[str, Any]]:
     """``conda list`` (default cols / ``--export`` / ``--json``) — conda; rows whose
     channel is ``pypi`` are pip-installed (ecosystem=pypi). S5a intake."""
     stripped = normalize_ws(text).lstrip()
@@ -165,7 +175,9 @@ def parse_conda_list_text(text: str, manifest: str = "conda-list.txt") -> list[d
     return deps
 
 
-def parse_environment_yml(text: str, manifest: str = "environment.yml") -> list[dict[str, Any]]:
+def parse_environment_yml(
+    text: str, manifest: str = "environment.yml"
+) -> list[dict[str, Any]]:
     """``environment.yml`` — the ``dependencies:`` list (conda), incl. a nested
     ``- pip:`` block (pypi). Kept intentionally light (line-based, no full YAML dep)."""
     deps: list[dict[str, Any]] = []
@@ -178,7 +190,11 @@ def parse_environment_yml(text: str, manifest: str = "environment.yml") -> list[
         if re.match(r"^dependencies:\s*$", stripped):
             in_deps = True
             continue
-        if in_deps and re.match(r"^[A-Za-z0-9_]+:\s*$", stripped) and not stripped.startswith("-"):
+        if (
+            in_deps
+            and re.match(r"^[A-Za-z0-9_]+:\s*$", stripped)
+            and not stripped.startswith("-")
+        ):
             in_deps = in_pip = False
             continue
         if not in_deps:
@@ -186,17 +202,23 @@ def parse_environment_yml(text: str, manifest: str = "environment.yml") -> list[
         if re.match(r"^-\s*pip:\s*$", stripped):
             in_pip = True
             continue
-        m = re.match(r"^-\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:[=<>!~]+\s*([^\s;#]+))?", stripped)
+        m = re.match(
+            r"^-\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:[=<>!~]+\s*([^\s;#]+))?", stripped
+        )
         if m and m.group(1) and m.group(1) not in ("python", "pip"):
             eco = "pypi" if in_pip else "conda"
             deps.append(_dep(m.group(1), m.group(2) or None, eco, manifest))
     return deps
 
 
-_TOML_DEP_RE = re.compile(r'^\s*"?([A-Za-z0-9][A-Za-z0-9._-]*)"?\s*=\s*"?[<>=~!*^]*\s*([0-9][^"\s,]*)?')
+_TOML_DEP_RE = re.compile(
+    r'^\s*"?([A-Za-z0-9][A-Za-z0-9._-]*)"?\s*=\s*"?[<>=~!*^]*\s*([0-9][^"\s,]*)?'
+)
 
 
-def _parse_toml_tables(text: str, tables: tuple[str, ...], ecosystem: str, manifest: str) -> list[dict[str, Any]]:
+def _parse_toml_tables(
+    text: str, tables: tuple[str, ...], ecosystem: str, manifest: str
+) -> list[dict[str, Any]]:
     """Very small TOML table scanner (dependencies-only) — no toml dependency; good
     enough for pixi.toml ``[dependencies]`` / pyproject ``[project] dependencies``."""
     deps: list[dict[str, Any]] = []
@@ -215,12 +237,18 @@ def _parse_toml_tables(text: str, tables: tuple[str, ...], ecosystem: str, manif
 
 
 def parse_pixi_toml(text: str, manifest: str = "pixi.toml") -> list[dict[str, Any]]:
-    conda = _parse_toml_tables(text, ("dependencies", "tool.pixi.dependencies"), "conda", manifest)
-    pypi = _parse_toml_tables(text, ("pypi-dependencies", "tool.pixi.pypi-dependencies"), "pypi", manifest)
+    conda = _parse_toml_tables(
+        text, ("dependencies", "tool.pixi.dependencies"), "conda", manifest
+    )
+    pypi = _parse_toml_tables(
+        text, ("pypi-dependencies", "tool.pixi.pypi-dependencies"), "pypi", manifest
+    )
     return conda + pypi
 
 
-def parse_pyproject_toml(text: str, manifest: str = "pyproject.toml") -> list[dict[str, Any]]:
+def parse_pyproject_toml(
+    text: str, manifest: str = "pyproject.toml"
+) -> list[dict[str, Any]]:
     """PEP 621 ``[project] dependencies`` array (pypi)."""
     deps: list[dict[str, Any]] = []
     in_deps = False
@@ -244,11 +272,15 @@ def _purl_ecosystem(purl: str) -> str:
     """Map a purl ``pkg:<type>/...`` to the matcher ecosystem (mirrors the shipped
     ``inventory_match.annotate_sbom`` classification)."""
     m = re.match(r"^pkg:([A-Za-z0-9.+-]+)/", purl or "")
-    t = (m.group(1).lower() if m else "")
-    return {"pypi": "pypi", "conda": "conda"}.get(t, "npm" if t == "npm" else t or "generic")
+    t = m.group(1).lower() if m else ""
+    return {"pypi": "pypi", "conda": "conda"}.get(
+        t, "npm" if t == "npm" else t or "generic"
+    )
 
 
-def parse_cyclonedx(doc: dict[str, Any], manifest: str = "sbom.cdx.json") -> list[dict[str, Any]]:
+def parse_cyclonedx(
+    doc: dict[str, Any], manifest: str = "sbom.cdx.json"
+) -> list[dict[str, Any]]:
     """CycloneDX SBOM passthrough — PRESERVE each component's ``cfe:*`` properties
     and ``purl`` (incl. ``?channel=conda-forge``) VERBATIM (AD-10, never stripped)."""
     deps: list[dict[str, Any]] = []
@@ -271,7 +303,9 @@ def parse_cyclonedx(doc: dict[str, Any], manifest: str = "sbom.cdx.json") -> lis
     return deps
 
 
-def parse_spdx(doc: dict[str, Any], manifest: str = "sbom.spdx.json") -> list[dict[str, Any]]:
+def parse_spdx(
+    doc: dict[str, Any], manifest: str = "sbom.spdx.json"
+) -> list[dict[str, Any]]:
     """SPDX SBOM passthrough — deps from ``packages[]`` + purl ``externalRefs``."""
     deps: list[dict[str, Any]] = []
     for pkg in doc.get("packages") or []:
@@ -284,7 +318,9 @@ def parse_spdx(doc: dict[str, Any], manifest: str = "sbom.spdx.json") -> list[di
                 purl = ref.get("referenceLocator")
                 break
         eco = _purl_ecosystem(purl) if purl else "pypi"
-        deps.append(_dep(str(name), pkg.get("versionInfo") or None, eco, manifest, purl=purl))
+        deps.append(
+            _dep(str(name), pkg.get("versionInfo") or None, eco, manifest, purl=purl)
+        )
     return deps
 
 
@@ -355,14 +391,26 @@ def parse_intake(
         if not isinstance(doc, dict):
             return {"format": detected, "deps": [], "passthrough": True}
         if detected == "cyclonedx":
-            return {"format": "cyclonedx", "deps": parse_cyclonedx(doc, filename or "sbom.cdx.json"), "passthrough": True}
-        return {"format": "spdx", "deps": parse_spdx(doc, filename or "sbom.spdx.json"), "passthrough": True}
+            return {
+                "format": "cyclonedx",
+                "deps": parse_cyclonedx(doc, filename or "sbom.cdx.json"),
+                "passthrough": True,
+            }
+        return {
+            "format": "spdx",
+            "deps": parse_spdx(doc, filename or "sbom.spdx.json"),
+            "passthrough": True,
+        }
     text = raw if isinstance(raw, str) else json.dumps(raw)
     parser = _TEXT_PARSERS.get(detected)
     if parser is None:
         # unknown text → try pip-list heuristics (never crash)
         parser = parse_pip_list_text
-    return {"format": detected, "deps": parser(text, filename or detected), "passthrough": False}
+    return {
+        "format": detected,
+        "deps": parser(text, filename or detected),
+        "passthrough": False,
+    }
 
 
 # ── the datasets (IO owners) ──────────────────────────────────────────────────
@@ -391,11 +439,15 @@ class SbomIntakeDataset(AbstractDataset):
 
     def load(self) -> dict[str, Any]:
         path = Path(self._filepath)
-        raw = path.read_text(encoding="utf-8", errors="replace")  # dataset-owned file IO (not denylisted)
+        raw = path.read_text(
+            encoding="utf-8", errors="replace"
+        )  # dataset-owned file IO (not denylisted)
         return parse_intake(raw, filename=path.name, fmt=self._format)
 
     def save(self, data: Any) -> None:
-        raise NotImplementedError(f"{type(self).__name__} is a read-only intake source; it is never saved to.")
+        raise NotImplementedError(
+            f"{type(self).__name__} is a read-only intake source; it is never saved to."
+        )
 
     def _describe(self) -> dict[str, Any]:
         return {"filepath": self._filepath, "format": self._format or "auto"}
@@ -451,7 +503,12 @@ class TransitiveResolverDataset(AbstractDataset):
             }
 
     def save(self, data: Any) -> None:
-        raise NotImplementedError(f"{type(self).__name__} is a read-only resolver source; it is never saved to.")
+        raise NotImplementedError(
+            f"{type(self).__name__} is a read-only resolver source; it is never saved to."
+        )
 
     def _describe(self) -> dict[str, Any]:
-        return {"filepath": self._filepath, "resolver": "injected" if self._resolver else "offline(None)"}
+        return {
+            "filepath": self._filepath,
+            "resolver": "injected" if self._resolver else "offline(None)",
+        }

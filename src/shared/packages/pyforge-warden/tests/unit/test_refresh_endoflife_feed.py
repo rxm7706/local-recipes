@@ -19,9 +19,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
 
 def _load_refresh_endoflife_feed():
     module_path = _SCRIPTS_DIR / "refresh_endoflife_feed.py"
-    spec = importlib.util.spec_from_file_location(
-        "refresh_endoflife_feed", module_path
-    )
+    spec = importlib.util.spec_from_file_location("refresh_endoflife_feed", module_path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -104,7 +102,9 @@ def test_fetch_product_cycles_rejects_a_non_array_top_level(
 ):
     monkeypatch.setattr(
         "urllib.request.urlopen",
-        lambda *a, **k: _FakeResponse(json.dumps({"unexpected": "shape"}).encode("utf-8")),
+        lambda *a, **k: _FakeResponse(
+            json.dumps({"unexpected": "shape"}).encode("utf-8")
+        ),
     )
     with pytest.raises(ValueError, match="expected shape"):
         refresh_endoflife_feed.fetch_product_cycles("python")
@@ -161,9 +161,7 @@ def test_fetch_product_cycles_preserves_the_lexical_form_of_numeric_cycles(
     misroute (review finding, 2026-07-23). Raw JSON is used deliberately:
     ``json.dumps`` of a Python float would itself round-trip the value."""
     raw = b'[{"cycle": 3.10, "releaseDate": "2021-10-04", "eol": "2026-10-31", "latest": 3.10}]'
-    monkeypatch.setattr(
-        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(raw)
-    )
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: _FakeResponse(raw))
     (cycle_record,) = refresh_endoflife_feed.fetch_product_cycles("python")
     assert cycle_record["cycle"] == "3.10"
     assert cycle_record["latest"] == "3.10"
@@ -206,7 +204,9 @@ def test_refresh_aborts_the_whole_run_on_one_products_failure(
     cache_dir = tmp_path / "endoflife-cache"
 
     with pytest.raises(urllib.error.URLError):
-        refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=["python", "django"])
+        refresh_endoflife_feed.refresh(
+            str(cache_dir), product_slugs=["python", "django"]
+        )
 
     assert not (cache_dir / "endoflife" / "endoflife_snapshot.json").exists()
 
@@ -225,9 +225,7 @@ def test_refresh_reports_products_dropped_by_a_narrower_fetch_set(
     from pyforge.warden.feeds import write_endoflife_cache
 
     cache_dir = tmp_path / "cache"
-    write_endoflife_cache(
-        cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES}
-    )
+    write_endoflife_cache(cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES})
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
@@ -343,9 +341,7 @@ def test_main_warns_on_stderr_when_a_narrower_run_drops_products(
     from pyforge.warden.feeds import write_endoflife_cache
 
     cache_dir = tmp_path / "cache"
-    write_endoflife_cache(
-        cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES}
-    )
+    write_endoflife_cache(cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES})
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),

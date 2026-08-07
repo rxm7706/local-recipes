@@ -137,7 +137,7 @@ def normalize_url(value):
     s = str(value).strip().lower()
     for scheme in ("https://", "http://"):
         if s.startswith(scheme):
-            s = s[len(scheme):]
+            s = s[len(scheme) :]
             break
     s = s.rstrip("/")
     if s.endswith(".git"):
@@ -175,7 +175,7 @@ def derive_name(target):
     s = str(target).strip().lower()
     for scheme in ("https://", "http://"):
         if s.startswith(scheme):
-            s = s[len(scheme):]
+            s = s[len(scheme) :]
             break
     s = s.rstrip("/")
     if s.endswith(".git"):
@@ -211,8 +211,7 @@ def compute_matches(skills, target):
             and normalize_url(source_repo) == norm_target
         )
         name_match = (
-            bool(derived)
-            and str(entry.get("name") or "").strip().lower() == derived
+            bool(derived) and str(entry.get("name") or "").strip().lower() == derived
         )
         if not (url_match or name_match):
             continue
@@ -222,17 +221,21 @@ def compute_matches(skills, target):
             reason = "url"
         else:
             reason = "name"
-        matches.append({
-            "name": entry.get("name"),
-            "active_version": entry.get("active_version"),
-            "source_repo": source_repo,
-            "active_path": entry.get("active_path"),
-            "match_reason": reason,
-        })
+        matches.append(
+            {
+                "name": entry.get("name"),
+                "active_version": entry.get("active_version"),
+                "source_repo": source_repo,
+                "active_path": entry.get("active_path"),
+                "match_reason": reason,
+            }
+        )
     return matches
 
 
-def scan_inventory(skills_folder, skill_filter=None, manifest_only=False, match_target=None):
+def scan_inventory(
+    skills_folder, skill_filter=None, manifest_only=False, match_target=None
+):
     """Scan the skills output folder and produce an inventory."""
     skills_dir = Path(skills_folder)
 
@@ -301,9 +304,15 @@ def scan_inventory(skills_folder, skill_filter=None, manifest_only=False, match_
 
     # Compute summary
     result["summary"]["total_skills"] = len(result["skills"])
-    result["summary"]["total_versions"] = sum(len(s["versions"]) for s in result["skills"])
-    result["summary"]["with_metadata"] = sum(1 for s in result["skills"] if s["metadata"])
-    result["summary"]["with_provenance"] = sum(1 for s in result["skills"] if s["has_provenance_map"])
+    result["summary"]["total_versions"] = sum(
+        len(s["versions"]) for s in result["skills"]
+    )
+    result["summary"]["with_metadata"] = sum(
+        1 for s in result["skills"] if s["metadata"]
+    )
+    result["summary"]["with_provenance"] = sum(
+        1 for s in result["skills"] if s["has_provenance_map"]
+    )
 
     # Coexistence matching (opt-in via --match-target; additive top-level key).
     if match_target is not None:

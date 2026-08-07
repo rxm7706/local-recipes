@@ -50,9 +50,7 @@ _WHOLE_CATEGORY = object()
 def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     parser = argparse.ArgumentParser(
         prog="doctor",
-        description=(
-            "Pre-flight + fleet-watch diagnostics for the pyforge factory."
-        ),
+        description=("Pre-flight + fleet-watch diagnostics for the pyforge factory."),
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
@@ -360,8 +358,7 @@ def _emit_text(findings: tuple[Finding, ...]) -> None:
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
     fail = sum(1 for f in findings if f.status is DoctorStatus.FAIL)
     lines = [
-        f"doctor check: {len(findings)} finding(s) -- "
-        f"{ok} ok, {warn} warn, {fail} fail"
+        f"doctor check: {len(findings)} finding(s) -- {ok} ok, {warn} warn, {fail} fail"
     ]
     for finding in findings:
         lines.append(

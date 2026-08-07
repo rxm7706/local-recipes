@@ -263,9 +263,13 @@ def adoption_stage(conda_name: ibis.Expr, ...) -> ibis.Expr:
 ```python
 # semantic/models.py — BSL binds expressions to datasets
 from boring_semantic_layer import SemanticModel, Dimension, Measure
-model = SemanticModel(..., measures=[
-    Measure("adoption_stage", adoption_stage, ...),
-])
+
+model = SemanticModel(
+    ...,
+    measures=[
+        Measure("adoption_stage", adoption_stage, ...),
+    ],
+)
 ```
 
 ```python

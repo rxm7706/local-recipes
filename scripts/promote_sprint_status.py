@@ -61,8 +61,14 @@ def _load_generate():
 
 
 def ledger_path_for(slug: str) -> Path:
-    return (REPO_ROOT / "_bmad-output" / "projects" / slug
-            / "planning-artifacts" / LEDGER_NAME)
+    return (
+        REPO_ROOT
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / LEDGER_NAME
+    )
 
 
 def render(project: str, src_rel: str, statuses: dict[str, str]) -> str:
@@ -84,7 +90,9 @@ def main() -> int:
         if not statuses:
             # An empty map would silently blank a good twin — refuse rather than
             # write nothing over something.
-            skipped.append(f"{key} (feed parsed 0 statuses — refusing to blank the twin)")
+            skipped.append(
+                f"{key} (feed parsed 0 statuses — refusing to blank the twin)"
+            )
             continue
         dest = ledger_path_for(slug)
         if not dest.parent.is_dir():
@@ -97,9 +105,15 @@ def main() -> int:
         dest.write_text(text, encoding="utf-8")
         wrote.append(f"{key} ({len(statuses)})")
 
-    print(f"sprint-status ledger sync — wrote {len(wrote)}, unchanged {len(unchanged)}, "
-          f"skipped {len(skipped)}")
-    for label, items in (("wrote", wrote), ("unchanged", unchanged), ("skipped", skipped)):
+    print(
+        f"sprint-status ledger sync — wrote {len(wrote)}, unchanged {len(unchanged)}, "
+        f"skipped {len(skipped)}"
+    )
+    for label, items in (
+        ("wrote", wrote),
+        ("unchanged", unchanged),
+        ("skipped", skipped),
+    ):
         for i in items:
             print(f"  {label:9} {i}")
     if not wrote and not unchanged:

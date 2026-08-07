@@ -302,13 +302,15 @@ def find_table_drift(text: str) -> list[dict]:
             cells = _split_row_cells(row_text)
             actual = len(cells)
             if actual != expected:
-                findings.append({
-                    "line": row_lineno,
-                    "section": current_section,
-                    "expected_cols": expected,
-                    "actual_cols": actual,
-                    "row": row_text,
-                })
+                findings.append(
+                    {
+                        "line": row_lineno,
+                        "section": current_section,
+                        "expected_cols": expected,
+                        "actual_cols": actual,
+                        "row": row_text,
+                    }
+                )
 
         # if the block ended at a non-row line, fall through to advance i;
         # i already points past the block.

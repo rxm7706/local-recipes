@@ -74,7 +74,9 @@ def packages_parquet(write_parquet) -> str:
                 "conda_name": ["a", "b", "c"],
                 "latest_status": ["active", "active", "inactive"],
                 "feedstock_archived": pd.array([0, 0, 0], dtype="Int64"),
-                "latest_conda_upload": pd.array([NOW - 86400, NOW - 8 * 86400, NOW], dtype="Int64"),
+                "latest_conda_upload": pd.array(
+                    [NOW - 86400, NOW - 8 * 86400, NOW], dtype="Int64"
+                ),
                 "downloads_total": pd.array([100, 200, 300], dtype="Int64"),
                 "downloads_30d": pd.array([1, 2, 3], dtype="Int64"),
                 "latest_upload_age_days": pd.array([1, 8, 0], dtype="Int64"),
@@ -102,6 +104,8 @@ def bmad_fixture(tmp_path) -> dict:
     specs = tmp_path / "specs"
     specs.mkdir()
     (specs / "one.md").write_text("---\nstatus: ready\n---\n# One\n", encoding="utf-8")
-    (specs / "two.md").write_text("---\nstatus: shipped\n---\n# Two\n", encoding="utf-8")
+    (specs / "two.md").write_text(
+        "---\nstatus: shipped\n---\n# Two\n", encoding="utf-8"
+    )
     (specs / "no-fm.md").write_text("# No frontmatter here\n", encoding="utf-8")
     return {"sprint": str(sprint), "epics": str(epics), "specs": str(specs)}

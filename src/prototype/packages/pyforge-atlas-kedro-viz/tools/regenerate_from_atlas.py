@@ -16,6 +16,7 @@ from the real catalog (falling back to a name heuristic).
 Re-run after any pyforge-atlas pipeline change:
     pixi run -e local-recipes regenerate-kedro-viz-proto
 """
+
 from __future__ import annotations
 
 import ast
@@ -26,11 +27,15 @@ import yaml
 REPO = Path(__file__).resolve().parents[5]
 ATLAS_PIPES = REPO / "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines"
 ATLAS_CATALOG = REPO / "src/shared/packages/pyforge-atlas/conf/base/catalog.yml"
-PROTO_PIPES = REPO / "src/prototype/packages/pyforge-atlas-kedro-viz/src/pyforge/atlas_kedro_viz/pipelines"
+PROTO_PIPES = (
+    REPO
+    / "src/prototype/packages/pyforge-atlas-kedro-viz/src/pyforge/atlas_kedro_viz/pipelines"
+)
 PROTO_CONF = REPO / "src/prototype/packages/pyforge-atlas-kedro-viz/conf/base"
 
 
 # ---- AST parsing of the real pipelines -------------------------------------
+
 
 def _lit(node):
     """AST node -> python value for the str / [str,...] / dict / None cases."""
@@ -54,8 +59,11 @@ def parse_pipeline(pyfile: Path) -> list[dict]:
     tree = ast.parse(pyfile.read_text(encoding="utf-8"))
     out = []
     for call in ast.walk(tree):
-        if not (isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
-                and call.func.id == "node"):
+        if not (
+            isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name)
+            and call.func.id == "node"
+        ):
             continue
         kw = {k.arg: k.value for k in call.keywords}
 
@@ -65,17 +73,22 @@ def parse_pipeline(pyfile: Path) -> list[dict]:
             return call.args[pos] if len(call.args) > pos else None
 
         name_node = pick("name", 3)
-        if not isinstance(name_node, ast.Constant) or not isinstance(name_node.value, str):
+        if not isinstance(name_node, ast.Constant) or not isinstance(
+            name_node.value, str
+        ):
             continue  # only real, named nodes
-        out.append({
-            "name": name_node.value,
-            "inputs": _as_list(_lit(pick("inputs", 1))),
-            "outputs": _as_list(_lit(pick("outputs", 2))),
-        })
+        out.append(
+            {
+                "name": name_node.value,
+                "inputs": _as_list(_lit(pick("inputs", 1))),
+                "outputs": _as_list(_lit(pick("outputs", 2))),
+            }
+        )
     return out
 
 
 # ---- layer assignment ------------------------------------------------------
+
 
 def load_real_layers() -> dict[str, str]:
     doc = yaml.safe_load(ATLAS_CATALOG.read_text(encoding="utf-8")) or {}
@@ -105,11 +118,23 @@ def is_param(ds: str) -> bool:
 # ---- graphviz DAG image ----------------------------------------------------
 
 _LAYER_FILL = {
-    "raw": "#ffe0b2", "atlas": "#bbdefb", "views": "#c8e6c9",
-    "derived": "#f8bbd0", "read_surface": "#d1c4e9",
+    "raw": "#ffe0b2",
+    "atlas": "#bbdefb",
+    "views": "#c8e6c9",
+    "derived": "#f8bbd0",
+    "read_surface": "#d1c4e9",
 }
-_CLUSTER_FILL = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#fce4ec", "#ede7f6",
-                 "#e0f7fa", "#f9fbe7", "#efebe9", "#eceff1"]
+_CLUSTER_FILL = [
+    "#e3f2fd",
+    "#f1f8e9",
+    "#fff3e0",
+    "#fce4ec",
+    "#ede7f6",
+    "#e0f7fa",
+    "#f9fbe7",
+    "#efebe9",
+    "#eceff1",
+]
 
 
 def _build_graph(pipe_names, parsed, assigned, real_layers):
@@ -118,34 +143,70 @@ def _build_graph(pipe_names, parsed, assigned, real_layers):
 
     keep = list(pipe_names)
     datasets = {
-        d for name in keep for nd in parsed[name]
+        d
+        for name in keep
+        for nd in parsed[name]
         for d in nd["inputs"] + nd["outputs"]
         if d and not is_param(d) and d != "<dynamic>"
     }
     g = graphviz.Digraph("pyforge_atlas_dag")
-    g.attr(rankdir="LR", bgcolor="white", fontname="Helvetica",
-           nodesep="0.22", ranksep="0.7", splines="spline")
+    g.attr(
+        rankdir="LR",
+        bgcolor="white",
+        fontname="Helvetica",
+        nodesep="0.22",
+        ranksep="0.7",
+        splines="spline",
+    )
     g.attr("node", fontname="Helvetica", fontsize="9")
     g.attr("edge", color="#90a4ae", arrowsize="0.6")
 
     for d in sorted(datasets):
-        g.node("ds__" + d, d, shape="ellipse", style="filled", fontsize="8",
-               color="#b0bec5", fillcolor=_LAYER_FILL.get(layer_for(d, real_layers), "#eceff1"))
+        g.node(
+            "ds__" + d,
+            d,
+            shape="ellipse",
+            style="filled",
+            fontsize="8",
+            color="#b0bec5",
+            fillcolor=_LAYER_FILL.get(layer_for(d, real_layers), "#eceff1"),
+        )
 
     for i, name in enumerate(sorted(keep)):
         with g.subgraph(name="cluster_" + name) as c:
-            c.attr(label=name, style="filled,rounded", color="#78909c",
-                   fillcolor=_CLUSTER_FILL[i % len(_CLUSTER_FILL)],
-                   fontname="Helvetica-Bold", fontsize="13")
-            for d in sorted(dd for dd, p in assigned.items() if p == name and dd in datasets):
-                c.node("fn__extract_" + d, "extract_" + d, shape="box",
-                       style="filled,rounded", fillcolor="white", color="#546e7a")
+            c.attr(
+                label=name,
+                style="filled,rounded",
+                color="#78909c",
+                fillcolor=_CLUSTER_FILL[i % len(_CLUSTER_FILL)],
+                fontname="Helvetica-Bold",
+                fontsize="13",
+            )
+            for d in sorted(
+                dd for dd, p in assigned.items() if p == name and dd in datasets
+            ):
+                c.node(
+                    "fn__extract_" + d,
+                    "extract_" + d,
+                    shape="box",
+                    style="filled,rounded",
+                    fillcolor="white",
+                    color="#546e7a",
+                )
             for nd in parsed[name]:
-                c.node("fn__" + nd["name"], nd["name"], shape="box",
-                       style="filled,rounded", fillcolor="white", color="#546e7a")
+                c.node(
+                    "fn__" + nd["name"],
+                    nd["name"],
+                    shape="box",
+                    style="filled,rounded",
+                    fillcolor="white",
+                    color="#546e7a",
+                )
 
     for name in keep:
-        for d in sorted(dd for dd, p in assigned.items() if p == name and dd in datasets):
+        for d in sorted(
+            dd for dd, p in assigned.items() if p == name and dd in datasets
+        ):
             g.edge("fn__extract_" + d, "ds__" + d)
         for nd in parsed[name]:
             for inp in nd["inputs"]:
@@ -182,8 +243,10 @@ def emit_graphviz(parsed, assigned, real_layers, docs_dir) -> int:
     # editable drawio (diagrams.net) of the full DAG — via graphviz2drawio
     try:
         from graphviz2drawio import graphviz2drawio
+
         (docs_dir / "dag.drawio").write_text(
-            graphviz2drawio.convert(full.source), encoding="utf-8")
+            graphviz2drawio.convert(full.source), encoding="utf-8"
+        )
         n += 1
     except Exception as exc:  # pragma: no cover
         print(f"graphviz2drawio unavailable ({exc}); skipped dag.drawio")
@@ -191,6 +254,7 @@ def emit_graphviz(parsed, assigned, real_layers, docs_dir) -> int:
 
 
 # ---- emit ------------------------------------------------------------------
+
 
 def _fmt(vals: list[str]):
     """Format a node inputs/outputs list back to a str | [list] | None literal."""
@@ -239,7 +303,7 @@ def main() -> int:
             for ds in n["inputs"] + n["outputs"]:
                 if is_param(ds):
                     if ds.startswith("params:"):
-                        param_paths.add(ds[len("params:"):])
+                        param_paths.add(ds[len("params:") :])
                     continue
                 if ds == "<dynamic>":
                     continue
@@ -270,10 +334,14 @@ def main() -> int:
             )
         for n in parsed[name]:
             n_out = len(n["outputs"])
-            stub_call = f'stub("{n["name"]}"' + (f", n_outputs={n_out}" if n_out > 1 else "") + ")"
+            stub_call = (
+                f'stub("{n["name"]}"'
+                + (f", n_outputs={n_out}" if n_out > 1 else "")
+                + ")"
+            )
             inp = [d for d in n["inputs"] if d != "<dynamic>"]
             lines.append(
-                f'            node({stub_call}, {_fmt(inp)}, {_fmt(n["outputs"])}, '
+                f"            node({stub_call}, {_fmt(inp)}, {_fmt(n['outputs'])}, "
                 f'name="{n["name"]}"),'
             )
         (PROTO_PIPES / f"{name}.py").write_text(
@@ -307,7 +375,9 @@ def main() -> int:
         for p in parts[:-1]:
             cur = cur.setdefault(p, {})
         cur[parts[-1]] = None  # stub value; viz only needs the key to exist
-    header = "# GENERATED by tools/regenerate_from_atlas.py — stub params for the viz DAG.\n"
+    header = (
+        "# GENERATED by tools/regenerate_from_atlas.py — stub params for the viz DAG.\n"
+    )
     (PROTO_CONF / "parameters.yml").write_text(
         header + (yaml.safe_dump(params, sort_keys=True) if params else "{}\n"),
         encoding="utf-8",
@@ -339,10 +409,14 @@ def main() -> int:
 
     n_nodes = sum(len(v) for v in parsed.values()) + len(assigned)
     print(f"pipelines: {sorted(parsed)}")
-    print(f"nodes: {n_nodes} ({len(assigned)} extraction + "
-          f"{sum(len(v) for v in parsed.values())} real-mirrored)")
-    print(f"datasets: {len(all_datasets)} | params: {len(param_paths)} | "
-          f"dag images: {n_svg} (svg + drawio)")
+    print(
+        f"nodes: {n_nodes} ({len(assigned)} extraction + "
+        f"{sum(len(v) for v in parsed.values())} real-mirrored)"
+    )
+    print(
+        f"datasets: {len(all_datasets)} | params: {len(param_paths)} | "
+        f"dag images: {n_svg} (svg + drawio)"
+    )
     return 0
 
 

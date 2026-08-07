@@ -113,7 +113,9 @@ class RequiredResource:
 
 # The vuln-db env resource the vdb refresh declares (AC-3): the `vdb-refresh` pixi task
 # runs `appthreat-vulnerability-db` inside the separate vuln-db conda env.
-VULN_DB_ENV_RESOURCE = RequiredResource(name="vuln-db", tool="appthreat-vulnerability-db")
+VULN_DB_ENV_RESOURCE = RequiredResource(
+    name="vuln-db", tool="appthreat-vulnerability-db"
+)
 
 
 @dataclass(frozen=True)
@@ -195,7 +197,9 @@ class ExternalRefreshDataset(AbstractDataset):
         # supplied by the Dagster resource at C1 / an attended run (DW-B5-2) — NEVER
         # imported here.
         self._refresher = refresher
-        self._cadence_seconds = int(cadence_seconds) if cadence_seconds is not None else WEEKLY_SECONDS
+        self._cadence_seconds = (
+            int(cadence_seconds) if cadence_seconds is not None else WEEKLY_SECONDS
+        )
         self._required_resource = required_resource
         self._timeout_seconds = int(timeout_seconds)
         self._max_retries = int(max_retries)
@@ -215,10 +219,14 @@ class ExternalRefreshDataset(AbstractDataset):
         ``OSError`` if absent — callers treat that as 'refresh due'."""
         raise NotImplementedError
 
-    def _mark_stale(self, reason: str, *, only_if_absent: bool = False) -> StalenessMarker:
+    def _mark_stale(
+        self, reason: str, *, only_if_absent: bool = False
+    ) -> StalenessMarker:
         """Keep last-good; stamp a staleness marker. Never raises (AD-13 never-fail).
         ``only_if_absent`` skips rewriting an existing marker (read-path idempotence)."""
-        marker = StalenessMarker(stale=True, reason=reason, last_good_exists=self._store_exists())
+        marker = StalenessMarker(
+            stale=True, reason=reason, last_good_exists=self._store_exists()
+        )
         if only_if_absent and self._staleness_path.is_file():
             return marker
         try:
@@ -231,7 +239,9 @@ class ExternalRefreshDataset(AbstractDataset):
                 ),
             )
         except OSError as exc:  # marker write must itself never take the run down
-            logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
+            logger.warning(
+                "could not write staleness marker for %s: %s", self._filepath, exc
+            )
         return marker
 
     def _clear_stale(self) -> None:
@@ -249,7 +259,10 @@ class ExternalRefreshDataset(AbstractDataset):
             return None
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
+        except (
+            OSError,
+            ValueError,
+        ):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             return None
         if not isinstance(raw, dict):
             return None
@@ -291,7 +304,11 @@ class ExternalRefreshDataset(AbstractDataset):
         """
         request = data if isinstance(data, RefreshRequest) else None
         force = bool(request.force) if request is not None else False
-        cadence = int(request.cadence_seconds) if request is not None else self._cadence_seconds
+        cadence = (
+            int(request.cadence_seconds)
+            if request is not None
+            else self._cadence_seconds
+        )
 
         if not force and not self._refresh_due(cadence):
             # Fresh within cadence — the operator's out-of-band refresh keeps it current.
@@ -300,12 +317,16 @@ class ExternalRefreshDataset(AbstractDataset):
 
         if self._refresher is None:
             # Due (or forced) but no refresher wired here — offline / unattended run.
-            self._mark_stale("refresh due but no refresher wired (offline / unattended run)")
+            self._mark_stale(
+                "refresh due but no refresher wired (offline / unattended run)"
+            )
             return
         try:
             fetched = self._refresher()
         except Exception as exc:  # AD-13: an unreachable endpoint never fails the run.
-            logger.warning("refresh of %s failed, keeping last-good: %s", self._filepath, exc)
+            logger.warning(
+                "refresh of %s failed, keeping last-good: %s", self._filepath, exc
+            )
             self._mark_stale(f"refresh failed: {type(exc).__name__}: {exc}")
             return
         if self._is_empty(fetched):
@@ -315,7 +336,9 @@ class ExternalRefreshDataset(AbstractDataset):
         try:
             self._write(fetched)
         except Exception as exc:  # a write failure must never crash the run OR clobber.
-            logger.warning("write of %s failed, keeping last-good: %s", self._filepath, exc)
+            logger.warning(
+                "write of %s failed, keeping last-good: %s", self._filepath, exc
+            )
             self._mark_stale(f"write failed: {type(exc).__name__}: {exc}")
             return
         self._clear_stale()
@@ -362,10 +385,15 @@ class ExternalRefreshDataset(AbstractDataset):
         return {
             "filepath": self._filepath,
             "refresh_cadence_seconds": self._cadence_seconds,
-            "required_resource": self._required_resource.to_dict() if self._required_resource else None,
+            "required_resource": self._required_resource.to_dict()
+            if self._required_resource
+            else None,
             # AD-6 retry/observability budget — declarative metadata C1's Dagster resource
             # reads (per-node timeout + retry); not enforced in-loop.
-            "retry_budget": {"timeout_seconds": self._timeout_seconds, "max_retries": self._max_retries},
+            "retry_budget": {
+                "timeout_seconds": self._timeout_seconds,
+                "max_retries": self._max_retries,
+            },
             "refresher_wired": self._refresher is not None,
             "asset": type(self).__name__,
         }
@@ -419,7 +447,9 @@ class VDBStoreDataset(ExternalRefreshDataset):
         super().__init__(
             filepath=filepath,
             refresher=refresher,
-            cadence_seconds=cadence_seconds if cadence_seconds is not None else WEEKLY_SECONDS,
+            cadence_seconds=cadence_seconds
+            if cadence_seconds is not None
+            else WEEKLY_SECONDS,
             required_resource=VULN_DB_ENV_RESOURCE,
             timeout_seconds=timeout_seconds,
             max_retries=max_retries,
@@ -450,12 +480,18 @@ class VDBStoreDataset(ExternalRefreshDataset):
             # Air-gapped / never-refreshed: return an empty frame + surface a marker so a
             # consumer degrades gracefully (AD-13). Read-path idempotence: don't rewrite an
             # existing marker (avoids churn when both G and G' load the store).
-            self._mark_stale("vdb store absent (never refreshed / air-gapped)", only_if_absent=True)
+            self._mark_stale(
+                "vdb store absent (never refreshed / air-gapped)", only_if_absent=True
+            )
             return pd.DataFrame()
         try:
             frame = pd.read_parquet(self._store_path)
         except Exception as exc:  # corrupt/truncated store must not crash the consumer.
-            logger.warning("vdb store unreadable (%s), degrading to empty: %s", self._store_path, exc)
+            logger.warning(
+                "vdb store unreadable (%s), degrading to empty: %s",
+                self._store_path,
+                exc,
+            )
             self._mark_stale("vdb store unreadable", only_if_absent=True)
             return pd.DataFrame()
         # DW-B2-2: coerce the CVSS ScoreType at the read boundary — the node gets floats.
@@ -506,7 +542,9 @@ class OSVOfflineStoreDataset(ExternalRefreshDataset):
         super().__init__(
             filepath=filepath,
             refresher=refresher,
-            cadence_seconds=cadence_seconds if cadence_seconds is not None else WEEKLY_SECONDS,
+            cadence_seconds=cadence_seconds
+            if cadence_seconds is not None
+            else WEEKLY_SECONDS,
             required_resource=None,
             timeout_seconds=timeout_seconds,
             max_retries=max_retries,
@@ -530,18 +568,27 @@ class OSVOfflineStoreDataset(ExternalRefreshDataset):
         if not isinstance(fetched, list):
             # The OSV store is a list of records; a dict/scalar refresh return is malformed
             # (list(dict) would persist only keys) — reject so save() keeps last-good.
-            raise TypeError(f"OSV refresh must return a list of records, got {type(fetched).__name__}")
+            raise TypeError(
+                f"OSV refresh must return a list of records, got {type(fetched).__name__}"
+            )
         self._atomic_write(
-            self._store_path, lambda p: p.write_text(json.dumps(fetched), encoding="utf-8")
+            self._store_path,
+            lambda p: p.write_text(json.dumps(fetched), encoding="utf-8"),
         )
 
     def load(self) -> list[dict[str, Any]]:
         if not self._store_exists():
-            self._mark_stale("OSV offline store absent (never refreshed / air-gapped)", only_if_absent=True)
+            self._mark_stale(
+                "OSV offline store absent (never refreshed / air-gapped)",
+                only_if_absent=True,
+            )
             return []
         try:
             data = json.loads(self._store_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
+        except (
+            OSError,
+            ValueError,
+        ):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             self._mark_stale("OSV offline store unreadable", only_if_absent=True)
             return []
         if not isinstance(data, list):
@@ -586,7 +633,9 @@ class MappingCacheDataset(ExternalRefreshDataset):
         super().__init__(
             filepath=filepath,
             refresher=None,  # no fetch: the "refresh" is the Phase C export passed to save
-            cadence_seconds=cadence_seconds if cadence_seconds is not None else WEEKLY_SECONDS,
+            cadence_seconds=cadence_seconds
+            if cadence_seconds is not None
+            else WEEKLY_SECONDS,
             required_resource=None,
             metadata=metadata,
         )
@@ -609,7 +658,10 @@ class MappingCacheDataset(ExternalRefreshDataset):
             return {}
         try:
             data = json.loads(self._cache_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
+        except (
+            OSError,
+            ValueError,
+        ):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             return {}
         return data if isinstance(data, dict) else {}
 
@@ -621,10 +673,14 @@ class MappingCacheDataset(ExternalRefreshDataset):
         if not new_map:
             self._mark_stale("mapping export produced no entries — keeping last-good")
             return
-        merged = {**self._read_existing(), **{str(k): v for k, v in new_map.items() if isinstance(v, str)}}
+        merged = {
+            **self._read_existing(),
+            **{str(k): v for k, v in new_map.items() if isinstance(v, str)},
+        }
         try:
             self._atomic_write(
-                self._cache_path, lambda p: p.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+                self._cache_path,
+                lambda p: p.write_text(json.dumps(merged, indent=2), encoding="utf-8"),
             )
         except Exception as exc:  # never crash / never clobber (AD-13).
             logger.warning("mapping cache write failed, keeping last-good: %s", exc)
@@ -634,11 +690,16 @@ class MappingCacheDataset(ExternalRefreshDataset):
 
     def load(self) -> dict[str, str]:
         if not self._cache_path.is_file():
-            self._mark_stale("mapping cache absent (never exported)", only_if_absent=True)
+            self._mark_stale(
+                "mapping cache absent (never exported)", only_if_absent=True
+            )
             return {}
         try:
             data = json.loads(self._cache_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
+        except (
+            OSError,
+            ValueError,
+        ):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             self._mark_stale("mapping cache unreadable", only_if_absent=True)
             return {}
         return data if isinstance(data, dict) else {}

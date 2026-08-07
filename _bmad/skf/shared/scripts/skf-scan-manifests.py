@@ -251,7 +251,11 @@ def parse_pyproject_toml(text: str) -> tuple[list[Dep], list[str]]:
                     deps.append(parsed)
 
     # Poetry
-    poetry = data.get("tool", {}).get("poetry") if isinstance(data.get("tool"), dict) else None
+    poetry = (
+        data.get("tool", {}).get("poetry")
+        if isinstance(data.get("tool"), dict)
+        else None
+    )
     if isinstance(poetry, dict):
         deps_raw = poetry.get("dependencies")
         if isinstance(deps_raw, dict):
@@ -261,7 +265,11 @@ def parse_pyproject_toml(text: str) -> tuple[list[Dep], list[str]]:
                 if isinstance(spec, str):
                     deps.append({"name": name, "version": spec})
                 elif isinstance(spec, dict):
-                    ver = spec.get("version") if isinstance(spec.get("version"), str) else None
+                    ver = (
+                        spec.get("version")
+                        if isinstance(spec.get("version"), str)
+                        else None
+                    )
                     deps.append({"name": name, "version": ver})
                 else:
                     deps.append({"name": name, "version": None})
@@ -336,9 +344,7 @@ def parse_setup_cfg(text: str) -> tuple[list[Dep], list[str]]:
     """Extract `install_requires` from setup.cfg's `[options]` section."""
     warnings: list[str] = []
     # find [options] section through next [section]
-    sec = re.search(
-        r"\[options\](.*?)(?=^\[|\Z)", text, re.MULTILINE | re.DOTALL
-    )
+    sec = re.search(r"\[options\](.*?)(?=^\[|\Z)", text, re.MULTILINE | re.DOTALL)
     if not sec:
         return [], warnings
     body = sec.group(1)
@@ -444,7 +450,11 @@ def parse_pom_xml(text: str) -> tuple[list[Dep], list[str]]:
         body = block.group(1)
         scope_m = re.search(r"<scope>\s*(.*?)\s*</scope>", body)
         # skip test/provided/system scopes — runtime + compile + (no-scope) are production
-        if scope_m and scope_m.group(1).strip().lower() in {"test", "provided", "system"}:
+        if scope_m and scope_m.group(1).strip().lower() in {
+            "test",
+            "provided",
+            "system",
+        }:
             continue
         gid = re.search(r"<groupId>\s*(.*?)\s*</groupId>", body)
         aid = re.search(r"<artifactId>\s*(.*?)\s*</artifactId>", body)

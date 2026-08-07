@@ -58,7 +58,13 @@ def validate_frontmatter(content, skill_name=None):
 
     # Check frontmatter delimiters
     if not content.startswith("---\n"):
-        issues.append({"severity": "high", "field": "frontmatter", "message": "Missing opening --- delimiter"})
+        issues.append(
+            {
+                "severity": "high",
+                "field": "frontmatter",
+                "message": "Missing opening --- delimiter",
+            }
+        )
         return issues
 
     # Find closing --- on its own line (not a substring match inside YAML values)
@@ -68,7 +74,13 @@ def validate_frontmatter(content, skill_name=None):
             end_idx = sum(len(l) + 1 for l in content.split("\n")[:i])
             break
     if end_idx == -1:
-        issues.append({"severity": "high", "field": "frontmatter", "message": "Missing closing --- delimiter"})
+        issues.append(
+            {
+                "severity": "high",
+                "field": "frontmatter",
+                "message": "Missing closing --- delimiter",
+            }
+        )
         return issues
 
     fm_text = content[4:end_idx].strip()
@@ -81,22 +93,59 @@ def validate_frontmatter(content, skill_name=None):
     # Required fields
     name = fm.get("name", "")
     if not name:
-        issues.append({"severity": "high", "field": "name", "message": "name field missing or empty"})
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": "name field missing or empty",
+            }
+        )
     elif not re.match(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$", name) or len(name) > 64:
-        issues.append({"severity": "high", "field": "name", "message": f"name must be lowercase alphanumeric + hyphens, 1-64 chars, got: {name}"})
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": f"name must be lowercase alphanumeric + hyphens, 1-64 chars, got: {name}",
+            }
+        )
 
     if skill_name and name and name != skill_name:
-        issues.append({"severity": "high", "field": "name", "message": f"name '{name}' does not match directory name '{skill_name}'"})
+        issues.append(
+            {
+                "severity": "high",
+                "field": "name",
+                "message": f"name '{name}' does not match directory name '{skill_name}'",
+            }
+        )
 
     desc = fm.get("description", "")
     if not desc:
-        issues.append({"severity": "high", "field": "description", "message": "description field missing or empty"})
+        issues.append(
+            {
+                "severity": "high",
+                "field": "description",
+                "message": "description field missing or empty",
+            }
+        )
 
     # Allowed fields
-    allowed = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+    allowed = {
+        "name",
+        "description",
+        "license",
+        "compatibility",
+        "metadata",
+        "allowed-tools",
+    }
     for key in fm:
         if key not in allowed:
-            issues.append({"severity": "low", "field": key, "message": f"Unknown frontmatter field: {key}"})
+            issues.append(
+                {
+                    "severity": "low",
+                    "field": key,
+                    "message": f"Unknown frontmatter field: {key}",
+                }
+            )
 
     return issues
 
@@ -110,7 +159,13 @@ def validate_body_structure(content):
     for section in required_sections:
         pattern = rf"^##\s+.*{re.escape(section)}"
         if not re.search(pattern, body, re.MULTILINE | re.IGNORECASE):
-            issues.append({"severity": "medium", "field": f"section:{section}", "message": f"Missing ## {section} section"})
+            issues.append(
+                {
+                    "severity": "medium",
+                    "field": f"section:{section}",
+                    "message": f"Missing ## {section} section",
+                }
+            )
 
     return issues
 
@@ -120,7 +175,13 @@ def validate_context_snippet(content):
     issues = []
 
     if not content or not content.strip():
-        issues.append({"severity": "high", "field": "content", "message": "Context snippet is empty"})
+        issues.append(
+            {
+                "severity": "high",
+                "field": "content",
+                "message": "Context snippet is empty",
+            }
+        )
         return issues
 
     lines = content.strip().split("\n")
@@ -129,19 +190,43 @@ def validate_context_snippet(content):
     if lines:
         first = lines[0]
         if not re.match(r"\[.+ v.+\]\|root:", first):
-            issues.append({"severity": "medium", "field": "line1", "message": f"First line doesn't match expected pattern: [{first[:50]}...]"})
+            issues.append(
+                {
+                    "severity": "medium",
+                    "field": "line1",
+                    "message": f"First line doesn't match expected pattern: [{first[:50]}...]",
+                }
+            )
 
     # Second line: |IMPORTANT:
     if len(lines) > 1:
         if not lines[1].startswith("|IMPORTANT:"):
-            issues.append({"severity": "medium", "field": "line2", "message": "Second line should start with |IMPORTANT:"})
+            issues.append(
+                {
+                    "severity": "medium",
+                    "field": "line2",
+                    "message": "Second line should start with |IMPORTANT:",
+                }
+            )
 
     # Approximate token count (rough: ~4 chars per token)
     approx_tokens = len(content) // 4
     if approx_tokens < 40:
-        issues.append({"severity": "low", "field": "length", "message": f"Context snippet may be too short (~{approx_tokens} tokens)"})
+        issues.append(
+            {
+                "severity": "low",
+                "field": "length",
+                "message": f"Context snippet may be too short (~{approx_tokens} tokens)",
+            }
+        )
     elif approx_tokens > 200:
-        issues.append({"severity": "low", "field": "length", "message": f"Context snippet may be too long (~{approx_tokens} tokens)"})
+        issues.append(
+            {
+                "severity": "low",
+                "field": "length",
+                "message": f"Context snippet may be too long (~{approx_tokens} tokens)",
+            }
+        )
 
     return issues
 
@@ -150,40 +235,96 @@ def validate_metadata_json(data, generated_by=None):
     """Validate metadata.json fields. Returns list of issues."""
     issues = []
 
-    required_str = ["name", "version", "source_authority", "language", "generation_date"]
+    required_str = [
+        "name",
+        "version",
+        "source_authority",
+        "language",
+        "generation_date",
+    ]
     for field in required_str:
         val = data.get(field)
         if not val or not isinstance(val, str):
-            issues.append({"severity": "high", "field": field, "message": f"{field} missing or not a string"})
+            issues.append(
+                {
+                    "severity": "high",
+                    "field": field,
+                    "message": f"{field} missing or not a string",
+                }
+            )
 
     # source_repo should be a URL
     repo = data.get("source_repo", "")
     if not repo:
-        issues.append({"severity": "medium", "field": "source_repo", "message": "source_repo missing"})
+        issues.append(
+            {
+                "severity": "medium",
+                "field": "source_repo",
+                "message": "source_repo missing",
+            }
+        )
 
     # generated_by check
     gb = data.get("generated_by", "")
     if not gb:
-        issues.append({"severity": "medium", "field": "generated_by", "message": "generated_by missing"})
+        issues.append(
+            {
+                "severity": "medium",
+                "field": "generated_by",
+                "message": "generated_by missing",
+            }
+        )
     elif generated_by and gb != generated_by:
-        issues.append({"severity": "low", "field": "generated_by", "message": f"generated_by is '{gb}', expected '{generated_by}'"})
+        issues.append(
+            {
+                "severity": "low",
+                "field": "generated_by",
+                "message": f"generated_by is '{gb}', expected '{generated_by}'",
+            }
+        )
 
     # confidence_tier
     if not data.get("confidence_tier"):
-        issues.append({"severity": "medium", "field": "confidence_tier", "message": "confidence_tier missing"})
+        issues.append(
+            {
+                "severity": "medium",
+                "field": "confidence_tier",
+                "message": "confidence_tier missing",
+            }
+        )
 
     # stats
     stats = data.get("stats", {})
     if not isinstance(stats, dict):
-        issues.append({"severity": "high", "field": "stats", "message": "stats must be an object"})
+        issues.append(
+            {"severity": "high", "field": "stats", "message": "stats must be an object"}
+        )
     else:
-        required_stats = ["exports_documented", "exports_public_api", "exports_total", "public_api_coverage", "total_coverage"]
+        required_stats = [
+            "exports_documented",
+            "exports_public_api",
+            "exports_total",
+            "public_api_coverage",
+            "total_coverage",
+        ]
         for field in required_stats:
             val = stats.get(field)
             if val is None:
-                issues.append({"severity": "medium", "field": f"stats.{field}", "message": f"stats.{field} missing"})
+                issues.append(
+                    {
+                        "severity": "medium",
+                        "field": f"stats.{field}",
+                        "message": f"stats.{field} missing",
+                    }
+                )
             elif not isinstance(val, (int, float)):
-                issues.append({"severity": "medium", "field": f"stats.{field}", "message": f"stats.{field} must be a number"})
+                issues.append(
+                    {
+                        "severity": "medium",
+                        "field": f"stats.{field}",
+                        "message": f"stats.{field} must be a number",
+                    }
+                )
 
     return issues
 
@@ -219,41 +360,55 @@ def validate_metadata_export_gate(data):
     enum_issues = []
 
     # String required fields — high-severity presence checks.
-    for field in ("name", "version", "skill_type", "source_authority",
-                  "generation_date", "confidence_tier"):
+    for field in (
+        "name",
+        "version",
+        "skill_type",
+        "source_authority",
+        "generation_date",
+        "confidence_tier",
+    ):
         val = data.get(field)
         if not val or not isinstance(val, str):
-            required_issues.append({
-                "severity": "high",
-                "field": field,
-                "message": f"{field} missing or not a non-empty string",
-            })
+            required_issues.append(
+                {
+                    "severity": "high",
+                    "field": field,
+                    "message": f"{field} missing or not a non-empty string",
+                }
+            )
 
     # exports — must be present as an array (high if absent/not-a-list).
     exports = data.get("exports")
     if not isinstance(exports, list):
-        required_issues.append({
-            "severity": "high",
-            "field": "exports",
-            "message": "exports missing or not an array",
-        })
+        required_issues.append(
+            {
+                "severity": "high",
+                "field": "exports",
+                "message": "exports missing or not an array",
+            }
+        )
     elif len(exports) == 0:
-        required_issues.append({
-            "severity": "low",
-            "field": "exports",
-            "message": "exports array is empty",
-        })
+        required_issues.append(
+            {
+                "severity": "low",
+                "field": "exports",
+                "message": "exports array is empty",
+            }
+        )
 
     # Enum membership — only when the value is present as a non-empty string
     # (otherwise the required-field check above already fired for it).
     for field, allowed in _EXPORT_GATE_ENUMS.items():
         val = data.get(field)
         if isinstance(val, str) and val and val not in allowed:
-            enum_issues.append({
-                "severity": "high",
-                "field": field,
-                "message": f"{field} '{val}' not in {list(allowed)}",
-            })
+            enum_issues.append(
+                {
+                    "severity": "high",
+                    "field": field,
+                    "message": f"{field} '{val}' not in {list(allowed)}",
+                }
+            )
 
     return required_issues, enum_issues
 
@@ -387,51 +542,69 @@ def validate_stack_counts(skill_dir, meta):
     # library_count vs per-library reference file count
     if _is_int(library_count_meta):
         if library_count_meta != ref_file_count:
-            issues.append({
+            issues.append(
+                {
+                    "severity": "medium",
+                    "field": "library_count",
+                    "message": f"library_count ({library_count_meta}) does not match per-library reference file count ({ref_file_count})",
+                }
+            )
+    else:
+        issues.append(
+            {
                 "severity": "medium",
                 "field": "library_count",
-                "message": f"library_count ({library_count_meta}) does not match per-library reference file count ({ref_file_count})",
-            })
-    else:
-        issues.append({
-            "severity": "medium",
-            "field": "library_count",
-            "message": "library_count missing or not an integer",
-        })
+                "message": "library_count missing or not an integer",
+            }
+        )
 
     # integration_count vs integration pair file count
     if _is_int(integration_count_meta):
         if integration_count_meta != pair_file_count:
-            issues.append({
+            issues.append(
+                {
+                    "severity": "medium",
+                    "field": "integration_count",
+                    "message": f"integration_count ({integration_count_meta}) does not match integration pair file count ({pair_file_count})",
+                }
+            )
+    else:
+        issues.append(
+            {
                 "severity": "medium",
                 "field": "integration_count",
-                "message": f"integration_count ({integration_count_meta}) does not match integration pair file count ({pair_file_count})",
-            })
-    else:
-        issues.append({
-            "severity": "medium",
-            "field": "integration_count",
-            "message": "integration_count missing or not an integer",
-        })
+                "message": "integration_count missing or not an integer",
+            }
+        )
 
     # confidence_distribution sum vs library_count
     if confidence_sum is None:
-        issues.append({
-            "severity": "medium",
-            "field": "confidence_distribution",
-            "message": "confidence_distribution missing or not an object with t1/t1_low/t2/t3 keys",
-        })
+        issues.append(
+            {
+                "severity": "medium",
+                "field": "confidence_distribution",
+                "message": "confidence_distribution missing or not an object with t1/t1_low/t2/t3 keys",
+            }
+        )
     elif _is_int(library_count_meta) and confidence_sum != library_count_meta:
-        issues.append({
-            "severity": "medium",
-            "field": "confidence_distribution",
-            "message": f"confidence_distribution sum ({confidence_sum}) does not match library_count ({library_count_meta})",
-        })
+        issues.append(
+            {
+                "severity": "medium",
+                "field": "confidence_distribution",
+                "message": f"confidence_distribution sum ({confidence_sum}) does not match library_count ({library_count_meta})",
+            }
+        )
 
     return issues, observed
 
 
-def validate_skill_package(skill_dir, generated_by=None, skip_frontmatter=False, skill_type="individual", export_gate=False):
+def validate_skill_package(
+    skill_dir,
+    generated_by=None,
+    skip_frontmatter=False,
+    skill_type="individual",
+    export_gate=False,
+):
     """Validate a complete skill package directory.
 
     When `skip_frontmatter` is True, the SKILL.md frontmatter pass is omitted —
@@ -461,7 +634,10 @@ def validate_skill_package(skill_dir, generated_by=None, skip_frontmatter=False,
         "skill_name": skill_name,
         "files_found": {},
         "validation": {},
-        "summary": {"total_issues": 0, "by_severity": {"high": 0, "medium": 0, "low": 0}},
+        "summary": {
+            "total_issues": 0,
+            "by_severity": {"high": 0, "medium": 0, "low": 0},
+        },
     }
 
     # Check file existence
@@ -479,7 +655,9 @@ def validate_skill_package(skill_dir, generated_by=None, skip_frontmatter=False,
     if skill_md_path.exists():
         content = skill_md_path.read_text(encoding="utf-8")
         if skip_frontmatter:
-            fm_section = {"skipped": "frontmatter validation skipped (--skip-frontmatter)"}
+            fm_section = {
+                "skipped": "frontmatter validation skipped (--skip-frontmatter)"
+            }
             fm_issues = []
         else:
             fm_issues = validate_frontmatter(content, skill_name)
@@ -487,12 +665,17 @@ def validate_skill_package(skill_dir, generated_by=None, skip_frontmatter=False,
         if skill_type == "stack":
             # Individual-skill body sections (Overview/Description/Key Exports/
             # Usage) do not apply to a stack capstone — checked in validate.md §4.
-            body_section = {"skipped": "stack-type: individual body-structure check not applicable"}
+            body_section = {
+                "skipped": "stack-type: individual body-structure check not applicable"
+            }
             body_issues = []
         else:
             body_issues = validate_body_structure(content)
             body_section = body_issues
-        result["validation"]["skill_md"] = {"frontmatter": fm_section, "body": body_section}
+        result["validation"]["skill_md"] = {
+            "frontmatter": fm_section,
+            "body": body_section,
+        }
         for issue in fm_issues + body_issues:
             result["summary"]["total_issues"] += 1
             result["summary"]["by_severity"][issue["severity"]] += 1
@@ -511,7 +694,9 @@ def validate_skill_package(skill_dir, generated_by=None, skip_frontmatter=False,
             result["summary"]["total_issues"] += 1
             result["summary"]["by_severity"][issue["severity"]] += 1
     else:
-        result["validation"]["context_snippet"] = {"skipped": "context-snippet.md not found"}
+        result["validation"]["context_snippet"] = {
+            "skipped": "context-snippet.md not found"
+        }
 
     # Validate metadata.json
     meta_path = files["metadata.json"]
@@ -522,9 +707,14 @@ def validate_skill_package(skill_dir, generated_by=None, skip_frontmatter=False,
             if skill_type == "stack":
                 # Individual-skill metadata schema (source_repo, stats.*) does not
                 # apply to a stack capstone; validate the stack count-equalities.
-                result["validation"]["metadata"] = {"skipped": "stack-type: individual metadata schema not checked (see validation.stack_counts)"}
+                result["validation"]["metadata"] = {
+                    "skipped": "stack-type: individual metadata schema not checked (see validation.stack_counts)"
+                }
                 stack_issues, observed = validate_stack_counts(skill_dir, meta)
-                result["validation"]["stack_counts"] = {"issues": stack_issues, "observed": observed}
+                result["validation"]["stack_counts"] = {
+                    "issues": stack_issues,
+                    "observed": observed,
+                }
                 for issue in stack_issues:
                     result["summary"]["total_issues"] += 1
                     result["summary"]["by_severity"][issue["severity"]] += 1
@@ -539,14 +729,20 @@ def validate_skill_package(skill_dir, generated_by=None, skip_frontmatter=False,
             result["summary"]["total_issues"] += 1
             result["summary"]["by_severity"]["high"] += 1
             if skill_type == "stack":
-                result["validation"]["stack_counts"] = {"skipped": f"metadata.json parse error: {e}"}
+                result["validation"]["stack_counts"] = {
+                    "skipped": f"metadata.json parse error: {e}"
+                }
     else:
         result["validation"]["metadata"] = {"skipped": "metadata.json not found"}
         if skill_type == "stack":
-            result["validation"]["stack_counts"] = {"skipped": "metadata.json not found"}
+            result["validation"]["stack_counts"] = {
+                "skipped": "metadata.json not found"
+            }
 
     # Overall pass/fail
-    result["result"] = "PASS" if result["summary"]["by_severity"]["high"] == 0 else "FAIL"
+    result["result"] = (
+        "PASS" if result["summary"]["by_severity"]["high"] == 0 else "FAIL"
+    )
 
     return result
 
@@ -571,7 +767,10 @@ def _validate_export_gate(skill_dir):
         "skill_name": skill_name,
         "files_found": {},
         "validation": {},
-        "summary": {"total_issues": 0, "by_severity": {"high": 0, "medium": 0, "low": 0}},
+        "summary": {
+            "total_issues": 0,
+            "by_severity": {"high": 0, "medium": 0, "low": 0},
+        },
     }
 
     def _record(issues):
@@ -588,18 +787,32 @@ def _validate_export_gate(skill_dir):
     skill_md_text = ""
     skill_md_issues = []
     if not skill_md_path.exists():
-        skill_md_issues.append({"severity": "high", "field": "SKILL.md", "message": "SKILL.md not found"})
+        skill_md_issues.append(
+            {"severity": "high", "field": "SKILL.md", "message": "SKILL.md not found"}
+        )
     else:
         skill_md_text = skill_md_path.read_text(encoding="utf-8")
         if not skill_md_text.strip():
-            skill_md_issues.append({"severity": "high", "field": "SKILL.md", "message": "SKILL.md is empty"})
+            skill_md_issues.append(
+                {
+                    "severity": "high",
+                    "field": "SKILL.md",
+                    "message": "SKILL.md is empty",
+                }
+            )
     result["validation"]["skill_md"] = {"issues": skill_md_issues}
     _record(skill_md_issues)
 
     # 2. metadata.json must exist, parse as JSON, and satisfy the required-field
     #    presence + enum-membership contract.
     if not meta_path.exists():
-        meta_issues = [{"severity": "high", "field": "metadata.json", "message": "metadata.json not found"}]
+        meta_issues = [
+            {
+                "severity": "high",
+                "field": "metadata.json",
+                "message": "metadata.json not found",
+            }
+        ]
         result["validation"]["metadata"] = {"issues": meta_issues, "enum_issues": []}
         _record(meta_issues)
     else:
@@ -607,12 +820,24 @@ def _validate_export_gate(skill_dir):
             with open(meta_path, encoding="utf-8") as f:
                 meta = json.load(f)
         except json.JSONDecodeError as e:
-            meta_issues = [{"severity": "high", "field": "metadata.json", "message": f"JSON parse error: {e}"}]
-            result["validation"]["metadata"] = {"issues": meta_issues, "enum_issues": []}
+            meta_issues = [
+                {
+                    "severity": "high",
+                    "field": "metadata.json",
+                    "message": f"JSON parse error: {e}",
+                }
+            ]
+            result["validation"]["metadata"] = {
+                "issues": meta_issues,
+                "enum_issues": [],
+            }
             _record(meta_issues)
         else:
             required_issues, enum_issues = validate_metadata_export_gate(meta)
-            result["validation"]["metadata"] = {"issues": required_issues, "enum_issues": enum_issues}
+            result["validation"]["metadata"] = {
+                "issues": required_issues,
+                "enum_issues": enum_issues,
+            }
             _record(required_issues)
             _record(enum_issues)
 
@@ -620,17 +845,21 @@ def _validate_export_gate(skill_dir):
     missing, orphans = crossref_section_7b(skill_md_text, skill_dir)
     crossref_issues = []
     for path in missing:
-        crossref_issues.append({
-            "severity": "high",
-            "field": "crossref_7b",
-            "message": f"SKILL.md Section 7b references '{path}' but it is absent on disk",
-        })
+        crossref_issues.append(
+            {
+                "severity": "high",
+                "field": "crossref_7b",
+                "message": f"SKILL.md Section 7b references '{path}' but it is absent on disk",
+            }
+        )
     for path in orphans:
-        crossref_issues.append({
-            "severity": "low",
-            "field": "crossref_7b",
-            "message": f"'{path}' present on disk but not referenced in SKILL.md Section 7b (orphan)",
-        })
+        crossref_issues.append(
+            {
+                "severity": "low",
+                "field": "crossref_7b",
+                "message": f"'{path}' present on disk but not referenced in SKILL.md Section 7b (orphan)",
+            }
+        )
     result["validation"]["crossref_7b"] = {
         "missing": missing,
         "orphans": orphans,

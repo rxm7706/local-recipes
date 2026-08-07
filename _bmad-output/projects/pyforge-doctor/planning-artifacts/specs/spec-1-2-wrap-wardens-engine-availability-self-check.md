@@ -96,19 +96,24 @@ def gather(target: Path) -> tuple[Finding, ...]:
     try:
         from pyforge.warden.engines import run_doctor_checks
     except ImportError:
-        return (Finding(
-            source=Source.WARDEN_DOCTOR, check="pyforge-warden",
-            status=DoctorStatus.FAIL,
-            message="pyforge-warden not installed -- install the `gate` "
-                    "extra (`pip install pyforge-doctor[gate]`) or add "
-                    "pyforge-warden to the environment",
-            evidence={},
-        ),)
+        return (
+            Finding(
+                source=Source.WARDEN_DOCTOR,
+                check="pyforge-warden",
+                status=DoctorStatus.FAIL,
+                message="pyforge-warden not installed -- install the `gate` "
+                "extra (`pip install pyforge-doctor[gate]`) or add "
+                "pyforge-warden to the environment",
+                evidence={},
+            ),
+        )
     return tuple(
         Finding(
-            source=Source.WARDEN_DOCTOR, check=c.name,
+            source=Source.WARDEN_DOCTOR,
+            check=c.name,
             status=DoctorStatus.OK if c.ok else DoctorStatus.FAIL,
-            message=c.message, evidence={},
+            message=c.message,
+            evidence={},
         )
         for c in run_doctor_checks(target)
     )

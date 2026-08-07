@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from pyforge.mason.exit_codes import (
-    EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
+    EXIT_CFE_UNAVAILABLE,
+    EXIT_FAILED,
+    EXIT_INTERRUPTED,
+    EXIT_OK,
+    EXIT_USAGE,
 )
 
 

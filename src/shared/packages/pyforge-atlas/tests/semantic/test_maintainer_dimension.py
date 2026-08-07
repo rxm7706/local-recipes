@@ -50,13 +50,17 @@ def test_duplicate_long_form_rows_do_not_double_count(parquet_table):
     pm_dupe = pd.DataFrame(
         {"conda_name": ["a", "a", "b"], "maintainer": ["alice", "alice", "alice"]}
     )  # (a, alice) appears twice
-    packages = models.build_packages_model(parquet_table(_packages_df(), "pkg"), now_unix=NOW)
+    packages = models.build_packages_model(
+        parquet_table(_packages_df(), "pkg"), now_unix=NOW
+    )
     pm = models.build_package_maintainers_model(parquet_table(pm_dupe, "pm"))
     join = models.join_packages_by_maintainer(packages, pm)
     res = join.query(
         dimensions=["maintainer"], measures=["packages.downloads_total"]
     ).execute()
-    downloads = {r["maintainer"]: r["packages.downloads_total"] for _, r in res.iterrows()}
+    downloads = {
+        r["maintainer"]: r["packages.downloads_total"] for _, r in res.iterrows()
+    }
     # alice ⋈ {a(100), b(200)} — a is duplicated in the long form but must sum to 300,
     # NOT 400 (no double-count from the dupe row).
     assert int(downloads["alice"]) == 300
@@ -64,7 +68,9 @@ def test_duplicate_long_form_rows_do_not_double_count(parquet_table):
     pcm = models.build_package_maintainers_model(parquet_table(pm_dupe, "pm2"))
     counts = {
         r["maintainer"]: int(r["package_count"])
-        for _, r in pcm.query(dimensions=["maintainer"], measures=["package_count"]).execute().iterrows()
+        for _, r in pcm.query(dimensions=["maintainer"], measures=["package_count"])
+        .execute()
+        .iterrows()
     }
     assert counts["alice"] == 2
 
@@ -77,14 +83,18 @@ def test_maintainer_is_a_declared_dimension(parquet_table):
     # group-by maintainer → package_count, anchored to an independent pandas groupby.
     got = {
         r["maintainer"]: int(r["package_count"])
-        for _, r in model.query(dimensions=["maintainer"], measures=["package_count"]).execute().iterrows()
+        for _, r in model.query(dimensions=["maintainer"], measures=["package_count"])
+        .execute()
+        .iterrows()
     }
     expected = _pm_df().groupby("maintainer")["conda_name"].nunique().to_dict()
     assert got == expected
 
 
 def test_maintainer_scoped_downloads_is_a_declared_join(parquet_table):
-    packages = models.build_packages_model(parquet_table(_packages_df(), "pkg"), now_unix=NOW)
+    packages = models.build_packages_model(
+        parquet_table(_packages_df(), "pkg"), now_unix=NOW
+    )
     pm = models.build_package_maintainers_model(parquet_table(_pm_df(), "pm"))
     join = models.join_packages_by_maintainer(packages, pm)
 
@@ -92,12 +102,16 @@ def test_maintainer_scoped_downloads_is_a_declared_join(parquet_table):
         r["maintainer"]: int(r["packages.downloads_total"])
         for _, r in join.query(
             dimensions=["maintainer"], measures=["packages.downloads_total"]
-        ).execute().iterrows()
+        )
+        .execute()
+        .iterrows()
     }
 
     # INDEPENDENT anchor: the raw-SQL JOIN consumers write today, in pandas.
     merged = _pm_df().merge(_packages_df(), on="conda_name")
-    expected = merged.groupby("maintainer")["downloads_total"].sum().astype(int).to_dict()
+    expected = (
+        merged.groupby("maintainer")["downloads_total"].sum().astype(int).to_dict()
+    )
     assert got == expected  # alice=300, bob=100, carol=300
 
 
@@ -136,7 +150,9 @@ def test_maintainer_with_no_packages_and_package_with_no_maintainer(parquet_tabl
         [pm_df, pd.DataFrame({"conda_name": ["ghost"], "maintainer": ["zzz"]})],
         ignore_index=True,
     )
-    packages = models.build_packages_model(parquet_table(_packages_df(), "pkg"), now_unix=NOW)
+    packages = models.build_packages_model(
+        parquet_table(_packages_df(), "pkg"), now_unix=NOW
+    )
     pm = models.build_package_maintainers_model(parquet_table(pm_df, "pm"))
     join = models.join_packages_by_maintainer(packages, pm)
 
@@ -145,7 +161,9 @@ def test_maintainer_with_no_packages_and_package_with_no_maintainer(parquet_tabl
     res = join.query(
         dimensions=["maintainer"], measures=["packages.downloads_total"]
     ).execute()
-    downloads = {r["maintainer"]: r["packages.downloads_total"] for _, r in res.iterrows()}
+    downloads = {
+        r["maintainer"]: r["packages.downloads_total"] for _, r in res.iterrows()
+    }
     assert int(downloads["alice"]) == 100  # alice ⋈ a(100) only, in this frame
     # zzz's package 'ghost' is not in packages → its downloads sum is NULL, not 100.
     assert pd.isna(downloads.get("zzz"))

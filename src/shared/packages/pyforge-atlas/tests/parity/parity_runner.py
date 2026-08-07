@@ -65,9 +65,17 @@ def diff_view(
     order-independent sort). ``material_drift`` is set iff a difference remains
     after the benign columns are excluded.
     """
-    benign = [c for c in benign_columns if c in legacy_frame.columns or c in kedro_frame.columns]
-    legacy_cmp = legacy_frame.drop(columns=[c for c in benign if c in legacy_frame.columns])
-    kedro_cmp = kedro_frame.drop(columns=[c for c in benign if c in kedro_frame.columns])
+    benign = [
+        c
+        for c in benign_columns
+        if c in legacy_frame.columns or c in kedro_frame.columns
+    ]
+    legacy_cmp = legacy_frame.drop(
+        columns=[c for c in benign if c in legacy_frame.columns]
+    )
+    kedro_cmp = kedro_frame.drop(
+        columns=[c for c in benign if c in kedro_frame.columns]
+    )
 
     result = compare_frames(kedro_cmp, legacy_cmp)
     benign_diffs = (
@@ -98,14 +106,25 @@ def _read_legacy_view(conn: sqlite3.Connection, view: str) -> pd.DataFrame:
 
 # --- synthetic fixture surface (the in-loop gate; NO real data) ------------
 
+
 def _synthetic_pair(view: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """A tiny synthetic (legacy, kedro) pair for one view — identical by
     construction (zero drift) so fixture mode proves the happy path. Includes a
     benign ``captured_at`` column that differs, to exercise the benign-diff
     classification."""
     base = [
-        {"conda_name": "numpy", "n": 3, "score": 1.5, "captured_at": "2026-07-17T00:00:00Z"},
-        {"conda_name": "pandas", "n": 1, "score": 2.0, "captured_at": "2026-07-17T00:00:00Z"},
+        {
+            "conda_name": "numpy",
+            "n": 3,
+            "score": 1.5,
+            "captured_at": "2026-07-17T00:00:00Z",
+        },
+        {
+            "conda_name": "pandas",
+            "n": 1,
+            "score": 2.0,
+            "captured_at": "2026-07-17T00:00:00Z",
+        },
     ]
     legacy = pd.DataFrame(base)
     kedro = pd.DataFrame(
@@ -129,7 +148,11 @@ def run_parity(
     (the per-view Kedro composition, finalized at the attended event). Reads the
     real DB read-only.
     """
-    views = list(view_names) if view_names is not None else list(legacy_surface_view_names())
+    views = (
+        list(view_names)
+        if view_names is not None
+        else list(legacy_surface_view_names())
+    )
     # Never fabricate evidence for a view outside the frozen legacy-surface
     # registry — a bogus view name must fail, not produce a green synthetic pair.
     unknown = [v for v in views if v not in legacy_surface_view_names()]

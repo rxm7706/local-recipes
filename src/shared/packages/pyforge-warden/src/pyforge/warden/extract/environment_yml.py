@@ -119,8 +119,7 @@ class EnvironmentYmlExtractor:
             return ()
         if not isinstance(dependencies, list):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'dependencies' must "
-                "be a list"
+                f"unparsable manifest {manifest.path}: 'dependencies' must be a list"
             )
         # fail-loud gate: asserted (not just called for its fail-loud side
         # effect) so a future `_ROUTES` edit is caught HERE rather than
@@ -202,7 +201,6 @@ class EnvironmentYmlExtractor:
             isinstance(entry, str) for entry in pip_list
         ):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: 'pip' must be a "
-                "list of strings"
+                f"unparsable manifest {manifest.path}: 'pip' must be a list of strings"
             )
         return [pep508_pypi_component(entry, provenance) for entry in pip_list]

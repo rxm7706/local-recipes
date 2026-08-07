@@ -13,7 +13,12 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.steward.keys import DriftFinding, locate_http_module, scan_file, scan_source
+from pyforge.steward.keys import (
+    DriftFinding,
+    locate_http_module,
+    scan_file,
+    scan_source,
+)
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "ungated_jfrog_auth.py"
 

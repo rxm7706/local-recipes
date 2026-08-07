@@ -207,8 +207,7 @@ class PixiTomlExtractor:
             return []
         if not isinstance(tables, dict):
             raise UnparsableManifestError(
-                f"unparsable manifest {manifest.path}: {prefix!r} must be "
-                "a table"
+                f"unparsable manifest {manifest.path}: {prefix!r} must be a table"
             )
         components: list[Component] = []
         for name, table in sorted(tables.items()):

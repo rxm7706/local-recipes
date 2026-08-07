@@ -92,7 +92,9 @@ def read_sprint_status(path: str | Path | None) -> dict[str, Any]:
     if not path or not Path(path).exists():
         return {}
     try:
-        doc = yaml.load(Path(path).read_text(encoding="utf-8-sig"), Loader=_StrictSafeLoader)
+        doc = yaml.load(
+            Path(path).read_text(encoding="utf-8-sig"), Loader=_StrictSafeLoader
+        )
     except yaml.YAMLError:
         return {}
     if not isinstance(doc, dict):
@@ -137,18 +139,30 @@ def build_factory_status_frame(
     """
     defaults = _default_paths()
     sprint_status_path = (
-        sprint_status_path if sprint_status_path is not None else defaults["sprint_status_path"]
+        sprint_status_path
+        if sprint_status_path is not None
+        else defaults["sprint_status_path"]
     )
     epics_path = epics_path if epics_path is not None else defaults["epics_path"]
     specs_dir = specs_dir if specs_dir is not None else defaults["specs_dir"]
 
     rows: list[dict[str, str]] = [
         # AD-17: the build timestamp travels IN the rendered surface, row 0.
-        {"source": "build", "artifact": "build_stamp", "key": "generated_at", "status": build_stamp}
+        {
+            "source": "build",
+            "artifact": "build_stamp",
+            "key": "generated_at",
+            "status": build_stamp,
+        }
     ]
     for key, value in read_sprint_status(sprint_status_path).items():
         rows.append(
-            {"source": "sprint-status.yaml", "artifact": "development_status", "key": str(key), "status": str(value)}
+            {
+                "source": "sprint-status.yaml",
+                "artifact": "development_status",
+                "key": str(key),
+                "status": str(value),
+            }
         )
     epics_status = read_epics_status(epics_path)
     # Only contribute a row when epics.md actually yields a status — a missing/malformed
@@ -157,9 +171,21 @@ def build_factory_status_frame(
     # not distinguish from a real None; the "never fabricated status" contract wins.)
     if epics_status is not None:
         rows.append(
-            {"source": "epics.md", "artifact": "frontmatter", "key": "status", "status": str(epics_status)}
+            {
+                "source": "epics.md",
+                "artifact": "frontmatter",
+                "key": "status",
+                "status": str(epics_status),
+            }
         )
     for name, status in read_spec_statuses(specs_dir).items():
-        rows.append({"source": "docs/specs", "artifact": name, "key": "status", "status": status})
+        rows.append(
+            {
+                "source": "docs/specs",
+                "artifact": name,
+                "key": "status",
+                "status": status,
+            }
+        )
 
     return pd.DataFrame(rows, columns=FRAME_COLUMNS)

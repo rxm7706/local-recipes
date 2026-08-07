@@ -89,7 +89,9 @@ def test_unused_dep_fixture_yields_hygiene_finding_in_report():
     assert document["exit_code"] == 0
     ids = {f["id"] for f in document["findings"]}
     assert "hygiene:DEP002:requests" in ids
-    hygiene_finding = next(f for f in document["findings"] if f["id"] == "hygiene:DEP002:requests")
+    hygiene_finding = next(
+        f for f in document["findings"] if f["id"] == "hygiene:DEP002:requests"
+    )
     assert hygiene_finding["axis"] == "hygiene"
 
 
@@ -111,8 +113,12 @@ def test_source_less_input_is_not_applicable_never_failure():
 
 def test_source_dir_without_python_is_not_applicable(tmp_path):
     (tmp_path / "requirements.txt").write_text("requests==2.31.0\n", encoding="utf-8")
-    hygiene = run_dependency_hygiene({}, {"gate": {"hygiene_source_dir": str(tmp_path)}})
-    assert hygiene["applicable"] is False  # no adjacent *.py -> deptry N/A, not a failure
+    hygiene = run_dependency_hygiene(
+        {}, {"gate": {"hygiene_source_dir": str(tmp_path)}}
+    )
+    assert (
+        hygiene["applicable"] is False
+    )  # no adjacent *.py -> deptry N/A, not a failure
 
 
 # --------------------------------------------------------------------------- #
@@ -125,12 +131,17 @@ def test_policy_breach_halts_with_frozen_exit_1_and_alerts():
 
     with pytest.raises(DataContractViolation) as excinfo:
         assemble_and_gate(
-            hygiene, _MATCH_REPORT, params,
-            alert_sink=lambda a: hand_off(a, inbox), build_stamp=STAMP,
+            hygiene,
+            _MATCH_REPORT,
+            params,
+            alert_sink=lambda a: hand_off(a, inbox),
+            build_stamp=STAMP,
         )
 
     raised = excinfo.value
-    assert isinstance(raised, Exception)  # native — Dagster/kedro treat it as a run failure
+    assert isinstance(
+        raised, Exception
+    )  # native — Dagster/kedro treat it as a run failure
     assert raised.alert.evidence["exit_code"] == 1  # warden's frozen policy-fail code
     assert raised.alert.evidence["status"] == "policy-violation"
     assert raised.alert.rule == "policy-gate:policy-violation"
@@ -148,14 +159,21 @@ def test_kev_affecting_current_is_a_breach():
     params = _critical_security(kev=True)
     params["gate"]["policy"] = {"max_critical": 5, "max_high": None, "kev_gate": True}
     with pytest.raises(DataContractViolation) as excinfo:
-        assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params, build_stamp=STAMP)
+        assemble_and_gate(
+            {"applicable": False, "findings": [], "errors": []},
+            _MATCH_REPORT,
+            params,
+            build_stamp=STAMP,
+        )
     assert excinfo.value.alert.evidence["exit_code"] == 1
 
 
 def test_security_within_policy_is_warn_not_breach():
     params = _critical_security()
     params["gate"]["policy"] = {"max_critical": 5, "max_high": None, "kev_gate": False}
-    document = assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params)
+    document = assemble_and_gate(
+        {"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params
+    )
     assert document["exit_code"] == 0  # within policy -> warn, exit 0
     assert document["status"]["value"] == "warn"
 
@@ -168,13 +186,21 @@ def test_deptry_engine_error_yields_frozen_exit_2():
         "axis": "hygiene",
         "applicable": True,
         "findings": [],
-        "errors": [{"kind": "engine-unavailable", "owner": "deptry", "message": "deptry not on PATH"}],
+        "errors": [
+            {
+                "kind": "engine-unavailable",
+                "owner": "deptry",
+                "message": "deptry not on PATH",
+            }
+        ],
         "deps_total": 0,
         "deps_assessed": 0,
     }
     with pytest.raises(DataContractViolation) as excinfo:
         assemble_and_gate(hygiene, _MATCH_REPORT, {}, build_stamp=STAMP)
-    assert excinfo.value.alert.evidence["exit_code"] == 2  # error dominates -> frozen error code
+    assert (
+        excinfo.value.alert.evidence["exit_code"] == 2
+    )  # error dominates -> frozen error code
     assert excinfo.value.alert.evidence["status"] == "error"
     assert excinfo.value.alert.severity is Severity.critical
 
@@ -185,7 +211,9 @@ def test_deptry_engine_error_yields_frozen_exit_2():
 def test_report_is_four_axis_and_schema_valid():
     # assemble_and_gate calls report.render_json internally (schema self-validation);
     # a returned document therefore validated. Assert the four axes are present.
-    document = assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, {})
+    document = assemble_and_gate(
+        {"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, {}
+    )
     axes = {c["axis"] for c in document["coverage"]}
     assert axes == {"hygiene", "vulnerability", "license", "currency"}
     assert document["schema_version"].startswith("1.")
@@ -193,11 +221,17 @@ def test_report_is_four_axis_and_schema_valid():
 
 def test_license_and_currency_degrade_to_atlas_native_or_not_applicable():
     # currency populated from the atlas-native match report; license -> not-applicable.
-    document = assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, {})
+    document = assemble_and_gate(
+        {"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, {}
+    )
     currency = next(c for c in document["coverage"] if c["axis"] == "currency")
     license_cov = next(c for c in document["coverage"] if c["axis"] == "license")
-    assert currency["deps_total"] == 1  # from the match report's 1 component (atlas-native)
-    assert license_cov["deps_total"] == 0 and license_cov["deps_assessed"] == 0  # not-applicable
+    assert (
+        currency["deps_total"] == 1
+    )  # from the match report's 1 component (atlas-native)
+    assert (
+        license_cov["deps_total"] == 0 and license_cov["deps_assessed"] == 0
+    )  # not-applicable
 
 
 # --------------------------------------------------------------------------- #
@@ -212,11 +246,15 @@ def test_single_producer_of_compliance_report():
         for n in ast.walk(tree):
             if isinstance(n, ast.Attribute) and n.attr == "ComplianceReport":
                 producers.append(py.name)
-    assert set(producers) <= {"gate.py"}, f"a non-gate module constructs ComplianceReport: {producers}"
+    assert set(producers) <= {"gate.py"}, (
+        f"a non-gate module constructs ComplianceReport: {producers}"
+    )
 
     # Exactly one pipeline node produces the terminal report dataset.
     pipe = create_pipeline()
-    emitters = [nd.name for nd in pipe.nodes if "sbom_compliance_report_entry" in nd.outputs]
+    emitters = [
+        nd.name for nd in pipe.nodes if "sbom_compliance_report_entry" in nd.outputs
+    ]
     assert emitters == ["assemble_and_gate"]
 
 
@@ -229,17 +267,23 @@ def test_gate_absent_extra_fails_with_install_hint_others_run(monkeypatch):
 
     # (1) the gate node fails with an EXPLICIT install hint.
     with pytest.raises(GateDependencyMissing) as excinfo:
-        assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, {})
+        assemble_and_gate(
+            {"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, {}
+        )
     assert "pyforge-atlas[gate]" in str(excinfo.value)
 
     # (2) independence preserved: a source-less hygiene call needs NO warden.
     assert run_dependency_hygiene({}, {})["applicable"] is False
 
     # (3) every OTHER pipeline still resolves (the atlas package imports fine w/o warden).
-    from pyforge.atlas.pipelines.seed_gaps.pipeline import create_pipeline as seed_pipeline
+    from pyforge.atlas.pipelines.seed_gaps.pipeline import (
+        create_pipeline as seed_pipeline,
+    )
 
     assert len(seed_pipeline().nodes) >= 1
-    assert len(create_pipeline().nodes) == 4  # the universal_sbom pipeline itself still builds
+    assert (
+        len(create_pipeline().nodes) == 4
+    )  # the universal_sbom pipeline itself still builds
 
 
 # --------------------------------------------------------------------------- #
@@ -283,13 +327,27 @@ def test_real_pipeline_breach_halts_before_report_persists():
 
     def _gate_node(hyg, match, parameters):
         return assemble_and_gate(
-            hyg, match, parameters, alert_sink=lambda a: hand_off(a, inbox), build_stamp=STAMP
+            hyg,
+            match,
+            parameters,
+            alert_sink=lambda a: hand_off(a, inbox),
+            build_stamp=STAMP,
         )
 
     pipe = Pipeline(
         [
-            node(run_dependency_hygiene, ["sbom_intake_entry", "parameters"], "sbom_hygiene_entry", name="hyg"),
-            node(_gate_node, ["sbom_hygiene_entry", "sbom_match_report_entry", "parameters"], "sbom_compliance_report_entry", name="gate"),
+            node(
+                run_dependency_hygiene,
+                ["sbom_intake_entry", "parameters"],
+                "sbom_hygiene_entry",
+                name="hyg",
+            ),
+            node(
+                _gate_node,
+                ["sbom_hygiene_entry", "sbom_match_report_entry", "parameters"],
+                "sbom_compliance_report_entry",
+                name="gate",
+            ),
         ]
     )
     catalog = DataCatalog(
@@ -322,13 +380,19 @@ def test_all_indeterminate_security_axis_is_indeterminate_not_a_min_crash():
                 "source": "atlas-cve",
                 "snapshot_at": "2026-07-18",
                 "findings": [
-                    {"id": "indeterminate:offline-db-unavailable:numpy@1.0", "severity": "unknown",
-                     "subject": "numpy", "message": "db offline"},
+                    {
+                        "id": "indeterminate:offline-db-unavailable:numpy@1.0",
+                        "severity": "unknown",
+                        "subject": "numpy",
+                        "message": "db offline",
+                    },
                 ],
             }
         }
     }
-    document = assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params)
+    document = assemble_and_gate(
+        {"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params
+    )
     # no breach → WARN/exit 0, driven off the (indeterminate) finding id — NOT a min()-over-empty crash.
     assert document["status"]["value"] == "warn"
     assert document["exit_code"] == 0
@@ -340,16 +404,23 @@ def test_out_of_vocab_severity_tier_degrades_to_unknown_not_a_crash():
     params = {
         "gate": {
             "security": {
-                "source": "atlas-cve", "snapshot_at": "2026-07-18",
+                "source": "atlas-cve",
+                "snapshot_at": "2026-07-18",
                 "findings": [
-                    {"id": "vuln:RHSA-2026-1:openssl@3.0", "severity": "important",  # RedHat tier
-                     "subject": "openssl", "message": "rh vuln"},
+                    {
+                        "id": "vuln:RHSA-2026-1:openssl@3.0",
+                        "severity": "important",  # RedHat tier
+                        "subject": "openssl",
+                        "message": "rh vuln",
+                    },
                 ],
             }
         }
     }
     # 'important' is not critical/high, so no breach → warn/exit 0; the point is it does not crash.
-    document = assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params)
+    document = assemble_and_gate(
+        {"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params
+    )
     assert document["exit_code"] == 0
 
 
@@ -359,6 +430,15 @@ def test_whitespace_only_build_stamp_falls_back_not_a_masking_error():
     .strip() emptiness test → the 'unknown-build' fallback, and the BREACH alert still fires."""
     params = _critical_security()  # one critical → breach → exit 1 + alert
     with pytest.raises(DataContractViolation) as excinfo:
-        assemble_and_gate({"applicable": False, "findings": [], "errors": []}, _MATCH_REPORT, params, build_stamp="   ")
-    assert excinfo.value.alert.evidence["exit_code"] == 1        # the real breach, not a stamp error
-    assert excinfo.value.alert.build_stamp == "unknown-build"     # whitespace → safe fallback
+        assemble_and_gate(
+            {"applicable": False, "findings": [], "errors": []},
+            _MATCH_REPORT,
+            params,
+            build_stamp="   ",
+        )
+    assert (
+        excinfo.value.alert.evidence["exit_code"] == 1
+    )  # the real breach, not a stamp error
+    assert (
+        excinfo.value.alert.build_stamp == "unknown-build"
+    )  # whitespace → safe fallback

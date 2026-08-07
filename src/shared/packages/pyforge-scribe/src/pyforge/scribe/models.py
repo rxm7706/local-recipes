@@ -99,7 +99,9 @@ class CaptureRecord(BaseModel):
                 in_metadata = False
 
         if capture_type not in CAPTURE_TYPES:
-            raise ValueError(f"invalid or missing metadata.type in frontmatter: {capture_type!r}")
+            raise ValueError(
+                f"invalid or missing metadata.type in frontmatter: {capture_type!r}"
+            )
 
         return cls(type=capture_type, name=name, description=description, text=text)
 

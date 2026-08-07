@@ -167,7 +167,9 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
             return None
         if isinstance(value, bool):
             # bool is an int subclass but is never a meaningful ttl.
-            raise ValueError(f"ttl_seconds must be an integer number of seconds; got {value!r}")
+            raise ValueError(
+                f"ttl_seconds must be an integer number of seconds; got {value!r}"
+            )
         try:
             ttl = int(value)
         except (TypeError, ValueError):
@@ -176,7 +178,9 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
                 f"string); got {value!r}"
             ) from None
         if ttl < 0:
-            raise ValueError(f"ttl_seconds must be >= 0 (0 = everything stale); got {ttl}")
+            raise ValueError(
+                f"ttl_seconds must be >= 0 (0 = everything stale); got {ttl}"
+            )
         return ttl
 
     # -- epoch-seconds boundary normalization (DW-A3-P10) ------------------
@@ -198,7 +202,11 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         """Coerce to numeric and divide any ms-magnitude value by 1000 — the single
         dataset-boundary conversion (DW-A3-P10). Second-magnitude values pass
         through untouched; NaN survives as NaN."""
-        s = series if pd.api.types.is_numeric_dtype(series) else pd.to_numeric(series, errors="coerce")
+        s = (
+            series
+            if pd.api.types.is_numeric_dtype(series)
+            else pd.to_numeric(series, errors="coerce")
+        )
         ms = s.abs() >= cls._MS_EPOCH_THRESHOLD
         if ms.any():
             logger.warning(

@@ -41,11 +41,13 @@ class MockRunner:
 
     def add_finding(self, code: str, severity: str, message: str):
         """Add a finding to the result."""
-        self.result_findings.append({
-            "code": code,
-            "severity": severity,
-            "message": message,
-        })
+        self.result_findings.append(
+            {
+                "code": code,
+                "severity": severity,
+                "message": message,
+            }
+        )
 
     def reset(self):
         """Reset the runner for reuse."""

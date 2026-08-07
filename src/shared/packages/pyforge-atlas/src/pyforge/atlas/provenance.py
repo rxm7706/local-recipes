@@ -201,7 +201,9 @@ def _resolve_row_fetched_at(loaded_value: Any, column: str) -> ProvenanceInfo:
         )
 
 
-def resolve_for_catalog_dataset(catalog: Any, name: str, loaded_value: Any) -> ProvenanceInfo:
+def resolve_for_catalog_dataset(
+    catalog: Any, name: str, loaded_value: Any
+) -> ProvenanceInfo:
     """Dispatch on ``catalog[name]``'s actual TYPE (never an enumerated/
     hardcoded name list) to derive ``loaded_value``'s genuine provenance."""
     dataset = catalog[name]

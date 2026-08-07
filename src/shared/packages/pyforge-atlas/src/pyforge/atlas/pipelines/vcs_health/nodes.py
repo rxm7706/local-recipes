@@ -75,6 +75,7 @@ def _as_bool_series(col: pd.Series) -> pd.Series:
 # Phase E — maintainer enrichment  (reads core_cf_graph_raw — cross-pipeline, AD-3)
 # ---------------------------------------------------------------------------
 
+
 def enrich_maintainers(
     core_cf_graph_raw: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -125,21 +126,31 @@ def enrich_maintainers(
 # Phase E.5 — archived-feedstock detection
 # ---------------------------------------------------------------------------
 
+
 def detect_archived_feedstocks(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase E.5  (phase_e5_archived_feedstocks CFA:2504)
     """Detect archived feedstocks from the GitHub API response. Input:
     ``feedstock_name``, ``archived`` (bool). Output: the ``feedstock_name`` rows whose
     repo is archived (``archived=True``)."""
     src = vcs_github_api_raw
-    if src is None or src.empty or not {"feedstock_name", "archived"} <= set(src.columns):
+    if (
+        src is None
+        or src.empty
+        or not {"feedstock_name", "archived"} <= set(src.columns)
+    ):
         return pd.DataFrame(columns=["feedstock_name", "archived"])
     archived = src[_as_bool_series(src["archived"])]
-    return archived[["feedstock_name", "archived"]].drop_duplicates().reset_index(drop=True)
+    return (
+        archived[["feedstock_name", "archived"]]
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
 
 
 # ---------------------------------------------------------------------------
 # Phase K — upstream version tracking (3-RPS bucket is DATASET-owned, not here)
 # ---------------------------------------------------------------------------
+
 
 def track_upstream_versions(
     vcs_github_api_raw: pd.DataFrame,
@@ -184,7 +195,14 @@ def track_upstream_versions(
 # ---------------------------------------------------------------------------
 
 _REGISTRY_INPUTS = (
-    "npm", "cran", "cpan", "luarocks", "crates", "rubygems", "maven", "nuget",
+    "npm",
+    "cran",
+    "cpan",
+    "luarocks",
+    "crates",
+    "rubygems",
+    "maven",
+    "nuget",
 )
 
 
@@ -209,9 +227,14 @@ def track_registry_versions(
     per_registry = zip(
         _REGISTRY_INPUTS,
         (
-            vcs_registry_npm_raw, vcs_registry_cran_raw, vcs_registry_cpan_raw,
-            vcs_registry_luarocks_raw, vcs_registry_crates_raw, vcs_registry_rubygems_raw,
-            vcs_registry_maven_raw, vcs_registry_nuget_raw,
+            vcs_registry_npm_raw,
+            vcs_registry_cran_raw,
+            vcs_registry_cpan_raw,
+            vcs_registry_luarocks_raw,
+            vcs_registry_crates_raw,
+            vcs_registry_rubygems_raw,
+            vcs_registry_maven_raw,
+            vcs_registry_nuget_raw,
         ),
     )
     for registry, df in per_registry:
@@ -231,6 +254,7 @@ def track_registry_versions(
 # ---------------------------------------------------------------------------
 # Phase N — live health signals
 # ---------------------------------------------------------------------------
+
 
 def fetch_live_health(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
     # legacy: Phase N  (phase_n_github_live CFA:6525)
@@ -259,6 +283,7 @@ def fetch_live_health(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:
 #         dataset produced by pypi_intelligence; Kedro datasets are shared by
 #         catalog NAME, ownership = producer, so this node only READS it, AD-3.)
 # ---------------------------------------------------------------------------
+
 
 def derive_release_velocity(
     pypi_current_versions: pd.DataFrame,
@@ -308,7 +333,13 @@ def derive_release_velocity(
     """
     if now is None:
         now = int(time.time())
-    cols = ["pypi_name", "conda_name", "version", "release_lag_hours", "release_lag_qualifies"]
+    cols = [
+        "pypi_name",
+        "conda_name",
+        "version",
+        "release_lag_hours",
+        "release_lag_qualifies",
+    ]
 
     def _empty() -> pd.DataFrame:
         # explicit per-column dtypes so an empty return matches the non-empty path's
@@ -338,7 +369,11 @@ def derive_release_velocity(
         return _empty()
 
     repo = core_repodata_raw
-    if repo is None or repo.empty or not {"conda_name", "version", "timestamp"} <= set(repo.columns):
+    if (
+        repo is None
+        or repo.empty
+        or not {"conda_name", "version", "timestamp"} <= set(repo.columns)
+    ):
         return _empty()
 
     # -- conda side: FIRST availability = MIN per-build timestamp, ms→s at the boundary.
@@ -350,9 +385,7 @@ def derive_release_velocity(
     r["conda_name"] = r["conda_name"].map(_key)
     r["version"] = r["version"].map(_key)
     r = r.dropna(subset=["conda_name", "version"])
-    first_avail = (
-        r.groupby(["conda_name", "version"], as_index=False)["_avail_s"].min()
-    )
+    first_avail = r.groupby(["conda_name", "version"], as_index=False)["_avail_s"].min()
 
     # -- pypi side: map pypi_name → conda_name, then match on (conda_name, version).
     p = pcv[["pypi_name", "version", "upload_time_iso_8601"]].copy(deep=False)
@@ -398,7 +431,9 @@ def derive_release_velocity(
         },
         columns=cols,
     )
-    out = out.drop_duplicates(subset=["pypi_name", "conda_name", "version"]).reset_index(drop=True)
+    out = out.drop_duplicates(
+        subset=["pypi_name", "conda_name", "version"]
+    ).reset_index(drop=True)
     return out
 
 
@@ -535,7 +570,9 @@ def classify_migration_readiness(
     ``blocker``, ``not_in_tracker_inferred``, ``downloads_total``, ``unmigrated_volume_rank``.
     Empty / missing inputs → typed empty frame, never raises (AD-13).
     """
-    detail_map = vcs_migration_detail_raw if isinstance(vcs_migration_detail_raw, dict) else {}
+    detail_map = (
+        vcs_migration_detail_raw if isinstance(vcs_migration_detail_raw, dict) else {}
+    )
     pkgs = core_packages_enumerated
     if pkgs is None or pkgs.empty or "conda_name" not in getattr(pkgs, "columns", []):
         return _empty_migration_readiness()
@@ -543,13 +580,17 @@ def classify_migration_readiness(
         return _empty_migration_readiness()
 
     # -- atlas feedstock set: one (conda_name -> is_noarch) per package (dedup defensively).
-    atlas = pkgs[["conda_name"] + (["subdirs"] if "subdirs" in pkgs.columns else [])].copy()
+    atlas = pkgs[
+        ["conda_name"] + (["subdirs"] if "subdirs" in pkgs.columns else [])
+    ].copy()
     atlas["conda_name"] = atlas["conda_name"].map(_key)
     atlas = atlas.dropna(subset=["conda_name"]).drop_duplicates("conda_name")
     if atlas.empty:
         return _empty_migration_readiness()
     subdirs_lookup = (
-        dict(zip(atlas["conda_name"], atlas["subdirs"])) if "subdirs" in atlas.columns else {}
+        dict(zip(atlas["conda_name"], atlas["subdirs"]))
+        if "subdirs" in atlas.columns
+        else {}
     )
     feedstocks = list(atlas["conda_name"])
     noarch_flags = {name: _is_noarch(subdirs_lookup.get(name)) for name in feedstocks}
@@ -557,7 +598,11 @@ def classify_migration_readiness(
     # -- downloads lookup (Phase F): conda_name -> downloads_total (dedup, max wins).
     dl_lookup: dict[str, float] = {}
     dl = core_downloads
-    if dl is not None and not dl.empty and {"conda_name", "downloads_total"} <= set(dl.columns):
+    if (
+        dl is not None
+        and not dl.empty
+        and {"conda_name", "downloads_total"} <= set(dl.columns)
+    ):
         d = dl[["conda_name", "downloads_total"]].copy()
         d["conda_name"] = d["conda_name"].map(_key)
         d["downloads_total"] = pd.to_numeric(d["downloads_total"], errors="coerce")
@@ -581,9 +626,15 @@ def classify_migration_readiness(
             elif name in done:
                 readiness, blocker, inferred = READINESS_REBUILD_DONE, "", False
             else:
-                hit = next((b for b in BLOCKER_BUCKETS if name in blocker_members[b]), None)
+                hit = next(
+                    (b for b in BLOCKER_BUCKETS if name in blocker_members[b]), None
+                )
                 if hit is not None:
-                    readiness, blocker, inferred = READINESS_CONFIRMED_PENDING, hit, False
+                    readiness, blocker, inferred = (
+                        READINESS_CONFIRMED_PENDING,
+                        hit,
+                        False,
+                    )
                 else:
                     # Absent from EVERY bucket → INFERRED unmigrated (never confirmed).
                     readiness, blocker, inferred = READINESS_NOT_IN_TRACKER, "", True
@@ -594,7 +645,9 @@ def classify_migration_readiness(
                     "readiness": readiness,
                     "blocker": blocker,
                     "not_in_tracker_inferred": inferred,
-                    "downloads_total": float(dl_lookup.get(name)) if name in dl_lookup else float("nan"),
+                    "downloads_total": float(dl_lookup.get(name))
+                    if name in dl_lookup
+                    else float("nan"),
                 }
             )
 
@@ -603,7 +656,9 @@ def classify_migration_readiness(
     out["downloads_total"] = pd.to_numeric(out["downloads_total"], errors="coerce")
 
     # -- top-unmigrated-by-volume rank (per migration; ready rows carry a null rank).
-    unmigrated_mask = out["readiness"].isin([READINESS_CONFIRMED_PENDING, READINESS_NOT_IN_TRACKER])
+    unmigrated_mask = out["readiness"].isin(
+        [READINESS_CONFIRMED_PENDING, READINESS_NOT_IN_TRACKER]
+    )
     rank = pd.Series(pd.NA, index=out.index, dtype="Int64")
     if unmigrated_mask.any():
         um = out.loc[unmigrated_mask, ["migration", "downloads_total"]].copy()

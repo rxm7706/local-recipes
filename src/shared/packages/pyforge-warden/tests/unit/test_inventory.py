@@ -282,7 +282,9 @@ def test_canonical_name_pep503_for_pypi_unchanged_for_conda():
 
 
 def test_derive_purl_forms():
-    assert derive_purl(Ecosystem.PYPI, "requests", "2.31.0") == "pkg:pypi/requests@2.31.0"
+    assert (
+        derive_purl(Ecosystem.PYPI, "requests", "2.31.0") == "pkg:pypi/requests@2.31.0"
+    )
     assert derive_purl(Ecosystem.CONDA, "numpy", "1.26.4") == "pkg:conda/numpy@1.26.4"
     assert derive_purl(Ecosystem.PYPI, "requests", None) == "pkg:pypi/requests"
 
@@ -296,8 +298,14 @@ def test_derive_purl_uses_canonical_purl_names():
     # conda: VERBATIM — channel-index names are already canonical, and
     # typing_extensions vs typing-extensions are DISTINCT real conda packages
     # (folding them would name a different package; follow-up review fix).
-    assert derive_purl(Ecosystem.CONDA, "ruamel.yaml", "0.18") == "pkg:conda/ruamel.yaml@0.18"
-    assert derive_purl(Ecosystem.CONDA, "typing_extensions", "4.12") == "pkg:conda/typing_extensions@4.12"
+    assert (
+        derive_purl(Ecosystem.CONDA, "ruamel.yaml", "0.18")
+        == "pkg:conda/ruamel.yaml@0.18"
+    )
+    assert (
+        derive_purl(Ecosystem.CONDA, "typing_extensions", "4.12")
+        == "pkg:conda/typing_extensions@4.12"
+    )
     assert derive_purl(Ecosystem.CONDA, "PyYAML", "6.0") == "pkg:conda/PyYAML@6.0"
 
 
@@ -312,9 +320,7 @@ def test_derive_purl_agrees_with_identity_for_conda():
 def test_derive_purl_percent_encodes_reserved_characters():
     """A RAW_MALFORMED name/version can never smuggle purl syntax."""
     purl = derive_purl(Ecosystem.PYPI, "foo @ git+https://evil", "1.0?x=1#y")
-    assert purl == (
-        "pkg:pypi/foo%20%40%20git%2Bhttps%3A%2F%2Fevil@1.0%3Fx%3D1%23y"
-    )
+    assert purl == ("pkg:pypi/foo%20%40%20git%2Bhttps%3A%2F%2Fevil@1.0%3Fx%3D1%23y")
     assert strip_purl_qualifiers(purl) == purl  # no raw ? or # survives
 
 
@@ -325,7 +331,9 @@ def test_derive_purl_empty_version_omits_at():
 
 def test_strip_purl_qualifiers():
     assert (
-        strip_purl_qualifiers("pkg:conda/numpy@1.26.4?build=py312h2b&channel=conda-forge")
+        strip_purl_qualifiers(
+            "pkg:conda/numpy@1.26.4?build=py312h2b&channel=conda-forge"
+        )
         == "pkg:conda/numpy@1.26.4"
     )
     assert strip_purl_qualifiers("pkg:pypi/foo@1.0#sub/path") == "pkg:pypi/foo@1.0"

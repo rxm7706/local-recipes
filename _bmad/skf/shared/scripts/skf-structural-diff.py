@@ -151,7 +151,10 @@ def entries_from_data(data: object, source: str = "") -> tuple[list[dict], str |
             f"Unrecognised inventory format{where}: expected array or object "
             f"with an 'exports' or 'entries' key"
         )
-    return [], f"Unrecognised inventory format{where}: top-level value must be array or object"
+    return (
+        [],
+        f"Unrecognised inventory format{where}: top-level value must be array or object",
+    )
 
 
 def load_inventory(path: Path) -> tuple[list[dict], str | None]:
@@ -212,7 +215,9 @@ def load_reexport_map(path: Path) -> tuple[dict[str, str], str | None]:
     if not isinstance(data, dict):
         return {}, f"reexport map '{path}' must be a JSON object"
     src = data["reexport_map"] if isinstance(data.get("reexport_map"), dict) else data
-    return {k: v for k, v in src.items() if isinstance(k, str) and isinstance(v, str)}, None
+    return {
+        k: v for k, v in src.items() if isinstance(k, str) and isinstance(v, str)
+    }, None
 
 
 # --------------------------------------------------------------------------
@@ -337,11 +342,13 @@ def diff_inventories(
         base_file = base_rec.get("file")
         curr_file = curr_rec.get("file")
         if base_file and curr_file and base_file != curr_file:
-            moved.append({
-                "name": name,
-                "previous_file": base_file,
-                "current_file": curr_file,
-            })
+            moved.append(
+                {
+                    "name": name,
+                    "previous_file": base_file,
+                    "current_file": curr_file,
+                }
+            )
 
         entry_changed = False
         for field in DIFF_FIELDS:
@@ -352,12 +359,14 @@ def diff_inventories(
             if base_val is None or curr_val is None:
                 continue
             if base_val != curr_val:
-                changed.append({
-                    "name": name,
-                    "field": field,
-                    "baseline_value": base_val,
-                    "current_value": curr_val,
-                })
+                changed.append(
+                    {
+                        "name": name,
+                        "field": field,
+                        "baseline_value": base_val,
+                        "current_value": curr_val,
+                    }
+                )
                 entry_changed = True
 
         if not entry_changed:
@@ -482,14 +491,19 @@ def main() -> int:
             out_path.write_text(output_text + "\n", encoding="utf-8")
         except OSError as exc:
             print(
-                json.dumps({"status": "error", "error": f"Cannot write output: {exc}"}, indent=2)
+                json.dumps(
+                    {"status": "error", "error": f"Cannot write output: {exc}"},
+                    indent=2,
+                )
             )
             return 1
     else:
         print(output_text)
 
     summary = result["summary"]
-    has_diff = summary["added"] or summary["removed"] or summary["changed"] or summary["moved"]
+    has_diff = (
+        summary["added"] or summary["removed"] or summary["changed"] or summary["moved"]
+    )
     return 1 if has_diff else 0
 
 

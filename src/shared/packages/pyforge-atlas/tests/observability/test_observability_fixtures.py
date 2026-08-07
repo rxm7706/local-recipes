@@ -198,17 +198,23 @@ def test_node_error_emits_fail_and_closes_span():
     assert len(fail) == 1
     assert fail[0].run.facets["errorMessage"].message == "boom"
     # the node span was closed (no leak) — it appears among finished spans.
-    node_spans = [s for s in exporter.get_finished_spans() if s.name == "node:double_it"]
+    node_spans = [
+        s for s in exporter.get_finished_spans() if s.name == "node:double_it"
+    ]
     assert len(node_spans) == 1
     assert node_spans[0].status.status_code.name == "ERROR"
 
 
 def test_node_with_no_inputs_or_outputs():
     hooks, exporter, events = _direct_hooks()
-    n = node(lambda: pd.DataFrame({"a": [1]}), inputs=None, outputs="only_out", name="src")
+    n = node(
+        lambda: pd.DataFrame({"a": [1]}), inputs=None, outputs="only_out", name="src"
+    )
     hooks.before_pipeline_run({}, None, None)
     hooks.before_node_run(n, None, {}, False, "r1")
-    hooks.after_node_run(n, None, {}, {"only_out": pd.DataFrame({"a": [1, 2]})}, False, "r1")
+    hooks.after_node_run(
+        n, None, {}, {"only_out": pd.DataFrame({"a": [1, 2]})}, False, "r1"
+    )
     hooks.after_pipeline_run({}, {}, None, None)
     complete = next(e for e in events if e.eventType == RunState.COMPLETE)
     assert complete.inputs == []
@@ -269,7 +275,9 @@ def test_nested_pipeline_runs_do_not_leak_spans():
     hooks.after_node_run(n, None, {"raw_in": df}, {"mid": df}, False, "r1")
     hooks.after_pipeline_run({"pipeline_name": "inner"}, {}, None, None)
     hooks.after_pipeline_run({"pipeline_name": "outer"}, {}, None, None)
-    pipeline_spans = [s for s in exporter.get_finished_spans() if s.name == "pipeline_run"]
+    pipeline_spans = [
+        s for s in exporter.get_finished_spans() if s.name == "pipeline_run"
+    ]
     assert len(pipeline_spans) == 2  # both frames closed, none leaked
 
 
@@ -288,11 +296,17 @@ def test_sized_non_dataframe_output_degrades_not_bogus_rowcount():
     for bad in ({"k": "v", "j": "w"}, [1, 2, 3, 4, 5], "hello"):
         n = node(_double, inputs="raw_in", outputs="mid", name="nd")
         hooks.before_pipeline_run({}, None, None)
-        hooks.before_node_run(n, None, {"raw_in": pd.DataFrame({"a": [1]})}, False, "r1")
-        hooks.after_node_run(n, None, {"raw_in": pd.DataFrame({"a": [1]})}, {"mid": bad}, False, "r1")
+        hooks.before_node_run(
+            n, None, {"raw_in": pd.DataFrame({"a": [1]})}, False, "r1"
+        )
+        hooks.after_node_run(
+            n, None, {"raw_in": pd.DataFrame({"a": [1]})}, {"mid": bad}, False, "r1"
+        )
         hooks.after_pipeline_run({}, {}, None, None)
         complete = [e for e in events if e.eventType == RunState.COMPLETE][-1]
-        assert "outputStatistics" not in complete.outputs[0].facets, f"bogus rowCount for {type(bad).__name__}"
+        assert "outputStatistics" not in complete.outputs[0].facets, (
+            f"bogus rowCount for {type(bad).__name__}"
+        )
 
 
 def test_pipeline_error_emits_ol_fail_for_in_flight_nodes():
@@ -308,7 +322,9 @@ def test_pipeline_error_emits_ol_fail_for_in_flight_nodes():
     fails = [e for e in events if e.eventType == RunState.FAIL]
     assert len(starts) == 1 and len(fails) == 1  # the START has a matching terminal
     assert fails[0].job.name == "open_node"
-    assert fails[0].run.runId == starts[0].run.runId  # same run — a real terminal, not a new one
+    assert (
+        fails[0].run.runId == starts[0].run.runId
+    )  # same run — a real terminal, not a new one
 
 
 def test_deepcopy_preserves_injected_backends_no_otel_ol_asymmetry():
@@ -321,12 +337,21 @@ def test_deepcopy_preserves_injected_backends_no_otel_ol_asymmetry():
     hooks, exporter, events = _direct_hooks()
     dup = copy.deepcopy(hooks)
     assert dup._provider is hooks._provider  # shared by reference (survives the copy)
-    assert dup._ol is hooks._ol              # symmetric — both backends survive
+    assert dup._ol is hooks._ol  # symmetric — both backends survive
     # the copy actually EMITS to the shared injected backends (no silent OTel drop):
     n = node(_double, inputs="raw_in", outputs="mid", name="dup_node")
     dup.before_pipeline_run({}, None, None)
     dup.before_node_run(n, None, {"raw_in": pd.DataFrame({"a": [1]})}, False, "r1")
-    dup.after_node_run(n, None, {"raw_in": pd.DataFrame({"a": [1]})}, {"mid": pd.DataFrame({"a": [1, 2]})}, False, "r1")
+    dup.after_node_run(
+        n,
+        None,
+        {"raw_in": pd.DataFrame({"a": [1]})},
+        {"mid": pd.DataFrame({"a": [1, 2]})},
+        False,
+        "r1",
+    )
     dup.after_pipeline_run({}, {}, None, None)
     assert any(e.eventType == RunState.COMPLETE for e in events)  # OL emitted
-    assert [s for s in exporter.get_finished_spans() if s.name == "node:dup_node"]  # OTel emitted
+    assert [
+        s for s in exporter.get_finished_spans() if s.name == "node:dup_node"
+    ]  # OTel emitted

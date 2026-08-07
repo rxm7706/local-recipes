@@ -174,7 +174,11 @@ def check(inp):
         return make_error("Input must be a JSON object")
 
     threshold = inp.get("driftThresholdPct", DEFAULT_DRIFT_PCT)
-    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)) or threshold < 0:
+    if (
+        isinstance(threshold, bool)
+        or not isinstance(threshold, (int, float))
+        or threshold < 0
+    ):
         return make_error("driftThresholdPct must be a non-negative number")
 
     skill_type = inp.get("skillType")
@@ -297,8 +301,8 @@ def _build_parser():
         epilog=(
             "Example:\n"
             "  uv run check-metadata-coherence.py "
-            "'{\"clusterA\":{\"exports_public_api\":55,\"exports_length\":48},"
-            "\"clusterB\":{\"exports_documented\":114}}'"
+            '\'{"clusterA":{"exports_public_api":55,"exports_length":48},'
+            '"clusterB":{"exports_documented":114}}\''
         ),
     )
     src = parser.add_mutually_exclusive_group()

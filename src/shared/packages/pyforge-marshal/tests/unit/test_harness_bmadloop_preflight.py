@@ -71,7 +71,9 @@ def test_harness_version_none_on_a_nonzero_exit(harness, monkeypatch):
     import pyforge.marshal.adapters.harness_bmadloop as module
 
     def _fake_run(args, **kwargs):
-        return subprocess.CompletedProcess(args=args, returncode=1, stdout="", stderr="boom")
+        return subprocess.CompletedProcess(
+            args=args, returncode=1, stdout="", stderr="boom"
+        )
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     assert harness.harness_version() is None
@@ -81,7 +83,9 @@ def test_harness_version_none_on_unparseable_output(harness, monkeypatch):
     import pyforge.marshal.adapters.harness_bmadloop as module
 
     def _fake_run(args, **kwargs):
-        return subprocess.CompletedProcess(args=args, returncode=0, stdout="\n", stderr="")
+        return subprocess.CompletedProcess(
+            args=args, returncode=0, stdout="\n", stderr=""
+        )
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     assert harness.harness_version() is None
@@ -188,12 +192,16 @@ def test_adapter_binary_raises_harness_error_for_an_unknown_adapter(harness, tmp
         harness.adapter_binary("not-a-real-adapter", tmp_path)
 
 
-def test_adapter_seed_files_raises_harness_error_for_an_unknown_adapter(harness, tmp_path):
+def test_adapter_seed_files_raises_harness_error_for_an_unknown_adapter(
+    harness, tmp_path
+):
     with pytest.raises(HarnessError):
         harness.adapter_seed_files("not-a-real-adapter", tmp_path)
 
 
-def test_adapter_binary_raises_harness_error_when_bmad_loop_unimportable(harness, tmp_path, monkeypatch):
+def test_adapter_binary_raises_harness_error_when_bmad_loop_unimportable(
+    harness, tmp_path, monkeypatch
+):
     monkeypatch.setitem(sys.modules, "bmad_loop.adapters.profile", None)
     with pytest.raises(HarnessError, match="not importable"):
         harness.adapter_binary("claude", tmp_path)
@@ -210,7 +218,9 @@ def test_adapter_binary_raises_harness_error_not_raw_when_profile_overlay_is_not
     (``claude``, never mentioned in the broken file)."""
     profiles_dir = tmp_path / ".bmad-loop" / "profiles"
     profiles_dir.mkdir(parents=True)
-    (profiles_dir / "broken.toml").write_bytes(b"name = \"broken\"\nbinary = \"\xff\xfe\"\n")
+    (profiles_dir / "broken.toml").write_bytes(
+        b'name = "broken"\nbinary = "\xff\xfe"\n'
+    )
 
     with pytest.raises(HarnessError):
         harness.adapter_binary("claude", tmp_path)
@@ -258,7 +268,9 @@ def test_story_feed_error_none_for_a_valid_feed(harness, tmp_path):
     _seed_bmad_config(tmp_path)
     feed_dir = tmp_path / "_bmad-output" / "implementation-artifacts"
     feed_dir.mkdir(parents=True)
-    (feed_dir / "sprint-status.yaml").write_text("development_status: {}\n", encoding="utf-8")
+    (feed_dir / "sprint-status.yaml").write_text(
+        "development_status: {}\n", encoding="utf-8"
+    )
     assert harness.story_feed_error(tmp_path) is None
 
 
@@ -279,7 +291,9 @@ def test_story_feed_error_when_sprint_status_is_invalid_yaml(harness, tmp_path):
     _seed_bmad_config(tmp_path)
     feed_dir = tmp_path / "_bmad-output" / "implementation-artifacts"
     feed_dir.mkdir(parents=True)
-    (feed_dir / "sprint-status.yaml").write_text("not: valid: yaml: [", encoding="utf-8")
+    (feed_dir / "sprint-status.yaml").write_text(
+        "not: valid: yaml: [", encoding="utf-8"
+    )
     error = harness.story_feed_error(tmp_path)
     assert error is not None
 
@@ -298,7 +312,9 @@ def test_story_feed_error_never_raises_when_bmad_config_is_not_utf8(harness, tmp
     assert error is not None
 
 
-def test_story_feed_error_never_raises_when_bmad_config_top_level_is_a_list(harness, tmp_path):
+def test_story_feed_error_never_raises_when_bmad_config_top_level_is_a_list(
+    harness, tmp_path
+):
     """Second review pass, same contract one shape over: ``load_paths`` calls
     ``doc.get(...)`` on whatever ``yaml.safe_load`` returned without an
     isinstance check, so a config.yaml whose top level is a LIST (valid YAML,
@@ -313,7 +329,9 @@ def test_story_feed_error_never_raises_when_bmad_config_top_level_is_a_list(harn
     assert "shape" in error or "bmad-config" in error
 
 
-def test_story_feed_error_never_raises_when_sprint_status_is_not_utf8(harness, tmp_path):
+def test_story_feed_error_never_raises_when_sprint_status_is_not_utf8(
+    harness, tmp_path
+):
     """Same gap as the config.yaml case above, one layer down:
     ``sprintstatus.load`` reads the feed file the same unguarded way."""
     _seed_bmad_config(tmp_path)
@@ -325,7 +343,9 @@ def test_story_feed_error_never_raises_when_sprint_status_is_not_utf8(harness, t
     assert error is not None
 
 
-def test_story_feed_error_never_raises_when_bmad_loop_unimportable(harness, tmp_path, monkeypatch):
+def test_story_feed_error_never_raises_when_bmad_loop_unimportable(
+    harness, tmp_path, monkeypatch
+):
     # `from bmad_loop import bmadconfig, sprintstatus` resolves `bmadconfig`
     # as a FROMLIST name of the already-imported `bmad_loop` package -- once
     # any earlier test (this file's own `test_story_feed_error_none_for_a_

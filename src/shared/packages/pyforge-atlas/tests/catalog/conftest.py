@@ -158,8 +158,8 @@ EXPECTED_OVERRIDE_POINTS = EXPECTED_LIVE_OVERRIDE_POINTS | RESERVED_OVERRIDE_POI
 # Extra overrides asserted SEPARATELY (current data access, not helper-backed).
 EXPECTED_EXTRA_OVERRIDES = {
     "ANACONDA_API_BASE_URL",  # gap A2-G2 (Phase F direct env override)
-    "OSV_VULNS_BUCKET_URL",   # § 3.4 store 2 refresh endpoint (B5)
-    "BIGQUERY_BASE_URL",      # Phase P connection base (A2-J1; B3 flips to GBQ)
+    "OSV_VULNS_BUCKET_URL",  # § 3.4 store 2 refresh endpoint (B5)
+    "BIGQUERY_BASE_URL",  # Phase P connection base (A2-J1; B3 flips to GBQ)
 }
 
 # Full-URL fetcher settings (outside the 20-count) — set-pinned (P7).

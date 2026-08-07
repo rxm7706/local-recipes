@@ -314,7 +314,9 @@ def tier_prerequisites_met(tier: str, tools: dict) -> tuple[bool, list[str]]:
         "Forge+": {"ast_grep": "ast-grep", "ccc": "ccc"},
         "Deep": {"ast_grep": "ast-grep", "gh_cli": "gh", "qmd": "qmd"},
     }[tier]
-    missing = [display for key, display in needed.items() if not tools[key]["available"]]
+    missing = [
+        display for key, display in needed.items() if not tools[key]["available"]
+    ]
     return (len(missing) == 0, missing)
 
 
@@ -341,6 +343,7 @@ def read_prior_state(prior_state_path) -> dict:
     try:
         import yaml  # local import — only needed when --prior-state-from is used
         from pathlib import Path as _P
+
         p = _P(prior_state_path)
         if not p.exists():
             return empty
@@ -358,7 +361,9 @@ def read_prior_state(prior_state_path) -> dict:
         "previous_ccc_index_status": ccc_index.get("status"),
         "previous_ccc_indexed_path": ccc_index.get("indexed_path"),
         "previous_ccc_last_indexed": ccc_index.get("last_indexed"),
-        "previous_ccc_staleness_threshold_hours": ccc_index.get("staleness_threshold_hours"),
+        "previous_ccc_staleness_threshold_hours": ccc_index.get(
+            "staleness_threshold_hours"
+        ),
     }
 
 
@@ -434,9 +439,9 @@ def detect(args: argparse.Namespace) -> dict:
     with ThreadPoolExecutor(max_workers=4) as ex:
         futures = {
             "ast_grep": ex.submit(probe_ast_grep),
-            "gh_cli":   ex.submit(probe_gh_cli),
-            "qmd":      ex.submit(probe_qmd),
-            "ccc":      ex.submit(probe_ccc),
+            "gh_cli": ex.submit(probe_gh_cli),
+            "qmd": ex.submit(probe_qmd),
+            "ccc": ex.submit(probe_ccc),
         }
         for key, fut in futures.items():
             tools[key] = fut.result()
@@ -475,8 +480,13 @@ def detect(args: argparse.Namespace) -> dict:
     require_missing: list[str] = []
     if args.require_tier is not None:
         if args.require_tier not in VALID_TIERS:
-            _die(1, f"--require-tier must be one of {VALID_TIERS}, got {args.require_tier!r}")
-        require_satisfied, require_missing = tier_prerequisites_met(args.require_tier, tools)
+            _die(
+                1,
+                f"--require-tier must be one of {VALID_TIERS}, got {args.require_tier!r}",
+            )
+        require_satisfied, require_missing = tier_prerequisites_met(
+            args.require_tier, tools
+        )
     else:
         require_satisfied = None
 
@@ -518,13 +528,17 @@ def compute_deltas(current_tools: dict, prior: dict, calculated_tier: str) -> di
     tools_removed = [], tier_changed = false.
     """
     tool_keys = ("ast_grep", "gh_cli", "qmd", "ccc")
-    cur_avail = {k: bool((current_tools.get(k) or {}).get("available")) for k in tool_keys}
+    cur_avail = {
+        k: bool((current_tools.get(k) or {}).get("available")) for k in tool_keys
+    }
 
     prev_tools_raw = prior.get("previous_tools") or {}
     if prev_tools_raw:
         prev_avail = {k: bool(prev_tools_raw.get(k, False)) for k in tool_keys}
         tools_added = sorted(k for k in tool_keys if cur_avail[k] and not prev_avail[k])
-        tools_removed = sorted(k for k in tool_keys if prev_avail[k] and not cur_avail[k])
+        tools_removed = sorted(
+            k for k in tool_keys if prev_avail[k] and not cur_avail[k]
+        )
     else:
         tools_added = sorted(k for k in tool_keys if cur_avail[k])
         tools_removed = []
@@ -548,40 +562,40 @@ def main() -> None:
         "--tier-override",
         default=None,
         help="Force a specific tier (must be one of Quick, Forge, Forge+, Deep — case-sensitive)."
-             " Invalid values are flagged in the output rather than rejected, so step 4 can"
-             " surface the warning to the user.",
+        " Invalid values are flagged in the output rather than rejected, so step 4 can"
+        " surface the warning to the user.",
     )
     parser.add_argument(
         "--require-tier",
         default=None,
         help="Require the calculated tier to satisfy this requirement (uses tool-prerequisite"
-             " check, not tier-name comparison — Deep does not subsume Forge+ because Deep"
-             " does not require ccc). Output reports satisfied/missing-tools; caller decides"
-             " whether to halt.",
+        " check, not tier-name comparison — Deep does not subsume Forge+ because Deep"
+        " does not require ccc). Output reports satisfied/missing-tools; caller decides"
+        " whether to halt.",
     )
     parser.add_argument(
         "--snyk-env-var",
         default="SNYK_TOKEN",
         help="Environment variable name to check for security-scan availability"
-             " (informational only — does NOT affect tier). Default: SNYK_TOKEN.",
+        " (informational only — does NOT affect tier). Default: SNYK_TOKEN.",
     )
     parser.add_argument(
         "--project-root",
         default=None,
         help="Absolute project root of the current run. Used only to compute"
-             " prior.ccc_index_fresh: the prior CCC index counts as fresh only"
-             " when its indexed_path equals this value (and its status/timestamp"
-             " still qualify). Omitted → ccc_index_fresh is always false.",
+        " prior.ccc_index_fresh: the prior CCC index counts as fresh only"
+        " when its indexed_path equals this value (and its status/timestamp"
+        " still qualify). Omitted → ccc_index_fresh is always false.",
     )
     parser.add_argument(
         "--prior-state-from",
         default=None,
         help="Optional path to a previous-run forge-tier.yaml. When provided,"
-             " the script reads it and surfaces previous_tier, previous_tools,"
-             " previous_detection_date, and previous_ccc_* fields under the 'prior'"
-             " key — removing YAML-parse responsibility from the step prompt."
-             " Missing file or unreadable YAML returns the first-run shape (all"
-             " null/empty) without erroring.",
+        " the script reads it and surfaces previous_tier, previous_tools,"
+        " previous_detection_date, and previous_ccc_* fields under the 'prior'"
+        " key — removing YAML-parse responsibility from the step prompt."
+        " Missing file or unreadable YAML returns the first-run shape (all"
+        " null/empty) without erroring.",
     )
     args = parser.parse_args()
 

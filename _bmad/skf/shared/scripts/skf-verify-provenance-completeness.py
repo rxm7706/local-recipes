@@ -319,8 +319,9 @@ def verify(metadata: dict, prov: dict, source_root: Path | None) -> dict:
                         {
                             "export_name": name,
                             "source_file": sf if isinstance(sf, str) else None,
-                            "source_line": sl if isinstance(sl, int)
-                            and not isinstance(sl, bool) else sl,
+                            "source_line": sl
+                            if isinstance(sl, int) and not isinstance(sl, bool)
+                            else sl,
                             "reason": reason,
                         }
                     )
@@ -404,9 +405,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="emit provenance completeness / orphan / stale-citation findings",
     )
     p.add_argument("--metadata", required=True, help="path to metadata.json")
-    p.add_argument(
-        "--provenance", required=True, help="path to provenance-map.json"
-    )
+    p.add_argument("--provenance", required=True, help="path to provenance-map.json")
     p.add_argument(
         "--source-root",
         default=None,
@@ -422,9 +421,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="write JSON to this file instead of stdout ('-' for stdout)",
     )
-    p.add_argument(
-        "--verbose", action="store_true", help="diagnostics to stderr"
-    )
+    p.add_argument("--verbose", action="store_true", help="diagnostics to stderr")
     p.set_defaults(func=_cmd_verify)
     return parser
 

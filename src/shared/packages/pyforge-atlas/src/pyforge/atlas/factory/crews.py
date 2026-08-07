@@ -66,6 +66,7 @@ class _StrictSafeLoader(yaml.SafeLoader):
             seen.add(key)
         return super().construct_mapping(node, deep=deep)
 
+
 #: The visible stale banner stamped into a compiled body when the source is stale. LintCrew
 #: checks for this exact prefix so a stale page that drops the banner is a reported violation.
 STALE_BANNER_PREFIX = "> ⚠️ STALE"
@@ -155,7 +156,10 @@ def _resolve_staleness(meta: Mapping[str, Any], raw_doc: Path) -> dict[str, Any]
     if sidecar is None:
         return inline
     reasons = [r for r in (sidecar.get("reason"), inline.get("reason")) if r]
-    merged: dict[str, Any] = {"stale": True, "reason": "; ".join(dict.fromkeys(reasons))}
+    merged: dict[str, Any] = {
+        "stale": True,
+        "reason": "; ".join(dict.fromkeys(reasons)),
+    }
     marked = sidecar.get("marked_at", inline.get("marked_at"))
     if marked is not None:
         merged["marked_at"] = marked
@@ -178,8 +182,12 @@ def _identity_enricher(_title: str, body: str) -> str:
 @dataclass
 class CompileResult:
     compiled: list[str] = field(default_factory=list)  # compiled doc names, sorted
-    stale_forwarded: list[str] = field(default_factory=list)  # names whose staleness propagated
-    failed: list[tuple[str, str]] = field(default_factory=list)  # (name, reason) skipped docs
+    stale_forwarded: list[str] = field(
+        default_factory=list
+    )  # names whose staleness propagated
+    failed: list[tuple[str, str]] = field(
+        default_factory=list
+    )  # (name, reason) skipped docs
 
     @property
     def count(self) -> int:
@@ -222,7 +230,9 @@ class CompileCrew:
                 # AD-13/AD-22: forward the source's staleness — the compiled page cannot read as
                 # fresh. Both machine-readable (frontmatter) AND human-visible (body banner).
                 compiled_meta["stale"] = True
-                compiled_meta["stale_reason"] = str(marker.get("reason", "source marked stale"))
+                compiled_meta["stale_reason"] = str(
+                    marker.get("reason", "source marked stale")
+                )
                 if "marked_at" in marker:
                     compiled_meta["stale_marked_at"] = marker["marked_at"]
                 body = self._prepend_banner(body, compiled_meta["stale_reason"])
@@ -298,19 +308,25 @@ class LintCrew:
                 # Lint REPORTS on a bad page, never raises (docstring contract) — a single
                 # malformed page must not DoS the whole pass and hide other violations.
                 report.violations.append(
-                    LintViolation(name, "malformed-frontmatter", f"{type(exc).__name__}: {exc}")
+                    LintViolation(
+                        name, "malformed-frontmatter", f"{type(exc).__name__}: {exc}"
+                    )
                 )
                 continue
             if not meta:
                 report.violations.append(
-                    LintViolation(name, "missing-frontmatter", "no YAML frontmatter block")
+                    LintViolation(
+                        name, "missing-frontmatter", "no YAML frontmatter block"
+                    )
                 )
             elif not meta.get("title"):
                 report.violations.append(
                     LintViolation(name, "missing-title", "frontmatter has no 'title'")
                 )
             if not body.strip():
-                report.violations.append(LintViolation(name, "empty-body", "body is empty"))
+                report.violations.append(
+                    LintViolation(name, "empty-body", "body is empty")
+                )
             if meta.get("stale") and STALE_BANNER_PREFIX not in body:
                 report.violations.append(
                     LintViolation(
@@ -336,12 +352,20 @@ class LintCrew:
                     resolved.relative_to(compiled_root)
                 except ValueError:
                     report.violations.append(
-                        LintViolation(name, "broken-link", f"link target {target!r} escapes compiled/")
+                        LintViolation(
+                            name,
+                            "broken-link",
+                            f"link target {target!r} escapes compiled/",
+                        )
                     )
                     continue
                 if not resolved.is_file():
                     report.violations.append(
-                        LintViolation(name, "broken-link", f"link target {target!r} not in compiled/")
+                        LintViolation(
+                            name,
+                            "broken-link",
+                            f"link target {target!r} not in compiled/",
+                        )
                     )
         return report
 
@@ -399,7 +423,11 @@ def keyword_retriever(
         overlap = q_terms & d_terms
         if not overlap:
             continue
-        scored.append(Grounding(doc=name, snippet=_snippet(body, overlap), score=float(len(overlap))))
+        scored.append(
+            Grounding(
+                doc=name, snippet=_snippet(body, overlap), score=float(len(overlap))
+            )
+        )
     scored.sort(key=lambda g: (-g.score, g.doc))
     return scored[:k]
 

@@ -125,7 +125,7 @@ def _anonymous(path: Path) -> list[int]:
             field_taken, in_entry = False, False
         elif _ANON_RE.match(ln):
             if in_entry and not field_taken:
-                field_taken = True          # this one belongs to the heading above
+                field_taken = True  # this one belongs to the heading above
             else:
                 out.append(n)
     return out
@@ -223,11 +223,17 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"findings": findings}, indent=2))
         return 1 if findings else 0
 
-    scanned = sorted(
-        p.name for p in PROJECTS.iterdir() if p.is_dir() and (p / TIER3).is_file()
-    ) if PROJECTS.is_dir() else []
-    print(f"Deferred-work durability — {len(scanned)} project(s) with a Tier-3 ledger"
-          + (f": {', '.join(scanned)}" if scanned else ""))
+    scanned = (
+        sorted(
+            p.name for p in PROJECTS.iterdir() if p.is_dir() and (p / TIER3).is_file()
+        )
+        if PROJECTS.is_dir()
+        else []
+    )
+    print(
+        f"Deferred-work durability — {len(scanned)} project(s) with a Tier-3 ledger"
+        + (f": {', '.join(scanned)}" if scanned else "")
+    )
 
     if not findings:
         print("\nOK: every Tier-3 deferral has a tracked twin.")
@@ -236,29 +242,41 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\nFINDINGS ({len(findings)}):")
     for f in findings:
         if f["kind"] == "no-tracked-ledger":
-            print(f"  ✗ [no-tracked-ledger] {f['project']}: {f['tier3']} holds "
-                  f"{f['tier3_bytes'] / 1024:.0f} KB of deferred work and "
-                  f"{f['tracked']} does not exist — the WHOLE record is gitignored.")
+            print(
+                f"  ✗ [no-tracked-ledger] {f['project']}: {f['tier3']} holds "
+                f"{f['tier3_bytes'] / 1024:.0f} KB of deferred work and "
+                f"{f['tracked']} does not exist — the WHOLE record is gitignored."
+            )
             continue
         if f["kind"] == "ledger-entry-unstatused":
-            print(f"  ✗ [ledger-entry-unstatused] {f['project']}/{f['id']}: no `status:` "
-                  f"line in {f['tracked']} — it cannot be counted as open or closed.")
+            print(
+                f"  ✗ [ledger-entry-unstatused] {f['project']}/{f['id']}: no `status:` "
+                f"line in {f['tracked']} — it cannot be counted as open or closed."
+            )
             continue
         if f["kind"] == "ledger-entry-unidentified":
-            print(f"  ✗ [ledger-entry-unidentified] {f['project']} {f['id']} of "
-                  f"{f['tracked']}: an entry with no `## DW-<scope>-<n>` heading — it "
-                  f"cannot be cited, deduped, or individually closed.")
+            print(
+                f"  ✗ [ledger-entry-unidentified] {f['project']} {f['id']} of "
+                f"{f['tracked']}: an entry with no `## DW-<scope>-<n>` heading — it "
+                f"cannot be cited, deduped, or individually closed."
+            )
             continue
         hint = ""
         if f["generic_id"]:
-            hint = ("  — a generic id: bmad-loop's own damping output. Rename it to the "
-                    "ledger's DW-<story>-<n> convention on promotion, or the next damped "
-                    "story collides with it.")
-        print(f"  ✗ [{f['kind']}] {f['project']}/{f['id']}: present in {f['tier3']} "
-              f"but NOT in {f['tracked']}{hint}")
-    print("\nTier-3 is gitignored — an entry only there does not survive a clone or a\n"
-          "worktree teardown. Promote it into the tracked ledger (rewriting the body and\n"
-          "adding a resolution is expected), then re-run.")
+            hint = (
+                "  — a generic id: bmad-loop's own damping output. Rename it to the "
+                "ledger's DW-<story>-<n> convention on promotion, or the next damped "
+                "story collides with it."
+            )
+        print(
+            f"  ✗ [{f['kind']}] {f['project']}/{f['id']}: present in {f['tier3']} "
+            f"but NOT in {f['tracked']}{hint}"
+        )
+    print(
+        "\nTier-3 is gitignored — an entry only there does not survive a clone or a\n"
+        "worktree teardown. Promote it into the tracked ledger (rewriting the body and\n"
+        "adding a resolution is expected), then re-run."
+    )
     return 1
 
 

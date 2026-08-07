@@ -84,7 +84,9 @@ def test_currency_rung_is_always_warn(reason, verdict):
         message="m",
         subject="pkg",
         severity=None,
-        currency=CurrencyInfo(verdict=verdict, latest="1.0.0", lag=lag, eol_date="2099-01-01")
+        currency=CurrencyInfo(
+            verdict=verdict, latest="1.0.0", lag=lag, eol_date="2099-01-01"
+        )
         if reason != "unknown"
         else CurrencyInfo(verdict=verdict),
     )
@@ -121,7 +123,9 @@ def _finding(reason, verdict, *, lag=0):
         message="m",
         subject="pkg",
         severity=None,
-        currency=CurrencyInfo(verdict=verdict, latest="1.0.0", lag=lag, eol_date="2099-01-01")
+        currency=CurrencyInfo(
+            verdict=verdict, latest="1.0.0", lag=lag, eol_date="2099-01-01"
+        )
         if reason != "unknown"
         else CurrencyInfo(verdict=verdict),
     )
@@ -148,18 +152,14 @@ def test_currency_rung_over_lag_above_threshold_is_policy_violation():
     """An over-lag (SUPPORTED verdict, positive lag) whose lag EXCEEDS
     --max-lag composes policy-violation (a numeric check, not a table key)."""
     finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=5)
-    status, _driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, _driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.POLICY_VIOLATION
 
 
 def test_currency_rung_over_lag_at_or_below_threshold_stays_warn():
     """An over-lag within --max-lag is visible (warn) but never blocking."""
     finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=2)
-    status, _driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, _driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.WARN
     # lag == max_lag is the boundary: NOT over the threshold -> warn.
     boundary = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=3)
@@ -196,9 +196,7 @@ def test_currency_rung_supported_with_no_lag_under_a_threshold_fails_closed():
         severity=None,
         currency=CurrencyInfo(verdict=CurrencyVerdict.SUPPORTED, lag=None),
     )
-    status, _driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, _driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.INDETERMINATE
     status_no_gate, _ = currency_rung(
         finding, policy=_GATING_CURRENCY_POLICY, max_lag=None
@@ -211,9 +209,7 @@ def test_currency_rung_freshness_finding_currency_none_is_indeterminate():
     never toward clean -- regardless of policy/max_lag."""
     finding = currency_stale_finding(unavailable=False)
     assert finding.currency is None
-    status, driver = currency_rung(
-        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
-    )
+    status, driver = currency_rung(finding, policy=_GATING_CURRENCY_POLICY, max_lag=3)
     assert status is Status.INDETERMINATE
     assert driver == StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id)
 
@@ -222,9 +218,7 @@ def test_currency_rung_still_warns_with_defaults():
     """The ceiling holds for the no-policy call: policy=None falls back to
     all-WARN DEFAULT_CURRENCY_POLICY, and an over-lag with no max_lag warns."""
     assert currency_rung(_finding("eol", CurrencyVerdict.EOL))[0] is Status.WARN
-    assert (
-        currency_rung(_finding("unknown", CurrencyVerdict.UNKNOWN))[0] is Status.WARN
-    )
+    assert currency_rung(_finding("unknown", CurrencyVerdict.UNKNOWN))[0] is Status.WARN
     assert (
         currency_rung(_finding("over-lag", CurrencyVerdict.SUPPORTED, lag=9))[0]
         is Status.WARN
@@ -400,8 +394,18 @@ def test_resolve_from_lines_skips_malformed_entries():
 
 
 _CYCLES = [
-    {"cycle": "2.0.0", "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": "2.0.0"},
-    {"cycle": "2.31.0", "releaseDate": "2023-05-22", "eol": "2099-01-01", "latest": "2.31.0"},
+    {
+        "cycle": "2.0.0",
+        "releaseDate": "2020-01-01",
+        "eol": "2099-01-01",
+        "latest": "2.0.0",
+    },
+    {
+        "cycle": "2.31.0",
+        "releaseDate": "2023-05-22",
+        "eol": "2099-01-01",
+        "latest": "2.31.0",
+    },
 ]
 
 
@@ -508,7 +512,11 @@ def test_classify_eol_wins_even_when_also_over_lag():
     """Decision record § 2, worked example 4: eol beats over-lag even when
     BOTH conditions hold on the same resolution."""
     resolution = _Resolution(
-        tier="lts-registry", verdict=CurrencyVerdict.EOL, latest="6.1", lag=3, eol_date="2020-01-01"
+        tier="lts-registry",
+        verdict=CurrencyVerdict.EOL,
+        latest="6.1",
+        lag=3,
+        eol_date="2020-01-01",
     )
     assert _classify(resolution) == ("eol", CurrencyVerdict.EOL)
 
@@ -624,7 +632,11 @@ def test_resolve_routes_an_endoflife_sourced_registry_entry_via_its_slug():
         products=_products(),
         alias_index=_alias_index(),
         registry_fresh=True,
-        endoflife_snapshot={"python": [{"cycle": "3.12", "releaseDate": "2023-10-02", "eol": "2028-10-31"}]},
+        endoflife_snapshot={
+            "python": [
+                {"cycle": "3.12", "releaseDate": "2023-10-02", "eol": "2028-10-31"}
+            ]
+        },
         endoflife_fresh=True,
         now=_NOW,
     )
@@ -728,7 +740,11 @@ def test_currency_findings_mixed_fixture_covers_all_three_reasons(
     ]
     findings, currency_data = currency_findings(components, now=now)
 
-    by_reason = {f.id.split(":")[1]: f for f in findings if not f.id.startswith("currency:unknown:!python")}
+    by_reason = {
+        f.id.split(":")[1]: f
+        for f in findings
+        if not f.id.startswith("currency:unknown:!python")
+    }
     assert set(by_reason) == {"eol", "over-lag", "unknown"}
     for finding in findings:
         status, _driver = currency_rung(finding)
@@ -879,9 +895,14 @@ def test_bundled_registry_matches_the_cfe_canonical_source_when_present():
     the installed package."""
     import yaml
 
-    canonical = Path(__file__).resolve().parents[6] / ".claude" / "skills" / (
-        "conda-forge-expert"
-    ) / "data" / "lts-registry.yaml"
+    canonical = (
+        Path(__file__).resolve().parents[6]
+        / ".claude"
+        / "skills"
+        / ("conda-forge-expert")
+        / "data"
+        / "lts-registry.yaml"
+    )
     if not canonical.is_file():
         pytest.skip("CFE canonical registry not present (non-monorepo context)")
     canonical_doc = yaml.safe_load(canonical.read_text(encoding="utf-8"))
@@ -966,10 +987,16 @@ def test_ambient_snapshot_keeps_every_pinned_fixture_dep_it_covers_fully_current
     assert cache_dir is not None, "ambient feed cache env var not set -- see conftest"
     snapshot = feeds.load_endoflife_snapshot(feeds.endoflife_cache_path(cache_dir))
     assert snapshot, "ambient endoflife snapshot missing -- see tests/conftest.py"
-    normalized_snapshot = {_normalize_name(key): value for key, value in snapshot.items()}
+    normalized_snapshot = {
+        _normalize_name(key): value for key, value in snapshot.items()
+    }
 
-    requirement_pin = re.compile(r"\b([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][A-Za-z0-9._+!-]*)")
-    toml_pin = re.compile(r'(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*=\s*"\s*==\s*([0-9][^"]*)"')
+    requirement_pin = re.compile(
+        r"\b([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][A-Za-z0-9._+!-]*)"
+    )
+    toml_pin = re.compile(
+        r'(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*=\s*"\s*==\s*([0-9][^"]*)"'
+    )
     stale: list[str] = []
     for path in sorted(fixtures_root.rglob("*")):
         if not path.is_file():

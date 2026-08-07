@@ -44,7 +44,9 @@ def _other_files(root: Path, exclude: Path) -> list[Path]:
 
 
 def test_happy_path_writes_file_and_one_index_line(memory_root: Path) -> None:
-    result = capture(memory_root, "project", "ADR-005b: in-house gateway replaces LiteLLM")
+    result = capture(
+        memory_root, "project", "ADR-005b: in-house gateway replaces LiteLLM"
+    )
 
     assert result.path.exists()
     assert result.path.parent == memory_root / "project"
@@ -66,14 +68,18 @@ def test_frontmatter_round_trips_through_from_frontmatter(memory_root: Path) -> 
     result = capture(memory_root, "reference", "some reference note")
     content = result.path.read_text(encoding="utf-8")
     frontmatter, _, body = content.partition("---\n")[2].partition("---\n")
-    parsed = CaptureRecord.from_frontmatter("---\n" + frontmatter + "---\n", text=body.strip())
+    parsed = CaptureRecord.from_frontmatter(
+        "---\n" + frontmatter + "---\n", text=body.strip()
+    )
 
     assert parsed.type == "reference"
     assert parsed.name == result.record.name
     assert parsed.description == result.record.description
 
 
-def test_slug_collision_appends_numeric_suffix_without_clobbering(memory_root: Path) -> None:
+def test_slug_collision_appends_numeric_suffix_without_clobbering(
+    memory_root: Path,
+) -> None:
     first = capture(memory_root, "feedback", "same text every time")
     second = capture(memory_root, "feedback", "same text every time")
 
@@ -122,7 +128,9 @@ def test_concurrent_captures_lose_no_entries(memory_root: Path) -> None:
     assert project_section.count("- [") == 20
 
 
-def test_frontmatter_name_is_quoted_and_survives_type_coercing_content(memory_root: Path) -> None:
+def test_frontmatter_name_is_quoted_and_survives_type_coercing_content(
+    memory_root: Path,
+) -> None:
     """Regression: text that slugifies to a bare '404'/'2026-07-25'/etc.
     must not parse back as a YAML int/date -- name must always be str.
 
@@ -139,7 +147,9 @@ def test_frontmatter_name_is_quoted_and_survives_type_coercing_content(memory_ro
     assert parsed.name == "404"
 
 
-def test_embedded_horizontal_rule_round_trips_via_parse_capture_file(memory_root: Path) -> None:
+def test_embedded_horizontal_rule_round_trips_via_parse_capture_file(
+    memory_root: Path,
+) -> None:
     """Regression: a bare '---' line inside the captured body must not be
     mistaken for the frontmatter's closing delimiter."""
     text = "Decision.\n\n---\n\nRationale follows the divider above."
@@ -163,14 +173,18 @@ def test_invalid_capture_type_is_rejected_before_any_write(memory_root: Path) ->
     assert not (memory_root / "decision").exists()
 
 
-def test_missing_memory_root_fails_loudly_instead_of_auto_creating(tmp_path: Path) -> None:
+def test_missing_memory_root_fails_loudly_instead_of_auto_creating(
+    tmp_path: Path,
+) -> None:
     missing_root = tmp_path / "nope" / ".claude" / "memory"
     with pytest.raises(ValueError, match="does not exist"):
         capture(missing_root, "project", "some text")
     assert not missing_root.exists()
 
 
-def test_different_types_land_in_matching_subdirectory_and_section(memory_root: Path) -> None:
+def test_different_types_land_in_matching_subdirectory_and_section(
+    memory_root: Path,
+) -> None:
     feedback_result = capture(memory_root, "feedback", "a feedback entry")
     project_result = capture(memory_root, "project", "a project entry")
     reference_result = capture(memory_root, "reference", "a reference entry")

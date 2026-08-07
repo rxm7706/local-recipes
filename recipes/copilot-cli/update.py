@@ -40,16 +40,14 @@ REPO_ROOT = RECIPE_DIR.parent.parent
 # Maps recipe target_platform -> upstream release asset filename.
 # Keep in sync with the `source:` blocks in recipe.yaml.
 PLATFORM_ASSETS = {
-    "linux-64":      "copilot-linux-x64.tar.gz",
+    "linux-64": "copilot-linux-x64.tar.gz",
     "linux-aarch64": "copilot-linux-arm64.tar.gz",
-    "osx-arm64":     "copilot-darwin-arm64.tar.gz",
-    "osx-64":        "copilot-darwin-x64.tar.gz",
-    "win-64":        "copilot-win32-x64.zip",
+    "osx-arm64": "copilot-darwin-arm64.tar.gz",
+    "osx-64": "copilot-darwin-x64.tar.gz",
+    "win-64": "copilot-win32-x64.zip",
 }
 
-LICENSE_URL = (
-    "https://raw.githubusercontent.com/{repo}/refs/tags/v{version}/LICENSE.md"
-)
+LICENSE_URL = "https://raw.githubusercontent.com/{repo}/refs/tags/v{version}/LICENSE.md"
 
 
 def http_get(url: str) -> bytes:
@@ -64,8 +62,17 @@ def latest_release_tag() -> str:
     """Return the latest release tag, e.g. 'v1.0.61'."""
     try:
         return subprocess.check_output(
-            ["gh", "release", "view", "--repo", REPO,
-             "--json", "tagName", "-q", ".tagName"],
+            [
+                "gh",
+                "release",
+                "view",
+                "--repo",
+                REPO,
+                "--json",
+                "tagName",
+                "-q",
+                ".tagName",
+            ],
             text=True,
         ).strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -145,8 +152,7 @@ def update_text(
         text, n = pat.subn(rf"\g<1>{new_sha}", text)
         if n != 1:
             sys.exit(
-                f"ERROR: could not locate sha256 line for {asset} "
-                f"(matched {n} times)"
+                f"ERROR: could not locate sha256 line for {asset} (matched {n} times)"
             )
         changes.append((f"source[{target_platform}].sha256", new_sha))
 
@@ -158,9 +164,7 @@ def update_text(
     )
     text, n = lic_pat.subn(rf"\g<1>{license_sha}", text)
     if n != 1:
-        sys.exit(
-            f"ERROR: could not locate LICENSE.md sha256 line (matched {n} times)"
-        )
+        sys.exit(f"ERROR: could not locate LICENSE.md sha256 line (matched {n} times)")
     changes.append(("source[LICENSE.md].sha256", license_sha))
 
     return text, changes
@@ -168,8 +172,7 @@ def update_text(
 
 def run_build_and_verify(version: str) -> int:
     rc = subprocess.call(
-        ["pixi", "run", "-e", "local-recipes",
-         "recipe-build", "recipes/copilot-cli"],
+        ["pixi", "run", "-e", "local-recipes", "recipe-build", "recipes/copilot-cli"],
         cwd=REPO_ROOT,
     )
     if rc != 0:
@@ -178,11 +181,19 @@ def run_build_and_verify(version: str) -> int:
 
     channel = REPO_ROOT / "build_artifacts" / "linux64"
     rc = subprocess.call(
-        ["pixi", "exec",
-         "--channel", f"file://{channel}",
-         "--channel", "conda-forge",
-         "--spec", f"copilot-cli={version}",
-         "--", "copilot", "--version"],
+        [
+            "pixi",
+            "exec",
+            "--channel",
+            f"file://{channel}",
+            "--channel",
+            "conda-forge",
+            "--spec",
+            f"copilot-cli={version}",
+            "--",
+            "copilot",
+            "--version",
+        ],
         cwd=REPO_ROOT,
     )
     if rc != 0:
@@ -197,15 +208,18 @@ def main() -> int:
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
-        "--check", action="store_true",
+        "--check",
+        action="store_true",
         help="Report current vs latest; no changes (exit 1 if outdated).",
     )
     mode.add_argument(
-        "--apply", action="store_true",
+        "--apply",
+        action="store_true",
         help="Update recipe.yaml in place.",
     )
     parser.add_argument(
-        "--build", action="store_true",
+        "--build",
+        action="store_true",
         help="After --apply, run recipe-build and verify install on linux-64.",
     )
     args = parser.parse_args()
@@ -246,7 +260,10 @@ def main() -> int:
         )
 
     new_text, changes = update_text(
-        text, new_version=latest, sha_map=sums, license_sha=new_lic_sha,
+        text,
+        new_version=latest,
+        sha_map=sums,
+        license_sha=new_lic_sha,
     )
 
     if not args.apply:

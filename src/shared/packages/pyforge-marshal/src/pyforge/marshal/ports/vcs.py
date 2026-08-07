@@ -182,7 +182,9 @@ class VcsPort(Protocol):
         ``branch``, or ``None`` if no worktree holds it."""
         ...
 
-    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
+    def add_worktree(
+        self, repo_root: Path, home: Path, branch: str, *, base: str
+    ) -> None:
         """Create a worktree at ``home`` on ``branch``. If ``branch`` does
         not yet exist it is created FROM ``base`` (``base`` itself is never
         checked out into ``home``); if it already exists, ``home`` attaches
@@ -221,7 +223,9 @@ class VcsPort(Protocol):
         ``VcsCommandError`` on any git failure."""
         ...
 
-    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+    def remove_worktree(
+        self, repo_root: Path, home: Path, *, force: bool = False
+    ) -> None:
         """Remove the worktree at ``home`` (``git worktree remove``).
         ``force`` passes ``--force`` -- reserved for the path where the
         operator's own ``--force`` was needed to authorize a refused
@@ -229,7 +233,9 @@ class VcsPort(Protocol):
         with no flag. Raises ``VcsCommandError`` on any git failure."""
         ...
 
-    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+    def delete_branch(
+        self, repo_root: Path, branch: str, *, force: bool = False
+    ) -> None:
         """Delete ``branch`` (``git branch -d``/``-D``). ``force`` selects
         ``-D``: git's own ``-d`` uses commit-SHA ancestry and would
         spuriously refuse a branch this port's own ``is_branch_merged``
@@ -289,7 +295,9 @@ class VcsPort(Protocol):
         with no ``main``) or on any other git failure."""
         ...
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+    def commit_paths(
+        self, repo_root: Path, paths: tuple[Path, ...], message: str
+    ) -> str:
         """Story 4.1 (AD-29): stages exactly ``paths`` -- one ``git add --
         <path>`` per entry, never ``git add -A`` -- then commits ONLY those
         paths (``git commit -m <message> -- <path> <path> ...``, never a
@@ -331,7 +339,9 @@ class VcsPort(Protocol):
         resolve to a local branch."""
         ...
 
-    def merge_branch(self, repo_root: Path, branch: str, *, into: str, subject: str) -> str:
+    def merge_branch(
+        self, repo_root: Path, branch: str, *, into: str, subject: str
+    ) -> str:
         """Story 4.3 (FR-27, AD-24), redesigned by code review (2026-08-06,
         P1): merges ``branch`` into ``into`` WITHOUT ever checking out or
         otherwise mutating ``repo_root``'s own active working tree --

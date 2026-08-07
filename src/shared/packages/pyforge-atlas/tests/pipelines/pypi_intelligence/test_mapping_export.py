@@ -63,7 +63,9 @@ def test_equal_tier_collision_is_order_independent_deterministic():
         }
     )
     assert export_pypi_conda_map(df)["q"] == "conda-aaa"
-    assert export_pypi_conda_map(df.iloc[::-1].reset_index(drop=True))["q"] == "conda-aaa"
+    assert (
+        export_pypi_conda_map(df.iloc[::-1].reset_index(drop=True))["q"] == "conda-aaa"
+    )
 
 
 def test_unhashable_match_source_cell_does_not_crash():
@@ -82,7 +84,13 @@ def test_empty_and_malformed_inputs_yield_empty_map():
     assert export_pypi_conda_map(pd.DataFrame()) == {}
     assert export_pypi_conda_map(None) == {}
     # a non-string / missing conda_name is skipped (malformed cell — never exported).
-    df = pd.DataFrame({"pypi_name": ["z", "w"], "conda_name": [None, ["list"]], "match_source": ["parselmouth", "parselmouth"]})
+    df = pd.DataFrame(
+        {
+            "pypi_name": ["z", "w"],
+            "conda_name": [None, ["list"]],
+            "match_source": ["parselmouth", "parselmouth"],
+        }
+    )
     assert export_pypi_conda_map(df) == {}
 
 
@@ -94,7 +102,11 @@ def test_missing_match_source_column_defaults_rank():
 def test_flat_format_is_pypi_name_to_conda_name():
     # legacy-compatible {pypi_name: conda_name} shape (the retained authoring-read shim).
     df = pd.DataFrame(
-        {"pypi_name": ["numpy"], "conda_name": ["numpy"], "match_source": ["parselmouth"]}
+        {
+            "pypi_name": ["numpy"],
+            "conda_name": ["numpy"],
+            "match_source": ["parselmouth"],
+        }
     )
     out = export_pypi_conda_map(df)
     assert out == {"numpy": "numpy"}

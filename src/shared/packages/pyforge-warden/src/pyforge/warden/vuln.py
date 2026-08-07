@@ -341,9 +341,7 @@ def _synthesize_requirements(components: Sequence[Component]) -> SynthesizedInpu
             lines.append(f"{identity.name}=={identity.version}")
         else:
             excluded.append(component)
-    return SynthesizedInput(
-        lines=tuple(sorted(set(lines))), excluded=tuple(excluded)
-    )
+    return SynthesizedInput(lines=tuple(sorted(set(lines))), excluded=tuple(excluded))
 
 
 def _indeterminate_finding(reason: str, component: Component, message: str) -> Finding:
@@ -357,9 +355,7 @@ def _indeterminate_finding(reason: str, component: Component, message: str) -> F
     # per-component match-level rung, but per-component traceability in
     # `findings[]` would be lost — never acceptable for a waivable finding).
     version_segment = (
-        _sanitize_id_segment(component.version)
-        if component.version
-        else "unspecified"
+        _sanitize_id_segment(component.version) if component.version else "unspecified"
     )
     return Finding(
         id=(
@@ -836,9 +832,7 @@ def _findings_for_package(
         return []
     pkg_version = package.get("version")
     raw_pkg_ecosystem = package.get("ecosystem")
-    pkg_ecosystem = (
-        raw_pkg_ecosystem if isinstance(raw_pkg_ecosystem, str) else None
-    )
+    pkg_ecosystem = raw_pkg_ecosystem if isinstance(raw_pkg_ecosystem, str) else None
     groups = package_entry.get("groups")
     if not isinstance(groups, list):
         return []

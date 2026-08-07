@@ -111,21 +111,34 @@ The check is a second, narrowly-scoped exception to `engines.py`'s "one subproce
 DEPTRY_VERSION_RANGE = SpecifierSet(">=0.25.1,<0.26")
 _DEPTRY_VERSION_PATTERN = re.compile(r"^deptry\s+(\S+)", re.MULTILINE)
 
-def _check_engine_version(*, owner, argv, version_pattern, expected, cwd) -> ErrorRecord | None:
+
+def _check_engine_version(
+    *, owner, argv, version_pattern, expected, cwd
+) -> ErrorRecord | None:
     try:
         completed = subprocess.run(
-            argv, cwd=str(cwd), env={**os.environ, "NO_COLOR": "1"},
-            stdin=subprocess.DEVNULL, capture_output=True,
-            timeout=ENGINE_VERSION_CHECK_TIMEOUT_SECONDS, check=False,
+            argv,
+            cwd=str(cwd),
+            env={**os.environ, "NO_COLOR": "1"},
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=ENGINE_VERSION_CHECK_TIMEOUT_SECONDS,
+            check=False,
         )
     except FileNotFoundError:
-        return ErrorRecord(kind=ErrorKind.ENGINE_UNAVAILABLE, owner=owner,
-                            message=f"engine binary for {owner!r} not found on PATH")
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=f"engine binary for {owner!r} not found on PATH",
+        )
     # TimeoutExpired -> ENGINE_TIMEOUT, OSError -> ENGINE_EXECUTION_FAILED (mirrors _engine_env)
     match = version_pattern.search(completed.stdout.decode("utf-8", errors="replace"))
     if match is None or Version(match.group(1)) not in expected:
-        return ErrorRecord(kind=ErrorKind.ENGINE_UNAVAILABLE, owner=owner,
-                            message=f"{owner!r} version is missing, unparseable, or outside {expected}")
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=f"{owner!r} version is missing, unparseable, or outside {expected}",
+        )
     return None
 ```
 
