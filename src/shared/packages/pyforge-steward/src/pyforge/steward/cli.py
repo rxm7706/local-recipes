@@ -121,9 +121,8 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `dashboard` verb (`--build`/`--dry-run`; a later story adds the
-    `status` verb without changing this seam)."""
-    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard}")
+    """Add the `dashboard` (`--build`/`--dry-run`) and `status` verbs."""
+    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard,status}")
 
     dashboard = deploy_subs.add_parser(
         "dashboard", help="build/reconcile the GitHub Pages program-console dashboard"
@@ -133,6 +132,10 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
     )
     dashboard.add_argument(
         "--dry-run", action="store_true", help="build + diff and print — no commit/push"
+    )
+
+    deploy_subs.add_parser(
+        "status", help="report the last commit that touched docs/dashboard/ (SHA, timestamp)"
     )
 
 

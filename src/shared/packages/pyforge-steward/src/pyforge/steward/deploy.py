@@ -17,12 +17,17 @@ the operator or an existing workflow invokes the CLI).
 Story 2.3 slice: `--dry-run` on the same `dashboard` verb — build+diff,
 print, never commit/push. No new primitive; `_run_dashboard` just gains a
 third branch alongside `--build`/bare-reconcile.
+
+Story 2.4 slice: `last_deploy_commit` — reads the last commit that touched
+`docs/dashboard/` straight from `git log` (no separate state file, per
+FR-11). Wired as `steward deploy status`.
 """
 
 from __future__ import annotations
 
 import argparse
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
@@ -146,9 +151,47 @@ def commit_and_push_dashboard(*, cwd: str | Path) -> str:
     return sha
 
 
+# ── Deploy status (FR-11, Story 2.4) ────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class DeployRecord:
+    """The last commit that touched `docs/dashboard/` — SHA + committer
+    timestamp, read straight from `git log`. No separate state file exists
+    anywhere (FR-11's explicit constraint); this IS the record."""
+
+    sha: str
+    timestamp: str
+
+
+_LOG_FORMAT = "%H\x1f%cI"  # full SHA + strict-ISO committer date, unit-separated
+
+
+def last_deploy_commit(*, cwd: str | Path) -> DeployRecord | None:
+    """Return the last commit touching `docs/dashboard/`, or `None` if none
+    exists.
+
+    Reads git history directly (`git log -1`) — never a separate state file
+    (per FR-11's "no separate state store" constraint; see this story's
+    spec, "Design Notes" for why no Steward-provenance filter is applied).
+
+    Raises `subprocess.CalledProcessError` if `git log` itself fails (e.g.
+    `cwd` is not a git worktree) — propagated, not swallowed.
+    """
+    result = subprocess.run(
+        ["git", "log", "-1", f"--format={_LOG_FORMAT}", "--", str(_DASHBOARD_RELATIVE_PATH)],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    )
+    output = result.stdout.strip()
+    if not output:
+        return None
+    sha, timestamp = output.split("\x1f")
+    return DeployRecord(sha=sha, timestamp=timestamp)
+
+
 # ── DeployDuty (Duty-protocol adapter) ──────────────────────────────────────
 
-_DEPLOY_VERBS: tuple[str, ...] = ("dashboard",)
+_DEPLOY_VERBS: tuple[str, ...] = ("dashboard", "status")
 
 
 def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
@@ -187,12 +230,21 @@ def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
     return DutyResult(ok=True, summary=f"deploy dashboard: committed and pushed {sha}")
 
 
+def _run_status(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no flags yet
+    """`deploy status` — reports the last commit touching `docs/dashboard/`."""
+    root = repo_root()
+    record = last_deploy_commit(cwd=root)
+    if record is None:
+        return DutyResult(ok=True, summary="deploy status: no dashboard deploy commit found in git history")
+    return DutyResult(ok=True, summary=f"deploy status: last deploy {record.sha} at {record.timestamp}")
+
+
 class DeployDuty:
-    """The real `deploy` duty — dispatches the `dashboard` verb.
+    """The real `deploy` duty — dispatches the `dashboard`/`status` verbs.
 
     Bare `steward deploy` (no verb) degrades to `DutyResult(ok=True, ...)`
     naming the available verbs (AD-7), matching `KeysDuty`'s identical
-    precedent. A subprocess failure (pixi) is caught here as
+    precedent. A subprocess failure (pixi, git) is caught here as
     `subprocess.CalledProcessError` and reported as a duty-level failure,
     never conflated with an internal crash (AD-8 — that boundary is
     `cli.main()`'s alone).
@@ -208,7 +260,9 @@ class DeployDuty:
                 summary=f"deploy: available verbs are {', '.join(_DEPLOY_VERBS)}",
             )
         try:
-            return _run_dashboard(ns)
+            if verb == "dashboard":
+                return _run_dashboard(ns)
+            return _run_status(ns)
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
             cmd_name = exc.cmd[0] if exc.cmd else "subprocess"
