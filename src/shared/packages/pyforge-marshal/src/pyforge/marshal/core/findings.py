@@ -946,6 +946,19 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # is absolute, or that resolves outside the loop home once joined against
 # it, is refused rather than projected. Previously `home / Path(rel)` for
 # such a value could write a symlink anywhere the process could reach.
+#
+# Story 6.3 (projection drift detection, FR-42, AD-31/AD-36) adds the
+# sixteenth real caller's own ONE new code, MRS-CONFORM-001 (link-target
+# identity drift detected for one or more projected trees -- added/removed/
+# modified, folded into one code per the MRS-GATE-001 "one code, several
+# triggering shapes, same tier" precedent) at ERROR.
+# `gather_conformance_findings` (`cli/adapters.py`, shared by the new
+# `marshal adapters conform` verb and `marshal preflight`'s own additional
+# step) reuses MRS-ADP-001/002/003/004/005/009/011 verbatim for the
+# preconditions it shares with `adapters sync` -- the same code, the same
+# tier, a second call site, per AD-31's own MRS-DEPLOY-003 precedent ("the
+# SAME code two different ways depending on which of its two emit sites
+# fired... both fold into this one rung").
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1073,6 +1086,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-ADP-009",
         "MRS-ADP-010",
         "MRS-ADP-011",
+        "MRS-CONFORM-001",
     }
 )
 

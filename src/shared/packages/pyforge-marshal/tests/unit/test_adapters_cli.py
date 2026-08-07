@@ -388,4 +388,181 @@ def test_text_format_renders_without_crashing(capsys):
     adapters_cli.run_adapters_sync(_args(fmt="text"), fs=fs, harness=harness)
     out = capsys.readouterr().out
     assert "adapters sync" in out
+
+
+# --- Story 6.3: `marshal adapters conform` / `gather_conformance_findings` --
+
+
+def _run_conform(fs: FakeFs, harness: FakeHarness, slug: str = "pyforge-marshal") -> int:
+    return adapters_cli.run_adapters_conform(_args(slug), fs=fs, harness=harness)
+
+
+def test_conform_nothing_desired_reports_no_findings(capsys):
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness({})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["checks"] == []
+    assert envelope["data"]["unevaluated_trees"] == []
+
+
+def test_conform_after_sync_reports_confirmed_no_findings(capsys):
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness({"codex": ".agents/skills"})
+    adapters_cli.run_adapters_sync(_args(fmt="json"), fs=fs, harness=harness)
+    capsys.readouterr()  # discard sync's own envelope
+
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    checks = envelope["data"]["checks"]
+    assert len(checks) == 1
+    assert checks[0]["tree"] == ".agents/skills"
+    assert checks[0]["status"] == "link-target-confirmed"
+
+
+def test_conform_added_never_synced_reports_drift(capsys):
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness({"codex": ".agents/skills"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-CONFORM-001" in codes
+    checks = envelope["data"]["checks"]
+    assert checks[0]["status"] == "added"
+
+
+def test_conform_removed_deleted_out_of_band_reports_drift(capsys):
+    fs = FakeFs(
+        dirs={_HOME, _CANONICAL},
+        texts={
+            _MANIFEST: json.dumps(
+                {"canonical": ".claude/skills", "projected": {".agents/skills": {"mechanism": "symlink"}}}
+            )
+        },
+    )
+    harness = FakeHarness({"codex": ".agents/skills"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-CONFORM-001" in codes
+    checks = envelope["data"]["checks"]
+    assert checks[0]["status"] == "removed"
+
+
+def test_conform_modified_retargeted_reports_drift(capsys):
+    tree_path = _HOME / ".agents" / "skills"
+    fs = FakeFs(
+        dirs={_HOME, _CANONICAL},
+        symlinks={tree_path: Path("/somewhere/else")},
+        texts={
+            _MANIFEST: json.dumps(
+                {"canonical": ".claude/skills", "projected": {".agents/skills": {"mechanism": "symlink"}}}
+            )
+        },
+    )
+    harness = FakeHarness({"codex": ".agents/skills"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-CONFORM-001" in codes
+    checks = envelope["data"]["checks"]
+    assert checks[0]["status"] == "modified"
+
+
+def test_conform_modified_real_content_reports_drift(capsys):
+    tree_path = _HOME / ".agents" / "skills"
+    fs = FakeFs(
+        dirs={_HOME, _CANONICAL, tree_path},
+        texts={
+            _MANIFEST: json.dumps(
+                {"canonical": ".claude/skills", "projected": {".agents/skills": {"mechanism": "symlink"}}}
+            )
+        },
+    )
+    harness = FakeHarness({"codex": ".agents/skills"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-CONFORM-001" in codes
+    checks = envelope["data"]["checks"]
+    assert checks[0]["status"] == "modified"
+
+
+def test_conform_canonical_missing_reports_error_but_still_checks(capsys):
+    fs = FakeFs(dirs={_HOME})  # canonical NOT in dirs; something IS desired
+    harness = FakeHarness({"codex": ".agents/skills"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-003" in codes
+    assert "MRS-CONFORM-001" in codes  # never-synced tree still reported as drift
+
+
+def test_conform_adapter_enumeration_failure_reports_unevaluable(capsys):
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness(fail=HarnessError("bmad_loop is not importable"))
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-004" in codes
+
+
+def test_conform_unsupported_platform_reports_unevaluable_never_confirmed(capsys, monkeypatch):
+    monkeypatch.setattr(adapters_cli.os, "name", "nt")
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness({"codex": ".agents/skills"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-005" in codes
+    assert envelope["data"]["checks"] == []
+    assert ".agents/skills" in envelope["data"]["unevaluated_trees"]
+
+
+def test_conform_malformed_manifest_degrades_gracefully(capsys):
+    fs = FakeFs(dirs={_HOME, _CANONICAL}, texts={_MANIFEST: "{not json"})
+    harness = FakeHarness({"codex": ".agents/skills"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-009" in codes
+    assert "MRS-CONFORM-001" in codes  # treated as never-synced -> added
+
+
+def test_conform_confinement_refusal_reused(capsys):
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness({"evil": "/etc/cron.d/evil"})
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-011" in codes
+    assert envelope["data"]["checks"] == []
+
+
+def test_conform_malformed_slug_returns_error_finding(capsys):
+    fs = FakeFs()
+    harness = FakeHarness()
+    adapters_cli.run_adapters_conform(_args(slug="../evil"), fs=fs, harness=harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-001" in codes
+
+
+def test_conform_home_not_provisioned_returns_error_finding(capsys):
+    fs = FakeFs(dirs=set())
+    harness = FakeHarness()
+    _run_conform(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-002" in codes
+
+
+def test_conform_text_format_renders_without_crashing(capsys):
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness({"codex": ".agents/skills"})
+    adapters_cli.run_adapters_conform(_args(fmt="text"), fs=fs, harness=harness)
+    out = capsys.readouterr().out
+    assert "adapters conform" in out
     assert ".agents/skills" in out

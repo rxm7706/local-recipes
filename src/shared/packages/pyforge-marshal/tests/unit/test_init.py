@@ -336,6 +336,12 @@ class FakeHarness:
         }
         self.fail_adapter: Exception | None = None
         self.feed_error: str | None = None
+        # Story 6.3: `run_preflight`'s own new `gather_conformance_findings`
+        # step. Empty by default -- no configured adapter's declared tree
+        # differs from canonical -- so existing preflight tests (none of
+        # which set this) see zero new findings/calls beyond this one.
+        self.skill_trees: dict[str, str] = {}
+        self.fail_skill_trees: Exception | None = None
         self.calls: list[str] = []
 
     def binary_present(self, binary: str) -> bool:
@@ -373,6 +379,14 @@ class FakeHarness:
     def story_feed_error(self, project: Path) -> str | None:
         self.calls.append("story_feed_error")
         return self.feed_error
+
+    def adapter_skill_trees(self, project: Path) -> dict[str, str]:
+        """Story 6.3: `run_preflight`'s own new `gather_conformance_findings`
+        step."""
+        self.calls.append("adapter_skill_trees")
+        if self.fail_skill_trees:
+            raise self.fail_skill_trees
+        return dict(self.skill_trees)
 
 
 def _namespace(slug: str, *, fmt: str = "text") -> argparse.Namespace:

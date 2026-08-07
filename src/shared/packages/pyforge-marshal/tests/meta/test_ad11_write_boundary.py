@@ -339,6 +339,12 @@ class _RecordingHarness:
     def story_feed_error(self, project: Path) -> str | None:
         return None
 
+    def adapter_skill_trees(self, project: Path) -> dict[str, str]:
+        """Story 6.3: `run_preflight`'s own new `gather_conformance_findings`
+        step. Empty -- no configured adapter's declared tree differs from
+        canonical -- so this fake stays converged with no new write surface."""
+        return {}
+
     # --- Story 3.3's three additions ------------------------------------------
     def story_feed_keys(self, project: Path) -> tuple[str, ...]:
         return ("1-1-first-story", "1-2-second-story")
