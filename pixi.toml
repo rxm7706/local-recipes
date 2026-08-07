@@ -184,8 +184,8 @@ description = "Run the pyforge-steward suite across all three tiers (unit + conf
 cmd = "pytest src/shared/packages/pyforge-steward/tests -q"
 
 [feature.pyforge-steward.tasks.pyforge-steward-dogfood]
-description = "Steward dogfoods itself: run the CLI from the built env."
-cmd = "steward --version"
+description = "Steward dogfoods itself: run the CLI from the built env, then run its own drift audit against this repo's current state (Story 1.6)."
+cmd = "steward --version && steward keys audit --drift"
 
 # --- pyforge-marshal (Marshal): pixi build workspace member (doctor/warden mirror, Story 1.1) --
 # Task names mirror the sibling convention verbatim. Story 1.1 delivers the
