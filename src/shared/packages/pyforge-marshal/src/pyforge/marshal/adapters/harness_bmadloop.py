@@ -679,6 +679,22 @@ class BmadLoopHarness:
     def adapter_first_run_note(self, adapter_name: str, project: Path) -> str:
         return self._get_profile(adapter_name, project).first_run_note
 
+    def adapter_skill_trees(self, project: Path) -> dict[str, str]:
+        try:
+            from bmad_loop.adapters.profile import ProfileError, load_profiles
+        except ImportError as exc:
+            raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
+        try:
+            profiles = load_profiles(project)
+        except ProfileError as exc:
+            raise HarnessError(str(exc)) from exc
+        # Same guard as _get_profile's own identical review-discovered
+        # convention: an unreadable/non-UTF-8/wrong-typed project-local
+        # overlay must not escape as a raw traceback.
+        except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError) as exc:
+            raise HarnessError(f"cannot read adapter profile overlay: {exc}") from exc
+        return {name: profile.skill_tree for name, profile in profiles.items()}
+
     def story_feed_error(self, project: Path) -> str | None:
         try:
             from bmad_loop import bmadconfig, sprintstatus

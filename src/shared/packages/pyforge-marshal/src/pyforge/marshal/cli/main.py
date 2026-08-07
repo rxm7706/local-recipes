@@ -30,7 +30,11 @@ time, budget consumed -- derived entirely from journals/run state, never a
 hand-maintained file. ``check`` (Story 5.6, FR-65/AD-50) is the LAST Epic 5
 top-level sibling, dispatching to ``cli/check.py``: routes to the repo's
 existing detector registry (``scripts/detectors.py``, repo root) through
-the front door, never a reimplementation. Not wired through the
+the front door, never a reimplementation. ``adapters`` (Story 6.2, FR-41,
+AD-12/AD-36) is Epic 6's first top-level sibling, with a nested ``sync``
+action (more actions land in later Epic-6 stories), dispatching to
+``cli/adapters.py``: projects the canonical skill tree into every
+configured adapter's own declared tree. Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
 relay argparse's own code, clamp anything foreign) -- individual
@@ -113,6 +117,7 @@ from ..adapters.harness_bmadloop import (
 from ..core import policy as policy_core
 from ..core.context import MarshalContext
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
+from . import adapters as adapters_cli
 from . import check as check_cli
 from . import config as config_cli
 from . import deploy as deploy_cli
@@ -246,6 +251,7 @@ def _build_parser() -> argparse.ArgumentParser:
     retire_cli.add_retire_subparser(subparsers)
     status_cli.add_status_subparser(subparsers)
     check_cli.add_check_subparser(subparsers)
+    adapters_cli.add_adapters_subparser(subparsers)
     return parser
 
 

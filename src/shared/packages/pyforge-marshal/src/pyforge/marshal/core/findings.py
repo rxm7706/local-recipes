@@ -923,6 +923,29 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # undeclared, reported) at WARN, and MRS-SPIN-014 (the configured adapter
 # name could not be resolved -- HarnessError from adapter_binary) at
 # UNEVALUABLE.
+# Story 6.2 (skill-tree projection, FR-41, AD-12/AD-36) adds the fifteenth
+# real caller's own NEW area, MRS-ADP-* (ten codes): MRS-ADP-001/002
+# (malformed --slug / loop home not provisioned, mirroring MRS-SPIN-001/
+# 002 exactly) at ERROR; MRS-ADP-003 (the canonical `.claude/skills` tree
+# does not exist in the loop home) at ERROR; MRS-ADP-004 (HarnessPort.
+# adapter_skill_trees failed -- unimportable bmad_loop or an unreadable
+# profile overlay) and MRS-ADP-005 (the resolved platform has no declared
+# projection-mechanism table row) both at UNEVALUABLE, mirroring
+# MRS-SPIN-014's "Marshal cannot determine" tier; MRS-ADP-006/008 (a
+# specific tree's create/repoint or stale-removal I/O failed) both at
+# ERROR, isolated per tree; MRS-ADP-007 (a structural conflict -- real
+# content occupies a projection path, or an existing symlink points
+# somewhere other than canonical -- refused, never destroyed) at WARN;
+# MRS-ADP-009/010 (a malformed skill-projection.json manifest / the
+# manifest write itself failed) both at WARN, mirroring MRS-SPIN-015's
+# "degrades, never blocks an otherwise-viable operation" precedent.
+#
+# A review pass on Story 6.2 added MRS-ADP-011 (WARN, same "skip this one
+# tree, never abort the run" tier as 005/007): an adapter-declared
+# skill_tree -- including one from a project-local profile overlay -- that
+# is absolute, or that resolves outside the loop home once joined against
+# it, is refused rather than projected. Previously `home / Path(rel)` for
+# such a value could write a symlink anywhere the process could reach.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1039,6 +1062,17 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-013",
         "MRS-SPIN-014",
         "MRS-SPIN-015",
+        "MRS-ADP-001",
+        "MRS-ADP-002",
+        "MRS-ADP-003",
+        "MRS-ADP-004",
+        "MRS-ADP-005",
+        "MRS-ADP-006",
+        "MRS-ADP-007",
+        "MRS-ADP-008",
+        "MRS-ADP-009",
+        "MRS-ADP-010",
+        "MRS-ADP-011",
     }
 )
 

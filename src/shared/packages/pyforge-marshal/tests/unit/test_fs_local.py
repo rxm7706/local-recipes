@@ -184,6 +184,39 @@ def test_repoint_symlink_atomic_wraps_an_unsearchable_ancestor(fs, tmp_path):
         parent.chmod(0o755)
 
 
+# --- remove_symlink (Story 6.2, AD-12/AD-36) --------------------------------------
+
+
+def test_remove_symlink_removes_an_existing_symlink(fs, tmp_path):
+    link = tmp_path / "link"
+    os.symlink(Path("projects/acme/planning-artifacts"), link)
+    assert fs.remove_symlink(link) is True
+    assert not link.is_symlink()
+    assert not link.exists()
+
+
+def test_remove_symlink_is_a_no_op_when_nothing_exists(fs, tmp_path):
+    link = tmp_path / "does-not-exist"
+    assert fs.remove_symlink(link) is False
+
+
+def test_remove_symlink_refuses_a_real_directory(fs, tmp_path):
+    link = tmp_path / "link"
+    link.mkdir()
+    (link / "real-content.txt").write_text("keep me", encoding="utf-8")
+    with pytest.raises(FsError):
+        fs.remove_symlink(link)
+    assert (link / "real-content.txt").read_text(encoding="utf-8") == "keep me"
+
+
+def test_remove_symlink_refuses_a_real_file(fs, tmp_path):
+    link = tmp_path / "link"
+    link.write_text("real content", encoding="utf-8")
+    with pytest.raises(FsError):
+        fs.remove_symlink(link)
+    assert link.read_text(encoding="utf-8") == "real content"
+
+
 # --- is_dir ----------------------------------------------------------------------
 
 

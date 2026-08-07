@@ -181,6 +181,24 @@ class LocalFs:
                 pass
             raise FsError(f"cannot repoint symlink {path} -> {target}: {exc}") from exc
 
+    def remove_symlink(self, path: Path) -> bool:
+        # is_symlink() sits INSIDE the try, mirroring read_symlink_target's
+        # own 3.12-pathlib PermissionError caveat (an unsearchable ancestor
+        # raises rather than returning False).
+        try:
+            if not path.is_symlink():
+                if path.exists():
+                    raise FsError(
+                        f"{path} is a real file/directory, not a symlink -- refusing to remove it"
+                    )
+                return False
+            path.unlink()
+            return True
+        except FsError:
+            raise
+        except OSError as exc:
+            raise FsError(f"cannot remove symlink {path}: {exc}") from exc
+
     def is_dir(self, path: Path) -> bool:
         # Suppress OSError to False (Python 3.13+ pathlib semantics,
         # backported for the 3.12 floor): an unreadable ancestor must report
