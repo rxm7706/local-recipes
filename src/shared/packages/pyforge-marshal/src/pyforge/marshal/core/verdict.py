@@ -582,6 +582,49 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # tier as 013/007: the harness launch is already viable, so losing the
 # write degrades the run's OWN model resolution to whatever was already on
 # disk -- never a reason to abort an otherwise-viable launch.
+# Story 6.2's cli/adapters.py adds a new area, MRS-ADP-* (ten codes):
+# 001/002 (malformed slug / loop home not provisioned) and 003 (canonical
+# `.claude/skills` tree missing) at ERROR; 004 (adapter enumeration failed)
+# and 005 (unsupported platform, no declared mechanism-table row) at
+# UNEVALUABLE, alongside MRS-SPIN-014/MRS-GATE-009's identical "Marshal
+# cannot determine" tier; 006/008 (a specific tree's create or stale-removal
+# I/O failed) at ERROR, isolated per tree; 007 (a structural conflict --
+# real content in the way, or a hand-repointed symlink -- refused, not
+# destroyed) at WARN; 009/010 (a malformed manifest / the manifest write
+# itself failed) at WARN, the SAME "degrades, never blocks" tier as
+# MRS-SPIN-015.
+# Story 6.3 (projection drift detection, FR-42/AD-31/AD-36) adds ONE new
+# code, MRS-CONFORM-001 (link-target identity drift detected for one or
+# more projected trees -- added/removed/modified, all folded into this one
+# code) at ERROR, alongside MRS-ADP-003/006/008 and MRS-CHECK-002/003's
+# identical "a real, attempted check found a real problem" reasoning --
+# never GATE_FAILED (reserved for a PROJECT's own configured verify
+# command, not Marshal's own projection-mechanism integrity) and never WARN
+# (reserved for a safe refusal or a paper-trail gap that never blocks an
+# otherwise-viable operation, neither of which describes a confirmed drift
+# finding). `gather_conformance_findings` (`cli/adapters.py`, shared by the
+# new `marshal adapters conform` verb and `marshal preflight`'s own
+# additional step) reuses MRS-ADP-001/002/003/004/005/009/011 verbatim --
+# same codes, same tiers, a second call site, per this table's own
+# MRS-DEPLOY-003 precedent.
+# Story 6.4 (adapter probe with a machine-scoped record, FR-43, AD-31/AD-34/
+# AD-37) adds `cli/adapters.py::run_adapters_probe` (`marshal adapters
+# probe`), reusing MRS-ADP-001/002 verbatim for its shared preconditions,
+# plus four new codes. MRS-ADP-013 (a missing/blank --adapter, checked
+# before any I/O) and MRS-ADP-014 (adapter_probe raised HarnessError --
+# an unknown adapter or unimportable bmad_loop) both classify UNEVALUABLE,
+# the same tier as MRS-STATUS-003/MRS-SPIN-014's own "Marshal cannot
+# determine what to probe" precedents. MRS-ADP-015 (writing the
+# machine-scoped record failed) classifies ERROR, the same tier as
+# MRS-ADP-006/008's "a real write was attempted and failed" rung. MRS-ADP-016
+# (a pre-existing adapter-probes.json was malformed) classifies WARN, the
+# same "degrades to empty, never blocks" tier as MRS-ADP-009. `binary_
+# present is False` registers NO finding at all -- `Verdict.CLEAN`, exit 0,
+# the AC's own "reports unavailable and exits 0" read literally; the
+# ALREADY-SHIPPED MRS-PREFLIGHT-004 (Verdict.ERROR) already covers the
+# SAME real-world fact from a run-dependent call site (AD-31: the same
+# code never classifies two rungs, but the same FACT may, from two
+# call sites with different meanings) -- see the story's own spec.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -697,6 +740,23 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-013": Verdict.WARN,
     "MRS-SPIN-014": Verdict.UNEVALUABLE,
     "MRS-SPIN-015": Verdict.WARN,
+    "MRS-ADP-001": Verdict.ERROR,
+    "MRS-ADP-002": Verdict.ERROR,
+    "MRS-ADP-003": Verdict.ERROR,
+    "MRS-ADP-004": Verdict.UNEVALUABLE,
+    "MRS-ADP-005": Verdict.UNEVALUABLE,
+    "MRS-ADP-006": Verdict.ERROR,
+    "MRS-ADP-007": Verdict.WARN,
+    "MRS-ADP-008": Verdict.ERROR,
+    "MRS-ADP-009": Verdict.WARN,
+    "MRS-ADP-010": Verdict.WARN,
+    "MRS-ADP-011": Verdict.WARN,
+    "MRS-CONFORM-001": Verdict.ERROR,
+    "MRS-ADP-012": Verdict.ERROR,
+    "MRS-ADP-013": Verdict.UNEVALUABLE,
+    "MRS-ADP-014": Verdict.UNEVALUABLE,
+    "MRS-ADP-015": Verdict.ERROR,
+    "MRS-ADP-016": Verdict.WARN,
 }
 
 

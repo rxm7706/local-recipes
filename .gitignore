@@ -775,6 +775,16 @@ claude_hash.txt
 # a loop home's hand-edit rode `git push origin HEAD:main` onto every
 # project).
 .bmad-loop/policy.toml
+# Derived artifact (Story 6.2, AD-12/AD-36): the skill-tree projection
+# manifest cli/adapters.py::run_adapters_sync writes per loop home --
+# bookkeeping for stale-projection detection only, never hand-edited, never
+# tracked (same precedent as .bmad-loop/policy.toml above).
+.bmad-loop/skill-projection.json
+# Derived artifact (Story 6.2, AD-12/AD-36): the projected skill tree(s)
+# cli/adapters.py::run_adapters_sync creates -- a directory symlink to the
+# canonical .claude/skills, never real content, never tracked. Root-anchored
+# (mirrors /.herald/ above): .agents/ does not otherwise exist in this repo.
+/.agents/
 _bmad/_memory/
 
 # Parked artifact-fork evidence dirs (local-only Tier-3 copies; see each dir's README)

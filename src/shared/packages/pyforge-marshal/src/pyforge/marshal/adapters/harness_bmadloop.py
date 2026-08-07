@@ -198,6 +198,7 @@ import tomlkit
 from ..core import policy
 from ..core.egress import to_redacted
 from ..ports.harness import (
+    AdapterProbe,
     DeferredStory,
     RunStatusSnapshot,
     SpinResult,
@@ -576,6 +577,29 @@ _RUN_STARTING_RE = re.compile(r"^run (\S+) starting\b")
 # own tick loop indefinitely).
 _STOP_TIMEOUT_S = 30.0
 
+# Story 6.4's `adapter_probe` -- `bmad-loop probe-adapter --json`'s own
+# default SCAN mode is documented (confirmed live against the installed
+# 0.9.0 `bmad_loop/probe.py` module docstring) as "zero process launch
+# beyond `--version`/`--help`", so this sits well above `_VERSION_TIMEOUT_S`
+# (a single `--version` call) without approaching `--probe` mode's own
+# interactive, tmux-launching budget -- which this story never invokes at
+# all (see the spec's own Boundaries & Constraints).
+_PROBE_TIMEOUT_S = 30.0
+
+# Story 6.4 (FR-43) -- the curated, read-only subset of the resolved
+# `CLIProfile`'s own already-declared fields this story reports as an
+# adapter's "declared capabilities" (the AC's own phrasing; `CLIProfile` has
+# no literal `capabilities` attribute -- see the spec's Design Notes for
+# why each of these five, and no others, was chosen).
+def _profile_capabilities(profile: object) -> dict[str, object]:
+    return {
+        "hookless": profile.hookless,
+        "hook_dialect": profile.hooks.dialect,
+        "usage_parser": profile.usage_parser,
+        "skill_tree": profile.skill_tree,
+        "model_flag": profile.model_flag,
+    }
+
 
 class HarnessError(Exception):
     """Raised by ``BmadLoopHarness`` methods that are documented to raise
@@ -678,6 +702,81 @@ class BmadLoopHarness:
 
     def adapter_first_run_note(self, adapter_name: str, project: Path) -> str:
         return self._get_profile(adapter_name, project).first_run_note
+
+    def adapter_probe(self, adapter_name: str, project: Path) -> AdapterProbe:
+        """Story 6.4 (FR-43): observe ``adapter_name``'s support on this
+        machine. Resolves the SAME profile ``adapter_binary`` does (the
+        identical ``HarnessError`` contract), then never raises again --
+        every subprocess failure below degrades to a field on the returned
+        ``AdapterProbe``, mirroring ``harness_version``'s own convention."""
+        profile = self._get_profile(adapter_name, project)
+        capabilities = _profile_capabilities(profile)
+        binary_present = self.binary_present(profile.binary)
+        if not binary_present:
+            return AdapterProbe(
+                adapter=adapter_name,
+                binary=profile.binary,
+                binary_present=False,
+                binary_version=None,
+                capabilities=capabilities,
+                probe_output=None,
+                probe_note="binary not found on PATH",
+            )
+
+        version_result = _run([profile.binary, "--version"])
+        binary_version: str | None = None
+        if version_result is not None and version_result.returncode == 0:
+            text = version_result.stdout.strip()
+            # Mirrors `harness_version`'s own "prog, then the version token"
+            # parse -- the same argparse `action="version"` convention most
+            # of these CLIs share; a shape that does not fit degrades to the
+            # whole stripped line rather than `None` (the version SUBPROCESS
+            # itself succeeded, so *something* was reported).
+            _prog, _sep, parsed = text.rpartition(" ")
+            binary_version = parsed or text or None
+
+        probe_result = _run(
+            ["bmad-loop", "probe-adapter", "--cli", adapter_name, "--json"],
+            timeout_s=_PROBE_TIMEOUT_S,
+        )
+        probe_output: str | None = None
+        probe_note: str | None = None
+        if probe_result is None:
+            probe_note = "bmad-loop probe-adapter could not be launched or timed out"
+        elif probe_result.returncode != 0:
+            probe_note = f"bmad-loop probe-adapter exited {probe_result.returncode}"
+        else:
+            redacted = self._redact_probe_output(probe_result.stdout)
+            if redacted is None:
+                probe_note = "probe output could not be redacted"
+            else:
+                probe_output = redacted
+
+        return AdapterProbe(
+            adapter=adapter_name,
+            binary=profile.binary,
+            binary_present=True,
+            binary_version=binary_version,
+            capabilities=capabilities,
+            probe_output=probe_output,
+            probe_note=probe_note,
+        )
+
+    def adapter_skill_trees(self, project: Path) -> dict[str, str]:
+        try:
+            from bmad_loop.adapters.profile import ProfileError, load_profiles
+        except ImportError as exc:
+            raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
+        try:
+            profiles = load_profiles(project)
+        except ProfileError as exc:
+            raise HarnessError(str(exc)) from exc
+        # Same guard as _get_profile's own identical review-discovered
+        # convention: an unreadable/non-UTF-8/wrong-typed project-local
+        # overlay must not escape as a raw traceback.
+        except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError) as exc:
+            raise HarnessError(f"cannot read adapter profile overlay: {exc}") from exc
+        return {name: profile.skill_tree for name, profile in profiles.items()}
 
     def story_feed_error(self, project: Path) -> str | None:
         try:
@@ -1094,6 +1193,38 @@ class BmadLoopHarness:
         try:
             redacted = to_redacted({"text": text})
             return json.loads(redacted.text)["text"]
+        except (ValueError, LookupError, TypeError):
+            return None
+
+    @staticmethod
+    def _redact_probe_output(text: str) -> str | None:
+        """Story 6.4's own probe-output redaction -- review finding: wrapping
+        the WHOLE ``bmad-loop probe-adapter --json`` document as one opaque
+        string (``_redact_text``'s own shape) means ``to_redacted``'s
+        field-NAME-based redaction half never sees the document's actual
+        keys -- it only ever recurses into a real ``Mapping``, and a single
+        giant string value is not one. A secret-shaped field inside that
+        JSON (e.g. a literal ``api_key``/``session_token`` key) would then be
+        invisible to anything except the five hardcoded token-shape regexes,
+        a real narrowing of protection for a document ``tests/meta/
+        test_probe_json_contract.py`` already proves is well-formed JSON.
+
+        Parses ``text`` first; a ``dict`` payload is redacted via
+        ``to_redacted`` DIRECTLY (both halves: field-name AND shape), then
+        re-serialized -- the full-coverage path this document's own proven
+        shape makes the common case. Anything that fails to parse as a JSON
+        object (unexpected for this contract, but never assumed) falls back
+        to ``_redact_text``'s opaque-string wrap, so a shape surprise still
+        degrades to reduced-but-real coverage rather than an exception
+        escaping this always-degrades-never-raises method."""
+        try:
+            parsed = json.loads(text)
+        except (ValueError, TypeError):
+            return BmadLoopHarness._redact_text(text)
+        if not isinstance(parsed, dict):
+            return BmadLoopHarness._redact_text(text)
+        try:
+            return to_redacted(parsed).text
         except (ValueError, LookupError, TypeError):
             return None
 

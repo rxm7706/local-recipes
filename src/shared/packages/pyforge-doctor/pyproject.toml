@@ -12,9 +12,14 @@ license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 # Lean, targeted dependency set (mirrors pyforge-warden's own doctrine):
 # jsonschema validates the packaged DoctorReport envelope against
-# data/report-schema.json. Nothing else is needed at scaffold stage.
+# data/report-schema.json. mcp is Story 2.1's primary atlas Watch-axis
+# transport (sources/atlas.py, the sole sanctioned import site) -- mirrors
+# pyforge-herald's identical mcp>=1.28.1 runtime dependency (pixi.toml's
+# in-repo conda pin is the tighter mcp>=2.0.0 floor already in use
+# repo-wide).
 dependencies = [
     "jsonschema",
+    "mcp>=1.28.1",
 ]
 
 [project.optional-dependencies]

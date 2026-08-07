@@ -923,6 +923,82 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # undeclared, reported) at WARN, and MRS-SPIN-014 (the configured adapter
 # name could not be resolved -- HarnessError from adapter_binary) at
 # UNEVALUABLE.
+# Story 6.2 (skill-tree projection, FR-41, AD-12/AD-36) adds the fifteenth
+# real caller's own NEW area, MRS-ADP-* (ten codes): MRS-ADP-001/002
+# (malformed --slug / loop home not provisioned, mirroring MRS-SPIN-001/
+# 002 exactly) at ERROR; MRS-ADP-003 (the canonical `.claude/skills` tree
+# does not exist in the loop home) at ERROR; MRS-ADP-004 (HarnessPort.
+# adapter_skill_trees failed -- unimportable bmad_loop or an unreadable
+# profile overlay) and MRS-ADP-005 (the resolved platform has no declared
+# projection-mechanism table row) both at UNEVALUABLE, mirroring
+# MRS-SPIN-014's "Marshal cannot determine" tier; MRS-ADP-006/008 (a
+# specific tree's create/repoint or stale-removal I/O failed) both at
+# ERROR, isolated per tree; MRS-ADP-007 (a structural conflict -- real
+# content occupies a projection path, or an existing symlink points
+# somewhere other than canonical -- refused, never destroyed) at WARN;
+# MRS-ADP-009/010 (a malformed skill-projection.json manifest / the
+# manifest write itself failed) both at WARN, mirroring MRS-SPIN-015's
+# "degrades, never blocks an otherwise-viable operation" precedent.
+#
+# A review pass on Story 6.2 added MRS-ADP-011 (WARN, same "skip this one
+# tree, never abort the run" tier as 005/007): an adapter-declared
+# skill_tree -- including one from a project-local profile overlay -- that
+# is absolute, or that resolves outside the loop home once joined against
+# it, is refused rather than projected. Previously `home / Path(rel)` for
+# such a value could write a symlink anywhere the process could reach.
+#
+# Story 6.3 (projection drift detection, FR-42, AD-31/AD-36) adds the
+# sixteenth real caller's own ONE new code, MRS-CONFORM-001 (link-target
+# identity drift detected for one or more projected trees -- added/removed/
+# modified, folded into one code per the MRS-GATE-001 "one code, several
+# triggering shapes, same tier" precedent) at ERROR.
+#
+# A review pass on this same story added MRS-ADP-012 (ERROR: reading a
+# tree's own live symlink state failed -- an unsearchable
+# ancestor directory, a real, documented `LocalFs` failure mode). Isolated
+# per tree (mirrors MRS-ADP-006/008's own "one tree's failure never aborts
+# another's" precedent) rather than letting the raw `FsError` propagate
+# out of `gather_conformance_findings` -- since that function now runs
+# UNCONDITIONALLY as part of `marshal preflight`, an unguarded I/O failure
+# here would have crashed the whole preflight command.
+# `gather_conformance_findings` (`cli/adapters.py`, shared by the new
+# `marshal adapters conform` verb and `marshal preflight`'s own additional
+# step) reuses MRS-ADP-001/002/003/004/005/009/011 verbatim for the
+# preconditions it shares with `adapters sync` -- the same code, the same
+# tier, a second call site, per AD-31's own MRS-DEPLOY-003 precedent ("the
+# SAME code two different ways depending on which of its two emit sites
+# fired... both fold into this one rung").
+#
+# Story 6.4 (adapter probe with a machine-scoped record, FR-43, AD-31/AD-34/
+# AD-37) adds `cli/adapters.py`'s own `run_adapters_probe` (`marshal
+# adapters probe`), reusing MRS-ADP-001/002 verbatim for the preconditions
+# it shares with `sync`/`conform` (the SAME MRS-DEPLOY-003 precedent, now a
+# THIRD call site), plus four wholly new codes. MRS-ADP-013 (`--adapter` is
+# missing/blank, checked before any harness/filesystem touch) classifies
+# UNEVALUABLE, the same pre-I/O shape-gate tier as MRS-STATUS-003's own
+# "a required companion argument is missing" precedent. MRS-ADP-014
+# (`HarnessPort.adapter_probe` raised `HarnessError` -- an unknown adapter
+# name or an unimportable `bmad_loop`) classifies UNEVALUABLE, the same
+# tier as MRS-SPIN-014's own "an adapter name could not be resolved to a
+# real profile" reasoning -- a configuration fact Marshal cannot determine,
+# never a real precondition that was checked and failed. MRS-ADP-015
+# (writing the machine-scoped probe record failed -- `RecordPort.
+# write_redacted_atomic` raised `FsError`) classifies ERROR, the same tier
+# as MRS-ADP-006/008's own "a real write was attempted and failed" rung --
+# the OBSERVATION itself still succeeded and is still reported in
+# `data.probe`; only the durable write is what failed. MRS-ADP-016 (a
+# pre-existing `adapter-probes.json` was malformed JSON or not a JSON
+# object) classifies WARN, the same "malformed bookkeeping degrades to
+# empty, never blocks" tier MRS-ADP-009 already established for the
+# skill-projection manifest -- this probe's own fresh entry still writes.
+# Deliberately, `binary_present is False` (the AC's own "unavailable")
+# registers NO finding at all: `data.probe.status == "unavailable"` with an
+# empty findings list folds to `Verdict.CLEAN`, exit 0 -- the AC's own
+# "reports it as unavailable and exits 0", read literally. The DIFFERENT
+# reading ("unevaluable anywhere a run depends on it", AD-31) is already
+# satisfied by the SHIPPED `MRS-PREFLIGHT-004` (a run-dependent call site
+# reporting the identical real-world fact at `Verdict.ERROR`) -- see the
+# story's own spec Design Notes for why this needed no new code.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1039,6 +1115,23 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-013",
         "MRS-SPIN-014",
         "MRS-SPIN-015",
+        "MRS-ADP-001",
+        "MRS-ADP-002",
+        "MRS-ADP-003",
+        "MRS-ADP-004",
+        "MRS-ADP-005",
+        "MRS-ADP-006",
+        "MRS-ADP-007",
+        "MRS-ADP-008",
+        "MRS-ADP-009",
+        "MRS-ADP-010",
+        "MRS-ADP-011",
+        "MRS-CONFORM-001",
+        "MRS-ADP-012",
+        "MRS-ADP-013",
+        "MRS-ADP-014",
+        "MRS-ADP-015",
+        "MRS-ADP-016",
     }
 )
 

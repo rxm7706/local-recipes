@@ -16,10 +16,10 @@
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
-  1-3-fallback-transport-adapter: backlog
+  1-3-fallback-transport-adapter: done
   1-4-bridge-core-skeleton-state-errors-determinism-boundary: done
   1-5-registry-module-readme-design-project: done
-  1-6-herald-deck-seed-slug: backlog
+  1-6-herald-deck-seed-slug: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: backlog
   2-2-commit-opt-in: backlog
   2-3-marp-source-pull: backlog
@@ -31,7 +31,7 @@ development_status:
   4-3-halt-on-auth-error: backlog
   5-1-push-regenerated-exports-with-etag-guard: backlog
   5-2-conflict-refusal-on-export-push: backlog
-  epic-1: backlog
+  epic-1: done
   epic-1-retrospective: optional
   epic-2: backlog
   epic-2-retrospective: optional

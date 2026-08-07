@@ -284,6 +284,13 @@ def test_preflight_end_to_end_converges_seeds_and_acknowledges(tmp_path, monkeyp
 
     home = loop_home_root / slug
     _seed_bmad_config_and_sprint_status(home)
+    # Story 6.3's own MRS-ADP-003 (projection conformance, now an
+    # unconditional `run_preflight` step) expects the canonical skill tree
+    # to exist in the home -- a real git-worktree-provisioned loop home
+    # gets `.claude/skills` for free (it's tracked repo content), but this
+    # fixture's own synthetic home is not a real worktree checkout. An
+    # empty directory is sufficient: the check only probes `is_dir()`.
+    (home / ".claude" / "skills").mkdir(parents=True, exist_ok=True)
 
     started = time.perf_counter()
     first_exit = main(["preflight", slug, "--acknowledge", "claude"])

@@ -65,6 +65,16 @@ TOKENIZED_PREVIEW_HOST = "claudeusercontent.com"
 REDACTED = "<redacted: tokenized preview url>"
 """Replacement for any string value that mentions the tokenized host."""
 
+MODERNIST_DESIGN_SYSTEM_ID = "fbc1d6c8-b35f-4df6-9044-a64d2675427b"
+"""The Modernist design system every PyForge deck is bound to
+(``bridge-protocol.md`` § Conventions). Lives here, not in any one adapter
+module -- it is a bridge-protocol convention every adapter and bridge-core's
+own CAP-1 ``seed`` operation (Story 1.6) need, and only ``transport.base``
+is reachable from bridge-core under the determinism boundary (AD-3/AD-4).
+Moved from ``mcp_transport.py`` in Story 1.6 for exactly that reason; still
+re-exported at the package root so ``from pyforge.herald.transport import
+MODERNIST_DESIGN_SYSTEM_ID`` is unchanged for every existing caller."""
+
 _READ_TAG = "untrusted-project-content"
 _READ_OPEN_RE = re.compile(rf"<{_READ_TAG}\b([^>]*)>")
 _READ_CLOSE = f"</{_READ_TAG}>"
@@ -288,20 +298,25 @@ def sanitize_payload(payload: Any) -> Any:
     return payload
 
 
-def _as_text(value: Any) -> str:
+def as_text(value: Any) -> str:
     """A wire field as text, or ``""`` when the server sent a non-string.
 
     ``str(value)`` is the trap this exists to avoid: a JSON ``null`` would
     become the literal ``"None"``, a truthy four-character value that sails
     straight through FR-24's etag check. Anything that is not already a
-    string is treated as absent."""
+    string is treated as absent.
+
+    Public since Story 1.3 (promoted alongside ``require_conditional``,
+    per Story 1.2's DW-1-2-14): ``AgentSdkTransport`` needs the identical
+    null-coercion its sibling adapter uses, and a second consumer is what
+    settles a shared seam as public rather than a cross-module private."""
     return value if isinstance(value, str) else ""
 
 
-def _as_optional_text(value: Any) -> str | None:
-    """``_as_text`` for a field the port models as ``str | None``, where
+def as_optional_text(value: Any) -> str | None:
+    """``as_text`` for a field the port models as ``str | None``, where
     "the server sent something unusable" and "the server sent nothing" are
-    the same answer."""
+    the same answer. Public for the same reason as ``as_text`` (Story 1.3)."""
     return value if isinstance(value, str) else None
 
 
@@ -351,7 +366,7 @@ def parse_read_response(text: str) -> FileRead:
                 "read_file returned a JSON answer that is not an "
                 "if_none_match short-circuit"
             )
-        etag = _as_text(payload.get("etag"))
+        etag = as_text(payload.get("etag"))
         if not etag:
             # The etag is the whole point of the short-circuit: the caller
             # stores it as the next poll's `if_none_match`. Accepting ""
@@ -362,7 +377,7 @@ def parse_read_response(text: str) -> FileRead:
                 "no etag; the wire contract moved"
             )
         return FileRead(
-            path=_as_text(payload.get("path")),
+            path=as_text(payload.get("path")),
             etag=etag,
             body=None,
             unchanged=True,

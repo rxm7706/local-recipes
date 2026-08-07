@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pyforge.herald as herald_pkg
 import pytest
-from pyforge.herald import bridge, errors, registry, state
+from pyforge.herald import bridge, deck_pipeline, errors, registry, state
 from pyforge.herald import transport as transport_pkg
 from pyforge.herald.cli import dispatch
 from pyforge.herald.errors import (
@@ -111,40 +111,35 @@ def test_run_propagates_any_herald_error_unchanged(error):
 
 # --- determinism boundary: bridge-core's own source -------------------------
 
-_BRIDGE_CORE_MODULES = (bridge, state, errors, registry)
+_BRIDGE_CORE_MODULES = (bridge, state, errors, registry, deck_pipeline)
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
-neither belongs in this sweep. ``registry.py`` (Story 1.5) joins here: it is
-bridge-core, not the CLI layer or a transport adapter, so it has no cause
+neither belongs in this sweep. ``registry.py`` (Story 1.5) and
+``deck_pipeline.py`` (Story 1.6, CAP-1 ``seed``) join here: both are
+bridge-core, not the CLI layer or a transport adapter, so neither has cause
 for exclusion."""
-
-_SPECULATIVE_ADAPTER_MODULES = {"agent_sdk_transport"}
-"""Story 1.3's planned adapter, denied by name before it exists --
-derivation below cannot cover an unwritten module."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name
     for module in pkgutil.iter_modules(transport_pkg.__path__)
     if module.name != "base"
-} | _SPECULATIVE_ADAPTER_MODULES
+}
 """Concrete transport adapter *modules* bridge-core may never name directly
 (AD-3). Derived from the live package -- every submodule except ``base`` is
 an adapter by construction -- so a new adapter is covered the day it lands,
-not the day someone remembers this set; the speculative names are unioned
-in because derivation cannot see what does not exist yet."""
-
-_SPECULATIVE_ADAPTER_NAMES = {"AgentSdkTransport"}
+not the day someone remembers this set. Story 1.3's ``agent_sdk_transport``
+is covered this way now that it exists; no speculative name is needed."""
 
 _FORBIDDEN_ADAPTER_NAMES = {
     name for name in transport_pkg.__all__ if not hasattr(transport_base, name)
-} | _SPECULATIVE_ADAPTER_NAMES
+}
 """Everything ``transport/__init__.py`` re-exports that does not come from
 ``transport.base`` -- the adapter classes plus their companions
 (``DesignCredential``, ``resolve_design_credential``, ``DESIGN_MCP_URL``,
-...). ``from .transport import McpTransport`` is a real, reachable
-violation distinct from naming the adapter's own module -- both are
-checked, and deriving the set keeps the newest adapter's exports covered
-automatically."""
+``AgentSdkTransport``, ``SubprocessAgentLauncher``, ...). ``from .transport
+import McpTransport`` is a real, reachable violation distinct from naming
+the adapter's own module -- both are checked, and deriving the set keeps
+the newest adapter's exports covered automatically."""
 
 _FORBIDDEN_INFERENCE_PACKAGES = {
     "a2a_sdk",
@@ -225,6 +220,8 @@ def test_derived_adapter_denylists_cover_the_known_adapter():
     this fails before the guard silently covers nothing."""
     assert "mcp_transport" in _FORBIDDEN_ADAPTER_MODULES
     assert "McpTransport" in _FORBIDDEN_ADAPTER_NAMES
+    assert "agent_sdk_transport" in _FORBIDDEN_ADAPTER_MODULES
+    assert "AgentSdkTransport" in _FORBIDDEN_ADAPTER_NAMES
 
 
 def test_bridge_core_sweep_covers_every_non_excluded_package_module():
@@ -314,8 +311,15 @@ def _module_source(module) -> str:
     return Path(module.__file__).read_text(encoding="utf-8")
 
 
-def test_bridge_py_reaches_transport_only_via_transport_base():
-    assert _transport_import_violations(_module_source(bridge)) == []
+@pytest.mark.parametrize("module", (bridge, deck_pipeline), ids=lambda m: m.__name__)
+def test_bridge_and_deck_pipeline_reach_transport_only_via_transport_base(module):
+    """``deck_pipeline.py`` (Story 1.6, CAP-1 ``seed``) joins ``bridge.py``
+    here rather than the stricter ``state``/``errors``/``registry`` test
+    below: it has the same legitimate reason ``bridge.run`` does to name
+    ``transport.base`` -- its ``seed`` signature takes a ``DesignTransport``
+    and it needs ``MODERNIST_DESIGN_SYSTEM_ID``, both only reachable through
+    the protocol + value-types module, never a concrete adapter."""
+    assert _transport_import_violations(_module_source(module)) == []
 
 
 @pytest.mark.parametrize("module", (state, errors, registry), ids=lambda m: m.__name__)
@@ -360,6 +364,23 @@ def test_importing_bridge_does_not_load_the_transport_package(tmp_path: Path):
     ``sys.modules`` is already polluted."""
     probe = (
         "import sys; import pyforge.herald.bridge; "
+        "sys.exit(1 if any(m.startswith('pyforge.herald.transport') "
+        "for m in sys.modules) else 0)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", probe], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_importing_deck_pipeline_does_not_load_the_transport_package():
+    """``deck_pipeline.seed`` needs ``MODERNIST_DESIGN_SYSTEM_ID`` at real
+    call time (unlike ``bridge.run``, which only needs ``DesignTransport``
+    as a type annotation) -- its import is deferred to inside the function
+    body specifically so merely *importing* the module carries the same
+    ``sys.modules`` guarantee ``bridge.py``'s own probe proves above."""
+    probe = (
+        "import sys; import pyforge.herald.deck_pipeline; "
         "sys.exit(1 if any(m.startswith('pyforge.herald.transport') "
         "for m in sys.modules) else 0)"
     )
