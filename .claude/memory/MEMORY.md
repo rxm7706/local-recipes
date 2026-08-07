@@ -16,6 +16,8 @@ letting the index grow unbounded.
 
 ## Feedback
 
+- [bmad-runs-cfe-retro](feedback/bmad-runs-cfe-retro.md) — Always-on rule — at closeout of any BMAD-driven conda-forge effort, run bmad-retrospective focused on conda-forge-exper…
+
 ## Project
 
 ## Reference
