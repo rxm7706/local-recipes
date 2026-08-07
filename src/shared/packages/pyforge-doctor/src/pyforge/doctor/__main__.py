@@ -6,8 +6,11 @@ Story 1.5 wires the ``check`` subcommand (FR-9/NFR-4): ``--engines``/
 (catalog + single-check filter) into one human-readable-or-``--json``
 ``DoctorReport``, exiting via ``verdict.exit_code_for``. Story 2.3 wires
 ``monitor --fleet`` the same way, composing Story 2.1/2.2's
-``sources.atlas.gather`` per requested ``--watch`` axis. ``diagnose`` is not
-wired yet -- it lands with Epic 3.
+``sources.atlas.gather`` per requested ``--watch`` axis. Story 3.4 wires
+``diagnose --target ... [--prescribe]``, composing the same two gather
+filters for one target and, with ``--prescribe``, Epic 3's
+``prescribe.partition``/``prescribe.rank``/``prescribe.name_root_cause``
+pipeline into ``Prescription``\\ s.
 
 ``main`` always RETURNS an int; it never calls an exit primitive itself
 (``verdict.py`` is the sole module permitted to do that -- the
@@ -30,8 +33,9 @@ from pathlib import Path
 
 import jsonschema
 
+from . import prescribe
 from .checks import env_hygiene, registry
-from .models import DoctorReport, DoctorStatus, Finding, Source
+from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
 from .sources import atlas, warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
 
@@ -39,6 +43,12 @@ from .verdict import EXIT_SIGINT, exit_code_for
 # (the two highest-signal defaults per Story 2.1/2.2's own Sources), not
 # every axis unconditionally.
 _DEFAULT_MONITOR_AXES: tuple[str, ...] = ("staleness", "cve")
+
+# Story 3.4: `diagnose --target` reuses the SAME default axis set for its
+# own fleet-signal gather -- no AC asks for a different default, and
+# introducing one would be an unjustified divergence from `monitor`'s own
+# documented default (Simplicity First).
+_DEFAULT_DIAGNOSE_AXES: tuple[str, ...] = _DEFAULT_MONITOR_AXES
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant -- see models.py's module docstring for the taxonomy rationale),
@@ -55,7 +65,10 @@ _WHOLE_CATEGORY = object()
 
 
 def _build_parser() -> tuple[
-    argparse.ArgumentParser, argparse.ArgumentParser, argparse.ArgumentParser
+    argparse.ArgumentParser,
+    argparse.ArgumentParser,
+    argparse.ArgumentParser,
+    argparse.ArgumentParser,
 ]:
     parser = argparse.ArgumentParser(
         prog="doctor",
@@ -157,7 +170,37 @@ def _build_parser() -> tuple[
         action="store_true",
         help="emit one schema-valid DoctorReport document on stdout",
     )
-    return parser, check, monitor
+
+    diagnose = subparsers.add_parser(
+        "diagnose",
+        help="gather + (optionally) partition/rank/root-cause one target",
+    )
+    diagnose.add_argument(
+        "--target",
+        required=True,
+        metavar="TARGET",
+        help=(
+            "the feedstock/maintainer to scope the fleet-signal gather to; "
+            "when TARGET is also an existing local directory, the "
+            "engines+env checks (Story 1.5's own default combined run) are "
+            "gathered against it too"
+        ),
+    )
+    diagnose.add_argument(
+        "--prescribe",
+        action="store_true",
+        help=(
+            "run the partition/rank/root-cause pipeline and populate "
+            "prescriptions; without this flag, findings are gathered and "
+            "reported but never partitioned/ranked"
+        ),
+    )
+    diagnose.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one schema-valid DoctorReport document on stdout",
+    )
+    return parser, check, monitor, diagnose
 
 
 def _validate_check_names(
@@ -262,7 +305,7 @@ def main(argv: list[str] | None = None) -> int:
     """
     if argv is None:
         argv = sys.argv[1:]
-    parser, check_parser, monitor_parser = _build_parser()
+    parser, check_parser, monitor_parser, _diagnose_parser = _build_parser()
     try:
         try:
             args = parser.parse_args(argv)
@@ -270,6 +313,9 @@ def main(argv: list[str] | None = None) -> int:
                 _validate_check_names(args, check_parser)
             elif args.command == "monitor":
                 _validate_monitor_args(args, monitor_parser)
+            # "diagnose" has no name/axis catalog to validate against --
+            # --target is a free-form string and argparse's own
+            # required=True already enforces its presence.
         except SystemExit as exc:
             # argparse exits itself: --version/--help -> 0, a usage error
             # -> 2 (never 0). Surface its code as a return value, never
@@ -295,10 +341,12 @@ def main(argv: list[str] | None = None) -> int:
         # during dispatch -- not just during parsing -- must also return
         # EXIT_SIGINT rather than escape as a raw KeyboardInterrupt (main()
         # never raises -- see its own docstring). `args.command` is one of
-        # `{"check", "monitor"}` past this point (subparsers is
-        # required=True; `diagnose` lands with Epic 3).
+        # `{"check", "monitor", "diagnose"}` past this point (subparsers is
+        # required=True).
         if args.command == "monitor":
             return _run_monitor(args)
+        if args.command == "diagnose":
+            return _run_diagnose(args)
         return _run_check(args)
     except KeyboardInterrupt:
         return EXIT_SIGINT
@@ -439,6 +487,97 @@ def _run_monitor(args: argparse.Namespace) -> int:
     return exit_code
 
 
+def _action_text(pf: prescribe.PartitionedFinding) -> str:
+    """Story 3.4's WHAT-TO-DO text, distinct from ``root_cause``'s WHY --
+    derived from the partition, never duplicating the root-cause string."""
+    if pf.partition is Partition.ACTIONABLE:
+        return f"address {pf.finding.check} ({pf.finding.source.value})"
+    if pf.partition is Partition.BLOCKED:
+        return f"blocked -- {pf.reason}"
+    return f"accepted risk -- {pf.reason}"  # Partition.ACCEPTED_RISK
+
+
+def _build_prescriptions(
+    findings: tuple[Finding, ...],
+) -> tuple[Prescription, ...]:
+    """Assembles one ``Prescription`` per gathered ``Finding`` (Story 3.1's
+    own "never a silent drop" rule extended to the full pipeline output):
+    the ``ACTIONABLE`` subset carries a real 1-based ``rank``/``rank_factors``
+    from ``prescribe.rank``; ``BLOCKED``/``ACCEPTED_RISK`` (and any
+    ``ACTIONABLE`` Finding TIED OUT of the ranked subset -- there is none,
+    ``rank`` covers every ``ACTIONABLE`` Finding by construction) carry
+    ``rank=None``/``rank_factors=None`` per the frozen schema's own
+    "populated by a later epic's ranking pass; null until then" framing,
+    here read as "null for anything ranking doesn't apply to." """
+    partitioned = prescribe.partition(findings)
+    ranked = prescribe.rank(partitioned)
+    rank_by_finding = {
+        id(rp.finding): (rp.rank, rp.rank_factors) for rp in ranked
+    }
+
+    prescriptions: list[Prescription] = []
+    for pf in partitioned:
+        rank_value, rank_factors = rank_by_finding.get(id(pf.finding), (None, None))
+        prescriptions.append(
+            Prescription(
+                finding_ref=f"{pf.finding.source.value}:{pf.finding.check}",
+                partition=pf.partition,
+                rank=rank_value,
+                rank_factors=rank_factors,
+                action=_action_text(pf),
+                root_cause=prescribe.name_root_cause(pf.finding, findings),
+            )
+        )
+    return tuple(prescriptions)
+
+
+def _run_diagnose(args: argparse.Namespace) -> int:
+    """Story 3.4: gather Findings for ``--target``, composing Epic 1's
+    `checks` gather (when ``--target`` is ALSO an existing local directory
+    -- "when the target implies an environment check", the AC's own
+    wording) with Epic 2's `sources.atlas` gather (always, scoped to
+    ``--target`` as the maintainer/feedstock filter). Without
+    ``--prescribe``, reports the gathered Findings with ``prescriptions``
+    present but empty (Story 1.1's frozen envelope requires the KEY for
+    ``verb == "diagnose"`` even when there's nothing to populate it with
+    yet). With ``--prescribe``, runs Story 3.1/3.2/3.3's full pipeline --
+    every gathered Finding becomes exactly one ``Prescription``, so a
+    target with only ``blocked``/``accepted-risk`` Findings still reports
+    them (Story 3.1's "never a silent drop" rule, extended here)."""
+    findings: tuple[Finding, ...] = ()
+    for axis in _DEFAULT_DIAGNOSE_AXES:
+        findings += atlas.gather(axis, target=args.target)
+
+    target_path = Path(args.target)
+    if target_path.is_dir():
+        findings += warden_source.gather(target_path)
+        findings += env_hygiene.gather(target_path)
+
+    prescriptions: tuple[Prescription, ...] = ()
+    if args.prescribe:
+        prescriptions = _build_prescriptions(findings)
+
+    exit_code = exit_code_for(findings)
+    if args.json:
+        # verb="diagnose" ALWAYS carries the `prescriptions` key in the
+        # JSON envelope, empty or not (Story 1.1's frozen contract) --
+        # unlike the text render below, this is never conditioned on
+        # `--prescribe`.
+        _emit_json(findings, verb="diagnose", prescriptions=prescriptions)
+    else:
+        # The human-readable render only shows a "prescription(s)" section
+        # when `--prescribe` was actually requested -- an UNREQUESTED empty
+        # pipeline result would misleadingly read as "ran and found zero"
+        # rather than "didn't run" (AC1's own "reports them without
+        # partitioning/ranking" framing).
+        _emit_text(
+            findings,
+            verb="diagnose",
+            prescriptions=prescriptions if args.prescribe else None,
+        )
+    return exit_code
+
+
 def _render_list() -> int:
     lines = [f"{spec.category}\t{spec.name}" for spec in registry.list_checks()]
     _write_stdout("\n".join(lines) + "\n")
@@ -454,12 +593,18 @@ def _report_schema() -> dict:
     return json.loads(schema_text)
 
 
-def _emit_json(findings: tuple[Finding, ...], *, verb: str) -> None:
+def _emit_json(
+    findings: tuple[Finding, ...],
+    *,
+    verb: str,
+    prescriptions: tuple[Prescription, ...] | None = None,
+) -> None:
     report = DoctorReport(
         schema_version=1,
         verb=verb,
         generated_at=datetime.now(UTC).isoformat(),
         findings=findings,
+        prescriptions=prescriptions,
     )
     document = report.to_json_dict()
     # Self-validated BEFORE it ever reaches stdout -- a schema-invalid
@@ -481,7 +626,12 @@ def _single_line(text: str) -> str:
     return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
 
 
-def _emit_text(findings: tuple[Finding, ...], *, verb: str) -> None:
+def _emit_text(
+    findings: tuple[Finding, ...],
+    *,
+    verb: str,
+    prescriptions: tuple[Prescription, ...] | None = None,
+) -> None:
     ok = sum(1 for f in findings if f.status is DoctorStatus.OK)
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
     fail = sum(1 for f in findings if f.status is DoctorStatus.FAIL)
@@ -494,6 +644,21 @@ def _emit_text(findings: tuple[Finding, ...], *, verb: str) -> None:
             f"  [{finding.source.value}] {finding.check}: "
             f"{finding.status.value} -- {_single_line(finding.message)}"
         )
+    # Story 3.4 FR-9 parity: whatever --json shows under "prescriptions"
+    # must also be visible in the human-readable render -- otherwise
+    # `doctor diagnose --prescribe` (no --json) would silently omit the
+    # entire point of --prescribe from its own default output.
+    if prescriptions is not None:
+        lines.append(f"  {len(prescriptions)} prescription(s):")
+        for prescription in prescriptions:
+            rank_text = (
+                f"rank {prescription.rank}" if prescription.rank is not None else "unranked"
+            )
+            lines.append(
+                f"    [{prescription.partition.value}, {rank_text}] "
+                f"{prescription.finding_ref}: {_single_line(prescription.action)}"
+            )
+            lines.append(f"      root cause: {_single_line(prescription.root_cause)}")
     _write_stdout("\n".join(lines) + "\n")
 
 
