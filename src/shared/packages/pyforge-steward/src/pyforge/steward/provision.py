@@ -13,12 +13,23 @@ Story 3.1 slice: `load_pixi_environments` (a read-only `tomllib` parse of
 both the shorthand list form and the explicit `{ features = [...] }` table
 form) and `materialize_environment` (a `pixi install -e <name>` subprocess
 wrap). Wired as `steward provision --env <name>`.
+
+Story 3.2 slice: `run_bmad_loop_worktree` (a `scripts/bmad-loop-worktree
+<name>` subprocess wrap, parsing the provisioned worktree's path from the
+script's own first stdout line) composed with Story 3.1's
+`materialize_environment`, run against the worktree instead of the repo
+root. Wired as `steward provision --runner bmad-loop --env <name>`. `<name>`
+doubles as BOTH the pixi environment name AND the `bmad-loop-worktree` BMAD
+project slug — see this story's spec, "Design Notes", for why there is no
+separate `--slug` flag.
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
@@ -111,9 +122,55 @@ def materialize_environment(name: str, *, cwd: str | Path) -> subprocess.Complet
     )
 
 
+# ── Runner provisioning (FR-13, Story 3.2) ──────────────────────────────────
+
+_WORKTREE_STDOUT_PATTERN = re.compile(
+    r"^worktree:\s+(?P<path>.+?)(?:\s+\[.*\]|\s+\(reused\))?\s*$"
+)
+
+
+def run_bmad_loop_worktree(name: str, *, root: Path) -> Path:
+    """`scripts/bmad-loop-worktree <name>` as a subprocess (AD-1/AD-5) —
+    Steward never reimplements or forks worktree-provisioning logic.
+
+    `name` doubles as the BMAD project slug `bmad-loop-worktree` expects —
+    every `pyforge-*` pixi environment this repo defines is named
+    identically to its BMAD project slug (see this story's spec, "Design
+    Notes"), so there is no separate `--slug` flag.
+
+    Returns the provisioned worktree's path, parsed from the script's own
+    first stdout line (`worktree: <path> [<branch>]` or `worktree: <path>
+    (reused)`).
+
+    Raises `subprocess.CalledProcessError` on a non-zero exit — propagated,
+    not swallowed, so the underlying script's own stderr (e.g. "no such BMAD
+    project") reaches the operator verbatim via `ProvisionDuty`'s boundary —
+    and `RuntimeError` if the script exits 0 but its stdout does not start
+    with the expected `worktree: <path> ...` line, an unexpected shape this
+    wrapper does not silently tolerate.
+    """
+    script = root / _BMAD_LOOP_WORKTREE_RELATIVE_PATH
+    result = subprocess.run(
+        [sys.executable, str(script), name],
+        cwd=str(root),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    first_line = result.stdout.splitlines()[0] if result.stdout else ""
+    match = _WORKTREE_STDOUT_PATTERN.match(first_line)
+    if not match:
+        raise RuntimeError(
+            "provision --runner bmad-loop: bmad-loop-worktree exited 0 but its "
+            "first stdout line did not match the expected 'worktree: <path> "
+            f"...' shape (got {first_line!r})"
+        )
+    return Path(match.group("path"))
+
+
 # ── ProvisionDuty (Duty-protocol adapter) ───────────────────────────────────
 
-_PROVISION_HELP = "available flags: --env <name>"
+_PROVISION_HELP = "available flags: --env <name> | --runner bmad-loop --env <name>"
 
 
 def _run_env(ns: argparse.Namespace) -> DutyResult:
@@ -136,18 +193,76 @@ def _run_env(ns: argparse.Namespace) -> DutyResult:
     )
 
 
+def _run_runner(ns: argparse.Namespace) -> DutyResult:
+    """`provision --runner bmad-loop --env <name>` (Story 3.2).
+
+    Review finding: an env-name failure inside `materialize_environment`
+    (run AFTER the worktree already exists) is caught HERE, not left to
+    `ProvisionDuty.run`'s generic outer handler -- the outer handler would
+    report only the failing `pixi install` command, silently omitting that a
+    worktree WAS already provisioned at a specific path. Naming that path
+    explicitly is what the AC's "no partial/orphaned worktree state is left
+    silently unreported" requires.
+    """
+    runner = ns.runner
+    if runner != "bmad-loop":
+        return DutyResult(
+            ok=False,
+            summary=f"provision --runner: unknown runner {runner!r} (only 'bmad-loop' is supported)",
+        )
+    name = ns.env
+    if not name:
+        return DutyResult(ok=False, summary="provision --runner bmad-loop: --env is required")
+
+    root = repo_root()
+    environments = load_pixi_environments(cwd=root)
+    if name not in environments:
+        valid = ", ".join(sorted(environments))
+        return DutyResult(
+            ok=False,
+            summary=(
+                f"provision --runner bmad-loop: {name!r} is not a valid pixi "
+                f"environment. Valid environments: {valid}"
+            ),
+        )
+
+    worktree = run_bmad_loop_worktree(name, root=root)
+    try:
+        materialize_environment(name, cwd=worktree)
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").strip()
+        return DutyResult(
+            ok=False,
+            summary=(
+                f"provision --runner bmad-loop: worktree {worktree} provisioned, "
+                f"but `pixi install -e {name}` inside it exited {exc.returncode}: {stderr}"
+            ),
+        )
+    return DutyResult(
+        ok=True,
+        summary=(
+            f"provision --runner bmad-loop: worktree {worktree} + env {name!r} "
+            "materialized together"
+        ),
+    )
+
+
 class ProvisionDuty:
-    """The real `provision` duty — dispatches the `--env` flag (Epic 3
-    grows this class one flag per story; Story 3.1 lands `--env` only).
+    """The real `provision` duty — dispatches the `--env`/`--runner` flags
+    (Epic 3 grows this class one flag per story; Story 3.2 adds `--runner`).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
-    action is a flag on the bare `provision` duty parser, matching the AC's
-    own `steward provision --env <name>` shape. Bare `steward provision`
-    (no flags) degrades to `DutyResult(ok=True, ...)` naming the available
-    flags (AD-7), matching `KeysDuty`'s/`DeployDuty`'s identical precedent.
-    A subprocess failure (pixi) is caught here as `subprocess.
-    CalledProcessError` and reported as a duty-level failure, never
-    conflated with an internal crash (AD-8 — that boundary is
+    action is a flag on the bare `provision` duty parser, matching each
+    story's own `steward provision --env <name>` / `--runner bmad-loop
+    --env <name>` shape. Precedence when more than one flag is passed:
+    `--runner` > `--env` (a documented judgment call, not a silent one —
+    mirrors `DeployDuty`'s own `--build`-wins-over-`--dry-run` precedent; no
+    AC defines combining them). Bare `steward provision` (no flags)
+    degrades to `DutyResult(ok=True, ...)` naming the available flags
+    (AD-7), matching `KeysDuty`'s/`DeployDuty`'s identical precedent. A
+    subprocess failure (pixi, bmad-loop-worktree) is caught here as
+    `subprocess.CalledProcessError` and reported as a duty-level failure,
+    never conflated with an internal crash (AD-8 — that boundary is
     `cli.main()`'s alone).
     """
 
@@ -155,6 +270,8 @@ class ProvisionDuty:
 
     def run(self, ns: argparse.Namespace) -> DutyResult:
         try:
+            if getattr(ns, "runner", None):
+                return _run_runner(ns)
             if getattr(ns, "env", None):
                 return _run_env(ns)
             return DutyResult(ok=True, summary=f"provision: {_PROVISION_HELP}")
