@@ -172,8 +172,19 @@ def load_budget(path: str | Path) -> tuple[Ceiling, ...]:
             f"{path}: top-level document must be a mapping, got "
             f"{type(document).__name__}"
         )
+    raw_ceilings = document.get("ceilings") or []
+    if not isinstance(raw_ceilings, list):
+        # Review finding: `for raw in document.get("ceilings") or []:` raises
+        # a bare, uncaught TypeError (not BudgetError) when "ceilings" is a
+        # truthy non-iterable-of-entries scalar (e.g. `ceilings: 5`) -- that
+        # propagates all the way to cli.main()'s generic exception handler
+        # as a raw traceback, contradicting this function's own "a corrupt
+        # budget file must never silently [crash]" guarantee.
+        raise BudgetError(
+            f"{path}: 'ceilings' must be a list, got {type(raw_ceilings).__name__}"
+        )
     ceilings: list[Ceiling] = []
-    for raw in document.get("ceilings") or []:
+    for raw in raw_ceilings:
         if not isinstance(raw, dict):
             raise BudgetError(f"{path}: each ceiling entry must be a mapping")
         try:
@@ -182,7 +193,12 @@ def load_budget(path: str | Path) -> tuple[Ceiling, ...]:
                     amount=float(raw["amount"]),
                     currency=raw["currency"],
                     period=raw["period"],
-                    declared_at=raw.get("declared_at"),
+                    # `.get()` here (review finding) silently let a document
+                    # missing this field load as `declared_at=None`, despite
+                    # the dataclass field being typed `str` (non-optional)
+                    # and this function's own docstring promising a missing
+                    # required field raises `BudgetError`.
+                    declared_at=raw["declared_at"],
                 )
             )
         except (KeyError, TypeError, ValueError) as exc:

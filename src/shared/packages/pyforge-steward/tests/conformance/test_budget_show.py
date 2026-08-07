@@ -124,3 +124,48 @@ def test_budget_show_json_via_cli_renders_a_load_error_as_json_not_plain_text(
     err = capsys.readouterr().err
     payload = json.loads(err)
     assert "error" in payload
+
+
+def test_budget_show_json_via_cli_renders_a_non_list_ceilings_error_as_json(
+    tmp_path, monkeypatch, capsys
+):
+    """Review finding: `for raw in document.get("ceilings") or []:` raised a
+    bare, uncaught `TypeError` (not `BudgetError`) when "ceilings" was a
+    truthy non-list scalar (e.g. `ceilings: 5`) -- that propagated past
+    every duty-level exception handler to `cli.main()`'s generic
+    `except Exception`, printing a raw Python traceback instead of the
+    promised clean, `--json`-aware error."""
+    monkeypatch.setattr("pyforge.steward.budget.repo_root", lambda: tmp_path)
+    budget_path = tmp_path / ".steward" / "budget.yaml"
+    budget_path.parent.mkdir(parents=True)
+    budget_path.write_text("ceilings: 5\n")
+
+    from pyforge.steward.cli import EXIT_FAILED
+
+    rc = main(["budget", "show", "--json"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    payload = json.loads(err)
+    assert "error" in payload
+
+
+def test_budget_show_reports_a_load_error_when_declared_at_is_missing(
+    tmp_path, monkeypatch, capsys
+):
+    """Review finding: `Ceiling.declared_at` is typed `str` (non-optional),
+    and this module's own docstring promises a document missing a required
+    field raises `BudgetError` -- but the load path used `.get()` for
+    `declared_at`, silently defaulting to `None` instead of raising."""
+    monkeypatch.setattr("pyforge.steward.budget.repo_root", lambda: tmp_path)
+    budget_path = tmp_path / ".steward" / "budget.yaml"
+    budget_path.parent.mkdir(parents=True)
+    budget_path.write_text(
+        "ceilings:\n  - amount: 1500\n    currency: usd\n    period: month\n"
+    )  # missing declared_at
+
+    from pyforge.steward.cli import EXIT_FAILED
+
+    rc = main(["budget", "show"])
+
+    assert rc == EXIT_FAILED
