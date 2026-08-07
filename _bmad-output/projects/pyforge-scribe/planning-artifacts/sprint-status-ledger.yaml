@@ -19,11 +19,11 @@ development_status:
   1-3-promotion-workflow-proposal-then-confirm-team-voice-rewrite: done
   1-4-pointer-stub-write-back-idempotent-re-invocation: done
   1-5-seed-promotion-the-end-to-end-proof: done
-  2-1-graphstore-port-flat-file-v1-adapter: backlog
-  2-2-nightly-compile-from-named-tool-surfaces: backlog
-  2-3-fact-supersession-in-the-compiled-graph: backlog
-  2-4-scribe-recall-grounded-cited-answers: backlog
+  2-1-graphstore-port-flat-file-v1-adapter: done
+  2-2-nightly-compile-from-named-tool-surfaces: done
+  2-3-fact-supersession-in-the-compiled-graph: done
+  2-4-scribe-recall-grounded-cited-answers: done
   epic-1: done
   epic-1-retrospective: optional
-  epic-2: backlog
+  epic-2: done
   epic-2-retrospective: optional
