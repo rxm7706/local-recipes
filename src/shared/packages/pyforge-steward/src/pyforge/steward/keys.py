@@ -33,9 +33,16 @@ the inventory (`steward keys list`), built strictly from `KeyIdentityEntry`
 fields; never opens `identity_path` or a `secrets` path, so a raw secret
 value structurally cannot appear in either format (NFR-7).
 
-Stories 1.6-1.7 continue to extend this same file (the architecture's
-single duty-adapter-module design for Epic 1) rather than splitting it into
-a subpackage.
+Story 1.6 slice: `_run_audit`, wiring `steward keys audit --drift [--path]
+--secrets <path>` onto the drift-detection (Story 1.2) and plaintext-secret
+(Story 1.3) primitives directly — no new scan logic, only CLI dispatch and
+result formatting. This is also this duty's dogfood target (the package's
+own `pyforge-steward-dogfood` pixi task runs `steward keys audit --drift`
+against this repo's own state).
+
+Story 1.7 continues to extend this same file (the architecture's single
+duty-adapter-module design for Epic 1) rather than splitting it into a
+subpackage.
 """
 
 from __future__ import annotations
@@ -828,7 +835,56 @@ def format_inventory(entries: tuple[KeyIdentityEntry, ...], *, as_json: bool) ->
 
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
 
-_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list")
+_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list", "audit")
+
+
+def _run_audit(ns: argparse.Namespace) -> DutyResult:
+    """`keys audit --drift [--path] --secrets <path>` (Story 1.6).
+
+    `--drift` always scans exactly one file (`--path`, defaulting to
+    `locate_http_module()`'s delegate target) via `scan_file` — never a
+    directory walk (AD-2/Never: not a general-purpose static-analysis
+    framework). `--secrets <path>` dispatches on `is_dir()` onto
+    `scan_directory_for_secrets`/`scan_file_for_secrets` (Story 1.3).
+    Neither flag given degrades to `ok=True` naming the available flags
+    (AD-7). `ok=False` iff at least one scan that ran reported a finding.
+    """
+    if not ns.drift and not ns.secrets:
+        return DutyResult(ok=True, summary="keys audit: pass --drift and/or --secrets <path>")
+
+    ok = True
+    lines: list[str] = []
+
+    if ns.drift:
+        target = Path(ns.path) if ns.path else locate_http_module()
+        try:
+            drift_findings = scan_file(target)
+        except OSError as exc:
+            return DutyResult(ok=False, summary=f"keys audit: [drift] {exc}")
+        except SyntaxError as exc:
+            return DutyResult(ok=False, summary=f"keys audit: [drift] {target}: {exc}")
+        if drift_findings:
+            ok = False
+            lines.extend(f"[drift] {f.message}" for f in drift_findings)
+        else:
+            lines.append(f"[drift] clean: {target}")
+
+    if ns.secrets:
+        secrets_target = Path(ns.secrets)
+        try:
+            if secrets_target.is_dir():
+                secret_findings = scan_directory_for_secrets(secrets_target)
+            else:
+                secret_findings = scan_file_for_secrets(secrets_target)
+        except OSError as exc:
+            return DutyResult(ok=False, summary=f"keys audit: [secrets] {exc}")
+        if secret_findings:
+            ok = False
+            lines.extend(f"[secrets] {f.message}" for f in secret_findings)
+        else:
+            lines.append(f"[secrets] clean: {secrets_target}")
+
+    return DutyResult(ok=ok, summary="\n".join(lines))
 
 
 class KeysDuty:
@@ -877,10 +933,12 @@ class KeysDuty:
                         f"{entry.name!r} (identity at {entry.identity_path})"
                     ),
                 )
-            else:  # verb == "list"
+            elif verb == "list":
                 inventory_path = ns.inventory or default_inventory_path()
                 entries = load_inventory(inventory_path)
                 return DutyResult(ok=True, summary=format_inventory(entries, as_json=ns.json))
+            else:  # verb == "audit"
+                return _run_audit(ns)
         except ValueError as exc:
             return DutyResult(ok=False, summary=f"keys {verb}: {exc}")
         except subprocess.CalledProcessError as exc:

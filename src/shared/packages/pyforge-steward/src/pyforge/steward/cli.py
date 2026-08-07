@@ -27,7 +27,7 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
-    "keys": "credential lifecycle — encrypt/decrypt/rotate/list (audit/revoke land in later stories)",
+    "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit (revoke lands in a later story)",
     "deploy": "deployment duties",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
@@ -53,7 +53,9 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
-    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate,list}")
+    keys_subs = keys_parser.add_subparsers(
+        dest="keys_verb", metavar="{encrypt,decrypt,rotate,list,audit}"
+    )
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
     encrypt.add_argument("file", help="the plaintext file to encrypt")
@@ -85,6 +87,24 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
         help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
     )
     list_.add_argument("--json", action="store_true", help="emit JSON instead of a text table")
+
+    audit = keys_subs.add_parser(
+        "audit", help="scan for host-unscoped credential attachment and/or plaintext secrets"
+    )
+    audit.add_argument(
+        "--drift", action="store_true", help="scan for the historical host-unscoped-attachment shape"
+    )
+    audit.add_argument(
+        "--path",
+        default=None,
+        help="file to scan for --drift (default: the _http.py delegate module)",
+    )
+    audit.add_argument(
+        "--secrets",
+        default=None,
+        metavar="PATH",
+        help="file or directory to scan for plaintext-secret-shaped content",
+    )
 
 
 def resolve_duty(name: str) -> Duty:
