@@ -71,6 +71,7 @@ import argparse
 import json
 from collections.abc import Mapping
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import LocalFs
@@ -92,6 +93,14 @@ from .config import (
     conventional_project_policy_path,
     repo_root,
 )
+
+if TYPE_CHECKING:
+    # Story 5.6 (FR-65/AD-50): `run_land`'s `context` parameter below is
+    # type-only -- this module's own internal logic is NOT retrofitted to
+    # CONSUME it in this pass (see cli/main.py's own module docstring and
+    # the spec's Design Notes); a real (non-TYPE_CHECKING) import would add
+    # a runtime dependency this module doesn't otherwise need.
+    from ..core.context import MarshalContext
 
 # The same physical-repo constant ``cli/deploy.py::_FORGE_REPO`` already
 # establishes -- every Marshal station lives inside this one repo, so this
@@ -271,7 +280,15 @@ def run_land(
     vcs: VcsPort | None = None,
     fs: FsPort | None = None,
     forge: ForgePort | None = None,
+    context: MarshalContext | None = None,
 ) -> int:
+    # Story 5.6 (FR-65/AD-50): `context`, if `cli/main.py`'s dispatch
+    # resolved one, is accepted but deliberately UNUSED here -- proving the
+    # "resolved once at the front door" plumbing reaches this handler
+    # without retrofitting its own internal policy/home-path derivation
+    # (see this story's own Design Notes; `cli/main.py`'s module docstring
+    # names the exact three already-shipped commands this applies to).
+    del context
     # Local imports -- see this module's own docstring for why cli/deploy.py
     # and cli/init.py are never imported at module level here.
     from .deploy import (

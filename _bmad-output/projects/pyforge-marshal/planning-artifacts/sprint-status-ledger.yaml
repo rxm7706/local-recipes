@@ -73,7 +73,7 @@ development_status:
   5-3-escalation-queue: done
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: done
   5-5-durability-as-a-reported-fleet-status-dimension: done
-  5-6-marshal-check-the-detector-registry-through-the-front-door: backlog
+  5-6-marshal-check-the-detector-registry-through-the-front-door: done
   6-1-profile-driven-adapter-selection-project-scoped: backlog
   6-2-skill-tree-projection: backlog
   6-3-projection-drift-detection-that-can-actually-fail: backlog
@@ -114,7 +114,7 @@ development_status:
   epic-3-retrospective: done
   epic-4: done
   epic-4-retrospective: done
-  epic-5: in-progress
+  epic-5: done
   epic-5-retrospective: optional
   epic-6: backlog
   epic-6-retrospective: optional

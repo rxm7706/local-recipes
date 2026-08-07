@@ -27,13 +27,37 @@ isolated per-story branches provably safe to delete (dry-run by default,
 another NEW top-level sibling, dispatching to ``cli/status.py``: one row per
 loop home across the whole fleet -- runtime state, current story, elapsed
 time, budget consumed -- derived entirely from journals/run state, never a
-hand-maintained file. Not wired through the
+hand-maintained file. ``check`` (Story 5.6, FR-65/AD-50) is the LAST Epic 5
+top-level sibling, dispatching to ``cli/check.py``: routes to the repo's
+existing detector registry (``scripts/detectors.py``, repo root) through
+the front door, never a reimplementation. Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
 relay argparse's own code, clamp anything foreign) -- individual
 subcommand handlers (e.g. ``config.run_config``) are the ones that build
 and print an envelope; this module only dispatches to them and relays
 their returned int.
+
+Story 5.6 also adds a context-resolution step ahead of dispatch:
+``_resolve_context`` gathers a ``core.context.MarshalContext`` (project
+slug, composed policy, conventional loop-home path, story key) whenever
+``--project`` is present on the invocation, via the SAME
+``policy.compose``/``cli/init.py::_home_path`` primitives every existing
+command already calls individually -- never a second resolution
+mechanism. The resolved context (``None`` when no ``--project`` is
+present) is threaded to the dispatched handler via an additive
+``context=`` keyword, but ONLY when that handler's own signature already
+accepts one (``inspect.signature``-checked here, per-handler) -- of the
+handlers wired below, only ``cli/check.py::run_check`` (this story's own
+brand-new command) actually consumes it; ``cli/spin.py::run_spin``,
+``cli/status.py::run_status``, and ``cli/land.py::run_land`` (the three
+already-shipped commands this story's AC also names) accept it as an
+additive, currently-UNUSED parameter, proving the "resolved once at the
+front door" plumbing works end to end without retrofitting those three
+large, already-hardened commands' own internal policy/home-path
+re-derivation in this pass (see the spec's own Design Notes). Every other
+handler's signature is untouched, so ``inspect.signature`` simply never
+finds a ``context`` parameter to fill for them.
 
 Story 1.9 (packaging, FR-52/FR-57) extends ``--version`` (still bypassing
 the envelope, still exiting ``EXIT_OK`` unconditionally -- it is
@@ -77,6 +101,7 @@ already-computed exit code rather than constructing a new one.
 from __future__ import annotations
 
 import argparse
+import inspect
 import sys
 
 from ..adapters.harness_bmadloop import (
@@ -85,7 +110,10 @@ from ..adapters.harness_bmadloop import (
     harness_version_in_range,
     harness_version_tuple,
 )
+from ..core import policy as policy_core
+from ..core.context import MarshalContext
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
+from . import check as check_cli
 from . import config as config_cli
 from . import deploy as deploy_cli
 from . import gate as gate_cli
@@ -217,7 +245,58 @@ def _build_parser() -> argparse.ArgumentParser:
     land_cli.add_land_subparser(subparsers)
     retire_cli.add_retire_subparser(subparsers)
     status_cli.add_status_subparser(subparsers)
+    check_cli.add_check_subparser(subparsers)
     return parser
+
+
+def _resolve_context(args: argparse.Namespace) -> MarshalContext | None:
+    """Story 5.6 (FR-65/AD-50): resolves a ``MarshalContext`` once, before
+    dispatch, whenever ``--project`` is present on the invocation --
+    gathered via the SAME primitives every existing command already calls
+    individually (``cli/config.py``'s conventional project-policy lookup +
+    ``core.policy.compose``, ``cli/init.py::_home_path``), never a second
+    resolution mechanism. Returns ``None`` when the invocation carries no
+    ``--project`` value at all -- several subcommands (``factory spin``,
+    ``land``) identify their project via a positional ``slug`` instead;
+    resolving THAT is a future story's own scope, not this one's (see the
+    module docstring and the spec's own Design Notes)."""
+    slug = getattr(args, "project", None)
+    if slug is None:
+        return None
+
+    # Code review (2026-08-07, Edge Case Hunter, the single most severe
+    # finding against this story): the policy-file lookup is now gated on
+    # `_is_valid_project_slug` BEFORE any filesystem touch, and the
+    # presence probe is wrapped in `try/except OSError` -- the SAME
+    # established pattern `cli/status.py`/`cli/land.py`/`cli/retire.py`
+    # already use for this exact operation. The original version had
+    # neither guard: an unvalidated slug let `conventional_project_policy_
+    # path` build a path via naive string interpolation (a real, previously
+    # documented path-traversal risk `cli/gate.py`'s own comments name for
+    # the identical lookup), and a bare `candidate.is_file()` propagates
+    # `PermissionError` on Python 3.12 for an unsearchable ancestor
+    # directory -- uncaught here, that would have crashed `main()`'s own
+    # "never raises" contract for any `marshal check --project ...`/
+    # `marshal status --project ...` invocation hitting either condition.
+    project_data: dict[str, object] = {}
+    if policy_core._is_valid_project_slug(slug):
+        candidate = config_cli.conventional_project_policy_path(slug)
+        try:
+            present = candidate.is_file()
+        except OSError:
+            present = True
+        if present:
+            try:
+                project_data = dict(config_cli._read_project_policy(candidate))
+            except config_cli.PolicyIOError:
+                project_data = {}
+
+    effective, _findings = policy_core.compose(
+        project_slug=slug, project=project_data, flags={}
+    )
+    loop_home = init_cli._home_path(slug) if policy_core._is_valid_project_slug(slug) else None
+    story = getattr(args, "story", None)
+    return MarshalContext(slug=slug, loop_home=loop_home, policy=effective, story=story)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -259,7 +338,16 @@ def main(argv: list[str] | None = None) -> int:
             # keeping this function's own "never raise" contract) makes the
             # failure visible instead.
             return EXIT_USAGE
-        result = handler(args)
+        # Story 5.6 (FR-65/AD-50): resolve MarshalContext once, ahead of
+        # dispatch, and thread it through ONLY when the handler's own
+        # signature already accepts one -- inspect.signature-checked here
+        # so every handler that hasn't been extended with a `context=`
+        # parameter yet keeps working completely unchanged (see the module
+        # docstring for exactly which ones have been, this pass).
+        if "context" in inspect.signature(handler).parameters:
+            result = handler(args, context=_resolve_context(args))
+        else:
+            result = handler(args)
         if (
             isinstance(result, int)
             and not isinstance(result, bool)

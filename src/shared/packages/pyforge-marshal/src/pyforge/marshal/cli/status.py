@@ -76,6 +76,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
@@ -101,6 +102,14 @@ from .config import (
     conventional_project_policy_path,
     repo_root,
 )
+
+if TYPE_CHECKING:
+    # Story 5.6 (FR-65/AD-50): `run_status`'s `context` parameter below is
+    # type-only -- this module's own internal logic is NOT retrofitted to
+    # CONSUME it in this pass (see cli/main.py's own module docstring and
+    # the spec's Design Notes); a real (non-TYPE_CHECKING) import would add
+    # a runtime dependency this module doesn't otherwise need.
+    from ..core.context import MarshalContext
 
 # This module's own local copy of `cli/spin.py`'s journal-shape constants --
 # `cli/retire.py` establishes the identical "each module owns its own copy
@@ -637,7 +646,15 @@ def run_status(
     harness: HarnessPort | None = None,
     process: ProcessPort | None = None,
     clock: ClockPort | None = None,
+    context: MarshalContext | None = None,
 ) -> int:
+    # Story 5.6 (FR-65/AD-50): `context`, if `cli/main.py`'s dispatch
+    # resolved one, is accepted but deliberately UNUSED here -- proving the
+    # "resolved once at the front door" plumbing reaches this handler
+    # without retrofitting its own internal policy/home-path derivation
+    # (see this story's own Design Notes; `cli/main.py`'s module docstring
+    # names the exact three already-shipped commands this applies to).
+    del context
     # Local import -- `cli/init.py` imports `from . import deploy`, and
     # `cli/deploy.py`'s own `_gather_claimed_commits`/`cli/retire.py`'s own
     # `run_retire` both document the identical `cli.deploy`/`cli.init`
