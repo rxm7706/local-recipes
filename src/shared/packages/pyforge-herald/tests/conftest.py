@@ -41,6 +41,7 @@ from typing import Any
 
 import pytest
 
+from pyforge.herald import auth
 from pyforge.herald.transport import ToolResult
 from pyforge.herald.transport.mcp_transport import CREDENTIALS_PATH_ENV
 
@@ -111,6 +112,12 @@ def deny_network(
     # override is ever renamed, this guard must move with it rather than
     # silently stop guarding.
     monkeypatch.setenv(CREDENTIALS_PATH_ENV, str(tmp_path / "no-credentials.json"))
+    # Same discipline for Story 6.3's operator-role config file: a CLI-level
+    # test that calls `auth.resolve_auth_context()` with no explicit
+    # `config_path` (exactly what `cli.py`'s write-command handlers do) must
+    # never read the developer's real `~/.herald/config` -- point the
+    # module-level default at a tmp_path location that does not exist.
+    monkeypatch.setattr(auth, "DEFAULT_CONFIG_PATH", tmp_path / "no-herald-config")
 
 
 @pytest.fixture
