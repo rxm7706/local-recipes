@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import threading
 from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
 
@@ -698,6 +699,199 @@ def test_promote_rerun_against_a_converged_system_is_zero_changes(
     # to reconcile (no open intent survives the first run) and nothing to
     # act on.
     assert len(list(runs_dir.iterdir())) == run_count_after_first
+
+
+# =====================================================================
+# ``run_promote``'s specs_dir advisory lock (Story 4.9, AD-42).
+# =====================================================================
+
+
+class _LockRaisingFs(LocalFs):
+    """A ``FsPort`` wrapper (real ``LocalFs`` for everything else) whose
+    ``acquire_advisory_lock`` always raises ``FsError`` -- proves
+    ``run_promote``'s lock-contention path reports ``MRS-DEPLOY-023`` and
+    performs no copy/commit, matching the story's own "clean, re-entrant
+    refusal, never a hard error" contract."""
+
+    def acquire_advisory_lock(self, path, *, timeout_s):
+        raise FsError("simulated: another process holds this lock")
+
+
+class _LockTrackingFs(LocalFs):
+    """A ``FsPort`` wrapper (real ``LocalFs``/real ``fcntl.flock`` for the
+    lock mechanics themselves) recording every acquire/release call's own
+    REQUESTED path (not the ``.lock`` sibling ``AdvisoryLock.path`` holds)
+    and call order in one shared list -- proves the lock is acquired on
+    ``specs_dir`` itself, and (used across two sequential ``run_promote``
+    calls sharing one instance) that a second run's own locked section
+    never overlaps the first's."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.events: list[tuple[str, Path]] = []
+        self.acquire_calls = 0
+        self.release_calls = 0
+        self._requested_path_by_lock_id: dict[int, Path] = {}
+
+    def acquire_advisory_lock(self, path, *, timeout_s):
+        self.acquire_calls += 1
+        lock = super().acquire_advisory_lock(path, timeout_s=timeout_s)
+        self._requested_path_by_lock_id[id(lock)] = path
+        self.events.append(("acquire", path))
+        return lock
+
+    def release_advisory_lock(self, lock) -> None:
+        self.release_calls += 1
+        requested_path = self._requested_path_by_lock_id.pop(id(lock), lock.path)
+        self.events.append(("release", requested_path))
+        super().release_advisory_lock(lock)
+
+
+def _specs_dir(tmp_path: Path, slug: str) -> Path:
+    return tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
+
+
+def test_promote_reports_warn_and_promotes_nothing_when_the_lock_is_contended(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=_LockRaisingFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-023" in codes
+    assert payload["data"]["lock_contended"] is True
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["promoted_count"] == 0
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0  # WARN never fails the exit code, same tier as MRS-DEPLOY-021/022
+    assert vcs.commit_calls == []
+    assert not _tracked_path(tmp_path, "acme", "1-2-title").exists()
+
+
+def test_promote_with_nothing_to_promote_never_acquires_the_lock(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs()  # no durable merges at all -- plan.to_promote is empty
+    fs = _LockTrackingFs()
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=fs)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["lock_contended"] is False
+    assert fs.acquire_calls == 0
+    assert fs.release_calls == 0
+    assert exit_code == 0
+
+
+def test_promote_acquires_and_releases_the_lock_on_specs_dir_around_copy_and_commit(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    fs = _LockTrackingFs()
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=fs)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["promoted"] == ["1.2"]
+    assert payload["data"]["lock_contended"] is False
+    assert exit_code == 0
+    assert fs.acquire_calls == 1
+    assert fs.release_calls == 1
+    assert fs.events == [
+        ("acquire", _specs_dir(tmp_path, "acme")),
+        ("release", _specs_dir(tmp_path, "acme")),
+    ]
+
+
+def test_promote_hits_the_real_contention_path_when_another_holder_has_the_lock(
+    tmp_path, capsys, monkeypatch
+):
+    """Code review (2026-08-06, Edge Case Hunter): the other lock tests
+    either mock ``acquire_advisory_lock`` outright or never actually
+    contend (the ``_LockTrackingFs`` sequential test's second run has
+    nothing left to promote, so it never re-enters the locked section at
+    all) -- neither exercises ``run_promote``'s real try/except/else/
+    finally wiring against a GENUINE, real ``fcntl.flock`` held by another
+    holder. Here a background thread acquires the real lock on ``specs_dir``
+    via its OWN ``LocalFs`` instance (a second, independent open-file
+    descriptor -- ``fcntl.flock`` treats this as a distinct holder even
+    within one process, exactly like two separate OS processes) and holds
+    it past `run_promote`'s own (monkeypatched short) timeout, proving the
+    foreground call takes the real ``MRS-DEPLOY-023`` contention path
+    against ACTUAL lock contention, not a simulated one."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(deploy_module, "_PROMOTE_LOCK_TIMEOUT_S", 0.3)
+    _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    specs_dir = _specs_dir(tmp_path, "acme")
+
+    holder_fs = LocalFs()
+    release_event = threading.Event()
+    held_event = threading.Event()
+
+    def _hold_lock():
+        lock = holder_fs.acquire_advisory_lock(specs_dir, timeout_s=5.0)
+        held_event.set()
+        release_event.wait(timeout=5.0)
+        holder_fs.release_advisory_lock(lock)
+
+    holder = threading.Thread(target=_hold_lock, daemon=True)
+    holder.start()
+    try:
+        assert held_event.wait(timeout=5.0), "background holder never acquired the real lock"
+
+        exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+    finally:
+        release_event.set()
+        holder.join(timeout=5.0)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-023" in codes
+    assert payload["data"]["lock_contended"] is True
+    assert payload["data"]["promoted"] == []
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+
+
+def test_promote_sequential_runs_for_the_same_project_never_overlap_the_locked_section(
+    tmp_path, capsys, monkeypatch
+):
+    """Two sequential ``run_promote`` invocations for the SAME project,
+    sharing one lock-tracking ``FsPort`` -- proves the second run's own
+    re-scan sees the first run's already-committed promotion (never a
+    duplicate copy/commit) and that the first run's own acquire/release
+    pair fully completes before anything from the second run is attempted
+    (the second run has nothing left to promote, so it never even
+    re-enters the locked section -- the strongest possible proof the two
+    runs' write sections never overlap)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+    fs = _LockTrackingFs()
+
+    first_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=fs)
+    first_payload = json.loads(capsys.readouterr().out)
+
+    second_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=fs)
+    second_payload = json.loads(capsys.readouterr().out)
+
+    assert first_exit == 0
+    assert second_exit == 0
+    assert first_payload["data"]["promoted"] == ["1.2"]
+    assert second_payload["data"]["promoted"] == []
+    assert second_payload["data"]["already_promoted"] == ["1.2"]
+    assert len(vcs.commit_calls) == 1  # never promoted twice
+    assert fs.events == [
+        ("acquire", _specs_dir(tmp_path, "acme")),
+        ("release", _specs_dir(tmp_path, "acme")),
+    ]
 
 
 # =====================================================================

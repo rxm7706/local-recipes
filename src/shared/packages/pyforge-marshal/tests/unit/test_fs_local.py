@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,7 @@ from pyforge.marshal.adapters.fs_local import (
     _tmp_sibling,
 )
 from pyforge.marshal.core.egress import Redacted
+from pyforge.marshal.ports.fs import AdvisoryLock
 
 
 @pytest.fixture
@@ -683,3 +685,108 @@ def test_append_line_is_safe_under_concurrent_writers_near_the_sidecar_threshold
         pairs.append((document["writer_id"], document["counter"]))
 
     assert len(pairs) == len(set(pairs)) == total_expected
+
+
+# --- acquire_advisory_lock / release_advisory_lock (Story 4.9, AD-42) ------
+
+
+def test_acquire_advisory_lock_returns_a_lock_and_creates_the_sibling_file(fs, tmp_path):
+    target = tmp_path / "specs"
+    target.mkdir()
+    lock = fs.acquire_advisory_lock(target, timeout_s=1.0)
+    try:
+        assert isinstance(lock, AdvisoryLock)
+        assert lock.path == tmp_path / "specs.lock"
+        assert lock.path.is_file()
+    finally:
+        fs.release_advisory_lock(lock)
+
+
+def test_acquire_advisory_lock_does_not_require_target_path_to_exist(fs, tmp_path):
+    """The lock file is a SIBLING of ``path`` -- ``path`` itself is never
+    opened, so it need not exist (``specs_dir`` may not exist yet on a
+    fresh checkout, and this primitive still works)."""
+    target = tmp_path / "does-not-exist"
+    lock = fs.acquire_advisory_lock(target, timeout_s=1.0)
+    try:
+        assert lock.path == tmp_path / "does-not-exist.lock"
+    finally:
+        fs.release_advisory_lock(lock)
+
+
+def test_release_advisory_lock_allows_a_subsequent_acquire_to_succeed(fs, tmp_path):
+    target = tmp_path / "specs"
+    lock = fs.acquire_advisory_lock(target, timeout_s=1.0)
+    fs.release_advisory_lock(lock)
+
+    second = fs.acquire_advisory_lock(target, timeout_s=1.0)
+    fs.release_advisory_lock(second)
+
+
+def test_second_acquire_times_out_behind_a_held_lock(fs, tmp_path):
+    """Real ``fcntl.flock`` semantics, single process/thread, sequential:
+    a SECOND ``LocalFs`` instance's acquire on the same path, while the
+    first is still held, must raise ``FsError`` once ``timeout_s`` elapses
+    -- proving the bounded-retry-loop timeout path actually blocks rather
+    than silently double-granting the lock."""
+    target = tmp_path / "specs"
+    first_holder = LocalFs()
+    lock = first_holder.acquire_advisory_lock(target, timeout_s=1.0)
+    try:
+        second_holder = LocalFs()
+        start = time.monotonic()
+        with pytest.raises(FsError):
+            second_holder.acquire_advisory_lock(target, timeout_s=0.2)
+        elapsed = time.monotonic() - start
+        # Genuinely waited (not an immediate raise) but did not hang far
+        # past the requested bound.
+        assert 0.15 <= elapsed < 2.0
+    finally:
+        first_holder.release_advisory_lock(lock)
+
+
+def test_acquire_advisory_lock_succeeds_once_the_holder_releases(fs, tmp_path):
+    """Completes the timeout proof above: after the first holder releases,
+    a subsequent acquire (even one that previously timed out against it)
+    succeeds immediately."""
+    target = tmp_path / "specs"
+    first_holder = LocalFs()
+    lock = first_holder.acquire_advisory_lock(target, timeout_s=1.0)
+
+    second_holder = LocalFs()
+    with pytest.raises(FsError):
+        second_holder.acquire_advisory_lock(target, timeout_s=0.2)
+
+    first_holder.release_advisory_lock(lock)
+
+    third = second_holder.acquire_advisory_lock(target, timeout_s=1.0)
+    second_holder.release_advisory_lock(third)
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores permission bits")
+def test_acquire_advisory_lock_raises_fs_error_on_unwritable_parent(fs, tmp_path):
+    parent = tmp_path / "readonly"
+    parent.mkdir()
+    parent.chmod(0o555)
+    target = parent / "nested" / "specs"
+    try:
+        with pytest.raises(FsError):
+            fs.acquire_advisory_lock(target, timeout_s=0.2)
+    finally:
+        parent.chmod(0o755)
+
+
+def test_release_advisory_lock_never_raises_and_closes_the_descriptor(fs, tmp_path):
+    """Idempotent-safe: releasing a lock this same process holds never
+    raises (mirrors ``remove_empty_dir``'s own established convention),
+    and the descriptor is actually closed -- a double-close would raise
+    ``OSError`` from the raw ``os.close`` if the first close were skipped,
+    so this also proves the descriptor was closed exactly once by checking
+    a subsequent acquire/release cycle still works cleanly."""
+    target = tmp_path / "specs"
+    lock = fs.acquire_advisory_lock(target, timeout_s=1.0)
+    fs.release_advisory_lock(lock)  # must not raise
+    # A second acquire/release cycle proves the fd was actually released
+    # at the OS level, not merely "didn't crash".
+    second = fs.acquire_advisory_lock(target, timeout_s=1.0)
+    fs.release_advisory_lock(second)

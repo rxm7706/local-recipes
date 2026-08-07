@@ -475,6 +475,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # force. MRS-LAND-007 (ForgePort.merge_pr itself failed) classifies ERROR,
 # the same tier as MRS-DEPLOY-008/014 -- a real, irreversible-step write was
 # attempted and did not converge.
+# Story 4.9 (an advisory lock serializes concurrent writes to the shared
+# planning-artifacts/specs/ store, AD-42) adds MRS-DEPLOY-023 (run_promote's
+# new FsPort.acquire_advisory_lock call could not acquire the lock within
+# timeout_s) at WARN, the same tier as MRS-DEPLOY-021/022 -- a clean,
+# re-entrant refusal, never a hard error.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -571,6 +576,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-005": Verdict.WARN,
     "MRS-LAND-006": Verdict.ERROR,
     "MRS-LAND-007": Verdict.ERROR,
+    "MRS-DEPLOY-023": Verdict.WARN,
 }
 
 

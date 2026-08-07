@@ -720,6 +720,15 @@ Thumbs.db
 # Claude Code harness runtime artifacts (session lock from ScheduleWakeup, etc.)
 .claude/scheduled_tasks.lock
 
+# pyforge-marshal: advisory-lock sidecar files (Story 4.9, AD-42) --
+# `marshal deploy promote`'s FsPort.acquire_advisory_lock creates
+# `planning-artifacts/specs.lock` to serialize concurrent promotions;
+# release_advisory_lock best-effort removes it, but a crashed holder can
+# leave it behind (harmless -- its mere existence never blocks a later
+# acquire, only a live flock hold does), so it's ignored rather than
+# tracked either way.
+_bmad-output/projects/*/planning-artifacts/specs.lock
+
 # BMAD: personal config (user-scoped) and per-developer artifacts.
 # Note: _bmad/custom/*.user.toml is already handled by _bmad/custom/.gitignore.
 # Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.

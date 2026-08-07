@@ -16,8 +16,10 @@ import pytest
 
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
+from pyforge.marshal.cli import deploy as deploy_module
 from pyforge.marshal.cli import land as land_module
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
+from pyforge.marshal.ports.process import ProcessResult
 
 _BMADLOOP_WAVE_SUBJECT = "Merge bmad-loop/run-1/4-4-batch into loop/acme (bmad-loop)"
 
@@ -705,3 +707,177 @@ def test_run_land_with_default_ports_does_not_crash(tmp_path, monkeypatch, capsy
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-001" in codes
+
+
+# =====================================================================
+# Story 4.9 proof tests (AD-42): "regenerate on main, never a loop home"
+# is proven, not merely assumed; the journal's own concurrency protocol
+# stays untouched by the new advisory lock.
+# =====================================================================
+
+
+class _RecordingProcess:
+    """A minimal ``ProcessPort`` stand-in recording every ``cwd`` a command
+    ran with -- proves ``_run_resync_commands`` (called from ``land``'s own
+    resync step via ``cli/deploy.py::reconcile_feed``) always runs with
+    ``cwd=root``, never a loop home's own path."""
+
+    def __init__(self) -> None:
+        self.cwd_calls: list[Path] = []
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        self.cwd_calls.append(cwd)
+        return ProcessResult(returncode=0, stdout="", stderr="")
+
+
+class _NoWriteFs:
+    """A read-only ``FsPort`` stand-in: every WRITE-shaped method (including
+    the new Story 4.9 lock pair) raises ``AssertionError`` -- proves
+    ``reconcile_feed``'s resync path performs ZERO writes anywhere, home or
+    otherwise. Read-shaped methods answer the minimum needed to reach
+    ``_gather_claimed_commits``'s own early-return (``exists`` reports the
+    loop home absent)."""
+
+    def exists(self, path):
+        return False
+
+    def read_text(self, path):
+        return None
+
+    def is_dir(self, path):
+        return False
+
+    def read_symlink_target(self, path):
+        return None
+
+    def _refuse(self, name):
+        raise AssertionError(
+            f"reconcile_feed's resync path must never call FsPort.{name}"
+        )
+
+    def write_text_atomic(self, path, content):
+        self._refuse("write_text_atomic")
+
+    def repoint_symlink_atomic(self, path, target):
+        self._refuse("repoint_symlink_atomic")
+
+    def ensure_dir(self, path):
+        self._refuse("ensure_dir")
+
+    def remove_empty_dir(self, path):
+        self._refuse("remove_empty_dir")
+
+    def resolve_path(self, path):
+        self._refuse("resolve_path")
+
+    def copy_file(self, src, dst):
+        self._refuse("copy_file")
+
+    def append_line(self, path, line, *, fsync):
+        self._refuse("append_line")
+
+    def create_dir_exclusive(self, path):
+        self._refuse("create_dir_exclusive")
+
+    def acquire_advisory_lock(self, path, *, timeout_s):
+        self._refuse("acquire_advisory_lock")
+
+    def release_advisory_lock(self, lock):
+        self._refuse("release_advisory_lock")
+
+
+class _UnusedHarness:
+    """A ``HarnessPort`` stand-in that must never be called -- ``_NoWriteFs
+    .exists`` above always reports the loop home absent, so
+    ``_gather_claimed_commits`` short-circuits before ever reaching
+    ``run_status_snapshot``."""
+
+    def run_status_snapshot(self, project, run_id):
+        raise AssertionError("should never be called: the loop home is absent")
+
+
+def test_reconcile_feed_resync_runs_at_root_and_never_writes_under_a_loop_home(
+    tmp_path, monkeypatch
+):
+    """Story 4.9 proof test (AD-42 half one): ``land``'s resync step calls
+    ``cli/deploy.py::reconcile_feed`` in-process (``_run_resync_if_enabled``)
+    -- this is the SAME function, called the same way, so exercising it
+    directly proves the exact invariant both ``marshal deploy refresh-feed``
+    and ``marshal land``'s own resync step share: derived reporting surfaces
+    regenerate against ``root = repo_root()`` (the checked-out integration
+    branch), never a loop home's own Tier-3 copy. ``root``/``home_root`` are
+    pinned to two DIFFERENT, non-overlapping directories -- a future edit
+    that accidentally threaded ``home`` in instead of ``root`` anywhere in
+    ``reconcile_feed``/``_run_resync_commands``/``_gather_claimed_commits``
+    would make this test's own cwd/no-write assertions fail."""
+    root = tmp_path / "main-checkout"
+    root.mkdir()
+    home_root = tmp_path / "loop-homes"
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: root)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+
+    policy_path = root / "marshal-policy.toml"
+    policy_path.write_text(
+        'landing_resync = true\nlanding_resync_commands = ["true"]\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        deploy_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    process = _RecordingProcess()
+    fs = _NoWriteFs()
+    vcs = _FakeVcs(base_subjects=("Merge 1.2 into main",))
+    args = argparse.Namespace(project="acme", format="json")
+
+    data, findings = deploy_module.reconcile_feed(
+        args, vcs=vcs, fs=fs, process=process, harness=_UnusedHarness()
+    )
+
+    assert root != home_root
+    assert not str(root).startswith(str(home_root))
+    assert not str(home_root).startswith(str(root))
+    assert data["resync_skipped"] is False
+    assert process.cwd_calls == [root]
+    assert not home_root.exists()  # never created -- nothing ever wrote there
+    assert not any(finding.severity.value == "error" for finding in findings)
+
+
+def test_deploy_run_write_never_touches_the_new_advisory_lock(tmp_path):
+    """Story 4.9 proof test (boundary, second half): the journal's own
+    append protocol (``_DeployRun.write``/``_write_deploy_entry``, AD-25/
+    AD-28/AD-30) is UNTOUCHED by this story's new
+    ``FsPort.acquire_advisory_lock``/``release_advisory_lock`` pair -- F-6's
+    own concurrency answer (per-run-directory isolation + a single
+    ``O_APPEND`` write) stays the journal's sole mechanism. A fake FsPort
+    that raises ``AssertionError`` from BOTH lock methods, otherwise
+    delegating everything to a real ``LocalFs``, proves a full intent +
+    outcome journal write cycle never reaches either one."""
+
+    class _LockRefusingFs(LocalFs):
+        def acquire_advisory_lock(self, path, *, timeout_s):
+            raise AssertionError("journal writes must never acquire the new advisory lock")
+
+        def release_advisory_lock(self, lock):
+            raise AssertionError("journal writes must never release the new advisory lock")
+
+    fs = _LockRefusingFs()
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-1")
+    findings: list = []
+
+    intent_id = deploy_run.write(
+        findings,
+        kind="promote-commit",
+        phase=deploy_module.Phase.INTENT,
+        payload={"story_keys": ["1.2"]},
+    )
+    assert intent_id is not None
+
+    outcome_id = deploy_run.write(
+        findings,
+        kind="promote-commit",
+        phase=deploy_module.Phase.OUTCOME,
+        payload={"story_keys": ["1.2"]},
+        intent_id=intent_id,
+    )
+    assert outcome_id is not None
+    assert findings == []

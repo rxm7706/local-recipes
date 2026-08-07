@@ -60,12 +60,40 @@ stream held open, so two uncoordinated writers can never interleave a
 partial line -- and ``create_dir_exclusive`` -- AD-25's ``mkdir``, exclusive
 by definition, so a run-directory collision is a hard finding, never an
 append.
+
+Story 4.9 (AD-42's second half -- an advisory lock serializes concurrent
+writes to the shared, git-tracked ``planning-artifacts/specs/`` store) adds
+``acquire_advisory_lock``/``release_advisory_lock``: a plain acquire/release
+pair, not a ``contextlib`` context manager (no context manager exists
+anywhere else in ``ports/``/``adapters/``, and this story does not introduce
+the first one) -- a caller wraps the guarded section in its own
+``try``/``finally``. Deliberately NOT a general-purpose distributed lock or
+lock registry: a single POSIX ``fcntl.flock`` on a sibling ``.lock`` file,
+scoped to whatever ``run_promote`` (this story's sole caller) needs
+serialized. The journal's own two-writer case (``append_line`` above) is a
+DIFFERENT, already-shipped concurrency answer (per-run-directory isolation
+plus a single ``O_APPEND`` write) and stays untouched by this pair.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+
+@dataclass(frozen=True)
+class AdvisoryLock:
+    """Opaque handle returned by ``FsPort.acquire_advisory_lock``, passed
+    back verbatim to ``release_advisory_lock`` (Story 4.9). ``path`` is the
+    sibling lock file itself (not the path the caller originally passed --
+    useful for a caller/operator inspecting a stuck lock); ``handle`` is the
+    adapter-owned OS-level primitive (``LocalFs``'s own implementation
+    stores the open file descriptor there) -- callers must treat it as
+    opaque, never inspect or mutate it."""
+
+    path: Path
+    handle: object
 
 
 class FsPort(Protocol):
@@ -183,4 +211,39 @@ class FsPort(Protocol):
         exists -- a collision is a hard finding, never an append, and
         ``path`` is left untouched. Any other ``OSError`` raises plain
         ``FsError``."""
+        ...
+
+    def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
+        """Acquires a POSIX advisory lock (Story 4.9, AD-42) on a sibling
+        lock file at ``path.with_suffix(path.suffix + ".lock")``, creating
+        it if absent -- ``path`` itself is never opened, locked, or
+        modified. Blocks up to ``timeout_s`` (a bounded retry loop with a
+        short sleep between attempts -- ``fcntl.flock`` itself has no
+        timeout parameter; mirrors this package's own "never an unbounded
+        block" convention, e.g. every ``ProcessPort.run`` call already
+        carries an explicit timeout). Raises ``FsError`` if the lock cannot
+        be acquired within ``timeout_s``, or on any other I/O failure (an
+        unwritable parent directory, a permission error). Returns an opaque
+        ``AdvisoryLock`` handle for ``release_advisory_lock``.
+
+        The lock is ADVISORY, not mandatory: it only serializes two
+        processes that both call this method on the same ``path`` -- it
+        provides no protection against a writer that bypasses this
+        primitive entirely."""
+        ...
+
+    def release_advisory_lock(self, lock: AdvisoryLock) -> None:
+        """Releases ``lock`` (Story 4.9), closes its underlying descriptor,
+        and best-effort removes the sidecar lock file. Call AT MOST ONCE
+        per successful ``acquire_advisory_lock`` (code review, 2026-08-06:
+        this is NOT idempotent -- a second call operates on an fd number
+        the OS may already have reassigned to an unrelated open file
+        elsewhere in this process, silently unlocking/closing the wrong
+        resource rather than raising; double-release is a caller bug this
+        method cannot detect or guard against). Never raises on a properly
+        single-released lock (mirrors ``remove_empty_dir``'s own "the
+        caller already knows this is safe" precondition shape). A caller
+        MUST release via ``try``/``finally`` around the guarded section --
+        no ``contextlib`` context manager exists for this pair (see this
+        module's own docstring)."""
         ...
