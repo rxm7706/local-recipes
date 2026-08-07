@@ -47,10 +47,11 @@ def test_deck_pull_success_prints_the_local_path_and_returns_0(
 ):
     seen = {}
 
-    def _fake_pull(transport, *, slug, repo_root):
+    def _fake_pull(transport, *, slug, repo_root, commit):
         seen["slug"] = slug
         seen["repo_root"] = repo_root
         seen["transport"] = transport
+        seen["commit"] = commit
         return _fake_pull_result()
 
     monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
@@ -62,13 +63,14 @@ def test_deck_pull_success_prints_the_local_path_and_returns_0(
     assert exit_code == 0
     assert seen["slug"] == "pyforge-warden"
     assert seen["repo_root"] == tmp_path
+    assert seen["commit"] is False
     out = capsys.readouterr().out
     assert "pyforge-warden" in out
     assert "PyForge Warden.dc.html" in out
 
 
 def test_deck_pull_unchanged_reports_unchanged_and_returns_0(monkeypatch, capsys):
-    def _fake_pull(transport, *, slug, repo_root):
+    def _fake_pull(transport, *, slug, repo_root, commit):
         return _fake_pull_result(unchanged=True, local_path=None)
 
     monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
@@ -83,7 +85,7 @@ def test_deck_pull_unchanged_reports_unchanged_and_returns_0(monkeypatch, capsys
 def test_deck_pull_defaults_repo_root_to_cwd(monkeypatch, tmp_path: Path):
     seen = {}
 
-    def _fake_pull(transport, *, slug, repo_root):
+    def _fake_pull(transport, *, slug, repo_root, commit):
         seen["repo_root"] = repo_root
         return _fake_pull_result()
 
@@ -98,7 +100,7 @@ def test_deck_pull_defaults_repo_root_to_cwd(monkeypatch, tmp_path: Path):
 def test_deck_pull_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
     monkeypatch, capsys
 ):
-    def _fake_pull(transport, *, slug, repo_root):
+    def _fake_pull(transport, *, slug, repo_root, commit):
         raise HeraldError("no bridge state recorded")
 
     monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
@@ -109,3 +111,49 @@ def test_deck_pull_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
     err = capsys.readouterr().err
     assert "HeraldError" in err
     assert "no bridge state recorded" in err
+
+
+def test_deck_pull_commit_flag_defaults_to_false(monkeypatch):
+    seen = {}
+
+    def _fake_pull(transport, *, slug, repo_root, commit):
+        seen["commit"] = commit
+        return _fake_pull_result()
+
+    monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
+    cli.main(["deck", "pull", "pyforge-warden"])
+    assert seen["commit"] is False
+
+
+def test_deck_pull_commit_flag_forwards_true(monkeypatch):
+    seen = {}
+
+    def _fake_pull(transport, *, slug, repo_root, commit):
+        seen["commit"] = commit
+        return _fake_pull_result(committed=True)
+
+    monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
+    cli.main(["deck", "pull", "pyforge-warden", "--commit"])
+    assert seen["commit"] is True
+
+
+def test_deck_pull_commit_flag_reports_committed_in_stdout(monkeypatch, capsys):
+    def _fake_pull(transport, *, slug, repo_root, commit):
+        return _fake_pull_result(committed=commit)
+
+    monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
+    cli.main(["deck", "pull", "pyforge-warden", "--commit"])
+    out = capsys.readouterr().out
+    assert "committed" in out
+
+
+def test_deck_pull_without_commit_flag_does_not_mention_committed_in_stdout(
+    monkeypatch, capsys
+):
+    def _fake_pull(transport, *, slug, repo_root, commit):
+        return _fake_pull_result(committed=commit)
+
+    monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull)
+    cli.main(["deck", "pull", "pyforge-warden"])
+    out = capsys.readouterr().out
+    assert "committed" not in out

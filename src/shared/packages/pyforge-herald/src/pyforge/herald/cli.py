@@ -82,6 +82,14 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
     )
+    pull.add_argument(
+        "--commit",
+        action="store_true",
+        help=(
+            "commit the pulled + re-derived files to git (default: leave "
+            "them uncommitted; never commits when the pull was unchanged)"
+        ),
+    )
     # status/watch land in Epics 3-4, under this same deck_subparsers group.
     return parser
 
@@ -150,13 +158,16 @@ def _run_deck_pull(args: argparse.Namespace) -> int:
         result = bridge.run(
             transport,
             lambda t: deck_pipeline.pull_prototype(
-                t, slug=args.slug, repo_root=repo_root
+                t, slug=args.slug, repo_root=repo_root, commit=args.commit
             ),
         )
         if result.unchanged:
             print(f"pull {args.slug} ({result.artifact}): unchanged")
         else:
-            print(f"pulled {args.slug} ({result.artifact}) -> {result.local_path}")
+            suffix = " (committed)" if result.committed else ""
+            print(
+                f"pulled {args.slug} ({result.artifact}) -> {result.local_path}{suffix}"
+            )
 
     return dispatch(operation)
 

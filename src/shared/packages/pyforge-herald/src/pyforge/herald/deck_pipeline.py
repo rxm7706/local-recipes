@@ -519,14 +519,88 @@ def _default_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# --- CAP-2: --commit, Story 2.2 ----------------------------------------------
+#
+# `bridge-protocol.md` § *Pull* step 5: "Commit is the operator's (or
+# `--commit`'s) move -- never implicit." Herald has no pre-existing
+# git-wrapping convention of its own (Epic 1 never touched git); this seam's
+# shape (`git add -- <paths>` then `git commit -m <message> -- <paths>`)
+# mirrors `pyforge-marshal`'s own `GitVcs.commit_paths` -- the one real,
+# persistent git-commit convention already established anywhere in this
+# monorepo -- rather than inventing a new one.
+
+_DEFAULT_GIT_TIMEOUT = 60.0
+
+
+@runtime_checkable
+class GitCommitter(Protocol):
+    """The injectable git-commit seam, mirroring ``LocalProver`` /
+    ``DeckExporter``'s pattern: a real implementation shells two bounded
+    subprocess calls; every test injects a hand-written fake."""
+
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+        """Raise ``errors.HeraldError`` naming what failed; return normally
+        on success (including when there was nothing new to stage under
+        ``paths`` -- callers only invoke this when a real change is known to
+        exist)."""
+        ...
+
+
+class SubprocessGitCommitter:
+    """The real ``GitCommitter``: ``git add -- <paths>`` then ``git commit
+    -m <message> -- <paths>`` in ``repo_root``, using the operator's own git
+    identity/signing config -- this commit is meant to survive, unlike
+    ``pyforge-marshal``'s throwaway ``commit-tree`` comparisons. Never
+    invoked by this package's own tests (every pull test injects a fake)."""
+
+    def __init__(self, *, timeout: float = _DEFAULT_GIT_TIMEOUT) -> None:
+        self._timeout = timeout
+
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+        rel_paths = [
+            str(p.relative_to(repo_root)) if p.is_absolute() else str(p) for p in paths
+        ]
+        self._run(repo_root, ["git", "add", "--", *rel_paths])
+        self._run(repo_root, ["git", "commit", "-m", message, "--", *rel_paths])
+
+    def _run(self, repo_root: Path, args: list[str]) -> None:
+        try:
+            completed = subprocess.run(
+                args,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise errors.HeraldError(
+                f"git commit failed: {' '.join(args)!r} in {repo_root} "
+                f"exceeded {self._timeout}s ({exc})"
+            ) from exc
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"git commit failed: could not run {' '.join(args)!r} in "
+                f"{repo_root} ({exc})"
+            ) from exc
+        if completed.returncode != 0:
+            tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
+            raise errors.HeraldError(
+                f"git commit failed: {' '.join(args)!r} in {repo_root} exited "
+                f"{completed.returncode}: {tail}"
+            )
+
+
 def pull_prototype(
     transport: DesignTransport,
     *,
     slug: str,
     repo_root: Path,
+    commit: bool = False,
     state_path: Path | None = None,
     prover: LocalProver | None = None,
     exporter: DeckExporter | None = None,
+    committer: GitCommitter | None = None,
     now: Callable[[], datetime] | None = None,
 ) -> PullResult:
     """CAP-2, Story 2.1: pull the main prototype (``bridge-protocol.md`` §
@@ -534,11 +608,15 @@ def pull_prototype(
 
     On ``{unchanged: true}``: returns immediately with
     ``PullResult(unchanged=True)`` -- no write, no state update, no
-    extract/build/export. On a real change: writes the decoded body to
+    extract/build/export, and (Story 2.2) never a commit even when
+    ``commit=True``. On a real change: writes the decoded body to
     ``presentations/<slug>/project/PyForge <Persona>.dc.html``, records the
     new etag, then re-derives via ``prover`` (default ``NpmLocalProver``,
     reused from Story 1.6) and ``exporter`` (default ``PixiDeckExporter``).
-    Never commits (Story 2.2 adds ``--commit``)."""
+    When ``commit=True`` and the pull was a real change, stages and commits
+    the whole ``presentations/<slug>/`` directory plus the bridge-state file
+    via ``committer`` (default ``SubprocessGitCommitter``, Story 2.2) --
+    commit is opt-in, never implicit."""
     resolved_now = now or _default_now
     resolved_state_path = (
         repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
@@ -572,11 +650,20 @@ def pull_prototype(
     (prover or NpmLocalProver()).prove(deck_dir)
     (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
 
+    committed = False
+    if commit:
+        (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir, resolved_state_path],
+            message=f"herald: pull {slug} ({PROTOTYPE_ARTIFACT_KEY})",
+        )
+        committed = True
+
     return PullResult(
         slug=slug,
         artifact=PROTOTYPE_ARTIFACT_KEY,
         local_path=local_path,
         unchanged=False,
         etag=file_read.etag,
-        committed=False,
+        committed=committed,
     )

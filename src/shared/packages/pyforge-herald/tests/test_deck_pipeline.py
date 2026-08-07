@@ -524,6 +524,19 @@ class FakeExporter:
             raise self._fails
 
 
+class FakeCommitter:
+    def __init__(self, *, fails: HeraldError | None = None):
+        self.calls: list[dict] = []
+        self._fails = fails
+
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+        self.calls.append(
+            {"repo_root": repo_root, "paths": list(paths), "message": message}
+        )
+        if self._fails is not None:
+            raise self._fails
+
+
 _FIXED_NOW = datetime(2026, 8, 7, 12, 0, 0, tzinfo=timezone.utc)
 
 
@@ -742,3 +755,102 @@ def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
     assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
     recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
     assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E6"
+
+
+# --- CAP-2: --commit (Story 2.2) ---------------------------------------------
+
+
+def test_pull_prototype_without_commit_never_calls_the_committer(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E7", body="<html>x</html>", unchanged=False)
+    )
+    committer = FakeCommitter()
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False
+
+
+def test_pull_prototype_commit_true_stages_and_commits_after_a_real_change(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E8", body="<html>x</html>", unchanged=False)
+    )
+    committer = FakeCommitter()
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result.committed is True
+    assert len(committer.calls) == 1
+    call = committer.calls[0]
+    assert call["repo_root"] == tmp_path
+    assert tmp_path / "presentations" / "pyforge-warden" in call["paths"]
+    assert tmp_path / state.DEFAULT_STATE_PATH in call["paths"]
+    assert "pyforge-warden" in call["message"]
+
+
+def test_pull_prototype_commit_true_never_commits_an_unchanged_pull(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
+    )
+    committer = FakeCommitter()
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False
+    assert result.unchanged is True
+
+
+def test_pull_prototype_propagates_a_commit_failure(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E9", body="<html>x</html>", unchanged=False)
+    )
+    committer = FakeCommitter(fails=HeraldError("git commit failed: nothing to commit"))
+    with pytest.raises(HeraldError, match="nothing to commit"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            commit=True,
+            prover=FakeProver(),
+            exporter=FakeExporter(),
+            committer=committer,
+            now=lambda: _FIXED_NOW,
+        )
+    # The write and state update already landed before the commit failed --
+    # not rolled back (see the story spec's Design Notes).
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
