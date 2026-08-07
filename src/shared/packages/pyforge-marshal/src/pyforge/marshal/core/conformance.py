@@ -45,6 +45,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 # `ports/` is NOT in AD-4's forbidden-modules list (only `subprocess`/`os`/
 # `time`/`pyforge.marshal.adapters` are) -- `core/status.py` already imports
@@ -418,7 +419,13 @@ def evaluate_smoke(facts: SmokeFacts) -> SmokeReport:
 
 
 def build_smoke_record(
-    adapter: str, report: SmokeReport, *, binary: str, binary_present: bool
+    adapter: str,
+    report: SmokeReport,
+    *,
+    binary: str,
+    binary_present: bool,
+    harness_version: str | None = None,
+    recorded_at: str | None = None,
 ) -> dict[str, object]:
     """Shape an already-classified `SmokeReport` (Story 6.5, FR-44) into the
     plain dict `cli/adapters.py::run_adapters_smoke` reports as `data.smoke`
@@ -426,7 +433,15 @@ def build_smoke_record(
     boundary -- never here, AD-4) persists to the machine-scoped smoke
     record file. Mirrors `build_probe_record`'s own "the caller already
     gathered every fact, this function only shapes" convention -- no I/O, no
-    redaction."""
+    redaction.
+
+    `harness_version`/`recorded_at` (Story 6.6, FR-45) are additive,
+    backward-compatible keyword parameters -- mirroring Story 6.5's own
+    `render_policy_toml`/`write_policy_toml` `adapter=` precedent -- capturing
+    the bmad-loop version and the UTC ISO-8601 instant THIS smoke ran, since
+    that fact is only ever truthfully known at smoke time, never
+    reconstructible later when `core.conformance.build_matrix_row`
+    accumulates it into a tracked matrix row."""
     return {
         "adapter": adapter,
         "binary": binary,
@@ -434,4 +449,305 @@ def build_smoke_record(
         "status": report.status,
         "failing_stage": report.failing_stage,
         "detail": report.detail,
+        "harness_version": harness_version,
+        "recorded_at": recorded_at,
     }
+
+
+# Story 6.6 (conformance matrix, FR-45/SM-6/AD-31/AD-37) -- a FOURTH,
+# independent closed status pair for a FOURTH distinct fact ("what does the
+# accumulated, tracked matrix claim about this adapter on this host"),
+# deliberately excluded from `ALL_STATUSES` and from Story 6.4's/6.5's own
+# pairs even though three of the four string literals happen to coincide
+# with `STATUS_SMOKE_*` -- AD-31's "never conflated, never sharing a
+# constant" is about the CLASSIFICATION/constant, not incidental string
+# equality (the identical reasoning Story 6.5's own docstring already gives
+# for its coincidence with Story 6.4's `STATUS_UNAVAILABLE`).
+STATUS_MATRIX_NOT_ATTEMPTED = "not-attempted"
+STATUS_MATRIX_UNAVAILABLE = "unavailable"
+STATUS_MATRIX_FAIL = "fail"
+STATUS_MATRIX_PASS = "pass"
+
+# `not-attempted` has no corresponding `STATUS_SMOKE_*` entry -- it is not a
+# fact `evaluate_smoke` can ever classify (a smoke either ran, "unavailable",
+# or classified pass/fail); it is what `build_matrix_row` reports when NO
+# smoke record exists for an adapter at all.
+_SMOKE_STATUS_TO_MATRIX_STATUS: Mapping[str, str] = {
+    STATUS_SMOKE_PASS: STATUS_MATRIX_PASS,
+    STATUS_SMOKE_FAIL: STATUS_MATRIX_FAIL,
+    STATUS_SMOKE_UNAVAILABLE: STATUS_MATRIX_UNAVAILABLE,
+}
+
+
+@dataclass(frozen=True)
+class MatrixRow:
+    """One adapter's accumulated conformance-matrix row (Story 6.6, FR-45)
+    -- the FULL contract `cli/adapters.py::run_adapters_matrix` renders into
+    the tracked matrix file. `stale` is `True` iff `date` parses and is
+    older than the caller-supplied staleness threshold -- `False`, never
+    fabricated, for `not-attempted` (no claim was ever made, so "how old is
+    the claim" does not apply) and for an unparseable/missing `date`."""
+
+    adapter: str
+    status: str
+    adapter_version: str | None
+    harness_version: str | None
+    date: str | None
+    failing_stage: str | None
+    stale: bool
+
+
+def build_matrix_row(
+    adapter: str,
+    *,
+    smoke_record: Mapping[str, object] | None,
+    probe_record: Mapping[str, object] | None,
+    now: datetime,
+    stale_after_days: int,
+) -> MatrixRow:
+    """The pure, total classifier every caller uses (Story 6.6, FR-45/SM-6):
+    no I/O, no clock read (`now` is caller-supplied, AD-4) -- `cli/
+    adapters.py::run_adapters_matrix` gathers `smoke_record`/`probe_record`
+    from the two EXISTING machine-scoped files (`_read_smoke_state`/
+    `_read_probe_state`) before calling this function.
+
+    `smoke_record is None` -> `STATUS_MATRIX_NOT_ATTEMPTED`, with `date`/
+    `stale`/`harness_version`/`failing_stage` all `None`/`False` (no smoke
+    claim exists at all to carry those facts) -- but `adapter_version`
+    STILL comes from `probe_record` when one is available (SM-6's "not
+    gameable" requirement is about `status`, never about discarding a real,
+    already-known probe fact just because smoke hasn't run yet -- review
+    finding: an earlier draft hardcoded `adapter_version=None` here too,
+    silently dropping a known probed version).
+
+    Otherwise `smoke_record["status"]` maps through
+    `_SMOKE_STATUS_TO_MATRIX_STATUS`; an unrecognized/missing value degrades
+    to `STATUS_MATRIX_NOT_ATTEMPTED` rather than fabricating a `pass` --
+    defensive against a record this module did not itself produce (e.g. a
+    hand-edited `adapter-smoke.json`). This degraded case ALSO reports
+    `date: None`, `stale: False` -- the same "no claim exists to age" rule
+    as the `smoke_record is None` case applies here too (review finding: an
+    earlier draft computed `date`/`stale` from the malformed record's own
+    `recorded_at` even when `status` itself was unrecognized, producing a
+    self-contradictory `not-attempted, stale=True` row).
+
+    `date`/`stale` (only computed when `status` is a recognized, real
+    smoke-run status): `smoke_record["recorded_at"]` is parsed via
+    `datetime.fromisoformat`; a naive result is treated as UTC (matches
+    `core.egress`'s own timestamp convention). An unparseable or missing
+    value reports `date: None`, `stale: False` -- never raises, and never
+    fabricates staleness from an absent fact."""
+    raw_adapter_version = probe_record.get("binary_version") if probe_record is not None else None
+    adapter_version = raw_adapter_version if isinstance(raw_adapter_version, str) else None
+
+    if smoke_record is None:
+        return MatrixRow(
+            adapter=adapter,
+            status=STATUS_MATRIX_NOT_ATTEMPTED,
+            adapter_version=adapter_version,
+            harness_version=None,
+            date=None,
+            failing_stage=None,
+            stale=False,
+        )
+
+    raw_status = smoke_record.get("status")
+    status = _SMOKE_STATUS_TO_MATRIX_STATUS.get(
+        raw_status if isinstance(raw_status, str) else "", STATUS_MATRIX_NOT_ATTEMPTED
+    )
+
+    if status == STATUS_MATRIX_NOT_ATTEMPTED:
+        return MatrixRow(
+            adapter=adapter,
+            status=status,
+            adapter_version=adapter_version,
+            harness_version=None,
+            date=None,
+            failing_stage=None,
+            stale=False,
+        )
+
+    raw_date = smoke_record.get("recorded_at")
+    date = raw_date if isinstance(raw_date, str) else None
+    stale = False
+    if date is not None:
+        try:
+            parsed = datetime.fromisoformat(date)
+        except ValueError:
+            parsed = None
+        if parsed is not None:
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            stale = (now - parsed) > timedelta(days=stale_after_days)
+
+    raw_harness_version = smoke_record.get("harness_version")
+    harness_version = raw_harness_version if isinstance(raw_harness_version, str) else None
+
+    raw_failing_stage = smoke_record.get("failing_stage")
+    failing_stage = raw_failing_stage if isinstance(raw_failing_stage, str) else None
+
+    return MatrixRow(
+        adapter=adapter,
+        status=status,
+        adapter_version=adapter_version,
+        harness_version=harness_version,
+        date=date,
+        failing_stage=failing_stage,
+        stale=stale,
+    )
+
+
+def render_matrix_markdown(rows: Iterable[MatrixRow], *, hostname: str, generated_at: str) -> str:
+    """Pure markdown-table rendering (Story 6.6, FR-45) -- no I/O (AD-4);
+    `cli/adapters.py::run_adapters_matrix` writes the returned text to the
+    ONE tracked, per-host path AD-37's F-7 amendment names. Rows sort by
+    adapter name for a deterministic diff across runs."""
+    lines = [
+        f"# Adapter conformance matrix -- {hostname}",
+        "",
+        f"Generated: {generated_at}",
+        "",
+        "| Adapter | Status | Adapter version | Harness version | Date | Failing stage | Stale |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for row in sorted(rows, key=lambda entry: entry.adapter):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    row.adapter,
+                    row.status,
+                    row.adapter_version or "-",
+                    row.harness_version or "-",
+                    row.date or "-",
+                    row.failing_stage or "-",
+                    "yes" if row.stale else "no",
+                ]
+            )
+            + " |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+# =====================================================================
+# Story 6.7 -- entry-file family drift check, detect-only (FR-46, C-3,
+# AD-11).
+# =====================================================================
+#
+# This repo's own cross-tool "entry-file family": AGENTS.md is the declared
+# hub (the cross-tool entry point), and each of the other four is a
+# per-tool satellite pointer at THAT tool's own conventional path. Ownership
+# between stations for these shared, repo-level files is unsettled (C-3/
+# AD-11) -- Marshal never edits one; this concern is detection only.
+#
+# Family membership is a declared table, never inline branching on a
+# filename literal (the AC's own "family membership is configuration, not
+# a literal") -- mirrors `MECHANISM_CHECKERS`'s own "ONE table, one owner"
+# shape. Hub first, by convention (`ENTRY_FILE_FAMILY[0]`).
+ENTRY_FILE_FAMILY: tuple[str, ...] = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".cursor/rules/specs.mdc",
+    "GEMINI.md",
+    ".github/copilot-instructions.md",
+)
+
+
+@dataclass(frozen=True)
+class EntryFileTool:
+    """One CLI tool's own entry-file consumption contract: `reads` is the
+    subset of `ENTRY_FILE_FAMILY` that tool's own runtime actually loads at
+    session start. `len(reads) > 1` is exactly the AC's own "applies the
+    union of two files" shape."""
+
+    tool: str
+    reads: tuple[str, ...]
+
+
+# Confirmed against each tool's own documented behavior (this repo's own
+# CLAUDE.md/AGENTS.md text): Claude Code reads `CLAUDE.md` directly, and
+# `CLAUDE.md`'s own text documents `AGENTS.md` as the cross-tool hub it
+# forwards to -- Claude Code applies the union of both. Cursor, Gemini, and
+# Copilot each read only their own single satellite pointer.
+ENTRY_FILE_TOOLS: tuple[EntryFileTool, ...] = (
+    EntryFileTool("claude", ("CLAUDE.md", "AGENTS.md")),
+    EntryFileTool("cursor", (".cursor/rules/specs.mdc",)),
+    EntryFileTool("gemini", ("GEMINI.md",)),
+    EntryFileTool("copilot", (".github/copilot-instructions.md",)),
+)
+
+_ENTRY_FILE_HUB: str = ENTRY_FILE_FAMILY[0]
+
+
+@dataclass(frozen=True)
+class EntryFileState:
+    """One family member's already-read presence/content facts (Story 6.7)
+    -- gathered by `cli/adapters.py::run_adapters_entry_files`, nothing is
+    read here (AD-4). `mentions_hub` is `None` for the hub's own row (not
+    applicable to itself) -- `True`/`False` for every satellite, per
+    whether its content contains the hub's own filename as a substring."""
+
+    path: str
+    exists: bool
+    mentions_hub: bool | None
+
+
+@dataclass(frozen=True)
+class EntryFileDivergence:
+    """One detected divergence (Story 6.7) -- `affected_tools` is computed
+    from `ENTRY_FILE_TOOLS` itself, never hand-listed per divergence.
+    `cross_contaminating` is `True` exactly when at least one affected
+    tool's own `reads` set has more than one member (the AC's own
+    "cross-contaminating, not merely cosmetic" requirement, made
+    structural)."""
+
+    path: str
+    detail: str
+    affected_tools: tuple[str, ...]
+    cross_contaminating: bool
+
+
+def evaluate_entry_file_family(
+    states: Mapping[str, EntryFileState],
+    *,
+    tools: Iterable[EntryFileTool] = ENTRY_FILE_TOOLS,
+) -> tuple[EntryFileDivergence, ...]:
+    """The pure, total classifier every caller uses (Story 6.7, FR-46): no
+    I/O (AD-4) -- `states` is caller-supplied, keyed by `ENTRY_FILE_FAMILY`
+    path. A missing `states` entry for a family member is treated the same
+    as `exists=False` (never crashes on a partial read).
+
+    A divergence is reported for a family member that is ABSENT, or
+    (satellites only, never the hub itself) present but `mentions_hub is
+    False` -- a satellite that has drifted away from forwarding to the hub
+    is exactly the "instruction content is not isolated per-CLI" hazard
+    this story targets. The hub's own `mentions_hub` field is never
+    consulted (it is `None`, not applicable to itself)."""
+    tools_tuple = tuple(tools)
+    divergences: list[EntryFileDivergence] = []
+    for path in ENTRY_FILE_FAMILY:
+        state = states.get(path)
+        affected_tools = tuple(sorted(tool.tool for tool in tools_tuple if path in tool.reads))
+        cross_contaminating = any(
+            path in tool.reads and len(tool.reads) > 1 for tool in tools_tuple
+        )
+        if state is None or not state.exists:
+            divergences.append(
+                EntryFileDivergence(
+                    path=path,
+                    detail=f"{path!r} is absent",
+                    affected_tools=affected_tools,
+                    cross_contaminating=cross_contaminating,
+                )
+            )
+            continue
+        if path != _ENTRY_FILE_HUB and state.mentions_hub is False:
+            divergences.append(
+                EntryFileDivergence(
+                    path=path,
+                    detail=f"{path!r} exists but no longer references the hub {_ENTRY_FILE_HUB!r}",
+                    affected_tools=affected_tools,
+                    cross_contaminating=cross_contaminating,
+                )
+            )
+    return tuple(divergences)

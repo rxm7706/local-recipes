@@ -782,6 +782,28 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SMOKE-005": Verdict.UNEVALUABLE,
     "MRS-SMOKE-006": Verdict.ERROR,
     "MRS-SMOKE-007": Verdict.WARN,
+    # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37):
+    # MRS-MATRIX-001 (a pre-existing adapter-probes.json/adapter-smoke.json
+    # was malformed) at WARN, mirroring MRS-ADP-016/MRS-SMOKE-007's own
+    # "degrades to empty, never blocks" tier. MRS-MATRIX-002 (writing the
+    # tracked matrix file failed) at ERROR, mirroring MRS-ADP-015/
+    # MRS-SMOKE-006's own "a real write was attempted and failed" tier.
+    "MRS-MATRIX-001": Verdict.WARN,
+    "MRS-MATRIX-002": Verdict.ERROR,
+    # Story 6.7 (entry-file family drift check, detect-only, FR-46/C-3/
+    # AD-11): MRS-ENTRY-001 (a declared family member absent, or present
+    # but no longer referencing the hub) at WARN -- detect-only, never
+    # blocks, mirroring MRS-ADP-007/MRS-DEPLOY-001's own "reported, never
+    # blocks" tier.
+    "MRS-ENTRY-001": Verdict.WARN,
+    # Story 6.8 (upstream contribution register, FR-58/AD-2):
+    # MRS-UPSTREAM-001 (register absent/malformed/an entry failed shape
+    # check) at WARN, mirroring MRS-ADP-016/MRS-SMOKE-007/MRS-MATRIX-001's
+    # own "degrades, never blocks" tier. MRS-UPSTREAM-002 (a landed entry
+    # flags its workaround for removal) at WARN -- purely informational,
+    # never a failure.
+    "MRS-UPSTREAM-001": Verdict.WARN,
+    "MRS-UPSTREAM-002": Verdict.WARN,
 }
 
 

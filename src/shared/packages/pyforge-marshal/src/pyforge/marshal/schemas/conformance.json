@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:conformance.v1",
+  "title": "MarshalConformanceMatrixRow",
+  "description": "The dict shape core.conformance.build_matrix_row() produces (Story 6.6, FR-45/SM-6/AD-31/AD-37): one adapter's accumulated conformance-matrix row -- status, adapter version, harness version, date, failing stage, and whether the row is stale. additionalProperties is false, matching gate-record.json's/policy.json's own closed-schema discipline. jsonschema validates this document only in tests (src/ never runtime-validates against it, matching gate-record.json's own precedent).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["adapter", "status", "adapter_version", "harness_version", "date", "failing_stage", "stale"],
+  "properties": {
+    "adapter": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The adapter (profile) name, e.g. \"claude\", \"codex\"."
+    },
+    "status": {
+      "enum": ["not-attempted", "unavailable", "fail", "pass"],
+      "description": "The FOURTH, independent closed status vocabulary this story adds (AD-31) -- never conflated with the tree-drift, probe-availability, or smoke-run vocabularies core/conformance.py also declares, even where a string literal coincides. \"not-attempted\" means no claim is made at all; SM-6 counts only \"pass\"."
+    },
+    "adapter_version": {
+      "type": ["string", "null"],
+      "description": "The adapter binary's own reported version, from the most recent probe record, or null if never probed or unavailable."
+    },
+    "harness_version": {
+      "type": ["string", "null"],
+      "description": "The bmad-loop version that ran the smoke this row reports, or null if no smoke record exists."
+    },
+    "date": {
+      "type": ["string", "null"],
+      "description": "The UTC ISO-8601 instant the underlying smoke record was written (core.conformance.build_smoke_record's own recorded_at), or null if no smoke record exists or it carries no parseable timestamp."
+    },
+    "failing_stage": {
+      "enum": ["read", "change", "verify", "commit", null],
+      "description": "The smoke's own failing stage (core.conformance.SMOKE_STAGES) when status is \"fail\"; null otherwise."
+    },
+    "stale": {
+      "type": "boolean",
+      "description": "True iff date parses and is older than the caller's configured staleness threshold. Always false for \"not-attempted\" (no claim exists to age) and for a missing/unparseable date -- never fabricated."
+    }
+  }
+}

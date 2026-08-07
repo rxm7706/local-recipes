@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -43,6 +44,7 @@ class FakeFs:
         self.fail_repoint: dict[Path, Exception] = {}
         self.fail_remove: dict[Path, Exception] = {}
         self.fail_read_symlink: dict[Path, Exception] = {}
+        self.fail_read_text: dict[Path, Exception] = {}
         self.fail_write_text: Exception | None = None
         self.fail_acquire_lock: Exception | None = None
         # Real `Path.exists()` FOLLOWS a symlink and reports False for a
@@ -95,6 +97,8 @@ class FakeFs:
         return _lexical_normalize(path)
 
     def read_text(self, path: Path) -> str | None:
+        if path in self.fail_read_text:
+            raise self.fail_read_text[path]
         return self.texts.get(path)
 
     def write_text_atomic(self, path: Path, content: str) -> None:
@@ -141,6 +145,7 @@ class FakeHarness:
         probe_fail: Exception | None = None,
         smoke=None,
         smoke_fail: Exception | None = None,
+        harness_version: str | None = "0.9.0",
     ) -> None:
         self._skill_trees = skill_trees or {}
         self._fail = fail
@@ -148,6 +153,7 @@ class FakeHarness:
         self._probe_fail = probe_fail
         self._smoke = smoke
         self._smoke_fail = smoke_fail
+        self._harness_version = harness_version
         self.run_smoke_calls: list[dict] = []
 
     def adapter_skill_trees(self, project: Path) -> dict[str, str]:
@@ -159,6 +165,9 @@ class FakeHarness:
         if self._probe_fail:
             raise self._probe_fail
         return self._probe
+
+    def harness_version(self) -> str | None:
+        return self._harness_version
 
     def run_smoke(self, project: Path, *, adapter_name: str, story: str, timeout_s: float, log_path: Path):
         self.run_smoke_calls.append(
@@ -1289,3 +1298,313 @@ def test_smoke_text_format_renders_without_crashing(capsys):
     out = capsys.readouterr().out
     assert "adapters smoke" in out
     assert "unavailable" in out
+
+
+def test_smoke_written_record_carries_harness_version_and_recorded_at(capsys, tmp_path):
+    """Story 6.6 (FR-45): the smoke's own machine-scoped record now carries
+    the two facts `run_adapters_matrix` later accumulates -- only ever
+    truthfully known at smoke time."""
+    fs = _pass_fs(tmp_path)
+    harness = FakeHarness(smoke=_pass_smoke(), harness_version="0.9.0")
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    _run_smoke(fs, harness, vcs)
+    _envelope_from(capsys)
+    written = json.loads(fs.texts[_SMOKE_STATE_PATH])
+    assert written["claude"]["harness_version"] == "0.9.0"
+    assert written["claude"]["recorded_at"] is not None
+
+
+# =====================================================================
+# ``marshal adapters matrix`` (Story 6.6, FR-45/SM-6/AD-31/AD-37).
+# =====================================================================
+
+_MATRIX_ROOT = Path("/fake/repo")
+_MATRIX_NOW = datetime(2026, 8, 7, tzinfo=timezone.utc)
+
+
+def _matrix_args(slug: str = "pyforge-marshal", fmt: str = "json", stale_after_days: int = 30) -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, format=fmt, stale_after_days=stale_after_days)
+
+
+@pytest.fixture
+def _patch_matrix(monkeypatch):
+    monkeypatch.setattr(adapters_cli, "_machine_state_dir", lambda: _PROBE_STATE_PATH.parent)
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: _MATRIX_ROOT)
+    monkeypatch.setattr(adapters_cli.socket, "gethostname", lambda: "host1")
+    monkeypatch.setattr(adapters_cli, "_now_utc", lambda: _MATRIX_NOW)
+
+
+def _matrix_path(slug: str = "pyforge-marshal") -> Path:
+    return (
+        _MATRIX_ROOT
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "conformance"
+        / "matrix"
+        / "host1.md"
+    )
+
+
+def test_matrix_malformed_slug_returns_error_finding(capsys, _patch_matrix):
+    fs = FakeFs()
+    code = adapters_cli.run_adapters_matrix(_matrix_args(slug="../evil"), fs=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-001" in codes
+    assert code != 0
+
+
+def test_matrix_fresh_host_writes_empty_matrix(capsys, _patch_matrix):
+    fs = FakeFs()
+    code = adapters_cli.run_adapters_matrix(_matrix_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["rows"] == []
+    assert code == 0
+    assert _matrix_path() in fs.texts
+    assert "host1" in fs.texts[_matrix_path()]
+
+
+def test_matrix_reports_pass_fail_unavailable_not_attempted(capsys, _patch_matrix):
+    fs = FakeFs(
+        texts={
+            _PROBE_STATE_PATH: json.dumps(
+                {
+                    "claude": {"binary_version": "1.0.0"},
+                    "codex": {"binary_version": "2.0.0"},
+                    "never-smoked": {"binary_version": "9.9.9"},
+                }
+            ),
+            _SMOKE_STATE_PATH: json.dumps(
+                {
+                    "claude": {
+                        "status": "pass",
+                        "failing_stage": None,
+                        "harness_version": "0.9.0",
+                        "recorded_at": "2026-08-06T00:00:00+00:00",
+                    },
+                    "codex": {
+                        "status": "unavailable",
+                        "failing_stage": None,
+                        "harness_version": None,
+                        "recorded_at": "2026-08-06T00:00:00+00:00",
+                    },
+                    "gemini": {
+                        "status": "fail",
+                        "failing_stage": "verify",
+                        "harness_version": "0.9.0",
+                        "recorded_at": "2026-08-06T00:00:00+00:00",
+                    },
+                }
+            ),
+        }
+    )
+    code = adapters_cli.run_adapters_matrix(_matrix_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert code == 0
+    rows = {row["adapter"]: row for row in envelope["data"]["rows"]}
+    assert rows["claude"]["status"] == "pass"
+    assert rows["claude"]["adapter_version"] == "1.0.0"
+    assert rows["codex"]["status"] == "unavailable"
+    assert rows["gemini"]["status"] == "fail"
+    assert rows["gemini"]["failing_stage"] == "verify"
+    assert rows["never-smoked"]["status"] == "not-attempted"
+    written = fs.texts[_matrix_path()]
+    for adapter in ("claude", "codex", "gemini", "never-smoked"):
+        assert adapter in written
+
+
+def test_matrix_marks_stale_rows(capsys, _patch_matrix):
+    fs = FakeFs(
+        texts={
+            _SMOKE_STATE_PATH: json.dumps(
+                {"claude": {"status": "pass", "recorded_at": "2020-01-01T00:00:00+00:00"}}
+            )
+        }
+    )
+    code = adapters_cli.run_adapters_matrix(_matrix_args(stale_after_days=30), fs=fs)
+    envelope = _envelope_from(capsys)
+    assert code == 0
+    rows = {row["adapter"]: row for row in envelope["data"]["rows"]}
+    assert rows["claude"]["stale"] is True
+
+
+def test_matrix_malformed_probe_state_reports_matrix_001_and_still_uses_smoke_state(capsys, _patch_matrix):
+    fs = FakeFs(
+        texts={
+            _PROBE_STATE_PATH: "{not json",
+            _SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}}),
+        }
+    )
+    code = adapters_cli.run_adapters_matrix(_matrix_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-MATRIX-001" in codes
+    rows = {row["adapter"]: row for row in envelope["data"]["rows"]}
+    assert rows["claude"]["status"] == "pass"
+    assert code == 0
+
+
+def test_matrix_write_failure_reports_error_but_still_reports_rows(capsys, _patch_matrix):
+    fs = FakeFs(
+        texts={_SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})}
+    )
+    fs.fail_write_text = FsError("disk full")
+    code = adapters_cli.run_adapters_matrix(_matrix_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-MATRIX-002" in codes
+    assert code != 0
+    rows = {row["adapter"]: row for row in envelope["data"]["rows"]}
+    assert rows["claude"]["status"] == "pass"
+    assert _matrix_path() not in fs.texts
+
+
+def test_matrix_text_format_renders_without_crashing(capsys, _patch_matrix):
+    fs = FakeFs(
+        texts={_SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})}
+    )
+    adapters_cli.run_adapters_matrix(_matrix_args(fmt="text"), fs=fs)
+    out = capsys.readouterr().out
+    assert "adapters matrix" in out
+    assert "claude" in out
+
+
+def test_matrix_written_content_matches_render_matrix_markdown(capsys, _patch_matrix):
+    from pyforge.marshal.core.conformance import build_matrix_row, render_matrix_markdown
+
+    fs = FakeFs(
+        texts={_SMOKE_STATE_PATH: json.dumps({"claude": {"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"}})}
+    )
+    adapters_cli.run_adapters_matrix(_matrix_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    written = fs.texts[_matrix_path()]
+    row = build_matrix_row(
+        "claude",
+        smoke_record={"status": "pass", "recorded_at": "2026-08-06T00:00:00+00:00"},
+        probe_record=None,
+        now=_MATRIX_NOW,
+        stale_after_days=30,
+    )
+    # Structural equivalence, not byte-identity (generated_at is a live
+    # clock read this test cannot pin) -- same rows, same table shape.
+    expected = render_matrix_markdown([row], hostname="host1", generated_at="ignored")
+    assert written.splitlines()[4:] == expected.splitlines()[4:]
+    assert envelope["data"]["hostname"] == "host1"
+
+
+# =====================================================================
+# ``marshal adapters entry-files`` (Story 6.7, FR-46/C-3/AD-11).
+# =====================================================================
+
+_ENTRY_ROOT = Path("/fake/entry-repo")
+
+
+def _entry_args(fmt: str = "json") -> argparse.Namespace:
+    return argparse.Namespace(format=fmt)
+
+
+@pytest.fixture
+def _patch_entry_files(monkeypatch):
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: _ENTRY_ROOT)
+
+
+def _consistent_entry_texts() -> dict[Path, str]:
+    from pyforge.marshal.core.conformance import ENTRY_FILE_FAMILY
+
+    texts: dict[Path, str] = {_ENTRY_ROOT / ENTRY_FILE_FAMILY[0]: "the hub, AGENTS.md\n"}
+    for path in ENTRY_FILE_FAMILY[1:]:
+        texts[_ENTRY_ROOT / path] = f"see AGENTS.md for the full rules\n"
+    return texts
+
+
+def test_entry_files_all_consistent_reports_no_finding(capsys, _patch_entry_files):
+    fs = FakeFs(texts=_consistent_entry_texts())
+    code = adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["divergences"] == []
+    assert code == 0
+
+
+def test_entry_files_missing_satellite_reports_mrs_entry_001(capsys, _patch_entry_files):
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / ".cursor/rules/specs.mdc"]
+    fs = FakeFs(texts=texts)
+    code = adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ENTRY-001" in codes
+    assert code == 0  # WARN exits 0 -- a detect-only advisory, never blocking
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert ".cursor/rules/specs.mdc" in divergences
+    assert divergences[".cursor/rules/specs.mdc"]["cross_contaminating"] is False
+
+
+def test_entry_files_missing_hub_names_claude_as_cross_contaminating(capsys, _patch_entry_files):
+    from pyforge.marshal.core.conformance import ENTRY_FILE_FAMILY
+
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / ENTRY_FILE_FAMILY[0]]
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert divergences[ENTRY_FILE_FAMILY[0]]["cross_contaminating"] is True
+    assert "claude" in divergences[ENTRY_FILE_FAMILY[0]]["affected_tools"]
+
+
+def test_entry_files_drifted_satellite_no_longer_mentioning_hub(capsys, _patch_entry_files):
+    texts = _consistent_entry_texts()
+    texts[_ENTRY_ROOT / "CLAUDE.md"] = "totally standalone content, no cross-reference\n"
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert "CLAUDE.md" in divergences
+    assert "no longer references" in divergences["CLAUDE.md"]["detail"]
+
+
+def test_entry_files_never_writes(capsys, _patch_entry_files):
+    """A detect-only command -- no mutator call ever fires, regardless of
+    how many divergences are found."""
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / "GEMINI.md"]
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    _envelope_from(capsys)
+    assert fs.symlinks == {}
+    # write_text_atomic's own store is `texts` -- assert it holds ONLY the
+    # seeded family-member content, never a new/rewritten entry.
+    assert set(fs.texts.keys()) == set(texts.keys())
+
+
+def test_entry_files_unreadable_family_member_degrades_to_absent_never_crashes(capsys, _patch_entry_files):
+    """Self-review finding: `fs.read_text` can raise `FsError` for a real
+    read failure (permission error, path naming a directory) -- distinct
+    from its `None` 'does not exist' return. An unguarded call would crash
+    this detect-only command entirely; it must degrade to the same
+    'absent' shape instead."""
+    texts = _consistent_entry_texts()
+    fs = FakeFs(texts=texts)
+    fs.fail_read_text = {_ENTRY_ROOT / "GEMINI.md": FsError("permission denied")}
+    code = adapters_cli.run_adapters_entry_files(_entry_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ENTRY-001" in codes
+    divergences = {d["path"]: d for d in envelope["data"]["divergences"]}
+    assert "GEMINI.md" in divergences
+    assert code == 0
+
+
+def test_entry_files_text_format_renders_without_crashing(capsys, _patch_entry_files):
+    texts = _consistent_entry_texts()
+    del texts[_ENTRY_ROOT / "GEMINI.md"]
+    fs = FakeFs(texts=texts)
+    adapters_cli.run_adapters_entry_files(_entry_args(fmt="text"), fs=fs)
+    out = capsys.readouterr().out
+    assert "adapters entry-files" in out
+    assert "GEMINI.md" in out

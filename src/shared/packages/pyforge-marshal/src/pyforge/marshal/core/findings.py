@@ -1031,6 +1031,40 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # reporting surface, never a run precondition" tier MRS-ADP-013/014's own
 # sibling verb (`adapters probe`) already established for the identical
 # real-world fact.
+# Story 6.8 (upstream contribution register, FR-58/AD-2) adds
+# `cli/upstream.py`'s own `run_upstream` (`marshal upstream`) -- a NEW
+# area, `MRS-UPSTREAM-*`, two codes. `MRS-UPSTREAM-001` (the tracked
+# register is absent, malformed JSON, or one of its own entries fails the
+# shape check) classifies WARN, mirroring `MRS-ADP-016`/`MRS-SMOKE-007`'s
+# own "degrades to empty, never blocks" tier -- every OTHER well-formed
+# entry still reports. `MRS-UPSTREAM-002` (an entry's own `upstream_status`
+# is `landed` -- its compensating workaround is flagged for review/
+# removal) classifies WARN too: purely informational, a landed gap is good
+# news, never a failure of anything Marshal did, but it IS actionable so a
+# silent `CLEAN` would under-report it.
+# Story 6.7 (entry-file family drift check, detect-only, FR-46/C-3/AD-11)
+# adds `cli/adapters.py`'s own `run_adapters_entry_files` (`marshal
+# adapters entry-files`) -- a NEW area, `MRS-ENTRY-*`, one code.
+# `MRS-ENTRY-001` (a declared family member -- the hub `AGENTS.md` or one
+# of its per-tool satellite pointers -- is absent, or present but no
+# longer references the hub) classifies WARN: a detect-only advisory that
+# never blocks, the same tier as `MRS-ADP-007`/`MRS-DEPLOY-001`'s own
+# "reported, never blocks" precedent. This command never writes (C-3/AD-11:
+# ownership between stations for a shared repo-level file is unsettled),
+# so no code here ever classifies ERROR/GATE_FAILED for a failed write --
+# there is no write to fail.
+# Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37) adds
+# `cli/adapters.py`'s own `run_adapters_matrix` (`marshal adapters matrix`)
+# -- a NEW area, `MRS-MATRIX-*`, reusing `MRS-ADP-001` verbatim for its one
+# shared precondition (a malformed project slug). `MRS-MATRIX-001` (a
+# pre-existing `adapter-probes.json`/`adapter-smoke.json` was malformed
+# JSON -- the SAME underlying fact `MRS-ADP-016`/`MRS-SMOKE-007` already
+# name from their own sibling commands, re-reported under this command's
+# own area) classifies WARN, mirroring `MRS-ADP-016`/`MRS-SMOKE-007`'s own
+# "degrades to empty, never blocks" tier. `MRS-MATRIX-002` (writing the
+# tracked matrix file failed) classifies ERROR, mirroring
+# `MRS-ADP-015`/`MRS-SMOKE-006`'s own "a real write was attempted and
+# failed" tier -- the envelope still reports the computed `data.rows`.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1171,6 +1205,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SMOKE-005",
         "MRS-SMOKE-006",
         "MRS-SMOKE-007",
+        "MRS-MATRIX-001",
+        "MRS-MATRIX-002",
+        "MRS-ENTRY-001",
+        "MRS-UPSTREAM-001",
+        "MRS-UPSTREAM-002",
     }
 )
 

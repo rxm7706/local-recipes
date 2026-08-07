@@ -127,6 +127,7 @@ from . import land as land_cli
 from . import retire as retire_cli
 from . import spin as spin_cli
 from . import status as status_cli
+from . import upstream as upstream_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant), so the version string duplicates pyproject.toml's version
@@ -252,6 +253,7 @@ def _build_parser() -> argparse.ArgumentParser:
     status_cli.add_status_subparser(subparsers)
     check_cli.add_check_subparser(subparsers)
     adapters_cli.add_adapters_subparser(subparsers)
+    upstream_cli.add_upstream_subparser(subparsers)
     return parser
 
 

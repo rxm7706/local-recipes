@@ -68,7 +68,9 @@ import argparse
 import json
 import os
 import secrets
+import socket
 from collections.abc import Callable, Mapping
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -82,15 +84,21 @@ from ..adapters.harness_bmadloop import (
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.conformance import (
+    ENTRY_FILE_FAMILY,
     STATUS_ADDED,
     STATUS_LINK_TARGET_CONFIRMED,
     STATUS_SMOKE_FAIL,
+    EntryFileState,
+    MatrixRow,
     SmokeFacts,
     TreeLiveState,
+    build_matrix_row,
     build_probe_record,
     build_smoke_record,
     evaluate_conformance,
+    evaluate_entry_file_family,
     evaluate_smoke,
+    render_matrix_markdown,
 )
 from ..core.egress import to_redacted
 from ..core.model import Finding, Severity, build_envelope
@@ -100,7 +108,7 @@ from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.record import RecordPort
 from ..ports.vcs import VcsPort
-from .config import _suppress_downstream_pipe_close
+from .config import _suppress_downstream_pipe_close, repo_root
 from .init import _home_path, _loop_home_root, _machine_state_dir
 
 if TYPE_CHECKING:
@@ -158,6 +166,19 @@ _SMOKE_DEFAULT_TIMEOUT_S = 900.0
 _SMOKE_STORY_KEY = "1-1-marshal-conformance-smoke"
 _SMOKE_SPRINT_STATUS = f"development_status:\n  {_SMOKE_STORY_KEY}: ready-for-dev\n"
 _SMOKE_SPEC_FILENAME = f"spec-{_SMOKE_STORY_KEY}.md"
+def _now_utc() -> datetime:
+    """Mirrors `cli/spin.py`'s/`cli/retire.py`'s own identically-named,
+    un-injected helper -- no `ClockPort` precedent exists in this file, and
+    Story 6.6 does not introduce one."""
+    return datetime.now(timezone.utc)
+
+
+# Story 6.6 (conformance matrix, FR-45/SM-6/AD-31/AD-37) -- the default
+# age, in days, past which `run_adapters_matrix` marks a row's own smoke
+# evidence `stale` (data in the rendered row, never a finding -- see the
+# story's own spec Design Notes).
+_MATRIX_STALE_AFTER_DAYS_DEFAULT = 30
+
 _SMOKE_SPEC_CONTENT = f"""# Marshal conformance smoke story
 
 Marshal's own canonical, adapter-agnostic conformance smoke story (Story
@@ -294,6 +315,52 @@ def add_adapters_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     smoke_parser.set_defaults(handler=run_adapters_smoke)
 
+    matrix_parser = adapters_subparsers.add_parser(
+        "matrix",
+        help="Accumulate probe/smoke results into the tracked, per-host conformance matrix (FR-45).",
+        description=(
+            "Reads the machine-scoped adapter-probes.json/adapter-smoke.json "
+            "records and writes the ONE tracked, per-host portability claim "
+            "at planning-artifacts/conformance/matrix/<hostname>.md under "
+            "the named project's own tracked planning artifacts (AD-37). "
+            "Needs no loop home."
+        ),
+    )
+    matrix_parser.add_argument("slug", help="The BMAD project slug whose tracked planning artifacts to write into.")
+    matrix_parser.add_argument(
+        "--stale-after-days",
+        dest="stale_after_days",
+        type=int,
+        default=_MATRIX_STALE_AFTER_DAYS_DEFAULT,
+        metavar="N",
+        help=f"Age, in days, past which a row's smoke evidence is marked stale (default: {_MATRIX_STALE_AFTER_DAYS_DEFAULT}).",
+    )
+    matrix_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    matrix_parser.set_defaults(handler=run_adapters_matrix)
+
+    entry_files_parser = adapters_subparsers.add_parser(
+        "entry-files",
+        help="Detect cross-tool entry-file family drift, report-only (FR-46).",
+        description=(
+            "Read-only: reports presence and mutual consistency across "
+            "this repo's own entry-file family (AGENTS.md plus its "
+            "per-tool satellite pointers) -- never edits any of them "
+            "(C-3/AD-11: ownership between stations is unsettled)."
+        ),
+    )
+    entry_files_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    entry_files_parser.set_defaults(handler=run_adapters_entry_files)
+
 
 def _render_text(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
@@ -382,6 +449,53 @@ def _render_text_smoke(data: dict[str, object], findings: tuple[Finding, ...]) -
         lines.append(f"  status:          {smoke.get('status', '?')}")
         lines.append(f"  failing_stage:   {smoke.get('failing_stage')}")
         lines.append(f"  detail:          {smoke.get('detail', '?')}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _render_text_matrix(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints, mirroring ``_render_text_smoke``'s own
+    shape (AD-14)."""
+    lines = [f"adapters matrix -- hostname={data.get('hostname')} path={data.get('path')}"]
+    rows = data.get("rows")
+    if isinstance(rows, list):
+        for entry in rows:
+            if not isinstance(entry, dict):
+                continue
+            lines.append(
+                f"  {entry.get('adapter', '?'):16} {entry.get('status', '?'):14} "
+                f"adapter_version={entry.get('adapter_version')} "
+                f"harness_version={entry.get('harness_version')} "
+                f"date={entry.get('date')} stale={entry.get('stale')}"
+            )
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _render_text_entry_files(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints, mirroring ``_render_text_matrix``'s own
+    shape (AD-14)."""
+    lines = ["adapters entry-files"]
+    divergences = data.get("divergences")
+    if isinstance(divergences, list):
+        for entry in divergences:
+            if not isinstance(entry, dict):
+                continue
+            lines.append(
+                f"  {entry.get('path', '?'):32} {entry.get('detail', '')} "
+                f"affected={','.join(entry.get('affected_tools', []))} "
+                f"cross_contaminating={entry.get('cross_contaminating')}"
+            )
+    if not divergences:
+        lines.append("  no divergence detected")
     if findings:
         lines.append("findings:")
         for finding in findings:
@@ -1601,11 +1715,17 @@ def run_adapters_smoke(
                     commit_made=commit_made,
                 )
             )
+            # Story 6.6 (FR-45): captured HERE, never reconstructed later --
+            # the bmad-loop version and the instant this smoke ran are only
+            # ever truthfully known at smoke time (see this story's own spec
+            # Design Notes).
             smoke_record = build_smoke_record(
                 adapter_name,
                 report,
                 binary=smoke_result.binary,
                 binary_present=smoke_result.binary_present,
+                harness_version=harness.harness_version(),
+                recorded_at=_now_utc().isoformat(),
             )
             data["smoke"] = smoke_record
 
@@ -1672,3 +1792,197 @@ def run_adapters_smoke(
             )
 
     return _emit(args, data, findings, command="adapters smoke", renderer=_render_text_smoke)
+
+
+# =====================================================================
+# ``marshal adapters matrix`` (Story 6.6, FR-45/SM-6/AD-31/AD-37).
+# =====================================================================
+
+
+def run_adapters_matrix(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    context: MarshalContext | None = None,
+) -> int:
+    """``marshal adapters matrix`` (Story 6.6, FR-45/SM-6/AD-31/AD-37):
+    accumulates the two EXISTING machine-scoped observations
+    (``adapter-probes.json``/``adapter-smoke.json``) into the ONE tracked,
+    per-host portability claim (AD-37's F-7 amendment) -- never a second
+    machine-scoped write, never a loop-home dependency (unlike ``sync``/
+    ``conform``/``probe``)."""
+    del context
+    fs = fs if fs is not None else LocalFs()
+
+    slug = args.slug
+    stale_after_days = int(getattr(args, "stale_after_days", _MATRIX_STALE_AFTER_DAYS_DEFAULT))
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-ADP-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit(args, data, findings, command="adapters matrix", renderer=_render_text_matrix)
+
+    # `_read_probe_state`/`_read_smoke_state` register `MRS-ADP-016`/
+    # `MRS-SMOKE-007` for a malformed file -- this command reports the SAME
+    # underlying fact under its own area's code instead (mirrors
+    # `MRS-DEPLOY-003`'s own "same fact, this caller's own code" precedent)
+    # rather than leaking a sibling command's own finding code into this
+    # envelope.
+    raw_findings: list[Finding] = []
+    probe_state = _read_probe_state(fs, _machine_state_dir() / _PROBE_STATE_FILENAME, raw_findings)
+    smoke_state = _read_smoke_state(fs, _machine_state_dir() / _SMOKE_STATE_FILENAME, raw_findings)
+    for raw_finding in raw_findings:
+        if raw_finding.code in ("MRS-ADP-016", "MRS-SMOKE-007"):
+            findings.append(
+                Finding(
+                    code="MRS-MATRIX-001",
+                    severity=Severity.WARN,
+                    message=raw_finding.message,
+                    path=raw_finding.path,
+                )
+            )
+        else:
+            findings.append(raw_finding)
+
+    now = _now_utc()
+    hostname = socket.gethostname()
+    adapters = sorted(set(probe_state) | set(smoke_state))
+    rows: list[MatrixRow] = [
+        build_matrix_row(
+            adapter,
+            smoke_record=smoke_state.get(adapter) if isinstance(smoke_state.get(adapter), dict) else None,
+            probe_record=probe_state.get(adapter) if isinstance(probe_state.get(adapter), dict) else None,
+            now=now,
+            stale_after_days=stale_after_days,
+        )
+        for adapter in adapters
+    ]
+    data["hostname"] = hostname
+    data["rows"] = [
+        {
+            "adapter": row.adapter,
+            "status": row.status,
+            "adapter_version": row.adapter_version,
+            "harness_version": row.harness_version,
+            "date": row.date,
+            "failing_stage": row.failing_stage,
+            "stale": row.stale,
+        }
+        for row in rows
+    ]
+
+    generated_at = now.isoformat()
+    markdown = render_matrix_markdown(rows, hostname=hostname, generated_at=generated_at)
+
+    root = repo_root()
+    matrix_path = (
+        root
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "conformance"
+        / "matrix"
+        / f"{hostname}.md"
+    )
+    data["path"] = str(matrix_path)
+    try:
+        fs.ensure_dir(matrix_path.parent)
+        fs.write_text_atomic(matrix_path, markdown)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-MATRIX-002",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot write the tracked conformance matrix {str(matrix_path)!r}: {exc} -- "
+                    "the computed rows are still reported in data.rows"
+                ),
+                path=str(matrix_path),
+            )
+        )
+
+    return _emit(args, data, findings, command="adapters matrix", renderer=_render_text_matrix)
+
+
+# =====================================================================
+# ``marshal adapters entry-files`` (Story 6.7, FR-46/C-3/AD-11).
+# =====================================================================
+
+
+def run_adapters_entry_files(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    context: MarshalContext | None = None,
+) -> int:
+    """``marshal adapters entry-files`` (Story 6.7, FR-46/C-3/AD-11):
+    read-only cross-tool entry-file family drift detection -- reports
+    presence and mutual consistency, never edits any family member (a
+    shared repo-level file whose ownership between stations is unsettled)."""
+    del context
+    fs = fs if fs is not None else LocalFs()
+
+    findings: list[Finding] = []
+    data: dict[str, object] = {}
+
+    root = repo_root()
+    states: dict[str, EntryFileState] = {}
+    for path in ENTRY_FILE_FAMILY:
+        # `FsPort.read_text` raises `FsError` for a real read failure (a
+        # permission error, or `path` naming a directory) -- distinct from
+        # its `None` "does not exist" return. Self-review finding: an
+        # unguarded call here would crash this whole detect-only command on
+        # an unreadable ancestor directory, the identical class of failure
+        # `gather_conformance_findings`'s own docstring already documents
+        # (Blind Hunter, Story 6.3) -- degrades to the SAME "absent" shape
+        # a genuinely missing file already reports, rather than crashing.
+        try:
+            text = fs.read_text(root / path)
+        except FsError:
+            text = None
+        mentions_hub: bool | None
+        if path == ENTRY_FILE_FAMILY[0]:
+            mentions_hub = None
+        elif text is None:
+            mentions_hub = None
+        else:
+            mentions_hub = ENTRY_FILE_FAMILY[0] in text
+        states[path] = EntryFileState(path=path, exists=text is not None, mentions_hub=mentions_hub)
+
+    divergences = evaluate_entry_file_family(states)
+    data["divergences"] = [
+        {
+            "path": divergence.path,
+            "detail": divergence.detail,
+            "affected_tools": list(divergence.affected_tools),
+            "cross_contaminating": divergence.cross_contaminating,
+        }
+        for divergence in divergences
+    ]
+
+    if divergences:
+        summary = "; ".join(f"{d.path} ({d.detail})" for d in divergences)
+        findings.append(
+            Finding(
+                code="MRS-ENTRY-001",
+                severity=Severity.WARN,
+                message=(
+                    f"entry-file family drift detected for {len(divergences)} "
+                    f"member(s): {summary}"
+                ),
+            )
+        )
+
+    return _emit(args, data, findings, command="adapters entry-files", renderer=_render_text_entry_files)
