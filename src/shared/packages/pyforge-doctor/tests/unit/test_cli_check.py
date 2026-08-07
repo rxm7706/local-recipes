@@ -447,7 +447,7 @@ def test_text_output_neutralizes_embedded_newlines_in_messages(capsys):
         message="ok\n  [env-hygiene] forged-check: fail -- fabricated line",
         evidence={},
     )
-    main_module._emit_text((forged,))
+    main_module._emit_text((forged,), verb="check")
 
     captured = capsys.readouterr()
     body_lines = captured.out.rstrip("\n").split("\n")

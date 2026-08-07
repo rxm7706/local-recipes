@@ -4,8 +4,13 @@ Story 1.5 wires the ``check`` subcommand (FR-9/NFR-4): ``--engines``/
 ``--env`` compose Story 1.2/1.4's gather functions (``sources.warden.gather``,
 ``checks.env_hygiene.gather``) and Story 1.3's ``checks.registry``
 (catalog + single-check filter) into one human-readable-or-``--json``
-``DoctorReport``, exiting via ``verdict.exit_code_for``. ``monitor``/
-``diagnose`` are not wired yet -- those land with their own epics.
+``DoctorReport``, exiting via ``verdict.exit_code_for``. Story 2.3 wires
+``monitor --fleet`` the same way, composing Story 2.1/2.2's
+``sources.atlas.gather`` per requested ``--watch`` axis. Story 3.4 wires
+``diagnose --target ... [--prescribe]``, composing the same two gather
+filters for one target and, with ``--prescribe``, Epic 3's
+``prescribe.partition``/``prescribe.rank``/``prescribe.name_root_cause``
+pipeline into ``Prescription``\\ s.
 
 ``main`` always RETURNS an int; it never calls an exit primitive itself
 (``verdict.py`` is the sole module permitted to do that -- the
@@ -28,10 +33,22 @@ from pathlib import Path
 
 import jsonschema
 
+from . import prescribe
 from .checks import env_hygiene, registry
-from .models import DoctorReport, DoctorStatus, Finding, Source
-from .sources import warden as warden_source
+from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
+from .sources import atlas, warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
+
+# Story 2.3 AC1: omitting `--watch` runs this documented default axis set
+# (the two highest-signal defaults per Story 2.1/2.2's own Sources), not
+# every axis unconditionally.
+_DEFAULT_MONITOR_AXES: tuple[str, ...] = ("staleness", "cve")
+
+# Story 3.4: `diagnose --target` reuses the SAME default axis set for its
+# own fleet-signal gather -- no AC asks for a different default, and
+# introducing one would be an unjustified divergence from `monitor`'s own
+# documented default (Simplicity First).
+_DEFAULT_DIAGNOSE_AXES: tuple[str, ...] = _DEFAULT_MONITOR_AXES
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant -- see models.py's module docstring for the taxonomy rationale),
@@ -47,7 +64,12 @@ __version__ = "0.1.0"
 _WHOLE_CATEGORY = object()
 
 
-def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
+def _build_parser() -> tuple[
+    argparse.ArgumentParser,
+    argparse.ArgumentParser,
+    argparse.ArgumentParser,
+    argparse.ArgumentParser,
+]:
     parser = argparse.ArgumentParser(
         prog="doctor",
         description=(
@@ -107,7 +129,78 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     # `pyforge.warden.cli.main(["scan", "--version"])` (an argparse usage
     # error, exit 2) -- --version stays top-level only, mirroring warden's
     # own convention exactly (see the story spec's Design Notes).
-    return parser, check
+
+    monitor = subparsers.add_parser(
+        "monitor",
+        help="fleet-pulse watch over cf_atlas's staleness/cve/abandonment signals",
+    )
+    monitor.add_argument(
+        "--fleet",
+        action="store_true",
+        required=True,
+        help=(
+            "required -- names the scope this verb watches (the whole "
+            "fleet); mirrors the Dream's own `doctor monitor --fleet` "
+            "surface literally"
+        ),
+    )
+    monitor.add_argument(
+        "--watch",
+        default=None,
+        metavar="AXIS[,AXIS...]",
+        help=(
+            "comma-separated Watch axes to run (staleness, cve, "
+            "abandonment); default when omitted: staleness,cve"
+        ),
+    )
+    monitor.add_argument(
+        "--target",
+        default=None,
+        metavar="MAINTAINER",
+        help="scope every requested axis to one maintainer/feedstock",
+    )
+    monitor.add_argument(
+        "--source",
+        default=None,
+        metavar="SOURCE",
+        help="filter the rendered output to one Finding.source tag",
+    )
+    monitor.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one schema-valid DoctorReport document on stdout",
+    )
+
+    diagnose = subparsers.add_parser(
+        "diagnose",
+        help="gather + (optionally) partition/rank/root-cause one target",
+    )
+    diagnose.add_argument(
+        "--target",
+        required=True,
+        metavar="TARGET",
+        help=(
+            "the feedstock/maintainer to scope the fleet-signal gather to; "
+            "when TARGET is also an existing local directory, the "
+            "engines+env checks (Story 1.5's own default combined run) are "
+            "gathered against it too"
+        ),
+    )
+    diagnose.add_argument(
+        "--prescribe",
+        action="store_true",
+        help=(
+            "run the partition/rank/root-cause pipeline and populate "
+            "prescriptions; without this flag, findings are gathered and "
+            "reported but never partitioned/ranked"
+        ),
+    )
+    diagnose.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one schema-valid DoctorReport document on stdout",
+    )
+    return parser, check, monitor, diagnose
 
 
 def _validate_check_names(
@@ -162,6 +255,47 @@ def _validate_check_names(
             )
 
 
+def _split_watch_axes(raw: str | None) -> tuple[str, ...]:
+    """Pure parse of ``--watch``'s comma-separated axis list -- no
+    validation, no side effects. ``raw is None`` (the flag omitted
+    entirely) returns Story 2.3's documented default axis set.
+    De-duplication preserves first-occurrence order (``dict.fromkeys``) so
+    a redundant ``--watch staleness,staleness`` doesn't double-gather;
+    empty tokens (``",,"``, a leading/trailing comma) are dropped."""
+    if raw is None:
+        return _DEFAULT_MONITOR_AXES
+    tokens = (token.strip() for token in raw.split(","))
+    return tuple(dict.fromkeys(token for token in tokens if token))
+
+
+def _validate_monitor_args(
+    args: argparse.Namespace, monitor_parser: argparse.ArgumentParser
+) -> None:
+    """An unknown axis or an unrecognized ``--source`` is a usage error
+    (``.error()``, exit 2) raised HERE, before any ``atlas.gather`` call --
+    mirrors ``_validate_check_names``'s own "validate at the call boundary,
+    not inside the gather" discipline."""
+    axes = _split_watch_axes(args.watch)
+    if not axes:
+        monitor_parser.error(
+            "argument --watch: expected at least one axis, got an empty "
+            f"value ({args.watch!r})"
+        )
+    unknown_axes = [axis for axis in axes if axis not in atlas.VALID_WATCH_AXES]
+    if unknown_axes:
+        monitor_parser.error(
+            f"argument --watch: unknown axis(es) {unknown_axes!r} "
+            f"(known: {', '.join(sorted(atlas.VALID_WATCH_AXES))})"
+        )
+    if args.source is not None:
+        known_sources = sorted(source.value for source in Source)
+        if args.source not in known_sources:
+            monitor_parser.error(
+                f"argument --source: unknown source {args.source!r} "
+                f"(known: {', '.join(known_sources)})"
+            )
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse ``argv`` and return an exit code -- never raises ``SystemExit``
     itself. Exit codes stay inside Doctor's frozen ``{0, 2, 130}`` domain
@@ -171,11 +305,17 @@ def main(argv: list[str] | None = None) -> int:
     """
     if argv is None:
         argv = sys.argv[1:]
-    parser, check_parser = _build_parser()
+    parser, check_parser, monitor_parser, _diagnose_parser = _build_parser()
     try:
         try:
             args = parser.parse_args(argv)
-            _validate_check_names(args, check_parser)
+            if args.command == "check":
+                _validate_check_names(args, check_parser)
+            elif args.command == "monitor":
+                _validate_monitor_args(args, monitor_parser)
+            # "diagnose" has no name/axis catalog to validate against --
+            # --target is a free-form string and argparse's own
+            # required=True already enforces its presence.
         except SystemExit as exc:
             # argparse exits itself: --version/--help -> 0, a usage error
             # -> 2 (never 0). Surface its code as a return value, never
@@ -196,13 +336,17 @@ def main(argv: list[str] | None = None) -> int:
             # might exit with something outside Doctor's frozen {0, 2, 130}
             # domain (AD-2).
             return 2
-        # `check` is the only registered subcommand today -- args.command is
-        # always "check" past this point (subparsers is required=True with no
-        # other subparser registered). Dispatch stays INSIDE the outer try:
-        # a gather call is real multi-second work (the whole point of this
-        # story), so a Ctrl-C during `_run_check` -- not just during parsing
-        # -- must also return EXIT_SIGINT rather than escape as a raw
-        # KeyboardInterrupt (main() never raises -- see its own docstring).
+        # Dispatch stays INSIDE the outer try: a gather call is real
+        # multi-second work (the whole point of this story), so a Ctrl-C
+        # during dispatch -- not just during parsing -- must also return
+        # EXIT_SIGINT rather than escape as a raw KeyboardInterrupt (main()
+        # never raises -- see its own docstring). `args.command` is one of
+        # `{"check", "monitor", "diagnose"}` past this point (subparsers is
+        # required=True).
+        if args.command == "monitor":
+            return _run_monitor(args)
+        if args.command == "diagnose":
+            return _run_diagnose(args)
         return _run_check(args)
     except KeyboardInterrupt:
         return EXIT_SIGINT
@@ -307,9 +451,143 @@ def _run_check(args: argparse.Namespace) -> int:
     # the already-computed exit code (mirrors warden's cli.py discipline).
     exit_code = exit_code_for(findings)
     if args.json:
-        _emit_json(findings)
+        _emit_json(findings, verb="check")
     else:
-        _emit_text(findings)
+        _emit_text(findings, verb="check")
+    return exit_code
+
+
+def _run_monitor(args: argparse.Namespace) -> int:
+    """Story 2.3: compose Story 2.1/2.2's ``sources.atlas.gather`` per
+    requested ``--watch`` axis (already validated by ``_validate_monitor_args``
+    before this ever runs) into one ``DoctorReport``. Multi-axis composition
+    (Story 2.2 AC3) is exactly this loop-and-concatenate -- see
+    ``sources/atlas.py``'s own module docstring for why that composition
+    deliberately lives here, not inside ``gather()`` itself.
+
+    ``--source`` filters the ALREADY-GATHERED findings before either
+    render (never a second, narrower gather) -- this keeps the FR-9 parity
+    guarantee automatic: whatever the human-readable output shows is
+    exactly what ``--json`` shows, because both render from the same
+    filtered tuple."""
+    axes = _split_watch_axes(args.watch)
+
+    findings: tuple[Finding, ...] = ()
+    for axis in axes:
+        findings += atlas.gather(axis, target=args.target)
+
+    if args.source is not None:
+        findings = tuple(f for f in findings if f.source.value == args.source)
+
+    exit_code = exit_code_for(findings)
+    if args.json:
+        _emit_json(findings, verb="monitor")
+    else:
+        _emit_text(findings, verb="monitor")
+    return exit_code
+
+
+def _action_text(pf: prescribe.PartitionedFinding) -> str:
+    """Story 3.4's WHAT-TO-DO text, distinct from ``root_cause``'s WHY --
+    derived from the partition, never duplicating the root-cause string.
+
+    A clean (``DoctorStatus.OK``) ``Finding`` lands in ``ACTIONABLE`` too
+    (``prescribe._partition_one``'s "every Finding lands somewhere" rule),
+    but with ``reason="clean -- no remediation needed"`` -- review finding:
+    this branch used to render that case as ``"address X"`` regardless,
+    telling the operator to remediate something that already passed."""
+    if pf.partition is Partition.ACTIONABLE:
+        if pf.finding.status is DoctorStatus.OK:
+            return pf.reason
+        return f"address {pf.finding.check} ({pf.finding.source.value})"
+    if pf.partition is Partition.BLOCKED:
+        return f"blocked -- {pf.reason}"
+    return f"accepted risk -- {pf.reason}"  # Partition.ACCEPTED_RISK
+
+
+def _build_prescriptions(
+    findings: tuple[Finding, ...],
+) -> tuple[Prescription, ...]:
+    """Assembles one ``Prescription`` per gathered ``Finding`` (Story 3.1's
+    own "never a silent drop" rule extended to the full pipeline output):
+    the ``ACTIONABLE`` subset carries a real 1-based ``rank``/``rank_factors``
+    from ``prescribe.rank``; ``BLOCKED``/``ACCEPTED_RISK`` (and any
+    ``ACTIONABLE`` Finding TIED OUT of the ranked subset -- there is none,
+    ``rank`` covers every ``ACTIONABLE`` Finding by construction) carry
+    ``rank=None``/``rank_factors=None`` per the frozen schema's own
+    "populated by a later epic's ranking pass; null until then" framing,
+    here read as "null for anything ranking doesn't apply to." """
+    partitioned = prescribe.partition(findings)
+    ranked = prescribe.rank(partitioned)
+    rank_by_finding = {
+        id(rp.finding): (rp.rank, rp.rank_factors) for rp in ranked
+    }
+
+    prescriptions: list[Prescription] = []
+    for pf in partitioned:
+        rank_value, rank_factors = rank_by_finding.get(id(pf.finding), (None, None))
+        prescriptions.append(
+            Prescription(
+                finding_ref=f"{pf.finding.source.value}:{pf.finding.check}",
+                partition=pf.partition,
+                rank=rank_value,
+                rank_factors=rank_factors,
+                action=_action_text(pf),
+                root_cause=prescribe.name_root_cause(pf.finding, findings),
+            )
+        )
+    return tuple(prescriptions)
+
+
+def _run_diagnose(args: argparse.Namespace) -> int:
+    """Story 3.4: gather Findings for ``--target``, composing Epic 1's
+    `checks` gather (when ``--target`` is ALSO an existing local directory
+    -- "when the target implies an environment check", the AC's own
+    wording) with Epic 2's `sources.atlas` gather (always, scoped to
+    ``--target`` as the maintainer/feedstock filter). Without
+    ``--prescribe``, reports the gathered Findings with ``prescriptions``
+    present but empty (Story 1.1's frozen envelope requires the KEY for
+    ``verb == "diagnose"`` even when there's nothing to populate it with
+    yet). With ``--prescribe``, runs Story 3.1/3.2/3.3's full pipeline --
+    every gathered Finding becomes exactly one ``Prescription``, so a
+    target with only ``blocked``/``accepted-risk`` Findings still reports
+    them (Story 3.1's "never a silent drop" rule, extended here)."""
+    findings: tuple[Finding, ...] = ()
+    for axis in _DEFAULT_DIAGNOSE_AXES:
+        findings += atlas.gather(axis, target=args.target)
+
+    # `Path("").is_dir()` resolves to the CWD and returns True (review
+    # finding) -- `--target ""` would otherwise silently scope the local
+    # engine/env checks to wherever `doctor` happens to be invoked from,
+    # rather than the AC's own "when TARGET is ALSO an existing local
+    # directory" intent for a genuinely-given target.
+    target_path = Path(args.target) if args.target.strip() else None
+    if target_path is not None and target_path.is_dir():
+        findings += warden_source.gather(target_path)
+        findings += env_hygiene.gather(target_path)
+
+    prescriptions: tuple[Prescription, ...] = ()
+    if args.prescribe:
+        prescriptions = _build_prescriptions(findings)
+
+    exit_code = exit_code_for(findings)
+    if args.json:
+        # verb="diagnose" ALWAYS carries the `prescriptions` key in the
+        # JSON envelope, empty or not (Story 1.1's frozen contract) --
+        # unlike the text render below, this is never conditioned on
+        # `--prescribe`.
+        _emit_json(findings, verb="diagnose", prescriptions=prescriptions)
+    else:
+        # The human-readable render only shows a "prescription(s)" section
+        # when `--prescribe` was actually requested -- an UNREQUESTED empty
+        # pipeline result would misleadingly read as "ran and found zero"
+        # rather than "didn't run" (AC1's own "reports them without
+        # partitioning/ranking" framing).
+        _emit_text(
+            findings,
+            verb="diagnose",
+            prescriptions=prescriptions if args.prescribe else None,
+        )
     return exit_code
 
 
@@ -328,12 +606,18 @@ def _report_schema() -> dict:
     return json.loads(schema_text)
 
 
-def _emit_json(findings: tuple[Finding, ...]) -> None:
+def _emit_json(
+    findings: tuple[Finding, ...],
+    *,
+    verb: str,
+    prescriptions: tuple[Prescription, ...] | None = None,
+) -> None:
     report = DoctorReport(
         schema_version=1,
-        verb="check",
+        verb=verb,
         generated_at=datetime.now(UTC).isoformat(),
         findings=findings,
+        prescriptions=prescriptions,
     )
     document = report.to_json_dict()
     # Self-validated BEFORE it ever reaches stdout -- a schema-invalid
@@ -355,12 +639,17 @@ def _single_line(text: str) -> str:
     return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
 
 
-def _emit_text(findings: tuple[Finding, ...]) -> None:
+def _emit_text(
+    findings: tuple[Finding, ...],
+    *,
+    verb: str,
+    prescriptions: tuple[Prescription, ...] | None = None,
+) -> None:
     ok = sum(1 for f in findings if f.status is DoctorStatus.OK)
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
     fail = sum(1 for f in findings if f.status is DoctorStatus.FAIL)
     lines = [
-        f"doctor check: {len(findings)} finding(s) -- "
+        f"doctor {verb}: {len(findings)} finding(s) -- "
         f"{ok} ok, {warn} warn, {fail} fail"
     ]
     for finding in findings:
@@ -368,6 +657,21 @@ def _emit_text(findings: tuple[Finding, ...]) -> None:
             f"  [{finding.source.value}] {finding.check}: "
             f"{finding.status.value} -- {_single_line(finding.message)}"
         )
+    # Story 3.4 FR-9 parity: whatever --json shows under "prescriptions"
+    # must also be visible in the human-readable render -- otherwise
+    # `doctor diagnose --prescribe` (no --json) would silently omit the
+    # entire point of --prescribe from its own default output.
+    if prescriptions is not None:
+        lines.append(f"  {len(prescriptions)} prescription(s):")
+        for prescription in prescriptions:
+            rank_text = (
+                f"rank {prescription.rank}" if prescription.rank is not None else "unranked"
+            )
+            lines.append(
+                f"    [{prescription.partition.value}, {rank_text}] "
+                f"{prescription.finding_ref}: {_single_line(prescription.action)}"
+            )
+            lines.append(f"      root cause: {_single_line(prescription.root_cause)}")
     _write_stdout("\n".join(lines) + "\n")
 
 
