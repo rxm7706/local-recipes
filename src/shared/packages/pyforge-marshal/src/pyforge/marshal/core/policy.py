@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 21-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 22-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 and AD-40's 4 landing keys (Story 4.7)) -- not a mirror of the harness's much
@@ -19,7 +19,7 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 11 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 12 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
@@ -33,7 +33,12 @@ base branch, checked against Story 4.7's four before adding a new one, plus
 toggle's own allowlist of commands ``marshal deploy refresh-feed`` runs,
 validated identically to ``verify_commands`` --
 STATIC for the same reason: declared and validated here, consumed and acted
-on by later stories (4.5, 4.8, 4.10), never narrowed by a journal entry. 10
+on by later stories (4.5, 4.8, 4.10), never narrowed by a journal entry, plus
+(Story 6.9) ``mcp_servers`` -- AD-43's project-declared MCP tool surface,
+STATIC for the identical reason ``epic_surfaces``/``model_tier_map`` are:
+declared and validated here, rendered by ``cli/init.py::run_init`` into a
+loop home's ``.mcp.json`` and probed for resolvability by ``run_preflight``,
+never narrowed by a journal entry. 10
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -131,7 +136,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 21-key vocabulary -------------------------------------------
+# --- the closed 22-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -166,6 +171,15 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # every other landing key is STATIC: declared and validated here,
         # never narrowed by a journal entry.
         "landing_resync_commands",
+        # Story 6.9's 16th key (AD-43, the Q-11 resolution): the project's
+        # declared MCP tool surface, Mapping[str, {command, args?, env?}]
+        # keyed by server name. STATIC, not SEED -- like `epic_surfaces`/
+        # `model_tier_map`, it is project/policy-declared and never
+        # narrowed at runtime by a journal entry; `cli/init.py::run_init`
+        # renders it into the loop home's `.mcp.json` (seed-not-overwrite,
+        # Story 1.7's pattern) and `run_preflight` probes each declared
+        # server's command for resolvability.
+        "mcp_servers",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -334,6 +348,11 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # `verify_commands` already carries for the identical STATIC/tuple-of-
     # str shape.
     "landing_resync_commands": (),
+    # Story 6.9's `mcp_servers` (AD-43): no MCP server renders into a loop
+    # home's `.mcp.json` until a project declares one -- the same "nothing
+    # declared yet" posture `epic_surfaces`/`model_tier_map` already carry
+    # for the identical STATIC/empty-mapping shape.
+    "mcp_servers": {},
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -509,6 +528,55 @@ def _valid_epic_surfaces(value: object) -> dict[str, tuple[str, ...]] | None:
         if globs is None:
             return None
         result[epic] = globs
+    return result
+
+
+def _valid_mcp_servers(value: object) -> dict[str, dict[str, object]] | None:
+    """``mcp_servers`` (Story 6.9, AD-43): ``Mapping[str, {command: str,
+    args?: tuple[str, ...], env?: Mapping[str, str]}]`` keyed by non-empty
+    server name -- the project's declared MCP tool surface, rendered into a
+    loop home's ``.mcp.json`` by ``cli/init.py::run_init`` (seed-not-overwrite,
+    mirroring Story 1.7's adapter-seed pattern) and probed for resolvability
+    by ``run_preflight``. Mirrors ``_valid_model_tier_map``'s/
+    ``_valid_epic_surfaces``'s shape-checking pattern exactly: reject a
+    non-mapping, reject a non-string/empty key, reject an entry with an
+    unknown field or a malformed ``command``/``args``/``env`` -- the whole
+    field is excluded for THAT layer on any single malformed entry (the
+    same "one bad entry poisons the layer, not the whole field" semantics
+    every other mapping-typed validator in this module already applies).
+    ``command`` is REQUIRED and must be a non-empty str (the value
+    ``run_preflight``'s resolvability probe checks against ``PATH``/disk);
+    ``args`` defaults to an empty tuple, validated by the shared
+    ``_valid_str_tuple`` (non-empty strings only, matching every other
+    str-tuple field in this module); ``env`` defaults to an empty mapping,
+    each key/value a plain ``str`` (an empty value is permitted -- an
+    intentionally blank env var is a legitimate declaration, unlike an
+    empty command or an empty server name, which name no server at all)."""
+    if not isinstance(value, Mapping):
+        return None
+    result: dict[str, dict[str, object]] = {}
+    for name, spec in value.items():
+        if not isinstance(name, str) or name == "":
+            return None
+        if isinstance(spec, str) or not isinstance(spec, Mapping):
+            return None
+        if not set(spec.keys()) <= {"command", "args", "env"}:
+            return None
+        command = spec.get("command")
+        if not isinstance(command, str) or command == "":
+            return None
+        args = _valid_str_tuple(spec.get("args", ()))
+        if args is None:
+            return None
+        env_raw = spec.get("env", {})
+        if isinstance(env_raw, str) or not isinstance(env_raw, Mapping):
+            return None
+        env: dict[str, str] = {}
+        for env_key, env_value in env_raw.items():
+            if not isinstance(env_key, str) or env_key == "" or not isinstance(env_value, str):
+                return None
+            env[env_key] = env_value
+        result[name] = {"command": command, "args": args, "env": env}
     return result
 
 
@@ -1007,6 +1075,7 @@ class EffectivePolicy:
     landing_resync: PolicyField
     landing_base_branch: PolicyField
     landing_resync_commands: PolicyField
+    mcp_servers: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1022,6 +1091,7 @@ class EffectivePolicy:
             "landing_resync",
             "landing_base_branch",
             "landing_resync_commands",
+            "mcp_servers",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1069,6 +1139,7 @@ class EffectivePolicy:
                 "landing_resync",
                 "landing_base_branch",
                 "landing_resync_commands",
+                "mcp_servers",
             )
         )
         seed = ", ".join(
@@ -1120,6 +1191,7 @@ class EffectivePolicy:
             "landing_resync": _field_payload(self.landing_resync),
             "landing_base_branch": _field_payload(self.landing_base_branch),
             "landing_resync_commands": _field_payload(self.landing_resync_commands),
+            "mcp_servers": _field_payload(self.mcp_servers),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -1132,7 +1204,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 21-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 22-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -1254,6 +1326,15 @@ def compose(
         findings,
         "MRS-POLICY-002",
     )
+    mcp_servers = _merge_field(
+        "mcp_servers",
+        _valid_mcp_servers,
+        DEFAULT_POLICY["mcp_servers"],
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
     seed = {
         "gate_mode": _merge_field(
             "gate_mode",
@@ -1359,6 +1440,7 @@ def compose(
         landing_resync=landing_resync,
         landing_base_branch=landing_base_branch,
         landing_resync_commands=landing_resync_commands,
+        mcp_servers=mcp_servers,
         _seed=seed,
     )
     return effective, tuple(findings)

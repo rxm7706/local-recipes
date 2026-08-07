@@ -176,6 +176,33 @@ AD-29 reachability check itself could not run -- an UNDETERMINED result,
 refused at least as strictly as a confirmed non-empty one) all classify
 ``Verdict.ERROR`` -- see ``core/findings.py``'s own docstring for the exact
 per-code mapping.
+
+Story 6.9 (tool-surface rendering and preflight probe, AD-43/the Q-11
+resolution) adds a new project-scoped write target to ``run_init`` -- NOT a
+sixth member of ``_STEP_NAMES``/``data.steps`` (that tuple stays the four
+original provisioning primitives), but a new sibling top-level ``data.
+mcp_json`` key, mirroring how Story 1.7's own seed-file copy step reports
+through ``data.seed_files`` rather than joining ``_STEP_NAMES``. After the
+marker step, ``run_init`` composes the project's policy (the SAME
+``_read_project_policy``/``conventional_project_policy_path``/``policy.
+compose`` calls ``run_preflight`` already makes) and, via
+``_render_mcp_json``, renders ``<home>/.mcp.json`` from the composed
+``mcp_servers`` policy key -- copy-when-absent, identical to Story 1.7's
+adapter-seed discipline: a file already there, whether Marshal's own prior
+render or an operator's hand edit, is never touched. A write failure
+reuses the EXISTING ``MRS-INIT-004`` op-failed code rather than a new one
+(the same "git/filesystem operation failed" fact). ``run_preflight`` gains
+a companion resolvability probe, ``_probe_mcp_servers`` (modeled on its own
+``verify_commands`` check): it reads back the home's OWN rendered
+``.mcp.json`` (never ``~/.claude.json`` -- AD-43's hard constraint) and, for
+each policy-declared server, checks whether its ``command`` is resolvable
+via ``HarnessPort.binary_present``/``FsPort.exists``, reporting
+``data.mcp_servers`` (mirroring ``data.verify_commands``' own per-entry
+shape) and the one new code, ``MRS-PREFLIGHT-012`` (bundles a missing/
+malformed ``.mcp.json`` and an unresolvable declared command, mirroring
+``MRS-PREFLIGHT-008``'s own bundling precedent), classifying
+``Verdict.ERROR`` -- see ``core/findings.py``'s own docstring for the exact
+mapping.
 """
 
 from __future__ import annotations
@@ -316,6 +343,144 @@ def _slug_from_symlink_target(target: Path | None) -> str | None:
 
 def _op_failed_finding(message: str) -> Finding:
     return Finding(code="MRS-INIT-004", severity=Severity.ERROR, message=message)
+
+
+def _render_mcp_json(
+    effective: policy.EffectivePolicy, home: Path, fs: FsPort
+) -> tuple[str, list[Finding]]:
+    """Story 6.9 (AD-43): renders ``<home>/.mcp.json`` from the composed
+    policy's ``mcp_servers`` field, using the SAME copy-when-absent
+    discipline ``run_preflight``'s own adapter seed-file step already
+    established (Story 1.7) -- a file already there, whether Marshal's own
+    prior render or an operator's hand edit, is never touched. Returns the
+    step's own status (``"skipped"`` when ``mcp_servers`` is empty or the
+    file already exists, ``"done"`` on a fresh render, ``"failed"`` on a
+    write error) plus any findings -- a write failure reuses the EXISTING
+    ``MRS-INIT-004`` op-failed code (``_op_failed_finding``), the same
+    "git/filesystem operation failed" fact that code already covers
+    everywhere else in ``run_init``, not a new one. Never reads or writes
+    anything outside ``home`` -- in particular, never ``~/.claude.json``
+    (AD-43's own hard constraint)."""
+    servers = effective.mcp_servers.value
+    if not servers:
+        return "skipped", []
+    dst = home / ".mcp.json"
+    if fs.exists(dst):
+        return "skipped", []
+    payload = {
+        "mcpServers": {
+            name: {
+                "command": spec["command"],
+                "args": list(spec["args"]),
+                "env": dict(spec["env"]),
+            }
+            for name, spec in servers.items()
+        }
+    }
+    try:
+        fs.write_text_atomic(dst, json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    except FsError as exc:
+        return "failed", [_op_failed_finding(f"rendering {dst}: {exc}")]
+    return "done", []
+
+
+def _probe_mcp_servers(
+    slug: str,
+    home: Path,
+    effective: policy.EffectivePolicy,
+    fs: FsPort,
+    harness: HarnessPort,
+) -> tuple[list[dict[str, object]], list[Finding]]:
+    """Story 6.9 (AD-43): resolvability probe for the composed policy's
+    ``mcp_servers``, modeled directly on ``run_preflight``'s own
+    ``verify_commands`` check -- resolvable means the declared ``command``
+    is findable on ``PATH`` (``HarnessPort.binary_present``, the SAME seam
+    ``verify_commands``/the adapter binary check already use) or, for an
+    absolute path, present on disk (``FsPort.exists``). Reads ONLY the
+    home's OWN rendered ``.mcp.json`` -- never ``~/.claude.json`` (AD-43's
+    hard constraint: the user-scoped registry is never read as authority
+    and never written). One bundled code, ``MRS-PREFLIGHT-012``, covers all
+    three sub-cases (missing file, malformed file, unresolvable command) --
+    mirrors ``MRS-PREFLIGHT-008``'s own precedent for bundling closely
+    related "not satisfiably recorded" sub-cases under one code."""
+    declared = effective.mcp_servers.value
+    if not declared:
+        return [], []
+
+    mcp_path = home / ".mcp.json"
+    text = fs.read_text(mcp_path)
+    if text is None:
+        return [], [
+            Finding(
+                code="MRS-PREFLIGHT-012",
+                severity=Severity.ERROR,
+                message=(
+                    f"policy declares {len(declared)} MCP server(s) but "
+                    f"{mcp_path} does not exist -- run 'marshal init {slug}' "
+                    "to render it"
+                ),
+                path=str(mcp_path),
+            )
+        ]
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return [], [
+            Finding(
+                code="MRS-PREFLIGHT-012",
+                severity=Severity.ERROR,
+                message=f"{mcp_path} is not valid JSON: {exc}",
+                path=str(mcp_path),
+            )
+        ]
+    rendered_servers = parsed.get("mcpServers") if isinstance(parsed, dict) else None
+    if not isinstance(rendered_servers, dict):
+        return [], [
+            Finding(
+                code="MRS-PREFLIGHT-012",
+                severity=Severity.ERROR,
+                message=f"{mcp_path} carries no top-level 'mcpServers' object",
+                path=str(mcp_path),
+            )
+        ]
+
+    entries: list[dict[str, object]] = []
+    findings: list[Finding] = []
+    for name in declared:
+        rendered = rendered_servers.get(name)
+        command = rendered.get("command") if isinstance(rendered, dict) else None
+        resolvable = False
+        if isinstance(command, str) and command:
+            candidate = Path(command)
+            if candidate.is_absolute():
+                resolvable = fs.exists(candidate)
+            elif len(candidate.parts) > 1:
+                # A relative command containing a path separator (e.g.
+                # "bin/atlas-mcp") is neither a bare PATH-lookup name nor an
+                # absolute path -- `shutil.which` (which `binary_present`
+                # wraps) does NOT search PATH for a name containing a
+                # separator; it checks the literal path relative to the
+                # process's OWN cwd instead. Delegating this case to
+                # `binary_present` would make resolvability cwd-dependent
+                # and non-deterministic (review finding) -- reject it
+                # outright rather than risk a false "resolvable".
+                resolvable = False
+            else:
+                resolvable = harness.binary_present(command)
+        entries.append({"name": name, "command": command, "resolvable": resolvable})
+        if not resolvable:
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-012",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"MCP server {name!r}'s command {command!r} is not "
+                        "resolvable on PATH or as an absolute path"
+                    ),
+                    path=str(mcp_path),
+                )
+            )
+    return entries, findings
 
 
 def run_init(
@@ -621,6 +786,37 @@ def run_init(
             findings.append(_op_failed_finding(str(exc)))
             return _emit(args, data, findings)
 
+    # --- mcp.json render (Story 6.9, AD-43): seed-not-overwrite, identical
+    # to adapter seeds (Story 1.7) -- policy-declared MCP servers rendered
+    # into the home, never overwriting an operator-edited file. Composes
+    # the SAME project policy run_preflight composes (never
+    # ~/.claude.json -- AD-43's own hard constraint: the user-scoped
+    # registry is never read as authority and never written). A failure
+    # here (MRS-INIT-004) reports but does not undo the four steps above,
+    # which have already converged.
+    mcp_project_data: Mapping[str, object] = {}
+    mcp_policy_path = conventional_project_policy_path(slug)
+    try:
+        mcp_policy_present = mcp_policy_path.is_file()
+    except OSError:
+        # Same Python-3.12-ancestor-permission-error tolerance as
+        # run_preflight's own identical guard (see that function's comment)
+        # -- treat as present so _read_project_policy converts the failure
+        # into its typed PolicyIOError finding instead of a raw crash.
+        mcp_policy_present = True
+    if mcp_policy_present:
+        try:
+            mcp_project_data = _read_project_policy(mcp_policy_path)
+        except PolicyIOError as exc:
+            findings.append(exc.finding)
+    mcp_effective, mcp_policy_findings = policy.compose(
+        project_slug=slug, project=mcp_project_data, flags={}
+    )
+    findings.extend(mcp_policy_findings)
+    mcp_status, mcp_render_findings = _render_mcp_json(mcp_effective, home, fs)
+    data["mcp_json"] = {"status": mcp_status}
+    findings.extend(mcp_render_findings)
+
     # shlex.quote keeps the line directly pasteable even when the home path
     # needs shell quoting (a BMAD_LOOP_HOME_ROOT override containing a
     # space); it is a no-op for the common unspaced path, and the slug's
@@ -644,6 +840,8 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         lines.append("steps:")
         for name in _STEP_NAMES:
             lines.append(f"  {name}: {data['steps'][name]}")
+    if "mcp_json" in data:
+        lines.append(f"mcp_json: {data['mcp_json']['status']}")
     if "launch_line" in data:
         lines.append(f"launch: {data['launch_line']}")
     if findings:
@@ -1292,6 +1490,11 @@ def run_preflight(
             )
     data["verify_commands"] = verify_entries
 
+    # --- MCP tool surface resolvability (Story 6.9, AD-43) -----------------------
+    mcp_entries, mcp_probe_findings = _probe_mcp_servers(slug, home, effective, fs, harness)
+    data["mcp_servers"] = mcp_entries
+    findings.extend(mcp_probe_findings)
+
     # --- main checked out exactly once -------------------------------------------
     if repo_root is None:
         data["main_checked_out_once"] = False
@@ -1516,6 +1719,12 @@ def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, 
         lines.append("verify_commands:")
         for entry in data["verify_commands"]:
             lines.append(f"  {entry['command']!r}: resolvable={entry['resolvable']}")
+    if "mcp_servers" in data:
+        lines.append("mcp_servers:")
+        for entry in data["mcp_servers"]:
+            lines.append(
+                f"  {entry['name']!r} ({entry['command']!r}): resolvable={entry['resolvable']}"
+            )
     if "main_checked_out_once" in data:
         lines.append(f"main_checked_out_once: {data['main_checked_out_once']}")
     if "seed_files" in data:
