@@ -172,13 +172,16 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
 
 
 def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
-    """Add the `set` verb (Story 4.1) — `show`/`check` land in Stories 4.2/4.3."""
-    budget_subs = budget_parser.add_subparsers(dest="budget_verb", metavar="{set}")
+    """Add the `set`/`show` verbs (Stories 4.1/4.2) — `check` lands in Story 4.3."""
+    budget_subs = budget_parser.add_subparsers(dest="budget_verb", metavar="{set,show}")
 
     set_ = budget_subs.add_parser("set", help="declare a machine-readable budget ceiling")
     set_.add_argument(
         "--cap", required=True, help="<amount><currency>/<period>, e.g. '1500usd/month'"
     )
+
+    show = budget_subs.add_parser("show", help="print the currently declared ceiling(s)")
+    show.add_argument("--json", action="store_true", help="emit JSON instead of human-readable text")
 
 
 def resolve_duty(name: str) -> Duty:

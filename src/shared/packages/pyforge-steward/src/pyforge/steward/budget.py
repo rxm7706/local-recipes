@@ -17,12 +17,16 @@ mirrors `keys.py`'s `load_inventory`/`save_inventory` precedent), and
 all, so a malformed `--cap` value can never partially write or corrupt
 `.steward/budget.yaml`. Wired as `steward budget set --cap <cap>`.
 
+Story 4.2 slice: `format_ceilings` — read-only text/`--json` rendering of
+`load_budget`'s own output, and a "no ceiling has ever been declared"
+report for the empty case (never a crash, never a misleading zero). Wired
+as `steward budget show [--json]`.
+
 `BudgetDuty` is the `Duty`-conforming adapter `cli.py`'s `resolve_duty
-("budget")` now returns, wiring `steward budget set`. Bare `steward budget`
-(no verb) and `steward budget show`/`check` (not yet real verbs) all
-degrade to `DutyResult(ok=True, ...)` naming the available verbs (AD-7,
-`_BUDGET_VERBS` names only `set` so far) — `show`/`check` land in Stories
-4.2/4.3.
+("budget")` now returns, wiring `steward budget set`/`show`. Bare `steward
+budget` (no verb) and `steward budget check` (not yet a real verb) degrade
+to `DutyResult(ok=True, ...)` naming the available verbs (AD-7) — `check`
+lands in Story 4.3.
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 import os
 import re
 import threading
@@ -219,21 +224,65 @@ def set_ceiling(path: str | Path, cap: str) -> Ceiling:
     return ceiling
 
 
+# ── Ceiling display (Story 4.2) ─────────────────────────────────────────────
+
+
+def _ceiling_to_dict(ceiling: Ceiling) -> dict[str, object]:
+    return {
+        "amount": ceiling.amount,
+        "currency": ceiling.currency,
+        "period": ceiling.period,
+        "declared_at": ceiling.declared_at,
+    }
+
+
+def format_ceilings(ceilings: tuple[Ceiling, ...], *, as_json: bool) -> str:
+    """Render `ceilings` for `steward budget show`.
+
+    `as_json=True`: a JSON array, one object per ceiling — `[]` for no
+    ceiling ever declared, the correct machine-parseable empty state (never
+    a misleading zero). `as_json=False`: one line per ceiling in a stable,
+    human-readable `<amount> <currency>/<period> (declared <timestamp>)`
+    form; a plain sentence — not a crash, not `0` — when none exists.
+    """
+    if as_json:
+        return json.dumps([_ceiling_to_dict(c) for c in ceilings], indent=2)
+    if not ceilings:
+        return "budget show: no ceiling has ever been declared"
+    lines = [
+        f"{c.amount:g} {c.currency}/{c.period} (declared {c.declared_at})" for c in ceilings
+    ]
+    return "\n".join(lines)
+
+
 # ── BudgetDuty (Duty-protocol adapter) ──────────────────────────────────────
 
-_BUDGET_VERBS: tuple[str, ...] = ("set",)
+_BUDGET_VERBS: tuple[str, ...] = ("set", "show")
 
 
 class BudgetDuty:
-    """The real `budget` duty — dispatches `set` (Story 4.1; `show`/`check`
-    land in Stories 4.2/4.3).
+    """The real `budget` duty — dispatches `set`/`show` (Stories 4.1/4.2;
+    `check` lands in Story 4.3).
 
     Bare `steward budget` (no verb) degrades to `DutyResult(ok=True, ...)`
     naming the available verbs (AD-7), matching `KeysDuty`'s/`ProvisionDuty`'s
     identical precedent. A malformed `--cap` is caught here as
-    `CapParseError` (a `ValueError` subclass) — reported as a duty-level
-    failure, never conflated with an internal crash (AD-8 — that boundary
+    `CapParseError` (a `ValueError` subclass) and a malformed
+    `.steward/budget.yaml` as `BudgetError` — both reported as duty-level
+    failures, never conflated with an internal crash (AD-8 — that boundary
     is `cli.main()`'s alone).
+
+    Review finding (mirrors `ProvisionDuty._render_error`'s own, Epic 3's
+    closing review): `show`'s error path (a corrupt `.steward/budget.yaml`
+    raising `BudgetError`) must ALSO honor `--json` — an earlier draft of
+    this method only formatted `show`'s happy path via
+    `format_ceilings(..., as_json=...)`, so `budget show --json` against a
+    corrupt file would emit a plain-text summary that `cli.main()` prints
+    verbatim, unparseable by a caller that `json.loads()`s the output
+    because `--json` was passed. `_render_error` fixes this for every verb
+    uniformly via `getattr(ns, "json", False)` — `set` has no `--json` flag
+    at all, so it correctly defaults to plain text for it (there is no flag
+    value for `set` to disagree with).
     """
 
     name = "budget"
@@ -246,14 +295,27 @@ class BudgetDuty:
                 summary=f"budget: available verbs are {', '.join(_BUDGET_VERBS)}",
             )
         try:
+            if verb == "set":
+                path = default_budget_path()
+                ceiling = set_ceiling(path, ns.cap)
+                return DutyResult(
+                    ok=True,
+                    summary=(
+                        f"budget set: ceiling declared — {ceiling.amount:g} "
+                        f"{ceiling.currency}/{ceiling.period} (written to {path})"
+                    ),
+                )
             path = default_budget_path()
-            ceiling = set_ceiling(path, ns.cap)
-            return DutyResult(
-                ok=True,
-                summary=(
-                    f"budget set: ceiling declared — {ceiling.amount:g} "
-                    f"{ceiling.currency}/{ceiling.period} (written to {path})"
-                ),
-            )
+            ceilings = load_budget(path)
+            return DutyResult(ok=True, summary=format_ceilings(ceilings, as_json=ns.json))
         except CapParseError as exc:
-            return DutyResult(ok=False, summary=str(exc))
+            return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
+        except BudgetError as exc:
+            return DutyResult(ok=False, summary=self._render_error(ns, f"budget {verb}: {exc}"))
+
+    @staticmethod
+    def _render_error(ns: argparse.Namespace, message: str) -> str:
+        """See the review finding in this class's own docstring."""
+        if getattr(ns, "json", False):
+            return json.dumps({"error": message}, indent=2)
+        return message
