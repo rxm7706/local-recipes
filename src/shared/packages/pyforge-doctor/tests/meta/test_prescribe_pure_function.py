@@ -11,10 +11,10 @@ plain data -- it must add ZERO subprocess/MCP calls of its own. AST-scan
   ``test_atlas_sole_mcp_import.py``'s own detector -- ``prescribe.py`` is
   NOT the sanctioned ``mcp`` import site, only ``sources/atlas.py`` is);
 - imports anything outside the file's closed sanctioned surface
-  (``__future__``, ``dataclasses``, ``collections.abc``, ``..models``) --
-  a positive allowlist, same rationale as the warden guard's own: it ends
-  the "one more shell-out mechanism" arms race at once rather than
-  enumerating a growing denylist.
+  (``__future__``, ``dataclasses``, ``collections.abc``, ``re``,
+  ``..models``) -- a positive allowlist, same rationale as the warden
+  guard's own: it ends the "one more shell-out mechanism" arms race at
+  once rather than enumerating a growing denylist.
 
 Positively proves the detector fires on synthetic violations -- the guard
 is alive, not vacuous -- mirroring ``test_sources_warden_no_subprocess.py``'s
@@ -43,6 +43,7 @@ _SANCTIONED_IMPORTS = frozenset(
         "__future__",
         "dataclasses",
         "collections.abc",
+        "re",
         "pyforge.doctor.models",
     }
 )
