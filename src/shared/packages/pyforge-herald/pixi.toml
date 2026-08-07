@@ -32,3 +32,4 @@ hatchling = "*"
 [package.run-dependencies]
 python = ">=3.12"
 mcp = ">=1.28.1"
+httpx2 = ">=2.5.0"        # Story 6.4's evidence-link HTTP client -- already a transitive `mcp` dep, declared explicitly since evidence.py imports it directly

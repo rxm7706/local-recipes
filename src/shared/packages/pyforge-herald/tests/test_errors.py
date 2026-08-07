@@ -11,8 +11,11 @@ import pytest
 
 from pyforge.herald.errors import (
     AuthError,
+    EvidenceLinkError,
     ExportConflictError,
     HeraldError,
+    InvalidDateRangeError,
+    OperatorAuthorizationError,
     PullConflictError,
     SeedConflictError,
     TransportCallError,
@@ -58,6 +61,21 @@ def test_a_future_unmapped_subclass_also_falls_back_to_1():
         pass
 
     assert exit_code_for(SomeFutureHeraldError("x")) == 1
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        OperatorAuthorizationError("unauthorized: operator role required"),
+        InvalidDateRangeError("Invalid date format"),
+        EvidenceLinkError("Evidence link broken: https://example.invalid"),
+    ],
+)
+def test_epic_6_error_types_fall_back_to_1(error: HeraldError):
+    """Story 6.3/6.2/6.4's new error types are deliberately unmapped --
+    each AC calls for exit code 1, which is exactly what the safety-net
+    fallback already gives them without a new map entry."""
+    assert exit_code_for(error) == 1
 
 
 @pytest.mark.parametrize(

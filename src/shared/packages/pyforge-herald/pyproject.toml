@@ -13,7 +13,12 @@ authors = [{ name = "rxm7706" }]
 # Story 1.2 closes the architecture spine's Deferred question in favour of a
 # genuine runtime dependency: `McpTransport` is the shipped V1 transport, so
 # the MCP SDK ships with the package rather than living feature-side only.
-dependencies = ["mcp>=1.28.1"]
+# Story 6.4 declares `httpx2` explicitly even though `mcp` already pulls it
+# in transitively (`Requires-Dist: httpx2>=2.5.0`): evidence.py imports it
+# directly, so it is this package's own dependency, not an undeclared ride
+# on mcp's -- a future mcp release dropping/renaming it should not silently
+# break evidence.py.
+dependencies = ["mcp>=1.28.1", "httpx2>=2.5.0"]
 
 [project.scripts]
 herald = "pyforge.herald.cli:main"

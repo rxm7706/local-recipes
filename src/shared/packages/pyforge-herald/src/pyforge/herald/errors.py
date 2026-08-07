@@ -87,6 +87,39 @@ class ExportConflictError(HeraldError):
     ``SeedConflictError``."""
 
 
+class OperatorAuthorizationError(HeraldError):
+    """A write subcommand (``herald success publish``, ``herald notice
+    author``, ...) was attempted without a verified ``operator`` role, or
+    with no auth context at all (AD-16, Story 6.3).
+
+    Deliberately a direct ``HeraldError`` sibling, not a ``TransportError``
+    subclass: an authorization refusal is this CLI's own gate, decided
+    before any transport call, not something the far end reported. Falls
+    through ``exit_code_for``'s map to the default exit code (``1``) --
+    matching Story 6.3's AC ("no action taken, exit 1") without adding a
+    map entry."""
+
+
+class InvalidDateRangeError(HeraldError):
+    """``--date-range`` did not parse as ``<start>..<end>`` (Story 6.2).
+
+    Raised by the CLI's own post-parse validation, not by ``argparse``'s
+    ``type=`` machinery -- the AC calls for exit code ``1`` (a data-format
+    problem), which only the ``dispatch``/``exit_code_for`` path produces;
+    an ``argparse`` ``type=`` failure always exits ``2`` instead. Falls
+    through to the default exit code (``1``)."""
+
+
+class EvidenceLinkError(HeraldError):
+    """A publish-time evidence-link check failed (AD-15, Story 6.4): the
+    link is unreachable, or answered outside the 200-299 range.
+
+    Falls through to the default exit code (``1``) -- a broken evidence
+    link is a usage problem for the operator to fix or remove, not a
+    transport outage of Herald's own MCP connection (that stays
+    ``TransportError``'s exit code ``4``)."""
+
+
 _EXIT_BY_ERROR: tuple[tuple[type[HeraldError], int], ...] = (
     (SeedConflictError, 3),
     (PullConflictError, 3),
