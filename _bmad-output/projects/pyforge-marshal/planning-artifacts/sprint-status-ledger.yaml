@@ -59,7 +59,7 @@ development_status:
   3-7-escalation-deferral-and-resume: done
   3-8-stage-bound-durability-and-fleet-launch-wiring: done
   4-1-story-spec-promotion-with-a-durability-predicate: review
-  4-10-fleet-wide-branch-retirement: backlog
+  4-10-fleet-wide-branch-retirement: done
   4-2-teardown-reachability-and-spec-recovery-assistance: review
   4-3-merge-subject-conformance-and-review-cap-landing: review
   4-4-batch-pull-request-with-hygiene-preflight: review
@@ -112,7 +112,7 @@ development_status:
   epic-2-retrospective: done
   epic-3: done
   epic-3-retrospective: done
-  epic-4: in-progress
+  epic-4: done
   epic-4-retrospective: optional
   epic-5: backlog
   epic-5-retrospective: optional

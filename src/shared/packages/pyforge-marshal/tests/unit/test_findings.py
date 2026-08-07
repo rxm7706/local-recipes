@@ -144,6 +144,9 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-LAND-006",
             "MRS-LAND-007",
             "MRS-DEPLOY-023",
+            "MRS-RETIRE-001",
+            "MRS-RETIRE-002",
+            "MRS-RETIRE-003",
         }
     )
 

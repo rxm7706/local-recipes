@@ -277,6 +277,20 @@ requires this explicitly: an unclosed intent must never classify
 non-zero forever, breaking AD-21's exit-0 convergence property by design),
 and never blocks the run it is reported on -- it is surfaced every time,
 escalating it is an operator decision (``marshal audit``), never automatic.
+Story 4.10 (fleet-wide branch retirement, FR-63/AD-47) adds a new area,
+``MRS-RETIRE-*``: ``MRS-RETIRE-001`` (a malformed ``--project`` slug,
+checked before any I/O) classifies ``Verdict.UNEVALUABLE``, the same tier
+as ``MRS-INIT-001``/``MRS-SPIN-001``/``MRS-TEARDOWN-001``'s identical
+pre-I/O shape gates: Marshal cannot determine what to sweep.
+``MRS-RETIRE-002`` (a ``VcsCommandError`` gathering evidence for one
+candidate branch, or enumerating the fleet's worktrees at all) and
+``MRS-RETIRE-003`` (a ``delete_branch`` failure under ``--execute``, or a
+post-deletion journal-write failure) both classify ``Verdict.WARN``, the
+same tier as this codebase's every other "reported, never blocks
+progression" paper-trail-gap code (``MRS-DEPLOY-021``/``022``/``023``): a
+refused/failed branch is named, but the sweep continues for every other
+branch and project.
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -480,6 +494,13 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # new FsPort.acquire_advisory_lock call could not acquire the lock within
 # timeout_s) at WARN, the same tier as MRS-DEPLOY-021/022 -- a clean,
 # re-entrant refusal, never a hard error.
+# Story 4.10 (fleet-wide branch retirement, FR-63/AD-47) adds a new area,
+# MRS-RETIRE-*: MRS-RETIRE-001 (a malformed --project slug) at UNEVALUABLE,
+# alongside MRS-INIT-001/MRS-SPIN-001/MRS-TEARDOWN-001; MRS-RETIRE-002 (a
+# VcsCommandError gathering evidence, or enumerating the fleet) and
+# MRS-RETIRE-003 (a delete_branch failure under --execute, or a
+# post-deletion journal-write failure) both at WARN, alongside
+# MRS-DEPLOY-021/022/023 -- never blocking, the sweep continues.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -577,6 +598,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-006": Verdict.ERROR,
     "MRS-LAND-007": Verdict.ERROR,
     "MRS-DEPLOY-023": Verdict.WARN,
+    "MRS-RETIRE-001": Verdict.UNEVALUABLE,
+    "MRS-RETIRE-002": Verdict.WARN,
+    "MRS-RETIRE-003": Verdict.WARN,
 }
 
 
