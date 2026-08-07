@@ -2488,6 +2488,42 @@ def test_preflight_mcp_server_command_unresolvable_reports_finding(
     assert "not resolvable" in out
 
 
+def test_preflight_mcp_server_relative_command_with_separator_never_resolvable(
+    repo_root, tmp_path, monkeypatch, capsys
+):
+    """Review finding: `shutil.which` (what `binary_present` wraps) does NOT
+    search PATH for a command containing a path separator -- it checks the
+    literal path relative to the process's OWN cwd instead. A bare relative
+    command like "bin/atlas-mcp" is neither a PATH-lookup name nor an
+    absolute path; delegating it to `binary_present` made resolvability
+    cwd-dependent and non-deterministic. It must always report
+    unresolvable, regardless of what the fake harness claims is
+    'present'."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = json.dumps(
+        {"mcpServers": {"atlas": {"command": "bin/atlas-mcp"}}}
+    )
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    # Even if the harness/shutil.which would (incorrectly, cwd-dependently)
+    # report this as present, the relative-with-separator case must never
+    # reach that check.
+    harness.binaries_present.add("bin/atlas-mcp")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "bin/atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-012" in out
+    assert "'atlas' ('bin/atlas-mcp'): resolvable=False" in out
+
+
 def test_preflight_mcp_server_resolvable_reports_no_finding(
     repo_root, tmp_path, monkeypatch, capsys
 ):

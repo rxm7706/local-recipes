@@ -452,9 +452,21 @@ def _probe_mcp_servers(
         resolvable = False
         if isinstance(command, str) and command:
             candidate = Path(command)
-            resolvable = harness.binary_present(command) or (
-                candidate.is_absolute() and fs.exists(candidate)
-            )
+            if candidate.is_absolute():
+                resolvable = fs.exists(candidate)
+            elif len(candidate.parts) > 1:
+                # A relative command containing a path separator (e.g.
+                # "bin/atlas-mcp") is neither a bare PATH-lookup name nor an
+                # absolute path -- `shutil.which` (which `binary_present`
+                # wraps) does NOT search PATH for a name containing a
+                # separator; it checks the literal path relative to the
+                # process's OWN cwd instead. Delegating this case to
+                # `binary_present` would make resolvability cwd-dependent
+                # and non-deterministic (review finding) -- reject it
+                # outright rather than risk a false "resolvable".
+                resolvable = False
+            else:
+                resolvable = harness.binary_present(command)
         entries.append({"name": name, "command": command, "resolvable": resolvable})
         if not resolvable:
             findings.append(
