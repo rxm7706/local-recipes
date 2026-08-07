@@ -625,6 +625,27 @@ as ``MRS-DEPLOY-021``/``022``: a clean, re-entrant refusal
 matching AD-6's own idempotence posture for every other ``deploy``
 precondition.
 
+Story 4.10 (fleet-wide branch retirement, FR-63/AD-47) adds the thirteenth
+real caller's own NEW area, ``MRS-RETIRE-*`` (``cli/retire.py``'s ``marshal
+retire``): three codes. ``MRS-RETIRE-001`` (a malformed ``--project`` slug,
+checked before any I/O -- the same pre-I/O shape gate every sibling
+command's own ``MRS-INIT-001``/``MRS-SPIN-001``/``MRS-TEARDOWN-001``
+applies) classifies ``Verdict.UNEVALUABLE``: Marshal cannot determine what
+to sweep. ``MRS-RETIRE-002`` (a ``VcsCommandError`` from
+``VcsPort.is_branch_merged``/``worktree_path_for_branch`` while gathering
+evidence for one candidate branch, or from enumerating the fleet's
+worktrees at all) classifies ``Verdict.WARN`` -- per the story's own I/O
+matrix, that branch is refused (``insufficient_evidence``) and the sweep
+continues for every other branch/project; a read failure never itself
+invalidates the report. ``MRS-RETIRE-003`` (a ``VcsPort.delete_branch``
+call under ``--execute`` failed for one already-PROPOSED branch, or the
+post-deletion journal write for a project's own deleted set failed)
+classifies ``Verdict.WARN``, the same tier as ``MRS-RETIRE-002`` and this
+codebase's every other "reported, never blocks progression" paper-trail-gap
+code: the remaining proposed branches still get their own attempt, per the
+story's own Always bullet ("a delete_branch failure for one branch does not
+abort the sweep").
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -753,6 +774,13 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # code, MRS-DEPLOY-023: run_promote's new FsPort.acquire_advisory_lock call
 # could not acquire the lock within timeout_s -- WARN, a clean re-entrant
 # refusal (lock_contended: true, promoted: []), never a hard error.
+# Story 4.10 (fleet-wide branch retirement, FR-63/AD-47) adds the thirteenth
+# real caller's own NEW area, MRS-RETIRE-* (three codes): MRS-RETIRE-001
+# (a malformed --project slug) at UNEVALUABLE; MRS-RETIRE-002 (a
+# VcsCommandError gathering evidence for one branch, or enumerating the
+# fleet) and MRS-RETIRE-003 (a delete_branch failure under --execute, or a
+# post-deletion journal-write failure) both at WARN -- never blocking, the
+# sweep continues.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -851,6 +879,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-006",
         "MRS-LAND-007",
         "MRS-DEPLOY-023",
+        "MRS-RETIRE-001",
+        "MRS-RETIRE-002",
+        "MRS-RETIRE-003",
     }
 )
 

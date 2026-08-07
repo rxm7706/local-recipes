@@ -19,7 +19,11 @@ AD-13/AD-29), with a nested ``promote`` action, dispatches to
 ``cli/deploy.py``. ``land`` (Story 4.8, FR-60/AD-40) is a NEW top-level
 sibling -- not nested under ``deploy`` -- that takes a wave from "gates
 passed" to "merged, branch retired, feed resynced" in one command,
-dispatching to ``cli/land.py``. Not wired through the
+dispatching to ``cli/land.py``. ``retire`` (Story 4.10, FR-63/AD-47) is a
+NEW top-level sibling too, dispatching to ``cli/retire.py``: a fleet-wide
+sweep across every project's loop home for bmad-loop-minted, worktree-
+isolated per-story branches provably safe to delete (dry-run by default,
+``--execute`` to actually delete). Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
 relay argparse's own code, clamp anything foreign) -- individual
@@ -83,6 +87,7 @@ from . import deploy as deploy_cli
 from . import gate as gate_cli
 from . import init as init_cli
 from . import land as land_cli
+from . import retire as retire_cli
 from . import spin as spin_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
@@ -205,6 +210,7 @@ def _build_parser() -> argparse.ArgumentParser:
     spin_cli.add_factory_subparser(subparsers)
     deploy_cli.add_deploy_subparser(subparsers)
     land_cli.add_land_subparser(subparsers)
+    retire_cli.add_retire_subparser(subparsers)
     return parser
 
 

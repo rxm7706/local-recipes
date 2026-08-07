@@ -999,9 +999,26 @@ def test_help_lists_gate_subcommand(capsys):
     exit_code = main(["--help"])
     assert exit_code == 0
     assert (
-        "{config,init,homes,preflight,teardown,gate,factory,deploy,land}"
+        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire}"
         in capsys.readouterr().out
     )
+
+
+def test_retire_subcommand_is_wired(tmp_path, capsys, monkeypatch):
+    """Smoke test (Story 4.10): ``marshal retire`` dispatches to
+    ``cli/retire.py::run_retire`` and prints a real envelope -- mirrors this
+    module's own ``gate``/``land`` wiring precedent. Scoped to a nonexistent
+    slug so it never touches this dev repo's own real fleet state."""
+    from pyforge.marshal.cli import retire as retire_module
+
+    monkeypatch.setattr(retire_module, "repo_root", lambda: tmp_path)
+
+    exit_code = main(["retire", "--project", "no-such-project-xyz", "--format", "json"])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["command"] == "retire"
+    assert payload["data"]["proposals"] == []
 
 
 def test_gate_missing_evaluate_action_is_a_usage_error(capsys):
