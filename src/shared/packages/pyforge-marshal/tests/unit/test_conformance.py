@@ -7,15 +7,20 @@ from __future__ import annotations
 import pytest
 
 from pyforge.marshal.core.conformance import (
+    ALL_STATUSES,
     STATUS_ADDED,
+    STATUS_AVAILABLE,
     STATUS_LINK_TARGET_CONFIRMED,
     STATUS_MODIFIED,
     STATUS_REMOVED,
+    STATUS_UNAVAILABLE,
     ConformanceReport,
     TreeLiveState,
     _check_symlink_identity,
+    build_probe_record,
     evaluate_conformance,
 )
+from pyforge.marshal.ports.harness import AdapterProbe
 
 _TREE = ".agents/skills"
 _ADAPTERS = ("codex",)
@@ -116,3 +121,61 @@ def test_evaluate_conformance_empty_input_is_empty_report():
     report = evaluate_conformance([], mechanism="symlink")
     assert report.checks == ()
     assert report.unevaluated_trees == ()
+
+
+# --- build_probe_record (Story 6.4, FR-43, AD-31) ---------------------------
+
+
+def _probe(
+    *,
+    binary_present: bool = True,
+    binary_version: str | None = "1.0.0",
+    probe_output: str | None = '{"schema_version": 2}',
+    probe_note: str | None = None,
+) -> AdapterProbe:
+    return AdapterProbe(
+        adapter="claude",
+        binary="claude",
+        binary_present=binary_present,
+        binary_version=binary_version,
+        capabilities={"hookless": False},
+        probe_output=probe_output,
+        probe_note=probe_note,
+    )
+
+
+def test_build_probe_record_available_when_binary_present():
+    record = build_probe_record(_probe(binary_present=True))
+    assert record["status"] == STATUS_AVAILABLE
+    assert record["adapter"] == "claude"
+    assert record["binary"] == "claude"
+    assert record["binary_present"] is True
+    assert record["binary_version"] == "1.0.0"
+    assert record["capabilities"] == {"hookless": False}
+    assert record["probe_output"] == '{"schema_version": 2}'
+    assert record["probe_note"] is None
+
+
+def test_build_probe_record_unavailable_when_binary_absent():
+    record = build_probe_record(
+        _probe(binary_present=False, binary_version=None, probe_output=None, probe_note="binary not found on PATH")
+    )
+    assert record["status"] == STATUS_UNAVAILABLE
+    assert record["binary_version"] is None
+    assert record["probe_output"] is None
+    assert record["probe_note"] == "binary not found on PATH"
+
+
+def test_build_probe_record_fields_are_independently_none():
+    record = build_probe_record(_probe(binary_version=None, probe_output=None, probe_note="probe timed out"))
+    assert record["status"] == STATUS_AVAILABLE
+    assert record["binary_version"] is None
+    assert record["probe_output"] is None
+    assert record["probe_note"] == "probe timed out"
+
+
+def test_probe_statuses_never_appear_in_the_tree_drift_vocabulary():
+    """A DIFFERENT fact from tree-drift status -- the two vocabularies never
+    share a member (Story 6.3's own closed set stays unchanged)."""
+    assert STATUS_AVAILABLE not in ALL_STATUSES
+    assert STATUS_UNAVAILABLE not in ALL_STATUSES
