@@ -58,14 +58,14 @@ development_status:
   3-6-budget-ceilings-and-the-heaviest-story-advisory: done
   3-7-escalation-deferral-and-resume: done
   3-8-stage-bound-durability-and-fleet-launch-wiring: done
-  4-1-story-spec-promotion-with-a-durability-predicate: review
+  4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
-  4-2-teardown-reachability-and-spec-recovery-assistance: review
-  4-3-merge-subject-conformance-and-review-cap-landing: review
-  4-4-batch-pull-request-with-hygiene-preflight: review
-  4-5-feed-refresh-with-truth-partitioned-by-domain: review
-  4-6-deploy-idempotence-and-reconciliation-of-open-intents: review
-  4-7-landing-rules-as-declared-policy: review
+  4-2-teardown-reachability-and-spec-recovery-assistance: done
+  4-3-merge-subject-conformance-and-review-cap-landing: done
+  4-4-batch-pull-request-with-hygiene-preflight: done
+  4-5-feed-refresh-with-truth-partitioned-by-domain: done
+  4-6-deploy-idempotence-and-reconciliation-of-open-intents: done
+  4-7-landing-rules-as-declared-policy: done
   4-8-marshal-land-the-last-mile-lands-itself: done
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: done
   5-1-fleet-view: backlog
