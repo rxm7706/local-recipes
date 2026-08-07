@@ -63,7 +63,7 @@ development_status:
   4-2-teardown-reachability-and-spec-recovery-assistance: review
   4-3-merge-subject-conformance-and-review-cap-landing: review
   4-4-batch-pull-request-with-hygiene-preflight: review
-  4-5-feed-refresh-with-truth-partitioned-by-domain: backlog
+  4-5-feed-refresh-with-truth-partitioned-by-domain: review
   4-6-deploy-idempotence-and-reconciliation-of-open-intents: backlog
   4-7-landing-rules-as-declared-policy: review
   4-8-marshal-land-the-last-mile-lands-itself: backlog
