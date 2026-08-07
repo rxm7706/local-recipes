@@ -1031,6 +1031,17 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # reporting surface, never a run precondition" tier MRS-ADP-013/014's own
 # sibling verb (`adapters probe`) already established for the identical
 # real-world fact.
+# Story 6.8 (upstream contribution register, FR-58/AD-2) adds
+# `cli/upstream.py`'s own `run_upstream` (`marshal upstream`) -- a NEW
+# area, `MRS-UPSTREAM-*`, two codes. `MRS-UPSTREAM-001` (the tracked
+# register is absent, malformed JSON, or one of its own entries fails the
+# shape check) classifies WARN, mirroring `MRS-ADP-016`/`MRS-SMOKE-007`'s
+# own "degrades to empty, never blocks" tier -- every OTHER well-formed
+# entry still reports. `MRS-UPSTREAM-002` (an entry's own `upstream_status`
+# is `landed` -- its compensating workaround is flagged for review/
+# removal) classifies WARN too: purely informational, a landed gap is good
+# news, never a failure of anything Marshal did, but it IS actionable so a
+# silent `CLEAN` would under-report it.
 # Story 6.7 (entry-file family drift check, detect-only, FR-46/C-3/AD-11)
 # adds `cli/adapters.py`'s own `run_adapters_entry_files` (`marshal
 # adapters entry-files`) -- a NEW area, `MRS-ENTRY-*`, one code.
@@ -1197,6 +1208,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-MATRIX-001",
         "MRS-MATRIX-002",
         "MRS-ENTRY-001",
+        "MRS-UPSTREAM-001",
+        "MRS-UPSTREAM-002",
     }
 )
 

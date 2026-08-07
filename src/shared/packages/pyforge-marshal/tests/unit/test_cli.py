@@ -999,7 +999,7 @@ def test_help_lists_gate_subcommand(capsys):
     exit_code = main(["--help"])
     assert exit_code == 0
     assert (
-        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire,status,check,adapters}"
+        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire,status,check,adapters,upstream}"
         in capsys.readouterr().out
     )
 

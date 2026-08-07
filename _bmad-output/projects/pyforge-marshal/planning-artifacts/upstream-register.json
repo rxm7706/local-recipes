@@ -1,0 +1,41 @@
+{
+  "$comment": "Story 6.8, FR-58, AD-2. Tracked upstream contribution register: gaps in the wrapped bmad-loop engine, Marshal's own compensating workaround, and upstream status. Hand-curated -- git review decides content changes (mirrors the CFE-side cwe-seed-gap/spdx-schema-gap suggesters' own 'the curated map stays hand-owned' precedent). Content transcribed from the PRD's own FR-58 section (prds/prd-pyforge-marshal-2026-07-25/prd.md, section 7.9 and its cited cross-references), not invented. Read by 'marshal upstream'.",
+  "entries": [
+    {
+      "id": "idle-strand-detection",
+      "gap": "bmad-loop has no built-in detection of a session that has stopped producing output but has not exited (a wedged interactive prompt, a stalled turn) -- the only prior stopgap was an external tmux + log-mtime watchdog.",
+      "workaround": "core/supervise.py's idle-detection ladder (AD-9/AD-20): a supervisor process, outside the harness session, samples externally-observed liveness (wall clock, process liveness, output modification time) and never trusts session self-report.",
+      "compensating_fr": "FR-12",
+      "upstream_status": "open"
+    },
+    {
+      "id": "per-story-model-tiering",
+      "gap": "bmad-loop supports only run-level model selection -- one configured adapter model applies uniformly across every story in a sprint; a per-story model key is an upstream request (PRD 7.7).",
+      "workaround": "core/spec_difficulty.py's declared-difficulty parsing plus cli/spin.py's model_tier_map policy composition (Story 6.1, FR-48/FR-51/AD-19): Marshal resolves each story's declared difficulty and writes the tiered model choice into the rendered policy.toml bmad-loop itself reads, batching per-launch rather than per-story where the harness cannot honor a finer grain.",
+      "compensating_fr": "FR-51",
+      "upstream_status": "open"
+    },
+    {
+      "id": "hardcoded-planning-artifacts-composition",
+      "gap": "_bmad/bmm/config.yaml hard-codes planning_artifacts: \"{project-root}/_bmad-output/planning-artifacts\", and that key does NOT compose with a project's own output_folder override -- every BMAD write-skill resolves through one shared symlink pair per working tree, never a per-project path directly.",
+      "workaround": "cli/init.py's own marker+symlink convergence machinery: each loop home carries its own active-project marker and planning-artifact symlinks, independent of every other home and the main checkout (FR-2), with agreement checked and a desync reported rather than silently tolerated.",
+      "compensating_fr": "FR-2",
+      "upstream_status": "open"
+    },
+    {
+      "id": "acp-evaluation",
+      "gap": "No Agent Communication Protocol (ACP) evaluation exists in bmad-loop for a versioned, neutrally-governed cross-agent adapter contract -- every adapter integration today is a bespoke CLI-probe/subprocess wrapper against the harness's own declarative profiles.",
+      "workaround": "adapters/harness_bmadloop.py's single wrap-not-absorb seam (AD-2/AD-3) plus the harness's own six declarative adapter profiles as the interim adapter contract, backstopped by the probe/conformance-smoke/matrix machinery (Epic 6) as a substitute portability proof until ACP migration trigger Q-6 fires.",
+      "compensating_fr": "FR-58",
+      "upstream_status": "open"
+    },
+    {
+      "id": "non-posix-multiplexer-support",
+      "gap": "bmad-loop's multiplexer backend detection had no declared non-POSIX (Windows-native) backend -- multiplexer_backend_available always reported unavailable off POSIX, a hard constraint for Windows-native operators without WSL.",
+      "workaround": "cli/init.py's own MRS-PREFLIGHT-003 preflight check surfaced the gap explicitly (never silently degraded) while it was open -- no functional workaround beyond honest detection existed prior to the upstream fix.",
+      "compensating_fr": "FR-5",
+      "upstream_status": "landed",
+      "note": "Landed upstream 2026-08-01: bmad-loop v0.9.0 shipped a Windows psmux multiplexer backend. Entry closes as delivered -- the MRS-PREFLIGHT-003 workaround is flagged for review/removal now that a real backend exists."
+    }
+  ]
+}

@@ -189,6 +189,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-MATRIX-001",
             "MRS-MATRIX-002",
             "MRS-ENTRY-001",
+            "MRS-UPSTREAM-001",
+            "MRS-UPSTREAM-002",
         }
     )
 

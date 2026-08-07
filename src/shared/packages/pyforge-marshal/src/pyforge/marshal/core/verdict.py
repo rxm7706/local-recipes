@@ -796,6 +796,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # blocks, mirroring MRS-ADP-007/MRS-DEPLOY-001's own "reported, never
     # blocks" tier.
     "MRS-ENTRY-001": Verdict.WARN,
+    # Story 6.8 (upstream contribution register, FR-58/AD-2):
+    # MRS-UPSTREAM-001 (register absent/malformed/an entry failed shape
+    # check) at WARN, mirroring MRS-ADP-016/MRS-SMOKE-007/MRS-MATRIX-001's
+    # own "degrades, never blocks" tier. MRS-UPSTREAM-002 (a landed entry
+    # flags its workaround for removal) at WARN -- purely informational,
+    # never a failure.
+    "MRS-UPSTREAM-001": Verdict.WARN,
+    "MRS-UPSTREAM-002": Verdict.WARN,
 }
 
 
