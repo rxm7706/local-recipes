@@ -153,6 +153,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-STATUS-005",
             "MRS-STATUS-006",
             "MRS-STATUS-007",
+            "MRS-STATUS-008",
+            "MRS-STATUS-009",
         }
     )
 

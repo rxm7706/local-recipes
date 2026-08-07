@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,6 +18,7 @@ import pytest
 
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
+from pyforge.marshal.adapters.process_posix import ProcessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli import status as status_cli
@@ -714,6 +716,7 @@ class TestBuildFleetRow:
             "budget_consumed": None,
             "escalation_reason": None,
             "escalation_artifact": None,
+            "unpushed_work": None,
         }
         assert finding is None
 
@@ -1031,13 +1034,42 @@ class _FakeHarness:
 
 
 class _FakeProcess:
-    def __init__(self, alive_pids: frozenset[int] = frozenset()) -> None:
+    """Story 5.5 extends this fake with a ``run`` method for
+    ``_gather_unpushed_work_findings``'s own single ``ProcessPort.run``
+    call. Defaults to a clean, findings-free detector response (valid JSON,
+    an empty ``findings`` list) so every PRE-5.5 test that constructs a
+    bare ``_FakeProcess()`` (never configuring ``run_*``) keeps its own
+    already-established assertions -- a `run` call this test never
+    anticipated must never inject a surprise finding into its own verdict."""
+
+    def __init__(
+        self,
+        alive_pids: frozenset[int] = frozenset(),
+        *,
+        run_result: ProcessResult | None = None,
+        run_raises: bool = False,
+    ) -> None:
         self.alive_pids = alive_pids
         self.calls: list[int] = []
+        self.run_calls: list[tuple[tuple[str, ...], Path]] = []
+        self.run_result = run_result
+        self.run_raises = run_raises
 
     def is_alive(self, pid: int) -> bool:
         self.calls.append(pid)
         return pid in self.alive_pids
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        self.run_calls.append((tuple(argv), cwd))
+        if self.run_raises:
+            raise ProcessError("cannot launch the unpushed-work detector")
+        if self.run_result is not None:
+            return self.run_result
+        return ProcessResult(
+            returncode=0,
+            stdout=json.dumps({"base": "origin/main", "findings": []}),
+            stderr="",
+        )
 
 
 class _FakeClock:
@@ -2738,4 +2770,371 @@ class TestReconcileLedgerCli:
         assert "--reconcile-ledger" in out
         assert "discrepancies: 1" in out
         assert "4.1 merged-not-done-in-ledger" in out
+        assert exit_code == 0
+
+
+# =============================================================================
+# Story 5.5 (durability as a reported fleet-status dimension, FR-62/AD-48):
+# `run_status`'s fleet-summary path folds `scripts/unpushed_work_check.py
+# --json --branches-only`'s own findings onto each home's row, matched by
+# `ref == f"loop/{slug}"`. Covers the spec's own I/O & Edge-Case Matrix.
+# =============================================================================
+
+
+def _unpushed_result(*findings: dict[str, object], base: str = "origin/main") -> ProcessResult:
+    # Code review (2026-08-07, Edge Case Hunter): the real
+    # `scripts/unpushed_work_check.py::main` always returns 1 in --json
+    # mode (the early `return 0` only exists on the plain-text OK-clean
+    # path), never 0 -- fixed so this fixture can't mask a future change
+    # that starts trusting returncode 0 vs. 1 in production code.
+    return ProcessResult(
+        returncode=1,
+        stdout=json.dumps({"base": base, "findings": list(findings)}),
+        stderr="",
+    )
+
+
+def _unpushed_finding(
+    ref: str, *, files: int = 3, stat: str = "3 files changed, 40 insertions(+)",
+    remedy: str | None = None,
+) -> dict[str, object]:
+    return {
+        "kind": "unpushed-branch",
+        "ref": ref,
+        "files": files,
+        "stat": stat,
+        "remedy": remedy or f"git push origin {ref}",
+    }
+
+
+class TestUnpushedWork:
+    def test_no_unpushed_work_anywhere_is_null_with_no_finding(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        process = _FakeProcess(run_result=_unpushed_result())
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["unpushed_work"] is None
+        assert [f["code"] for f in payload["findings"]] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+        # The detector ran exactly once for the whole sweep.
+        assert len(process.run_calls) == 1
+        argv, cwd = process.run_calls[0]
+        # Code review (2026-08-07, Edge Case Hunter): `sys.executable`,
+        # never a bare `"python3"` off PATH.
+        assert argv[0] == sys.executable
+        assert argv[-2:] == ("--json", "--branches-only")
+
+    def test_matching_branch_folds_evidence_onto_the_row_and_warns(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
+                )
+            }
+        )
+        process = _FakeProcess(
+            alive_pids=frozenset({5252}),
+            run_result=_unpushed_result(_unpushed_finding("loop/acme", files=9, stat="9 files changed")),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["unpushed_work"] == {
+            "files": 9,
+            "stat": "9 files changed",
+            "remedy": "git push origin loop/acme",
+        }
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-008" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_finding_ref_matching_no_known_home_is_ignored(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        process = _FakeProcess(
+            run_result=_unpushed_result(_unpushed_finding("recover/some-other-branch")),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["unpushed_work"] is None
+        assert [f["code"] for f in payload["findings"]] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_detector_script_launch_failure_reports_null_and_warns(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        process = _FakeProcess(run_raises=True)
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["unpushed_work"] is None
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-009" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_detector_unknown_exit_code_is_treated_as_unavailable(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """The documented UNKNOWN/exit-2 case prints PLAIN TEXT even with
+        --json passed -- never JSON-parseable; this test's own `run_result`
+        mirrors that shape exactly (non-JSON stdout, returncode 2)."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        process = _FakeProcess(
+            run_result=ProcessResult(
+                returncode=2,
+                stdout="UNKNOWN: could not list remote branches (offline?)\n",
+                stderr="",
+            )
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["unpushed_work"] is None
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-009" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_malformed_json_output_is_treated_as_unavailable(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        process = _FakeProcess(
+            run_result=ProcessResult(returncode=0, stdout="{not valid json", stderr="")
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["unpushed_work"] is None
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-009" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_journal_unreadable_row_still_surfaces_real_unpushed_work(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Code review (2026-08-07, Blind Hunter, the single most severe
+        finding against this story, independently confirmed): unlike
+        `escalation_reason`/`escalation_artifact` (Story 5.3), whose ONLY
+        source is the same journal that's unreadable here,
+        `unpushed_work`'s source is a COMPLETELY INDEPENDENT signal (a git
+        branch-vs-remote diff) that has nothing to do with journal
+        readability. A degraded (`journal_unreadable`) row must still
+        surface real unpushed-work evidence -- suppressing it would be the
+        exact false-green this story exists to eliminate, for precisely
+        the population most likely to carry real, unrescued local-only
+        work (a home whose journal write itself got interrupted)."""
+        run_dir = _seed_run_journal(
+            tmp_path, run_id="acme-run1", lines=["{not valid json at all"]
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        process = _FakeProcess(
+            run_result=_unpushed_result(_unpushed_finding("loop/acme")),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["state"] == "unknown"
+        assert row["unpushed_work"] is not None
+        assert row["unpushed_work"]["files"] == 3
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-002" in codes
+        assert "MRS-STATUS-008" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_has_run_false_row_still_surfaces_real_unpushed_work(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Same root cause and fix as the journal-unreadable case above,
+        for the `has_run=False` ("idle", no run yet) row shape -- a
+        brand-new home that has never run bmad-loop can still have a real,
+        at-risk branch."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        process = _FakeProcess(
+            run_result=_unpushed_result(_unpushed_finding("loop/acme")),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["state"] == "idle"
+        assert row["unpushed_work"] is not None
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-008" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_detector_skipped_entirely_when_fleet_is_empty(self, capsys):
+        vcs = _FakeVcs(worktrees=())
+        process = _FakeProcess()
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["homes"] == []
+        assert process.run_calls == []
+        assert exit_code == 0
+
+    def test_text_format_matches_json_presence_of_unpushed_work(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        # An idle (has_run=False) row hardcodes unpushed_work: None
+        # regardless of a matching finding (see
+        # test_has_run_false_row_never_surfaces_unpushed_work above) -- a
+        # running home is needed here to reach the row shape that actually
+        # surfaces it, so this text/json parity check exercises something
+        # real.
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
+                )
+            }
+        )
+        process = _FakeProcess(
+            alive_pids=frozenset({5252}),
+            run_result=_unpushed_result(
+                _unpushed_finding("loop/acme", files=5, stat="5 files changed")
+            ),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        assert "UNPUSHED files=5" in out
         assert exit_code == 0

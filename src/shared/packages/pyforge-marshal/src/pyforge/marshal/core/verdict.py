@@ -315,6 +315,15 @@ run" rationale -- a REQUIRED read, not a per-row degradation.
 checked before any I/O) classifies ``Verdict.UNEVALUABLE``, alongside
 ``MRS-STATUS-003``'s own identical pre-I/O shape-gate precedent.
 
+Story 5.5 (durability as a reported fleet-status dimension, FR-62/AD-48)
+adds two more codes to the same area, both ``Verdict.WARN``:
+``MRS-STATUS-008`` (a home's own station branch carries local-only content
+the ``scripts/unpushed_work_check.py`` detector confirmed is not on
+origin) and ``MRS-STATUS-009`` (that detector could not be consulted this
+run at all -- missing script, launch failure, its own documented
+``UNKNOWN``/exit-2 case, or malformed JSON). Both are "reported, never
+blocks progression", the same tier as ``MRS-STATUS-001``/``005``.
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -536,6 +545,10 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # that does not resolve to a real run directory) at WARN, alongside
 # MRS-DEPLOY-004's own orphaned-key precedent -- a clean, reportable gap,
 # never itself a failure.
+# Story 5.5 (durability as a reported fleet-status dimension, FR-62/AD-48)
+# adds MRS-STATUS-008 (a home's branch carries unpushed content the
+# unpushed_work_check.py detector confirmed) and MRS-STATUS-009 (that
+# detector could not be consulted this run), both at WARN.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -642,6 +655,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-STATUS-005": Verdict.WARN,
     "MRS-STATUS-006": Verdict.UNEVALUABLE,
     "MRS-STATUS-007": Verdict.UNEVALUABLE,
+    "MRS-STATUS-008": Verdict.WARN,
+    "MRS-STATUS-009": Verdict.WARN,
 }
 
 
