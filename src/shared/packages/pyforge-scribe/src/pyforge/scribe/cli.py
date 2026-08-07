@@ -15,6 +15,7 @@ from pathlib import Path
 import typer
 
 from pyforge.scribe.capture import capture as capture_write
+from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
     PromotionProposal,
@@ -137,8 +138,20 @@ def _render_proposal(proposal: PromotionProposal) -> str:
 def graph_compile(
     nightly: bool = typer.Option(False, "--nightly", help="Run in unattended nightly mode."),
 ) -> None:
-    """Stub — Epic 2 (Story 2.1+) owns the real graph-compile projection builder."""
-    typer.echo("scribe graph compile: not yet implemented", err=True)
+    """Rebuild the compiled knowledge graph from `.claude/memory/`,
+    `.memlog.md` files, git history, retros, and CHANGELOGs (Story 2.2/2.3).
+    Never prompts -- safe to run from cron/CI with no human present."""
+    try:
+        result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    for warning in result.warnings:
+        typer.echo(f"warning: {warning}", err=True)
+    typer.echo(
+        f"compiled {result.node_count} node(s), {result.invalidated_count} invalidated "
+        f"-> {result.store_path}"
+    )
 
 
 @app.command("recall")
