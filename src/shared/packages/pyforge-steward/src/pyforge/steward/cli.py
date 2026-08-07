@@ -22,13 +22,14 @@ EXIT_USAGE = 2           # argparse convention
 EXIT_INTERRUPTED = 130   # 128 + SIGINT
 EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 
-# The four duties. `keys` lands first (Epic 1); the rest accept no verbs yet, but
-# are declared so `steward --help` states the whole surface from the start.
+# The four duties. `keys` (Epic 1) and `deploy` (Epic 2) are real; `provision`/
+# `budget` accept no verbs yet, but are declared so `steward --help` states the
+# whole surface from the start.
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
-    "deploy": "deployment duties",
+    "deploy": "dashboard build/reconcile/status",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
 }
@@ -45,6 +46,8 @@ def build_parser() -> argparse.ArgumentParser:
         duty_parser = subs.add_parser(name, help=_HELP[name], description=_HELP[name])
         if name == "keys":
             _add_keys_subparsers(duty_parser)
+        elif name == "deploy":
+            _add_deploy_subparsers(duty_parser)
     return parser
 
 
@@ -117,12 +120,26 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
+    """Add the `dashboard` verb (Story 2.1: `--build` only; later stories add
+    `--dry-run` and the `status` verb without changing this seam)."""
+    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard}")
+
+    dashboard = deploy_subs.add_parser(
+        "dashboard", help="build/reconcile the GitHub Pages program-console dashboard"
+    )
+    dashboard.add_argument(
+        "--build", action="store_true", help="build only — refresh docs/dashboard/, no diff/commit/push"
+    )
+
+
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
-    `keys` returns a real `KeysDuty` (Story 1.3); `deploy`/`provision`/
-    `budget` are still `NullDuty` — real implementations replace them one
-    epic at a time without changing this seam.
+    `keys` returns a real `KeysDuty` (Story 1.3); `deploy` returns a real
+    `DeployDuty` (Story 2.1). `provision`/`budget` are still `NullDuty` —
+    real implementations replace them one epic at a time without changing
+    this seam.
     """
     if name == "keys":
         # Imported here, not at module top: keys.py resolves its `_http.py`
@@ -132,6 +149,10 @@ def resolve_duty(name: str) -> Duty:
         from .keys import KeysDuty
 
         return KeysDuty()
+    if name == "deploy":
+        from .deploy import DeployDuty
+
+        return DeployDuty()
     return NullDuty(name)
 
 
