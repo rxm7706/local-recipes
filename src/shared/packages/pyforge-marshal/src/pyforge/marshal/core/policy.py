@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 20-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 21-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 and AD-40's 4 landing keys (Story 4.7)) -- not a mirror of the harness's much
@@ -19,7 +19,7 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 10 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 11 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
@@ -28,9 +28,12 @@ at runtime by a journal entry, unlike ``frozen_surfaces`` below -- and
 (Story 4.7) the 4 landing keys ``landing_rules``, ``landing_merge_strategy``,
 ``landing_branch_retirement``, ``landing_resync`` (AD-40), plus (Story 4.4)
 a 5th, ``landing_base_branch`` -- ``marshal deploy batch-pr``'s own target
-base branch, checked against Story 4.7's four before adding a new one --
+base branch, checked against Story 4.7's four before adding a new one, plus
+(Story 4.5) a 6th, ``landing_resync_commands`` -- the ``landing_resync``
+toggle's own allowlist of commands ``marshal deploy refresh-feed`` runs,
+validated identically to ``verify_commands`` --
 STATIC for the same reason: declared and validated here, consumed and acted
-on by later stories (4.4, 4.8, 4.10), never narrowed by a journal entry. 10
+on by later stories (4.5, 4.8, 4.10), never narrowed by a journal entry. 10
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -128,7 +131,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 20-key vocabulary -------------------------------------------
+# --- the closed 21-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -156,6 +159,13 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # targets") -- STATIC for the same reason its four siblings are:
         # declared and validated here, never narrowed by a journal entry.
         "landing_base_branch",
+        # Story 4.5's 6th landing key (AD-40): the `landing_resync`
+        # toggle's own allowlist of commands to run when it composes
+        # `True` (`marshal deploy refresh-feed`) -- validated identically
+        # to `verify_commands` (a tuple of non-empty str), same reason
+        # every other landing key is STATIC: declared and validated here,
+        # never narrowed by a journal entry.
+        "landing_resync_commands",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -319,6 +329,11 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # practice (never the forge's own "default branch" concept, which for a
     # fork defaults to the UPSTREAM's default, not this repo's own main).
     "landing_base_branch": "main",
+    # Story 4.5's `landing_resync_commands` (AD-40): no command runs until a
+    # project declares one -- the same "nothing declared yet" posture
+    # `verify_commands` already carries for the identical STATIC/tuple-of-
+    # str shape.
+    "landing_resync_commands": (),
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -991,6 +1006,7 @@ class EffectivePolicy:
     landing_branch_retirement: PolicyField
     landing_resync: PolicyField
     landing_base_branch: PolicyField
+    landing_resync_commands: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1005,6 +1021,7 @@ class EffectivePolicy:
             "landing_branch_retirement",
             "landing_resync",
             "landing_base_branch",
+            "landing_resync_commands",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1051,6 +1068,7 @@ class EffectivePolicy:
                 "landing_branch_retirement",
                 "landing_resync",
                 "landing_base_branch",
+                "landing_resync_commands",
             )
         )
         seed = ", ".join(
@@ -1101,6 +1119,7 @@ class EffectivePolicy:
             "landing_branch_retirement": _field_payload(self.landing_branch_retirement),
             "landing_resync": _field_payload(self.landing_resync),
             "landing_base_branch": _field_payload(self.landing_base_branch),
+            "landing_resync_commands": _field_payload(self.landing_resync_commands),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -1113,7 +1132,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 20-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 21-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -1226,6 +1245,15 @@ def compose(
         findings,
         "MRS-POLICY-002",
     )
+    landing_resync_commands = _merge_field(
+        "landing_resync_commands",
+        _valid_str_tuple,
+        DEFAULT_POLICY["landing_resync_commands"],
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
     seed = {
         "gate_mode": _merge_field(
             "gate_mode",
@@ -1330,6 +1358,7 @@ def compose(
         landing_branch_retirement=landing_branch_retirement,
         landing_resync=landing_resync,
         landing_base_branch=landing_base_branch,
+        landing_resync_commands=landing_resync_commands,
         _seed=seed,
     )
     return effective, tuple(findings)

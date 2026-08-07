@@ -12,7 +12,9 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.core import status
+from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Severity
+from pyforge.marshal.ports.process import ProcessResult
 
 _CANONICAL = Path("/repo/_bmad-output/projects/acme/implementation-artifacts")
 
@@ -400,3 +402,160 @@ def test_slug_from_symlink_target_matches_cli_init_copy():
         assert status._slug_from_symlink_target(
             target
         ) == init_cli._slug_from_symlink_target(target)
+
+
+# =============================================================================
+# Story 4.5: DomainField / reconcile_feed_domains / classify_resync_outcome
+# (AD-33) -- covers every row of the spec's I/O & Edge-Case Matrix.
+# =============================================================================
+
+
+def test_domain_field_rejects_an_unrecognized_domain():
+    with pytest.raises(ValueError, match="git.*journal"):
+        status.DomainField(value=True, domain="repo")  # type: ignore[arg-type]
+
+
+def test_domain_field_to_dict_round_trips():
+    field = status.DomainField(value=42, domain="journal")
+    assert status.domain_field_to_dict(field) == {"value": 42, "domain": "journal"}
+
+
+def test_reconcile_claimed_commit_matching_merged_keys_is_no_finding():
+    key = normalize("1.2")
+    report = status.reconcile_feed_domains(
+        frozenset({key}),
+        (status.ClaimedCommit(story_key=key, claimed_commit_sha="deadbeef"),),
+    )
+    assert report.findings == ()
+    assert len(report.stories) == 1
+    row = report.stories[0]
+    assert row["story_key"] == "1.2"
+    assert row["durable"] == status.DomainField(value=True, domain="git")
+    assert row["claimed_commit_sha"] == status.DomainField(
+        value="deadbeef", domain="journal"
+    )
+
+
+def test_reconcile_claimed_commit_not_in_merged_keys_is_mrs_status_001():
+    """The harness claims a commit landed; git's own merged_story_keys
+    disagrees -- reported, never resolved either way (AD-33)."""
+    key = normalize("2.1")
+    report = status.reconcile_feed_domains(
+        frozenset(),
+        (status.ClaimedCommit(story_key=key, claimed_commit_sha="cafebabe"),),
+    )
+    assert len(report.findings) == 1
+    finding = report.findings[0]
+    assert finding.code == "MRS-STATUS-001"
+    assert finding.severity is Severity.WARN
+    assert "2.1" in finding.message
+    assert "cafebabe" in finding.message
+    row = report.stories[0]
+    # `durable` (git) is never overridden by the journal's claim.
+    assert row["durable"].value is False
+    assert row["claimed_commit_sha"].value == "cafebabe"
+
+
+def test_reconcile_claimed_commit_none_is_no_finding_git_stands_alone():
+    key = normalize("3.1")
+    report = status.reconcile_feed_domains(frozenset({key}), (
+        status.ClaimedCommit(story_key=key, claimed_commit_sha=None),
+    ))
+    assert report.findings == ()
+    row = report.stories[0]
+    assert row["durable"].value is True
+    assert row["claimed_commit_sha"].value is None
+
+
+def test_reconcile_empty_state_is_clean():
+    report = status.reconcile_feed_domains(frozenset(), ())
+    assert report.stories == ()
+    assert report.findings == ()
+
+
+def test_reconcile_every_field_is_tagged_with_its_own_domain():
+    key = normalize("4.5")
+    report = status.reconcile_feed_domains(
+        frozenset({key}),
+        (status.ClaimedCommit(story_key=key, claimed_commit_sha="sha1"),),
+    )
+    row = report.stories[0]
+    assert row["durable"].domain == "git"
+    assert row["claimed_commit_sha"].domain == "journal"
+
+
+def test_reconcile_is_sorted_deterministically_for_the_noop_property():
+    keys = [normalize(k) for k in ("3.1", "1.2", "2.4")]
+    report = status.reconcile_feed_domains(frozenset(keys), ())
+    assert [row["story_key"] for row in report.stories] == ["1.2", "2.4", "3.1"]
+
+
+def test_reconcile_duplicate_story_key_prefers_later_phase_non_none_sha():
+    """Code review (2026-08-06, P3, Edge Case Hunter): two
+    ``TaskPhaseSnapshot``-derived claims for the SAME story key (a real
+    shape -- dev/review/done-phase snapshots of one task) must resolve by
+    an explicit, deterministic precedence, never by which happened to be
+    LAST in a dict comprehension's own iteration order."""
+    key = normalize("5.1")
+    earlier = status.ClaimedCommit(
+        story_key=key, claimed_commit_sha="earliersha", phase="review-verify"
+    )
+    later = status.ClaimedCommit(
+        story_key=key, claimed_commit_sha="donesha", phase="done"
+    )
+    # Feed them in BOTH orders -- the result must not depend on input order.
+    report_forward = status.reconcile_feed_domains(frozenset({key}), (earlier, later))
+    report_reverse = status.reconcile_feed_domains(frozenset({key}), (later, earlier))
+    assert report_forward.stories[0]["claimed_commit_sha"].value == "donesha"
+    assert report_reverse.stories[0]["claimed_commit_sha"].value == "donesha"
+
+
+def test_reconcile_duplicate_story_key_prefers_non_none_sha_over_none():
+    key = normalize("5.2")
+    no_claim = status.ClaimedCommit(story_key=key, claimed_commit_sha=None, phase="done")
+    has_claim = status.ClaimedCommit(
+        story_key=key, claimed_commit_sha="sha123", phase="dev-running"
+    )
+    report = status.reconcile_feed_domains(frozenset({key}), (no_claim, has_claim))
+    assert report.stories[0]["claimed_commit_sha"].value == "sha123"
+
+
+# --- classify_resync_outcome -------------------------------------------------
+
+
+def test_classify_resync_outcome_never_ran_reports_mrs_deploy_019():
+    report, finding = status.classify_resync_outcome(
+        "echo hi", None, failure_reason="could not launch"
+    )
+    assert report == {"command": "echo hi", "resolvable": False, "returncode": None}
+    assert finding.code == "MRS-DEPLOY-019"
+    assert finding.severity is Severity.ERROR
+    assert "could not launch" in finding.message
+
+
+def test_classify_resync_outcome_nonzero_exit_reports_mrs_deploy_020():
+    result = ProcessResult(returncode=1, stdout="", stderr="boom")
+    report, finding = status.classify_resync_outcome("false", result)
+    assert report["resolvable"] is True
+    assert report["returncode"] == 1
+    assert finding.code == "MRS-DEPLOY-020"
+    assert "exited 1" in finding.message
+
+
+def test_classify_resync_outcome_signal_kill_names_the_signal():
+    result = ProcessResult(returncode=-9, stdout="", stderr="")
+    _, finding = status.classify_resync_outcome("cmd", result)
+    assert "terminated by signal 9" in finding.message
+
+
+def test_classify_resync_outcome_success_is_no_finding():
+    result = ProcessResult(returncode=0, stdout="ok", stderr="")
+    report, finding = status.classify_resync_outcome("true", result)
+    assert finding is None
+    assert report == {
+        "command": "true",
+        "resolvable": True,
+        "returncode": 0,
+        "stdout": "ok",
+        "stderr": "",
+    }

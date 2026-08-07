@@ -928,6 +928,47 @@ def test_content_hash_handles_a_nonempty_landing_rules():
     assert isinstance(effective.content_hash, str) and len(effective.content_hash) == 64
 
 
+# --- landing_resync_commands validation (Story 4.5, AD-40) -------------------
+# Validated IDENTICALLY to verify_commands (`_valid_str_tuple`) -- mirrors
+# that key's own tests above almost verbatim.
+
+
+def test_landing_resync_commands_is_static_not_seed():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    assert effective.landing_resync_commands.value == ()
+    assert effective.landing_resync_commands.layer is PolicyLayer.DEFAULT
+
+
+def test_landing_resync_commands_valid_list_accepted():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"landing_resync_commands": ["marshal deploy promote"]},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.landing_resync_commands.value == ("marshal deploy promote",)
+    assert effective.landing_resync_commands.layer is PolicyLayer.PROJECT
+
+
+def test_landing_resync_commands_non_string_entry_falls_back_and_reports():
+    effective, findings = compose(
+        project_slug="acme", project={"landing_resync_commands": ["ok", 123]}, flags={}
+    )
+    assert effective.landing_resync_commands.value == DEFAULT_POLICY["landing_resync_commands"]
+    assert effective.landing_resync_commands.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+    assert findings[0].path == "project"
+
+
+def test_landing_resync_commands_rejects_empty_string_entry():
+    effective, findings = compose(
+        project_slug="acme", project={"landing_resync_commands": [""]}, flags={}
+    )
+    assert effective.landing_resync_commands.value == ()
+    assert findings[0].code == "MRS-POLICY-002"
+
+
 # --- idle_threshold_minutes validation (Story 3.5, FR-12) --------------------
 
 
@@ -1213,6 +1254,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
+            landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             _seed=seed,
         )
 
@@ -1230,6 +1272,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
+            landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -1247,6 +1290,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
+            landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             _seed={
                 # All 10 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -1303,6 +1347,7 @@ def test_schema_file_declares_the_twenty_keys():
         "landing_branch_retirement",
         "landing_resync",
         "landing_base_branch",
+        "landing_resync_commands",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",

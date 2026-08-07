@@ -422,6 +422,21 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # an existing PR's own base branch does not match the policy-declared
 # landing_base_branch) at ERROR, the same tier -- update_pr must never be
 # called against a PR targeting a different base than policy declares.
+# Story 4.5 (feed refresh with truth partitioned by domain, AD-33) adds two
+# more MRS-DEPLOY-* codes for `marshal deploy refresh-feed` plus a new area,
+# MRS-STATUS-*: MRS-DEPLOY-019 (a `landing_resync_commands` entry could not
+# be run at all -- parse failure, bare shell syntax, or a launch failure) at
+# UNEVALUABLE, the same tier as MRS-GATE-002/003 -- Marshal could not run
+# the configured command at all; MRS-DEPLOY-020 (a `landing_resync_commands`
+# entry ran and exited non-zero) at GATE_FAILED, the same tier as
+# MRS-GATE-001/MRS-DEPLOY-010 -- a real, configured command ran and failed.
+# MRS-STATUS-001 (`core.status.reconcile_feed_domains`'s own reconciliation
+# mismatch: a journal-claimed `commit_sha` for a story that git's own
+# `merged_story_keys` does not confirm) classifies WARN, the same tier as
+# this codebase's every other "reported, never blocks progression"
+# paper-trail-gap code (MRS-DEPLOY-001/002/004/005/009/012) -- AD-33 forbids
+# resolving the discrepancy either way; it is named so it is never passed
+# over silently, but never itself invalidates the report.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -506,6 +521,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-016": Verdict.ERROR,
     "MRS-DEPLOY-017": Verdict.ERROR,
     "MRS-DEPLOY-018": Verdict.ERROR,
+    "MRS-DEPLOY-019": Verdict.UNEVALUABLE,
+    "MRS-DEPLOY-020": Verdict.GATE_FAILED,
+    "MRS-STATUS-001": Verdict.WARN,
 }
 
 
