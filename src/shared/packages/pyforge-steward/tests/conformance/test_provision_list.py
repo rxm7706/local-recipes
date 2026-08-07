@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from pyforge.steward.cli import EXIT_OK, main
+from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.provision import format_environments
 
 _PIXI_TOML = """\
@@ -69,6 +69,25 @@ def test_provision_list_json_via_cli_emits_valid_json(tmp_path, monkeypatch, cap
     data = json.loads(capsys.readouterr().out)
     assert data["linux"] == ["linux", "python"]
     assert data["pyforge-steward"] == ["pyforge-steward"]
+
+
+def test_provision_list_json_on_malformed_pixi_toml_still_emits_valid_json(
+    tmp_path, monkeypatch, capsys
+):
+    """Review finding: an error raised on ANY flag's path used to always
+    render as plain text (`f"provision: {exc}"`), even when `--json` was
+    passed -- `--list --json` against a malformed `pixi.toml` used to
+    print un-parseable text instead of a JSON error object, breaking any
+    caller that unconditionally `json.loads()`s the output because
+    `--json` was requested."""
+    (tmp_path / "pixi.toml").write_text("[environments\nbroken toml", encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+
+    rc = main(["provision", "--list", "--json"])
+
+    assert rc == EXIT_FAILED
+    data = json.loads(capsys.readouterr().err)
+    assert "error" in data
 
 
 def test_provision_list_never_writes_to_pixi_toml(tmp_path, monkeypatch):

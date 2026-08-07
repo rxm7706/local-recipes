@@ -389,8 +389,20 @@ class ProvisionDuty:
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
             cmd_name = " ".join(str(part) for part in exc.cmd) if exc.cmd else "subprocess"
-            return DutyResult(
-                ok=False, summary=f"provision: `{cmd_name}` exited {exc.returncode}: {stderr}"
-            )
+            message = f"`{cmd_name}` exited {exc.returncode}: {stderr}"
+            return DutyResult(ok=False, summary=self._render_error(ns, message))
         except (RuntimeError, FileNotFoundError, tomllib.TOMLDecodeError) as exc:
-            return DutyResult(ok=False, summary=f"provision: {exc}")
+            return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
+
+    @staticmethod
+    def _render_error(ns: argparse.Namespace, message: str) -> str:
+        """Every success path this duty has (`_run_list`'s own
+        `format_environments(..., as_json=...)`) already honors `--json`;
+        an error raised on ANY flag's path must too (review finding: an
+        earlier draft only formatted the happy path, so `--list --json`
+        against e.g. a malformed `pixi.toml` emitted a plain-text summary
+        `cli.main()` prints verbatim -- unparseable by a caller that
+        `json.loads()`s the output because `--json` was passed)."""
+        if getattr(ns, "json", False):
+            return json.dumps({"error": message}, indent=2)
+        return f"provision: {message}"
