@@ -17,6 +17,15 @@
   its OWN one-FAIL-Finding, tagged with ITS OWN Source, and does not stop
   the other sub-calls from running (partial degrade, not all-or-nothing --
   the three sub-calls are independent instruments).
+* ``"adoption"`` (Story 4.3, FR-12, AD-9) -- a COMPOSITE of
+  ``adoption_stage`` (fleet/maintainer-scoped, always attempted) and
+  ``version_downloads`` (per-PACKAGE, no maintainer mode -- attempted only
+  when ``target`` is given, since there is nothing fleet-wide to call it
+  with), BOTH normalized under the single ``Source.ADOPTION`` tag (unlike
+  ``abandonment``'s per-sub-instrument tagging -- Story 4.3 AC1 asks for one
+  ``Source.ADOPTION``, not two). Opt-in only: never added to
+  ``monitor --fleet``'s default axis set (Story 2.3's existing
+  ``staleness``/``cve`` default is unchanged by this addition).
 
 Every axis reaches its underlying data over the SAME two transports
 (``conda_forge_server.py``'s MCP tools are thin ``_run_script(...)`` shims
@@ -82,11 +91,28 @@ from typing import Any, Callable
 from ..cli_bridge import CliBridgeError, run_cli_json
 from ..models import DoctorStatus, Finding, Source
 
-_VALID_AXES = frozenset({"staleness", "cve", "abandonment"})
+_VALID_AXES = frozenset({"staleness", "cve", "abandonment", "adoption"})
 
 # Public alias -- Story 2.3's CLI layer validates `--watch` axis names
 # against this without reaching into a leading-underscore module internal.
 VALID_WATCH_AXES = _VALID_AXES
+
+#: Which `Source` member(s) each axis's own `gather()` dispatch (above)
+#: can produce -- `"abandonment"` is a composite of TWO instruments
+#: (`_gather_abandonment`'s own feedstock-health + release-cadence
+#: sub-sources), every other axis is a single `Source`. Public: Story 4.2's
+#: `monitor --fleet --surface` uses this to recompute which axes are still
+#: genuinely represented after a `--source` filter narrows `findings`
+#: (review finding: recording the REQUESTED `--watch` axes verbatim, even
+#: when `--source` drops an entire axis's findings, contradicted the
+#: surface's own documented "exactly which axes the triggering run
+#: covered" claim).
+AXIS_SOURCES: dict[str, frozenset[Source]] = {
+    "staleness": frozenset({Source.STALENESS_REPORT}),
+    "cve": frozenset({Source.CVE_WATCHER}),
+    "abandonment": frozenset({Source.FEEDSTOCK_HEALTH, Source.RELEASE_CADENCE}),
+    "adoption": frozenset({Source.ADOPTION}),
+}
 
 # Trend labels release_cadence's own `_classify` can emit that count as an
 # "abandonment" signal (Story 2.2 AC2) -- filtered client-side since the
@@ -292,6 +318,92 @@ def _normalize_release_cadence_rows(rows: list[Any]) -> tuple[Finding, ...]:
                 status=DoctorStatus.FAIL if trend == "silent" else DoctorStatus.WARN,
                 message=message,
                 evidence=dict(row),
+            )
+        )
+    return tuple(findings)
+
+
+# adoption_stage's own `_classify` labels (see the skill script) that count
+# as a real health signal -- "silent" (no release in 730 days) is the
+# harder signal, mirroring release_cadence's own decelerating/silent split.
+_ADOPTION_DECLINING_STAGES = frozenset({"declining"})
+_ADOPTION_SILENT_STAGES = frozenset({"silent"})
+
+
+def _normalize_adoption_stage_rows(rows: list[Any]) -> tuple[Finding, ...]:
+    """One ``Finding`` per ``adoption_stage`` row, tagged
+    ``Source.ADOPTION`` (Story 4.3 AC1). ``stage in {"declining", "silent"}``
+    is a real abandonment-adjacent signal (``"silent"`` -- FAIL -- being the
+    harder of the two); every other stage (``bleeding-edge``/``stable``/
+    ``mature``/``unknown``) is informational -- WARN would overstate a
+    healthy or merely-unclassified package, so those stay OK."""
+    findings: list[Finding] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            findings.append(
+                _one_fail_finding(
+                    Source.ADOPTION,
+                    f"adoption_stage returned a non-object row: {row!r}",
+                )
+            )
+            continue
+        stage = row.get("stage")
+        message = (
+            f"stage={stage} age_days={row.get('age_days')!s} "
+            f"releases_30d={row.get('releases_30d')!s} "
+            f"total_downloads={row.get('total_downloads')!s}"
+        )
+        if stage in _ADOPTION_SILENT_STAGES:
+            status = DoctorStatus.FAIL
+        elif stage in _ADOPTION_DECLINING_STAGES:
+            status = DoctorStatus.WARN
+        else:
+            status = DoctorStatus.OK
+        findings.append(
+            Finding(
+                source=Source.ADOPTION,
+                check=_row_check_name(row),
+                status=status,
+                message=message,
+                evidence=dict(row),
+            )
+        )
+    return tuple(findings)
+
+
+def _normalize_version_downloads_rows(
+    rows: list[Any], *, package: str
+) -> tuple[Finding, ...]:
+    """One ``Finding`` per ``version_downloads`` row, tagged
+    ``Source.ADOPTION`` (Story 4.3 AC1's second sub-instrument). Rows carry
+    NO package-identity field of their own (the underlying query is already
+    scoped to one ``name`` -- see the skill script's own SELECT) -- ``check``
+    is set to the ``package`` this sub-call was made FOR, injected the same
+    way ``_normalize_cve_rows`` injects ``severity`` into its own evidence.
+    Purely informational supplementary evidence for ``adoption_stage``'s own
+    verdict (a single version's download count implies no health signal by
+    itself) -- always OK, never WARN/FAIL on its own."""
+    findings: list[Finding] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            findings.append(
+                _one_fail_finding(
+                    Source.ADOPTION,
+                    f"version_downloads returned a non-object row: {row!r}",
+                )
+            )
+            continue
+        message = (
+            f"version={row.get('version')!s} "
+            f"total_downloads={row.get('total_downloads')!s}"
+        )
+        findings.append(
+            Finding(
+                source=Source.ADOPTION,
+                check=package,
+                status=DoctorStatus.OK,
+                message=message,
+                evidence=dict(row, conda_name=package),
             )
         )
     return tuple(findings)
@@ -630,6 +742,70 @@ def _gather_abandonment(
     return tuple(findings)
 
 
+def _gather_adoption(
+    *,
+    target: str | None,
+    server_script_path: Path,
+    timeout: float,
+    mcp_caller: Callable[[str, dict[str, Any]], str] | None,
+    cli_runner: Callable[[Path, list[str]], Any] | None,
+) -> tuple[Finding, ...]:
+    """Composite of ``adoption_stage`` (always attempted, fleet/maintainer
+    scoped) and ``version_downloads`` (per-package, only attempted when
+    ``target`` is given -- the underlying tool has no fleet-wide/maintainer
+    mode of its own, see module docstring) -- both normalized under
+    ``Source.ADOPTION`` (Story 4.3 AC1), each with its own independent
+    degrade-to-FAIL-Finding on failure (mirrors ``_gather_abandonment``'s own
+    partial-degrade discipline: one sub-instrument failing never hides the
+    other's Findings). No ``cli_script_path`` override parameter -- same
+    rationale as ``_gather_abandonment``: two different underlying scripts,
+    no one path a caller could sensibly override."""
+    findings: list[Finding] = []
+
+    mcp_arguments: dict[str, Any] = {}
+    if target is not None:
+        mcp_arguments["maintainer"] = target
+    cli_args = ["--json"]
+    if target is not None:
+        cli_args.extend(["--maintainer", target])
+    try:
+        rows = _fetch_rows(
+            tool_name="adoption_stage",
+            mcp_arguments=mcp_arguments,
+            cli_script_path=_default_cli_script("adoption_stage.py"),
+            cli_args=cli_args,
+            server_script_path=server_script_path,
+            timeout=timeout,
+            mcp_caller=mcp_caller,
+            cli_runner=cli_runner,
+            extract_rows=_extract_list_rows,
+        )
+    except _FetchFailed as exc:
+        findings.append(_one_fail_finding(Source.ADOPTION, str(exc)))
+    else:
+        findings.extend(_normalize_adoption_stage_rows(rows))
+
+    if target is not None:
+        try:
+            rows = _fetch_rows(
+                tool_name="version_downloads",
+                mcp_arguments={"name": target},
+                cli_script_path=_default_cli_script("version_downloads.py"),
+                cli_args=["--json", target],
+                server_script_path=server_script_path,
+                timeout=timeout,
+                mcp_caller=mcp_caller,
+                cli_runner=cli_runner,
+                extract_rows=_extract_list_rows,
+            )
+        except _FetchFailed as exc:
+            findings.append(_one_fail_finding(Source.ADOPTION, str(exc)))
+        else:
+            findings.extend(_normalize_version_downloads_rows(rows, package=target))
+
+    return tuple(findings)
+
+
 # --- entrypoint ------------------------------------------------------------
 
 
@@ -647,7 +823,7 @@ def gather(
     """Gather one atlas Watch axis's signal, MCP-first with CLI fallback.
 
     ``axis`` is validated against a small closed set (``{"staleness",
-    "cve", "abandonment"}`` as of Story 2.2) -- an unrecognized axis raises
+    "cve", "abandonment", "adoption"}`` as of Story 4.3) -- an unrecognized axis raises
     ``ValueError`` at the call boundary (a programmer error, not a runtime
     degrade case). Every other failure degrades to a ``Finding`` (see
     module docstring); no other exception escapes.
@@ -695,8 +871,16 @@ def gather(
             mcp_caller=mcp_caller,
             cli_runner=cli_runner,
         )
-    # axis == "abandonment" (the only remaining member of _VALID_AXES)
-    return _gather_abandonment(
+    if axis == "abandonment":
+        return _gather_abandonment(
+            target=target,
+            server_script_path=server_script_path,
+            timeout=timeout,
+            mcp_caller=mcp_caller,
+            cli_runner=cli_runner,
+        )
+    # axis == "adoption" (the only remaining member of _VALID_AXES)
+    return _gather_adoption(
         target=target,
         server_script_path=server_script_path,
         timeout=timeout,

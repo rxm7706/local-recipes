@@ -10,7 +10,15 @@ Story 1.5 wires the ``check`` subcommand (FR-9/NFR-4): ``--engines``/
 ``diagnose --target ... [--prescribe]``, composing the same two gather
 filters for one target and, with ``--prescribe``, Epic 3's
 ``prescribe.partition``/``prescribe.rank``/``prescribe.name_root_cause``
-pipeline into ``Prescription``\\ s.
+pipeline into ``Prescription``\\ s. Epic 4 extends this wiring three ways:
+Story 4.1's ``score.grade`` runs alongside ``diagnose``'s own gather,
+adding ``grade``/``axis_scores`` to the report; Story 4.2's
+``monitor --surface PATH`` (opt-in) writes a persistent fleet-health
+surface from the SAME already-gathered findings via ``fleet_surface``;
+Story 4.3 adds ``adoption`` as a fourth, opt-in-only ``--watch`` axis
+(``sources.atlas`` itself, not this module, does the real work); Story
+4.4's ``prescribe.recommend_safe_upgrade`` populates each Prescription's
+``safe_upgrade_target``/``safe_upgrade_reason``.
 
 ``main`` always RETURNS an int; it never calls an exit primitive itself
 (``verdict.py`` is the sole module permitted to do that -- the
@@ -33,7 +41,7 @@ from pathlib import Path
 
 import jsonschema
 
-from . import prescribe
+from . import fleet_surface, prescribe, score
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
 from .sources import atlas, warden as warden_source
@@ -150,7 +158,7 @@ def _build_parser() -> tuple[
         metavar="AXIS[,AXIS...]",
         help=(
             "comma-separated Watch axes to run (staleness, cve, "
-            "abandonment); default when omitted: staleness,cve"
+            "abandonment, adoption); default when omitted: staleness,cve"
         ),
     )
     monitor.add_argument(
@@ -169,6 +177,16 @@ def _build_parser() -> tuple[
         "--json",
         action="store_true",
         help="emit one schema-valid DoctorReport document on stdout",
+    )
+    monitor.add_argument(
+        "--surface",
+        default=None,
+        metavar="PATH",
+        help=(
+            "also write a persistent, schema-versioned fleet-health surface "
+            "to PATH, derived strictly from this run's own findings "
+            "(idempotent regeneration; no independent second gather)"
+        ),
     )
 
     diagnose = subparsers.add_parser(
@@ -469,7 +487,14 @@ def _run_monitor(args: argparse.Namespace) -> int:
     render (never a second, narrower gather) -- this keeps the FR-9 parity
     guarantee automatic: whatever the human-readable output shows is
     exactly what ``--json`` shows, because both render from the same
-    filtered tuple."""
+    filtered tuple.
+
+    Story 4.2: ``--surface PATH`` (optional) writes a persistent
+    fleet-health surface derived from this SAME (already ``--source``-
+    filtered) findings tuple -- never a second, independent gather (AD-8).
+    Omitting ``--surface`` changes nothing about ``monitor``'s existing
+    behavior (backward compatible, mirrors Story 4.3's own "opt-in only"
+    discipline for a new addition)."""
     axes = _split_watch_axes(args.watch)
 
     findings: tuple[Finding, ...] = ()
@@ -478,6 +503,20 @@ def _run_monitor(args: argparse.Namespace) -> int:
 
     if args.source is not None:
         findings = tuple(f for f in findings if f.source.value == args.source)
+        # Review finding: `axes` was recorded verbatim from `--watch`,
+        # requested BEFORE this filter -- narrowing to the axes still
+        # actually represented in the filtered findings keeps the
+        # surface's own "exactly which axes the triggering run covered"
+        # claim honest even when `--source` drops an entire axis.
+        remaining_sources = {f.source for f in findings}
+        axes = tuple(
+            axis
+            for axis in axes
+            if atlas.AXIS_SOURCES.get(axis, frozenset()) & remaining_sources
+        )
+
+    if args.surface:
+        fleet_surface.write_surface(Path(args.surface), findings, axes=axes)
 
     exit_code = exit_code_for(findings)
     if args.json:
@@ -526,6 +565,9 @@ def _build_prescriptions(
     prescriptions: list[Prescription] = []
     for pf in partitioned:
         rank_value, rank_factors = rank_by_finding.get(id(pf.finding), (None, None))
+        safe_upgrade_target, safe_upgrade_reason = prescribe.recommend_safe_upgrade(
+            pf.finding
+        )
         prescriptions.append(
             Prescription(
                 finding_ref=f"{pf.finding.source.value}:{pf.finding.check}",
@@ -534,6 +576,8 @@ def _build_prescriptions(
                 rank_factors=rank_factors,
                 action=_action_text(pf),
                 root_cause=prescribe.name_root_cause(pf.finding, findings),
+                safe_upgrade_target=safe_upgrade_target,
+                safe_upgrade_reason=safe_upgrade_reason,
             )
         )
     return tuple(prescriptions)
@@ -570,23 +614,35 @@ def _run_diagnose(args: argparse.Namespace) -> int:
     if args.prescribe:
         prescriptions = _build_prescriptions(findings)
 
+    # Story 4.1: `diagnose` is the one verb that grades a single target's
+    # OWN findings (the "composite health grade per dependency" framing) --
+    # always computed (score.grade is pure/cheap, mirrors `--prescribe`'s
+    # own AD-4 discipline of never gating a pure aggregation behind more
+    # flags than necessary), never gated behind an extra flag.
+    grade_result = score.grade(findings)
+
     exit_code = exit_code_for(findings)
     if args.json:
         # verb="diagnose" ALWAYS carries the `prescriptions` key in the
         # JSON envelope, empty or not (Story 1.1's frozen contract) --
         # unlike the text render below, this is never conditioned on
         # `--prescribe`.
-        _emit_json(findings, verb="diagnose", prescriptions=prescriptions)
+        _emit_json(
+            findings, verb="diagnose", prescriptions=prescriptions,
+            grade_result=grade_result,
+        )
     else:
         # The human-readable render only shows a "prescription(s)" section
         # when `--prescribe` was actually requested -- an UNREQUESTED empty
         # pipeline result would misleadingly read as "ran and found zero"
         # rather than "didn't run" (AC1's own "reports them without
-        # partitioning/ranking" framing).
+        # partitioning/ranking" framing). The grade line, unlike
+        # prescriptions, is unconditional -- it costs nothing to show.
         _emit_text(
             findings,
             verb="diagnose",
             prescriptions=prescriptions if args.prescribe else None,
+            grade_result=grade_result,
         )
     return exit_code
 
@@ -611,6 +667,7 @@ def _emit_json(
     *,
     verb: str,
     prescriptions: tuple[Prescription, ...] | None = None,
+    grade_result: score.GradeResult | None = None,
 ) -> None:
     report = DoctorReport(
         schema_version=1,
@@ -618,6 +675,12 @@ def _emit_json(
         generated_at=datetime.now(UTC).isoformat(),
         findings=findings,
         prescriptions=prescriptions,
+        grade=grade_result.grade.value if grade_result is not None else None,
+        axis_scores=(
+            tuple(axis.to_json_dict() for axis in grade_result.axis_scores)
+            if grade_result is not None
+            else None
+        ),
     )
     document = report.to_json_dict()
     # Self-validated BEFORE it ever reaches stdout -- a schema-invalid
@@ -644,6 +707,7 @@ def _emit_text(
     *,
     verb: str,
     prescriptions: tuple[Prescription, ...] | None = None,
+    grade_result: score.GradeResult | None = None,
 ) -> None:
     ok = sum(1 for f in findings if f.status is DoctorStatus.OK)
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
@@ -652,6 +716,17 @@ def _emit_text(
         f"doctor {verb}: {len(findings)} finding(s) -- "
         f"{ok} ok, {warn} warn, {fail} fail"
     ]
+    if grade_result is not None:
+        # Story 4.1 FR-9 parity: whatever --json's `grade`/`axis_scores`
+        # show must also be visible in the human-readable render.
+        lines.append(
+            f"  grade: {grade_result.grade.value} -- {_single_line(grade_result.reason)}"
+        )
+        for axis in grade_result.axis_scores:
+            lines.append(
+                f"    [{axis.axis}] {axis.grade.value} "
+                f"({axis.ok} ok, {axis.warn} warn, {axis.fail} fail)"
+            )
     for finding in findings:
         lines.append(
             f"  [{finding.source.value}] {finding.check}: "
@@ -672,6 +747,18 @@ def _emit_text(
                 f"{prescription.finding_ref}: {_single_line(prescription.action)}"
             )
             lines.append(f"      root cause: {_single_line(prescription.root_cause)}")
+            # Story 4.4 FR-9 parity: whatever --json's safe_upgrade_target/
+            # safe_upgrade_reason show must also be visible here.
+            if prescription.safe_upgrade_target is not None:
+                lines.append(
+                    f"      safe upgrade: {prescription.safe_upgrade_target} "
+                    f"({_single_line(prescription.safe_upgrade_reason or '')})"
+                )
+            else:
+                lines.append(
+                    "      safe upgrade: none -- "
+                    f"{_single_line(prescription.safe_upgrade_reason or '')}"
+                )
     _write_stdout("\n".join(lines) + "\n")
 
 

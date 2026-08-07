@@ -1,12 +1,17 @@
-"""Meta test — NFR-1 read-only guard (Story 1.1).
+"""Meta test — NFR-1 read-only guard (Story 1.1; exemption added Story 4.2).
 
 Nothing under the installed ``pyforge.doctor`` package may write outside a
 ``tempfile``-scoped path (architecture spine Consistency Conventions: "v1 is
 read-only everywhere — no module under pyforge.doctor may write outside a
 tempfile-scoped path or mutate scanned trees", mirroring warden's own
-NFR-S4 discipline). Nothing gathers real Findings yet at this scaffold
-stage, so this is a best-effort STATIC AST scan for filesystem-write call
-sites: ``open(..., "w"/"a"/"x"/...)``, ``Path.write_text``/
+NFR-S4 discipline) -- EXCEPT ``fleet_surface.py`` (Story 4.2, FR-11, AD-8),
+the ONE sanctioned write site this v1.x addition deliberately introduces
+(mirrors ``sources/atlas.py``'s own sole-``mcp``-import-site exemption
+pattern, applied to the filesystem-write surface instead): AD-8 bounds what
+that write may do (strictly derived from already-gathered findings, no
+independent gather, idempotent, schema-versioned) even though NFR-1's own
+blanket rule predates it. This is a best-effort STATIC AST scan for
+filesystem-write call sites: ``open(..., "w"/"a"/"x"/...)``, ``Path.write_text``/
 ``Path.write_bytes``, and the common ``os``/``shutil`` mutation calls
 (``remove``/``unlink``/``rename``/``mkdir``/``makedirs``/``chmod``/
 ``copy*``/``move``/``rmtree``).
@@ -31,6 +36,11 @@ if _PACKAGE_FILE is None:
     raise ValueError("installed package has no __file__")
 PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 
+# The one sanctioned filesystem-write site (Story 4.2) -- exempted from this
+# scan, mirroring `test_atlas_sole_mcp_import.py`'s identical
+# `_EXEMPT_RELATIVE_PATHS` pattern for the mcp-import surface.
+_EXEMPT_RELATIVE_PATHS = frozenset({Path("fleet_surface.py")})
+
 _WRITE_METHOD_NAMES = frozenset(
     {
         "write_text",
@@ -51,7 +61,11 @@ _WRITE_METHOD_NAMES = frozenset(
 
 
 def _package_modules() -> list[Path]:
-    return sorted(PACKAGE_DIR.rglob("*.py"))
+    return sorted(
+        path
+        for path in PACKAGE_DIR.rglob("*.py")
+        if path.relative_to(PACKAGE_DIR) not in _EXEMPT_RELATIVE_PATHS
+    )
 
 
 def _parse(path: Path) -> ast.Module:
@@ -117,6 +131,27 @@ def _read_only_violations(tree: ast.Module) -> list[int]:
 def test_package_scan_surface_is_not_empty():
     modules = _package_modules()
     assert modules, "read-only guard found no modules to scan"
+
+
+def test_fleet_surface_module_exists():
+    fleet_surface_path = PACKAGE_DIR / "fleet_surface.py"
+    assert fleet_surface_path.is_file(), (
+        f"expected {fleet_surface_path} -- the Story 4.2 sanctioned write "
+        "site is missing"
+    )
+
+
+def test_fleet_surface_is_exempted_from_this_scan():
+    modules = {path.relative_to(PACKAGE_DIR) for path in _package_modules()}
+    assert Path("fleet_surface.py") not in modules
+
+
+def test_fleet_surface_itself_writes_somewhere():
+    """Non-vacuous proof: the sanctioned site actually contains a
+    filesystem-write call site -- so this exemption is narrowing a real
+    permission, not an accidentally-unused one."""
+    violations = _read_only_violations(_parse(PACKAGE_DIR / "fleet_surface.py"))
+    assert violations, "fleet_surface.py does not write to the filesystem at all"
 
 
 def test_no_filesystem_write_call_sites_in_package():

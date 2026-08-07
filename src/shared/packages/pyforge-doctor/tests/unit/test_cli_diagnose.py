@@ -254,6 +254,79 @@ def test_diagnose_exit_code_reflects_fail_findings(monkeypatch):
     assert main(["diagnose", "--target", "xyz"]) == 2
 
 
+# --- Story 4.4: safe-upgrade-target wiring ----------------------------
+
+
+def test_diagnose_prescribe_includes_safe_upgrade_target_when_confidently_known(
+    monkeypatch, capsys
+):
+    finding = _finding(
+        Source.STALENESS_REPORT,
+        "pkg-a",
+        evidence={"latest_conda_version": "1.2.3", "upstream_version": "1.2.4"},
+    )
+    _stub_atlas(monkeypatch, {"staleness": (finding,)})
+    _stub_no_directory_checks(monkeypatch)
+    main(["diagnose", "--target", "xyz", "--prescribe", "--json"])
+    document = json.loads(capsys.readouterr().out)
+    jsonschema.validate(document, _schema())
+    prescription = document["prescriptions"][0]
+    assert prescription["safe_upgrade_target"] == "1.2.4"
+    assert prescription["safe_upgrade_reason"]
+
+
+def test_diagnose_prescribe_safe_upgrade_target_is_null_with_a_reason_when_unknown(
+    monkeypatch, capsys
+):
+    finding = _finding(Source.STALENESS_REPORT, "pkg-a")  # no version evidence at all
+    _stub_atlas(monkeypatch, {"staleness": (finding,)})
+    _stub_no_directory_checks(monkeypatch)
+    main(["diagnose", "--target", "xyz", "--prescribe", "--json"])
+    document = json.loads(capsys.readouterr().out)
+    prescription = document["prescriptions"][0]
+    assert prescription["safe_upgrade_target"] is None
+    assert prescription["safe_upgrade_reason"]
+
+
+# --- Story 4.1: grade wiring -------------------------------------------
+
+
+def test_diagnose_json_includes_grade_and_axis_scores(monkeypatch, capsys):
+    _stub_atlas(
+        monkeypatch,
+        {"staleness": (_finding(Source.STALENESS_REPORT, "pkg-a", status=DoctorStatus.OK),)},
+    )
+    _stub_no_directory_checks(monkeypatch)
+    main(["diagnose", "--target", "xyz", "--json"])
+    document = json.loads(capsys.readouterr().out)
+    jsonschema.validate(document, _schema())
+    assert document["grade"] == "A"
+    assert document["axis_scores"] == [
+        {"axis": "staleness-report", "ok": 1, "warn": 0, "fail": 0, "grade": "A"}
+    ]
+
+
+def test_diagnose_text_includes_grade_line(monkeypatch, capsys):
+    _stub_atlas(
+        monkeypatch,
+        {"cve": (_finding(Source.CVE_WATCHER, "pkg-a", status=DoctorStatus.FAIL),)},
+    )
+    _stub_no_directory_checks(monkeypatch)
+    main(["diagnose", "--target", "xyz"])
+    out = capsys.readouterr().out
+    assert "grade: F" in out
+    assert "cve-watcher" in out
+
+
+def test_diagnose_grade_is_incomplete_with_no_findings(monkeypatch, capsys):
+    _stub_atlas(monkeypatch, {})
+    _stub_no_directory_checks(monkeypatch)
+    main(["diagnose", "--target", "xyz", "--json"])
+    document = json.loads(capsys.readouterr().out)
+    assert document["grade"] == "incomplete"
+    assert document["axis_scores"] == []
+
+
 def test_diagnose_default_axes_are_staleness_and_cve(monkeypatch):
     seen = []
 
