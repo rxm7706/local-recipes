@@ -13,6 +13,7 @@ from .agent_sdk_transport import (
     SubprocessAgentLauncher,
 )
 from .base import (
+    MODERNIST_DESIGN_SYSTEM_ID,
     DesignTransport,
     FileRead,
     PlanHandle,
@@ -28,7 +29,6 @@ from .base import (
 )
 from .mcp_transport import (
     DESIGN_MCP_URL,
-    MODERNIST_DESIGN_SYSTEM_ID,
     DesignCredential,
     McpTransport,
     resolve_design_credential,

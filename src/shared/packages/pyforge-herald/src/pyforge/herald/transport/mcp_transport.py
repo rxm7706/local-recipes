@@ -87,10 +87,6 @@ DESIGN_MCP_URL = "https://api.anthropic.com/v1/design/mcp"
 ANTHROPIC_VERSION = "2023-06-01"
 DESIGN_CLIENT_HEADER = "claude-cli-design-tool"
 
-MODERNIST_DESIGN_SYSTEM_ID = "fbc1d6c8-b35f-4df6-9044-a64d2675427b"
-"""The Modernist design system every PyForge deck is bound to
-(``bridge-protocol.md`` § Conventions)."""
-
 CREDENTIALS_PATH_ENV = "HERALD_DESIGN_CREDENTIALS"
 """Overrides the ``~/.claude/.credentials.json`` lookup (tests, sandboxes)."""
 

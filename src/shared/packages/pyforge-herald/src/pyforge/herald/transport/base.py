@@ -65,6 +65,16 @@ TOKENIZED_PREVIEW_HOST = "claudeusercontent.com"
 REDACTED = "<redacted: tokenized preview url>"
 """Replacement for any string value that mentions the tokenized host."""
 
+MODERNIST_DESIGN_SYSTEM_ID = "fbc1d6c8-b35f-4df6-9044-a64d2675427b"
+"""The Modernist design system every PyForge deck is bound to
+(``bridge-protocol.md`` § Conventions). Lives here, not in any one adapter
+module -- it is a bridge-protocol convention every adapter and bridge-core's
+own CAP-1 ``seed`` operation (Story 1.6) need, and only ``transport.base``
+is reachable from bridge-core under the determinism boundary (AD-3/AD-4).
+Moved from ``mcp_transport.py`` in Story 1.6 for exactly that reason; still
+re-exported at the package root so ``from pyforge.herald.transport import
+MODERNIST_DESIGN_SYSTEM_ID`` is unchanged for every existing caller."""
+
 _READ_TAG = "untrusted-project-content"
 _READ_OPEN_RE = re.compile(rf"<{_READ_TAG}\b([^>]*)>")
 _READ_CLOSE = f"</{_READ_TAG}>"
