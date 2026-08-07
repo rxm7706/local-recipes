@@ -219,13 +219,20 @@ import json
 import os
 import secrets
 import sys
+import tomllib
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
+from ..adapters.harness_bmadloop import (
+    BmadLoopHarness,
+    HarnessError,
+    HarnessPolicyWriteError,
+    render_policy_toml,
+    write_policy_toml,
+)
 from ..adapters.process_posix import PosixProcess, ProcessError
 from ..core import policy
 from ..core.identity import (
@@ -245,6 +252,7 @@ from ..core.journal import (
     prepare_for_write,
 )
 from ..core.model import Finding, Severity, build_envelope
+from ..core.spec_difficulty import DifficultyParseError, parse_declared_difficulty
 from ..core.supervise import EscalationStatus, evaluate_escalation
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
@@ -390,6 +398,303 @@ def _prior_attempt_keys(home: Path) -> set[StoryKey]:
     return flagged
 
 
+def _story_spec_candidates(home: Path, slug: str, key: StoryKey) -> list[Path]:
+    """Every candidate Tier-3 spec-file path for ``key`` -- the bare
+    ``spec-<key>.md`` plus any titled ``spec-<key>-<title>.md`` variant(s),
+    sorted -- shared by ``_large_spec_bytes`` (FR-14's own size advisory,
+    Story 3.6) and ``_story_declared_difficulty`` (FR-51's own difficulty
+    resolution, Story 6.1) so the two never drift into two different
+    notions of "this story's own spec file". A plain ``Path.glob``, not
+    routed through ``FsPort`` (see ``_large_spec_bytes``'s own docstring for
+    why: no directory-listing primitive exists on that port, and adding one
+    for these two read-only callers would be disproportionate)."""
+    tier3 = _tier3_path(home, slug)
+    stem = f"spec-{render_filename_slug(key)}"
+    try:
+        titled = sorted(tier3.glob(f"{stem}-*.md"))
+    except OSError:
+        titled = []
+    return [tier3 / f"{stem}.md", *titled]
+
+
+def _story_declared_difficulty(
+    home: Path, slug: str, key: StoryKey, findings: list[Finding]
+) -> str | None:
+    """FR-51's own per-story difficulty resolution (Story 6.1): ``key``'s
+    own declared ``difficulty:`` frontmatter, read from the SAME Tier-3
+    spec file ``_story_spec_candidates`` locates -- never a second notion of
+    "this story's own spec file". ALL candidates are consulted (mirrors
+    ``_large_spec_bytes``'s own "scan every candidate" discipline, not a
+    first-readable-wins short circuit): the first candidate that yields an
+    actual declared value wins, but a candidate that is unreadable, carries
+    no ``difficulty:`` key, or fails to parse never masks a REAL declaration
+    sitting in a sibling candidate (e.g. a stale ``spec-<key>.md`` with a
+    malformed multi-line block alongside a well-formed ``-2`` re-run
+    variant from step-01's own collision handling) -- a candidate producing
+    no value simply means "keep looking," not "this story is undeclared."
+
+    A story with no spec file yet, or whose spec carries no ``difficulty:``
+    key at all, is the mechanical-default case -- returns ``None``, no
+    finding: this is a story that has not declared a tier, not a malformed
+    one (``core.spec_difficulty.parse_declared_difficulty``'s own identical
+    "absent" contract). A malformed ``difficulty:`` declaration
+    (``DifficultyParseError``) is ALSO treated as undeclared (``None``) for
+    this launch's own governance computation -- a malformed value must never
+    silently pass through as though it named a real difficulty -- but ONLY
+    registers ``MRS-SPIN-013`` if NO candidate ultimately yields a real
+    declared value: a malformed sibling that a later candidate's genuine
+    declaration supersedes is not worth reporting as a launch-relevant gap."""
+    parse_error: DifficultyParseError | None = None
+    for path in _story_spec_candidates(home, slug, key):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        try:
+            declared = parse_declared_difficulty(text)
+        except DifficultyParseError as exc:
+            if parse_error is None:
+                parse_error = exc
+            continue
+        if declared is not None:
+            return declared
+    if parse_error is not None:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-013",
+                severity=Severity.WARN,
+                message=(
+                    f"story {render_feed_key(key)!r}'s own declared "
+                    f"difficulty could not be parsed: {parse_error} -- "
+                    "treated as undeclared for this launch's own model "
+                    "resolution"
+                ),
+            )
+        )
+    return None
+
+
+def _resolve_governing_difficulty(
+    preview: Sequence[StoryKey], home: Path, slug: str, findings: list[Finding]
+) -> tuple[str | None, dict[str, object] | None]:
+    """FR-51's own multi-story batching (Story 6.1): resolves every story in
+    ``preview``'s own declared difficulty (``_story_declared_difficulty``,
+    which registers ``MRS-SPIN-013`` for a malformed declaration and treats
+    it as undeclared), then picks the ONE difficulty that governs the
+    actual render -- the harness supports only run-level model selection
+    (FR-51's own explicit v1 constraint), so a heterogeneous batch is never
+    split into per-story sub-runs.
+
+    Deterministic tie-break (the spec's own Always bullet: "pick ONE
+    deterministic tie-break rule and document it"): the MOST COMMON
+    declared difficulty among ``preview``'s stories; ties broken by
+    EARLIEST declaration -- the first story, in ``preview``'s own
+    file/selection order, to declare the winning difficulty. A batch where
+    no story declares a difficulty at all governs ``None`` -- "no
+    override", the same behavior a single undeclared story already gets.
+
+    Returns ``(governing, batching_report)``. ``batching_report`` stays
+    ``None`` unless two or more DISTINCT declared difficulties appear among
+    ``preview``'s stories -- a homogeneous batch (including one where every
+    declaring story agrees) has nothing to reconcile and gets no report,
+    per the I/O matrix's own "no batching report" row."""
+    declared: dict[StoryKey, str | None] = {
+        key: _story_declared_difficulty(home, slug, key, findings) for key in preview
+    }
+    distinct = {value for value in declared.values() if value is not None}
+    if not distinct:
+        return None, None
+    if len(distinct) == 1:
+        return next(iter(distinct)), None
+
+    counts: dict[str, int] = {}
+    first_seen_index: dict[str, int] = {}
+    for index, key in enumerate(preview):
+        value = declared[key]
+        if value is None:
+            continue
+        counts[value] = counts.get(value, 0) + 1
+        first_seen_index.setdefault(value, index)
+    governing = max(counts, key=lambda value: (counts[value], -first_seen_index[value]))
+
+    mismatched = [
+        {"story": render_feed_key(key), "declared": declared[key]}
+        for key in preview
+        if declared[key] is not None and declared[key] != governing
+    ]
+    batching_report: dict[str, object] = {
+        "governing": governing,
+        "reason": (
+            "most common declared difficulty among in-scope stories, ties "
+            "broken by earliest declaration order"
+        ),
+        "mismatched": mismatched,
+    }
+    return governing, batching_report
+
+
+def _resolve_model_tiering(
+    harness: HarnessPort,
+    home: Path,
+    slug: str,
+    preview: Sequence[StoryKey],
+    findings: list[Finding],
+    data: dict[str, object],
+) -> bool:
+    """Story 6.1's own FR-48/FR-51/AD-19 model-tier resolution: the
+    governing difficulty among ``preview``'s in-scope stories
+    (``_resolve_governing_difficulty``), the resolved per-stage models for
+    that difficulty (``core.policy.EffectivePolicy.model_tier_map``'s own
+    already-shipped shape -- ``.get(governing, {})``, never a new lookup
+    mechanism: a difficulty absent from the map, including ``None`` itself,
+    resolves to "no override"), and the loop home's own configured adapter
+    name (mirrors ``cli/init.py::run_preflight``'s IDENTICAL
+    ``render_policy_toml`` -> ``tomllib.loads`` -> ``[adapter].name``
+    resolution -- never a second mechanism). Echoes ``adapter_name``/
+    ``resolved_models``/``model_tier_batching`` (when applicable) into
+    ``data`` -- this function's caller copies the same fields into the
+    outcome journal entry. Once the adapter itself resolves, ALSO persists
+    the same rendered, difficulty-tiered policy to the loop home's own
+    ``.bmad-loop/policy.toml`` via ``write_policy_toml`` -- the file
+    ``bmad-loop run`` (spawned by this function's caller, right after this
+    call returns) actually reads. Without this write the resolution would be
+    journaled/reported only, never applied to the launched process -- a
+    write failure degrades to ``MRS-SPIN-015`` (WARN) rather than aborting
+    an already-viable launch.
+
+    An empty ``preview`` (nothing selected for this launch) is a no-op --
+    there is nothing to resolve tiering for.
+
+    The project-policy composition this needs is a SEPARATE, independent
+    ``policy.compose()`` call from ``_spawn_supervisor_sidecar``'s own
+    (never a shared cache): both are pure over the same inputs, so calling
+    it twice produces identical results; this function does not re-report
+    ``policy_findings`` under ``MRS-SPIN-008`` -- ``_spawn_supervisor_sidecar``
+    already does, later in the SAME launch, and reporting the identical
+    finding twice from two call sites would be a confusing duplicate, not a
+    second real fact.
+
+    An unresolvable adapter name -- ``HarnessPort.adapter_binary`` raising
+    ``HarnessError`` for an unknown/unrecognized adapter -- registers
+    ``MRS-SPIN-014`` and returns ``True``, telling this function's caller to
+    REFUSE the launch (before minting a run id, before any spawn, before
+    any journal write -- the SAME "no journal entries at all" precedent
+    every other pre-spawn precondition gate in this function already
+    follows). This is deliberate, not merely "never crash": every OTHER
+    ``Verdict.UNEVALUABLE`` code this codebase has ever registered means
+    "Marshal could not determine what to do, so it refuses to act" -- never
+    "a live process now exists, unaccounted for" (that shape is exclusively
+    ``Verdict.WARN`` here, per ``MRS-SPIN-004``/``006``/``007``/``008``/
+    ``009``/``012``'s own extensively-documented reasoning) -- so
+    classifying this UNEVALUABLE while still spawning the harness would
+    report a non-zero exit over an already-launched, unaccounted-for
+    process, inviting exactly the double-dispatch hazard this codebase's
+    own architecture exists to prevent. Every OTHER degraded-but-proceeding
+    case below (an empty ``preview``, a ``render_policy_toml`` failure
+    unrelated to adapter resolution, a rendered policy naming no adapter at
+    all) returns ``False`` -- resolution simply could not complete, and the
+    launch proceeds without it."""
+    if not preview:
+        return False
+    governing, batching_report = _resolve_governing_difficulty(preview, home, slug, findings)
+    if batching_report is not None:
+        data["model_tier_batching"] = batching_report
+
+    project_policy_path = conventional_project_policy_path(slug)
+    project_policy_data: Mapping[str, object] = {}
+    if project_policy_path.is_file():
+        try:
+            project_policy_data = _read_project_policy(project_policy_path)
+        except Exception:  # noqa: BLE001 -- mirrors _spawn_supervisor_sidecar's
+            # own identical broad catch around this same read, for the same
+            # reason: a supplementary read must never abort an otherwise-
+            # successful launch over a corrupt or unreadable project-policy
+            # file.
+            project_policy_data = {}
+    effective_policy, _policy_findings = policy.compose(
+        project_slug=slug, project=project_policy_data, flags={}
+    )
+    data["resolved_models"] = (
+        dict(effective_policy.model_tier_map.value.get(governing, {}))
+        if governing is not None
+        else {}
+    )
+
+    try:
+        rendered = render_policy_toml(effective_policy, difficulty=governing)
+    except ValueError:
+        # bmad-loop's own load-time floor on max_dev_attempts/max_review_cycles
+        # (see render_policy_toml's own docstring) -- a project-policy defect
+        # unrelated to difficulty/adapter resolution, already surfaced (or
+        # about to be) elsewhere; this function simply cannot resolve the
+        # configured adapter from a render that failed.
+        return False
+    parsed_policy = tomllib.loads(rendered)
+    adapter_name = parsed_policy.get("adapter", {}).get("name")
+    if not isinstance(adapter_name, str) or not adapter_name:
+        return False
+    data["adapter_name"] = adapter_name
+
+    try:
+        harness.adapter_binary(adapter_name, home)
+    except HarnessError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-014",
+                severity=Severity.ERROR,
+                message=f"cannot resolve configured adapter {adapter_name!r}: {exc}",
+            )
+        )
+        return True
+
+    # The resolved, difficulty-tiered policy must reach the loop home's own
+    # `.bmad-loop/policy.toml` -- the ONE file `bmad-loop run` (spawned
+    # below by `harness.spin`) actually reads. Everything above this point
+    # only rendered the policy in-memory to recover `adapter_name`; without
+    # this write, the outcome journal's own `resolved_models` field would
+    # describe a tiering the launched process never applies (the harness
+    # would keep reading whatever `difficulty=None` baseline `marshal config
+    # --write-harness-policy` last persisted, silently diverging from what
+    # this run reports). A write failure here degrades the SAME way every
+    # other non-critical I/O step in this launch already does (MRS-SPIN-007's
+    # supervisor-spawn precedent): the harness launch is already viable, so
+    # losing the persisted tier override registers MRS-SPIN-015 (WARN) and
+    # the launch proceeds on whatever baseline policy is already on disk,
+    # never aborts an otherwise-viable launch.
+    try:
+        write_policy_toml(effective_policy, home, difficulty=governing)
+    except HarnessPolicyWriteError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-015",
+                severity=Severity.WARN,
+                message=(
+                    f"could not persist the resolved model-tier policy to "
+                    f"{home}: {exc} -- this run's model resolution is "
+                    "reported but was not applied; the harness will use "
+                    "whatever policy.toml was already on disk"
+                ),
+            )
+        )
+    return False
+
+
+def _tiering_journal_fields(data: Mapping[str, object]) -> dict[str, object]:
+    """The Story 6.1 additive outcome-journal fields ``_resolve_model_
+    tiering`` may have already echoed into ``data`` -- ``adapter_name``,
+    ``resolved_models``, ``model_tier_batching`` -- copied verbatim into
+    BOTH of ``run_spin``'s own outcome-entry payloads (the successful
+    launch and the launch-failure branch), never a second resolution: the
+    fields are additive-only (AD-25's own correlation-field discipline
+    unchanged) and simply absent when ``preview`` was empty or resolution
+    could not determine an adapter name."""
+    return {
+        key: data[key]
+        for key in ("adapter_name", "resolved_models", "model_tier_batching")
+        if key in data
+    }
+
+
 def _large_spec_bytes(home: Path, slug: str, key: StoryKey) -> int:
     """FR-14's own spec-size signal (Story 3.6, best-effort, never raises):
     the size in bytes of ``key``'s story spec in this loop home's Tier-3
@@ -412,14 +717,8 @@ def _large_spec_bytes(home: Path, slug: str, key: StoryKey) -> int:
     ``3.6`` cannot match story ``3.60``'s own spec. The largest match wins
     (there is normally exactly one; a ``-2`` re-run suffix from step-01's
     own collision handling can produce a second)."""
-    tier3 = _tier3_path(home, slug)
-    stem = f"spec-{render_filename_slug(key)}"
-    try:
-        titled = sorted(tier3.glob(f"{stem}-*.md"))
-    except OSError:
-        titled = []
     largest = 0
-    for candidate in (tier3 / f"{stem}.md", *titled):
+    for candidate in _story_spec_candidates(home, slug, key):
         try:
             largest = max(largest, candidate.stat().st_size)
         except OSError:
@@ -1176,6 +1475,21 @@ def run_spin(
         )
         return _emit(args, data, findings)
 
+    # --- Story 6.1 FR-48/FR-51/AD-19: profile-driven model-tier resolution --
+    # The governing difficulty among the SELECTED (`preview`, never the
+    # whole unfiltered feed -- the same "advise/resolve only for what this
+    # launch will actually run" rule FR-14's own preflight advisory already
+    # established) stories, the resolved per-stage models, and the loop
+    # home's own configured adapter name -- echoed into `data` here, copied
+    # into the outcome journal entry below (both the success and the
+    # launch-failure branches, since the resolution itself does not depend
+    # on the spawn attempt succeeding). Placed BEFORE minting the run id --
+    # an unresolvable configured adapter (MRS-SPIN-014) refuses the launch
+    # here, with NO journal entries at all, the same precondition-gate
+    # precedent every check above it already follows.
+    if _resolve_model_tiering(harness, home, slug, preview, findings, data):
+        return _emit(args, data, findings)
+
     # --- mint the run id, THEN create its directory (AD-25/AD-6) ------------
     writer_id = _writer_id()
     mint_moment = _now_utc()
@@ -1258,7 +1572,12 @@ def run_spin(
             kind=_LAUNCH_KIND,
             phase=Phase.OUTCOME,
             intent_id=intent_id,
-            payload={"pid": None, "harness_run_id": None, "error": str(exc)},
+            payload={
+                "pid": None,
+                "harness_run_id": None,
+                "error": str(exc),
+                **_tiering_journal_fields(data),
+            },
         )
         try:
             _append_entry(fs, run_dir, outcome_entry, fsync=False)
@@ -1291,7 +1610,11 @@ def run_spin(
         kind=_LAUNCH_KIND,
         phase=Phase.OUTCOME,
         intent_id=intent_id,
-        payload={"pid": spin_result.pid, "harness_run_id": spin_result.harness_run_id},
+        payload={
+            "pid": spin_result.pid,
+            "harness_run_id": spin_result.harness_run_id,
+            **_tiering_journal_fields(data),
+        },
     )
     try:
         _append_entry(fs, run_dir, outcome_entry, fsync=False)
@@ -1834,6 +2157,12 @@ def _render_text(
         )
     if "preview" in data:
         lines.append(f"preview ({len(data['preview'])}): {', '.join(data['preview'])}")
+    if "adapter_name" in data:
+        lines.append(f"adapter_name: {_scalar(data['adapter_name'])}")
+    if "resolved_models" in data:
+        lines.append(f"resolved_models: {data['resolved_models']}")
+    if "model_tier_batching" in data:
+        lines.append(f"model_tier_batching: {data['model_tier_batching']}")
     if "run_id" in data:
         lines.append(f"run_id: {data['run_id']}")
     if "log" in data:

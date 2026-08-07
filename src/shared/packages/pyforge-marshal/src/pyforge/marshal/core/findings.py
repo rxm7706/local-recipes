@@ -719,6 +719,41 @@ crashing the sweep or, worse, silently reading as "confirmed clean" -- the
 exact false-green the detector's own module docstring names as the
 2026-07-31 incident's root cause.
 
+Story 6.1 (profile-driven adapter selection, project-scoped, FR-48/FR-51/
+AD-19) adds two more codes to ``cli/spin.py``'s own ``MRS-SPIN-*`` area:
+``MRS-SPIN-013`` (a resolved in-scope story's own tracked spec declares a
+``difficulty:`` frontmatter key in a form ``core.spec_difficulty.
+parse_declared_difficulty`` does not support -- the multi-line YAML block
+form, ``DifficultyParseError`` -- that story is treated as undeclared for
+governance purposes, but the gap is reported rather than silently
+absorbed) and ``MRS-SPIN-014`` (the loop home's own configured adapter name
+could not be resolved to a real profile -- ``HarnessPort.adapter_binary``
+raised ``HarnessError`` for an unknown/unrecognized adapter). Both classify
+``Verdict.WARN``/``Verdict.UNEVALUABLE`` respectively (``MRS-SPIN-013``
+alongside this area's own 004/006/007/008/009/012 "reported, never blocks
+an already-in-flight launch" paper-trail-gap tier: the launch's own model
+resolution degrades to "no override" for that one story, exactly as an
+undeclared difficulty already does, and every other story in the batch is
+unaffected; ``MRS-SPIN-014`` at the SAME tier ``MRS-GATE-009``'s own
+"Marshal could not evaluate this at all" reasoning uses, per the spec's own
+explicit "Verdict.UNEVALUABLE, never a crash" wording for this exact
+scenario -- distinct from ``MRS-SPIN-002``/``003``/``005``'s ERROR tier
+because an unresolvable adapter name is a configuration fact Marshal cannot
+determine, not a real precondition that was checked and failed) -- see
+``core/verdict.py``.
+
+A review pass on Story 6.1 found the resolved model tiering was journaled
+and reported but never actually reached the loop home's own
+``.bmad-loop/policy.toml`` -- the file ``bmad-loop run`` (the process this
+same launch spawns) actually reads -- so the launched process could apply a
+DIFFERENT model tier than the one this run's own outcome entry claimed.
+The fix persists the resolved policy via ``write_policy_toml`` once the
+adapter itself resolves; ``MRS-SPIN-015`` (``Verdict.WARN``, alongside
+013/007's identical "reported, never blocks an already-viable launch"
+tier) covers the one failure mode that write can still hit -- an
+unwritable loop home -- degrading to whatever policy was already on disk
+rather than aborting the launch.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -882,6 +917,12 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # MRS-CHECK-003 (one registry-self-reported gap -- an undeclared or
 # untasked detector) both at ERROR; MRS-CHECK-004 (one detector reported
 # status == "unknown", could not run) at UNEVALUABLE.
+# Story 6.1 (profile-driven adapter selection, project-scoped, FR-48/FR-51/
+# AD-19) adds two more MRS-SPIN-* codes: MRS-SPIN-013 (a resolved story's own
+# declared difficulty was malformed -- DifficultyParseError -- treated as
+# undeclared, reported) at WARN, and MRS-SPIN-014 (the configured adapter
+# name could not be resolved -- HarnessError from adapter_binary) at
+# UNEVALUABLE.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -995,6 +1036,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-CHECK-002",
         "MRS-CHECK-003",
         "MRS-CHECK-004",
+        "MRS-SPIN-013",
+        "MRS-SPIN-014",
+        "MRS-SPIN-015",
     }
 )
 

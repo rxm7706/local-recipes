@@ -74,7 +74,7 @@ development_status:
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: done
   5-5-durability-as-a-reported-fleet-status-dimension: done
   5-6-marshal-check-the-detector-registry-through-the-front-door: done
-  6-1-profile-driven-adapter-selection-project-scoped: backlog
+  6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: backlog
   6-3-projection-drift-detection-that-can-actually-fail: backlog
   6-4-adapter-probe-with-a-machine-scoped-record: backlog
@@ -116,7 +116,7 @@ development_status:
   epic-4-retrospective: done
   epic-5: done
   epic-5-retrospective: done
-  epic-6: backlog
+  epic-6: in-progress
   epic-6-retrospective: optional
   epic-7: backlog
   epic-7-retrospective: optional

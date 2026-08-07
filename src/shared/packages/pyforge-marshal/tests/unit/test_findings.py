@@ -159,6 +159,9 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-CHECK-002",
             "MRS-CHECK-003",
             "MRS-CHECK-004",
+            "MRS-SPIN-013",
+            "MRS-SPIN-014",
+            "MRS-SPIN-015",
         }
     )
 
