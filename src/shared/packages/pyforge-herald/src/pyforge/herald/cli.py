@@ -90,6 +90,17 @@ def _build_parser() -> argparse.ArgumentParser:
             "them uncommitted; never commits when the pull was unchanged)"
         ),
     )
+    pull.add_argument(
+        "--target",
+        choices=[
+            "prototype",
+            "marp-deck",
+            "marp-executive-summary",
+            "marp-infographic",
+        ],
+        default="prototype",
+        help="which Design-side artifact to pull (default: prototype)",
+    )
     # status/watch land in Epics 3-4, under this same deck_subparsers group.
     return parser
 
@@ -145,22 +156,38 @@ def _run_deck_seed(args: argparse.Namespace) -> int:
     return dispatch(operation)
 
 
+def _pull_operation(
+    args: argparse.Namespace, repo_root: Path, transport: McpTransport
+) -> deck_pipeline.PullResult:
+    """Compose the right ``deck_pipeline.pull_*`` call for ``args.target``.
+    ``prototype`` (the default) dispatches to ``pull_prototype`` (Story 2.1);
+    every ``marp-*`` choice dispatches to ``pull_marp_source`` with the
+    ``marp-`` prefix stripped back to its ``kind`` (Story 2.3)."""
+    if args.target == "prototype":
+        return deck_pipeline.pull_prototype(
+            transport, slug=args.slug, repo_root=repo_root, commit=args.commit
+        )
+    kind = args.target.removeprefix("marp-")
+    return deck_pipeline.pull_marp_source(
+        transport,
+        slug=args.slug,
+        repo_root=repo_root,
+        kind=kind,
+        commit=args.commit,
+    )
+
+
 def _run_deck_pull(args: argparse.Namespace) -> int:
-    """Compose ``bridge.run`` + ``deck_pipeline.pull_prototype`` over the
-    V1-default ``McpTransport`` and hand the whole operation to ``dispatch``
-    (AD-6), mirroring ``_run_deck_seed``'s composition shape exactly:
-    ``McpTransport()`` is constructed inside ``operation``, never before
-    ``dispatch`` is called."""
+    """Compose ``bridge.run`` + the right ``deck_pipeline.pull_*`` call over
+    the V1-default ``McpTransport`` and hand the whole operation to
+    ``dispatch`` (AD-6), mirroring ``_run_deck_seed``'s composition shape
+    exactly: ``McpTransport()`` is constructed inside ``operation``, never
+    before ``dispatch`` is called."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
 
     def operation() -> None:
         transport = McpTransport()
-        result = bridge.run(
-            transport,
-            lambda t: deck_pipeline.pull_prototype(
-                t, slug=args.slug, repo_root=repo_root, commit=args.commit
-            ),
-        )
+        result = bridge.run(transport, lambda t: _pull_operation(args, repo_root, t))
         if result.unchanged:
             print(f"pull {args.slug} ({result.artifact}): unchanged")
         else:

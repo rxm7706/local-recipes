@@ -22,6 +22,7 @@ from pyforge.herald.deck_pipeline import (
     PullResult,
     SeedResult,
     _persona_from_slug,
+    pull_marp_source,
     pull_prototype,
     seed,
 )
@@ -854,3 +855,150 @@ def test_pull_prototype_propagates_a_commit_failure(tmp_path: Path):
         / "PyForge Warden.dc.html"
     )
     assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
+
+
+# --- CAP-2: pull_marp_source (Story 2.3) -------------------------------------
+
+
+def test_pull_marp_source_short_circuits_on_unchanged(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "M1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M1", body=None, unchanged=True)
+    )
+    exporter = FakeExporter()
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result == PullResult(
+        slug="pyforge-warden",
+        artifact="marp:deck",
+        local_path=None,
+        unchanged=True,
+        etag="M1",
+        committed=False,
+    )
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "src").exists()
+
+
+def test_pull_marp_source_uses_the_short_name_remote_path(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M2", body="# Deck", unchanged=False)
+    )
+    pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="executive-summary",
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert transport.calls[0]["path"] == "warden-executive-summary.md"
+
+
+def test_pull_marp_source_lands_at_the_dated_src_marp_path_and_calls_no_prover(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M3", body="# Infographic", unchanged=False)
+    )
+    exporter = FakeExporter()
+
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="infographic",
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "src"
+        / "marp"
+        / "pyforge-warden-infographic-2026-08-07.md"
+    )
+    assert result.local_path == local_path
+    assert result.artifact == "marp:infographic"
+    assert local_path.read_text(encoding="utf-8") == "# Infographic"
+    assert exporter.calls == [("pyforge-warden", tmp_path)]
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags["marp:infographic"] == "M3"
+
+
+def test_pull_marp_source_refuses_an_unknown_kind(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="unknown Marp source kind"):
+        pull_marp_source(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            kind="cover",
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_marp_source_refuses_when_not_seeded(tmp_path: Path):
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="herald deck seed"):
+        pull_marp_source(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            kind="deck",
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_marp_source_commit_true_stages_after_a_real_change(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M4", body="# Deck", unchanged=False)
+    )
+    committer = FakeCommitter()
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result.committed is True
+    assert len(committer.calls) == 1
+    assert "marp:deck" in committer.calls[0]["message"]
+
+
+def test_pull_marp_source_commit_true_never_commits_an_unchanged_pull(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "M1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M1", body=None, unchanged=True)
+    )
+    committer = FakeCommitter()
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False

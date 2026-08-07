@@ -667,3 +667,103 @@ def pull_prototype(
         etag=file_read.etag,
         committed=committed,
     )
+
+
+# --- CAP-2: authored-source pull (Marp sources), Story 2.3 -------------------
+#
+# `bridge-protocol.md` § *Authored-source pull*: same read/etag/decode loop as
+# the prototype pull, different landing path, NO extract/build step --
+# `deck-export` regenerates the derived set instead.
+
+_MARP_KINDS = ("deck", "executive-summary", "infographic")
+"""The three Marp source kinds `bridge-protocol.md`'s own worked example
+names (`warden-deck.md`, `warden-executive-summary.md`,
+`warden-infographic.md`)."""
+
+
+def _short_name(slug: str) -> str:
+    """`pyforge-<name>` -> `<name>`, the prefix the Design-side Marp source
+    filenames themselves carry (`bridge-protocol.md`'s own example: the
+    `pyforge-warden` deck's sources are named `warden-deck.md`, not
+    `pyforge-warden-deck.md`, inside its own Design project)."""
+    return slug.removeprefix("pyforge-")
+
+
+def pull_marp_source(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    repo_root: Path,
+    kind: str,
+    commit: bool = False,
+    state_path: Path | None = None,
+    exporter: DeckExporter | None = None,
+    committer: GitCommitter | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> PullResult:
+    """CAP-2, Story 2.3: pull one authored Marp source (``bridge-protocol.md``
+    § Authored-source pull). ``kind`` must be one of ``_MARP_KINDS``.
+
+    Same read/etag/decode loop as ``pull_prototype`` (``_pull_and_land``,
+    Story 2.1) -- no re-decoding, a truncated answer refuses, the write is
+    atomic, the etag is recorded under the per-kind key ``f"marp:{kind}"``.
+    Unlike ``pull_prototype``, there is no local-prove (extract/build) step:
+    ``deck-export`` alone regenerates the derived set from a Marp source.
+    ``--commit`` behaves identically to Story 2.2's (opt-in, never on an
+    unchanged pull)."""
+    if kind not in _MARP_KINDS:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r}: unknown Marp source kind {kind!r}; "
+            f"expected one of {', '.join(sorted(_MARP_KINDS))}"
+        )
+    resolved_now = now or _default_now
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = _require_seeded_state(resolved_state_path, slug)
+    short = _short_name(slug)
+    remote_path = f"{short}-{kind}.md"
+    artifact_key = f"marp:{kind}"
+    date_str = resolved_now().strftime("%Y-%m-%d")
+    deck_dir = repo_root / "presentations" / slug
+    local_path = deck_dir / "src" / "marp" / f"{slug}-{kind}-{date_str}.md"
+
+    file_read = _pull_and_land(
+        transport,
+        slug=slug,
+        state_path=resolved_state_path,
+        existing=existing,
+        remote_path=remote_path,
+        local_path=local_path,
+        artifact_key=artifact_key,
+        now=resolved_now,
+    )
+    if file_read is None:
+        return PullResult(
+            slug=slug,
+            artifact=artifact_key,
+            local_path=None,
+            unchanged=True,
+            etag=existing.etags.get(artifact_key),
+            committed=False,
+        )
+
+    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+
+    committed = False
+    if commit:
+        (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir, resolved_state_path],
+            message=f"herald: pull {slug} ({artifact_key})",
+        )
+        committed = True
+
+    return PullResult(
+        slug=slug,
+        artifact=artifact_key,
+        local_path=local_path,
+        unchanged=False,
+        etag=file_read.etag,
+        committed=committed,
+    )
