@@ -699,6 +699,8 @@ class TestBuildFleetRow:
             "current_story": None,
             "elapsed_seconds": None,
             "budget_consumed": None,
+            "escalation_reason": None,
+            "escalation_artifact": None,
         }
         assert finding is None
 
@@ -745,6 +747,137 @@ class TestBuildFleetRow:
         assert row["state"] == "stopped"
         assert row["budget_consumed"] is None
         assert finding is None
+
+    # --- Story 5.3 (FR-38): escalation_reason/escalation_artifact ----------
+
+    def test_non_escalated_row_reports_null_escalation_fields(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            tasks=(_task(phase="dev-running"),),
+            supervisor_alive=True,
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "running"
+        assert row["escalation_reason"] is None
+        assert row["escalation_artifact"] is None
+
+    def test_escalated_row_reports_reason_and_spec_file_artifact(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            paused_stage="escalation",
+            supervisor_alive=True,
+            paused_reason="needs a human decision",
+            escalated_spec_file="spec-1.2.md",
+            escalated_task_phase="dev-running",
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "paused-on-escalation"
+        assert row["escalation_reason"] == "needs a human decision"
+        assert row["escalation_artifact"] == "spec-1.2.md"
+
+    def test_escalation_artifact_falls_back_to_task_phase_when_no_spec_file(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            paused_stage="escalation",
+            supervisor_alive=True,
+            paused_reason="needs a human decision",
+            escalated_spec_file=None,
+            escalated_task_phase="dev-running",
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["escalation_artifact"] == "dev-running"
+
+    def test_escalated_but_dead_supervisor_reports_unsupervised_with_null_escalation_fields(
+        self,
+    ):
+        """Code review (2026-08-07, both reviewers independently, the
+        single most severe finding against this story): `paused_stage`
+        still literally reads `"escalation"` and `paused_reason`/
+        `escalated_spec_file` are both real, non-None values -- but
+        `derive_home_state`'s own dead-supervisor override (already
+        established, unchanged by this story) takes precedence, so the
+        DERIVED state is `"unsupervised"`, not `"paused-on-escalation"`.
+        The escalation fields must follow the derived state, never the
+        raw facts -- reporting them here would silently exclude this row
+        from `sort_fleet_rows`/`--escalations` (both key on `state`) while
+        still leaking stale escalation data into its JSON payload."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            paused_stage="escalation",
+            supervisor_alive=False,
+            paused_reason="needs a human decision",
+            escalated_spec_file="spec-1.2.md",
+            escalated_task_phase="dev-running",
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "unsupervised"
+        assert row["escalation_reason"] is None
+        assert row["escalation_artifact"] is None
+
+    def test_escalated_but_finished_reports_stopped_with_null_escalation_fields(self):
+        """Same root cause as the dead-supervisor case above, via
+        `derive_home_state`'s OTHER precedence rule: `finished=True`
+        reports `"stopped"` regardless of a stale `paused_stage`."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=True,
+            paused_stage="escalation",
+            supervisor_alive=True,
+            paused_reason="needs a human decision",
+            escalated_spec_file="spec-1.2.md",
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "stopped"
+        assert row["escalation_reason"] is None
+        assert row["escalation_artifact"] is None
+
+
+class TestSortFleetRows:
+    """Story 5.3 (FR-38): escalated rows sort first, stable otherwise."""
+
+    def _row(self, slug: str, state: str) -> dict[str, object]:
+        return {"slug": slug, "state": state}
+
+    def test_zero_escalations_order_unchanged(self):
+        rows = [self._row("a", "idle"), self._row("b", "running"), self._row("c", "stopped")]
+        assert status.sort_fleet_rows(rows) == rows
+
+    def test_one_escalation_sorts_first(self):
+        rows = [
+            self._row("a", "idle"),
+            self._row("b", "paused-on-escalation"),
+            self._row("c", "running"),
+        ]
+        result = status.sort_fleet_rows(rows)
+        assert [row["slug"] for row in result] == ["b", "a", "c"]
+
+    def test_multiple_escalations_sort_first_stable_otherwise(self):
+        rows = [
+            self._row("a", "idle"),
+            self._row("b", "paused-on-escalation"),
+            self._row("c", "running"),
+            self._row("d", "paused-on-escalation"),
+            self._row("e", "stopped"),
+        ]
+        result = status.sort_fleet_rows(rows)
+        assert [row["slug"] for row in result] == ["b", "d", "a", "c", "e"]
+
+    def test_empty_rows_is_a_noop(self):
+        assert status.sort_fleet_rows([]) == []
 
 
 # =============================================================================
@@ -818,9 +951,15 @@ class _FakeClock:
 
 
 def _args(
-    *, project: str | None = None, format: str = "json", run: str | None = None
+    *,
+    project: str | None = None,
+    format: str = "json",
+    run: str | None = None,
+    escalations: bool = False,
 ):
-    return argparse.Namespace(project=project, format=format, run=run)
+    return argparse.Namespace(
+        project=project, format=format, run=run, escalations=escalations
+    )
 
 
 def _payload(capsys):
@@ -966,13 +1105,16 @@ def _snapshot(
     finished: bool = False,
     paused_stage: str | None = None,
     tasks: tuple[TaskPhaseSnapshot, ...] = (),
+    paused_reason: str | None = None,
+    escalated_spec_file: str | None = None,
+    escalated_task_phase: str | None = None,
 ) -> RunStatusSnapshot:
     return RunStatusSnapshot(
         paused_stage=paused_stage,
         paused_story_key=None,
-        paused_reason=None,
-        escalated_spec_file=None,
-        escalated_task_phase=None,
+        paused_reason=paused_reason,
+        escalated_spec_file=escalated_spec_file,
+        escalated_task_phase=escalated_task_phase,
         deferred=(),
         finished=finished,
         tasks=tasks,
@@ -1360,6 +1502,234 @@ class TestRunStatus:
         payload = _payload(capsys)
         assert len(payload["data"]["homes"]) == 7
         assert all(row["state"] == "idle" for row in payload["data"]["homes"])
+        assert exit_code == 0
+
+    # --- Story 5.3 (FR-38): --escalations + fleet-summary sort -------------
+
+    def test_fleet_summary_sorts_escalated_rows_first(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(
+            monkeypatch, run_dir_map={"acme": None, "beta": None, "gamma": None}
+        )
+        run_dir_beta = _seed_run_journal(
+            tmp_path,
+            run_id="beta-run1",
+            lines=[
+                _outcome_line("beta-run1", pid=4242, harness_run_id="hrid-beta"),
+                _supervisor_attach_line("beta-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(
+            monkeypatch,
+            run_dir_map={"acme": None, "beta": run_dir_beta, "gamma": None},
+        )
+        homes = {
+            slug: tmp_path / "loop-homes" / slug for slug in ("acme", "beta", "gamma")
+        }
+        vcs = _FakeVcs(
+            worktrees=tuple(
+                WorktreeEntry(path=homes[slug], branch=f"loop/{slug}")
+                for slug in ("acme", "beta", "gamma")
+            )
+        )
+        harness = _FakeHarness(
+            snapshots={
+                (str(homes["beta"]), "hrid-beta"): _snapshot(
+                    paused_stage="escalation",
+                    paused_reason="needs a human decision",
+                    escalated_spec_file="spec-1.2.md",
+                )
+            }
+        )
+        process = _FakeProcess(alive_pids=frozenset({5252}))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        homes_rows = payload["data"]["homes"]
+        assert [row["slug"] for row in homes_rows] == ["beta", "acme", "gamma"]
+        assert homes_rows[0]["state"] == "paused-on-escalation"
+        assert homes_rows[0]["escalation_reason"] == "needs a human decision"
+        assert homes_rows[0]["escalation_artifact"] == "spec-1.2.md"
+        assert exit_code == 0
+
+    def test_escalations_flag_with_zero_matches_is_a_clean_empty_list(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
+        vcs = _FakeVcs(
+            worktrees=(
+                WorktreeEntry(path=tmp_path / "loop-homes" / "acme", branch="loop/acme"),
+                WorktreeEntry(path=tmp_path / "loop-homes" / "beta", branch="loop/beta"),
+            )
+        )
+
+        exit_code = status_cli.run_status(
+            _args(escalations=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["homes"] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_escalations_flag_with_matches_filters_to_only_escalated(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        run_dir_beta = _seed_run_journal(
+            tmp_path,
+            run_id="beta-run1",
+            lines=[
+                _outcome_line("beta-run1", pid=4242, harness_run_id="hrid-beta"),
+                _supervisor_attach_line("beta-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(
+            monkeypatch, run_dir_map={"acme": None, "beta": run_dir_beta}
+        )
+        homes = {slug: tmp_path / "loop-homes" / slug for slug in ("acme", "beta")}
+        vcs = _FakeVcs(
+            worktrees=(
+                WorktreeEntry(path=homes["acme"], branch="loop/acme"),
+                WorktreeEntry(path=homes["beta"], branch="loop/beta"),
+            )
+        )
+        harness = _FakeHarness(
+            snapshots={
+                (str(homes["beta"]), "hrid-beta"): _snapshot(
+                    paused_stage="escalation",
+                    paused_reason="needs a human decision",
+                    escalated_task_phase="dev-running",
+                )
+            }
+        )
+        process = _FakeProcess(alive_pids=frozenset({5252}))
+
+        exit_code = status_cli.run_status(
+            _args(escalations=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        homes_rows = payload["data"]["homes"]
+        assert len(homes_rows) == 1
+        assert homes_rows[0]["slug"] == "beta"
+        assert homes_rows[0]["state"] == "paused-on-escalation"
+        # No spec file was recorded -- falls back to the task phase.
+        assert homes_rows[0]["escalation_artifact"] == "dev-running"
+        assert exit_code == 0
+
+    def test_escalations_flag_combined_with_project_scope(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        run_dir_beta = _seed_run_journal(
+            tmp_path,
+            run_id="beta-run1",
+            lines=[
+                _outcome_line("beta-run1", pid=4242, harness_run_id="hrid-beta"),
+                _supervisor_attach_line("beta-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(
+            monkeypatch, run_dir_map={"acme": None, "beta": run_dir_beta}
+        )
+        homes = {slug: tmp_path / "loop-homes" / slug for slug in ("acme", "beta")}
+        vcs = _FakeVcs(
+            worktrees=(
+                WorktreeEntry(path=homes["acme"], branch="loop/acme"),
+                WorktreeEntry(path=homes["beta"], branch="loop/beta"),
+            )
+        )
+        harness = _FakeHarness(
+            snapshots={
+                (str(homes["beta"]), "hrid-beta"): _snapshot(
+                    paused_stage="escalation", paused_reason="needs a decision"
+                )
+            }
+        )
+        process = _FakeProcess(alive_pids=frozenset({5252}))
+
+        # Scoped to "acme" (not escalated) -- the filter applies on TOP of
+        # the scope, so the result is empty even though "beta" IS escalated.
+        exit_code = status_cli.run_status(
+            _args(project="acme", escalations=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"]["homes"] == []
+        assert exit_code == 0
+
+        # Scoped to "beta" (escalated) -- the filter keeps it.
+        exit_code = status_cli.run_status(
+            _args(project="beta", escalations=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert len(payload["data"]["homes"]) == 1
+        assert payload["data"]["homes"][0]["slug"] == "beta"
+        assert exit_code == 0
+
+    def test_text_format_marks_escalated_row(self, tmp_path, capsys, monkeypatch):
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    paused_stage="escalation",
+                    paused_reason="needs a human decision",
+                    escalated_spec_file="spec-1.2.md",
+                )
+            }
+        )
+        process = _FakeProcess(alive_pids=frozenset({5252}))
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        assert "[ESCALATED]" in out
+        assert "needs a human decision" in out
+        assert "spec-1.2.md" in out
         assert exit_code == 0
 
     def test_text_format_renders_without_crashing(self, tmp_path, capsys, monkeypatch):

@@ -788,6 +788,14 @@ class FleetHomeFacts:
     supervisor_alive: bool | None = None
     elapsed_seconds: float | None = None
     budget_consumed: int | float | None = None
+    # Story 5.3 (FR-38): `RunStatusSnapshot`'s own already-shipped
+    # `paused_reason`/`escalated_spec_file`/`escalated_task_phase` fields,
+    # threaded through verbatim -- `_gather_home_facts` already reads
+    # `snapshot` for Story 5.1's own fields; this story just adds these
+    # three, never a second/different read of the same snapshot.
+    paused_reason: str | None = None
+    escalated_spec_file: str | None = None
+    escalated_task_phase: str | None = None
 
 
 def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:
@@ -809,6 +817,8 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "current_story": None,
             "elapsed_seconds": None,
             "budget_consumed": None,
+            "escalation_reason": None,
+            "escalation_artifact": None,
         }
         finding = Finding(
             code=_MALFORMED_JOURNAL_CODE,
@@ -830,6 +840,8 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "current_story": None,
             "elapsed_seconds": None,
             "budget_consumed": None,
+            "escalation_reason": None,
+            "escalation_artifact": None,
         }
         return row, None
 
@@ -839,6 +851,41 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         tasks=facts.tasks,
         supervisor_alive=facts.supervisor_alive,
     )
+    # Story 5.3 (FR-38): `escalation_artifact` prefers `escalated_spec_file`,
+    # falling back to `escalated_task_phase` only when no spec file was
+    # recorded -- both already-shipped `RunStatusSnapshot` fields, reused
+    # verbatim (the spec's own Boundaries).
+    #
+    # Code review (2026-08-07, both reviewers independently, the single
+    # most severe finding against this story): gated on the DERIVED
+    # `state`, never on `facts.paused_reason`'s bare presence. bmad-loop's
+    # own `RunState.paused_reason` is populated for EVERY pause kind
+    # (spec-approval, epic-boundary, story-gate -- not only escalation),
+    # and `derive_home_state` can ALSO derive `"unsupervised"`/`"stopped"`
+    # for a run whose `paused_stage` still literally reads `"escalation"`
+    # (a crashed supervisor, or a finished run, respectively -- both
+    # already-tested precedence rules elsewhere in this module). The
+    # original version populated both fields from the raw facts
+    # unconditionally, so a home that was BOTH escalated AND had a dead
+    # supervisor reported `state: "unsupervised"` (correctly excluded from
+    # the sort-to-top and `--escalations` filter, which both key on
+    # `state == "paused-on-escalation"`) while STILL carrying a real
+    # escalation reason/artifact in its JSON payload -- exactly the "needs
+    # a human decision" home this story exists to surface, silently
+    # dropped from the one view built to catch it, with a `--format text`/
+    # `--format json` divergence on top (only JSON showed the stale
+    # fields, since the text marker itself IS gated on `state`).
+    escalated = state == "paused-on-escalation"
+    escalation_reason = facts.paused_reason if escalated else None
+    escalation_artifact = (
+        (
+            facts.escalated_spec_file
+            if facts.escalated_spec_file is not None
+            else facts.escalated_task_phase
+        )
+        if escalated
+        else None
+    )
     row = {
         "slug": facts.slug,
         "branch": facts.branch,
@@ -846,8 +893,19 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         "current_story": _current_story_key(facts.tasks),
         "elapsed_seconds": facts.elapsed_seconds,
         "budget_consumed": facts.budget_consumed,
+        "escalation_reason": escalation_reason,
+        "escalation_artifact": escalation_artifact,
     }
     return row, None
+
+
+def sort_fleet_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Escalated rows (``state == "paused-on-escalation"``) sort FIRST in
+    ``data.homes``, stable otherwise -- every other row keeps its existing
+    relative order (Story 5.3, FR-38). A pure sort applied once, after every
+    row is already built (``build_fleet_row``'s own output); never a
+    re-ordering of the underlying fleet enumeration itself."""
+    return sorted(rows, key=lambda row: row.get("state") != "paused-on-escalation")
 
 
 # =============================================================================
