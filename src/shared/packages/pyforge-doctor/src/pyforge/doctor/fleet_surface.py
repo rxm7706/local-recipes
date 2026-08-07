@@ -43,9 +43,24 @@ def build_surface(
     hardcoded subset (FR-11 AC4), automatically correct for whatever axis
     set ``monitor --fleet`` was invoked with, including Story 4.3's
     ``adoption`` axis with zero changes needed here."""
+    # `evidence` is included via a stable JSON serialization, not just
+    # (source, check, status, message): two Findings can tie on all four of
+    # those (e.g. two gather-failure sentinels sharing the same templated
+    # message) while differing in `evidence` -- without a tiebreaker,
+    # Python's stable sort falls back to `findings`' own input order,
+    # which can vary between two "same underlying findings" runs whose
+    # concurrent MCP/CLI calls resolved in a different wall-clock order.
+    # That silently breaks this function's own documented idempotency
+    # guarantee (review finding).
     sorted_findings = sorted(
         findings,
-        key=lambda f: (f.source.value, f.check, f.status.value, f.message),
+        key=lambda f: (
+            f.source.value,
+            f.check,
+            f.status.value,
+            f.message,
+            json.dumps(f.evidence, sort_keys=True, default=str),
+        ),
     )
     ok = sum(1 for f in sorted_findings if f.status.value == "ok")
     warn = sum(1 for f in sorted_findings if f.status.value == "warn")

@@ -311,6 +311,12 @@ def test_monitor_surface_reflects_the_source_filtered_findings(monkeypatch, tmp_
     )
     document = json.loads(surface_path.read_text(encoding="utf-8"))
     assert {f["check"] for f in document["findings"]} == {"pkg-b"}
+    # Review finding: `axes` used to record the REQUESTED `--watch` axes
+    # verbatim, even though `--source cve-watcher` drops every `staleness`
+    # finding -- the surface's own docstring claims it documents "exactly
+    # which axes the triggering run covered", which `staleness` no longer
+    # is once none of its findings survive the filter.
+    assert document["axes"] == ["cve"]
 
 
 def test_monitor_surface_is_idempotent_across_two_runs(monkeypatch, tmp_path):

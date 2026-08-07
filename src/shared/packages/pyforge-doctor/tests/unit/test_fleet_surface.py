@@ -71,6 +71,32 @@ def test_build_surface_reflects_whatever_axes_the_run_covered_including_adoption
     assert document["axes"] == ["adoption", "cve", "staleness"]
 
 
+def test_build_surface_ties_on_source_check_status_message_break_on_evidence():
+    """Review finding: the sort key omitted `evidence`, so two Findings
+    tying on (source, check, status, message) but differing in evidence
+    fell back to Python's stable-sort input order -- not a property of
+    their content. Re-running with the SAME two findings supplied in
+    reversed order must still produce identical output (the idempotency
+    guarantee this function documents)."""
+    a = Finding(
+        source=Source.CVE_WATCHER,
+        check="pkg-a",
+        status=DoctorStatus.FAIL,
+        message="gather failed",
+        evidence={"attempt": 1},
+    )
+    b = Finding(
+        source=Source.CVE_WATCHER,
+        check="pkg-a",
+        status=DoctorStatus.FAIL,
+        message="gather failed",
+        evidence={"attempt": 2},
+    )
+    forward = build_surface((a, b), axes=["cve"])
+    reversed_ = build_surface((b, a), axes=["cve"])
+    assert forward == reversed_
+
+
 def test_write_surface_writes_valid_json_and_returns_the_document(tmp_path):
     path = tmp_path / "nested" / "fleet-health.json"
     findings = (_finding(Source.STALENESS_REPORT, "pkg-a"),)

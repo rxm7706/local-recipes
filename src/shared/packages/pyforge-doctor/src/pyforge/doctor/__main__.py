@@ -503,6 +503,17 @@ def _run_monitor(args: argparse.Namespace) -> int:
 
     if args.source is not None:
         findings = tuple(f for f in findings if f.source.value == args.source)
+        # Review finding: `axes` was recorded verbatim from `--watch`,
+        # requested BEFORE this filter -- narrowing to the axes still
+        # actually represented in the filtered findings keeps the
+        # surface's own "exactly which axes the triggering run covered"
+        # claim honest even when `--source` drops an entire axis.
+        remaining_sources = {f.source for f in findings}
+        axes = tuple(
+            axis
+            for axis in axes
+            if atlas.AXIS_SOURCES.get(axis, frozenset()) & remaining_sources
+        )
 
     if args.surface:
         fleet_surface.write_surface(Path(args.surface), findings, axes=axes)

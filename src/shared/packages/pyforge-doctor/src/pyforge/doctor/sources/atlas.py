@@ -97,6 +97,23 @@ _VALID_AXES = frozenset({"staleness", "cve", "abandonment", "adoption"})
 # against this without reaching into a leading-underscore module internal.
 VALID_WATCH_AXES = _VALID_AXES
 
+#: Which `Source` member(s) each axis's own `gather()` dispatch (above)
+#: can produce -- `"abandonment"` is a composite of TWO instruments
+#: (`_gather_abandonment`'s own feedstock-health + release-cadence
+#: sub-sources), every other axis is a single `Source`. Public: Story 4.2's
+#: `monitor --fleet --surface` uses this to recompute which axes are still
+#: genuinely represented after a `--source` filter narrows `findings`
+#: (review finding: recording the REQUESTED `--watch` axes verbatim, even
+#: when `--source` drops an entire axis's findings, contradicted the
+#: surface's own documented "exactly which axes the triggering run
+#: covered" claim).
+AXIS_SOURCES: dict[str, frozenset[Source]] = {
+    "staleness": frozenset({Source.STALENESS_REPORT}),
+    "cve": frozenset({Source.CVE_WATCHER}),
+    "abandonment": frozenset({Source.FEEDSTOCK_HEALTH, Source.RELEASE_CADENCE}),
+    "adoption": frozenset({Source.ADOPTION}),
+}
+
 # Trend labels release_cadence's own `_classify` can emit that count as an
 # "abandonment" signal (Story 2.2 AC2) -- filtered client-side since the
 # underlying tool has no `--trend` flag of its own.
