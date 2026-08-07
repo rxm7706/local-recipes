@@ -381,3 +381,66 @@ def name_root_cause(finding: Finding, all_findings: Sequence[Finding]) -> str:
     if finding.source is Source.CVE_WATCHER:
         return _cve_root_cause(finding, all_findings)
     return _templated_root_cause(finding)
+
+
+# --- Story 4.4: single-hop safe-upgrade-target recommendation --------------
+
+
+def recommend_safe_upgrade(finding: Finding) -> tuple[str | None, str]:
+    """Single-hop safe-upgrade-target recommendation (Story 4.4, FR-13,
+    architecture spine AD-10). Pure -- reads ONLY ``finding.evidence``'s
+    already-gathered version fields (the SAME ``upstream_version``/
+    ``pypi_current_version``/``latest_conda_version`` keys
+    :func:`_classify_blast_radius` already reads, Story 3.2 -- no new
+    evidence vocabulary is invented here), makes zero subprocess/MCP calls
+    of its own (AD-4/AD-10 preserved), and never resolves a transitive,
+    multi-package chain -- this Finding's OWN next version, or nothing.
+
+    Returns ``(target, reason)``: ``target`` is a version string when a
+    single next-safe version is confidently known, else ``None`` --
+    ``reason`` is ALWAYS populated (never a bare ``None`` with no
+    explanation, mirroring ``rank``/``rank_factors``'s own paired
+    value+explanation convention), explaining either what was recommended
+    or why nothing could be.
+
+    A "confidently known" target requires BOTH: (1) evidence naming a
+    concrete next version, and (2) no explicit ``evidence["breaking_change"]``
+    signal, and (3) the version delta classifies as ``"patch"``/``"minor"``
+    via :func:`_classify_blast_radius` -- a ``"major"`` jump is explicitly
+    NOT confidently safe (AC2's "spans multiple major-version jumps with no
+    clear single next safe version" scenario), reusing the SAME
+    patch/minor/major/unknown/current classification :func:`rank` already
+    computes, rather than inventing a second version-comparison heuristic.
+
+    No current Source producer's evidence carries an ``upstream_version``/
+    ``pypi_current_version`` field (mirrors :func:`_classify_blast_radius`'s
+    own documented "resolves to unknown for every live Finding today"
+    consequence) -- this resolves to ``(None, ...)`` for every Finding
+    gathered by today's live axes, expected and directly testable with
+    synthetic evidence, not a bug."""
+    evidence = finding.evidence
+    target_v = evidence.get("upstream_version") or evidence.get("pypi_current_version")
+    if not target_v:
+        return None, "no upstream target version available in this Finding's evidence"
+
+    conda_v = evidence.get("latest_conda_version") or evidence.get("conda_version")
+    if evidence.get("breaking_change"):
+        return None, (
+            f"a breaking-change signal is present for {target_v!s} -- not "
+            "confidently safe"
+        )
+
+    blast_label, _ = _classify_blast_radius(evidence)
+    if blast_label == "major":
+        return None, (
+            f"the next known version {target_v!s} is a major-version jump "
+            f"from {conda_v!s} with no breaking-change signal to confirm "
+            "safety -- spans too much ground to call a single confident "
+            "'next safe' target"
+        )
+    if blast_label in ("unknown", "current"):
+        return None, (
+            "no single confidently-known next-safe version in this "
+            "Finding's evidence"
+        )
+    return str(target_v), f"{blast_label} version bump, no known breaking-change signal"

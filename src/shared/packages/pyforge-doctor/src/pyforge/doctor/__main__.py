@@ -33,7 +33,7 @@ from pathlib import Path
 
 import jsonschema
 
-from . import prescribe
+from . import prescribe, score
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
 from .sources import atlas, warden as warden_source
@@ -526,6 +526,9 @@ def _build_prescriptions(
     prescriptions: list[Prescription] = []
     for pf in partitioned:
         rank_value, rank_factors = rank_by_finding.get(id(pf.finding), (None, None))
+        safe_upgrade_target, safe_upgrade_reason = prescribe.recommend_safe_upgrade(
+            pf.finding
+        )
         prescriptions.append(
             Prescription(
                 finding_ref=f"{pf.finding.source.value}:{pf.finding.check}",
@@ -534,6 +537,8 @@ def _build_prescriptions(
                 rank_factors=rank_factors,
                 action=_action_text(pf),
                 root_cause=prescribe.name_root_cause(pf.finding, findings),
+                safe_upgrade_target=safe_upgrade_target,
+                safe_upgrade_reason=safe_upgrade_reason,
             )
         )
     return tuple(prescriptions)
@@ -570,23 +575,35 @@ def _run_diagnose(args: argparse.Namespace) -> int:
     if args.prescribe:
         prescriptions = _build_prescriptions(findings)
 
+    # Story 4.1: `diagnose` is the one verb that grades a single target's
+    # OWN findings (the "composite health grade per dependency" framing) --
+    # always computed (score.grade is pure/cheap, mirrors `--prescribe`'s
+    # own AD-4 discipline of never gating a pure aggregation behind more
+    # flags than necessary), never gated behind an extra flag.
+    grade_result = score.grade(findings)
+
     exit_code = exit_code_for(findings)
     if args.json:
         # verb="diagnose" ALWAYS carries the `prescriptions` key in the
         # JSON envelope, empty or not (Story 1.1's frozen contract) --
         # unlike the text render below, this is never conditioned on
         # `--prescribe`.
-        _emit_json(findings, verb="diagnose", prescriptions=prescriptions)
+        _emit_json(
+            findings, verb="diagnose", prescriptions=prescriptions,
+            grade_result=grade_result,
+        )
     else:
         # The human-readable render only shows a "prescription(s)" section
         # when `--prescribe` was actually requested -- an UNREQUESTED empty
         # pipeline result would misleadingly read as "ran and found zero"
         # rather than "didn't run" (AC1's own "reports them without
-        # partitioning/ranking" framing).
+        # partitioning/ranking" framing). The grade line, unlike
+        # prescriptions, is unconditional -- it costs nothing to show.
         _emit_text(
             findings,
             verb="diagnose",
             prescriptions=prescriptions if args.prescribe else None,
+            grade_result=grade_result,
         )
     return exit_code
 
@@ -611,6 +628,7 @@ def _emit_json(
     *,
     verb: str,
     prescriptions: tuple[Prescription, ...] | None = None,
+    grade_result: score.GradeResult | None = None,
 ) -> None:
     report = DoctorReport(
         schema_version=1,
@@ -618,6 +636,12 @@ def _emit_json(
         generated_at=datetime.now(UTC).isoformat(),
         findings=findings,
         prescriptions=prescriptions,
+        grade=grade_result.grade.value if grade_result is not None else None,
+        axis_scores=(
+            tuple(axis.to_json_dict() for axis in grade_result.axis_scores)
+            if grade_result is not None
+            else None
+        ),
     )
     document = report.to_json_dict()
     # Self-validated BEFORE it ever reaches stdout -- a schema-invalid
@@ -644,6 +668,7 @@ def _emit_text(
     *,
     verb: str,
     prescriptions: tuple[Prescription, ...] | None = None,
+    grade_result: score.GradeResult | None = None,
 ) -> None:
     ok = sum(1 for f in findings if f.status is DoctorStatus.OK)
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
@@ -652,6 +677,17 @@ def _emit_text(
         f"doctor {verb}: {len(findings)} finding(s) -- "
         f"{ok} ok, {warn} warn, {fail} fail"
     ]
+    if grade_result is not None:
+        # Story 4.1 FR-9 parity: whatever --json's `grade`/`axis_scores`
+        # show must also be visible in the human-readable render.
+        lines.append(
+            f"  grade: {grade_result.grade.value} -- {_single_line(grade_result.reason)}"
+        )
+        for axis in grade_result.axis_scores:
+            lines.append(
+                f"    [{axis.axis}] {axis.grade.value} "
+                f"({axis.ok} ok, {axis.warn} warn, {axis.fail} fail)"
+            )
     for finding in findings:
         lines.append(
             f"  [{finding.source.value}] {finding.check}: "
@@ -672,6 +708,18 @@ def _emit_text(
                 f"{prescription.finding_ref}: {_single_line(prescription.action)}"
             )
             lines.append(f"      root cause: {_single_line(prescription.root_cause)}")
+            # Story 4.4 FR-9 parity: whatever --json's safe_upgrade_target/
+            # safe_upgrade_reason show must also be visible here.
+            if prescription.safe_upgrade_target is not None:
+                lines.append(
+                    f"      safe upgrade: {prescription.safe_upgrade_target} "
+                    f"({_single_line(prescription.safe_upgrade_reason or '')})"
+                )
+            else:
+                lines.append(
+                    "      safe upgrade: none -- "
+                    f"{_single_line(prescription.safe_upgrade_reason or '')}"
+                )
     _write_stdout("\n".join(lines) + "\n")
 
 
