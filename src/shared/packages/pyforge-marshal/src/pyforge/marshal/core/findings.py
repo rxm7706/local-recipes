@@ -1065,6 +1065,26 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # tracked matrix file failed) classifies ERROR, mirroring
 # `MRS-ADP-015`/`MRS-SMOKE-006`'s own "a real write was attempted and
 # failed" tier -- the envelope still reports the computed `data.rows`.
+# Story 6.9 (tool-surface rendering and preflight probe, AD-43/the Q-11
+# resolution) adds `cli/init.py::run_preflight`'s own new MCP-server
+# resolvability check (`run_init` gains a companion `.mcp.json` render step,
+# but that step reuses the EXISTING `MRS-INIT-004` op-failed code -- a
+# fs.write_text_atomic failure is the same "git/filesystem operation
+# failed" fact that code already covers, not a new one). One new code,
+# `MRS-PREFLIGHT-012`, bundles three sub-cases the same way
+# `MRS-PREFLIGHT-008` already bundles its own three ("the declared tool
+# surface is not fully resolvable"): the home's `.mcp.json` is missing
+# despite the composed policy declaring `mcp_servers`; the file exists but
+# is not valid JSON or carries no top-level `mcpServers` object; or a
+# declared server's `command` is not resolvable (not on `PATH` via
+# `HarnessPort.binary_present`, and not an existing absolute path via
+# `FsPort.exists`) -- the SAME resolvability seam `MRS-PREFLIGHT-006`'s own
+# `verify_commands` check already uses. It classifies `Verdict.ERROR`, the
+# same tier as `MRS-PREFLIGHT-006`/`008`/`009`: a real, attempted
+# resolvability check found (or could not confirm) a real problem. This
+# probe reads ONLY the home's own rendered `.mcp.json` plus `PATH`/disk
+# state -- never `~/.claude.json` or any other user-scoped registry (AD-43's
+# own hard constraint).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1210,6 +1230,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-ENTRY-001",
         "MRS-UPSTREAM-001",
         "MRS-UPSTREAM-002",
+        "MRS-PREFLIGHT-012",
     }
 )
 

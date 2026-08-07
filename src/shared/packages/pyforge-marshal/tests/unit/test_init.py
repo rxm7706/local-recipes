@@ -544,6 +544,97 @@ def test_idempotent_rerun_all_steps_skipped_and_zero_writes(repo_root, capsys):
     assert vcs.add_worktree_calls == add_worktree_calls_before
 
 
+# --- mcp.json render (Story 6.9, AD-43) -----------------------------------------
+
+
+def test_init_no_mcp_servers_declared_skips_render(repo_root, capsys):
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "mcp_json: skipped" in out
+    home = vcs.worktrees["loop/acme"]
+    assert (home / ".mcp.json") not in fs.texts
+
+
+def test_init_renders_mcp_json_when_declared(repo_root, tmp_path, monkeypatch, capsys):
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text(
+        '[mcp_servers.atlas]\ncommand = "atlas-mcp"\nargs = ["--stdio"]\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "mcp_json: done" in out
+    home = vcs.worktrees["loop/acme"]
+    rendered = json.loads(fs.texts[home / ".mcp.json"])
+    assert rendered["mcpServers"]["atlas"]["command"] == "atlas-mcp"
+    assert rendered["mcpServers"]["atlas"]["args"] == ["--stdio"]
+
+
+def test_init_second_run_does_not_overwrite_hand_edited_mcp_json(
+    repo_root, tmp_path, monkeypatch, capsys
+):
+    """Seed-not-overwrite (AC): a second ``marshal init`` run against an
+    already-rendered ``.mcp.json`` -- including one an operator hand-edited
+    -- leaves it byte-for-byte untouched, identical to Story 1.7's adapter
+    seed files."""
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    first_exit = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert first_exit == EXIT_OK
+    capsys.readouterr()
+
+    home = vcs.worktrees["loop/acme"]
+    mcp_path = home / ".mcp.json"
+    fs.texts[mcp_path] = '{"mcpServers": {"hand-edited": {"command": "custom"}}}'
+    writes_before = list(fs.write_calls)
+
+    second_exit = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert second_exit == EXIT_OK
+    out = capsys.readouterr().out
+    assert "mcp_json: skipped" in out
+    assert fs.write_calls == writes_before  # zero new writes -- untouched
+    assert fs.texts[mcp_path] == '{"mcpServers": {"hand-edited": {"command": "custom"}}}'
+
+
+def test_init_mcp_json_write_failure_reports_finding(repo_root, tmp_path, monkeypatch, capsys):
+    """``fs.fail_write_text`` fails EVERY ``write_text_atomic`` call, so the
+    provisioning steps are converged (skipped) on a FIRST run before the
+    policy declares any ``mcp_servers`` -- the failure is injected only on
+    the SECOND run, once worktree/tier3_backlink/symlink/marker are all
+    already ``skipped`` and the mcp.json render is the only write left to
+    attempt."""
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+
+    first_exit = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert first_exit == EXIT_OK
+    capsys.readouterr()
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+    fs.fail_write_text = FsError("disk full")
+
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+
+
 # --- malformed slug: MRS-INIT-001, no I/O at all --------------------------------
 
 
@@ -2308,6 +2399,142 @@ def test_preflight_policy_path_is_file_oserror_degrades_to_typed_finding(
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-POLICY-004" in out
+
+
+# --- mcp server resolvability probe (Story 6.9, AD-43): MRS-PREFLIGHT-012 ----
+
+
+def test_preflight_no_mcp_servers_declared_skips_probe(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    envelope = json.loads(out)
+    assert "MRS-PREFLIGHT-012" not in out
+    # data.mcp_servers is present (an empty list, mirroring
+    # data.verify_commands' own "declared key, no entries" shape) since
+    # nothing was declared.
+    assert envelope["data"]["mcp_servers"] == []
+
+
+def test_preflight_mcp_json_missing_reports_finding(repo_root, tmp_path, monkeypatch, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-012" in out
+    assert "does not exist" in out
+
+
+def test_preflight_mcp_json_malformed_reports_finding(repo_root, tmp_path, monkeypatch, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = "{not valid json"
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-012" in out
+    assert "not valid JSON" in out
+
+
+def test_preflight_mcp_server_command_unresolvable_reports_finding(
+    repo_root, tmp_path, monkeypatch, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = json.dumps(
+        {"mcpServers": {"atlas": {"command": "definitely-not-a-real-binary-xyz"}}}
+    )
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text(
+        '[mcp_servers.atlas]\ncommand = "definitely-not-a-real-binary-xyz"\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-012" in out
+    assert "not resolvable" in out
+
+
+def test_preflight_mcp_server_resolvable_reports_no_finding(
+    repo_root, tmp_path, monkeypatch, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp"}}})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.binaries_present.add("atlas-mcp")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-012" not in out
+    assert "'atlas' ('atlas-mcp'): resolvable=True" in out
+
+
+def test_preflight_mcp_probe_never_touches_user_scoped_registry(
+    repo_root, tmp_path, monkeypatch, capsys
+):
+    """AD-43's hardest constraint: the resolvability probe reads ONLY the
+    home's own rendered ``.mcp.json`` -- never anything path-shaped like
+    ``~/.claude.json``. Asserted by inspecting every path FakeFs was ever
+    asked about."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    fs.texts[home / ".mcp.json"] = json.dumps({"mcpServers": {"atlas": {"command": "atlas-mcp"}}})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.binaries_present.add("atlas-mcp")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('[mcp_servers.atlas]\ncommand = "atlas-mcp"\n', encoding="utf-8")
+    monkeypatch.setattr(init_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    capsys.readouterr()
+    every_touched_path = set(fs.texts.keys()) | set(fs.write_calls)
+    assert not any(".claude.json" in str(p) for p in every_touched_path)
 
 
 # --- timing: presence/resolvability checks only, well under NFR-14's 10s ---

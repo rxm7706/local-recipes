@@ -127,6 +127,11 @@ _UNSETTABLE_KEYS = frozenset(
         # the same "no string value could ever satisfy this validator"
         # reason `verify_commands` itself is excluded for.
         "landing_resync_commands",
+        # Story 6.9's `mcp_servers` (AD-43) -- Mapping[str, {command, args?,
+        # env?}], the same "no string value could ever satisfy this
+        # validator" reason `model_tier_map`/`epic_surfaces` are excluded
+        # for.
+        "mcp_servers",
     }
 )
 
@@ -151,6 +156,7 @@ _FIELD_ORDER: tuple[str, ...] = (
     "landing_resync",
     "landing_base_branch",
     "landing_resync_commands",
+    "mcp_servers",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -309,7 +315,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 21-key document matching ``schemas/policy.json`` exactly:
+    """The flat 22-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

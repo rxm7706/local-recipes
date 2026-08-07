@@ -340,6 +340,97 @@ def test_model_tier_map_non_string_model_name_falls_back_and_reports():
     assert findings[0].code == "MRS-POLICY-002"
 
 
+# --- mcp_servers validation (Story 6.9, AD-43) --------------------------------
+
+
+def test_mcp_servers_default_is_empty_mapping():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert effective.mcp_servers.value == {}
+    assert effective.mcp_servers.layer is PolicyLayer.DEFAULT
+    assert findings == ()
+
+
+def test_mcp_servers_valid_shape_accepted():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "mcp_servers": {
+                "atlas": {"command": "atlas-mcp", "args": ["--stdio"], "env": {"FOO": "bar"}}
+            }
+        },
+        flags={},
+    )
+    assert findings == ()
+    assert effective.mcp_servers.value == {
+        "atlas": {"command": "atlas-mcp", "args": ("--stdio",), "env": {"FOO": "bar"}}
+    }
+    assert effective.mcp_servers.layer is PolicyLayer.PROJECT
+
+
+def test_mcp_servers_command_only_defaults_args_and_env():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"mcp_servers": {"atlas": {"command": "atlas-mcp"}}},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.mcp_servers.value == {"atlas": {"command": "atlas-mcp", "args": (), "env": {}}}
+
+
+def test_mcp_servers_missing_command_falls_back_and_reports():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"mcp_servers": {"atlas": {"args": ["--stdio"]}}},
+        flags={},
+    )
+    assert effective.mcp_servers.value == DEFAULT_POLICY["mcp_servers"]
+    assert effective.mcp_servers.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+    assert findings[0].path == "project"
+
+
+def test_mcp_servers_empty_server_name_falls_back_and_reports():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"mcp_servers": {"": {"command": "atlas-mcp"}}},
+        flags={},
+    )
+    assert effective.mcp_servers.value == DEFAULT_POLICY["mcp_servers"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_mcp_servers_unknown_entry_key_falls_back_and_reports():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"mcp_servers": {"atlas": {"command": "atlas-mcp", "bogus": "x"}}},
+        flags={},
+    )
+    assert effective.mcp_servers.value == DEFAULT_POLICY["mcp_servers"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_mcp_servers_non_mapping_falls_back_and_reports():
+    effective, findings = compose(
+        project_slug="acme", project={"mcp_servers": "not-a-mapping"}, flags={}
+    )
+    assert effective.mcp_servers.value == DEFAULT_POLICY["mcp_servers"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_mcp_servers_value_is_deeply_immutable():
+    effective, _ = compose(
+        project_slug="acme",
+        project={"mcp_servers": {"atlas": {"command": "atlas-mcp"}}},
+        flags={},
+    )
+    with pytest.raises(TypeError):
+        effective.mcp_servers.value["atlas"] = {"command": "other"}  # type: ignore[index]
+
+
 # --- epic_surfaces validation (Story 2.3, AD-27) ------------------------------
 
 
@@ -1255,6 +1346,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
+            mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             _seed=seed,
         )
 
@@ -1273,6 +1365,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
+            mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -1291,6 +1384,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
+            mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
                 # All 10 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -1348,6 +1442,7 @@ def test_schema_file_declares_the_twenty_keys():
         "landing_resync",
         "landing_base_branch",
         "landing_resync_commands",
+        "mcp_servers",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
