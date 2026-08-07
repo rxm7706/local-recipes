@@ -269,3 +269,88 @@ def rank(partitioned: Iterable[PartitionedFinding]) -> tuple[RankedPrescription,
         RankedPrescription(finding=finding, rank=index + 1, rank_factors=factors)
         for index, (finding, _sort_key, factors) in enumerate(scored)
     )
+
+
+# --- Story 3.3: root-cause naming ------------------------------------------
+
+
+def _find_correlated_staleness(
+    finding: Finding, all_findings: Sequence[Finding]
+) -> Finding | None:
+    """A same-``check`` ``Source.STALENESS_REPORT`` Finding in the same
+    gather batch, if one exists -- the correlation Story 3.3 AC1 asks for
+    ("a Prescription for a CVE Finding that traces to a staleness lag").
+    Never the SAME Finding object (a Finding is never "correlated" with
+    itself); ``status`` is not filtered here -- any staleness signal for
+    the same package is evidence of a lag, regardless of its own
+    WARN/FAIL tier."""
+    for other in all_findings:
+        if (
+            other is not finding
+            and other.source is Source.STALENESS_REPORT
+            and other.check == finding.check
+        ):
+            return other
+    return None
+
+
+def _cve_root_cause(finding: Finding, all_findings: Sequence[Finding]) -> str:
+    staleness = _find_correlated_staleness(finding, all_findings)
+    evidence = finding.evidence
+    severity = evidence.get("severity")
+    delta = evidence.get("delta")
+    now_v = evidence.get("now_v")
+    if staleness is not None:
+        age_days = staleness.evidence.get("age_days")
+        version = staleness.evidence.get("latest_conda_version")
+        return (
+            f"{finding.check}'s {severity or ''}-severity vulnerability count is "
+            f"{now_v!s} (delta {delta!s}) -- correlated with a staleness signal "
+            f"for the same package (pinned at {version!s}, {age_days!s} days "
+            "stale): the fix most likely already shipped upstream and simply "
+            "hasn't been adopted yet, rather than being genuinely unfixed."
+        )
+    return (
+        f"{finding.check}'s {severity or ''}-severity vulnerability count is "
+        f"{now_v!s} (delta {delta!s}) -- no correlated staleness signal for "
+        "this package in the same run, so this may be a newly-disclosed CVE "
+        "with no upstream fix yet rather than an adoption lag."
+    )
+
+
+def _templated_root_cause(finding: Finding) -> str:
+    """Templates a root cause from a Finding's own ``evidence`` (Story 3.3
+    AC2's "no new NLP/inference layer -- a pure template over already-
+    structured evidence") -- every non-CVE Source (``warden-doctor``,
+    ``staleness-report``, ``feedstock-health``, ``release-cadence``,
+    ``env-hygiene``) is templated this way, not just the AC's own named
+    "engine-missing" example, since the templating rule itself is
+    Source-agnostic: join whatever structured evidence the Finding
+    actually carries. Degrades to the Finding's own ``message`` verbatim
+    when ``evidence`` is empty (e.g. today's live ``warden-doctor``
+    Findings, which Story 1.2 documents as always carrying ``evidence={}``)
+    -- ``message`` is itself already a human-readable explanation, not a
+    placeholder, so this is a genuine fallback, not a degraded one."""
+    if not finding.evidence:
+        return finding.message
+    evidence_clause = "; ".join(
+        f"{key}={value!s}" for key, value in sorted(finding.evidence.items())
+    )
+    return f"{finding.message} (evidence: {evidence_clause})"
+
+
+def name_root_cause(finding: Finding, all_findings: Sequence[Finding]) -> str:
+    """Name WHY ``finding`` exists, not just what it is (Story 3.3, FR-8).
+    Pure -- reads only ``finding`` and the other already-gathered
+    ``all_findings`` it's being diagnosed alongside (for cross-Finding
+    correlation, e.g. CVE-traces-to-staleness); makes zero external calls.
+
+    ``Source.CVE_WATCHER`` Findings get a dedicated root-cause path that
+    checks for a same-``check`` ``Source.STALENESS_REPORT`` Finding in
+    ``all_findings`` (AC1: "traces to a staleness lag... names that lag").
+    Every other Source templates its root cause from its own ``evidence``
+    field, falling back to the Finding's own ``message`` when ``evidence``
+    is empty (AC2: "templated from that Finding's own evidence field")."""
+    if finding.source is Source.CVE_WATCHER:
+        return _cve_root_cause(finding, all_findings)
+    return _templated_root_cause(finding)
