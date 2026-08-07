@@ -16,6 +16,7 @@ import builtins
 import errno
 import json
 import sys
+import tomllib
 from pathlib import Path
 
 import jsonschema
@@ -203,6 +204,22 @@ class FakeHarness:
         self.resume_result: int = 636363
         self.fail_resume: Exception | None = None
         self.resume_calls: list[dict[str, object]] = []
+        # Story 6.1's own FR-51 adapter resolution (`_resolve_model_tiering`)
+        # -- defaults to succeeding with a fixed binary name, mirroring
+        # `spin_result`/`resume_result`'s own "succeeds by default"
+        # convention, so every pre-existing test in this file (which never
+        # configured this seam) keeps describing the same successful launch
+        # it always did.
+        self.adapter_binary_result: str = "claude"
+        self.fail_adapter_binary: Exception | None = None
+        self.adapter_binary_calls: list[tuple[str, Path]] = []
+
+    def adapter_binary(self, adapter_name: str, project: Path) -> str:
+        self.calls.append("adapter_binary")
+        self.adapter_binary_calls.append((adapter_name, project))
+        if self.fail_adapter_binary:
+            raise self.fail_adapter_binary
+        return self.adapter_binary_result
 
     def story_feed_error(self, project: Path) -> str | None:
         self.calls.append("story_feed_error")
@@ -418,7 +435,12 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
     assert outcome["phase"] == "outcome"
     assert outcome["intent_id"] == intent["id"]
     assert outcome["id"]["counter"] == 1
-    assert outcome["payload"] == {"pid": 4242, "harness_run_id": "acme-20260803T054512123Z-ab12cd"}
+    assert outcome["payload"] == {
+        "pid": 4242,
+        "harness_run_id": "acme-20260803T054512123Z-ab12cd",
+        "adapter_name": "claude",
+        "resolved_models": {},
+    }
     assert outcome["run_id"] == intent["run_id"]
     assert intent["run_id"].startswith("acme-")
 
@@ -693,7 +715,12 @@ def test_spin_unconfirmed_harness_run_id_warns_but_still_exits_0(home, capsys):
     out = capsys.readouterr().out
     assert "MRS-SPIN-004" in out
     outcome = json.loads(fs.appended_lines[1][1])
-    assert outcome["payload"] == {"pid": 777, "harness_run_id": None}
+    assert outcome["payload"] == {
+        "pid": 777,
+        "harness_run_id": None,
+        "adapter_name": "claude",
+        "resolved_models": {},
+    }
 
 
 # --- --foreground ------------------------------------------------------------------
@@ -2871,3 +2898,338 @@ def test_resume_cli_accepts_slug_and_format():
     assert args.slug == "acme"
     assert args.format == "json"
     assert args.handler is run_resume
+
+
+# --- Story 6.1: profile-driven adapter selection, project-scoped (FR-48/FR-51/AD-19) ---
+
+
+def _write_story_spec(home: Path, key: str, *, difficulty_frontmatter: str) -> None:
+    """Writes a minimal Tier-3 spec file for story ``key`` (e.g. ``"1-1"``)
+    carrying ``difficulty_frontmatter`` (the raw lines between the
+    ``---`` delimiters, INCLUDING any trailing newline) -- mirrors this
+    file's own existing MRS-SPIN-009 tests' convention of writing real spec
+    files under ``home``'s own Tier-3 store."""
+    spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    spec_dir.mkdir(parents=True, exist_ok=True)
+    (spec_dir / f"spec-{key}-a-story.md").write_text(
+        f"---\n{difficulty_frontmatter}---\n\n<intent-contract>\n", encoding="utf-8"
+    )
+
+
+def _model_tier_map_policy_path(tmp_path: Path) -> Path:
+    """A project-policy layer declaring a real ``model_tier_map`` -- the
+    SAME ``monkeypatch.setattr(spin_module, 'conventional_project_policy_path',
+    ...)`` seam ``test_spin_surfaces_a_malformed_idle_threshold_minutes_
+    project_policy_finding`` already established."""
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text(
+        "[model_tier_map.heavy]\n"
+        'dev = "opus"\n'
+        'review = "opus"\n'
+        "[model_tier_map.easy]\n"
+        'dev = "haiku"\n',
+        encoding="utf-8",
+    )
+    return policy_path
+
+
+def test_spin_undeclared_difficulty_resolves_no_override(home):
+    """A single in-scope story with no `difficulty:` frontmatter at all (no
+    spec file exists yet) is the mechanical-default case: `resolved_models`
+    is empty, no `model_tier_batching`, no MRS-SPIN-013/014 finding."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["payload"]["adapter_name"] == "claude"
+    assert outcome["payload"]["resolved_models"] == {}
+    assert "model_tier_batching" not in outcome["payload"]
+
+
+def test_spin_resolves_declared_difficulty_present_in_model_tier_map(
+    home, tmp_path, monkeypatch
+):
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["payload"]["resolved_models"] == {"dev": "opus", "review": "opus"}
+    assert "model_tier_batching" not in outcome["payload"]
+
+
+def test_spin_persists_the_resolved_model_tier_to_the_loop_homes_policy_toml(
+    home, tmp_path, monkeypatch
+):
+    """Review finding (Blind Hunter): the resolved model tiering must reach
+    the ACTUAL `.bmad-loop/policy.toml` the spawned `bmad-loop run` process
+    reads, not just the journaled/reported `data.resolved_models` -- a
+    launch-time write, via `write_policy_toml`, is the only thing that
+    makes the two agree."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    written = (home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8")
+    parsed = tomllib.loads(written)
+    assert parsed["adapter"]["dev"]["model"] == "opus"
+    assert parsed["adapter"]["review"]["model"] == "opus"
+
+
+def test_spin_declared_difficulty_absent_from_map_resolves_no_override(
+    home, tmp_path, monkeypatch
+):
+    """A declared difficulty NOT present in `model_tier_map` is treated
+    identically to undeclared -- never an error (`model_tier_map` is this
+    project's own declared vocabulary, per the spec's own I/O matrix)."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: nonexistent-tier\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["payload"]["resolved_models"] == {}
+
+
+def test_spin_malformed_difficulty_registers_mrs_spin_013_and_treated_as_undeclared(
+    home, capsys
+):
+    """A multi-line YAML block `difficulty:` declaration -- a form
+    `parse_declared_difficulty` does not support -- registers MRS-SPIN-013
+    and is treated as undeclared for governance purposes, never silently
+    absorbed and never itself blocking (WARN, the launch still proceeds)."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty:\n  heavy\n")
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    envelope_out = capsys.readouterr().out
+    envelope = json.loads(envelope_out)
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert "MRS-SPIN-013" in findings_by_code
+    assert findings_by_code["MRS-SPIN-013"]["severity"] == "warn"
+    assert "1.1" in findings_by_code["MRS-SPIN-013"]["message"]
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["payload"]["resolved_models"] == {}
+    assert harness.spin_calls, "a malformed difficulty must never block the launch"
+
+
+def test_spin_valid_sibling_spec_file_is_not_masked_by_an_earlier_malformed_one(
+    home, tmp_path, monkeypatch, capsys
+):
+    """Edge Case Hunter finding: a stale `spec-<key>.md` with a malformed
+    multi-line `difficulty:` block must not shadow a well-formed
+    declaration in a sibling `-2`-suffixed re-run spec -- ALL candidates are
+    consulted (mirroring `_large_spec_bytes`), not a first-readable-wins
+    short circuit. No MRS-SPIN-013 either: the story's difficulty WAS
+    resolved, from the sibling file."""
+    spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    spec_dir.mkdir(parents=True, exist_ok=True)
+    (spec_dir / "spec-1-1.md").write_text(
+        "---\ndifficulty:\n  heavy\n---\n\n<intent-contract>\n", encoding="utf-8"
+    )
+    (spec_dir / "spec-1-1-a-rerun.md").write_text(
+        "---\ndifficulty: heavy\n---\n\n<intent-contract>\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    codes = {finding["code"] for finding in envelope["findings"]}
+    assert "MRS-SPIN-013" not in codes
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["payload"]["resolved_models"] == {"dev": "opus", "review": "opus"}
+
+
+def test_spin_homogeneous_batch_declares_no_batching_report(home, tmp_path, monkeypatch):
+    """Multiple in-scope stories all declaring the SAME difficulty: one
+    render, no batching report (the I/O matrix's own explicit row)."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+    _write_story_spec(home, "1-2", difficulty_frontmatter="difficulty: heavy\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story", "1-2-second-story")
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert outcome["payload"]["resolved_models"] == {"dev": "opus", "review": "opus"}
+    assert "model_tier_batching" not in outcome["payload"]
+
+
+def test_spin_heterogeneous_batch_reports_the_mismatch_and_picks_the_most_common(
+    home, tmp_path, monkeypatch
+):
+    """Multiple in-scope stories declaring DIFFERENT difficulties: ONE
+    governing difficulty renders (the tie-break: most common declared
+    difficulty, ties broken by earliest declaration order), and every
+    story whose own declared difficulty does not match it is named in
+    `data.model_tier_batching` -- never silently resolved."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+    _write_story_spec(home, "1-2", difficulty_frontmatter="difficulty: heavy\n")
+    _write_story_spec(home, "1-3", difficulty_frontmatter="difficulty: easy\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story", "1-2-second-story", "1-3-third-story")
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    outcome = json.loads(fs.appended_lines[1][1])
+    # "heavy" is declared twice, "easy" once -- heavy governs.
+    assert outcome["payload"]["resolved_models"] == {"dev": "opus", "review": "opus"}
+    batching = outcome["payload"]["model_tier_batching"]
+    assert batching["governing"] == "heavy"
+    assert batching["mismatched"] == [{"story": "1.3", "declared": "easy"}]
+
+
+def test_spin_heterogeneous_batch_tie_break_is_earliest_declaration_order(
+    home, tmp_path, monkeypatch
+):
+    """A genuine tie (one story each declaring a different difficulty):
+    the FIRST story, in `preview`'s own selection order, to declare its
+    difficulty wins -- the spec's own documented deterministic tie-break."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: easy\n")
+    _write_story_spec(home, "1-2", difficulty_frontmatter="difficulty: heavy\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story", "1-2-second-story")
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    outcome = json.loads(fs.appended_lines[1][1])
+    batching = outcome["payload"]["model_tier_batching"]
+    assert batching["governing"] == "easy"
+    assert batching["mismatched"] == [{"story": "1.2", "declared": "heavy"}]
+
+
+def test_spin_unwritable_loop_home_degrades_policy_write_to_mrs_spin_015(
+    home, tmp_path, monkeypatch, capsys
+):
+    """An unwritable `.bmad-loop` directory (write_policy_toml's own
+    `HarnessPolicyWriteError`) must never abort an already-viable launch --
+    it registers MRS-SPIN-015 (WARN) and the launch proceeds on whatever
+    policy was already on disk, mirroring MRS-SPIN-007's identical
+    "degraded, never blocking" precedent for the supervisor sidecar."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    home.mkdir(parents=True, exist_ok=True)
+    # Occupy `.bmad-loop` with a plain file so `write_policy_toml`'s own
+    # `mkdir(parents=True, exist_ok=True)` raises OSError.
+    (home / ".bmad-loop").write_text("not a directory", encoding="utf-8")
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert "MRS-SPIN-015" in findings_by_code
+    assert findings_by_code["MRS-SPIN-015"]["severity"] == "warn"
+    assert harness.spin_calls, "an unwritable policy write must never block the launch"
+
+
+def test_spin_unknown_adapter_refuses_before_any_spawn_or_journal_write(home, capsys):
+    """`HarnessPort.adapter_binary` raising `HarnessError` for an unknown/
+    unrecognized adapter registers MRS-SPIN-014 and REFUSES the launch --
+    Verdict.UNEVALUABLE, never a crash, and never a spawn that then reports
+    a non-zero exit over an already-live process (see
+    `_resolve_model_tiering`'s own docstring for why this must refuse
+    rather than proceed)."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.fail_adapter_binary = HarnessError("no profile for adapter 'claude'")
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == 1
+    envelope = json.loads(capsys.readouterr().out)
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert "MRS-SPIN-014" in findings_by_code
+    assert findings_by_code["MRS-SPIN-014"]["severity"] == "error"
+    assert not harness.spin_calls, "an unresolvable adapter must never launch bmad-loop"
+    assert not fs.appended_lines, "an unresolvable adapter must produce no journal entries"
+
+
+def test_spin_empty_preview_skips_model_tiering_entirely(home):
+    """No story selected for this launch (an unmatched `--story`) -- there
+    is nothing to resolve tiering for, and no adapter_name/resolved_models
+    are echoed at all."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(
+        _spin_namespace("acme", story="9.9", fmt="json"), fs=fs, harness=harness
+    )
+
+    assert exit_code == EXIT_OK
+    outcome = json.loads(fs.appended_lines[1][1])
+    assert "adapter_name" not in outcome["payload"]
+    assert "resolved_models" not in outcome["payload"]
+    assert not harness.adapter_binary_calls

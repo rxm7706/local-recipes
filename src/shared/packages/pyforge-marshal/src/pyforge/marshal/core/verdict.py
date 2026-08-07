@@ -324,6 +324,23 @@ run at all -- missing script, launch failure, its own documented
 ``UNKNOWN``/exit-2 case, or malformed JSON). Both are "reported, never
 blocks progression", the same tier as ``MRS-STATUS-001``/``005``.
 
+Story 6.1 (profile-driven adapter selection, project-scoped, FR-48/FR-51/
+AD-19) adds two more codes to ``cli/spin.py``'s own ``MRS-SPIN-*`` area.
+``MRS-SPIN-013`` (a resolved story's own declared ``difficulty:`` was
+malformed -- ``core.spec_difficulty.DifficultyParseError``) classifies
+``Verdict.WARN``, alongside this area's own 004/006/007/008/009/012: the
+malformed story is treated as undeclared for the launch's own model
+resolution (the exact same "no override" degradation an undeclared
+difficulty already gets), so the gap is reported, never itself a reason to
+refuse an otherwise-clean launch. ``MRS-SPIN-014`` (the loop home's own
+configured adapter name could not be resolved to a real profile --
+``HarnessError`` from ``HarnessPort.adapter_binary``) classifies
+``Verdict.UNEVALUABLE``, the same tier as ``MRS-GATE-009``'s own "Marshal
+could not evaluate this at all" reasoning -- an unresolvable adapter name
+is a configuration fact Marshal cannot determine, not a real precondition
+that was checked and failed (the spec's own explicit "never a crash"
+wording for this exact scenario).
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -556,6 +573,15 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # both at ERROR -- a confirmed defect, not merely an unevaluated one; and
 # MRS-CHECK-004 (a detector reported "unknown", could not run) at
 # UNEVALUABLE, never conflated with a confirmed FINDINGS failure.
+# Story 6.1's cli/spin.py adds MRS-SPIN-013 (a malformed declared
+# difficulty, treated as undeclared) at WARN, alongside this area's own
+# 004/006/007/008/009/012, and MRS-SPIN-014 (the configured adapter could
+# not be resolved) at UNEVALUABLE, alongside MRS-GATE-009. A review pass on
+# Story 6.1 added MRS-SPIN-015 (the resolved, difficulty-tiered policy could
+# not be persisted to the loop home's own policy.toml) at the SAME WARN
+# tier as 013/007: the harness launch is already viable, so losing the
+# write degrades the run's OWN model resolution to whatever was already on
+# disk -- never a reason to abort an otherwise-viable launch.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -668,6 +694,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-CHECK-002": Verdict.ERROR,
     "MRS-CHECK-003": Verdict.ERROR,
     "MRS-CHECK-004": Verdict.UNEVALUABLE,
+    "MRS-SPIN-013": Verdict.WARN,
+    "MRS-SPIN-014": Verdict.UNEVALUABLE,
+    "MRS-SPIN-015": Verdict.WARN,
 }
 
 
