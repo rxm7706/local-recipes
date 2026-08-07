@@ -166,6 +166,9 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`loop-home-fleet-refresh.md`](loop-home-fleet-refresh.md) | dreamt | Refreshing every loop-home from `main` is a hand-run ritual with real judgment calls; `loop-push-watch`/`dashboard-watch` already automate the push side but neither was running all session — no auto-start exists anywhere. |
 | [`dream-to-code-model-self-verification.md`](dream-to-code-model-self-verification.md) | dreamt | Two follow-ups named at the 2026-07-23 Dream-to-Code restructure were never built: a `dream_chain_check.py --dreams` mode, and dogfooding `bmad-spec` against the model's own governing docs — both confirmed still genuinely missing. |
 | [`jira-github-projects-sync.md`](jira-github-projects-sync.md) | dreamt | Bidirectional GitHub Projects V2 ↔ Jira Cloud sync, no third-party SaaS, zero-loop + idempotent — full v1 draft spec handed in whole, staged at `docs/intake/jira-github-projects-sync/`. |
+| [`conda-forge-expert-rebuild.md`](conda-forge-expert-rebuild.md) | dreamt | Reopens Mason's D-1 (wrap, never fork) for CFE itself only — Skill-Forge-authored rebuild, sliced along CFE's own 3 tiers, hard cutover per slice so it doesn't repeat atlas's ~29,000-unused-lines outcome. |
+| [`bmad-module-provisioning.md`](bmad-module-provisioning.md) | dreamt | Skill Forge/`bmad-builder` were hand-installed once (a 2026-07-17 ad-hoc commit driving an npm Installer class), not reproducibly — Steward's own `provision` duty (Epic 3) should wrap this the way it already wraps pixi/bmad-loop-worktree. |
+| [`kedro-org-tooling-adoption.md`](kedro-org-tooling-adoption.md) | dreamt | `kedro-mcp` already resolved (wired, deliberately scoped); `kedro-skills`/`publish-kedro-viz`/`vscode-kedro` genuinely unused — owned by Atlas (the domain knowledge), mechanism leans on Steward's provisioning/deploy ducts. |
 
 **Applications**
 
