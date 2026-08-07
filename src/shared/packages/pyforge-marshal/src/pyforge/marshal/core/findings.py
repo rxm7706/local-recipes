@@ -873,6 +873,15 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # detector confirmed is not on origin) and MRS-STATUS-009 (that detector
 # could not be consulted this run at all -- every row's unpushed_work
 # reports null, never fabricated as clean).
+# Story 5.6 (marshal check, FR-65/AD-50) adds the fourteenth real caller's
+# own NEW area, MRS-CHECK-* (four codes): MRS-CHECK-001 (the detector
+# registry -- scripts/detectors.py -- could not be consulted this run at
+# all: a subprocess launch failure or unparseable JSON output, mirroring
+# MRS-STATUS-009's identical "detector unavailable" precedent) at WARN;
+# MRS-CHECK-002 (one detector reported status == "FINDINGS") and
+# MRS-CHECK-003 (one registry-self-reported gap -- an undeclared or
+# untasked detector) both at ERROR; MRS-CHECK-004 (one detector reported
+# status == "unknown", could not run) at UNEVALUABLE.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -982,6 +991,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-STATUS-007",
         "MRS-STATUS-008",
         "MRS-STATUS-009",
+        "MRS-CHECK-001",
+        "MRS-CHECK-002",
+        "MRS-CHECK-003",
+        "MRS-CHECK-004",
     }
 )
 

@@ -222,6 +222,7 @@ import sys
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
@@ -256,6 +257,14 @@ from .config import (
     conventional_project_policy_path,
 )
 from .init import _home_path
+
+if TYPE_CHECKING:
+    # Story 5.6 (FR-65/AD-50): `run_spin`'s `context` parameter below is
+    # type-only -- this module's own internal logic is NOT retrofitted to
+    # CONSUME it in this pass (see cli/main.py's own module docstring and
+    # the spec's Design Notes); a real (non-TYPE_CHECKING) import would add
+    # a runtime dependency this module doesn't otherwise need.
+    from ..core.context import MarshalContext
 
 # The run journal's own filename, under the run directory (architecture.md's
 # own "line-delimited JSON files under the run directory is the seed
@@ -861,7 +870,15 @@ def run_spin(
     fs: FsPort | None = None,
     harness: HarnessPort | None = None,
     process: ProcessPort | None = None,
+    context: MarshalContext | None = None,
 ) -> int:
+    # Story 5.6 (FR-65/AD-50): `context`, if `cli/main.py`'s dispatch
+    # resolved one, is accepted but deliberately UNUSED here -- proving the
+    # "resolved once at the front door" plumbing reaches this handler
+    # without retrofitting its own internal policy/home-path derivation
+    # (see this story's own Design Notes; `cli/main.py`'s module docstring
+    # names the exact three already-shipped commands this applies to).
+    del context
     fs = fs if fs is not None else LocalFs()
     harness = harness if harness is not None else BmadLoopHarness()
     process = process if process is not None else PosixProcess()

@@ -999,7 +999,7 @@ def test_help_lists_gate_subcommand(capsys):
     exit_code = main(["--help"])
     assert exit_code == 0
     assert (
-        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire,status}"
+        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire,status,check}"
         in capsys.readouterr().out
     )
 
@@ -1032,6 +1032,47 @@ def test_status_subcommand_is_wired(capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["command"] == "status"
     assert payload["data"]["homes"] == []
+
+
+def test_check_help_works(capsys):
+    """Smoke test (Story 5.6): ``marshal check --help`` exits clean and
+    documents the subcommand -- mirrors this module's own ``--help``
+    conventions for every other subcommand."""
+    exit_code = main(["check", "--help"])
+    assert exit_code == 0
+    assert "--scope" in capsys.readouterr().out
+
+
+def test_check_subcommand_is_wired(capsys, monkeypatch):
+    """Smoke test (Story 5.6): ``marshal check`` dispatches to
+    ``cli/check.py::run_check`` and prints a real envelope -- mirrors this
+    module's own ``retire``/``status`` wiring precedent. The underlying
+    ``scripts/detectors.py`` subprocess call is stubbed via a fake
+    ``PosixProcess`` so this test never depends on this dev repo's own real
+    detector state, and never crashes for a normal invocation (confirming
+    ``cli/main.py``'s new ``context=`` dispatch plumbing doesn't raise a
+    TypeError for the one handler that DOES accept it)."""
+    import json as json_module
+
+    from pyforge.marshal.cli import check as check_module
+    from pyforge.marshal.ports.process import ProcessResult
+
+    class _FakeProcess:
+        def run(self, argv, *, cwd, timeout_s=None):
+            return ProcessResult(
+                returncode=0,
+                stdout=json_module.dumps({"registry": [], "results": []}),
+                stderr="",
+            )
+
+    monkeypatch.setattr(check_module, "PosixProcess", _FakeProcess)
+
+    exit_code = main(["check", "--scope", "repo", "--format", "json"])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["command"] == "check"
+    assert payload["data"]["results"] == []
 
 
 def test_gate_missing_evaluate_action_is_a_usage_error(capsys):

@@ -549,6 +549,13 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # adds MRS-STATUS-008 (a home's branch carries unpushed content the
 # unpushed_work_check.py detector confirmed) and MRS-STATUS-009 (that
 # detector could not be consulted this run), both at WARN.
+# Story 5.6 (marshal check, FR-65/AD-50) adds MRS-CHECK-001 (the detector
+# registry itself could not be consulted this run) at WARN -- the same
+# tier as MRS-STATUS-009's identical precedent; MRS-CHECK-002 (a detector
+# reported real findings) and MRS-CHECK-003 (a registry-self-reported gap)
+# both at ERROR -- a confirmed defect, not merely an unevaluated one; and
+# MRS-CHECK-004 (a detector reported "unknown", could not run) at
+# UNEVALUABLE, never conflated with a confirmed FINDINGS failure.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -657,6 +664,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-STATUS-007": Verdict.UNEVALUABLE,
     "MRS-STATUS-008": Verdict.WARN,
     "MRS-STATUS-009": Verdict.WARN,
+    "MRS-CHECK-001": Verdict.WARN,
+    "MRS-CHECK-002": Verdict.ERROR,
+    "MRS-CHECK-003": Verdict.ERROR,
+    "MRS-CHECK-004": Verdict.UNEVALUABLE,
 }
 
 
