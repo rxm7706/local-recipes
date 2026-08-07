@@ -15,7 +15,7 @@ totalEpics: 7
 
 ---
 
-## Epic 1: Foundation — CLI Architecture + Shared Infrastructure
+## Epic 6: Foundation — CLI Architecture + Shared Infrastructure
 
 **Goal**: Operators have a unified CLI interface with shared flags, authorization, and evidence validation foundation.
 
@@ -24,7 +24,7 @@ totalEpics: 7
 
 ---
 
-### Story 1.1: Implement Herald CLI Dispatcher
+### Story 6.1: Implement Herald CLI Dispatcher
 
 As a **factory operator**,  
 I want a single `herald` entry point with routing to subcommands (progress, success, notice),  
@@ -61,7 +61,7 @@ And exit code is 2
 
 ---
 
-### Story 1.2: Implement Shared Argument Conventions
+### Story 6.2: Implement Shared Argument Conventions
 
 As a **factory operator**,  
 I want all CLI subcommands to support consistent global flags (`--json`, `--date-range`, `--station`),  
@@ -103,7 +103,7 @@ And exit code is 2
 
 ---
 
-### Story 1.3: Implement CLI Authentication & Authorization
+### Story 6.3: Implement CLI Authentication & Authorization
 
 As a **system admin**,  
 I want write operations (publish, author) to require operator role verification,  
@@ -119,7 +119,7 @@ And exit code is 1
 
 Given user with operator role  
 When user runs `herald success publish <claim-id>`  
-Then CLI proceeds with publish logic (implementation TBD in Epic 4)  
+Then CLI proceeds with publish logic (implementation TBD in Epic 9)  
 And exit code is 0
 
 Given read-only operation  
@@ -146,7 +146,7 @@ And response is honored (Y = proceed, n = abort)
 
 ---
 
-### Story 1.4: Implement Evidence Link Validation Protocol (Shared Infrastructure)
+### Story 6.4: Implement Evidence Link Validation Protocol (Shared Infrastructure)
 
 As a **developer (implementing Moments 3–5)**,  
 I want a shared evidence validation library that validates evidence links (404 detection, redirects),  
@@ -192,7 +192,7 @@ Then library exposes: `validate_link(url)` → {is_valid, status, redirects}, `s
 
 ---
 
-### Story 1.5: CLI Help & First-Day Usability (Inline)
+### Story 6.5: CLI Help & First-Day Usability (Inline)
 
 As a **new operator**,  
 I want `herald --help` and `herald <subcommand> --help` to show clear, complete help text,  
@@ -235,16 +235,16 @@ And exit code is 2
 
 ---
 
-## Epic 2: Foundation — Web Surface
+## Epic 7: Foundation — Web Surface
 
 **Goal**: Operators have a unified web dashboard with 4-tab navigation, responsive layout, and shared UX patterns.
 
 **FRs Covered**: FR-2.1–2.3  
-**Effort**: 2–3 stories | **Dependencies**: Epic 1 | **Week**: 2
+**Effort**: 2–3 stories | **Dependencies**: Epic 6 | **Week**: 2
 
 ---
 
-### Story 2.1: Design & Implement Web Layout (Header, Tabs, Sidebar, Responsive)
+### Story 7.1: Design & Implement Web Layout (Header, Tabs, Sidebar, Responsive)
 
 As a **factory operator**,  
 I want a unified Herald web interface with consistent header, 4-tab navigation (Pitch, Progress, Success, Operations), and sidebar filters,  
@@ -308,7 +308,7 @@ Then content area updates to show matching results (search implementation TBD by
 
 ---
 
-### Story 2.2: Implement Web Tooltips & Inline Help
+### Story 7.2: Implement Web Tooltips & Inline Help
 
 As a **operator**,  
 I want inline help (tooltips, ?-button guides, field hints) on the web surface,  
@@ -347,16 +347,16 @@ Example: "Station 'unknown' not found. Available: warden, atlas, marshal, ..."
 
 ---
 
-## Epic 3: Moment 2 — Progress Visibility (PRIORITY 1 — Week 3 Delivery)
+## Epic 8: Moment 2 — Progress Visibility (PRIORITY 1 — Week 3 Delivery)
 
 **Goal**: Factory leads see weekly/on-ship progress updates with cost transparency and unblock narratives.
 
 **FRs Covered**: FR-3.1–3.4  
-**Effort**: 2–3 stories | **Dependencies**: Epics 1, 2 | **Week**: 3 (fast-track)
+**Effort**: 2–3 stories | **Dependencies**: Epics 6, 7 | **Week**: 3 (fast-track)
 
 ---
 
-### Story 3.1: Implement Progress Data Model & Database Schema
+### Story 8.1: Implement Progress Data Model & Database Schema
 
 As a **developer**,  
 I want to define the Progress record schema and create database tables,  
@@ -401,7 +401,7 @@ Then results returned in O(log N) time (verified with EXPLAIN PLAN)
 
 ---
 
-### Story 3.2: Implement On-Ship Webhook & Weekly Cron Automation
+### Story 8.2: Implement On-Ship Webhook & Weekly Cron Automation
 
 As a **developer**,  
 I want to implement the automation dispatcher to handle on-ship webhooks and weekly cron jobs,  
@@ -460,7 +460,7 @@ Then:
 
 ---
 
-### Story 3.3: Implement Progress CLI (`herald progress` subcommand)
+### Story 8.3: Implement Progress CLI (`herald progress` subcommand)
 
 As a **operator**,  
 I want to query progress via CLI (`herald progress <station>`, `herald progress --list`, `herald progress --update`),  
@@ -514,7 +514,7 @@ Then output shows:
 
 ---
 
-### Story 3.4: Implement Progress Web Tab
+### Story 8.4: Implement Progress Web Tab
 
 As a **operator**,  
 I want to view Progress records in the web UI (Progress tab),  
@@ -565,16 +565,16 @@ And "Trigger update" button accessible
 
 ---
 
-## Epic 4: Moment 3 — Success Proclamation (Parallel with Epic 3 & 5)
+## Epic 9: Moment 3 — Success Proclamation (Parallel with Epic 8 & 10)
 
 **Goal**: Auto-extracted success claims with evidence linking and operator review gate.
 
 **FRs Covered**: FR-4.1–4.5  
-**Effort**: 2–3 stories | **Dependencies**: Epics 1, 2 | **Week**: 4
+**Effort**: 2–3 stories | **Dependencies**: Epics 6, 7 | **Week**: 4
 
 ---
 
-### Story 4.1: Implement Claim Data Model & Database Schema
+### Story 9.1: Implement Claim Data Model & Database Schema
 
 As a **developer**,  
 I want to define the Claim record schema and create database tables,  
@@ -622,7 +622,7 @@ Then no data corruption, atomic writes guaranteed
 
 ---
 
-### Story 4.2: Implement Auto-Extract & Operator Review Gate
+### Story 9.2: Implement Auto-Extract & Operator Review Gate
 
 As a **developer**,  
 I want to implement auto-extract on PR-close + operator review gate,  
@@ -667,7 +667,7 @@ Then CLI displays:
 Given operator publishes  
 When publishes claim with thesis  
 Then:
-  - Validates all evidence links (sync validation, Story 4.5)
+  - Validates all evidence links (sync validation, Story 9.5)
   - If any link invalid (404), reject: "Fix or remove broken links before publishing"
   - If all valid, update Claim: status=published, published_at=now, thesis=operator_input
   - Operator receives confirmation: "Claim published for <project> on <date>"
@@ -687,13 +687,13 @@ Then:
 - Webhook endpoint: `/api/herald/webhooks/on-pr-close`
 - Project extraction: regex on PR title/labels (configurable pattern)
 - Dashboard API: async query (don't block webhook response)
-- Evidence validation: uses Story 1.4 protocol (shared library)
+- Evidence validation: uses Story 6.4 protocol (shared library)
 - Retry logic: exponential backoff with jitter
 - Test: mock PR webhook payloads, verify draft Claims created, verify operator review flow
 
 ---
 
-### Story 4.3: Implement Success CLI
+### Story 9.3: Implement Success CLI
 
 As a **operator**,  
 I want to manage claims via CLI (`herald success review`, `herald success publish`, `herald success list`),  
@@ -716,7 +716,7 @@ And returns edited thesis
 Given `herald success publish <claim-id> --thesis "Thesis text"`  
 When command runs  
 Then:
-  - Validates all evidence links (Story 4.5)
+  - Validates all evidence links (Story 9.5)
   - If valid, publishes claim with supplied thesis
   - Shows confirmation: "Published claim for <project> on <date>"
   - Exit code 0
@@ -751,7 +751,7 @@ And exit code 0
 
 ---
 
-### Story 4.4: Implement Success Web Archive
+### Story 9.4: Implement Success Web Archive
 
 As a **operator**,  
 I want to browse published success claims in the web UI (Success tab),  
@@ -816,7 +816,7 @@ And expandable detail readable on mobile
 
 ---
 
-### Story 4.5: Implement Evidence Validation (Sync + Async)
+### Story 9.5: Implement Evidence Validation (Sync + Async)
 
 As a **developer**,  
 I want evidence links to be validated at publish time (sync) and weekly (async),  
@@ -826,7 +826,7 @@ So that no broken links exist in published claims.
 
 Given claim being published  
 When evidence links submitted  
-Then sync validation runs (uses Story 1.4 protocol):
+Then sync validation runs (uses Story 6.4 protocol):
   - HEAD request to each URL, check for 404/403
   - Follow redirects (max 3 hops)
   - Return: {is_valid, status, redirect_target}
@@ -863,8 +863,8 @@ When link is in stale state
 Then web UI shows warning badge + suggestion: "This link hasn't been validated recently. Review it."
 
 **Implementation Notes:**
-- Validation library: uses Story 1.4 shared protocol
-- Sync validation: called during publish (Story 4.2)
+- Validation library: uses Story 6.4 shared protocol
+- Sync validation: called during publish (Story 9.2)
 - Async validation: scheduled job (APScheduler/Celery Beat), runs weekly
 - Link validation: requests library with follow_redirects=True, timeout=5s
 - Rate limiting: batch validation requests, don't flood upstream
@@ -873,16 +873,16 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 
 ---
 
-## Epic 5: Moment 4 — Operations Notices (Parallel with Epic 3 & 4)
+## Epic 10: Moment 4 — Operations Notices (Parallel with Epic 8 & 9)
 
 **Goal**: Deprecations/EOL announced with permanent URLs and redirects.
 
 **FRs Covered**: FR-5.1–5.6  
-**Effort**: 2–3 stories | **Dependencies**: Epics 1, 2 | **Week**: 4
+**Effort**: 2–3 stories | **Dependencies**: Epics 6, 7 | **Week**: 4
 
-*(Stories 5.1–5.6 will follow similar structure to Epics 3–4. For brevity in this deliverable, I'll provide the key story titles and acceptance criteria summaries:)*
+*(Stories 10.1-10.6 will follow similar structure to Epics 8-9. For brevity in this deliverable, I'll provide the key story titles and acceptance criteria summaries:)*
 
-### Story 5.1: Notice Data Model & Archive Storage
+### Story 10.1: Notice Data Model & Archive Storage
 
 **Acceptance Criteria:**
 - Notice schema: type (deprecation|fix|eol), component, what/why/migration/deadline, reason_link
@@ -890,7 +890,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Database index: notice records for quick discovery
 - Versioning: edit history preserved
 
-### Story 5.2: Notice Authoring Workflow (CLI)
+### Story 10.2: Notice Authoring Workflow (CLI)
 
 **Acceptance Criteria:**
 - CLI: `herald notice author --type deprecation --component auth-api-v1 --reason "..."`
@@ -898,7 +898,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Draft/publish flow
 - Operator confirmation gate
 
-### Story 5.3: Notice Archive & Redirects
+### Story 10.3: Notice Archive & Redirects
 
 **Acceptance Criteria:**
 - Archive indexing: `/operations/notices/[category]/[YYYY-MM]/[component].md`
@@ -906,13 +906,13 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Permanent URLs (no 404s)
 - Operator confirmation of redirects
 
-### Story 5.4: Notice CLI
+### Story 10.4: Notice CLI
 
 **Acceptance Criteria:**
 - `herald notice author`, `list`, `archive`, `get` commands
 - Consistent with other subcommands (global flags, help text)
 
-### Story 5.5: Operations Web Tab
+### Story 10.5: Operations Web Tab
 
 **Acceptance Criteria:**
 - Notice board layout (grid or list)
@@ -920,7 +920,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Notice detail page
 - Responsive design
 
-### Story 5.6: Notice Lifecycle
+### Story 10.6: Notice Lifecycle
 
 **Acceptance Criteria:**
 - Draft → Published → Closed state machine
@@ -929,14 +929,14 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 
 ---
 
-## Epic 6: Integration Testing & Automation Reliability
+## Epic 11: Integration Testing & Automation Reliability
 
 **Goal**: All three Moments work together; automation reliable; evidence links validated.
 
 **FRs Covered**: FR-6.1–7.4  
-**Effort**: 1–2 stories | **Dependencies**: Epics 3, 4, 5 | **Week**: 5
+**Effort**: 1–2 stories | **Dependencies**: Epics 8, 9, 10 | **Week**: 5
 
-### Story 6.1: Integration Testing (CLI + Web + Automation)
+### Story 11.1: Integration Testing (CLI + Web + Automation)
 
 **Acceptance Criteria:**
 - End-to-end scenario: PR merge → progress created → claim auto-extracted → claim published → success visible in web
@@ -944,7 +944,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - CLI + web + automation coordinated
 - >90% coverage of critical paths
 
-### Story 6.2: Automation Reliability
+### Story 11.2: Automation Reliability
 
 **Acceptance Criteria:**
 - Webhook retries (exponential backoff, max 3)
@@ -952,14 +952,14 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Gate checks enforced (no claim for failed builds)
 - Operator alerts for failures
 
-### Story 6.3: Evidence Linking (Cross-Moment)
+### Story 11.3: Evidence Linking (Cross-Moment)
 
 **Acceptance Criteria:**
 - Success claims can link to Operations notices (bidirectional)
 - Links validated weekly
 - Backlinks visible in both directions
 
-### Story 6.4: Performance Testing
+### Story 11.4: Performance Testing
 
 **Acceptance Criteria:**
 - CLI commands <1s (95th percentile)
@@ -969,14 +969,14 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 
 ---
 
-## Epic 7: Documentation & Operator Experience
+## Epic 12: Documentation & Operator Experience
 
 **Goal**: CLI help, web guides, runbooks, and troubleshooting documented.
 
 **FRs Covered**: Implicit (NFRs: usability)  
 **Effort**: 0.5–1 story | **Dependencies**: All other epics | **Week**: 6
 
-### Story 7.1: CLI Runbooks & Troubleshooting
+### Story 12.1: CLI Runbooks & Troubleshooting
 
 **Acceptance Criteria:**
 - "How to author a notice" guide
@@ -984,7 +984,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Troubleshooting: webhook failures, automation misses, stale links
 - Escalation path (contact Herald team, file issue)
 
-### Story 7.2: Web Surface UX Guide
+### Story 12.2: Web Surface UX Guide
 
 **Acceptance Criteria:**
 - Inline help (tooltips, ?-button modals)
@@ -992,7 +992,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Empty state messages with next steps
 - Error messages with suggestions
 
-### Story 7.3: Operator Runbook
+### Story 12.3: Operator Runbook
 
 **Acceptance Criteria:**
 - Getting started (what is Herald, four Moments)
@@ -1000,7 +1000,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 - Examples (realistic command output, web screenshots)
 - FAQ section
 
-### Story 7.4: Automation Troubleshooting Guide
+### Story 12.4: Automation Troubleshooting Guide
 
 **Acceptance Criteria:**
 - Webhook not firing: diagnosis + fix
@@ -1014,7 +1014,7 @@ Then web UI shows warning badge + suggestion: "This link hasn't been validated r
 
 **Total Stories**: 18 detailed stories across 7 epics  
 **Total Effort**: 12–19 stories (estimated 6–12 weeks with parallel execution)  
-**Dependencies**: Sequential foundation (Epics 1–2) → Parallel Moments (Epics 3–5) → Integration (Epic 6) → Docs (Epic 7)  
+**Dependencies**: Sequential foundation (Epics 6-7) -> Parallel Moments (Epics 8-10) -> Integration (Epic 11) -> Docs (Epic 12)  
 **Ready for**: Handoff to development team via `bmad-quick-dev` or manual implementation
 
 All stories include:

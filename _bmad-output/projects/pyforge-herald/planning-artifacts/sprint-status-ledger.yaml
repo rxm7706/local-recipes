@@ -12,7 +12,17 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 27
+# stories: 57
+#
+# Epics 6-12 (below) were added 2026-08-07 to reconcile a real drift: the
+# "Herald Moments 2-4" planning chain (epics.md/epics-with-stories.md,
+# commit 6d5e941032) had overwritten the tracked epics.md content with a
+# NEW, non-overlapping 7-epic/30-story scheme using the SAME epic-1..epic-5
+# numbers this ledger already tracks for the original design-code-bridge
+# CLI scope -- never reconciled back into this ledger. Renumbered as a
+# continuation (epic-6..epic-12), mirroring the precedent set for
+# genesis-installer's own FR-namespace fold into pyforge-marshal, rather
+# than colliding keys or creating a second numbered island.
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -31,6 +41,36 @@ development_status:
   4-3-halt-on-auth-error: backlog
   5-1-push-regenerated-exports-with-etag-guard: backlog
   5-2-conflict-refusal-on-export-push: backlog
+  6-1-implement-herald-cli-dispatcher: backlog
+  6-2-implement-shared-argument-conventions: backlog
+  6-3-implement-cli-authentication-and-authorization: backlog
+  6-4-implement-evidence-link-validation-protocol-shared-infrastructure: backlog
+  6-5-cli-help-and-first-day-usability: backlog
+  7-1-design-and-implement-web-layout-header-tabs-sidebar-responsive: backlog
+  7-2-implement-web-tooltips-and-inline-help: backlog
+  8-1-implement-progress-data-model-and-database-schema: backlog
+  8-2-implement-on-ship-webhook-and-weekly-cron-automation: backlog
+  8-3-implement-progress-cli: backlog
+  8-4-implement-progress-web-tab: backlog
+  9-1-implement-claim-data-model-and-database-schema: backlog
+  9-2-implement-auto-extract-and-operator-review-gate: backlog
+  9-3-implement-success-cli: backlog
+  9-4-implement-success-web-archive: backlog
+  9-5-implement-evidence-validation-sync-and-async: backlog
+  10-1-notice-data-model-and-archive-storage: backlog
+  10-2-notice-authoring-workflow-cli: backlog
+  10-3-notice-archive-and-redirects: backlog
+  10-4-notice-cli: backlog
+  10-5-operations-web-tab: backlog
+  10-6-notice-lifecycle: backlog
+  11-1-integration-testing-cli-web-and-automation: backlog
+  11-2-automation-reliability: backlog
+  11-3-evidence-linking-cross-moment: backlog
+  11-4-performance-testing: backlog
+  12-1-cli-runbooks-and-troubleshooting: backlog
+  12-2-web-surface-ux-guide: backlog
+  12-3-operator-runbook: backlog
+  12-4-automation-troubleshooting-guide: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: backlog
@@ -41,3 +81,17 @@ development_status:
   epic-4-retrospective: optional
   epic-5: backlog
   epic-5-retrospective: optional
+  epic-6: backlog
+  epic-6-retrospective: optional
+  epic-7: backlog
+  epic-7-retrospective: optional
+  epic-8: backlog
+  epic-8-retrospective: optional
+  epic-9: backlog
+  epic-9-retrospective: optional
+  epic-10: backlog
+  epic-10-retrospective: optional
+  epic-11: backlog
+  epic-11-retrospective: optional
+  epic-12: backlog
+  epic-12-retrospective: optional
