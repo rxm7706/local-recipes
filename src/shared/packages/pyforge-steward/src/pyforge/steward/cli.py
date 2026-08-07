@@ -23,8 +23,8 @@ EXIT_INTERRUPTED = 130   # 128 + SIGINT
 EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 
 # The four duties. `keys` (Epic 1), `deploy` (Epic 2), and `provision`
-# (Epic 3) are real; `budget` accepts no flags yet, but is declared so
-# `steward --help` states the whole surface from the start.
+# (Epic 3) are real; `budget` (Epic 4) gains its first real verb (`set`)
+# this story — `steward --help` has stated the whole surface since Story 1.1.
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
@@ -50,6 +50,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_deploy_subparsers(duty_parser)
         elif name == "provision":
             _add_provision_subparsers(duty_parser)
+        elif name == "budget":
+            _add_budget_subparsers(duty_parser)
     return parser
 
 
@@ -169,13 +171,23 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
     )
 
 
+def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
+    """Add the `set` verb (Story 4.1) — `show`/`check` land in Stories 4.2/4.3."""
+    budget_subs = budget_parser.add_subparsers(dest="budget_verb", metavar="{set}")
+
+    set_ = budget_subs.add_parser("set", help="declare a machine-readable budget ceiling")
+    set_.add_argument(
+        "--cap", required=True, help="<amount><currency>/<period>, e.g. '1500usd/month'"
+    )
+
+
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
     `keys` returns a real `KeysDuty` (Story 1.3); `deploy` returns a real
     `DeployDuty` (Story 2.1); `provision` returns a real `ProvisionDuty`
-    (Story 3.1). `budget` is still `NullDuty` — a real implementation
-    replaces it without changing this seam.
+    (Story 3.1); `budget` returns a real `BudgetDuty` (Story 4.1). No duty
+    is `NullDuty` any more — the seam remains for a future fifth duty.
     """
     if name == "keys":
         # Imported here, not at module top: keys.py resolves its `_http.py`
@@ -193,6 +205,10 @@ def resolve_duty(name: str) -> Duty:
         from .provision import ProvisionDuty
 
         return ProvisionDuty()
+    if name == "budget":
+        from .budget import BudgetDuty
+
+        return BudgetDuty()
     return NullDuty(name)
 
 
