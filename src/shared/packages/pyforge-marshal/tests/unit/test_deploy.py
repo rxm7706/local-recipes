@@ -518,6 +518,189 @@ def test_promote_text_format_renders_a_summary(tmp_path, capsys, monkeypatch):
 
 
 # =====================================================================
+# Story 4.6 -- deploy idempotence and reconciliation of open intents
+# (AD-6/AD-21/AD-28), ``promote``'s own ``commit_paths`` intent/outcome
+# pair and pre-action reconciliation.
+# =====================================================================
+
+
+def test_promote_writes_an_intent_outcome_pair_around_commit_paths(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    assert exit_code == 0
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    intents = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-promote-commit" and line["phase"] == "intent"
+    ]
+    outcomes = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-promote-commit" and line["phase"] == "outcome"
+    ]
+    assert len(intents) == 1
+    assert intents[0]["payload"]["story_keys"] == ["1.2"]
+    assert intents[0]["payload"]["action"] == "commit_paths"
+    assert len(outcomes) == 1
+    assert outcomes[0]["intent_id"] == intents[0]["id"]
+
+
+def test_promote_merge_failure_leaves_an_open_intent_with_no_outcome(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",), commit_raises=True)
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    assert exit_code != 0
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    assert len(journal_lines) == 1
+    assert journal_lines[0]["kind"] == "deploy-promote-commit"
+    assert journal_lines[0]["phase"] == "intent"
+    assert "intent_id" not in journal_lines[0]
+
+
+def _write_open_intent(
+    tmp_path,
+    slug: str,
+    *,
+    run_id: str,
+    kind: str,
+    story_keys: list[str],
+    counter: int = 0,
+    writer_id: str = "prior-crashed-run",
+) -> dict:
+    """Simulate a crashed prior invocation: a lone ``intent`` entry, with no
+    matching ``outcome``, in its OWN run directory -- the exact shape a
+    process killed between the irreversible action succeeding and this
+    process journaling its own outcome would leave behind."""
+    run_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
+    )
+    run_dir.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "id": {"writer_id": writer_id, "counter": counter},
+        "ts": "2026-08-01T00:00:00.000Z",
+        "run_id": run_id,
+        "kind": kind,
+        "phase": "intent",
+        "payload": {"action": "prior-attempt", "story_keys": story_keys},
+    }
+    (run_dir / "journal.jsonl").write_text(json.dumps(entry) + "\n", encoding="utf-8")
+    return entry
+
+
+def test_promote_reconciles_a_prior_open_intent_when_evidence_confirms(
+    tmp_path, capsys, monkeypatch
+):
+    """A crashed prior `promote` left an open intent for "3.8"; THIS run's
+    own live evidence (a valid, committed tracked copy already exists)
+    confirms it happened -- the intent is closed with a `reconciliation`
+    outcome, and "3.8" is never re-committed."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
+    _write_tracked_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 3-8 into main",))
+    prior_intent = _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-1",
+        kind="deploy-promote-commit",
+        story_keys=["3.8"],
+    )
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-021" not in codes
+    assert vcs.commit_calls == []
+
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    reconciliations = [line for line in journal_lines if line["phase"] == "outcome"]
+    assert len(reconciliations) == 1
+    assert reconciliations[0]["kind"] == "reconciliation"
+    assert reconciliations[0]["intent_id"] == prior_intent["id"]
+
+
+def test_promote_reports_warn_for_an_open_intent_without_evidence(
+    tmp_path, capsys, monkeypatch
+):
+    """A crashed prior `promote`'s open intent names "9.9" -- nothing this
+    run can positively confirm happened. It stays open and is reported via
+    MRS-DEPLOY-021, WARN-classified (never ERROR, never blocking, AD-21's
+    F-17 amendment)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs()
+    _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-1",
+        kind="deploy-promote-commit",
+        story_keys=["9.9"],
+    )
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-021" in codes
+    warn_finding = next(f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-021")
+    assert warn_finding["severity"] == "warn"
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+
+
+def test_promote_rerun_against_a_converged_system_is_zero_changes(
+    tmp_path, capsys, monkeypatch
+):
+    """NFR-7: running `promote` twice in a row against the SAME state -- the
+    second run finds nothing left to promote, has no open intent to
+    reconcile (the first run's own intent/outcome pair already closed
+    itself within its own run), and produces zero changes at exit 0."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 1-2 into main",))
+
+    first_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+    capsys.readouterr()
+    runs_dir = (
+        tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "runs"
+    )
+    run_count_after_first = len(list(runs_dir.iterdir()))
+
+    second_exit = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+    payload = json.loads(capsys.readouterr().out)
+
+    assert first_exit == 0
+    assert second_exit == 0
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["already_promoted"] == ["1.2"]
+    assert payload["findings"] == []
+    assert len(vcs.commit_calls) == 1  # unchanged from the first run
+    # A fully converged re-run mints no NEW run directory at all -- nothing
+    # to reconcile (no open intent survives the first run) and nothing to
+    # act on.
+    assert len(list(runs_dir.iterdir())) == run_count_after_first
+
+
+# =====================================================================
 # ``unreachable_promotions_for_slug`` (Story 4.2).
 # =====================================================================
 
@@ -979,15 +1162,36 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(
     # branch name -- see `resolve_ref`'s default return above.
     assert vcs.merge_branch_calls == [("branch-tip-sha", "main", expected_subject)]
 
+    # Story 4.6: `land-story` now also journals an intent/outcome pair
+    # around `merge_branch` itself (AD-6), alongside the pre-existing
+    # manual-landing observation entry -- three lines total, not one.
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
-    assert len(journal_lines) == 1
-    payload_entry = journal_lines[0]["payload"]
+    assert len(journal_lines) == 3
+    observations = [line for line in journal_lines if line["phase"] == "observation"]
+    assert len(observations) == 1
+    payload_entry = observations[0]["payload"]
     assert payload_entry["story_key"] == "4.3"
     assert payload_entry["merge_sha"] == "merge-sha-456"
     assert payload_entry["gate_verdict"] == "clean"
     assert "landed manually" in payload_entry["justification"]
-    assert journal_lines[0]["kind"] == "manual-landing"
-    assert journal_lines[0]["phase"] == "observation"
+    assert observations[0]["kind"] == "manual-landing"
+
+    merge_intents = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-land-story-merge" and line["phase"] == "intent"
+    ]
+    merge_outcomes = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-land-story-merge" and line["phase"] == "outcome"
+    ]
+    assert len(merge_intents) == 1
+    assert merge_intents[0]["payload"]["story_keys"] == ["4.3"]
+    assert merge_intents[0]["payload"]["action"] == "merge_branch"
+    assert len(merge_outcomes) == 1
+    assert merge_outcomes[0]["intent_id"] == merge_intents[0]["id"]
+    assert merge_outcomes[0]["payload"]["merge_sha"] == "merge-sha-456"
 
 
 def test_land_story_reports_non_conforming_merges_without_blocking(
@@ -1039,9 +1243,15 @@ def test_land_story_conformance_audit_read_failure_warns_but_does_not_block(
     assert _find_land_journal_lines(tmp_path, "acme") != []
 
 
-def test_land_story_merge_failure_is_a_hard_stop_with_no_journal_entry(
+def test_land_story_merge_failure_leaves_an_open_intent_with_no_outcome(
     tmp_path, capsys, monkeypatch
 ):
+    """Story 4.6 (AD-6): the intent is written BEFORE `merge_branch` is
+    even attempted, so a merge failure leaves exactly ONE journal line --
+    the open intent, with no outcome and no manual-landing observation
+    (the landing itself never happened). This used to assert NO journal
+    entry at all; that was the exact AD-6 gap Story 4.6 exists to close --
+    see the story's own Spec Change Log for why this assertion changed."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(
         gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
@@ -1055,7 +1265,11 @@ def test_land_story_merge_failure_is_a_hard_stop_with_no_journal_entry(
     assert "MRS-DEPLOY-008" in codes
     assert exit_code != 0
     assert "merge_sha" not in payload["data"]
-    assert _find_land_journal_lines(tmp_path, "acme") == []
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    assert len(journal_lines) == 1
+    assert journal_lines[0]["kind"] == "deploy-land-story-merge"
+    assert journal_lines[0]["phase"] == "intent"
+    assert "intent_id" not in journal_lines[0]
 
 
 def test_land_story_uses_an_explicit_since_ref_over_the_computed_merge_base(
@@ -1219,9 +1433,126 @@ def test_land_story_redaction_failure_warns_but_still_lands(tmp_path, capsys, mo
     assert payload["verdict"] == "warn"
     assert exit_code == 0
     assert "merge_sha" in payload["data"]
+    # Story 4.6: three lines total (merge intent + outcome, plus the
+    # pre-existing manual-landing observation) -- not one.
     journal_lines = _find_land_journal_lines(tmp_path, "acme")
-    assert len(journal_lines) == 1
-    assert journal_lines[0]["payload"]["justification"] is None
+    assert len(journal_lines) == 3
+    observations = [line for line in journal_lines if line["phase"] == "observation"]
+    assert len(observations) == 1
+    assert observations[0]["payload"]["justification"] is None
+
+
+# =====================================================================
+# Story 4.6 -- deploy idempotence and reconciliation of open intents
+# (AD-6/AD-21/AD-28), ``land-story``'s own ``merge_branch`` intent/outcome
+# pair and pre-action reconciliation.
+# =====================================================================
+
+
+def test_land_story_reconciles_a_prior_open_intent_when_evidence_confirms(
+    tmp_path, capsys, monkeypatch
+):
+    """A crashed prior `land-story` left an open intent for "4.3"; THIS
+    run's own live evidence (the key is now reachable in main's own commit
+    history) confirms it happened -- the intent is closed with a
+    `reconciliation` outcome, and the already-merged short-circuit takes
+    over (no fresh merge attempt)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "evaluate_gate", _must_not_be_called)
+    already_landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        main_subjects=(already_landed_subject,),
+    )
+    prior_intent = _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-1",
+        kind="deploy-land-story-merge",
+        story_keys=["4.3"],
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["data"]["already_merged"] is True
+    assert vcs.merge_branch_calls == []
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    reconciliations = [line for line in journal_lines if line["phase"] == "outcome"]
+    assert len(reconciliations) == 1
+    assert reconciliations[0]["kind"] == "reconciliation"
+    assert reconciliations[0]["intent_id"] == prior_intent["id"]
+
+
+def test_land_story_reports_warn_for_an_open_intent_without_evidence(
+    tmp_path, capsys, monkeypatch
+):
+    """A crashed prior `land-story`'s open intent names a DIFFERENT key
+    ("9.9") than the one this run is landing -- nothing confirms it. It
+    stays open and is reported via MRS-DEPLOY-021 (WARN, never blocking),
+    and this run's own landing of "4.3" proceeds normally."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+    _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-1",
+        kind="deploy-land-story-merge",
+        story_keys=["9.9"],
+    )
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-021" in codes
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+    assert vcs.merge_branch_calls != []
+
+
+def test_land_story_rerun_against_a_converged_system_is_zero_changes(
+    tmp_path, capsys, monkeypatch
+):
+    """NFR-7: `land-story` on an already-merged key is already established
+    (P6) as a clean no-op; this proves it stays that way with zero NEW
+    journal entries once the first landing's own intent/outcome pair has
+    already closed itself."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        gate_module, "evaluate_gate", _fake_evaluate_gate(verdict=Verdict.CLEAN)
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha-123",
+        merge_branch_sha="merge-sha-456",
+        window_subjects=("Merge 4.3 into main",),
+    )
+    first_exit = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+    capsys.readouterr()
+    journal_lines_after_first = _find_land_journal_lines(tmp_path, "acme")
+
+    # The second run's own `_FakeVcs.commit_subjects("main", ...)` must now
+    # report the story as merged for the already-merged short-circuit to
+    # fire -- exactly what a REAL git repo would show after a real merge.
+    landed_subject = render_merge_subject(normalize("4.3"), "Merge {key} into main")
+    vcs.main_subjects = (landed_subject,)
+
+    second_exit = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+    payload = json.loads(capsys.readouterr().out)
+
+    assert first_exit == 0
+    assert second_exit == 0
+    assert payload["data"]["already_merged"] is True
+    assert len(vcs.merge_branch_calls) == 1  # unchanged from the first run
+    assert payload["findings"] == []
+    # No open intent survived the first (successful) run, so the second
+    # run's own reconciliation pass finds nothing and writes nothing new.
+    assert _find_land_journal_lines(tmp_path, "acme") == journal_lines_after_first
 
 
 # =====================================================================
@@ -1788,6 +2119,196 @@ def test_batch_pr_p10_already_landed_wave_is_a_noop(tmp_path, capsys, monkeypatc
     assert exit_code == 0
     assert forge.find_calls == []
     assert forge.create_calls == []
+
+
+# =====================================================================
+# Story 4.6 -- deploy idempotence and reconciliation of open intents
+# (AD-6/AD-21/AD-28), ``batch-pr``'s own ``create_pr``/``update_pr``
+# intent/outcome pair and pre-action reconciliation.
+# =====================================================================
+
+
+def test_batch_pr_writes_an_intent_outcome_pair_around_create_pr(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    assert exit_code == 0
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    intents = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-batch-pr-write" and line["phase"] == "intent"
+    ]
+    outcomes = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-batch-pr-write" and line["phase"] == "outcome"
+    ]
+    assert len(intents) == 1
+    assert intents[0]["payload"]["action"] == "create_pr"
+    assert intents[0]["payload"]["story_keys"] == ["4.4"]
+    assert len(outcomes) == 1
+    assert outcomes[0]["intent_id"] == intents[0]["id"]
+    assert outcomes[0]["payload"]["pr_number"] == 1
+
+
+def test_batch_pr_create_pr_failure_leaves_an_open_intent_with_no_outcome(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None, create_raises=True)
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    assert exit_code != 0
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    assert len(journal_lines) == 1
+    assert journal_lines[0]["kind"] == "deploy-batch-pr-write"
+    assert journal_lines[0]["phase"] == "intent"
+    assert "intent_id" not in journal_lines[0]
+
+
+def test_batch_pr_never_auto_reconciles_on_bare_pr_existence_alone(
+    tmp_path, capsys, monkeypatch
+):
+    """Code review (2026-08-06, P2, both reviewers' independent top
+    finding): a crashed prior `batch-pr` left an open intent for this
+    wave. `find_open_pr` now shows SOME PR on the head branch -- but bare
+    PR-existence does not confirm it is a PR reflecting THIS intent's own
+    story keys (a stale PR from an earlier, differently-scoped wave, or a
+    manually-opened PR, would satisfy the old check identically). `PrInfo`
+    carries no content field this port can verify per-key coverage
+    against, so this evidence is no longer treated as confirming --
+    reconciliation never auto-closes a `batch-pr` intent on it alone: the
+    intent stays open and is reported via MRS-DEPLOY-021, requiring the
+    operator's own confirmation. This does not change which of
+    create_pr/update_pr is called (that decision is `existing`'s own,
+    unchanged) -- `existing is not None` still routes to `update_pr`."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    existing_pr = PrInfo(number=7, url="https://example/pr/7", state="open", base="main")
+    forge = _FakeForge(existing=existing_pr)
+    prior_intent = _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-1",
+        kind="deploy-batch-pr-write",
+        story_keys=["4.4"],
+    )
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-021" in codes
+    assert len(forge.update_calls) == 1
+    assert forge.create_calls == []
+
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    reconciliations = [
+        line
+        for line in journal_lines
+        if line["phase"] == "outcome" and line["kind"] == "reconciliation"
+    ]
+    # The prior intent stays open -- NOT auto-closed by bare PR-existence.
+    assert reconciliations == []
+    still_open_intents = [
+        line
+        for line in journal_lines
+        if line["kind"] == "deploy-batch-pr-write"
+        and line["phase"] == "intent"
+        and line["id"] == prior_intent["id"]
+    ]
+    assert len(still_open_intents) == 1
+
+
+def test_batch_pr_reports_warn_for_an_open_intent_without_evidence(
+    tmp_path, capsys, monkeypatch
+):
+    """A crashed prior `batch-pr`'s open intent has NO confirming evidence
+    yet (no PR exists for the head branch) -- it stays open and is
+    reported via MRS-DEPLOY-021 (WARN, never blocking), and this run's own
+    `create_pr` attempt proceeds normally."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        resolve_ref_sha="head-sha-abc",
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+    _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-1",
+        kind="deploy-batch-pr-write",
+        story_keys=["4.4"],
+    )
+
+    exit_code = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-021" in codes
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+    assert len(forge.create_calls) == 1
+
+
+def test_batch_pr_rerun_against_a_converged_system_is_zero_changes(
+    tmp_path, capsys, monkeypatch
+):
+    """NFR-7: once every wave key is already durably landed on `base`, a
+    re-run is already established (P10) as a clean no-op -- this proves it
+    stays that way with zero NEW journal entries and no forge writes at
+    all across two consecutive runs."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        merge_base_sha="base-sha",
+        window_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        main_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+    forge = _FakeForge(existing=None)
+
+    first_exit = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+    capsys.readouterr()
+    second_exit = deploy_module.run_batch_pr(_batch_pr_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+    payload = json.loads(capsys.readouterr().out)
+
+    assert first_exit == 0
+    assert second_exit == 0
+    assert payload["data"]["already_landed"] is True
+    assert payload["findings"] == []
+    assert forge.create_calls == []
+    assert forge.update_calls == []
+    assert _find_land_journal_lines(tmp_path, "acme") == []
 
 
 def test_evaluate_hygiene_p9_label_does_not_fire_when_check_raises():
@@ -2676,3 +3197,192 @@ def test_refresh_feed_noop_reconciliation_holds_even_with_volatile_resync_output
     # is identical regardless.
     assert first["data"]["stories"] == second["data"]["stories"]
     assert first["findings"] == second["findings"]
+
+
+# =====================================================================
+# Code review (2026-08-06), remediation pass: P1/P3/P5.
+# =====================================================================
+
+
+def test_deploy_writer_id_p1_unique_across_pid_reuse(monkeypatch):
+    """Code review, 2026-08-06, P1 (both reviewers' independent top
+    finding, CRITICAL): OS process ids are reused over time. Before this
+    fix, `_deploy_writer_id` minted a bare `f"deploy-{action}-{pid}"`, with
+    the per-invocation counter always restarting at 0 -- so a crashed
+    invocation and a LATER, completely unrelated invocation of the same
+    action could mint the IDENTICAL `(writer_id, counter=0)`
+    `JournalEntryId` once `_fold_deploy_journal`'s GLOBAL fold combines
+    every run directory together (a hazard this diff itself introduced),
+    letting the fold mis-pair an outcome from one invocation against an
+    intent from a different, unrelated one -- corrupting AD-28's own
+    intent/outcome pairing guarantee. Two writer-id mints under the SAME
+    mocked pid must now be distinct."""
+    monkeypatch.setattr(deploy_module.os, "getpid", lambda: 4242)
+
+    first = deploy_module._deploy_writer_id("promote")
+    second = deploy_module._deploy_writer_id("promote")
+
+    assert first != second
+    # Both remain valid, filesystem-safe JournalEntryId writer ids.
+    JournalEntryId(first, 0)
+    JournalEntryId(second, 0)
+
+
+def test_deploy_writer_id_p1_pid_reuse_does_not_mispair_a_global_fold(tmp_path, monkeypatch):
+    """The end-to-end consequence of the P1 fix above: two SEPARATE
+    `_DeployRun` invocations of the SAME action, minted under the SAME
+    (mocked, reused) pid, produce DISTINCT writer ids -- so
+    `_fold_deploy_journal`'s GLOBAL fold across both run directories never
+    mis-pairs one invocation's own outcome against the other's own,
+    unrelated intent. Run A "crashes" (an open intent for "1.1", no
+    outcome); Run B, under the same pid, confirms and closes its own
+    disjoint "2.2" intent. Without the fix, both `JournalEntryId`s could
+    collide at `(writer_id, counter=0)`, and Run B's own outcome
+    (`intent_id` matching that shared id) would incorrectly also close
+    Run A's own still-open "1.1" intent in the fold."""
+    monkeypatch.setattr(deploy_module.os, "getpid", lambda: 4242)
+    fs = LocalFs()
+
+    findings_a: list = []
+    run_a = deploy_module._DeployRun(
+        fs, tmp_path, "acme", deploy_module._deploy_writer_id("promote")
+    )
+    intent_a = run_a.write(
+        findings_a,
+        kind="deploy-promote-commit",
+        phase=deploy_module.Phase.INTENT,
+        payload={"action": "commit_paths", "story_keys": ["1.1"]},
+    )
+    # Run A "crashes" here -- no outcome is ever written for intent_a.
+
+    findings_b: list = []
+    run_b = deploy_module._DeployRun(
+        fs, tmp_path, "acme", deploy_module._deploy_writer_id("promote")
+    )
+    intent_b = run_b.write(
+        findings_b,
+        kind="deploy-promote-commit",
+        phase=deploy_module.Phase.INTENT,
+        payload={"action": "commit_paths", "story_keys": ["2.2"]},
+    )
+    run_b.write(
+        findings_b,
+        kind="deploy-promote-commit",
+        phase=deploy_module.Phase.OUTCOME,
+        payload={"action": "commit_paths", "story_keys": ["2.2"]},
+        intent_id=intent_b,
+    )
+
+    assert intent_a.writer_id != intent_b.writer_id
+
+    fold_findings: list = []
+    fold_result = deploy_module._fold_deploy_journal(fs, tmp_path, "acme", fold_findings)
+    open_ids = {entry.id for entry in fold_result.open_intents}
+
+    assert intent_a in open_ids  # "1.1" correctly still open -- never crashed
+    assert intent_b not in open_ids  # "2.2" correctly closed by its own outcome
+    assert fold_findings == []
+
+
+def test_fold_deploy_journal_p3_reports_a_finding_on_blanket_fold_failure(
+    tmp_path, capsys, monkeypatch
+):
+    """Code review (2026-08-06, P3, Blind Hunter, HIGH): `_fold_deploy_journal`'s
+    outer `fold()` call can itself fail on a shape `fold` does not
+    tolerate. That used to degrade SILENTLY to an empty `FoldResult` --
+    indistinguishable, to every caller, from "confirmed: no open intents
+    anywhere" -- making every genuinely open intent across every run
+    directory invisible in one shot with zero signal. It must now emit a
+    registered MRS-DEPLOY-022 finding naming the failure instead, and the
+    guarded action must still proceed normally (never blocking)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-1",
+        kind="deploy-promote-commit",
+        story_keys=["9.9"],
+    )
+
+    real_fold = deploy_module.fold
+
+    def _raising_fold(lines, *, sidecars=None):
+        # Raise only for the REAL cross-run fold attempt (non-empty
+        # lines); the fallback `fold((), sidecars={})` this function's own
+        # except-clause makes must still succeed, exactly like the real
+        # `core.journal.fold` does for an empty input.
+        if lines:
+            raise ValueError("simulated malformed cross-run journal content")
+        return real_fold(lines, sidecars=sidecars or {})
+
+    monkeypatch.setattr(deploy_module, "fold", _raising_fold)
+
+    vcs = _FakeVcs()
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+    payload = json.loads(capsys.readouterr().out)
+
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-022" in codes
+    finding = next(f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-022")
+    assert finding["severity"] == "warn"
+    # The fold failure means reconciliation could not run at all -- the
+    # prior "9.9" open intent is therefore neither reconciled NOR reported
+    # as MRS-DEPLOY-021 this run (it is invisible to this fold, exactly
+    # the gap MRS-DEPLOY-022 exists to surface instead of hiding).
+    assert "MRS-DEPLOY-021" not in codes
+    # Never blocking -- the action this run guards still proceeds normally.
+    assert exit_code == 0
+
+
+def test_promote_reconciles_one_open_intent_while_leaving_a_disjoint_one_open(
+    tmp_path, capsys, monkeypatch
+):
+    """P5 (MEDIUM, Edge Case Hunter): two DISTINCT open intents of the same
+    kind, from two different crashed runs, each naming a disjoint
+    story-key subset -- `_reconcile_open_intents`'s loop must reconcile
+    the one this run's own live evidence confirms while INDEPENDENTLY
+    leaving the other open and reporting MRS-DEPLOY-021 for it alone.
+    Every prior reconciliation test scenario carried exactly one open
+    intent; this is the first to exercise the loop's multi-intent
+    iteration branch."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
+    _write_tracked_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 3-8 into main",))
+
+    confirmed_intent = _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-confirmed",
+        kind="deploy-promote-commit",
+        story_keys=["3.8"],
+        writer_id="prior-crashed-run-a",
+    )
+    unconfirmed_intent = _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-unconfirmed",
+        kind="deploy-promote-commit",
+        story_keys=["9.9"],
+        writer_id="prior-crashed-run-b",
+    )
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert codes.count("MRS-DEPLOY-021") == 1
+    warn_finding = next(f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-021")
+    assert "9.9" in warn_finding["message"]
+    assert "3.8" not in warn_finding["message"]
+
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    reconciliations = [
+        line
+        for line in journal_lines
+        if line["phase"] == "outcome" and line["kind"] == "reconciliation"
+    ]
+    assert len(reconciliations) == 1
+    assert reconciliations[0]["intent_id"] == confirmed_intent["id"]
+    assert reconciliations[0]["intent_id"] != unconfirmed_intent["id"]

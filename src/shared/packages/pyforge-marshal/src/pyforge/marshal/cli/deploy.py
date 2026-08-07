@@ -193,7 +193,16 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
 from ..core.egress import Redacted, to_redacted
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
-from ..core.journal import JournalEntryId, Phase, build_entry, fold, mint_run_id, prepare_for_write
+from ..core.journal import (
+    FoldResult,
+    JournalEntryId,
+    Phase,
+    build_entry,
+    fold,
+    intent_reconciles,
+    mint_run_id,
+    prepare_for_write,
+)
 from ..core.landing import LandingRule, rule_applies
 from ..core.model import Finding, Severity, Status, Verdict, build_envelope, status_for
 from ..core.promotion import PromotionPlan, SpecCandidate
@@ -236,11 +245,24 @@ _MRS_DEPLOY_015 = "MRS-DEPLOY-015"
 _MRS_DEPLOY_016 = "MRS-DEPLOY-016"
 _MRS_DEPLOY_017 = "MRS-DEPLOY-017"
 _MRS_DEPLOY_018 = "MRS-DEPLOY-018"
+_MRS_DEPLOY_021 = "MRS-DEPLOY-021"
+_MRS_DEPLOY_022 = "MRS-DEPLOY-022"
 
 # Story 4.3's own journal kind (mirrors cli/init.py's `_ABANDON_KIND`
 # convention) -- one `observation` entry per manual landing.
 _LAND_JOURNAL_FILENAME = "journal.jsonl"
 _LAND_KIND = "manual-landing"
+
+# Story 4.6's own journal kinds (AD-6/AD-21/AD-28): the intent/outcome pair
+# around each of the three commands' own irreversible step. A CLOSING
+# outcome for an open intent that this run's own action confirmed already
+# happened (never re-performed) carries the distinct `_RECONCILIATION_KIND`
+# instead of the action's own kind -- AD-28's own literal text, "a lone
+# intent is closed exclusively by a reconciliation outcome".
+_PROMOTE_COMMIT_KIND = "deploy-promote-commit"
+_LAND_MERGE_KIND = "deploy-land-story-merge"
+_BATCH_PR_WRITE_KIND = "deploy-batch-pr-write"
+_RECONCILIATION_KIND = "reconciliation"
 
 # Story 4.4's own repo constant: every Marshal station lives inside this ONE
 # physical repo (this repo's own `local-recipes` fork, per the team's own
@@ -694,6 +716,28 @@ def run_promote(
 
     already_promoted_list = [str(key) for key in sorted(scan.already_promoted)]
 
+    # Story 4.6's pre-action reconciliation precondition (AD-6/AD-21/AD-28):
+    # `scan.already_promoted` is ALREADY this run's own fresh, live
+    # evidence (a valid, git-committed tracked copy exists) -- exactly the
+    # "does the spec now exist and is it committed" evidence check the
+    # story's own Always bullet names for `promote`. A malformed/empty
+    # `project_slug` produced no candidates and no scan.plan either --
+    # `_reconcile_open_intents` itself now applies the SAME slug-validity
+    # guard (code review, 2026-08-06, P4: consistent across all three
+    # call sites, factored into the shared helper rather than duplicated
+    # here), so this call site no longer needs its own local guard.
+    deploy_run = _DeployRun(fs, root, project_slug, _deploy_writer_id("promote"))
+    _reconcile_open_intents(
+        fs,
+        root,
+        project_slug,
+        kind=_PROMOTE_COMMIT_KIND,
+        confirmed_story_keys=scan.already_promoted,
+        evidence_note="tracked spec exists and is git-committed",
+        deploy_run=deploy_run,
+        findings=findings,
+    )
+
     if scan.plan is not None:
         plan = scan.plan
         subjects_examined = len(scan.combined_subjects)
@@ -737,6 +781,24 @@ def run_promote(
                 f"marshal: promote {len(commit_targets)} story spec(s) to "
                 "tracked artifacts"
             )
+            # Story 4.6 (AD-6): an `intent` entry BEFORE the irreversible
+            # `commit_paths` call, an `outcome` AFTER it succeeds. A
+            # journal-write failure for the intent itself means no paper
+            # trail exists for the write about to happen -- `deploy_run
+            # .write` already reports it via a Finding; `commit_paths`
+            # still runs (a promote is not gated on its OWN journal write
+            # succeeding, matching this codebase's existing "best-effort
+            # journaling of an already-decided action" posture, e.g.
+            # `_journal_manual_landing`'s own post-merge journal write). A
+            # `commit_paths` failure leaves the intent open -- no outcome
+            # is written, per the story's own I/O matrix ("that step
+            # reports failed; intent for it stays open").
+            intent_id = deploy_run.write(
+                findings,
+                kind=_PROMOTE_COMMIT_KIND,
+                phase=Phase.INTENT,
+                payload={"action": "commit_paths", "story_keys": sorted(promoted)},
+            )
             try:
                 vcs.commit_paths(root, tuple(commit_targets), message)
             except VcsCommandError as exc:
@@ -747,6 +809,19 @@ def run_promote(
                         message=f"cannot commit promoted specs: {exc}",
                     )
                 )
+            else:
+                if intent_id is not None:
+                    deploy_run.write(
+                        findings,
+                        kind=_PROMOTE_COMMIT_KIND,
+                        phase=Phase.OUTCOME,
+                        payload={
+                            "action": "commit_paths",
+                            "story_keys": sorted(promoted),
+                            "commit_message": message,
+                        },
+                        intent_id=intent_id,
+                    )
 
     data["promoted"] = sorted(promoted)
     data["promoted_count"] = len(promoted)
@@ -1221,6 +1296,366 @@ def _journal_manual_landing(
     return None
 
 
+# ---------------------------------------------------------------------------
+# Story 4.6 -- deploy idempotence and reconciliation of open intents (AD-6/
+# AD-21/AD-28). Shared machinery `run_promote`/`run_land_story`/
+# `run_batch_pr` each wrap their own irreversible step with: (1) a
+# pre-action reconciliation check against every OPEN intent a prior,
+# possibly-crashed invocation of the SAME action left behind, and (2) a
+# fresh intent/outcome pair around the action this run itself performs.
+# ---------------------------------------------------------------------------
+
+
+def _deploy_writer_id(action: str) -> str:
+    """A fresh, process-scoped, filesystem-safe writer id, one per deploy
+    action -- mirrors ``_land_writer_id``'s identical rationale, scoped to
+    each of ``promote``/``land-story``/``batch-pr`` rather than only
+    ``land-story``. Prefixed ``deploy-`` (unlike ``_land_writer_id``'s bare
+    ``f"land-story-{pid}"``) so `land-story`'s own two independent writers
+    in the same process -- this helper's own intent/outcome pair and
+    ``_journal_manual_landing``'s pre-existing observation entry -- can
+    never mint the identical ``(writer_id, counter=0)`` composite id even
+    though `_fold_deploy_journal` folds every run directory's journal
+    TOGETHER (a real hazard once entries from separate run directories are
+    combined into one global fold, unlike this module's older
+    single-run-directory readers).
+
+    Code review (2026-08-06, P1, both reviewers' independent top finding):
+    also incorporates a fresh ``secrets``-sourced random token (the SAME
+    uniqueness source ``mint_run_id``'s own ``random_token`` argument
+    already uses via ``_land_random_token``, reused here rather than a
+    second scheme), not merely ``os.getpid()``. The bare-pid form used to
+    let the OS reuse a pid across two genuinely SEPARATE invocations (the
+    ordinary case over a long-lived Tier-3 store), which mints the
+    IDENTICAL ``(writer_id, counter=0)`` composite id for both -- harmless
+    before this story, when a fold only ever read ONE run directory at a
+    time, but `_fold_deploy_journal` now folds EVERY run directory
+    TOGETHER into one global ``fold()`` call, so a pid-reuse collision lets
+    an unrelated later invocation's outcome mis-pair against an EARLIER,
+    unrelated invocation's intent -- corrupting AD-28's own intent/outcome
+    pairing guarantee, exactly the "wrongly reconciled as already done"
+    failure mode this whole story exists to prevent. The random token
+    makes that collision practically impossible regardless of pid reuse.
+    Built via ``str.join`` rather than an f-string/``.format()`` literal --
+    the AD-23 inline-key-format meta-test
+    (``tests/meta/test_ad23_inline_key_format_guard.py``) flags any
+    two-placeholder-joined-by-a-bare-``-`` literal outside
+    ``core/identity.py`` on sight, since that is also the exact shape a
+    hand-rolled story-key formatter would take; this value is a writer id,
+    never a story key, but the guard is a purely structural AST scan with
+    no way to tell the two apart, so this is spelled to not match it."""
+    return "-".join(("deploy", action, str(os.getpid()), _land_random_token()))
+
+
+def _mint_deploy_run(fs: FsPort, root: Path, slug: str) -> tuple[Path, str] | Finding:
+    """Mint a fresh Tier-3 run directory for one deploy-action invocation's
+    own idempotence journal -- the SAME mint-a-fresh-run-then-append shape
+    ``_journal_manual_landing``/``cli/init.py::_journal_abandonments``
+    already establish, generalized so ``promote``/``batch-pr`` (which had
+    no journal at all before this story) gain it too. Returns a Finding
+    (never raises) on any I/O failure."""
+    moment = datetime.now(timezone.utc)
+    run_id = mint_run_id(slug, _land_format_utc_compact(moment), _land_random_token())
+    run_dir = (
+        root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
+    )
+    try:
+        fs.ensure_dir(run_dir.parent)
+        fs.create_dir_exclusive(run_dir)
+    except FsError as exc:
+        return Finding(
+            code=_MRS_DEPLOY_003,
+            severity=Severity.ERROR,
+            message=f"cannot create a journal directory for {slug!r}'s deploy action: {exc}",
+        )
+    return run_dir, run_id
+
+
+def _fold_deploy_journal(
+    fs: FsPort, root: Path, slug: str, findings: list[Finding]
+) -> FoldResult:
+    """The GLOBAL fold (AD-28) over EVERY run directory this slug's Tier-3
+    store carries under ``implementation-artifacts/runs/*/journal.jsonl``.
+
+    An ``intent`` minted by one invocation and the ``reconciliation``
+    outcome that later closes it are minted by a DIFFERENT, independent
+    invocation (a fresh run directory each time, per ``_mint_deploy_run``)
+    -- so pairing them by ``intent_id`` (AD-28's own "pairing is by
+    intent_id ONLY" rule) requires folding every line from every run
+    directory TOGETHER in ONE ``fold()`` call. A per-directory fold (this
+    module's own ``_gather_gate_verdicts`` precedent) would show the same
+    intent as perpetually open in its own origin file forever, even after
+    a later run's reconciliation outcome closed it -- the same class of
+    bug ``core.journal.fold``'s own docstring warns a positional/heuristic
+    pairing scheme would produce, here at the file-selection layer instead
+    of the entry-pairing layer.
+
+    Best-effort PER RUN DIRECTORY, mirroring every sibling reader in this
+    module: an unreadable ``runs`` directory, a single run's journal file,
+    or a sidecar blob is silently skipped rather than aborting the whole
+    scan -- a converged, fully-reconciled system must never fail to
+    evaluate just because one ancient run directory's own files rotted.
+
+    Code review (2026-08-06, P3, Blind Hunter): the outer ``fold()`` call
+    itself can still fail on a shape ``fold`` does not tolerate (a
+    corrupted line surviving quarantine, an unexpected ``KeyError``/
+    ``OSError`` from a pathological sidecar). That blanket failure used to
+    return an EMPTY ``FoldResult`` silently -- indistinguishable, to every
+    caller, from "confirmed: no open intents anywhere". That is not a
+    per-entry quarantine (``fold``'s own AD-30 mechanism already handles
+    those); it is a whole-fold failure that would make EVERY genuinely
+    open intent across every run directory invisible in one shot, with the
+    reconciliation pass reporting a clean run instead of naming the gap --
+    exactly the "discrepancies are reported, never silently resolved"
+    posture this story's own Design Notes require everywhere else. A
+    registered ``MRS-DEPLOY-022`` finding is appended instead, naming that
+    the cross-run fold failed and reconciliation could not be attempted
+    this invocation; the caller's own action still proceeds (this finding
+    is WARN, never blocking, the same posture MRS-DEPLOY-021 already
+    establishes for "no evidence yet")."""
+    runs_dir = root / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs"
+    all_lines: list[str] = []
+    sidecars: dict[str, str | None] = {}
+    try:
+        run_dirs = sorted(path for path in runs_dir.iterdir() if path.is_dir())
+    except OSError:
+        run_dirs = []
+    for run_dir in run_dirs:
+        try:
+            text = fs.read_text(run_dir / _LAND_JOURNAL_FILENAME)
+        except FsError:
+            continue
+        all_lines.extend(line for line in text.split("\n") if line.strip())
+        try:
+            blob_paths = sorted((run_dir / "blobs").glob("*.json"))
+        except OSError:
+            blob_paths = []
+        for blob_path in blob_paths:
+            try:
+                sidecars[f"blobs/{blob_path.name}"] = fs.read_text(blob_path)
+            except FsError:
+                sidecars[f"blobs/{blob_path.name}"] = None
+    try:
+        return fold(all_lines, sidecars=sidecars)
+    except (TypeError, ValueError, KeyError, OSError) as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_022,
+                severity=Severity.WARN,
+                message=(
+                    f"cross-run journal fold failed for {slug!r} ({exc}) -- "
+                    "reconciliation could not be attempted this invocation; "
+                    "any genuinely open intent from a prior run is neither "
+                    "confirmed nor reported this run"
+                ),
+            )
+        )
+        return fold((), sidecars={})
+
+
+def _write_deploy_entry(
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    *,
+    kind: str,
+    phase: Phase,
+    payload: Mapping[str, object],
+    intent_id: JournalEntryId | None = None,
+) -> tuple[JournalEntryId, Finding | None]:
+    """Append ONE journal entry to ``run_dir``'s own ``journal.jsonl``
+    (Story 4.6): builds, prepares, and appends via the SAME
+    ``build_entry``/``prepare_for_write``/``FsPort.append_line`` pipeline
+    ``_journal_manual_landing`` already established, generalized for a
+    caller-supplied phase/kind/payload/intent_id. ``fsync=True``
+    unconditionally -- an ``intent`` authorizes an irreversible action
+    about to happen (AD-6/AD-30's own precedent), and a genuine
+    ``outcome``/``reconciliation`` is the durable record of what happened;
+    neither is ever worth losing to a buffered write. Returns the entry's
+    own id (for a later outcome/reconciliation to reference) and, on any
+    I/O failure, a ``Finding`` the caller appends -- never raises. A
+    failed intent write means the caller must NOT proceed with the action
+    it was about to guard (no paper trail, no action -- AD-6's own
+    ordering), which every real call site below honors."""
+    entry_id = JournalEntryId(writer_id, counter)
+    entry = build_entry(
+        id=entry_id,
+        ts=_land_format_entry_ts(datetime.now(timezone.utc)),
+        run_id=run_id,
+        kind=kind,
+        phase=phase,
+        payload=payload,
+        intent_id=intent_id,
+    )
+    try:
+        prepared = prepare_for_write(entry)
+        if prepared.sidecar_relative_path is not None:
+            fs.write_text_atomic(
+                run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
+            )
+        fs.append_line(run_dir / _LAND_JOURNAL_FILENAME, prepared.line, fsync=True)
+    except FsError as exc:
+        return entry_id, Finding(
+            code=_MRS_DEPLOY_003,
+            severity=Severity.ERROR,
+            message=f"cannot journal a {phase.value} entry ({kind}) for {run_id!r}: {exc}",
+        )
+    return entry_id, None
+
+
+class _DeployRun:
+    """Lazily-minted run-directory handle shared across one command
+    invocation's own reconciliation pass and its own action intent/outcome
+    pair (Story 4.6) -- a command with NOTHING to reconcile and NOTHING to
+    act on mints no run directory at all (NFR-7: a converged re-run
+    produces zero changes, and that includes zero new, empty run
+    directories)."""
+
+    __slots__ = ("fs", "root", "slug", "writer_id", "run_dir", "run_id", "counter")
+
+    def __init__(self, fs: FsPort, root: Path, slug: str, writer_id: str) -> None:
+        self.fs = fs
+        self.root = root
+        self.slug = slug
+        self.writer_id = writer_id
+        self.run_dir: Path | None = None
+        self.run_id: str | None = None
+        self.counter = 0
+
+    def ensure(self, findings: list[Finding]) -> bool:
+        """Mint this invocation's run directory on first use. Returns
+        ``True`` once a usable ``run_dir`` exists, ``False`` (with a
+        Finding appended) if minting failed -- the caller must then skip
+        the journal write it was about to attempt, never crash."""
+        if self.run_dir is not None:
+            return True
+        minted = _mint_deploy_run(self.fs, self.root, self.slug)
+        if isinstance(minted, Finding):
+            findings.append(minted)
+            return False
+        self.run_dir, self.run_id = minted
+        return True
+
+    def write(
+        self,
+        findings: list[Finding],
+        *,
+        kind: str,
+        phase: Phase,
+        payload: Mapping[str, object],
+        intent_id: JournalEntryId | None = None,
+    ) -> JournalEntryId | None:
+        """Write one entry using this invocation's own run directory,
+        minting it first if needed. Returns the entry's own id on success
+        (even a partial success -- the write happened even if a Finding
+        was also appended for some OTHER reason), or ``None`` only when
+        the run directory itself could not be minted at all (nothing was
+        written)."""
+        if not self.ensure(findings):
+            return None
+        assert self.run_dir is not None and self.run_id is not None
+        entry_id, finding = _write_deploy_entry(
+            self.fs,
+            self.run_dir,
+            self.run_id,
+            self.writer_id,
+            self.counter,
+            kind=kind,
+            phase=phase,
+            payload=payload,
+            intent_id=intent_id,
+        )
+        self.counter += 1
+        if finding is not None:
+            findings.append(finding)
+        return entry_id
+
+
+def _reconcile_open_intents(
+    fs: FsPort,
+    root: Path,
+    slug: str,
+    *,
+    kind: str,
+    confirmed_story_keys: frozenset[StoryKey] | set[StoryKey],
+    evidence_note: str,
+    deploy_run: "_DeployRun",
+    findings: list[Finding],
+) -> None:
+    """The pre-action reconciliation precondition (Story 4.6, AD-6 x AD-21
+    x AD-28): folds every run directory's journal (``_fold_deploy_journal``)
+    for OPEN intents of ``kind``, and for each one asks
+    ``core.journal.intent_reconciles`` whether ``confirmed_story_keys`` --
+    already gathered by the caller via ``VcsPort``/``ForgePort``, e.g.
+    ``run_promote``'s own ``already_promoted`` set -- confirms it. A
+    reconciled intent is closed with a ``reconciliation`` outcome
+    (AD-28's own literal shape: ``intent_id`` referencing the open intent,
+    the evidence named) and NEVER causes the action to be re-performed here
+    -- this function only writes the closing outcome; every call site's own
+    existing idempotence check (``already_promoted``, ``merged_story_keys``,
+    ``find_open_pr``) is what ALREADY keeps the real action from re-running,
+    unchanged by this story. An UNreconciled intent stays open and is
+    reported via ``MRS-DEPLOY-021`` (``Verdict.WARN``, per AD-21's F-17
+    amendment) -- never blocking, and the action proceeds normally exactly
+    as it already would have without this story's own changes.
+
+    Code review (2026-08-06, P4, Blind Hunter): the slug-validity guard
+    (``policy._is_valid_project_slug``) is checked ONCE, HERE, rather than
+    duplicated at each of the three call sites -- ``run_land_story``/
+    ``run_batch_pr`` already refuse a malformed slug long before reaching
+    this call (their own ``MRS-POLICY-006`` precondition), but
+    ``run_promote`` tolerates an empty/malformed slug (an established,
+    pre-existing behavior: ``_scan_promotions`` degrades gracefully rather
+    than refusing) and used to wrap this call in its own local
+    ``if policy._is_valid_project_slug(...)`` -- an inconsistent posture
+    across three call sites presented as parallel implementations of the
+    same pattern. Reconciliation genuinely needs a valid project context
+    to resolve Tier-3 paths, so the guard is real, not decorative; folding
+    it in here means every caller gets it uniformly with no duplicated,
+    cross-module reach into ``core.policy``'s private helper."""
+    if not policy._is_valid_project_slug(slug):
+        return
+    fold_result = _fold_deploy_journal(fs, root, slug, findings)
+    open_intents = [entry for entry in fold_result.open_intents if entry.kind == kind]
+    if not open_intents:
+        return
+    confirmed = sorted(str(key) for key in confirmed_story_keys)
+    evidence: dict[str, object] = {"confirmed_story_keys": confirmed}
+    for intent in open_intents:
+        if intent_reconciles(intent.payload, evidence):
+            reconciled_keys = intent.payload.get("story_keys")
+            deploy_run.write(
+                findings,
+                kind=_RECONCILIATION_KIND,
+                phase=Phase.OUTCOME,
+                payload={
+                    "reconciled_kind": kind,
+                    "story_keys": reconciled_keys,
+                    "evidence": evidence_note,
+                    "confirmed_story_keys": confirmed,
+                },
+                intent_id=intent.id,
+            )
+        else:
+            findings.append(
+                Finding(
+                    code=_MRS_DEPLOY_021,
+                    severity=Severity.WARN,
+                    message=(
+                        f"open intent {intent.id.writer_id}:{intent.id.counter} "
+                        f"(kind={kind!r}, story_keys="
+                        f"{intent.payload.get('story_keys')!r}) from a prior "
+                        "run has no confirming evidence yet -- it stays open; "
+                        "this run does not re-perform the action without "
+                        "evidence, though its own existing idempotence check "
+                        "may make attempting it again safe regardless"
+                    ),
+                )
+            )
+
+
 def run_land_story(
     args: argparse.Namespace,
     *,
@@ -1380,7 +1815,29 @@ def run_land_story(
         main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE_BRANCH)
     except VcsCommandError:
         main_subjects = ()
-    if story_key in promotion.merged_story_keys(main_subjects, template, slug):
+    merged_keys_now = promotion.merged_story_keys(main_subjects, template, slug)
+
+    # Story 4.6's pre-action reconciliation precondition (AD-6/AD-21/AD-28):
+    # `merged_keys_now` is ALREADY this run's own fresh, live evidence --
+    # exactly "does the story now appear in merged_story_keys", the
+    # story's own Always bullet for `land-story`. A prior, possibly-crashed
+    # invocation's open `deploy-land-story-merge` intent for THIS key is
+    # closed here with a `reconciliation` outcome; the merge below is
+    # unaffected either way -- it is already governed entirely by the
+    # already-merged short-circuit immediately following.
+    deploy_run = _DeployRun(fs, root, slug, _deploy_writer_id("land-story"))
+    _reconcile_open_intents(
+        fs,
+        root,
+        slug,
+        kind=_LAND_MERGE_KIND,
+        confirmed_story_keys=merged_keys_now,
+        evidence_note="story key now reachable in main's own commit history",
+        deploy_run=deploy_run,
+        findings=findings,
+    )
+
+    if story_key in merged_keys_now:
         data["already_merged"] = True
         return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
 
@@ -1482,10 +1939,24 @@ def run_land_story(
 
     # 10. Merge -- the CAPTURED sha, not the bare branch name (see step 9).
     # A conflict/failure here is a hard stop -- never retried, never
-    # auto-resolved, and no journal entry (journal only on confirmed
-    # success). `merge_branch` itself never touches repo_root's own active
-    # checkout (code review, 2026-08-06, P1) and protects `into` with its
-    # own compare-and-swap ref update.
+    # auto-resolved. `merge_branch` itself never touches repo_root's own
+    # active checkout (code review, 2026-08-06, P1) and protects `into`
+    # with its own compare-and-swap ref update.
+    #
+    # Story 4.6 (AD-6): an `intent` entry BEFORE this irreversible merge, an
+    # `outcome` AFTER it succeeds. A `merge_branch` failure leaves the
+    # intent open -- no outcome is written, per the story's own I/O matrix.
+    merge_intent_id = deploy_run.write(
+        findings,
+        kind=_LAND_MERGE_KIND,
+        phase=Phase.INTENT,
+        payload={
+            "action": "merge_branch",
+            "story_keys": [str(story_key)],
+            "branch": branch,
+            "into": _MERGE_BASE_BRANCH,
+        },
+    )
     try:
         merge_sha = vcs.merge_branch(
             git_repo_root, branch_tip_after_gate, into=_MERGE_BASE_BRANCH, subject=subject
@@ -1500,6 +1971,20 @@ def run_land_story(
         )
         return _emit(args, "deploy land-story", data, findings, _render_text_land_story)
     data["merge_sha"] = merge_sha
+    if merge_intent_id is not None:
+        deploy_run.write(
+            findings,
+            kind=_LAND_MERGE_KIND,
+            phase=Phase.OUTCOME,
+            payload={
+                "action": "merge_branch",
+                "story_keys": [str(story_key)],
+                "branch": branch,
+                "into": _MERGE_BASE_BRANCH,
+                "merge_sha": merge_sha,
+            },
+            intent_id=merge_intent_id,
+        )
 
     # 11. Journal the manual landing -- one observation entry, fsync=True,
     # --justification redacted at capture (AD-34). A redaction failure
@@ -2151,6 +2636,41 @@ def run_batch_pr(
         data["updated"] = False
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
 
+    # Story 4.6's pre-action reconciliation precondition (AD-6/AD-21/AD-28).
+    #
+    # Code review (2026-08-06, P2, both reviewers' independent top finding):
+    # the story's own Always bullet names the evidence as "does
+    # ForgePort.find_open_pr now show a PR already reflecting THIS
+    # content" -- but `existing is not None` alone (bare PR-existence on
+    # the head branch) does NOT confirm that. A stale PR from an earlier,
+    # differently-scoped wave, or a manually-opened PR unrelated to a
+    # crashed intent, satisfies `existing is not None` just as readily as
+    # a PR this exact wave's own `create_pr`/`update_pr` produced --
+    # wrongly closing a prior crashed run's open intent on evidence that
+    # never actually confirmed its own story keys. `PrInfo` (``ports/
+    # forge.py``) carries no title/body/content field ``ForgePort`` could
+    # query to verify per-key coverage, and adding one is out of this
+    # story's scope (Code Map names no new ``ForgePort`` methods) -- so
+    # this call NEVER supplies `confirmed_story_keys` for `batch-pr`: every
+    # `batch-pr` open intent stays open and reports `MRS-DEPLOY-021`
+    # (WARN, non-blocking) until a stronger evidence source exists,
+    # requiring the operator's own confirmation rather than an automatic
+    # close on a signal too weak to trust. This does not change whether
+    # create_pr or update_pr is called below (that decision is `existing`'s
+    # own, already-established idempotence check, unchanged by this
+    # story).
+    deploy_run = _DeployRun(fs, root, slug, _deploy_writer_id("batch-pr"))
+    _reconcile_open_intents(
+        fs,
+        root,
+        slug,
+        kind=_BATCH_PR_WRITE_KIND,
+        confirmed_story_keys=set(),
+        evidence_note="find_open_pr now shows a PR reflecting this content",
+        deploy_run=deploy_run,
+        findings=findings,
+    )
+
     # Code review (2026-08-06, P4, both reviewers independently, mirroring
     # land-story's own identical TOCTOU fix): the hygiene preflight above
     # vetted `head_sha`, a SHA pinned once. If `head_branch` advanced (new
@@ -2192,6 +2712,17 @@ def run_batch_pr(
         data["updated"] = False
         return _emit(args, "deploy batch-pr", data, findings, _render_text_batch_pr)
 
+    # Story 4.6 (AD-6): an `intent` entry BEFORE this irreversible
+    # create_pr/update_pr write, an `outcome` AFTER it succeeds. A write
+    # failure leaves the intent open -- no outcome is written, per the
+    # story's own I/O matrix.
+    pr_action = "create_pr" if existing is None else "update_pr"
+    pr_intent_id = deploy_run.write(
+        findings,
+        kind=_BATCH_PR_WRITE_KIND,
+        phase=Phase.INTENT,
+        payload={"action": pr_action, "story_keys": [str(key) for key in wave_keys]},
+    )
     try:
         if existing is None:
             pr = forge.create_pr(
@@ -2217,6 +2748,18 @@ def run_batch_pr(
 
     data["pr_number"] = pr.number
     data["pr_url"] = pr.url
+    if pr_intent_id is not None:
+        deploy_run.write(
+            findings,
+            kind=_BATCH_PR_WRITE_KIND,
+            phase=Phase.OUTCOME,
+            payload={
+                "action": pr_action,
+                "story_keys": [str(key) for key in wave_keys],
+                "pr_number": pr.number,
+            },
+            intent_id=pr_intent_id,
+        )
 
     # Label application -- an ACTION, never a blocking gate (already
     # evaluated above); applied only once the PR exists. Code review

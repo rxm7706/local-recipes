@@ -131,6 +131,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DEPLOY-019",
             "MRS-DEPLOY-020",
             "MRS-STATUS-001",
+            "MRS-DEPLOY-021",
+            "MRS-DEPLOY-022",
         }
     )
 

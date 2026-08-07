@@ -267,6 +267,16 @@ the same tier as ``MRS-DEPLOY-001``/``002``/``004``/``005`` -- the landing
 already succeeded by the time this check runs, so an audit that cannot
 enumerate its own window is a reporting gap, never grounds to undo or
 block a landing that has already happened.
+Story 4.6 (deploy idempotence and reconciliation of open intents, AD-6/
+AD-21/AD-28) adds a twenty-first ``MRS-DEPLOY-*`` code, ``MRS-DEPLOY-021``:
+an open ``intent`` journaled by a prior, possibly-crashed invocation of
+``promote``/``land-story``/``batch-pr`` has no confirming external
+evidence yet. It classifies ``Verdict.WARN`` -- AD-21's own F-17 amendment
+requires this explicitly: an unclosed intent must never classify
+``Verdict.ERROR`` (that would make every subsequent ``deploy`` invocation
+non-zero forever, breaking AD-21's exit-0 convergence property by design),
+and never blocks the run it is reported on -- it is surfaced every time,
+escalating it is an operator decision (``marshal audit``), never automatic.
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -437,6 +447,14 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # paper-trail-gap code (MRS-DEPLOY-001/002/004/005/009/012) -- AD-33 forbids
 # resolving the discrepancy either way; it is named so it is never passed
 # over silently, but never itself invalidates the report.
+# Story 4.6 (deploy idempotence and reconciliation of open intents, AD-6/
+# AD-21/AD-28) adds MRS-DEPLOY-021 (an open intent from a prior deploy
+# invocation has no confirming evidence yet) at WARN, per AD-21's own F-17
+# amendment -- never ERROR, never blocking.
+# Code review (2026-08-06, P3) adds MRS-DEPLOY-022 (the cross-run journal
+# fold itself failed -- reconciliation could not be attempted this
+# invocation) at WARN, the same tier as MRS-DEPLOY-021: the underlying
+# action still proceeds, but the gap is reported, never silently absorbed.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -524,6 +542,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-019": Verdict.UNEVALUABLE,
     "MRS-DEPLOY-020": Verdict.GATE_FAILED,
     "MRS-STATUS-001": Verdict.WARN,
+    "MRS-DEPLOY-021": Verdict.WARN,
+    "MRS-DEPLOY-022": Verdict.WARN,
 }
 
 
