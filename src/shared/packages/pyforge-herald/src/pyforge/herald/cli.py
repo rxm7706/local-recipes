@@ -97,6 +97,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "marp-deck",
             "marp-executive-summary",
             "marp-infographic",
+            "standalone",
         ],
         default="prototype",
         help="which Design-side artifact to pull (default: prototype)",
@@ -165,6 +166,10 @@ def _pull_operation(
     ``marp-`` prefix stripped back to its ``kind`` (Story 2.3)."""
     if args.target == "prototype":
         return deck_pipeline.pull_prototype(
+            transport, slug=args.slug, repo_root=repo_root, commit=args.commit
+        )
+    if args.target == "standalone":
+        return deck_pipeline.pull_standalone_bundle(
             transport, slug=args.slug, repo_root=repo_root, commit=args.commit
         )
     kind = args.target.removeprefix("marp-")

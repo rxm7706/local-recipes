@@ -18,12 +18,14 @@ from pyforge.herald import state
 from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
     PROTOTYPE_ARTIFACT_KEY,
+    STANDALONE_BUNDLE_ARTIFACT_KEY,
     NpmLocalProver,
     PullResult,
     SeedResult,
     _persona_from_slug,
     pull_marp_source,
     pull_prototype,
+    pull_standalone_bundle,
     seed,
 )
 from pyforge.herald.errors import HeraldError, SeedConflictError
@@ -995,6 +997,182 @@ def test_pull_marp_source_commit_true_never_commits_an_unchanged_pull(tmp_path: 
         slug="pyforge-warden",
         repo_root=tmp_path,
         kind="deck",
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False
+
+
+# --- CAP-2: pull_standalone_bundle (Story 2.4) -------------------------------
+
+
+def test_pull_standalone_bundle_short_circuits_on_unchanged(tmp_path: Path):
+    _seed_state(
+        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"}
+    )
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="S1", body=None, unchanged=True)
+    )
+    exporter = FakeExporter()
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result == PullResult(
+        slug="pyforge-warden",
+        artifact=STANDALONE_BUNDLE_ARTIFACT_KEY,
+        local_path=None,
+        unchanged=True,
+        etag="S1",
+        committed=False,
+    )
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "src").exists()
+
+
+def test_pull_standalone_bundle_uses_the_persona_remote_path(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S2", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert transport.calls[0]["path"] == "Warden Infographic standalone.html"
+
+
+def test_pull_standalone_bundle_lands_at_the_dated_export_path(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S3", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    exporter = FakeExporter()
+
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "src"
+        / "marp"
+        / "pyforge-warden-infographic-standalone-2026-08-07.html"
+    )
+    assert result.local_path == local_path
+    assert result.artifact == STANDALONE_BUNDLE_ARTIFACT_KEY
+    assert local_path.read_text(encoding="utf-8") == "<html>bundle</html>"
+    assert exporter.calls == [("pyforge-warden", tmp_path)]
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[STANDALONE_BUNDLE_ARTIFACT_KEY] == "S3"
+
+
+def test_pull_standalone_bundle_write_completes_before_export_runs(tmp_path: Path):
+    """The bundle-supersedes-marp-render logic belongs to `deck-export`
+    (out of scope); this module's own responsibility is to guarantee no
+    check-then-act race by finishing the atomic write strictly before
+    invoking the exporter. Asserted here by an exporter fake that reads the
+    file back at call time -- if the write had not completed, this would
+    read stale/missing content instead of the just-pulled body."""
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S4", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    seen_at_export_time = {}
+
+    class ReadingExporter:
+        def export(self, *, slug: str, repo_root: Path) -> None:
+            local_path = (
+                repo_root
+                / "presentations"
+                / slug
+                / "src"
+                / "marp"
+                / "pyforge-warden-infographic-standalone-2026-08-07.html"
+            )
+            seen_at_export_time["body"] = local_path.read_text(encoding="utf-8")
+
+    pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=ReadingExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert seen_at_export_time["body"] == "<html>bundle</html>"
+
+
+def test_pull_standalone_bundle_refuses_when_not_seeded(tmp_path: Path):
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="herald deck seed"):
+        pull_standalone_bundle(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_standalone_bundle_commit_true_stages_after_a_real_change(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S5", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    committer = FakeCommitter()
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result.committed is True
+    assert len(committer.calls) == 1
+    assert STANDALONE_BUNDLE_ARTIFACT_KEY in committer.calls[0]["message"]
+
+
+def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
+    tmp_path: Path,
+):
+    _seed_state(
+        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"}
+    )
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="S1", body=None, unchanged=True)
+    )
+    committer = FakeCommitter()
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
         commit=True,
         exporter=FakeExporter(),
         committer=committer,

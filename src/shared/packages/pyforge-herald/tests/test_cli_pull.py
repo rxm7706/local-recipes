@@ -217,3 +217,29 @@ def test_deck_pull_target_marp_executive_summary_derives_the_right_kind(monkeypa
 
 def test_deck_pull_target_rejects_an_unknown_choice():
     assert cli.main(["deck", "pull", "pyforge-warden", "--target", "bogus"]) == 2
+
+
+def test_deck_pull_target_standalone_dispatches_to_pull_standalone_bundle(
+    monkeypatch,
+):
+    seen = {}
+
+    def _fake_pull_prototype(*args, **kwargs):
+        raise AssertionError("pull_prototype must not run for --target standalone")
+
+    def _fake_pull_marp(*args, **kwargs):
+        raise AssertionError("pull_marp_source must not run for --target standalone")
+
+    def _fake_pull_standalone(transport, *, slug, repo_root, commit):
+        seen["slug"] = slug
+        seen["commit"] = commit
+        return _fake_pull_result(artifact="standalone-bundle")
+
+    monkeypatch.setattr(deck_pipeline, "pull_prototype", _fake_pull_prototype)
+    monkeypatch.setattr(deck_pipeline, "pull_marp_source", _fake_pull_marp)
+    monkeypatch.setattr(deck_pipeline, "pull_standalone_bundle", _fake_pull_standalone)
+
+    exit_code = cli.main(["deck", "pull", "pyforge-warden", "--target", "standalone"])
+
+    assert exit_code == 0
+    assert seen == {"slug": "pyforge-warden", "commit": False}

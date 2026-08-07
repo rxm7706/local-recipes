@@ -767,3 +767,94 @@ def pull_marp_source(
         etag=file_read.etag,
         committed=committed,
     )
+
+
+# --- CAP-2: authored-source pull (standalone bundle), Story 2.4 -------------
+#
+# `bridge-protocol.md` § *Authored-source pull*: the Design-authored
+# "standalone bundle" (a richer, self-contained infographic HTML poster)
+# lands at the export path `src/marp/<slug>-infographic-standalone-<date>.html`,
+# superseding any `marp --html` render. That preference is `deck-export`'s
+# own responsibility (unmodified by this story, out of this module's code
+# map) -- see this story's spec Design Notes for the full boundary. This
+# module's ONLY job is landing the bundle file, identically to how
+# `pull_marp_source` lands a Marp source: same `_pull_and_land` loop, no
+# local-prove step, `exporter.export` after a real change.
+
+STANDALONE_BUNDLE_ARTIFACT_KEY = "standalone-bundle"
+
+
+def pull_standalone_bundle(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    repo_root: Path,
+    commit: bool = False,
+    state_path: Path | None = None,
+    exporter: DeckExporter | None = None,
+    committer: GitCommitter | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> PullResult:
+    """CAP-2, Story 2.4: pull the Design-authored standalone infographic
+    bundle (``bridge-protocol.md`` § Authored-source pull). Same
+    read/etag/decode loop as ``pull_marp_source`` (``_pull_and_land``, Story
+    2.1/2.3 reused unchanged) -- no re-decoding, a truncated answer refuses,
+    the write is atomic, the etag is recorded under
+    ``STANDALONE_BUNDLE_ARTIFACT_KEY``. No local-prove step. Renders no HTML
+    itself: landing this bundle at its fixed canonical path is what lets
+    ``deck-export`` (unmodified, out of scope here) prefer it over its own
+    ``marp --html`` fallback -- see the story spec's Design Notes for why
+    that boundary is deliberate. ``--commit`` behaves identically to Stories
+    2.2/2.3's (opt-in, never on an unchanged pull)."""
+    resolved_now = now or _default_now
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = _require_seeded_state(resolved_state_path, slug)
+    persona = _persona_from_slug(slug)
+    remote_path = f"{persona} Infographic standalone.html"
+    date_str = resolved_now().strftime("%Y-%m-%d")
+    deck_dir = repo_root / "presentations" / slug
+    local_path = (
+        deck_dir / "src" / "marp" / f"{slug}-infographic-standalone-{date_str}.html"
+    )
+
+    file_read = _pull_and_land(
+        transport,
+        slug=slug,
+        state_path=resolved_state_path,
+        existing=existing,
+        remote_path=remote_path,
+        local_path=local_path,
+        artifact_key=STANDALONE_BUNDLE_ARTIFACT_KEY,
+        now=resolved_now,
+    )
+    if file_read is None:
+        return PullResult(
+            slug=slug,
+            artifact=STANDALONE_BUNDLE_ARTIFACT_KEY,
+            local_path=None,
+            unchanged=True,
+            etag=existing.etags.get(STANDALONE_BUNDLE_ARTIFACT_KEY),
+            committed=False,
+        )
+
+    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+
+    committed = False
+    if commit:
+        (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir, resolved_state_path],
+            message=f"herald: pull {slug} ({STANDALONE_BUNDLE_ARTIFACT_KEY})",
+        )
+        committed = True
+
+    return PullResult(
+        slug=slug,
+        artifact=STANDALONE_BUNDLE_ARTIFACT_KEY,
+        local_path=local_path,
+        unchanged=False,
+        etag=file_read.etag,
+        committed=committed,
+    )
