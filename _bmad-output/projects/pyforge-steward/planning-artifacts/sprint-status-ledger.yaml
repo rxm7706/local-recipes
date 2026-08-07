@@ -21,10 +21,10 @@ development_status:
   1-5-the-operator-can-see-every-credential-steward-knows-about-never-a-secret-value: done
   1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: done
   1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: done
-  2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: backlog
-  2-2-nothing-happens-unless-something-actually-changed: backlog
-  2-3-the-operator-can-see-what-would-change-before-it-changes: backlog
-  2-4-the-operator-can-ask-when-did-the-dashboard-last-actually-deploy: backlog
+  2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
+  2-2-nothing-happens-unless-something-actually-changed: done
+  2-3-the-operator-can-see-what-would-change-before-it-changes: done
+  2-4-the-operator-can-ask-when-did-the-dashboard-last-actually-deploy: done
   3-1-any-named-pixi-environment-materializes-with-one-command: backlog
   3-2-a-bmad-loop-runner-and-its-environment-materialize-together: backlog
   3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: backlog
@@ -34,7 +34,7 @@ development_status:
   4-3-asking-am-i-under-budget-never-lies: backlog
   epic-1: done
   epic-1-retrospective: optional
-  epic-2: backlog
+  epic-2: done
   epic-2-retrospective: optional
   epic-3: backlog
   epic-3-retrospective: optional
