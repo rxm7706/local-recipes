@@ -115,31 +115,87 @@ def dashboard_diff(*, cwd: str | Path) -> str:
 
 
 def commit_and_push_dashboard(*, cwd: str | Path) -> str:
-    """`git add` the `docs/dashboard/` diff, commit it, and push to the
-    currently checked-out branch on `origin` — direct push, no new Actions
-    workflow (AD-4). Returns the new commit's full SHA.
+    """`git add` the `docs/dashboard/` diff, commit it (scoped to that same
+    pathspec), and push to the currently checked-out branch on `origin` —
+    direct push, no new Actions workflow (AD-4). Returns the new commit's
+    full SHA.
 
-    Raises `subprocess.CalledProcessError` on any failing step (nothing to
-    commit, a detached HEAD with no branch, a rejected push) — propagated,
-    not swallowed, caught only at `DeployDuty`'s boundary. Each step runs in
-    sequence rather than a single scripted command so a failure is
-    attributable to a specific step by its own `exc.cmd` (see this story's
-    spec, "Design Notes" — a push failure after a successful local commit is
-    a known, accepted partial-completion state, not silently retried or
-    rolled back).
+    Review finding: the branch is now resolved (`git symbolic-ref --short
+    HEAD`) FIRST, before any write -- a detached-HEAD checkout used to
+    commit successfully and only fail resolving the push branch AFTER an
+    orphan commit already existed, silently, with no record it was ever
+    made once garbage-collected. Refusing before the commit means a
+    detached-HEAD failure leaves the working tree exactly as it was.
+
+    Review finding: `git commit` is now scoped to `-- docs/dashboard`
+    (mirrors the preceding `git add`'s own pathspec) rather than a bare
+    `git commit`, which commits the ENTIRE index regardless of what `git
+    add` staged -- any unrelated file staged by the operator or another
+    process sharing this working tree at call time would otherwise ride
+    along into this commit and get pushed under a misleading message.
+
+    Raises `subprocess.CalledProcessError` on any failing step (a detached
+    HEAD with no branch, nothing to commit, a rejected push) — propagated,
+    not swallowed, caught only at `DeployDuty`'s boundary, which now names
+    the exact failing command (see `DeployDuty.run`) rather than a bare
+    `"git"`. A push failure after a successful local commit is a known,
+    accepted partial-completion state -- not rolled back here, but the next
+    `deploy dashboard` invocation now detects and retries it (see
+    `_push_pending_commit_if_ahead`) rather than silently reporting "nothing
+    to deploy".
     """
+    branch = subprocess.run(
+        ["git", "symbolic-ref", "--short", "HEAD"],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    ).stdout.strip()
     subprocess.run(
         ["git", "add", "--", str(_DASHBOARD_RELATIVE_PATH)],
         cwd=str(cwd), check=True, capture_output=True, text=True,
     )
     subprocess.run(
-        ["git", "commit", "-m", "dashboard: refresh status (steward deploy dashboard)"],
+        ["git", "commit", "-m", "dashboard: refresh status (steward deploy dashboard)",
+         "--", str(_DASHBOARD_RELATIVE_PATH)],
         cwd=str(cwd), check=True, capture_output=True, text=True,
     )
     sha = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=str(cwd), check=True, capture_output=True, text=True,
     ).stdout.strip()
+    subprocess.run(
+        ["git", "push", "origin", branch],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    )
+    return sha
+
+
+def _push_pending_commit_if_ahead(*, cwd: str | Path) -> str | None:
+    """Review finding: if an earlier `commit_and_push_dashboard` call
+    committed successfully but its push failed, the local branch is left
+    AHEAD of `origin` with a real, already-committed change. The next
+    `steward deploy dashboard` run would previously build fresh content
+    identical to what's already committed, see an EMPTY `dashboard_diff`
+    (the working tree already matches the ahead-of-origin HEAD), and report
+    "nothing to deploy" -- permanently hiding the earlier push failure;
+    `deploy status` would also report the unpushed commit as if it were a
+    completed deploy.
+
+    Called before the diff check (never during `--dry-run`, which must
+    never push): if HEAD is ahead of its upstream, push it now and return
+    the pushed SHA. Returns `None` if not ahead (the ordinary case,
+    including "no upstream configured" or a detached HEAD -- `@{u}`
+    resolution failing here is treated as "cannot tell", not an error; the
+    normal build/diff/commit flow's own git calls surface a clearer error
+    if something about the checkout is genuinely broken).
+    """
+    ahead = subprocess.run(
+        ["git", "rev-list", "--count", "@{u}..HEAD"],
+        cwd=str(cwd), capture_output=True, text=True,
+    )
+    if ahead.returncode != 0:
+        return None
+    count = ahead.stdout.strip()
+    if not count.isdigit() or int(count) == 0:
+        return None
     branch = subprocess.run(
         ["git", "symbolic-ref", "--short", "HEAD"],
         cwd=str(cwd), check=True, capture_output=True, text=True,
@@ -148,7 +204,10 @@ def commit_and_push_dashboard(*, cwd: str | Path) -> str:
         ["git", "push", "origin", branch],
         cwd=str(cwd), check=True, capture_output=True, text=True,
     )
-    return sha
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    ).stdout.strip()
 
 
 # ── Deploy status (FR-11, Story 2.4) ────────────────────────────────────────
@@ -216,6 +275,22 @@ def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
     if getattr(ns, "build", False):
         return DutyResult(ok=True, summary="deploy dashboard: build complete (docs/dashboard/ refreshed)")
 
+    if not getattr(ns, "dry_run", False):
+        # Review finding: check for (and retry) an earlier run's unpushed
+        # commit BEFORE the diff-based no-op check below -- otherwise a
+        # stuck unpushed commit permanently masquerades as "nothing to
+        # deploy" forever (see `_push_pending_commit_if_ahead`'s own
+        # docstring). Never runs during `--dry-run`, which must never push.
+        pending_sha = _push_pending_commit_if_ahead(cwd=root)
+        if pending_sha is not None:
+            return DutyResult(
+                ok=True,
+                summary=(
+                    f"deploy dashboard: pushed previously-committed {pending_sha} "
+                    "(an earlier run's push had failed and was retried)"
+                ),
+            )
+
     diff_text = dashboard_diff(cwd=root)
     if not diff_text.strip():
         return DutyResult(ok=True, summary="deploy dashboard: no diff — nothing to deploy")
@@ -231,12 +306,32 @@ def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
 
 
 def _run_status(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no flags yet
-    """`deploy status` — reports the last commit touching `docs/dashboard/`."""
+    """`deploy status` — reports the last commit touching `docs/dashboard/`.
+
+    Review finding: previously reported the last commit's SHA/timestamp
+    unconditionally, even if that commit was never actually pushed (a prior
+    `deploy dashboard` committed but its push failed) -- misreporting a
+    local-only commit as a completed deploy. Now appends an explicit note
+    when HEAD is ahead of its upstream, using the SAME `@{u}`-based check
+    `_push_pending_commit_if_ahead` uses (read-only here -- `status` never
+    pushes) -- still no separate state file (FR-11)."""
     root = repo_root()
     record = last_deploy_commit(cwd=root)
     if record is None:
         return DutyResult(ok=True, summary="deploy status: no dashboard deploy commit found in git history")
-    return DutyResult(ok=True, summary=f"deploy status: last deploy {record.sha} at {record.timestamp}")
+    ahead = subprocess.run(
+        ["git", "rev-list", "--count", "@{u}..HEAD"],
+        cwd=str(root), capture_output=True, text=True,
+    )
+    unpushed_note = ""
+    if ahead.returncode == 0:
+        count = ahead.stdout.strip()
+        if count.isdigit() and int(count) > 0:
+            unpushed_note = " -- HEAD is ahead of origin; the most recent commit(s) may not be pushed yet"
+    return DutyResult(
+        ok=True,
+        summary=f"deploy status: last deploy {record.sha} at {record.timestamp}{unpushed_note}",
+    )
 
 
 class DeployDuty:
@@ -265,8 +360,13 @@ class DeployDuty:
             return _run_status(ns)
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
-            cmd_name = exc.cmd[0] if exc.cmd else "subprocess"
+            # Review finding: `exc.cmd[0]` was always the literal string
+            # "git" (every subprocess call in this module starts with it),
+            # so the summary never actually named which step failed despite
+            # this module's own docstrings claiming per-step attribution.
+            # The full command line does.
+            cmd_name = " ".join(str(part) for part in exc.cmd) if exc.cmd else "subprocess"
             return DutyResult(
                 ok=False,
-                summary=f"deploy {verb}: {cmd_name} exited {exc.returncode}: {stderr}",
+                summary=f"deploy {verb}: `{cmd_name}` exited {exc.returncode}: {stderr}",
             )

@@ -118,6 +118,36 @@ def test_deploy_status_via_cli_reports_no_prior_deploy_clearly(tmp_path, monkeyp
     assert "no dashboard deploy commit found" in out
 
 
+def test_deploy_status_notes_when_head_is_ahead_of_origin(tmp_path, monkeypatch, capsys):
+    """Review finding (Edge Case Hunter): `status` used to report a local
+    commit's SHA/timestamp as-is even when it had never actually reached
+    `origin` (a prior push failure) -- misreporting a local-only commit as
+    a completed deploy. Now names that state explicitly."""
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "--bare", str(origin)], check=True, capture_output=True)
+    work = tmp_path / "work"
+    _init_repo(work)
+    (work / "README.md").write_text("repo\n")
+    _git("add", "-A", cwd=work)
+    _git("commit", "-m", "init", cwd=work)
+    _git("remote", "add", "origin", str(origin), cwd=work)
+    _git("push", "-u", "origin", "main", cwd=work)
+
+    (work / "docs" / "dashboard").mkdir(parents=True)
+    (work / "docs" / "dashboard" / "data.js").write_text("v1\n")
+    _git("add", "-A", cwd=work)
+    _git("commit", "-m", "dashboard: refresh status (never pushed)", cwd=work)
+    # Deliberately never pushed -- HEAD is now ahead of origin/main.
+
+    monkeypatch.setattr("pyforge.steward.deploy.repo_root", lambda: work)
+
+    rc = main(["deploy", "status"])
+
+    assert rc == EXIT_OK
+    out = capsys.readouterr().out
+    assert "ahead of origin" in out
+
+
 def test_deploy_status_via_cli_surfaces_a_git_failure_as_exit_failed(tmp_path, monkeypatch):
     not_a_repo = tmp_path / "not-a-repo"
     not_a_repo.mkdir()

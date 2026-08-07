@@ -3,7 +3,7 @@ title: 'Story 2.2: Nothing happens unless something actually changed'
 type: 'feature'
 created: '2026-08-07'
 status: 'done'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 warnings: []
@@ -118,3 +118,21 @@ warnings: []
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- expected: all tests pass
 
 **Results (2026-08-07):** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 111 passed (105 pre-existing + 6 new in `test_deploy_reconcile.py`), including the zero-commit-run-twice and exactly-one-commit-on-real-diff properties against real scratch git repos with a real bare `origin` remote.
+
+## Review Triage Log
+
+### 2026-08-07 -- Epic 2 close-out adversarial review (Blind Hunter + Edge Case Hunter, parallel, no shared context, git-operation-focused given this module shells out to commit/push)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4 (high 1, medium 2, low 1)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `high` `patch` (Blind Hunter, live-confirmed via repro) **`git commit` with no pathspec commits the ENTIRE index, not just what `git add -- docs/dashboard` staged.** An unrelated file staged by the operator (or another process sharing the same working tree) at call time would silently ride along into the `dashboard: refresh status` commit and get pushed under a misleading message. Fixed: `git commit -- docs/dashboard` (pathspec-scoped, mirroring the preceding `git add`'s own scope). New test: `test_commit_and_push_never_sweeps_in_an_unrelated_staged_file` (stages an unrelated `secret.txt`, asserts it's absent from the resulting commit and still staged afterward).
+  - `medium` `patch` (Blind Hunter) **Detached HEAD: the commit happened BEFORE the branch-resolution failure that revealed it.** `git symbolic-ref --short HEAD` ran last, after `git add`/`git commit` already succeeded -- a detached-HEAD checkout left a real, silently-orphaned commit with zero record it was ever made once garbage-collected. Fixed: branch resolution now runs FIRST, before any write; a detached HEAD now refuses cleanly with the working tree exactly as it was. New test: `test_commit_and_push_refuses_before_committing_on_a_detached_head`.
+  - `medium` `patch` (Edge Case Hunter) **A failed push becomes permanently silent on the very next run.** This spec's own Design Notes above already named this exact gap ("push-fails-after-commit... not proposed as a fix here since speculative recovery logic ahead of any real reported incident isn't warranted") and deliberately deferred it. The review changed that calculus: Edge Case Hunter demonstrated the CONCRETE consequence, not a speculative one -- the next run's own diff against the already-committed working tree comes back empty, permanently reporting "nothing to deploy" with no path back to noticing, and `deploy status` (Story 2.4) independently misreports the unpushed commit as a completed deploy. That combination (silently-converts-to-success AND status actively lies about it) is a real, demonstrated failure mode, not the speculative one this spec's own Design Notes declined to solve for. Fixed: new `_push_pending_commit_if_ahead` -- before the diff check (never during `--dry-run`, which must never push), checks whether HEAD is ahead of its upstream and retries the push if so, reporting the pushed SHA rather than silently declaring "nothing to deploy". New test: `test_a_stuck_unpushed_commit_is_retried_and_pushed_on_the_next_run`. The companion `deploy status` fix (an explicit "ahead of origin" note) is recorded in Story 2.4's own spec, since that's the file it lives in.
+  - `low` `patch` (Edge Case Hunter) **`cmd_name` in `DeployDuty.run`'s exception handler was always the literal string `"git"`**, since every subprocess call in this module starts with it -- contradicting the module's own docstring claim of "attributable to a specific step by its own `exc.cmd`." Fixed: the full command line is now used instead of just `exc.cmd[0]`.
+
+**Follow-up review recommendation: false** -- all four findings are isolated to `commit_and_push_dashboard`'s own write sequence and the shared exception-formatting boundary, each covered by a dedicated new test proving the fix; no new design questions opened.
+
+**Re-verification (2026-08-07, after all four patches):** `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- **126 passed** (122 pre-review-pass baseline + 4 new tests; one of the four review tests -- the status "ahead of origin" note -- lives in and is counted under Story 2.4's own spec).

@@ -145,6 +145,90 @@ def test_dashboard_diff_propagates_a_git_failure_outside_a_worktree(tmp_path):
         dashboard_diff(cwd=not_a_repo)
 
 
+def test_commit_and_push_never_sweeps_in_an_unrelated_staged_file(tmp_path):
+    """Review finding (Blind Hunter): `git commit` with no pathspec commits
+    the ENTIRE index, not just what `git add -- docs/dashboard` staged.
+    An unrelated file staged by the operator (or another process sharing
+    this working tree) before `commit_and_push_dashboard` runs must never
+    ride along into the dashboard commit."""
+    work = _make_repo_with_origin(tmp_path)
+
+    (work / "docs" / "dashboard" / "data.js").write_text(
+        "window.DASHBOARD_DATA = {v: 2};\n"
+    )
+    (work / "secret.txt").write_text("unrelated, pre-staged content\n")
+    _git("add", "--", "secret.txt", cwd=work)
+
+    sha = commit_and_push_dashboard(cwd=work)
+
+    changed_files = _git("show", "--name-only", "--format=", sha, cwd=work).stdout.split()
+    assert changed_files == ["docs/dashboard/data.js"]
+    assert "secret.txt" not in changed_files
+    # Still staged, untouched by this commit -- never silently discarded either.
+    status = _git("status", "--porcelain", cwd=work).stdout
+    assert "secret.txt" in status
+
+
+def test_commit_and_push_refuses_before_committing_on_a_detached_head(tmp_path):
+    """Review finding (Blind Hunter): the branch used to be resolved AFTER
+    the commit already existed, so a detached-HEAD checkout created a real,
+    silently-orphaned commit before the failure that revealed it. The
+    branch is now resolved FIRST -- a detached HEAD refuses cleanly with
+    the working tree exactly as it was, zero new commits."""
+    work = _make_repo_with_origin(tmp_path)
+    before = _commit_count(work)
+    head_sha = _git("rev-parse", "HEAD", cwd=work).stdout.strip()
+    _git("checkout", "--detach", head_sha, cwd=work)
+
+    (work / "docs" / "dashboard" / "data.js").write_text(
+        "window.DASHBOARD_DATA = {v: 2};\n"
+    )
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        commit_and_push_dashboard(cwd=work)
+
+    assert "symbolic-ref" in " ".join(exc_info.value.cmd)
+    # No orphan commit was created -- the failure happened before any write.
+    assert _commit_count(work) == before
+
+
+def test_a_stuck_unpushed_commit_is_retried_and_pushed_on_the_next_run(tmp_path, monkeypatch):
+    """Review finding (Edge Case Hunter): a prior run that committed but
+    failed to push used to be permanently invisible -- the next run's own
+    diff against the (already up to date) working tree came back empty,
+    reporting "nothing to deploy" forever. The next `deploy dashboard` run
+    must detect HEAD is ahead of origin and push the pending commit instead
+    of silently no-op'ing."""
+    from pyforge.steward.deploy import _push_pending_commit_if_ahead
+
+    work = _make_repo_with_origin(tmp_path)
+    before = _commit_count(work)
+
+    # Simulate a successful commit whose push failed: remove the remote,
+    # commit for real, then restore the remote (the commit is now real and
+    # ahead of origin, exactly like a live push failure would leave it).
+    origin_url = _git("remote", "get-url", "origin", cwd=work).stdout.strip()
+    _git("remote", "remove", "origin", cwd=work)
+    (work / "docs" / "dashboard" / "data.js").write_text(
+        "window.DASHBOARD_DATA = {v: 2};\n"
+    )
+    _git("add", "-A", cwd=work)
+    _git("commit", "-m", "dashboard: refresh status (simulated stuck commit)", cwd=work)
+    stuck_sha = _git("rev-parse", "HEAD", cwd=work).stdout.strip()
+    _git("remote", "add", "origin", origin_url, cwd=work)
+    _git("fetch", "origin", cwd=work)
+    _git("branch", "--set-upstream-to=origin/main", "main", cwd=work)
+
+    pushed_sha = _push_pending_commit_if_ahead(cwd=work)
+
+    assert pushed_sha == stuck_sha
+    assert _commit_count(work) == before + 1  # no duplicate commit
+    origin_head = _git(
+        "rev-parse", "refs/heads/main", cwd=tmp_path / "origin.git"
+    ).stdout.strip()
+    assert origin_head == stuck_sha
+
+
 def test_commit_and_push_reports_a_specific_failing_step_when_push_target_is_missing(tmp_path):
     """No `origin` remote configured: add+commit succeed, push fails — the
     failure is attributable to `git push` specifically via `exc.cmd`, and

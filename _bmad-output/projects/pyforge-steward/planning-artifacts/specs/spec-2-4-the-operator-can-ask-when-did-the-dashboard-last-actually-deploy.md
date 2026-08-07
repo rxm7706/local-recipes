@@ -3,7 +3,7 @@ title: 'Story 2.4: The operator can ask "when did the dashboard last actually de
 type: 'feature'
 created: '2026-08-07'
 status: 'done'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context: []
 warnings: []
@@ -92,6 +92,38 @@ warnings: []
   a single read-only `git log` invocation with no write anywhere in the
   path, structurally incapable of racing another concurrent invocation the
   way `keys-inventory.yaml`'s read-then-write cycle could.
+
+### 2026-08-07 — Adversarial review pass (Blind Hunter + Edge Case Hunter, Epic 2 batch)
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1
+- defer: 0
+- reject: 0
+- **Finding (Edge Case Hunter)**: `_run_status` reported a local commit's
+  SHA/timestamp as-is even when that commit had never actually reached
+  `origin` (e.g. the prior run's push failed after `deploy.py::commit_and_push_dashboard`
+  had already committed — see [[spec-2-2-...]]'s own "stuck commit" fix for
+  the write-side half of the same failure mode). Reporting only the local
+  commit misrepresented an in-flight, not-yet-pushed change as a completed
+  deploy.
+- **Fix**: `_run_status` now also runs the same `git rev-list --count
+  @{u}..HEAD` ahead-check `_push_pending_commit_if_ahead` uses, but
+  read-only — it never pushes from `status`. When HEAD is ahead of
+  `origin`, the printed summary appends `" -- HEAD is ahead of origin; the
+  most recent commit(s) may not be pushed yet"` so the operator sees the
+  distinction instead of a misleadingly-clean report.
+- **Test**: `tests/conformance/test_deploy_status.py::test_deploy_status_notes_when_head_is_ahead_of_origin`
+  — real scratch repo + real bare origin, commits to `docs/dashboard/`
+  without pushing, asserts `"ahead of origin"` appears in the CLI output.
+- **Re-verification (2026-08-07, after the patch):** `pixi run --frozen -e
+  pyforge-steward pyforge-steward-test` -- **126 passed** (122 baseline + 4
+  new tests across the Epic 2 review batch; this story's own share is the
+  one `test_deploy_status_notes_when_head_is_ahead_of_origin` test noted
+  above). See [[spec-2-2-nothing-happens-unless-something-actually-changed]]
+  for the write-side companion fix (`_push_pending_commit_if_ahead`,
+  wired into `deploy dashboard` itself) and the other three findings from
+  this same review pass.
 
 ## Design Notes
 
