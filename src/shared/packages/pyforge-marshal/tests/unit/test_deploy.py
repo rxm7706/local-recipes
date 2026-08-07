@@ -1960,3 +1960,372 @@ def test_batch_pr_redact_p11_returns_none_on_any_redaction_failure(monkeypatch):
     monkeypatch.setattr(deploy_module, "to_redacted", _raising_to_redacted)
 
     assert deploy_module._batch_pr_redact("some text") is None
+
+
+# =====================================================================
+# ``marshal deploy refresh-feed`` (Story 4.5, AD-33).
+# =====================================================================
+
+from pyforge.marshal.adapters.process_posix import ProcessError  # noqa: E402
+from pyforge.marshal.core.journal import (  # noqa: E402
+    JournalEntryId,
+    Phase,
+    build_entry,
+    prepare_for_write,
+)
+from pyforge.marshal.ports.harness import RunStatusSnapshot, TaskPhaseSnapshot  # noqa: E402
+from pyforge.marshal.ports.process import ProcessResult  # noqa: E402
+
+
+class _FakeProcess:
+    """A minimal ``ProcessPort`` stand-in: a fixed, deterministic result per
+    command (or a raise), plus a call log so a test can assert exactly what
+    ran -- mirrors ``_FakeVcs``'s own established shape."""
+
+    def __init__(self, *, results: dict[str, ProcessResult] | None = None, raise_on: set = frozenset()):
+        self.results = results or {}
+        self.raise_on = raise_on
+        self.calls: list[list[str]] = []
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        self.calls.append(list(argv))
+        command = " ".join(argv)
+        if command in self.raise_on:
+            raise ProcessError(f"could not launch {command!r}")
+        return self.results.get(command, ProcessResult(returncode=0, stdout="", stderr=""))
+
+
+class _FakeHarness:
+    """A minimal ``HarnessPort`` stand-in exposing only
+    ``run_status_snapshot`` -- the sole method ``refresh-feed`` calls."""
+
+    def __init__(self, *, snapshot: RunStatusSnapshot | None = None):
+        self.snapshot = snapshot
+        self.calls: list[tuple] = []
+
+    def run_status_snapshot(self, project, run_id):
+        self.calls.append((project, run_id))
+        return self.snapshot
+
+
+def _refresh_feed_args(*, project: str = "acme", format: str = "json") -> argparse.Namespace:
+    return argparse.Namespace(project=project, format=format)
+
+
+def _write_prior_run_with_harness_run_id(
+    tmp_path, home: Path, slug: str, run_id: str, harness_run_id: str
+) -> Path:
+    """Seeds a real Marshal run directory under ``home``'s own Tier-3 store
+    with a minimal, valid ``run-launch`` outcome entry naming
+    ``harness_run_id`` -- the SAME shape
+    ``cli/spin.py::_resolve_harness_run_id_for_resume`` reads, mirroring
+    ``test_spin.py::_seed_resolvable_prior_run``'s own real-filesystem
+    convention (this module's tests use a real ``LocalFs``, never a fake
+    one)."""
+    run_dir = home / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    entry = build_entry(
+        id=JournalEntryId("spin-1", 1),
+        ts="2026-08-01T00:00:00.000Z",
+        run_id=run_id,
+        kind="run-launch",
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("spin-1", 0),
+        payload={"pid": 4242, "harness_run_id": harness_run_id},
+    )
+    line = prepare_for_write(entry).line
+    (run_dir / "journal.jsonl").write_text(line + "\n", encoding="utf-8")
+    return run_dir
+
+
+def _write_refresh_feed_project_policy(tmp_path: Path, monkeypatch, text: str) -> Path:
+    """Mirrors ``_write_batch_pr_project_policy``'s own pattern: writes to an
+    arbitrary path and monkeypatches ``conventional_project_policy_path`` so
+    ``run_refresh_feed``'s policy read finds it -- the real conventional
+    path resolves against the REAL repo_root(), not the monkeypatched
+    ``deploy_module.repo_root``."""
+    path = tmp_path / "refresh-feed-marshal-policy.toml"
+    path.write_text(text, encoding="utf-8")
+    monkeypatch.setattr(deploy_module, "conventional_project_policy_path", lambda slug: path)
+    return path
+
+
+def test_refresh_feed_reports_git_facts_with_no_journal_available(
+    tmp_path, capsys, monkeypatch
+):
+    """No loop home provisioned at all -- a legitimate state, per the
+    story's own I/O matrix: git's own answer stands alone, no findings."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=_FakeProcess(), harness=_FakeHarness()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["stories"] == [
+        {
+            "story_key": "1.2",
+            "durable": {"value": True, "domain": "git"},
+            "claimed_commit_sha": {"value": None, "domain": "journal"},
+        }
+    ]
+    # landing_resync defaults true, but landing_resync_commands defaults
+    # empty -- resync runs, nothing to execute.
+    assert payload["data"]["resync_skipped"] is False
+    assert payload["data"]["resync_commands"] == []
+
+
+def test_refresh_feed_claimed_commit_matching_git_is_consistent(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    home = home_root / "acme"
+    _write_prior_run_with_harness_run_id(
+        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
+    )
+    vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+    snapshot = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        tasks=(TaskPhaseSnapshot(story_key="1-2-title", phase="done", commit_sha="deadbeef"),),
+    )
+    harness = _FakeHarness(snapshot=snapshot)
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=_FakeProcess(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["stories"] == [
+        {
+            "story_key": "1.2",
+            "durable": {"value": True, "domain": "git"},
+            "claimed_commit_sha": {"value": "deadbeef", "domain": "journal"},
+        }
+    ]
+    assert harness.calls == [(home, "acme-hh01")]
+
+
+def test_refresh_feed_claimed_commit_not_confirmed_by_git_reports_mrs_status_001(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    home = home_root / "acme"
+    _write_prior_run_with_harness_run_id(
+        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
+    )
+    vcs = _FakeVcs(main_subjects=())  # nothing merged, per git
+    snapshot = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        tasks=(TaskPhaseSnapshot(story_key="9-9-title", phase="review", commit_sha="feedbead"),),
+    )
+    harness = _FakeHarness(snapshot=snapshot)
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=_FakeProcess(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-STATUS-001" in codes
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0  # WARN stays exit 0 -- reported, never blocking
+    row = payload["data"]["stories"][0]
+    assert row["durable"]["value"] is False
+    assert row["claimed_commit_sha"]["value"] == "feedbead"
+
+
+def test_refresh_feed_landing_resync_false_skips_resync_step(tmp_path, capsys, monkeypatch, tmp_path_factory):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    _write_refresh_feed_project_policy(tmp_path, monkeypatch, "landing_resync = false\n")
+    vcs = _FakeVcs()
+    process = _FakeProcess()
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["data"]["resync_skipped"] is True
+    assert payload["data"]["resync_commands"] == []
+    assert process.calls == []
+
+
+def test_refresh_feed_runs_configured_resync_commands_when_resync_is_true(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["true"]\n',
+    )
+    vcs = _FakeVcs()
+    process = _FakeProcess(results={"true": ProcessResult(returncode=0, stdout="", stderr="")})
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["data"]["resync_skipped"] is False
+    assert payload["data"]["resync_commands"] == [
+        {"command": "true", "resolvable": True, "returncode": 0, "stdout": "", "stderr": ""}
+    ]
+    assert process.calls == [["true"]]
+
+
+def test_refresh_feed_resync_command_failure_is_reported_not_swallowed(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["false"]\n',
+    )
+    vcs = _FakeVcs()
+    process = _FakeProcess(results={"false": ProcessResult(returncode=1, stdout="", stderr="nope")})
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-020" in codes
+    assert payload["verdict"] == "gate-failed"
+    assert exit_code != 0
+
+
+def test_refresh_feed_resync_command_launch_failure_reports_mrs_deploy_019(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["missing-binary"]\n',
+    )
+    vcs = _FakeVcs()
+    process = _FakeProcess(raise_on={"missing-binary"})
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-019" in codes
+    assert payload["verdict"] == "unevaluable"
+
+
+def test_refresh_feed_resync_command_with_bare_shell_syntax_is_never_spawned(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["true && false"]\n',
+    )
+    vcs = _FakeVcs()
+    process = _FakeProcess()
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=_FakeHarness()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-019" in codes
+    assert process.calls == []  # never spawned
+
+
+def test_refresh_feed_with_no_active_project_reports_mrs_policy_005(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(project=""),
+        vcs=_FakeVcs(),
+        fs=LocalFs(),
+        process=_FakeProcess(),
+        harness=_FakeHarness(),
+    )
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-POLICY-005" in codes
+    assert payload["data"]["stories"] == []
+    assert exit_code == 0
+
+
+def test_refresh_feed_hard_main_read_failure_reports_mrs_deploy_003(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    vcs = _FakeVcs(main_raises=True)
+
+    exit_code = deploy_module.run_refresh_feed(
+        _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=_FakeProcess(), harness=_FakeHarness()
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-003" in codes
+    assert payload["verdict"] == "unevaluable"
+    assert exit_code != 0
+
+
+def test_refresh_feed_is_a_provable_noop_across_two_runs(tmp_path, capsys, monkeypatch):
+    """The story's own provable-no-op requirement: running refresh-feed
+    twice against unchanged fixtures produces identical output (this
+    report has no timestamp field, so byte-identical is the bar)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    home = home_root / "acme"
+    _write_prior_run_with_harness_run_id(
+        tmp_path, home, "acme", "acme-20260801T000000000Z-aaaa", "acme-hh01"
+    )
+    _write_refresh_feed_project_policy(tmp_path, monkeypatch, 'landing_resync = true\nlanding_resync_commands = ["true"]\n',
+    )
+    snapshot = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        tasks=(TaskPhaseSnapshot(story_key="1-2-title", phase="done", commit_sha="deadbeef"),),
+    )
+
+    def _run_once():
+        vcs = _FakeVcs(main_subjects=("Merge 1.2 into main",))
+        process = _FakeProcess(results={"true": ProcessResult(returncode=0, stdout="", stderr="")})
+        harness = _FakeHarness(snapshot=snapshot)
+        deploy_module.run_refresh_feed(
+            _refresh_feed_args(), vcs=vcs, fs=LocalFs(), process=process, harness=harness
+        )
+        return capsys.readouterr().out
+
+    first = _run_once()
+    second = _run_once()
+    assert first == second
+    assert json.loads(first)["data"]["stories"] != []
