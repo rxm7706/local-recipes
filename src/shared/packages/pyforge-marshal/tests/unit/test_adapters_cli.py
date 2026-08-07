@@ -13,6 +13,8 @@ import pytest
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.cli import adapters as adapters_cli
+from pyforge.marshal.ports.fs import AdvisoryLock
+from pyforge.marshal.ports.harness import AdapterProbe
 
 _HOME = Path("/fake/home/pyforge-marshal")
 _CANONICAL = _HOME / ".claude" / "skills"
@@ -42,6 +44,7 @@ class FakeFs:
         self.fail_remove: dict[Path, Exception] = {}
         self.fail_read_symlink: dict[Path, Exception] = {}
         self.fail_write_text: Exception | None = None
+        self.fail_acquire_lock: Exception | None = None
         # Real `Path.exists()` FOLLOWS a symlink and reports False for a
         # dangling one, even though the link itself is present
         # (`is_symlink()` is True). This fake otherwise treats "is a
@@ -99,6 +102,27 @@ class FakeFs:
             raise self.fail_write_text
         self.texts[path] = content
 
+    def write_redacted_atomic(self, path: Path, payload) -> None:
+        """``RecordPort``'s fake -- Story 6.4. Stores the ALREADY-redacted
+        ``payload.text`` (mirrors ``LocalFs.write_redacted_atomic``'s own
+        "delegates entirely to write_text_atomic" shape)."""
+        if self.fail_write_text:
+            raise self.fail_write_text
+        self.texts[path] = payload.text
+
+    def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
+        """A trivial in-memory fake -- Story 6.4's review fix. This
+        double is exercised single-threaded, so no real mutual exclusion
+        is needed; it only needs to satisfy the Protocol shape
+        ``run_adapters_probe`` now calls. ``fail_acquire_lock`` lets a test
+        simulate lock contention."""
+        if self.fail_acquire_lock:
+            raise self.fail_acquire_lock
+        return AdvisoryLock(path=path, handle=object())
+
+    def release_advisory_lock(self, lock: AdvisoryLock) -> None:
+        pass
+
 
 def _lexical_normalize(path: Path) -> Path:
     """Normalize ``..``/``.`` components without touching the real
@@ -109,14 +133,27 @@ def _lexical_normalize(path: Path) -> Path:
 
 
 class FakeHarness:
-    def __init__(self, skill_trees: dict[str, str] | None = None, fail: Exception | None = None) -> None:
+    def __init__(
+        self,
+        skill_trees: dict[str, str] | None = None,
+        fail: Exception | None = None,
+        probe=None,
+        probe_fail: Exception | None = None,
+    ) -> None:
         self._skill_trees = skill_trees or {}
         self._fail = fail
+        self._probe = probe
+        self._probe_fail = probe_fail
 
     def adapter_skill_trees(self, project: Path) -> dict[str, str]:
         if self._fail:
             raise self._fail
         return dict(self._skill_trees)
+
+    def adapter_probe(self, adapter_name: str, project: Path):
+        if self._probe_fail:
+            raise self._probe_fail
+        return self._probe
 
 
 def _args(slug: str = "pyforge-marshal", fmt: str = "json") -> argparse.Namespace:
@@ -436,6 +473,28 @@ def test_conform_added_never_synced_reports_drift(capsys):
     assert checks[0]["status"] == "added"
 
 
+def test_gather_conformance_findings_never_synced_is_not_drift_when_asked(capsys):
+    """Review finding (Edge Case Hunter, Story 6.4): `run_preflight`'s own
+    unconditional call wires `treat_never_synced_as_drift=False` --
+    otherwise a perfectly ordinary freshly-configured, not-yet-synced
+    project (an "added" tree, never previously projected) failed preflight
+    at ERROR on every routine invocation, a basic onboarding regression.
+    `run_adapters_conform` (exercised by the sibling test just above) keeps
+    the stricter default -- this proves the OTHER caller's own behavior
+    directly against `gather_conformance_findings` rather than only via
+    `cli/init.py`'s own integration-level wiring."""
+    fs = FakeFs(dirs={_HOME, _CANONICAL})
+    harness = FakeHarness({"codex": ".agents/skills"})
+    data, findings = adapters_cli.gather_conformance_findings(
+        _HOME, fs=fs, harness=harness, treat_never_synced_as_drift=False
+    )
+    codes = {f.code for f in findings}
+    assert "MRS-CONFORM-001" not in codes
+    # The full truth is still reported in `data` -- only the FINDING
+    # (which drives verdict/exit-code) is suppressed for this shape.
+    assert data["checks"][0]["status"] == "added"
+
+
 def test_conform_removed_deleted_out_of_band_reports_drift(capsys):
     fs = FakeFs(
         dirs={_HOME, _CANONICAL},
@@ -621,3 +680,191 @@ def test_conform_text_format_renders_without_crashing(capsys):
     out = capsys.readouterr().out
     assert "adapters conform" in out
     assert ".agents/skills" in out
+
+
+# --- Story 6.4: `marshal adapters probe` ------------------------------------
+
+_PROBE_STATE_PATH = Path("/fake/state/pyforge-marshal") / "adapter-probes.json"
+
+
+def _probe_args(slug: str = "pyforge-marshal", fmt: str = "json", adapter: str = "claude") -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, format=fmt, adapter=adapter)
+
+
+def _available_probe(adapter: str = "claude") -> AdapterProbe:
+    return AdapterProbe(
+        adapter=adapter,
+        binary=adapter,
+        binary_present=True,
+        binary_version="1.0.0",
+        capabilities={"hookless": False},
+        probe_output='{"schema_version": 2}',
+        probe_note=None,
+    )
+
+
+def _unavailable_probe(adapter: str = "codex") -> AdapterProbe:
+    return AdapterProbe(
+        adapter=adapter,
+        binary=adapter,
+        binary_present=False,
+        binary_version=None,
+        capabilities={"hookless": False},
+        probe_output=None,
+        probe_note="binary not found on PATH",
+    )
+
+
+@pytest.fixture(autouse=True)
+def _patch_machine_state_dir(monkeypatch):
+    monkeypatch.setattr(adapters_cli, "_machine_state_dir", lambda: _PROBE_STATE_PATH.parent)
+
+
+def _run_probe(fs: FakeFs, harness: FakeHarness, slug: str = "pyforge-marshal", adapter: str = "claude") -> int:
+    return adapters_cli.run_adapters_probe(_probe_args(slug, adapter=adapter), fs=fs, harness=harness, record=fs)
+
+
+def test_probe_available_adapter_reports_available_no_findings(capsys):
+    fs = FakeFs(dirs={_HOME})
+    harness = FakeHarness(probe=_available_probe())
+    code = _run_probe(fs, harness)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["probe"]["status"] == "available"
+    assert envelope["data"]["probe"]["binary_version"] == "1.0.0"
+    assert code == 0
+
+
+def test_probe_unavailable_adapter_reports_unavailable_and_exits_zero(capsys):
+    fs = FakeFs(dirs={_HOME})
+    harness = FakeHarness(probe=_unavailable_probe())
+    code = _run_probe(fs, harness, adapter="codex")
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["probe"]["status"] == "unavailable"
+    assert code == 0
+
+
+def test_probe_writes_the_redacted_record_to_the_machine_scoped_path(capsys):
+    fs = FakeFs(dirs={_HOME})
+    harness = FakeHarness(probe=_available_probe())
+    _run_probe(fs, harness)
+    _envelope_from(capsys)
+    assert _PROBE_STATE_PATH in fs.texts
+    written = json.loads(fs.texts[_PROBE_STATE_PATH])
+    assert written["claude"]["status"] == "available"
+
+
+def test_probe_write_is_never_a_bare_write_text_atomic(capsys):
+    """AD-34: the write MUST go through ``RecordPort.write_redacted_atomic``,
+    never ``FsPort.write_text_atomic`` -- both are the SAME fake object
+    here, but only the redacted path is exercised (``write_text_atomic``
+    would also satisfy this fake, so this test asserts the RECORD's shape
+    is valid JSON produced by ``to_redacted``, not merely present)."""
+    fs = FakeFs(dirs={_HOME})
+    harness = FakeHarness(probe=_available_probe())
+    _run_probe(fs, harness)
+    _envelope_from(capsys)
+    # to_redacted's own json.dumps(sort_keys=True) shape -- keys sorted.
+    raw = fs.texts[_PROBE_STATE_PATH]
+    assert list(json.loads(raw).keys()) == sorted(json.loads(raw).keys())
+
+
+def test_probe_merges_into_an_existing_record_preserving_other_adapters(capsys):
+    fs = FakeFs(
+        dirs={_HOME},
+        texts={_PROBE_STATE_PATH: json.dumps({"codex": {"status": "unavailable"}})},
+    )
+    harness = FakeHarness(probe=_available_probe())
+    _run_probe(fs, harness)
+    _envelope_from(capsys)
+    written = json.loads(fs.texts[_PROBE_STATE_PATH])
+    assert written["codex"]["status"] == "unavailable"
+    assert written["claude"]["status"] == "available"
+
+
+def test_probe_malformed_existing_record_degrades_to_empty_with_warn(capsys):
+    fs = FakeFs(dirs={_HOME}, texts={_PROBE_STATE_PATH: "{not json"})
+    harness = FakeHarness(probe=_available_probe())
+    _run_probe(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-016" in codes
+    written = json.loads(fs.texts[_PROBE_STATE_PATH])
+    assert written["claude"]["status"] == "available"
+
+
+def test_probe_unknown_adapter_reports_error_finding(capsys):
+    fs = FakeFs(dirs={_HOME})
+    harness = FakeHarness(probe_fail=HarnessError("unknown adapter"))
+    code = _run_probe(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-014" in codes
+    assert code != 0
+
+
+def test_probe_missing_adapter_flag_reports_error_finding_no_touch(capsys):
+    fs = FakeFs(dirs={_HOME})
+    harness = FakeHarness(probe=_available_probe())
+    adapters_cli.run_adapters_probe(_probe_args(adapter=""), fs=fs, harness=harness, record=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-013" in codes
+    assert _PROBE_STATE_PATH not in fs.texts
+
+
+def test_probe_malformed_slug_returns_error_finding(capsys):
+    fs = FakeFs()
+    harness = FakeHarness(probe=_available_probe())
+    adapters_cli.run_adapters_probe(_probe_args(slug="../evil"), fs=fs, harness=harness, record=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-001" in codes
+
+
+def test_probe_home_not_provisioned_returns_error_finding(capsys):
+    fs = FakeFs(dirs=set())
+    harness = FakeHarness(probe=_available_probe())
+    _run_probe(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-002" in codes
+
+
+def test_probe_write_failure_reports_error_finding_but_still_reports_the_observation(capsys):
+    fs = FakeFs(dirs={_HOME})
+    fs.fail_write_text = FsError("disk full")
+    harness = FakeHarness(probe=_available_probe())
+    _run_probe(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-015" in codes
+    assert envelope["data"]["probe"]["status"] == "available"
+
+
+def test_probe_lock_contention_reports_error_finding_writes_nothing(capsys):
+    """Review finding (Blind Hunter): two concurrent `marshal adapters
+    probe` invocations for DIFFERENT adapters share the read-merge-write
+    cycle against `adapter-probes.json` -- without a lock, the second
+    writer silently clobbers the first's already-succeeded observation.
+    Guarded by the same injectable `FsPort.acquire_advisory_lock` pair
+    `cli/deploy.py::run_promote` established; a contended lock reports
+    MRS-ADP-015 and performs no write, rather than racing anyway."""
+    fs = FakeFs(dirs={_HOME})
+    fs.fail_acquire_lock = FsError("simulated: another process holds this lock")
+    harness = FakeHarness(probe=_available_probe())
+    _run_probe(fs, harness)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-ADP-015" in codes
+    assert _PROBE_STATE_PATH not in fs.texts
+
+
+def test_probe_text_format_renders_without_crashing(capsys):
+    fs = FakeFs(dirs={_HOME})
+    harness = FakeHarness(probe=_available_probe())
+    adapters_cli.run_adapters_probe(_probe_args(fmt="text"), fs=fs, harness=harness, record=fs)
+    out = capsys.readouterr().out
+    assert "adapters probe" in out
+    assert "available" in out

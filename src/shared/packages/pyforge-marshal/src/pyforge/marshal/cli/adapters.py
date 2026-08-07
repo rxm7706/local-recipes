@@ -74,19 +74,42 @@ from typing import TYPE_CHECKING
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..core import policy
-from ..core.conformance import STATUS_LINK_TARGET_CONFIRMED, TreeLiveState, evaluate_conformance
+from ..core.conformance import (
+    STATUS_ADDED,
+    STATUS_LINK_TARGET_CONFIRMED,
+    TreeLiveState,
+    build_probe_record,
+    evaluate_conformance,
+)
+from ..core.egress import to_redacted
 from ..core.model import Finding, Severity, build_envelope
 from ..core.skill_projection import CANONICAL_SKILL_TREE_REL, plan_projection
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
+from ..ports.record import RecordPort
 from .config import _suppress_downstream_pipe_close
-from .init import _home_path
+from .init import _home_path, _machine_state_dir
 
 if TYPE_CHECKING:
     from ..core.context import MarshalContext
 
 _MANIFEST_RELPATH = (".bmad-loop", "skill-projection.json")
+
+# Story 6.4 (FR-43, AD-37) -- the ONE machine-scoped filename this story
+# adds under `_machine_state_dir()`'s already-declared base, alongside
+# `cli/init.py`'s own `adapter-acknowledgements.json`. A single JSON object,
+# keyed by adapter name, each value the adapter's LATEST probe record --
+# mirrors that sibling file's own "one file, one collection" shape rather
+# than proliferating one file per adapter.
+_PROBE_STATE_FILENAME = "adapter-probes.json"
+
+# Review finding: two concurrent `marshal adapters probe` invocations for
+# DIFFERENT adapters share this one file's read-merge-write cycle; a short
+# timeout is enough since the guarded section is one small JSON read+write,
+# never a real subprocess call (the probe itself already completed before
+# the lock is acquired).
+_PROBE_LOCK_TIMEOUT_S = 5.0
 
 
 def add_adapters_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -147,6 +170,33 @@ def add_adapters_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     conform_parser.set_defaults(handler=run_adapters_conform)
 
+    probe_parser = adapters_subparsers.add_parser(
+        "probe",
+        help="Observe a named adapter's real support on this machine (FR-43).",
+        description=(
+            "Read-only: records binary presence and version, the resolved "
+            "profile's own declared capabilities, and bmad-loop "
+            "probe-adapter --json's own (redacted) scan-mode output, then "
+            "writes the observation to the single declared machine-scoped "
+            "path (AD-37) -- never into any project's own artifacts. An "
+            "adapter absent from this host reports 'unavailable' and exits "
+            "0 (this read-only surface never blocks on it, AD-31)."
+        ),
+    )
+    probe_parser.add_argument("slug", help="The BMAD project slug whose loop home to probe from.")
+    probe_parser.add_argument(
+        "--adapter",
+        required=True,
+        help="The adapter (profile) name to probe, e.g. 'claude', 'codex'.",
+    )
+    probe_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    probe_parser.set_defaults(handler=run_adapters_probe)
+
 
 def _render_text(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
@@ -192,6 +242,30 @@ def _render_text_conform(data: dict[str, object], findings: tuple[Finding, ...])
     unevaluated = data.get("unevaluated_trees")
     if isinstance(unevaluated, list) and unevaluated:
         lines.append(f"unevaluated: {', '.join(unevaluated)}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _render_text_probe(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints, mirroring ``_render_text_conform``'s own
+    shape (AD-14)."""
+    probe = data.get("probe")
+    lines = [f"adapters probe -- adapter={data.get('adapter')}"]
+    if isinstance(probe, dict):
+        lines.append(f"  status:          {probe.get('status', '?')}")
+        lines.append(f"  binary:          {probe.get('binary', '?')}")
+        lines.append(f"  binary_present:  {probe.get('binary_present', '?')}")
+        lines.append(f"  binary_version:  {probe.get('binary_version', '?')}")
+        capabilities = probe.get("capabilities")
+        if isinstance(capabilities, dict):
+            for key, value in sorted(capabilities.items()):
+                lines.append(f"  capability.{key}: {value}")
+        if probe.get("probe_note"):
+            lines.append(f"  probe_note:      {probe.get('probe_note')}")
     if findings:
         lines.append("findings:")
         for finding in findings:
@@ -615,6 +689,7 @@ def gather_conformance_findings(
     *,
     fs: FsPort,
     harness: HarnessPort,
+    treat_never_synced_as_drift: bool = True,
 ) -> tuple[dict[str, object], list[Finding]]:
     """Story 6.3 (FR-42, AD-31/AD-36): the READ-ONLY "does the live
     filesystem still satisfy the current projection plan" check -- shared by
@@ -628,6 +703,24 @@ def gather_conformance_findings(
     Returns ``(data, findings)`` rather than emitting an envelope itself --
     the two callers wrap it differently (a standalone envelope vs folding
     into ``marshal preflight``'s own).
+
+    ``treat_never_synced_as_drift`` (review finding, Edge Case Hunter on
+    Story 6.4): a tree that is DESIRED but has never gone through ``marshal
+    adapters sync`` (``STATUS_ADDED`` -- not yet in ``previously_projected``
+    at all) is the ordinary, expected state for a project right after
+    ``marshal init`` with a non-default adapter configured -- it is "not
+    yet synced", not "drifted from a working state". ``run_adapters_conform``
+    (the operator-invoked standalone audit) keeps the default ``True``: an
+    operator explicitly asking "does the live filesystem match the desired
+    plan" wants to see a never-synced tree named. ``run_preflight`` (this
+    function's OTHER caller, wired to run unconditionally on every
+    invocation) passes ``False``: without it, a perfectly ordinary
+    freshly-configured, not-yet-synced project failed preflight at ERROR on
+    every run until the operator separately ran ``adapters sync`` -- a
+    basic onboarding-flow regression this parameter closes. ``removed``/
+    ``modified`` (a tree that WAS projected and is no longer, or now
+    resolves elsewhere) are real drift either way and are never filtered by
+    this parameter -- only the "never synced" shape changes tier.
 
     Deliberately gathers the DESIRED-tree plan (``plan_projection``, exactly
     like ``sync``) BEFORE ever probing the canonical tree's own presence --
@@ -826,6 +919,8 @@ def gather_conformance_findings(
         )
 
     drift = [check for check in report.checks if check.status != STATUS_LINK_TARGET_CONFIRMED]
+    if not treat_never_synced_as_drift:
+        drift = [check for check in drift if check.status != STATUS_ADDED]
     if drift:
         summary = "; ".join(f"{check.tree} ({check.status}: {check.detail})" for check in drift)
         findings.append(
@@ -900,3 +995,190 @@ def run_adapters_conform(
     findings.extend(conform_findings)
 
     return _emit(args, data, findings, command="adapters conform", renderer=_render_text_conform)
+
+
+def _read_probe_state(fs: FsPort, path: Path, findings: list[Finding]) -> dict[str, object]:
+    """Mirrors ``cli/init.py::_read_acknowledged``'s own defensive degrade:
+    absent, unreadable, or malformed (not a JSON object) all read as an
+    empty collection -- this run's own fresh probe entry still merges into
+    it and writes normally. Malformed (present but unparseable) is the ONE
+    case worth a WARN finding (``MRS-ADP-016``, mirrors ``_read_manifest``'s
+    own ``MRS-ADP-009`` precedent for a corrupted derived-state file);
+    genuinely absent is silent -- the ordinary first-probe-ever shape."""
+    try:
+        text = fs.read_text(path)
+    except FsError:
+        return {}
+    if text is None:
+        return {}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        findings.append(
+            Finding(
+                code="MRS-ADP-016",
+                severity=Severity.WARN,
+                message=(
+                    f"machine-scoped probe record {str(path)!r} is not valid JSON -- "
+                    "treating as empty; this probe's own entry still writes"
+                ),
+                path=str(path),
+            )
+        )
+        return {}
+    if not isinstance(parsed, dict):
+        findings.append(
+            Finding(
+                code="MRS-ADP-016",
+                severity=Severity.WARN,
+                message=(
+                    f"machine-scoped probe record {str(path)!r} is not a JSON object -- "
+                    "treating as empty; this probe's own entry still writes"
+                ),
+                path=str(path),
+            )
+        )
+        return {}
+    return parsed
+
+
+def run_adapters_probe(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    harness: HarnessPort | None = None,
+    record: RecordPort | None = None,
+    context: MarshalContext | None = None,
+) -> int:
+    """``marshal adapters probe`` (Story 6.4, FR-43/AD-31/AD-34/AD-37):
+    observes a NAMED adapter's real support on this machine and records it
+    to the single declared machine-scoped path. Read-only with respect to
+    the loop home and every projection artifact -- the ONLY write this
+    command makes is the one machine-scoped probe-record file, and it goes
+    through ``RecordPort`` (never ``FsPort.write_text_atomic``), the ONE
+    egress-classified port AD-34 requires for a durable record. ``record``
+    is a separate parameter from ``fs`` (distinct Protocols, per AD-34's
+    "redaction is a port-boundary property") even though ``LocalFs`` is the
+    sole implementation of both -- Story 2.6 shipped ``RecordPort`` with no
+    real caller yet; this is its first."""
+    del context
+    fs = fs if fs is not None else LocalFs()
+    harness = harness if harness is not None else BmadLoopHarness()
+    record = record if record is not None else LocalFs()
+
+    slug = args.slug
+    adapter_name = args.adapter
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug, "adapter": adapter_name}
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-ADP-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit(args, data, findings, command="adapters probe", renderer=_render_text_probe)
+
+    try:
+        home = _home_path(slug)
+    except (RuntimeError, OSError) as exc:
+        findings.append(
+            Finding(
+                code="MRS-ADP-002",
+                severity=Severity.ERROR,
+                message=f"resolving the loop-home root: {exc}",
+            )
+        )
+        return _emit(args, data, findings, command="adapters probe", renderer=_render_text_probe)
+    data["home"] = str(home)
+
+    if not fs.is_dir(home):
+        findings.append(
+            Finding(
+                code="MRS-ADP-002",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home not provisioned: {str(home)!r} is not a directory "
+                    f"-- run 'marshal init {slug}' first"
+                ),
+                path=str(home),
+            )
+        )
+        return _emit(args, data, findings, command="adapters probe", renderer=_render_text_probe)
+
+    if not isinstance(adapter_name, str) or not adapter_name.strip():
+        findings.append(
+            Finding(
+                code="MRS-ADP-013",
+                severity=Severity.ERROR,
+                message=f"--adapter must be a non-blank adapter name, got {adapter_name!r}",
+            )
+        )
+        return _emit(args, data, findings, command="adapters probe", renderer=_render_text_probe)
+
+    try:
+        probe = harness.adapter_probe(adapter_name, home)
+    except HarnessError as exc:
+        findings.append(
+            Finding(
+                code="MRS-ADP-014",
+                severity=Severity.ERROR,
+                message=f"could not probe adapter {adapter_name!r}: {exc}",
+            )
+        )
+        return _emit(args, data, findings, command="adapters probe", renderer=_render_text_probe)
+
+    probe_record = build_probe_record(probe)
+    data["probe"] = probe_record
+
+    state_path = _machine_state_dir() / _PROBE_STATE_FILENAME
+    # Review finding: this file is shared across EVERY adapter this machine
+    # ever probes (`existing[adapter_name] = probe_record`, one growing
+    # dict) -- two concurrent `marshal adapters probe` invocations for
+    # DIFFERENT adapters would each read the same starting state, each add
+    # only their own entry, and whichever process's write landed last would
+    # silently discard the other's already-succeeded probe result. Guarded
+    # by the SAME injectable `FsPort.acquire_advisory_lock`/
+    # `release_advisory_lock` pair `cli/deploy.py::run_promote` already
+    # established (AD-42) -- never a second, raw `fcntl` mechanism.
+    try:
+        lock = fs.acquire_advisory_lock(state_path, timeout_s=_PROBE_LOCK_TIMEOUT_S)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-ADP-015",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot acquire the probe-record lock on {str(state_path)!r} "
+                    f"within {_PROBE_LOCK_TIMEOUT_S}s -- another probe is plausibly "
+                    f"running concurrently; this probe's own observation is not "
+                    f"recorded this run: {exc}"
+                ),
+                path=str(state_path),
+            )
+        )
+        return _emit(args, data, findings, command="adapters probe", renderer=_render_text_probe)
+    try:
+        existing = _read_probe_state(fs, state_path, findings)
+        existing[adapter_name] = probe_record
+        try:
+            record.write_redacted_atomic(state_path, to_redacted(existing))
+        except FsError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-ADP-015",
+                    severity=Severity.ERROR,
+                    message=f"writing the machine-scoped probe record {str(state_path)!r}: {exc}",
+                    path=str(state_path),
+                )
+            )
+    finally:
+        fs.release_advisory_lock(lock)
+
+    return _emit(args, data, findings, command="adapters probe", renderer=_render_text_probe)

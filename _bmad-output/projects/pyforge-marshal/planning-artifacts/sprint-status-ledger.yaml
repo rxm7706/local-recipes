@@ -77,7 +77,7 @@ development_status:
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done
-  6-4-adapter-probe-with-a-machine-scoped-record: backlog
+  6-4-adapter-probe-with-a-machine-scoped-record: done
   6-5-conformance-smoke-in-an-ephemeral-home: backlog
   6-6-the-conformance-matrix: backlog
   6-7-entry-file-family-drift-check-detect-only: backlog

@@ -607,6 +607,24 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # additional step) reuses MRS-ADP-001/002/003/004/005/009/011 verbatim --
 # same codes, same tiers, a second call site, per this table's own
 # MRS-DEPLOY-003 precedent.
+# Story 6.4 (adapter probe with a machine-scoped record, FR-43, AD-31/AD-34/
+# AD-37) adds `cli/adapters.py::run_adapters_probe` (`marshal adapters
+# probe`), reusing MRS-ADP-001/002 verbatim for its shared preconditions,
+# plus four new codes. MRS-ADP-013 (a missing/blank --adapter, checked
+# before any I/O) and MRS-ADP-014 (adapter_probe raised HarnessError --
+# an unknown adapter or unimportable bmad_loop) both classify UNEVALUABLE,
+# the same tier as MRS-STATUS-003/MRS-SPIN-014's own "Marshal cannot
+# determine what to probe" precedents. MRS-ADP-015 (writing the
+# machine-scoped record failed) classifies ERROR, the same tier as
+# MRS-ADP-006/008's "a real write was attempted and failed" rung. MRS-ADP-016
+# (a pre-existing adapter-probes.json was malformed) classifies WARN, the
+# same "degrades to empty, never blocks" tier as MRS-ADP-009. `binary_
+# present is False` registers NO finding at all -- `Verdict.CLEAN`, exit 0,
+# the AC's own "reports unavailable and exits 0" read literally; the
+# ALREADY-SHIPPED MRS-PREFLIGHT-004 (Verdict.ERROR) already covers the
+# SAME real-world fact from a run-dependent call site (AD-31: the same
+# code never classifies two rungs, but the same FACT may, from two
+# call sites with different meanings) -- see the story's own spec.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -735,6 +753,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-ADP-011": Verdict.WARN,
     "MRS-CONFORM-001": Verdict.ERROR,
     "MRS-ADP-012": Verdict.ERROR,
+    "MRS-ADP-013": Verdict.UNEVALUABLE,
+    "MRS-ADP-014": Verdict.UNEVALUABLE,
+    "MRS-ADP-015": Verdict.ERROR,
+    "MRS-ADP-016": Verdict.WARN,
 }
 
 
