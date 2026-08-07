@@ -45,15 +45,19 @@ the story spec's Design Notes:**
 
 from __future__ import annotations
 
+import os
 import subprocess
+import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from . import errors, registry, state
 
 if TYPE_CHECKING:
-    from .transport.base import DesignTransport, ProjectRef
+    from .transport.base import DesignTransport, FileRead, ProjectRef
 
 PILOT_SUPPORT_SOURCE_PROJECT_ID = "ad84d4f6-c292-42c8-98bf-ede78a567773"
 """The already-seeded ``pyforge-marshal`` Design project (``bridge-protocol.md``
@@ -328,4 +332,251 @@ def seed(
     )
     return SeedResult(
         project=project, persona=persona, prototype_filename=prototype_filename
+    )
+
+
+# --- CAP-2: pull (Design -> repo), Story 2.1 --------------------------------
+#
+# `bridge-protocol.md` § *Pull*: `read_file(path, if_none_match: <last-seen
+# etag>)` -> `{unchanged: true}` short-circuits (no body transferred, nothing
+# written) -> otherwise write the (already entity-decoded -- see
+# `_pull_and_land`'s own docstring) body, record the new etag, re-derive
+# (`npm run extract` -> `npm run build` -> `deck-export`). `--commit` lands in
+# Story 2.2; Marp-source and standalone-bundle pull land in Stories 2.3/2.4.
+
+PROTOTYPE_ARTIFACT_KEY = "prototype"
+"""The ``state.DeckState.etags`` key for the main ``.dc.html`` prototype."""
+
+_DEFAULT_EXPORT_TIMEOUT = 300.0
+
+
+@dataclass(frozen=True)
+class PullResult:
+    """What a ``pull_*`` function returns: which artifact, whether the pull
+    was a no-op (etag short-circuit), where it landed locally when it
+    wasn't, the etag now on record, and whether ``--commit`` (Story 2.2)
+    actually committed it."""
+
+    slug: str
+    artifact: str
+    local_path: Path | None
+    unchanged: bool
+    etag: str | None
+    committed: bool = False
+
+
+def _require_seeded_state(state_path: Path, slug: str) -> state.DeckState:
+    """The deck's recorded ``state.DeckState``, or a ``HeraldError`` naming
+    ``herald deck seed`` -- pulling needs a ``project_id`` to read from, and
+    ``state.py`` is the only source of one this module has (unlike
+    ``seed``'s registry-bootstrap fallback, there is no analogous "adopt an
+    already-linked deck" path here yet; see the story spec's Design Notes)."""
+    existing = state.read(state_path, slug)
+    if existing is None:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r}: no bridge state recorded at {state_path} "
+            f"-- run 'herald deck seed {slug}' first"
+        )
+    return existing
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Write ``text`` to ``path`` atomically (temp file in ``path``'s own
+    directory, then ``os.replace``), mirroring ``state.write`` /
+    ``registry.register``'s existing crash-safety convention: a process
+    crash mid-write must never leave a corrupt half-written pulled file."""
+    could_not = f"could not write {path}"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle, tmp_name = tempfile.mkstemp(
+            dir=path.parent, prefix=f".{path.name}-", suffix=".tmp"
+        )
+    except OSError as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc
+    try:
+        try:
+            fh = os.fdopen(handle, "w", encoding="utf-8")
+        except BaseException:
+            os.close(handle)
+            raise
+        with fh:
+            fh.write(text)
+        os.replace(tmp_name, path)
+    except BaseException as exc:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        if isinstance(exc, (OSError, ValueError)):
+            raise errors.HeraldError(f"{could_not}: {exc}") from exc
+        raise
+
+
+def _pull_and_land(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    state_path: Path,
+    existing: state.DeckState,
+    remote_path: str,
+    local_path: Path,
+    artifact_key: str,
+    now: Callable[[], datetime],
+) -> FileRead | None:
+    """One ``read_file`` + etag short-circuit + (on change) atomic write +
+    ``state.py`` update. Returns ``None`` on an ``{unchanged: true}`` answer
+    -- the caller must treat that as "stop here", never running prove/export
+    for a no-op pull.
+
+    ``FileRead.body`` is used **verbatim, with no further entity-decoding**:
+    ``McpTransport.read_file`` / ``AgentSdkTransport.read_file`` already
+    return ``transport.base.parse_read_response(...)``, which decodes the
+    wire's ``&amp;``/``&lt;``/``&gt;`` escaping internally. Re-decoding here
+    would silently corrupt any pulled file that legitimately contains one of
+    those substrings."""
+    last_etag = existing.etags.get(artifact_key)
+    file_read = transport.read_file(
+        project_id=existing.project_id, path=remote_path, if_none_match=last_etag
+    )
+    if file_read.unchanged:
+        return None
+    if file_read.truncated:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r} artifact {artifact_key!r}: read_file "
+            f"returned a truncated window for {remote_path!r}; a partial "
+            f"read must never be mistaken for the whole file"
+        )
+    if file_read.body is None:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r} artifact {artifact_key!r}: read_file "
+            f"reported a change for {remote_path!r} but returned no body"
+        )
+    _atomic_write_text(local_path, file_read.body)
+    new_etags = dict(existing.etags)
+    new_etags[artifact_key] = file_read.etag
+    state.write(
+        state_path,
+        slug,
+        state.DeckState(
+            project_id=existing.project_id,
+            etags=new_etags,
+            last_pull=now().isoformat(),
+        ),
+    )
+    return file_read
+
+
+@runtime_checkable
+class DeckExporter(Protocol):
+    """The injectable ``deck-export`` seam (re-derive step 4:
+    ``pixi run -e local-recipes deck-export <slug>``), mirroring
+    ``LocalProver``'s pattern: a real implementation shells a bounded
+    subprocess; every test injects a hand-written fake."""
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        """Raise ``errors.HeraldError`` naming what failed; return normally
+        on success."""
+        ...
+
+
+class PixiDeckExporter:
+    """The real ``DeckExporter``: ``pixi run -e local-recipes deck-export
+    <slug>`` in ``repo_root``, one bounded subprocess call. Never invoked by
+    this package's own tests (every pull test injects a fake)."""
+
+    def __init__(self, *, timeout: float = _DEFAULT_EXPORT_TIMEOUT) -> None:
+        self._timeout = timeout
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        try:
+            completed = subprocess.run(
+                ["pixi", "run", "-e", "local-recipes", "deck-export", slug],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"{slug}' in {repo_root} exceeded {self._timeout}s ({exc})"
+            ) from exc
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: could not run 'pixi run -e "
+                f"local-recipes deck-export {slug}' in {repo_root} ({exc})"
+            ) from exc
+        if completed.returncode != 0:
+            tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
+            raise errors.HeraldError(
+                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"{slug}' in {repo_root} exited {completed.returncode}: {tail}"
+            )
+
+
+def _default_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def pull_prototype(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    repo_root: Path,
+    state_path: Path | None = None,
+    prover: LocalProver | None = None,
+    exporter: DeckExporter | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> PullResult:
+    """CAP-2, Story 2.1: pull the main prototype (``bridge-protocol.md`` §
+    Pull, steps 1-4). Requires a prior ``seed`` (``_require_seeded_state``).
+
+    On ``{unchanged: true}``: returns immediately with
+    ``PullResult(unchanged=True)`` -- no write, no state update, no
+    extract/build/export. On a real change: writes the decoded body to
+    ``presentations/<slug>/project/PyForge <Persona>.dc.html``, records the
+    new etag, then re-derives via ``prover`` (default ``NpmLocalProver``,
+    reused from Story 1.6) and ``exporter`` (default ``PixiDeckExporter``).
+    Never commits (Story 2.2 adds ``--commit``)."""
+    resolved_now = now or _default_now
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = _require_seeded_state(resolved_state_path, slug)
+    persona = _persona_from_slug(slug)
+    prototype_filename = f"PyForge {persona}.dc.html"
+    deck_dir = repo_root / "presentations" / slug
+    local_path = deck_dir / "project" / prototype_filename
+
+    file_read = _pull_and_land(
+        transport,
+        slug=slug,
+        state_path=resolved_state_path,
+        existing=existing,
+        remote_path=prototype_filename,
+        local_path=local_path,
+        artifact_key=PROTOTYPE_ARTIFACT_KEY,
+        now=resolved_now,
+    )
+    if file_read is None:
+        return PullResult(
+            slug=slug,
+            artifact=PROTOTYPE_ARTIFACT_KEY,
+            local_path=None,
+            unchanged=True,
+            etag=existing.etags.get(PROTOTYPE_ARTIFACT_KEY),
+            committed=False,
+        )
+
+    (prover or NpmLocalProver()).prove(deck_dir)
+    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+
+    return PullResult(
+        slug=slug,
+        artifact=PROTOTYPE_ARTIFACT_KEY,
+        local_path=local_path,
+        unchanged=False,
+        etag=file_read.etag,
+        committed=False,
     )

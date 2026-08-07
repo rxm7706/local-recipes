@@ -10,16 +10,19 @@ network, no adapter); every local-prove call is against a hand-written
 from __future__ import annotations
 
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-
 from pyforge.herald import state
 from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
+    PROTOTYPE_ARTIFACT_KEY,
     NpmLocalProver,
+    PullResult,
     SeedResult,
     _persona_from_slug,
+    pull_prototype,
     seed,
 )
 from pyforge.herald.errors import HeraldError, SeedConflictError
@@ -464,3 +467,278 @@ def test_npm_local_prover_maps_a_timeout_to_a_herald_error(monkeypatch, tmp_path
     monkeypatch.setattr(subprocess, "run", _raise)
     with pytest.raises(HeraldError, match="exceeded"):
         NpmLocalProver(timeout=1).prove(tmp_path)
+
+
+# --- CAP-2: pull_prototype (Story 2.1) ---------------------------------------
+
+
+class FakePullTransport:
+    """A hand-written ``DesignTransport`` double exercising only
+    ``read_file`` -- every other method raises, since ``pull_prototype``
+    never calls them."""
+
+    def __init__(self, *, answers=None):
+        self.calls: list[dict] = []
+        # Consumed one per call (a list), or a single canned FileRead reused
+        # for every call.
+        self._answers = answers
+
+    def read_file(self, **kwargs) -> FileRead:
+        self.calls.append(kwargs)
+        answer = self._answers
+        if isinstance(answer, list):
+            assert answer, "FakePullTransport ran out of canned read_file answers"
+            return answer.pop(0)
+        return answer
+
+    def get_design_prompt(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls get_design_prompt")
+
+    def create_project(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls create_project")
+
+    def finalize_plan(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls finalize_plan")
+
+    def create_support_js(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls create_support_js")
+
+    def copy_files(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls copy_files")
+
+    def write_files(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls write_files")
+
+    def render_preview(self, **kwargs) -> PreviewRef:
+        raise NotImplementedError("pull_prototype never calls render_preview")
+
+
+class FakeExporter:
+    def __init__(self, *, fails: HeraldError | None = None):
+        self.calls: list[tuple[str, Path]] = []
+        self._fails = fails
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        self.calls.append((slug, repo_root))
+        if self._fails is not None:
+            raise self._fails
+
+
+_FIXED_NOW = datetime(2026, 8, 7, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def _seed_state(tmp_path: Path, slug: str, *, project_id="p-1", etags=None) -> None:
+    state.write(
+        tmp_path / state.DEFAULT_STATE_PATH,
+        slug,
+        state.DeckState(project_id=project_id, etags=dict(etags or {}), last_pull=None),
+    )
+
+
+def test_pull_prototype_short_circuits_on_unchanged_and_skips_every_downstream_step(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
+    )
+    prover = FakeProver()
+    exporter = FakeExporter()
+
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=prover,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert result == PullResult(
+        slug="pyforge-warden",
+        artifact=PROTOTYPE_ARTIFACT_KEY,
+        local_path=None,
+        unchanged=True,
+        etag="E1",
+        committed=False,
+    )
+    # Nothing downstream of the etag check ran.
+    assert prover.calls == []
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "project").exists()
+    # state.py is untouched -- last_pull stays None, proving no re-write happened.
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.last_pull is None
+
+
+def test_pull_prototype_if_none_match_uses_the_last_seen_etag(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
+    )
+    pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert transport.calls[0]["if_none_match"] == "E1"
+    assert transport.calls[0]["project_id"] == "p-1"
+    assert transport.calls[0]["path"] == "PyForge Warden.dc.html"
+
+
+def test_pull_prototype_writes_the_decoded_body_and_re_derives(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="E2", body="<html>edited & saved</html>", unchanged=False
+        )
+    )
+    prover = FakeProver()
+    exporter = FakeExporter()
+
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=prover,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert result.local_path == local_path
+    assert result.unchanged is False
+    assert result.etag == "E2"
+    assert local_path.read_text(encoding="utf-8") == "<html>edited & saved</html>"
+    assert prover.calls == [tmp_path / "presentations" / "pyforge-warden"]
+    assert exporter.calls == [("pyforge-warden", tmp_path)]
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E2"
+    assert recorded.last_pull == _FIXED_NOW.isoformat()
+
+
+def test_pull_prototype_body_is_not_re_decoded(tmp_path: Path):
+    """`FileRead.body` is already entity-decoded by
+    `transport.base.parse_read_response` -- `pull_prototype` must use it
+    verbatim. A body containing a literal `&amp;` (e.g. the file's own prior
+    content already had one) must survive unchanged, not be decoded a
+    second time into `&`."""
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="E3", body="already &amp; decoded once", unchanged=False
+        )
+    )
+    pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert local_path.read_text(encoding="utf-8") == "already &amp; decoded once"
+
+
+def test_pull_prototype_refuses_a_truncated_answer_before_writing(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x",
+            etag="E4",
+            body="partial",
+            unchanged=False,
+            first_line=1,
+            last_line=5,
+            total_lines=20,
+        )
+    )
+    prover = FakeProver()
+    exporter = FakeExporter()
+    with pytest.raises(HeraldError, match="truncated"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=prover,
+            exporter=exporter,
+            now=lambda: _FIXED_NOW,
+        )
+    assert prover.calls == []
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "project").exists()
+
+
+def test_pull_prototype_refuses_a_changed_answer_with_no_body(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E5", body=None, unchanged=False)
+    )
+    with pytest.raises(HeraldError, match="no body"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+            exporter=FakeExporter(),
+            now=lambda: _FIXED_NOW,
+        )
+
+
+def test_pull_prototype_refuses_when_not_seeded(tmp_path: Path):
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="herald deck seed"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E6", body="<html>x</html>", unchanged=False)
+    )
+    exporter = FakeExporter(fails=HeraldError("deck-export exited 1"))
+    with pytest.raises(HeraldError, match="deck-export exited 1"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+            exporter=exporter,
+            now=lambda: _FIXED_NOW,
+        )
+    # The write and state update already happened before export ran.
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E6"
