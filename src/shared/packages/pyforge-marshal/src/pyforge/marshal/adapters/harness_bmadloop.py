@@ -1209,3 +1209,30 @@ class BmadLoopHarness:
             return path.as_posix() if path.is_file() else None
         except (OSError, ValueError, TypeError):
             return None
+
+    def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
+        """Story 5.4 (FR-39/FR-40): reads the sprint-status-shaped YAML file
+        at ``path`` DIRECTLY via ``bmad_loop.sprintstatus.load`` -- the SAME
+        parser ``story_feed_keys``/``story_feed_error`` already import --
+        never a hand-rolled second YAML reader. Unlike those two methods,
+        this one never consults ``bmad_loop.bmadconfig.load_paths``: the
+        caller passes an explicit path (the TRACKED
+        ``sprint-status-ledger.yaml`` twin, never a loop home's own
+        configured Tier-3 feed), so there is no ``project`` directory to
+        resolve a config from in the first place."""
+        try:
+            from bmad_loop import sprintstatus
+        except ImportError as exc:
+            raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
+        # sprintstatus.load calls Path.read_text(encoding="utf-8") before its
+        # own SprintStatusError handling begins, so an unreadable/non-UTF-8
+        # file raises OSError/UnicodeDecodeError raw past that type -- the
+        # same gap `story_feed_error`'s own docstring already documents for
+        # the identical call.
+        try:
+            feed = sprintstatus.load(path)
+        except sprintstatus.SprintStatusError as exc:
+            raise HarnessError(str(exc)) from exc
+        except (OSError, UnicodeDecodeError) as exc:
+            raise HarnessError(f"cannot read ledger: {exc}") from exc
+        return tuple((story.key, story.status) for story in feed.stories)

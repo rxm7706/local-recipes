@@ -1103,3 +1103,99 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
             path=facts.project,
         )
     return row, finding
+
+
+# =============================================================================
+# Story 5.4 (ledger-vs-git reconciliation, FR-39/FR-40): compares the
+# tracked ``sprint-status-ledger.yaml`` twin's own ``status: done`` story
+# keys against git's own durably-merged story keys (``core.promotion.
+# merged_story_keys``), and reports EVERY disagreement in either direction
+# by name -- the live incident this story exists to catch (Epic 4's own
+# stories sat at ``review`` in the tracked ledger for hours after their PRs
+# had actually merged). ``cli/status.py`` gathers both sets via
+# ``HarnessPort.ledger_story_statuses``/``VcsPort.commit_subjects`` first --
+# this module stays pure (AD-4): no I/O, subprocess, or clock read. Neither
+# source is ever rewritten here (AD-33): this is a read-only, diagnostic
+# comparison, never a resolution.
+# =============================================================================
+
+#: The two named discrepancy directions (the spec's own Always bullet: BOTH
+#: reported, neither a lesser-supported afterthought).
+DONE_IN_LEDGER_NOT_MERGED = "done-in-ledger-not-merged"
+MERGED_NOT_DONE_IN_LEDGER = "merged-not-done-in-ledger"
+
+#: Code review (2026-08-07, both reviewers independently, the single most
+#: severe finding against this story -- confirmed LIVE against this repo's
+#: own real history): the two directions are NOT equally reliable.
+#: ``MERGED_NOT_DONE_IN_LEDGER`` is a POSITIVE match -- `core.promotion.
+#: merged_story_keys` found a commit subject that conforms to one of its
+#: recognized shapes, so the key genuinely is durably merged; this is the
+#: live incident's own exact failure mode (Epic 4's 4.1-4.7 stuck at
+#: `review`) and this direction is CONFIRMED. ``DONE_IN_LEDGER_NOT_MERGED``
+#: is an ABSENCE of a match -- and `merged_story_keys` has a real, known
+#: blind spot: a GitHub squash-merge commit's subject is free-form human
+#: prose (this repo's own `sprint-status-ledger.yaml` header comment
+#: explicitly documents this exact failure mode as the reason the ledger
+#: exists at all: "the archaeology that failed when squash-merging PR #132
+#: made Epic 10's bmad-loop merge subjects unreachable from main"). A live
+#: run against this repo's own real ledger produced 5 `DONE_IN_LEDGER_
+#: NOT_MERGED` rows for stories that ARE genuinely merged (1.2, 1.3, 1.6,
+#: 1.10, 5.1) -- zero of them real discrepancies. Reporting this direction
+#: with the SAME confidence as the other would train an operator to
+#: distrust the ledger over false alarms, defeating this story's own
+#: purpose. Both directions are still reported (the AC's own "both
+#: reported" requirement, unchanged) but tagged with `confidence` so a
+#: consumer can weight them correctly.
+CONFIDENCE_CONFIRMED = "confirmed"
+CONFIDENCE_UNCONFIRMED = "unconfirmed"
+
+
+def reconcile_ledger_vs_git(
+    ledger_done_keys: frozenset[str], merged_keys: frozenset[str]
+) -> tuple[dict[str, object], ...]:
+    """The pure reconciliation core of ``marshal status --reconcile-ledger``
+    (Story 5.4): one row per story key present in exactly one of the two
+    sets -- ``{"story_key": str, "kind": str, "confidence": str}``, ``kind``
+    one of ``DONE_IN_LEDGER_NOT_MERGED``/``MERGED_NOT_DONE_IN_LEDGER``
+    above. A key present in BOTH (agreement) or NEITHER contributes
+    nothing -- the clean case, per the spec's own I/O matrix ("Ledger and
+    git agree fully" -> ``data.discrepancies: []``). Sorted by story key
+    within each direction (``DONE_IN_LEDGER_NOT_MERGED`` rows first, then
+    ``MERGED_NOT_DONE_IN_LEDGER``) for a deterministic report over a
+    deterministic input, never dict/set iteration-order luck -- mirrors
+    ``reconcile_feed_domains``'s own identical precedent.
+
+    ``confidence`` (code review, 2026-08-07, see this module's own
+    ``CONFIDENCE_CONFIRMED``/``CONFIDENCE_UNCONFIRMED`` module-level
+    comment for the full rationale): ``MERGED_NOT_DONE_IN_LEDGER`` rows are
+    always ``CONFIDENCE_CONFIRMED`` (a positive git match is proof);
+    ``DONE_IN_LEDGER_NOT_MERGED`` rows are always ``CONFIDENCE_UNCONFIRMED``
+    (an absence of a match does NOT prove the story was never merged --
+    ``merged_story_keys`` has a real, documented blind spot for squash-merge
+    commit subjects).
+
+    Both arguments are ALREADY-normalized ``str`` forms of Marshal's
+    canonical ``StoryKey`` (the caller's job -- ``core.identity.normalize``,
+    skipping any raw key that fails to parse, mirrors every other Epic 5
+    story's established convention) -- this function does no parsing of its
+    own. No ``Finding`` is ever produced here: per the spec's own I/O
+    matrix, a discrepancy is reported, never an error -- it is named in
+    ``data.discrepancies`` alone."""
+    discrepancies: list[dict[str, object]] = []
+    for key in sorted(ledger_done_keys - merged_keys):
+        discrepancies.append(
+            {
+                "story_key": key,
+                "kind": DONE_IN_LEDGER_NOT_MERGED,
+                "confidence": CONFIDENCE_UNCONFIRMED,
+            }
+        )
+    for key in sorted(merged_keys - ledger_done_keys):
+        discrepancies.append(
+            {
+                "story_key": key,
+                "kind": MERGED_NOT_DONE_IN_LEDGER,
+                "confidence": CONFIDENCE_CONFIRMED,
+            }
+        )
+    return tuple(discrepancies)

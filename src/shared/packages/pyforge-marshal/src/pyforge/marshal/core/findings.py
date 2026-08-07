@@ -682,6 +682,24 @@ Story 4.1's own ``MRS-GATE-005`` broadening already established for the
 SAME "a run-scoped answer was requested and Marshal could not honor it"
 caller-facing meaning.
 
+Story 5.4 (ledger-vs-git reconciliation, FR-39/FR-40) adds three more codes
+to ``cli/status.py``'s own ``MRS-STATUS-*`` area. ``MRS-STATUS-005`` (the
+tracked ``sprint-status-ledger.yaml`` twin for ``--project SLUG`` could not
+be read -- missing entirely, invalid YAML, or no ``development_status``
+map) classifies ``Verdict.WARN``, the same "clean, reportable gap, never
+itself a failure" tier as ``MRS-STATUS-004``'s own orphaned-run precedent:
+``data.discrepancies`` reports empty, never fabricated. ``MRS-STATUS-006``
+(``--reconcile-ledger`` supplied without ``--project`` alongside it,
+checked before any I/O) classifies ``Verdict.UNEVALUABLE``, the same
+pre-I/O shape-gate tier as ``MRS-STATUS-003``'s own ``--run``/``--project``
+precedent -- a fleet-wide reconciliation sweep is out of this story's own
+scope. ``MRS-STATUS-007`` (git's own commit history for ``main`` could not
+be read while gathering ``core.promotion.merged_story_keys``'s durability
+evidence) classifies ``Verdict.UNEVALUABLE``, mirroring
+``MRS-DEPLOY-003``'s identical rationale in the promotion area: Marshal
+cannot honestly determine ANY story's durability this run, so this is a
+"could not evaluate", never a "reported and moved on", finding.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -825,6 +843,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # not resolve to a real run directory) at WARN; MRS-STATUS-002 is reused,
 # broadened to also cover a per-run detail view's own unreadable
 # state.json.
+# Story 5.4 (ledger-vs-git reconciliation, FR-39/FR-40) adds three more
+# MRS-STATUS-* codes: MRS-STATUS-005 (the tracked ledger could not be read)
+# at WARN, MRS-STATUS-006 (--reconcile-ledger given without --project) at
+# UNEVALUABLE, and MRS-STATUS-007 (main's own commit history could not be
+# read while gathering merged_story_keys) at UNEVALUABLE.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -929,6 +952,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-STATUS-002",
         "MRS-STATUS-003",
         "MRS-STATUS-004",
+        "MRS-STATUS-005",
+        "MRS-STATUS-006",
+        "MRS-STATUS-007",
     }
 )
 

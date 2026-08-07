@@ -12,14 +12,16 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import jsonschema
 import pytest
 
 from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli import status as status_cli
 from pyforge.marshal.core import status
-from pyforge.marshal.core.identity import normalize
+from pyforge.marshal.core.identity import normalize, render_merge_subject
 from pyforge.marshal.core.journal import (
     JournalEntryId,
     Phase,
@@ -42,6 +44,17 @@ _CANONICAL = Path("/repo/_bmad-output/projects/acme/implementation-artifacts")
 # `elapsed_seconds` computation only ever runs when a launch timestamp was
 # actually recovered); tests with no run at all never engage it.
 _FIXED_NOW = datetime(2026, 8, 6, 0, 30, 0, tzinfo=timezone.utc)
+
+# Story 5.4: schema files this file's own `jsonschema.validate` tests load
+# -- mirrors `test_init.py`'s own established `_SCHEMA_PATH` convention.
+_SCHEMAS_DIR = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "marshal" / "schemas"
+_STATUS_SCHEMA_PATH = _SCHEMAS_DIR / "status.json"
+_ENVELOPE_SCHEMA_PATH = _SCHEMAS_DIR / "envelope.v1.json"
+
+
+def _validate_against_status_schema(data: object) -> None:
+    schema = json.loads(_STATUS_SCHEMA_PATH.read_text(encoding="utf-8"))
+    jsonschema.validate(instance=data, schema=schema)
 
 
 def _home(
@@ -881,6 +894,62 @@ class TestSortFleetRows:
 
 
 # =============================================================================
+# Story 5.4: `core.status.reconcile_ledger_vs_git` -- pure comparison core
+# (AD-4), driven entirely by plain `frozenset[str]` args, no ports/I/O.
+# =============================================================================
+
+
+class TestReconcileLedgerVsGit:
+    def test_full_agreement_reports_no_discrepancies(self):
+        result = status.reconcile_ledger_vs_git(
+            frozenset({"1.1", "1.2"}), frozenset({"1.1", "1.2"})
+        )
+        assert result == ()
+
+    def test_empty_both_sides_reports_no_discrepancies(self):
+        assert status.reconcile_ledger_vs_git(frozenset(), frozenset()) == ()
+
+    def test_done_in_ledger_not_merged(self):
+        result = status.reconcile_ledger_vs_git(
+            frozenset({"1.1"}), frozenset()
+        )
+        assert result == (
+            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
+        )
+
+    def test_merged_not_done_in_ledger(self):
+        """The live incident this story exists to catch: a story git
+        confirms as durably merged whose ledger status is anything other
+        than done -- including absent entirely, the case exercised here."""
+        result = status.reconcile_ledger_vs_git(
+            frozenset(), frozenset({"4.1"})
+        )
+        assert result == (
+            {"story_key": "4.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},
+        )
+
+    def test_both_directions_at_once_sorted_by_key_within_each_kind(self):
+        result = status.reconcile_ledger_vs_git(
+            frozenset({"1.2", "1.1"}), frozenset({"2.2", "2.1"})
+        )
+        assert result == (
+            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
+            {"story_key": "1.2", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"},
+            {"story_key": "2.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},
+            {"story_key": "2.2", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"},
+        )
+
+    def test_result_is_deterministic_regardless_of_set_construction_order(self):
+        first = status.reconcile_ledger_vs_git(
+            frozenset({"3.1", "1.1", "2.1"}), frozenset({"9.9", "5.5"})
+        )
+        second = status.reconcile_ledger_vs_git(
+            frozenset({"2.1", "3.1", "1.1"}), frozenset({"5.5", "9.9"})
+        )
+        assert first == second
+
+
+# =============================================================================
 # Story 5.1: `cli/status.py`'s ``run_status`` -- I/O matrix, fake VcsPort/
 # HarnessPort/ProcessPort/ClockPort doubles (mirrors ``test_retire.py``'s
 # established shape); real ``LocalFs`` against a REAL ``tmp_path`` journal
@@ -896,11 +965,19 @@ class _FakeVcs:
         repo_root_raises: bool = False,
         worktrees: tuple[WorktreeEntry, ...] = (),
         worktrees_raise: bool = False,
+        commit_subjects_value: tuple[str, ...] = (),
+        commit_subjects_raises: bool = False,
     ) -> None:
         self.repo_root_value = repo_root_value
         self.repo_root_raises = repo_root_raises
         self.worktrees = worktrees
         self.worktrees_raise = worktrees_raise
+        # Story 5.4: `core.promotion.merged_story_keys`'s own git-evidence
+        # gathering (`_reconcile_ledger`'s `vcs.commit_subjects(root,
+        # "main")`) -- mirrors `test_deploy.py`'s own `_FakeVcs.
+        # commit_subjects` convention.
+        self.commit_subjects_value = commit_subjects_value
+        self.commit_subjects_raises = commit_subjects_raises
 
     def repo_common_root(self, start):
         if self.repo_root_raises:
@@ -912,6 +989,11 @@ class _FakeVcs:
             raise VcsCommandError("git worktree list failed")
         return self.worktrees
 
+    def commit_subjects(self, repo_root, ref):
+        if self.commit_subjects_raises:
+            raise VcsCommandError("cannot read commit history")
+        return self.commit_subjects_value
+
 
 class _FakeHarness:
     """Keyed by ``(str(project), run_id)`` -- mirrors ``test_retire.py::
@@ -919,14 +1001,33 @@ class _FakeHarness:
     command may resolve a distinct ``harness_run_id`` per project."""
 
     def __init__(
-        self, snapshots: dict[tuple[str, str], RunStatusSnapshot | None] | None = None
+        self,
+        snapshots: dict[tuple[str, str], RunStatusSnapshot | None] | None = None,
+        *,
+        ledger_statuses: tuple[tuple[str, str], ...] = (),
+        ledger_raises: bool = False,
+        ledger_error_message: str = "sprint status file not found",
     ) -> None:
         self.snapshots = snapshots or {}
         self.calls: list[tuple[str, str]] = []
+        # Story 5.4: `_reconcile_ledger`'s `HarnessPort.ledger_story_statuses`
+        # call -- `ledger_raises` mirrors `sprintstatus.load`'s own
+        # `SprintStatusError` (missing file, invalid YAML, ...), always
+        # surfaced by the real adapter as a `HarnessError`.
+        self.ledger_statuses = ledger_statuses
+        self.ledger_raises = ledger_raises
+        self.ledger_error_message = ledger_error_message
+        self.ledger_calls: list[Path] = []
 
     def run_status_snapshot(self, project, run_id):
         self.calls.append((str(project), run_id))
         return self.snapshots.get((str(project), run_id))
+
+    def ledger_story_statuses(self, path):
+        self.ledger_calls.append(path)
+        if self.ledger_raises:
+            raise HarnessError(self.ledger_error_message)
+        return self.ledger_statuses
 
 
 class _FakeProcess:
@@ -956,9 +1057,14 @@ def _args(
     format: str = "json",
     run: str | None = None,
     escalations: bool = False,
+    reconcile_ledger: bool = False,
 ):
     return argparse.Namespace(
-        project=project, format=format, run=run, escalations=escalations
+        project=project,
+        format=format,
+        run=run,
+        escalations=escalations,
+        reconcile_ledger=reconcile_ledger,
     )
 
 
@@ -2382,3 +2488,254 @@ class TestRunDetail:
         assert isinstance(exit_code, int)
         payload = _payload(capsys)
         assert payload["data"]["found"] is False
+
+
+# =============================================================================
+# Story 5.4: `cli/status.py`'s ``--reconcile-ledger --project <slug>`` path
+# -- I/O matrix, fake VcsPort/HarnessPort doubles (mirrors ``TestRunStatus``/
+# ``TestRunDetail``'s own established shape). ``status_cli.repo_root`` is
+# monkeypatched to a real ``tmp_path`` -- `_reconcile_ledger` resolves BOTH
+# the ledger path and the project-policy lookup off that module-level
+# function (mirrors `test_deploy.py`'s own identical
+# ``monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)``
+# convention), never off `VcsPort.repo_common_root` (which `--run`'s own
+# `_run_detail` uses instead -- a DIFFERENT resolution path, per
+# `core/status.py`'s own module docstring precedent in `_scan_promotions`).
+# =============================================================================
+
+_DEFAULT_MERGE_TEMPLATE = "Merge {key} into main"
+
+
+def _merged_subject(key: str) -> str:
+    return render_merge_subject(normalize(key), _DEFAULT_MERGE_TEMPLATE)
+
+
+class TestReconcileLedgerCli:
+    def test_without_project_refuses_before_any_io_mrs_status_006(self, capsys):
+        vcs = _FakeVcs()
+        harness = _FakeHarness()
+        exit_code = status_cli.run_status(
+            _args(reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-006"]
+        assert payload["verdict"] == "unevaluable"
+        assert exit_code == 1
+        # Refused before any I/O -- the ledger was never even looked up.
+        assert harness.ledger_calls == []
+        # Code review (2026-08-07, Edge Case Hunter): this refusal path's
+        # own data_version-2 payload must still satisfy schemas/status.json
+        # (required: ["project", "discrepancies"]) -- the original version
+        # omitted `discrepancies` entirely, failing its own published
+        # schema for exactly this invocation.
+        assert payload["data"]["discrepancies"] == []
+        _validate_against_status_schema(payload["data"])
+
+    def test_run_and_reconcile_ledger_together_is_mutually_exclusive(self, capsys):
+        """Code review (2026-08-07, Edge Case Hunter): the original version
+        let `--reconcile-ledger` silently win over `--run` with no signal
+        that `--run` was ignored."""
+        vcs = _FakeVcs()
+        harness = _FakeHarness()
+        exit_code = status_cli.run_status(
+            _args(project="acme", run="acme-run1", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-006"]
+        assert exit_code == 1
+        assert harness.ledger_calls == []
+        assert payload["data"]["discrepancies"] == []
+        _validate_against_status_schema(payload["data"])
+
+    def test_missing_ledger_file_reports_mrs_status_005(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs()
+        harness = _FakeHarness(
+            ledger_raises=True,
+            ledger_error_message="sprint status file not found: acme",
+        )
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-005"]
+        assert payload["data"]["discrepancies"] == []
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+        assert payload["data_version"] == 2
+
+    def test_git_history_unreadable_reports_mrs_status_007(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(commit_subjects_raises=True)
+        harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-007"]
+        assert payload["data"]["discrepancies"] == []
+        assert payload["verdict"] == "unevaluable"
+        assert exit_code == 1
+
+    def test_full_agreement_is_clean_with_no_discrepancies(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(commit_subjects_value=(_merged_subject("1.1"),))
+        harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"] == {"project": "acme", "discrepancies": []}
+        assert payload["findings"] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_done_in_ledger_not_merged_is_reported_never_a_finding(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """The "silent stale ledger" case, in reverse of the live incident:
+        a story the ledger claims done that git does not confirm. Named in
+        `data.discrepancies`, never a `Finding` (the spec's own I/O
+        matrix: "No finding -- reported, not an error")."""
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(commit_subjects_value=())
+        harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"]["discrepancies"] == [
+            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"}
+        ]
+        assert payload["findings"] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_merged_not_done_in_ledger_is_reported_never_a_finding(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """The live incident this story exists to catch: Epic 4's own
+        stories sat at ``review`` in the tracked ledger for hours after
+        their PRs had actually merged."""
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(commit_subjects_value=(_merged_subject("4.1"),))
+        harness = _FakeHarness(ledger_statuses=(("4-1-title", "review"),))
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"]["discrepancies"] == [
+            {"story_key": "4.1", "kind": "merged-not-done-in-ledger", "confidence": "confirmed"}
+        ]
+        assert payload["findings"] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_malformed_ledger_key_is_skipped_never_a_crash(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(commit_subjects_value=())
+        harness = _FakeHarness(
+            ledger_statuses=(
+                ("epic-1", "done"),  # an epic marker, not a story key
+                ("1-1-title", "done"),
+            )
+        )
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"]["discrepancies"] == [
+            {"story_key": "1.1", "kind": "done-in-ledger-not-merged", "confidence": "unconfirmed"}
+        ]
+        assert payload["findings"] == []
+        assert exit_code == 0
+
+    def test_json_data_payload_matches_status_schema(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(commit_subjects_value=(_merged_subject("4.1"),))
+        harness = _FakeHarness(ledger_statuses=(("4-1-title", "review"),))
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert exit_code == 0
+        assert payload["data_version"] == 2
+        status_schema = json.loads(_STATUS_SCHEMA_PATH.read_text(encoding="utf-8"))
+        jsonschema.validate(instance=payload["data"], schema=status_schema)
+        envelope_schema = json.loads(_ENVELOPE_SCHEMA_PATH.read_text(encoding="utf-8"))
+        jsonschema.validate(instance=payload, schema=envelope_schema)
+
+    def test_text_format_renders_without_crashing(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(commit_subjects_value=(_merged_subject("4.1"),))
+        harness = _FakeHarness(ledger_statuses=(("4-1-title", "review"),))
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True, format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        out = capsys.readouterr().out
+        assert "--reconcile-ledger" in out
+        assert "discrepancies: 1" in out
+        assert "4.1 merged-not-done-in-ledger" in out
+        assert exit_code == 0

@@ -392,6 +392,33 @@ class HarnessPort(Protocol):
         gate."""
         ...
 
+    def ledger_story_statuses(self, path: Path) -> tuple[tuple[str, str], ...]:
+        """Every ``(raw_key, raw_status)`` pair in the ``development_status``
+        map of the sprint-status-shaped YAML file at ``path`` (Story 5.4,
+        FR-39/FR-40), in file order -- bmad_loop's own
+        ``SprintStatus.stories[*].(key, status)``, reusing the SAME
+        ``bmad_loop.sprintstatus.load`` parser ``story_feed_keys``/
+        ``story_feed_error`` already import.
+
+        Unlike those two methods, ``path`` is an EXPLICIT file path, never
+        resolved via ``bmad_loop.bmadconfig.load_paths(project)``: the
+        caller (``marshal status --reconcile-ledger``) reads the TRACKED
+        ``sprint-status-ledger.yaml`` twin at its own fixed, conventional
+        location (``_bmad-output/projects/<slug>/planning-artifacts/
+        sprint-status-ledger.yaml``), never a loop home's own configured
+        Tier-3 feed -- there is no ``project`` directory to resolve a
+        config from. Returns each story's RAW key/status verbatim (never
+        Marshal's own normalized ``StoryKey`` -- that conversion belongs to
+        ``core.identity.normalize``, per AD-3/AD-4's layering: this
+        Protocol lives in ``ports/``, which never imports ``core``, and
+        must not duplicate that conversion here either).
+
+        Raises ``HarnessError`` for any read/parse failure (a missing file,
+        invalid YAML, or a document with no ``development_status`` map) --
+        mirrors ``story_feed_keys``'s own "no silent empty" convention;
+        never returns ``()`` to mean "could not be read"."""
+        ...
+
     def spin(
         self,
         project: Path,
