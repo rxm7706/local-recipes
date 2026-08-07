@@ -23,7 +23,11 @@ dispatching to ``cli/land.py``. ``retire`` (Story 4.10, FR-63/AD-47) is a
 NEW top-level sibling too, dispatching to ``cli/retire.py``: a fleet-wide
 sweep across every project's loop home for bmad-loop-minted, worktree-
 isolated per-story branches provably safe to delete (dry-run by default,
-``--execute`` to actually delete). Not wired through the
+``--execute`` to actually delete). ``status`` (Story 5.1, FR-36/AD-5) is
+another NEW top-level sibling, dispatching to ``cli/status.py``: one row per
+loop home across the whole fleet -- runtime state, current story, elapsed
+time, budget consumed -- derived entirely from journals/run state, never a
+hand-maintained file. Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
 relay argparse's own code, clamp anything foreign) -- individual
@@ -89,6 +93,7 @@ from . import init as init_cli
 from . import land as land_cli
 from . import retire as retire_cli
 from . import spin as spin_cli
+from . import status as status_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant), so the version string duplicates pyproject.toml's version
@@ -211,6 +216,7 @@ def _build_parser() -> argparse.ArgumentParser:
     deploy_cli.add_deploy_subparser(subparsers)
     land_cli.add_land_subparser(subparsers)
     retire_cli.add_retire_subparser(subparsers)
+    status_cli.add_status_subparser(subparsers)
     return parser
 
 

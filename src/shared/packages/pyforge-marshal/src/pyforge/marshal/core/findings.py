@@ -646,6 +646,20 @@ code: the remaining proposed branches still get their own attempt, per the
 story's own Always bullet ("a delete_branch failure for one branch does not
 abort the sweep").
 
+Story 5.1 (fleet-wide runtime status, FR-36/AD-5) adds one more code,
+``MRS-STATUS-002`` (``cli/status.py``'s ``marshal status``): a discovered
+home's most recent run journal, or bmad-loop's own ``state.json`` (via
+``HarnessPort.run_status_snapshot``), could not be read far enough to
+recover a supervisor pid and a live snapshot -- OR the fleet's own
+``VcsPort.list_worktrees`` enumeration itself failed. Classifies
+``Verdict.WARN``, the same "a per-row/per-sweep read failure degrades
+cleanly, never aborts the whole report" tier as ``MRS-RETIRE-002``'s
+identical rationale: the affected row (or the whole sweep, for an
+enumeration failure) reports a reportable ``"unknown"``-shaped state
+rather than crashing or silently reading as healthy -- see
+``core/status.py::build_fleet_row``'s own docstring for the row-shape
+degradation.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -882,6 +896,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-RETIRE-001",
         "MRS-RETIRE-002",
         "MRS-RETIRE-003",
+        "MRS-STATUS-002",
     }
 )
 

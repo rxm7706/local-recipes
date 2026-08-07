@@ -147,6 +147,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-RETIRE-001",
             "MRS-RETIRE-002",
             "MRS-RETIRE-003",
+            "MRS-STATUS-002",
         }
     )
 

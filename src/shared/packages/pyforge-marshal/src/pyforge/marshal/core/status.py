@@ -73,6 +73,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from ..ports.harness import TaskPhaseSnapshot
 from ..ports.process import ProcessResult
 from .identity import StoryKey
 from .model import Finding, Severity
@@ -633,3 +634,217 @@ def classify_resync_outcome(
         },
         None,
     )
+
+
+# =============================================================================
+# Story 5.1: fleet-wide runtime state (``marshal status``, FR-36/AD-5) -- one
+# row per loop home, derived ENTIRELY from journals/run state, never a
+# hand-maintained file (this story's own Intent: the exact class of gap that
+# let Epic 4's own tracked ledger silently show 4.1-4.7 as ``review`` for
+# hours after they'd merged). ``cli/status.py`` gathers every fact via
+# ``VcsPort``/``FsPort``/``HarnessPort``/``ProcessPort``/``ClockPort`` first
+# -- this module stays pure (AD-4): no I/O, subprocess, or clock read.
+# =============================================================================
+
+_MALFORMED_JOURNAL_CODE = "MRS-STATUS-002"
+
+_ESCALATION_PAUSED_STAGE = "escalation"
+
+# The exact literal `supervisor/durability.py::_DONE_PHASE` already uses --
+# reused, not re-spelled, mirroring `cli/retire.py`'s own identical
+# precedent for the same reason (core/ never imports supervisor/, the
+# reverse of that package's own import direction).
+_DONE_PHASE = "done"
+_DEFERRED_PHASE = "deferred"
+# Code review (2026-08-07, Edge Case Hunter): `"escalated"` was missing --
+# bmad-loop's own authoritative terminal-phase set (`bmad_loop.model.
+# TERMINAL_PHASES`) is `{DONE, DEFERRED, ESCALATED}`, not just the first
+# two. A task legitimately sitting at `phase="escalated"` (a real,
+# persisted value `TaskPhaseSnapshot.phase` can carry) was previously
+# treated as still IN-FLIGHT: `derive_home_state` would report `"running"`
+# for a home whose only non-terminal task was actually stuck awaiting an
+# operator's escalation decision, and `_current_story_key` would report
+# that stale escalated story as the "current" one, silently hiding
+# whatever task is actually running later in the tuple -- precisely the
+# "stuck work reported as healthy" failure this command exists to prevent.
+_ESCALATED_PHASE = "escalated"
+_TERMINAL_TASK_PHASES = frozenset({_DONE_PHASE, _DEFERRED_PHASE, _ESCALATED_PHASE})
+
+#: The closed 5-value state vocabulary the spec's own Boundaries name: the
+#: 4 "healthy" states PLUS ``"unsupervised"`` -- never conflated with them
+#: (a dead supervisor is never reported as any of the other four).
+FLEET_STATES = (
+    "idle",
+    "running",
+    "paused-on-escalation",
+    "stopped",
+    "unsupervised",
+)
+
+
+def derive_home_state(
+    *,
+    finished: bool,
+    paused_stage: str | None,
+    tasks: tuple[TaskPhaseSnapshot, ...],
+    supervisor_alive: bool | None,
+) -> str:
+    """The pure state-derivation core of ``marshal status`` (Story 5.1,
+    FR-36/AD-5): one of ``FLEET_STATES`` above, from a run's own
+    ``HarnessPort.run_status_snapshot`` fields plus a supervisor liveness
+    probe -- never engaged when the caller has already determined a home
+    has no run at all (``cli/status.py`` reports ``"idle"`` directly in
+    that case, without ever calling this function; see this module's own
+    ``build_fleet_row``).
+
+    **Supervisor liveness overrides every other derived state** (the
+    spec's own Design Notes) -- but ONLY while the run has not itself
+    finished: a ``finished`` run's own supervisor sidecar naturally exits
+    once its watched harness process does, so checking liveness against an
+    already-``finished`` run would misreport every ordinary completed run
+    as ``"unsupervised"``. ``supervisor_alive is False`` and ``not
+    finished`` together are therefore the ONLY unsupervised trigger --
+    exactly the spec's own I/O matrix row ("a home whose supervisor pid is
+    dead, run not finished"). ``supervisor_alive is None`` (liveness could
+    not be probed, e.g. no pid was ever recovered) never triggers this
+    override on its own -- a caller with no pid to check ``cli/status.py``
+    degrades to the ``"unknown"``-shaped row via ``journal_unreadable``
+    instead of ever reaching this function with a real pid absent.
+
+    Ordering below matches the spec's own I/O matrix exactly:
+    ``finished`` -> ``"stopped"``; ``paused_stage == "escalation"`` ->
+    ``"paused-on-escalation"``; a task whose ``phase`` is neither
+    ``"done"`` nor ``"deferred"`` -> ``"running"`` (mirrors
+    ``cli/retire.py``'s own reuse of the identical ``_DONE_PHASE``
+    literal); otherwise -> ``"idle"`` (a run that exists but has no
+    in-flight task right now -- e.g. between stories -- reads the same as
+    "nothing to report" a caller with no run at all would report)."""
+    if not finished and supervisor_alive is False:
+        return "unsupervised"
+    if finished:
+        return "stopped"
+    if paused_stage == _ESCALATION_PAUSED_STAGE:
+        return "paused-on-escalation"
+    for task in tasks:
+        if task.phase not in _TERMINAL_TASK_PHASES:
+            return "running"
+    return "idle"
+
+
+def _current_story_key(tasks: tuple[TaskPhaseSnapshot, ...]) -> str | None:
+    """ "Current story" (the spec's own Always bullet): the ``story_key`` of
+    the FIRST ``TaskPhaseSnapshot`` whose ``phase`` is neither ``"done"``
+    nor ``"deferred"`` -- ``None`` when every task is terminal, or there
+    are none at all."""
+    for task in tasks:
+        if task.phase not in _TERMINAL_TASK_PHASES:
+            return task.story_key
+    return None
+
+
+@dataclass(frozen=True)
+class FleetHomeFacts:
+    """Already-gathered facts for ONE discovered ``loop/<slug>`` worktree's
+    fleet-status row (Story 5.1) -- read by ``cli/status.py`` via
+    ``VcsPort``/``FsPort``/``HarnessPort``/``ProcessPort``/``ClockPort``
+    before this pure module ever sees them (AD-4).
+
+    ``has_run`` is ``False`` when no Marshal run directory exists yet for
+    this project at all (``cli/spin.py``'s own ``_latest_run_dir`` found
+    nothing) -- the spec's own "a home with no run yet" row: every other
+    field is then a placeholder, and neither ``derive_home_state`` nor
+    ``journal_unreadable`` is ever engaged.
+
+    ``journal_unreadable`` is ``True`` when a run WAS found but its own
+    journal (or bmad-loop's own ``state.json``, via
+    ``HarnessPort.run_status_snapshot``) could not be read far enough to
+    recover a supervisor pid and a live snapshot -- the spec's own "a
+    home whose journal is malformed/unreadable" row: this row's ``state``
+    reports as ``"unknown"``, with one ``MRS-STATUS-002`` WARN naming the
+    home, never a hard failure for the rest of the sweep.
+
+    ``finished``/``paused_stage``/``tasks`` mirror
+    ``RunStatusSnapshot``'s own same-named fields verbatim (only
+    meaningful when ``has_run`` is ``True`` and ``journal_unreadable`` is
+    ``False``). ``supervisor_alive`` is
+    ``ProcessPort.is_alive(supervisor_pid)`` already resolved to a
+    ``bool`` by the caller -- never ``None`` once ``journal_unreadable``
+    is ``False`` (a pid was, by construction, successfully recovered in
+    that case). ``elapsed_seconds`` is the caller's own
+    ``ClockPort.now()``-minus-launch-timestamp computation, or ``None``
+    when unavailable. ``budget_consumed`` is the supervisor's own last
+    JOURNALED observed quantity (Story 3.6's own ``"budget-usage"``
+    observation kind) -- never computed live (the spec's own Design
+    Notes: NFR-14 forbids a live harness query per home), ``None`` when no
+    budget-relevant entry has been journaled yet for this run."""
+
+    slug: str
+    branch: str
+    has_run: bool = False
+    journal_unreadable: bool = False
+    finished: bool = False
+    paused_stage: str | None = None
+    tasks: tuple[TaskPhaseSnapshot, ...] = ()
+    supervisor_alive: bool | None = None
+    elapsed_seconds: float | None = None
+    budget_consumed: int | float | None = None
+
+
+def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:
+    """One ``data.homes`` row plus an optional ``Finding`` (Story 5.1) --
+    mirrors this module's own ``_evaluate_home``/``_evaluate_main_checkout``
+    convention (already-gathered facts in, a plain row dict out).
+
+    Precedence mirrors ``FleetHomeFacts``'s own docstring: ``journal_
+    unreadable`` first (a malformed/unreadable journal degrades the WHOLE
+    row to ``"unknown"``, regardless of any other field -- there is
+    nothing else in ``facts`` this function can trust once that flag is
+    set), then ``has_run is False`` (a clean, finding-free ``"idle"``
+    row), then ``derive_home_state`` over the real run facts."""
+    if facts.journal_unreadable:
+        row: dict[str, object] = {
+            "slug": facts.slug,
+            "branch": facts.branch,
+            "state": "unknown",
+            "current_story": None,
+            "elapsed_seconds": None,
+            "budget_consumed": None,
+        }
+        finding = Finding(
+            code=_MALFORMED_JOURNAL_CODE,
+            severity=Severity.WARN,
+            message=(
+                f"{facts.slug}: the most recent run's journal or run state "
+                "could not be read -- this row's state is reported as "
+                "'unknown', never as one of the healthy states"
+            ),
+            path=facts.slug,
+        )
+        return row, finding
+
+    if not facts.has_run:
+        row = {
+            "slug": facts.slug,
+            "branch": facts.branch,
+            "state": "idle",
+            "current_story": None,
+            "elapsed_seconds": None,
+            "budget_consumed": None,
+        }
+        return row, None
+
+    state = derive_home_state(
+        finished=facts.finished,
+        paused_stage=facts.paused_stage,
+        tasks=facts.tasks,
+        supervisor_alive=facts.supervisor_alive,
+    )
+    row = {
+        "slug": facts.slug,
+        "branch": facts.branch,
+        "state": state,
+        "current_story": _current_story_key(facts.tasks),
+        "elapsed_seconds": facts.elapsed_seconds,
+        "budget_consumed": facts.budget_consumed,
+    }
+    return row, None
