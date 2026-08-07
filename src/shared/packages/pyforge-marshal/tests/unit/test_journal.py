@@ -29,6 +29,7 @@ from pyforge.marshal.core.journal import (
     Phase,
     PreparedWrite,
     build_entry,
+    intent_reconciles,
     mint_run_id,
     prepare_for_write,
 )
@@ -828,3 +829,69 @@ def test_live_frozen_surfaces_meta_never_reads_effective_policy_seed_directly():
     empty = FoldResult(entries=(), open_intents=(), orphaned_outcomes=(), quarantined=())
     live = empty.live_frozen_surfaces(seed_value)
     assert live == (FrozenPath(path="a.yaml", story_key=None),)
+
+
+# ---------------------------------------------------------------------------
+# Story 4.6 -- intent_reconciles: the pure reconciliation-evidence
+# classification (AD-6 x AD-21 x AD-28). The I/O & Edge-Case Matrix from
+# the story's own spec.
+# ---------------------------------------------------------------------------
+
+
+def test_intent_reconciles_true_when_every_key_is_confirmed():
+    intent_payload = {"action": "commit_paths", "story_keys": ["4.1", "4.2"]}
+    evidence = {"confirmed_story_keys": ["4.1", "4.2", "9.9"]}
+    assert intent_reconciles(intent_payload, evidence) is True
+
+
+def test_intent_reconciles_false_on_partial_match():
+    """A batched action either fully happened or Marshal cannot positively
+    say it did -- a partial match never reconciles."""
+    intent_payload = {"action": "commit_paths", "story_keys": ["4.1", "4.2"]}
+    evidence = {"confirmed_story_keys": ["4.1"]}
+    assert intent_reconciles(intent_payload, evidence) is False
+
+
+def test_intent_reconciles_false_when_evidence_is_empty():
+    intent_payload = {"action": "merge_branch", "story_keys": ["4.3"]}
+    evidence = {"confirmed_story_keys": []}
+    assert intent_reconciles(intent_payload, evidence) is False
+
+
+def test_intent_reconciles_false_on_missing_story_keys():
+    assert intent_reconciles({"action": "merge_branch"}, {"confirmed_story_keys": ["4.3"]}) is False
+
+
+def test_intent_reconciles_false_on_empty_story_keys():
+    intent_payload = {"action": "merge_branch", "story_keys": []}
+    evidence = {"confirmed_story_keys": ["4.3"]}
+    assert intent_reconciles(intent_payload, evidence) is False
+
+
+def test_intent_reconciles_false_on_non_list_story_keys():
+    intent_payload = {"action": "merge_branch", "story_keys": "4.3"}
+    evidence = {"confirmed_story_keys": ["4.3"]}
+    assert intent_reconciles(intent_payload, evidence) is False
+
+
+def test_intent_reconciles_false_on_non_str_element_in_story_keys():
+    intent_payload = {"action": "merge_branch", "story_keys": ["4.3", 4]}
+    evidence = {"confirmed_story_keys": ["4.3", 4]}
+    assert intent_reconciles(intent_payload, evidence) is False
+
+
+def test_intent_reconciles_false_on_missing_confirmed_story_keys():
+    intent_payload = {"action": "merge_branch", "story_keys": ["4.3"]}
+    assert intent_reconciles(intent_payload, {}) is False
+
+
+def test_intent_reconciles_false_on_non_list_confirmed_story_keys():
+    intent_payload = {"action": "merge_branch", "story_keys": ["4.3"]}
+    evidence = {"confirmed_story_keys": "4.3"}
+    assert intent_reconciles(intent_payload, evidence) is False
+
+
+def test_intent_reconciles_false_on_non_str_element_in_confirmed_story_keys():
+    intent_payload = {"action": "merge_branch", "story_keys": ["4.3"]}
+    evidence = {"confirmed_story_keys": [4.3]}
+    assert intent_reconciles(intent_payload, evidence) is False
