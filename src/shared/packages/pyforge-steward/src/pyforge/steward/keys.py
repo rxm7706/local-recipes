@@ -16,10 +16,21 @@ flags committed content plausibly matching a known secret shape. `KeysDuty`
 is the `Duty`-conforming adapter `cli.py`'s `resolve_duty("keys")` now
 returns, wiring `steward keys encrypt`/`steward keys decrypt`. There is still
 no `steward keys audit` verb — Story 1.6 exposes both this module's findings
-(`DriftFinding` and `PlaintextSecretFinding`) through one CLI verb. Stories
-1.4-1.7 continue to extend this same file (the architecture's single
-duty-adapter-module design for Epic 1) rather than splitting it into a
-subpackage.
+(`DriftFinding` and `PlaintextSecretFinding`) through one CLI verb.
+
+Story 1.4 slice: `.steward/keys-inventory.yaml` (FR-5) — `KeyIdentityEntry`,
+`InventoryError`, `load_inventory`/`save_inventory` (`yaml.safe_load`/
+`safe_dump` only) — plus `generate_identity` (an `age-keygen` subprocess
+wrap) and `rotate_identity`, which re-encrypts every secret an `issued`/
+`active` scope owns onto a freshly generated identity and retires the old
+one. Wired as `steward keys rotate --scope --new-identity [--inventory]`.
+No calendar/cron/scheduler path exists anywhere in this module — rotation
+is on-demand only (FR-3), pinned by `tests/meta/test_invariants.py`'s
+`test_no_rotation_scheduler_exists`.
+
+Stories 1.5-1.7 continue to extend this same file (the architecture's
+single duty-adapter-module design for Epic 1) rather than splitting it into
+a subpackage.
 """
 
 from __future__ import annotations
@@ -30,10 +41,14 @@ import re
 import stat
 import subprocess
 import sys
+import tempfile
 import tokenize
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+
+import yaml
 
 from .interfaces import DutyResult
 
@@ -348,21 +363,30 @@ def _find_credential_assignments(stmt: ast.stmt, func_name: str) -> list[DriftFi
 # the `KeysDuty` boundary — matching `scan_source`'s `SyntaxError` precedent
 # of not swallowing errors at the primitive level.
 
-def _reject_stdio_sentinel(input_path: str | Path, output: str | Path) -> None:
-    """Refuse `age`'s `-` stdin/stdout sentinel for either path.
+def _reject_dash(role: str, value: str | Path) -> None:
+    """Refuse `age`'s `-` stdin/stdout sentinel for a single named `role`.
 
-    `-` survives the `--` separator (it is a positional value `age`
-    special-cases, not a flag), but this wrapper closes stdin and discards
-    captured stdout — so `-` as input would encrypt the empty DEVNULL stream
-    and `-` as output would report success while the real payload vanished
-    into the discarded capture. Both are silent data loss; raise instead.
+    `-` survives the `--` separator (it is a positional value `age`/
+    `age-keygen` special-case, not a flag), but every subprocess wrap in this
+    module closes stdin and discards captured stdout — so `-` as an input
+    would read the empty DEVNULL stream and `-` as an output would report
+    success while the real payload vanished into the discarded capture. Both
+    are silent data loss; raise instead. Generalized out of the original
+    two-role `encrypt_file`/`decrypt_file` check (Story 1.3) so `rotate`'s
+    single `--new-identity` path (Story 1.4) reuses the exact same message
+    shape without a role-less pairwise loop.
     """
-    for role, value in (("input", input_path), ("output", output)):
-        if str(value) == "-":
-            raise ValueError(
-                f"{role} path '-' means stdin/stdout to age, which this "
-                "wrapper closes/discards — pass a real path (e.g. ./-)"
-            )
+    if str(value) == "-":
+        raise ValueError(
+            f"{role} path '-' means stdin/stdout to age, which this "
+            "wrapper closes/discards — pass a real path (e.g. ./-)"
+        )
+
+
+def _reject_stdio_sentinel(input_path: str | Path, output: str | Path) -> None:
+    """`_reject_dash` for both of `encrypt_file`/`decrypt_file`'s paths."""
+    _reject_dash("input", input_path)
+    _reject_dash("output", output)
 
 
 def encrypt_file(input_path: str | Path, *, recipient: str, output: str | Path) -> None:
@@ -511,9 +535,249 @@ def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFin
     return findings
 
 
+# ── Credential inventory + rotation (FR-3/FR-5) ─────────────────────────────
+#
+# `.steward/keys-inventory.yaml`, the tracked, repo-root config location
+# (ARCHITECTURE-SPINE.md's Consistency Conventions table). Stores only
+# identity NAME/SCOPE/PROVENANCE/STATUS/LAST_ROTATED and a filesystem
+# pointer (`identity_path`) to the actual `age` identity file — never the
+# identity's own secret-key CONTENT. `load_inventory`/`save_inventory` are
+# `yaml.safe_load`/`yaml.safe_dump` only (never `yaml.load`/`unsafe_load`),
+# mirroring `pyforge-warden`'s `waiver.py` precedent.
+
+_INVENTORY_RELATIVE_PATH = Path(".steward/keys-inventory.yaml")
+
+
+def repo_root() -> Path:
+    """The local-recipes checkout root.
+
+    Reuses `locate_http_module`'s own walk-up search: the module it finds
+    lives at ``<repo_root>/.claude/skills/conda-forge-expert/scripts/
+    _http.py``, four `.parent` hops down from that file — so the ancestor
+    the walk already matched IS the repo root, recovered without a second
+    filesystem walk.
+    """
+    return locate_http_module().parents[4]
+
+
+def default_inventory_path() -> Path:
+    """`.steward/keys-inventory.yaml` at the repo root."""
+    return repo_root() / _INVENTORY_RELATIVE_PATH
+
+
+@dataclass(frozen=True)
+class KeyIdentityEntry:
+    """One row of the credential inventory. Never carries a secret value —
+    `identity_path` is a filesystem pointer, not key material."""
+
+    name: str
+    scope: str
+    provenance: str          # "issued" | "observed"
+    status: str               # "active" | "retired"
+    last_rotated: str | None
+    identity_path: str | None
+    secrets: tuple[str, ...] = ()
+
+
+class InventoryError(ValueError):
+    """A malformed inventory file, or an operation the inventory can't
+    satisfy (e.g. rotating a scope with no issued/active entry)."""
+
+
+_VALID_PROVENANCE = ("issued", "observed")
+_VALID_STATUS = ("active", "retired")
+
+
+def load_inventory(path: str | Path) -> tuple[KeyIdentityEntry, ...]:
+    """Load `.steward/keys-inventory.yaml`-shaped YAML from `path`.
+
+    A missing file loads as ``()`` — mirrors `pyforge-warden`'s
+    `load_waivers` precedent (no inventory yet is a normal, not an error,
+    state). Raises `InventoryError` for a malformed document (not a mapping,
+    a missing required field, or an unrecognized `provenance`/`status`
+    value) — a corrupt inventory must never silently read as empty.
+    """
+    path = Path(path)
+    if not path.is_file():
+        return ()
+    with path.open("r", encoding="utf-8") as f:
+        document = yaml.safe_load(f) or {}
+    if not isinstance(document, dict):
+        raise InventoryError(
+            f"{path}: top-level document must be a mapping, got "
+            f"{type(document).__name__}"
+        )
+    entries: list[KeyIdentityEntry] = []
+    for raw in document.get("identities") or []:
+        if not isinstance(raw, dict):
+            raise InventoryError(f"{path}: each identity entry must be a mapping")
+        try:
+            entry = KeyIdentityEntry(
+                name=raw["name"],
+                scope=raw["scope"],
+                provenance=raw["provenance"],
+                status=raw["status"],
+                last_rotated=raw.get("last_rotated"),
+                identity_path=raw.get("identity_path"),
+                secrets=tuple(raw.get("secrets") or ()),
+            )
+        except KeyError as exc:
+            raise InventoryError(f"{path}: identity entry missing required field {exc}") from exc
+        if entry.provenance not in _VALID_PROVENANCE:
+            raise InventoryError(
+                f"{path}: identity {entry.name!r} has unknown provenance {entry.provenance!r}"
+            )
+        if entry.status not in _VALID_STATUS:
+            raise InventoryError(
+                f"{path}: identity {entry.name!r} has unknown status {entry.status!r}"
+            )
+        entries.append(entry)
+    return tuple(entries)
+
+
+def save_inventory(path: str | Path, entries: tuple[KeyIdentityEntry, ...]) -> None:
+    """Write `entries` to `path` as `.steward/keys-inventory.yaml`-shaped YAML.
+
+    Creates parent directories as needed. `yaml.safe_dump` only.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    document = {
+        "identities": [
+            {
+                "name": e.name,
+                "scope": e.scope,
+                "provenance": e.provenance,
+                "status": e.status,
+                "last_rotated": e.last_rotated,
+                "identity_path": e.identity_path,
+                "secrets": list(e.secrets),
+            }
+            for e in entries
+        ]
+    }
+    with path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(document, f, sort_keys=False)
+
+
+def generate_identity(output_path: str | Path) -> str:
+    """`age-keygen -o output_path`; returns the newly generated identity's
+    PUBLIC key (never its secret content).
+
+    Raises `ValueError` for a `-` `output_path` (mirrors `_reject_dash`'s
+    rationale for `age`'s own stdin/stdout sentinel), propagates
+    `subprocess.CalledProcessError` on a non-zero `age-keygen` exit (e.g. the
+    output path already exists and refuses overwrite), and raises
+    `RuntimeError` if `age-keygen` exits 0 but emits no ``Public key: ``
+    line on stderr (an unexpected shape this wrapper does not silently
+    tolerate).
+    """
+    _reject_dash("output", output_path)
+    result = subprocess.run(
+        ["age-keygen", "-o", str(output_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+        errors="replace",
+        stdin=subprocess.DEVNULL,
+    )
+    try:
+        pubkey_line = next(
+            line for line in result.stderr.splitlines() if line.startswith("Public key: ")
+        )
+    except StopIteration:
+        raise RuntimeError(
+            "age-keygen exited 0 but wrote no 'Public key: ' line to stderr "
+            f"(stderr={result.stderr!r})"
+        ) from None
+    return pubkey_line.removeprefix("Public key: ")
+
+
+def rotate_identity(
+    inventory_path: str | Path, *, scope: str, new_identity_path: str | Path
+) -> KeyIdentityEntry:
+    """Rotate the `issued`/`active` identity for `scope`.
+
+    Generates a fresh `age` identity at `new_identity_path`, re-encrypts
+    every secret path the current active entry lists (decrypt under the old
+    identity, encrypt under the new one, staged entirely through a private
+    `tempfile.TemporaryDirectory` — plaintext never lands anywhere durable),
+    then rewrites the inventory: the old entry becomes `status="retired"`
+    and a NEW entry (same `scope`, an incremented generation `name`) is
+    appended as `status="active"`. Every secret decrypts under the new
+    identity when this returns; none decrypts under the old one any more,
+    because each `.age` file at that path has been overwritten in place.
+
+    Raises `InventoryError` if no `issued`/`active` entry exists for `scope`
+    (covers: no entry at all, an `observed` entry, or an already-`retired`
+    one), `ValueError` for a `-` `new_identity_path`, and propagates
+    `subprocess.CalledProcessError` from `age-keygen`/`age` — never
+    swallowed. A failure partway through re-encrypting a multi-secret scope
+    leaves the inventory UNCHANGED (still pointing at the old, still-valid
+    identity) and the already-processed secrets re-encrypted — a known,
+    deliberately unsolved non-atomicity (see this story's spec, "Never").
+    """
+    _reject_dash("new_identity_path", new_identity_path)
+    entries = load_inventory(inventory_path)
+
+    active: KeyIdentityEntry | None = None
+    for entry in entries:
+        if entry.scope == scope and entry.provenance == "issued" and entry.status == "active":
+            active = entry
+            break
+    if active is None:
+        raise InventoryError(
+            f"rotate: no issued/active identity found for scope {scope!r} in "
+            f"{inventory_path}"
+        )
+    if not active.identity_path:
+        raise InventoryError(
+            f"rotate: identity {active.name!r} (scope {scope!r}) has no "
+            "identity_path recorded — cannot decrypt its secrets"
+        )
+
+    new_pubkey = generate_identity(new_identity_path)
+
+    with tempfile.TemporaryDirectory(prefix="steward-keys-rotate-") as tmpdir:
+        staging = Path(tmpdir)
+        for index, secret_path_str in enumerate(active.secrets):
+            secret_path = Path(secret_path_str)
+            staged_plaintext = staging / f"secret-{index}"
+            decrypt_file(secret_path, identity=active.identity_path, output=staged_plaintext)
+            encrypt_file(staged_plaintext, recipient=new_pubkey, output=secret_path)
+
+    same_scope_count = sum(1 for e in entries if e.scope == scope)
+    generation = same_scope_count + 1
+    new_name = scope if generation == 1 else f"{scope}-{generation}"
+    now = datetime.now(timezone.utc).isoformat()
+
+    retired = KeyIdentityEntry(
+        name=active.name,
+        scope=active.scope,
+        provenance=active.provenance,
+        status="retired",
+        last_rotated=active.last_rotated,
+        identity_path=active.identity_path,
+        secrets=active.secrets,
+    )
+    new_entry = KeyIdentityEntry(
+        name=new_name,
+        scope=scope,
+        provenance="issued",
+        status="active",
+        last_rotated=now,
+        identity_path=str(new_identity_path),
+        secrets=active.secrets,
+    )
+
+    updated = tuple(retired if e is active else e for e in entries) + (new_entry,)
+    save_inventory(inventory_path, updated)
+    return new_entry
+
+
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
 
-_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt")
+_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate")
 
 
 class KeysDuty:
@@ -545,8 +809,23 @@ class KeysDuty:
         try:
             if verb == "encrypt":
                 encrypt_file(ns.file, recipient=ns.recipient, output=ns.output)
-            else:
+            elif verb == "decrypt":
                 decrypt_file(ns.file, identity=ns.identity, output=ns.output)
+            else:  # verb == "rotate"
+                inventory_path = ns.inventory or default_inventory_path()
+                entry = rotate_identity(
+                    inventory_path, scope=ns.scope, new_identity_path=ns.new_identity
+                )
+                # Names the new entry and where its identity file lives —
+                # never the public key or any secret content (Boundaries &
+                # Constraints: rotate never prints a secret value).
+                return DutyResult(
+                    ok=True,
+                    summary=(
+                        f"keys rotate: scope {ns.scope!r} now active as "
+                        f"{entry.name!r} (identity at {entry.identity_path})"
+                    ),
+                )
         except ValueError as exc:
             return DutyResult(ok=False, summary=f"keys {verb}: {exc}")
         except subprocess.CalledProcessError as exc:

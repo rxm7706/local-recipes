@@ -10,10 +10,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# Only what pyforge.steward actually imports — the standard library at scaffold
-# stage (argparse, dataclasses, typing). No CLI framework, mirroring the sibling
-# stations' argparse dispatchers.
-dependencies = []
+# Only what pyforge.steward actually imports. No CLI framework, mirroring the
+# sibling stations' argparse dispatchers. PyYAML (Story 1.4): read/write of
+# .steward/keys-inventory.yaml — also declared as a pixi run-dependency
+# (pixi.toml), mirroring pyforge-warden's own dual declaration for the same
+# library.
+dependencies = ["PyYAML"]
 
 [project.scripts]
 steward = "pyforge.steward.cli:main"

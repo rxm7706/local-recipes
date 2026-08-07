@@ -27,7 +27,7 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
-    "keys": "credential lifecycle — encrypt/decrypt (rotation and audit land in later stories)",
+    "keys": "credential lifecycle — encrypt/decrypt/rotate (list/audit/revoke land in later stories)",
     "deploy": "deployment duties",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
@@ -53,7 +53,7 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
     `-r`, `--identity`/`-i`, `--output`/`-o`).
     """
-    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt}")
+    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt,rotate}")
 
     encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
     encrypt.add_argument("file", help="the plaintext file to encrypt")
@@ -64,6 +64,19 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
     decrypt.add_argument("file", help="the age-encrypted file to decrypt")
     decrypt.add_argument("--identity", "-i", required=True, help="the age identity (secret key) file")
     decrypt.add_argument("--output", "-o", required=True, help="path to write the decrypted file")
+
+    rotate = keys_subs.add_parser(
+        "rotate", help="rotate an issued identity, re-encrypting every secret it protects"
+    )
+    rotate.add_argument("--scope", required=True, help="the credential scope to rotate")
+    rotate.add_argument(
+        "--new-identity", required=True, help="path to write the newly generated age identity"
+    )
+    rotate.add_argument(
+        "--inventory",
+        default=None,
+        help="path to keys-inventory.yaml (default: repo-root .steward/keys-inventory.yaml)",
+    )
 
 
 def resolve_duty(name: str) -> Duty:

@@ -69,3 +69,33 @@ def test_no_duty_module_calls_sys_exit():
                isinstance(fn.value, ast.Name) and fn.value.id == "sys":
                 offenders.append(f"{path.name}:{node.lineno}")
     assert not offenders, f"sys.exit() call outside cli.py: {offenders}"
+
+
+def test_no_rotation_scheduler_exists():
+    """Story 1.4 / FR-3 / PRD D1: key rotation is on-demand only.
+
+    No calendar, cron, or time-based auto-rotation path may exist anywhere
+    in the package — checked via AST `import`/`import from` statements, not
+    a raw text scan: the sibling `test_no_cli_framework_dependency` test
+    already learned that lesson the hard way (a comment merely NAMING a
+    forbidden thing is not evidence of using it — this module's own
+    docstring says "no scheduler exists", which a text scan would flag as
+    if it imported one). A future "just add a nightly rotation cron" PR
+    fails loudly here instead of landing silently.
+    """
+    import ast
+
+    banned_modules = {"sched", "schedule", "apscheduler", "celery", "cron", "croniter"}
+    offenders: list[str] = []
+    for path in (PKG_ROOT / "steward").rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name.split(".")[0] for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module.split(".")[0]]
+            for name in names:
+                if name.lower() in banned_modules:
+                    offenders.append(f"{path.name}:{node.lineno} imports {name!r}")
+    assert not offenders, f"scheduler-shaped import found (rotation must be on-demand only): {offenders}"
