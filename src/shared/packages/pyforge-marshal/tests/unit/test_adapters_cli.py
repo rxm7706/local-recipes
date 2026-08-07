@@ -139,11 +139,16 @@ class FakeHarness:
         fail: Exception | None = None,
         probe=None,
         probe_fail: Exception | None = None,
+        smoke=None,
+        smoke_fail: Exception | None = None,
     ) -> None:
         self._skill_trees = skill_trees or {}
         self._fail = fail
         self._probe = probe
         self._probe_fail = probe_fail
+        self._smoke = smoke
+        self._smoke_fail = smoke_fail
+        self.run_smoke_calls: list[dict] = []
 
     def adapter_skill_trees(self, project: Path) -> dict[str, str]:
         if self._fail:
@@ -154,6 +159,20 @@ class FakeHarness:
         if self._probe_fail:
             raise self._probe_fail
         return self._probe
+
+    def run_smoke(self, project: Path, *, adapter_name: str, story: str, timeout_s: float, log_path: Path):
+        self.run_smoke_calls.append(
+            {
+                "project": project,
+                "adapter_name": adapter_name,
+                "story": story,
+                "timeout_s": timeout_s,
+                "log_path": log_path,
+            }
+        )
+        if self._smoke_fail:
+            raise self._smoke_fail
+        return self._smoke
 
 
 def _args(slug: str = "pyforge-marshal", fmt: str = "json") -> argparse.Namespace:
@@ -868,3 +887,405 @@ def test_probe_text_format_renders_without_crashing(capsys):
     out = capsys.readouterr().out
     assert "adapters probe" in out
     assert "available" in out
+
+
+
+# --- Story 6.5: `marshal adapters smoke` ------------------------------------
+#
+# `_provision_smoke_home` calls `write_policy_toml` DIRECTLY (the same real,
+# non-FsPort disk I/O `cli/spin.py`'s own `_resolve_model_tiering` already
+# uses, mirroring that module's own test convention) -- so `home` here is a
+# genuine directory under pytest's `tmp_path` sandbox, never a purely
+# in-memory fake path. `FakeFs` still stands in for every OTHER write this
+# command makes (the ephemeral marker, the synthetic sprint-status.yaml/spec,
+# the machine-scoped smoke record).
+
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
+from pyforge.marshal.ports.harness import SmokeRunResult
+
+_SMOKE_REPO_ROOT = Path("/fake/repo")
+_SMOKE_STATE_PATH = Path("/fake/state/pyforge-marshal") / "adapter-smoke.json"
+_SMOKE_SLUG = "_smoke-claude-cafefeed"
+_SMOKE_BRANCH = f"loop/{_SMOKE_SLUG}"
+
+
+class FakeSmokeVcs:
+    """Minimal in-memory ``VcsPort`` double covering exactly what
+    ``run_adapters_smoke`` calls: ``repo_common_root``, ``add_worktree``,
+    ``worktree_head_sha``, ``remove_worktree``, ``delete_branch``."""
+
+    def __init__(self, *, head_shas: list[str] | None = None) -> None:
+        self.repo_root = _SMOKE_REPO_ROOT
+        self.calls: list[str] = []
+        self.add_worktree_calls: list[tuple] = []
+        self.remove_worktree_calls: list[tuple] = []
+        self.delete_branch_calls: list[tuple] = []
+        self.fail_repo_common_root: Exception | None = None
+        self.fail_add_worktree: Exception | None = None
+        self.fail_remove_worktree: Exception | None = None
+        self.fail_delete_branch: Exception | None = None
+        self.fail_worktree_head_sha: Exception | None = None
+        # How many of the NEXT `worktree_head_sha` calls raise
+        # `fail_worktree_head_sha` before succeeding normally -- `-1` (the
+        # default) means "raise on every call, forever"; a positive count
+        # simulates a transient failure that clears itself after N calls.
+        self.fail_worktree_head_sha_times = -1
+        # Popped in call order; the SAME sha twice (the default) means "no
+        # commit advanced" -- a test wanting `commit_made=True` supplies two
+        # distinct shas.
+        self._head_shas = list(head_shas) if head_shas is not None else ["sha-a", "sha-a"]
+        self._head_index = 0
+
+    def repo_common_root(self, start: Path) -> Path:
+        self.calls.append("repo_common_root")
+        if self.fail_repo_common_root:
+            raise self.fail_repo_common_root
+        return self.repo_root
+
+    def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
+        self.calls.append("add_worktree")
+        self.add_worktree_calls.append((repo_root, home, branch, base))
+        if self.fail_add_worktree:
+            raise self.fail_add_worktree
+        home.mkdir(parents=True, exist_ok=True)
+
+    def worktree_head_sha(self, worktree_path: Path) -> str:
+        self.calls.append("worktree_head_sha")
+        if self.fail_worktree_head_sha is not None and self.fail_worktree_head_sha_times != 0:
+            if self.fail_worktree_head_sha_times > 0:
+                self.fail_worktree_head_sha_times -= 1
+            raise self.fail_worktree_head_sha
+        index = min(self._head_index, len(self._head_shas) - 1)
+        self._head_index += 1
+        return self._head_shas[index]
+
+    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+        self.calls.append("remove_worktree")
+        self.remove_worktree_calls.append((repo_root, home, force))
+        if self.fail_remove_worktree:
+            raise self.fail_remove_worktree
+
+    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+        self.calls.append("delete_branch")
+        self.delete_branch_calls.append((repo_root, branch, force))
+        if self.fail_delete_branch:
+            raise self.fail_delete_branch
+
+
+@pytest.fixture(autouse=True)
+def _patch_smoke_home_root_and_token(tmp_path, monkeypatch):
+    """Makes the ephemeral smoke home's path fully deterministic (a real
+    directory under ``tmp_path``, since ``write_policy_toml`` performs real
+    disk I/O -- see this section's own header comment) -- ``run_adapters_
+    smoke`` otherwise mints a random 8-hex-char suffix per invocation."""
+    monkeypatch.setattr(adapters_cli, "_loop_home_root", lambda: tmp_path / "loop-homes")
+    monkeypatch.setattr(adapters_cli.secrets, "token_hex", lambda n: "cafefeed")
+    monkeypatch.setattr(adapters_cli, "_machine_state_dir", lambda: _SMOKE_STATE_PATH.parent)
+
+
+def _smoke_home(tmp_path: Path) -> Path:
+    return tmp_path / "loop-homes" / _SMOKE_SLUG
+
+
+def _smoke_args(fmt: str = "json", adapter: str = "claude", timeout_seconds: float = 900.0) -> argparse.Namespace:
+    return argparse.Namespace(adapter=adapter, format=fmt, timeout_seconds=timeout_seconds)
+
+
+def _pass_smoke(adapter: str = "claude") -> SmokeRunResult:
+    return SmokeRunResult(
+        adapter=adapter, binary=adapter, binary_present=True, launched=True, returncode=0, timed_out=False
+    )
+
+
+def _pass_fs(tmp_path: Path, *, texts: dict[Path, str] | None = None) -> FakeFs:
+    """A `FakeFs` whose `SMOKE.md` already carries the marker line -- the
+    file-changed evidence `evaluate_smoke` now requires (alongside
+    `commit_made` and a clean `returncode`) before it reports PASS (review
+    finding: `commit_made` alone used to be sufficient corroboration)."""
+    seeded = {_smoke_home(tmp_path) / "SMOKE.md": "marshal-conformance-smoke: ok\n"}
+    if texts:
+        seeded.update(texts)
+    return FakeFs(texts=seeded)
+
+
+def _unavailable_smoke(adapter: str = "codex") -> SmokeRunResult:
+    return SmokeRunResult(
+        adapter=adapter, binary=adapter, binary_present=False, launched=False, returncode=None, timed_out=False
+    )
+
+
+def _run_smoke(
+    fs: FakeFs,
+    harness: FakeHarness,
+    vcs: FakeSmokeVcs,
+    *,
+    adapter: str = "claude",
+    fmt: str = "json",
+) -> int:
+    return adapters_cli.run_adapters_smoke(
+        _smoke_args(fmt=fmt, adapter=adapter), fs=fs, harness=harness, vcs=vcs, record=fs
+    )
+
+
+def test_smoke_pass_when_commit_advances_no_findings_teardown_runs(capsys, tmp_path):
+    fs = _pass_fs(tmp_path)
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["smoke"]["status"] == "pass"
+    assert envelope["data"]["smoke"]["failing_stage"] is None
+    assert code == 0
+    home = _smoke_home(tmp_path)
+    # teardown ALWAYS runs, even on a clean pass
+    assert vcs.remove_worktree_calls == [(_SMOKE_REPO_ROOT, home, True)]
+    assert vcs.delete_branch_calls == [(_SMOKE_REPO_ROOT, _SMOKE_BRANCH, True)]
+    # the machine-scoped record was written
+    written = json.loads(fs.texts[_SMOKE_STATE_PATH])
+    assert written["claude"]["status"] == "pass"
+
+
+def test_smoke_unavailable_adapter_reports_unavailable_and_exits_zero(capsys):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_unavailable_smoke())
+    vcs = FakeSmokeVcs()
+    code = _run_smoke(fs, harness, vcs, adapter="codex")
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["smoke"]["status"] == "unavailable"
+    assert code == 0
+    assert vcs.remove_worktree_calls  # teardown still runs
+
+
+def test_smoke_fail_no_change_no_commit_names_change_stage(capsys):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_pass_smoke())  # binary present, launched, but no evidence
+    vcs = FakeSmokeVcs()  # same sha twice -> no commit
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-003" in codes
+    assert envelope["data"]["smoke"]["status"] == "fail"
+    assert envelope["data"]["smoke"]["failing_stage"] == "change"
+    assert code != 0
+
+
+def test_smoke_fail_change_without_commit_names_verify_stage(capsys, tmp_path):
+    target = _smoke_home(tmp_path) / "SMOKE.md"
+    fs = FakeFs(texts={target: "marshal-conformance-smoke: ok\n"})
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs()  # same sha twice -> no commit
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-003" in codes
+    assert envelope["data"]["smoke"]["failing_stage"] == "verify"
+    assert code != 0
+
+
+def test_smoke_unknown_adapter_reports_unevaluable_finding_teardown_still_runs(capsys):
+    fs = FakeFs()
+    harness = FakeHarness(smoke_fail=HarnessError("unknown adapter"))
+    vcs = FakeSmokeVcs()
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-001" in codes
+    assert code != 0
+    assert vcs.remove_worktree_calls  # teardown still runs despite the raised HarnessError
+
+
+def test_smoke_missing_adapter_flag_reports_unevaluable_no_provisioning_touch(capsys):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs()
+    code = adapters_cli.run_adapters_smoke(_smoke_args(adapter=""), fs=fs, harness=harness, vcs=vcs, record=fs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-005" in codes
+    assert code != 0
+    assert vcs.calls == []  # no git touch at all
+
+
+def test_smoke_provisioning_failure_reports_error_finding(capsys):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs()
+    vcs.fail_add_worktree = VcsCommandError("simulated: cannot create worktree")
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-002" in codes
+    assert code != 0
+    # never reached the harness at all
+    assert harness.run_smoke_calls == []
+
+
+def test_smoke_add_worktree_failure_attempts_best_effort_teardown(capsys):
+    """Review finding: `GitVcs.add_worktree`'s own docstring documents that
+    a timeout can leave a REGISTERED, partial worktree/branch behind even
+    though it raised -- an ephemeral smoke home promises to leave no
+    residue (AD-37), so `_add_smoke_worktree` must attempt cleanup of any
+    partial state before re-raising, not just when a LATER step fails."""
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs()
+    vcs.fail_add_worktree = VcsCommandError("simulated: timed out mid-checkout")
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-002" in codes
+    assert code != 0
+    # best-effort teardown was attempted even though provisioning itself failed
+    assert vcs.remove_worktree_calls
+    assert vcs.delete_branch_calls
+
+
+def test_smoke_transient_pre_sha_read_failure_is_retried_and_still_detects_a_commit(capsys, tmp_path):
+    """Review finding: a single transient `worktree_head_sha` read failure
+    before the harness ran used to permanently pin `pre_sha` to `None`,
+    making `commit_made` unconditionally `False` for the rest of the run --
+    misreporting a genuine PASS as FAIL. One retry must recover from a
+    failure that clears itself."""
+    fs = _pass_fs(tmp_path)
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    vcs.fail_worktree_head_sha = VcsCommandError("simulated: transient read failure")
+    vcs.fail_worktree_head_sha_times = 1  # fails once (the pre-run read), then recovers
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    assert envelope["findings"] == []
+    assert envelope["data"]["smoke"]["status"] == "pass"
+    assert code == 0
+
+
+def test_smoke_scaffold_materialization_failure_after_worktree_created_still_tears_down(capsys):
+    """Regression (self-caught during implementation): scaffold
+    materialization (marker/sprint-status/spec/policy writes) happens AFTER
+    the git worktree already exists -- a failure there must still trigger
+    teardown, or the worktree/branch leaks as residue, directly
+    contradicting the AC's own "leaves no residue afterwards"."""
+    fs = FakeFs()
+    fs.fail_write_text = FsError("simulated: disk full mid-scaffold")
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs()
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-002" in codes
+    assert code != 0
+    # the harness was never called (scaffold never completed)...
+    assert harness.run_smoke_calls == []
+    # ...but the worktree/branch it already created WAS torn down
+    assert vcs.remove_worktree_calls
+    assert vcs.delete_branch_calls
+
+
+def test_smoke_teardown_failure_reports_warn_never_overrides_pass_verdict(capsys, tmp_path):
+    fs = _pass_fs(tmp_path)
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    vcs.fail_remove_worktree = VcsCommandError("simulated: worktree busy")
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-004" in codes
+    assert envelope["data"]["smoke"]["status"] == "pass"
+    assert code == 0  # a WARN-only finding set still folds to the exit-0 rung
+
+
+def test_smoke_write_failure_reports_error_but_still_reports_the_observation(capsys, tmp_path):
+    fs = _pass_fs(tmp_path)
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+
+    real_write_redacted_atomic = fs.write_redacted_atomic
+
+    def _fail_only_state_write(path, payload):
+        if path == _SMOKE_STATE_PATH:
+            raise FsError("disk full")
+        return real_write_redacted_atomic(path, payload)
+
+    fs.write_redacted_atomic = _fail_only_state_write  # type: ignore[method-assign]
+    code = _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-006" in codes
+    assert envelope["data"]["smoke"]["status"] == "pass"
+
+
+def test_smoke_lock_contention_reports_error_finding_writes_nothing(capsys):
+    fs = FakeFs()
+    fs.fail_acquire_lock = FsError("simulated: another process holds this lock")
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-006" in codes
+    assert _SMOKE_STATE_PATH not in fs.texts
+
+
+def test_smoke_malformed_existing_record_degrades_to_empty_with_warn(capsys, tmp_path):
+    fs = _pass_fs(tmp_path, texts={_SMOKE_STATE_PATH: "{not json"})
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    _run_smoke(fs, harness, vcs)
+    envelope = _envelope_from(capsys)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-SMOKE-007" in codes
+    written = json.loads(fs.texts[_SMOKE_STATE_PATH])
+    assert written["claude"]["status"] == "pass"
+
+
+def test_smoke_merges_into_existing_record_preserving_other_adapters(capsys, tmp_path):
+    fs = _pass_fs(tmp_path, texts={_SMOKE_STATE_PATH: json.dumps({"codex": {"status": "unavailable"}})})
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    _run_smoke(fs, harness, vcs)
+    _envelope_from(capsys)
+    written = json.loads(fs.texts[_SMOKE_STATE_PATH])
+    assert written["codex"]["status"] == "unavailable"
+    assert written["claude"]["status"] == "pass"
+
+
+def test_smoke_forces_the_configured_adapter_into_the_rendered_policy(capsys, tmp_path):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    _run_smoke(fs, harness, vcs)
+    _envelope_from(capsys)
+    rendered = (_smoke_home(tmp_path) / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8")
+    assert 'name = "claude"' in rendered
+
+
+def test_smoke_writes_ephemeral_marker(capsys, tmp_path):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    _run_smoke(fs, harness, vcs)
+    _envelope_from(capsys)
+    assert (_smoke_home(tmp_path) / ".marshal-ephemeral") in fs.texts
+
+
+def test_smoke_writes_synthetic_scaffold_via_fs(capsys, tmp_path):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_pass_smoke())
+    vcs = FakeSmokeVcs(head_shas=["sha-1", "sha-2"])
+    _run_smoke(fs, harness, vcs)
+    _envelope_from(capsys)
+    impl_dir = _smoke_home(tmp_path) / "_bmad-output" / "implementation-artifacts"
+    assert impl_dir / "sprint-status.yaml" in fs.texts
+    assert "ready-for-dev" in fs.texts[impl_dir / "sprint-status.yaml"]
+    assert impl_dir / "spec-1-1-marshal-conformance-smoke.md" in fs.texts
+
+
+def test_smoke_text_format_renders_without_crashing(capsys):
+    fs = FakeFs()
+    harness = FakeHarness(smoke=_unavailable_smoke())
+    vcs = FakeSmokeVcs()
+    _run_smoke(fs, harness, vcs, adapter="codex", fmt="text")
+    out = capsys.readouterr().out
+    assert "adapters smoke" in out
+    assert "unavailable" in out

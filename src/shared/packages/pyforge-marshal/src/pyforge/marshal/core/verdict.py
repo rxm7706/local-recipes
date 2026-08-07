@@ -625,6 +625,24 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # SAME real-world fact from a run-dependent call site (AD-31: the same
 # code never classifies two rungs, but the same FACT may, from two
 # call sites with different meanings) -- see the story's own spec.
+# Story 6.5 (conformance smoke in an ephemeral home, FR-44/AD-37) adds
+# `cli/adapters.py::run_adapters_smoke` (`marshal adapters smoke`), a NEW
+# area (MRS-SMOKE-*) -- this verb provisions its own throwaway home rather
+# than operating on an existing project's, so it does not reuse
+# MRS-ADP-001/002. MRS-SMOKE-005 (a missing/blank --adapter) and
+# MRS-SMOKE-001 (run_smoke raised HarnessError -- an unknown adapter or
+# unimportable bmad_loop) both classify UNEVALUABLE, mirroring
+# MRS-ADP-013/014's own tiers. MRS-SMOKE-002 (ephemeral-home provisioning
+# failed) and MRS-SMOKE-003 (the smoke's own status is "fail", naming the
+# failing stage) both classify ERROR, mirroring MRS-ADP-002/MRS-CONFORM-001.
+# MRS-SMOKE-006 (writing the machine-scoped smoke record failed) classifies
+# ERROR, mirroring MRS-ADP-015. MRS-SMOKE-004 (teardown failed, residue
+# left behind) and MRS-SMOKE-007 (a pre-existing adapter-smoke.json was
+# malformed) both classify WARN, mirroring MRS-ADP-009/016's own "degrades,
+# never blocks" tier -- a teardown failure never overrides the smoke's own
+# already-computed verdict. `binary_present is False` registers NO finding
+# at all -- the SAME "unavailable, exits 0" tier `adapters probe` already
+# established.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -757,6 +775,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-ADP-014": Verdict.UNEVALUABLE,
     "MRS-ADP-015": Verdict.ERROR,
     "MRS-ADP-016": Verdict.WARN,
+    "MRS-SMOKE-001": Verdict.UNEVALUABLE,
+    "MRS-SMOKE-002": Verdict.ERROR,
+    "MRS-SMOKE-003": Verdict.ERROR,
+    "MRS-SMOKE-004": Verdict.WARN,
+    "MRS-SMOKE-005": Verdict.UNEVALUABLE,
+    "MRS-SMOKE-006": Verdict.ERROR,
+    "MRS-SMOKE-007": Verdict.WARN,
 }
 
 

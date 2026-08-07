@@ -999,6 +999,38 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # satisfied by the SHIPPED `MRS-PREFLIGHT-004` (a run-dependent call site
 # reporting the identical real-world fact at `Verdict.ERROR`) -- see the
 # story's own spec Design Notes for why this needed no new code.
+#
+# Story 6.5 (conformance smoke in an ephemeral home, FR-44/AD-37) adds
+# `cli/adapters.py`'s own `run_adapters_smoke` (`marshal adapters smoke`) --
+# a NEW area, `MRS-SMOKE-*`, never reusing `MRS-ADP-001`/`002` (this verb
+# provisions its OWN throwaway home rather than operating on an existing
+# project's, so the slug-shape/home-provisioned preconditions those two
+# codes name simply do not apply the same way here). MRS-SMOKE-005 (a
+# missing/blank `--adapter`, checked before any I/O) classifies
+# UNEVALUABLE, the same pre-I/O shape-gate tier MRS-ADP-013 already
+# established. MRS-SMOKE-001 (`HarnessPort.run_smoke` raised `HarnessError`
+# -- an unknown adapter name or an unimportable `bmad_loop`) classifies
+# UNEVALUABLE, mirroring MRS-ADP-014's identical reasoning. MRS-SMOKE-002
+# (ephemeral-home provisioning failed -- a git/filesystem operation) and
+# MRS-SMOKE-003 (the smoke's own status is `"fail"`, naming the failing
+# stage) both classify ERROR, the same "a real operation was attempted and
+# failed, or real drift/failure was detected" tier MRS-ADP-002/
+# MRS-CONFORM-001 already established. MRS-SMOKE-006 (writing the
+# machine-scoped smoke record failed) classifies ERROR, mirroring
+# MRS-ADP-015 verbatim -- the OBSERVATION itself still succeeded and is
+# still reported in `data.smoke`; only the durable write is what failed.
+# MRS-SMOKE-004 (teardown of the ephemeral home failed -- residue left
+# behind) and MRS-SMOKE-007 (a pre-existing `adapter-smoke.json` was
+# malformed) both classify WARN, the same "degrades, never blocks, the
+# primary observation already succeeded" tier MRS-ADP-009/016 already
+# established -- a teardown failure NEVER overrides the smoke's own
+# already-computed pass/fail/unavailable verdict (AD-31: the context lives
+# in the code, and cleanup is a different fact from the smoke's own
+# result). Deliberately, `binary_present is False` (the AC's own
+# "unavailable") registers NO finding at all -- the SAME "read-only
+# reporting surface, never a run precondition" tier MRS-ADP-013/014's own
+# sibling verb (`adapters probe`) already established for the identical
+# real-world fact.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1132,6 +1164,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-ADP-014",
         "MRS-ADP-015",
         "MRS-ADP-016",
+        "MRS-SMOKE-001",
+        "MRS-SMOKE-002",
+        "MRS-SMOKE-003",
+        "MRS-SMOKE-004",
+        "MRS-SMOKE-005",
+        "MRS-SMOKE-006",
+        "MRS-SMOKE-007",
     }
 )
 
