@@ -90,6 +90,20 @@ warnings: []
 
 ## Review Triage Log
 
+### 2026-08-07 — Epic 1 close-out adversarial review (Blind Hunter + Edge Case Hunter, parallel, no shared context, security-focused given credential-lifecycle scope)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2 (both converged independently on the duplicate-active-entry gap; the concurrency race was already known/deferred by the self-review pass below, now actually fixed rather than left deferred)
+- defer: 0 (crash-mid-rotation atomicity remains explicitly out of scope per this spec's own "Never" clause and stays on the deferred-work ledger — re-litigated by the Blind Hunter pass and confirmed already-settled, not a new finding)
+- reject: 0
+- addressed_findings:
+  - `[high]` `[patch]` Two concurrent `rotate`/`revoke` invocations against the same `.steward/keys-inventory.yaml` raced: each independently loaded the same starting entries, mutated in memory, and did an unconditional `save_inventory` write with no lock — the second writer silently clobbered the first's new/retired entry, even though both writers' own filesystem side effects (re-encrypted secrets, new identity files) had already succeeded. Previously flagged and DEFERRED by this story's own self-review pass (see below) with the reasoning "no daemon/concurrent-caller model" — the Epic 1 close-out review re-raised it as a real, provable gap regardless of usage model, since nothing prevents an operator from running two `steward keys` invocations in two terminals. Fixed: `_locked_inventory` (`fcntl.flock` exclusive lock on a `.keys-inventory.yaml.lock` sentinel) now wraps the entire load-mutate-save cycle in both `rotate_identity` and `revoke_identity`; `save_inventory` also writes via temp-file + `os.replace` (atomic on POSIX) so a concurrent READER (`list`/`audit`) can no longer observe a torn write either. Proven live with two real threads racing two real scopes (`test_concurrent_rotations_do_not_lose_an_update`), not just asserted.
+  - `[medium]` `[patch]` (converged independently) Both `rotate_identity` and `revoke_identity` picked the FIRST matching active entry via a `for`/`break` scan with no uniqueness check — a corrupt or hand-edited inventory carrying two active entries for one scope would have one silently rotated/revoked while the other sat untouched but visually indistinguishable in `steward keys list` output. Fixed: both functions now collect ALL matching candidates and raise `InventoryError` naming the ambiguity (`"N issued/active identities found for scope ... expected exactly one"`) rather than guessing. Proven by `test_ambiguous_active_entries_for_a_scope_are_refused_not_silently_resolved` in both `test_keys_rotate.py` and `test_keys_revoke.py` — asserts the inventory is untouched after the refusal.
+  - `[none]` (Blind Hunter, re-examined, confirmed already-settled) The crash-mid-rotation lockout window (a `SIGKILL` between re-encrypting secret *i* and finishing the loop/inventory write) is the SAME non-atomicity this spec's own "Never" clause explicitly scopes out ("No full transactional rollback across a multi-secret rotation... inherits Story 1.3's existing known non-atomicity of a single `age --output` write... Not solved this story"), already on the deferred-work ledger. Confirmed this remains a deliberate, documented tradeoff rather than a silent gap — not re-opened.
+  - `[none]` (Blind Hunter) No leak in `format_inventory`/`--json` rendering (only ever reads declared dataclass fields) and no argv/error-message leakage in the `age`/`age-keygen` subprocess calls (only paths and the public key cross that boundary) — confirmed, no fix needed.
+
+**Follow-up review recommendation: false** — both patches are isolated to the inventory read-modify-write boundary, each covered by a dedicated new test proving the fix; the one remaining non-atomicity class is a pre-existing, explicitly-documented, already-ledgered tradeoff, not a new question.
+
 ### 2026-08-07 — Self-review pass (adversarial re-read of the diff before marking done)
 - intent_gap: 0
 - bad_spec: 0

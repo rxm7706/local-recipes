@@ -110,6 +110,93 @@ def test_unknown_scope_raises_inventory_error_and_touches_nothing(tmp_path):
     assert not (tmp_path / "x.txt").exists()
 
 
+def test_ambiguous_active_entries_for_a_scope_are_refused_not_silently_resolved(tmp_path):
+    """Review finding: a corrupt/hand-edited inventory with TWO issued/active
+    entries for the same scope must never be resolved by silently rotating
+    whichever appears first -- it must refuse loudly, and touch nothing."""
+    identity_path = tmp_path / "jfrog-identity.txt"
+    generate_identity(identity_path)
+    inventory_path = tmp_path / "keys-inventory.yaml"
+    duplicate = (
+        KeyIdentityEntry(
+            name="jfrog",
+            scope="jfrog",
+            provenance="issued",
+            status="active",
+            last_rotated=None,
+            identity_path=str(identity_path),
+            secrets=(),
+        ),
+        KeyIdentityEntry(
+            name="jfrog-dup",
+            scope="jfrog",
+            provenance="issued",
+            status="active",
+            last_rotated=None,
+            identity_path=str(identity_path),
+            secrets=(),
+        ),
+    )
+    save_inventory(inventory_path, duplicate)
+
+    with pytest.raises(InventoryError, match="2 issued/active identities"):
+        rotate_identity(inventory_path, scope="jfrog", new_identity_path=tmp_path / "new.txt")
+
+    assert load_inventory(inventory_path) == duplicate
+    assert not (tmp_path / "new.txt").exists()
+
+
+def test_concurrent_rotations_do_not_lose_an_update(tmp_path):
+    """Review finding: two `rotate_identity` calls against the same
+    inventory previously raced (load -> mutate -> save with no exclusion),
+    and the second `save_inventory` could silently clobber the first's
+    write. Threads share this process's GIL for the Python-level mutation,
+    but the file lock must still serialize the load-mutate-save cycle so
+    neither rotation's own inventory entry is lost."""
+    import threading
+
+    inventory_path, _old_identity = _make_scope(tmp_path, "acme", n_secrets=1)
+    identity_path_b = tmp_path / "beta-identity.txt"
+    generate_identity(identity_path_b)
+    entries = list(load_inventory(inventory_path))
+    entries.append(
+        KeyIdentityEntry(
+            name="beta",
+            scope="beta",
+            provenance="issued",
+            status="active",
+            last_rotated=None,
+            identity_path=str(identity_path_b),
+            secrets=(),
+        )
+    )
+    save_inventory(inventory_path, tuple(entries))
+
+    errors: list[BaseException] = []
+
+    def _rotate(scope: str, new_identity: Path) -> None:
+        try:
+            rotate_identity(inventory_path, scope=scope, new_identity_path=new_identity)
+        except BaseException as exc:  # noqa: BLE001 -- captured for the main thread to re-raise
+            errors.append(exc)
+
+    t1 = threading.Thread(target=_rotate, args=("acme", tmp_path / "acme-new.txt"))
+    t2 = threading.Thread(target=_rotate, args=("beta", tmp_path / "beta-new.txt"))
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+    assert not errors, errors
+
+    final = load_inventory(inventory_path)
+    active_scopes = {e.scope for e in final if e.status == "active"}
+    assert active_scopes == {"acme", "beta"}, (
+        "both concurrent rotations' new active entries must survive -- "
+        f"got {[(e.scope, e.status, e.name) for e in final]}"
+    )
+
+
 def test_observed_provenance_is_refused(tmp_path):
     inventory_path = tmp_path / "keys-inventory.yaml"
     save_inventory(

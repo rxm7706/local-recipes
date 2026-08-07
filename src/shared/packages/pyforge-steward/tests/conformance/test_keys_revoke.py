@@ -58,6 +58,29 @@ def test_revoking_an_observed_entry_with_generic_scope_succeeds(tmp_path):
     assert retired.provenance == "observed"
 
 
+def test_ambiguous_active_entries_for_a_scope_are_refused_not_silently_resolved(tmp_path):
+    """Review finding: two active entries for the same scope (e.g. an
+    `issued` one and a separately-recorded `observed` one sharing a name)
+    must never be resolved by silently revoking whichever appears first --
+    that would report success while leaving the OTHER active credential for
+    the same scope live and untouched."""
+    issued = KeyIdentityEntry(
+        name="jfrog", scope="jfrog", provenance="issued", status="active",
+        last_rotated=None, identity_path="/nonexistent/id.txt", secrets=(),
+    )
+    observed = KeyIdentityEntry(
+        name="jfrog-observed", scope="jfrog", provenance="observed", status="active",
+        last_rotated=None, identity_path=None, secrets=(),
+    )
+    inventory_path = tmp_path / "keys-inventory.yaml"
+    save_inventory(inventory_path, (issued, observed))
+
+    with pytest.raises(InventoryError, match="2 active identities"):
+        revoke_identity(inventory_path, scope="jfrog")
+
+    assert load_inventory(inventory_path) == (issued, observed)
+
+
 def test_unknown_scope_raises_inventory_error(tmp_path):
     entry = KeyIdentityEntry(
         name="jfrog", scope="jfrog", provenance="issued", status="active",

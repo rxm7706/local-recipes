@@ -53,12 +53,16 @@ from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
+import fcntl
 import json
+import os
 import re
 import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import tokenize
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -656,6 +660,14 @@ def save_inventory(path: str | Path, entries: tuple[KeyIdentityEntry, ...]) -> N
     """Write `entries` to `path` as `.steward/keys-inventory.yaml`-shaped YAML.
 
     Creates parent directories as needed. `yaml.safe_dump` only.
+
+    Writes via a pid+thread-id-suffixed temp file then `os.replace` (never
+    a direct `open("w")` on the real path) -- review finding: a concurrent
+    `load_inventory` reader (e.g. `steward keys list` running at the same
+    moment as a `rotate`/`revoke`) could otherwise observe a partially
+    written file mid-`yaml.safe_dump`. `os.replace` is atomic on POSIX, so
+    a reader always sees either the fully-old or fully-new document, never
+    a torn one.
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -673,8 +685,47 @@ def save_inventory(path: str | Path, entries: tuple[KeyIdentityEntry, ...]) -> N
             for e in entries
         ]
     }
-    with path.open("w", encoding="utf-8") as f:
+    tmp_path = path.parent / f".{path.name}.pid{os.getpid()}.t{threading.get_native_id()}.tmp"
+    with tmp_path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(document, f, sort_keys=False)
+    os.replace(tmp_path, path)
+
+
+@contextlib.contextmanager
+def _locked_inventory(path: str | Path):
+    """Hold an exclusive advisory lock (`fcntl.flock`) on `<path>.lock` for
+    the duration of a read-modify-write cycle against the inventory at
+    `path`.
+
+    Review finding: `rotate_identity`/`revoke_identity` each did an
+    independent load -> mutate -> `save_inventory` with no cross-process
+    exclusion. Two concurrent invocations (e.g. two `steward keys rotate`
+    calls for different scopes, or a race between `rotate` and `revoke`)
+    could each load the SAME starting entries, mutate independently, and
+    have the second `save_inventory` silently clobber the first's write --
+    a lost update, with no error surfaced anywhere. This lock serializes
+    the whole load-mutate-save cycle across processes on the same machine
+    (POSIX `flock` is not effective over NFS; this tool's own credential
+    store is local-only, so that limitation does not apply here).
+
+    The lock file itself is never deleted (removing it would reopen a
+    race between "another process still holds the fd" and "we just
+    unlinked the path a new locker would create") -- an empty, permanently
+    present `.keys-inventory.yaml.lock` sentinel is the accepted cost,
+    mirroring the standard flock-sentinel idiom.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.parent / f".{path.name}.lock"
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o666)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
 
 
 def generate_identity(output_path: str | Path) -> str:
@@ -727,69 +778,91 @@ def rotate_identity(
 
     Raises `InventoryError` if no `issued`/`active` entry exists for `scope`
     (covers: no entry at all, an `observed` entry, or an already-`retired`
-    one), `ValueError` for a `-` `new_identity_path`, and propagates
+    one) OR if MORE THAN ONE such entry exists (an ambiguous/corrupt
+    inventory is never resolved by silently acting on the first match),
+    `ValueError` for a `-` `new_identity_path`, and propagates
     `subprocess.CalledProcessError` from `age-keygen`/`age` — never
     swallowed. A failure partway through re-encrypting a multi-secret scope
     leaves the inventory UNCHANGED (still pointing at the old, still-valid
     identity) and the already-processed secrets re-encrypted — a known,
     deliberately unsolved non-atomicity (see this story's spec, "Never").
+
+    The whole load-mutate-save cycle holds `_locked_inventory`'s exclusive
+    lock (review finding: two concurrent `rotate`/`revoke` invocations
+    against the same inventory previously raced, one silently clobbering
+    the other's write).
     """
     _reject_dash("new_identity_path", new_identity_path)
-    entries = load_inventory(inventory_path)
 
-    active: KeyIdentityEntry | None = None
-    for entry in entries:
-        if entry.scope == scope and entry.provenance == "issued" and entry.status == "active":
-            active = entry
-            break
-    if active is None:
-        raise InventoryError(
-            f"rotate: no issued/active identity found for scope {scope!r} in "
-            f"{inventory_path}"
+    with _locked_inventory(inventory_path):
+        entries = load_inventory(inventory_path)
+
+        candidates = [
+            entry
+            for entry in entries
+            if entry.scope == scope and entry.provenance == "issued" and entry.status == "active"
+        ]
+        if not candidates:
+            raise InventoryError(
+                f"rotate: no issued/active identity found for scope {scope!r} in "
+                f"{inventory_path}"
+            )
+        if len(candidates) > 1:
+            # Review finding: silently acting on the first match (a
+            # for/break loop) would rotate ONE of several ambiguous active
+            # entries and leave the other(s) untouched but indistinguishable
+            # from the real one in `steward keys list` -- a corrupt/
+            # hand-edited inventory must never be resolved silently.
+            raise InventoryError(
+                f"rotate: {len(candidates)} issued/active identities found for "
+                f"scope {scope!r} in {inventory_path} (expected exactly one) -- "
+                "the inventory is ambiguous or corrupt; resolve by hand before "
+                "rotating"
+            )
+        active = candidates[0]
+        if not active.identity_path:
+            raise InventoryError(
+                f"rotate: identity {active.name!r} (scope {scope!r}) has no "
+                "identity_path recorded — cannot decrypt its secrets"
+            )
+
+        new_pubkey = generate_identity(new_identity_path)
+
+        with tempfile.TemporaryDirectory(prefix="steward-keys-rotate-") as tmpdir:
+            staging = Path(tmpdir)
+            for index, secret_path_str in enumerate(active.secrets):
+                secret_path = Path(secret_path_str)
+                staged_plaintext = staging / f"secret-{index}"
+                decrypt_file(secret_path, identity=active.identity_path, output=staged_plaintext)
+                encrypt_file(staged_plaintext, recipient=new_pubkey, output=secret_path)
+
+        same_scope_count = sum(1 for e in entries if e.scope == scope)
+        generation = same_scope_count + 1
+        new_name = scope if generation == 1 else f"{scope}-{generation}"
+        now = datetime.now(timezone.utc).isoformat()
+
+        retired = KeyIdentityEntry(
+            name=active.name,
+            scope=active.scope,
+            provenance=active.provenance,
+            status="retired",
+            last_rotated=active.last_rotated,
+            identity_path=active.identity_path,
+            secrets=active.secrets,
         )
-    if not active.identity_path:
-        raise InventoryError(
-            f"rotate: identity {active.name!r} (scope {scope!r}) has no "
-            "identity_path recorded — cannot decrypt its secrets"
+        new_entry = KeyIdentityEntry(
+            name=new_name,
+            scope=scope,
+            provenance="issued",
+            status="active",
+            last_rotated=now,
+            identity_path=str(new_identity_path),
+            secrets=active.secrets,
         )
 
-    new_pubkey = generate_identity(new_identity_path)
-
-    with tempfile.TemporaryDirectory(prefix="steward-keys-rotate-") as tmpdir:
-        staging = Path(tmpdir)
-        for index, secret_path_str in enumerate(active.secrets):
-            secret_path = Path(secret_path_str)
-            staged_plaintext = staging / f"secret-{index}"
-            decrypt_file(secret_path, identity=active.identity_path, output=staged_plaintext)
-            encrypt_file(staged_plaintext, recipient=new_pubkey, output=secret_path)
-
-    same_scope_count = sum(1 for e in entries if e.scope == scope)
-    generation = same_scope_count + 1
-    new_name = scope if generation == 1 else f"{scope}-{generation}"
-    now = datetime.now(timezone.utc).isoformat()
-
-    retired = KeyIdentityEntry(
-        name=active.name,
-        scope=active.scope,
-        provenance=active.provenance,
-        status="retired",
-        last_rotated=active.last_rotated,
-        identity_path=active.identity_path,
-        secrets=active.secrets,
-    )
-    new_entry = KeyIdentityEntry(
-        name=new_name,
-        scope=scope,
-        provenance="issued",
-        status="active",
-        last_rotated=now,
-        identity_path=str(new_identity_path),
-        secrets=active.secrets,
-    )
-
-    updated = tuple(retired if e is active else e for e in entries) + (new_entry,)
-    save_inventory(inventory_path, updated)
-    return new_entry
+        updated = tuple(retired if e is active else e for e in entries) + (new_entry,)
+        save_inventory(inventory_path, updated)
+        return new_entry
 
 
 # ── Inventory display (FR-5/NFR-7, Story 1.5) ───────────────────────────────
@@ -896,33 +969,50 @@ def revoke_identity(inventory_path: str | Path, *, scope: str) -> KeyIdentityEnt
     silent gap."
 
     Raises `InventoryError` if no `active` entry exists for `scope` (no
-    entry at all, or every entry for that scope is already `retired`) —
-    never a silent no-op on a repeat call.
+    entry at all, or every entry for that scope is already `retired`) OR if
+    MORE THAN ONE active entry exists for `scope` (never resolved by
+    silently acting on the first match) — never a silent no-op on a repeat
+    call. Holds `_locked_inventory`'s exclusive lock across the whole
+    load-mutate-save cycle (see `rotate_identity`'s identical review-finding
+    note).
     """
-    entries = load_inventory(inventory_path)
+    with _locked_inventory(inventory_path):
+        entries = load_inventory(inventory_path)
 
-    active: KeyIdentityEntry | None = None
-    for entry in entries:
-        if entry.scope == scope and entry.status == "active":
-            active = entry
-            break
-    if active is None:
-        raise InventoryError(
-            f"revoke: no active identity found for scope {scope!r} in {inventory_path}"
+        candidates = [
+            entry for entry in entries if entry.scope == scope and entry.status == "active"
+        ]
+        if not candidates:
+            raise InventoryError(
+                f"revoke: no active identity found for scope {scope!r} in {inventory_path}"
+            )
+        if len(candidates) > 1:
+            # Review finding (mirrors rotate_identity's identical fix): a
+            # scope with two active entries (e.g. an `issued` one and a
+            # separately-recorded `observed` one sharing a name) must never
+            # have the ambiguity resolved silently by revoking whichever
+            # happens to appear first -- that would report success while
+            # leaving the OTHER active credential for the same scope live.
+            raise InventoryError(
+                f"revoke: {len(candidates)} active identities found for scope "
+                f"{scope!r} in {inventory_path} (expected exactly one) -- the "
+                "inventory is ambiguous or corrupt; resolve by hand before "
+                "revoking"
+            )
+        active = candidates[0]
+
+        retired = KeyIdentityEntry(
+            name=active.name,
+            scope=active.scope,
+            provenance=active.provenance,
+            status="retired",
+            last_rotated=active.last_rotated,
+            identity_path=active.identity_path,
+            secrets=active.secrets,
         )
-
-    retired = KeyIdentityEntry(
-        name=active.name,
-        scope=active.scope,
-        provenance=active.provenance,
-        status="retired",
-        last_rotated=active.last_rotated,
-        identity_path=active.identity_path,
-        secrets=active.secrets,
-    )
-    updated = tuple(retired if e is active else e for e in entries)
-    save_inventory(inventory_path, updated)
-    return retired
+        updated = tuple(retired if e is active else e for e in entries)
+        save_inventory(inventory_path, updated)
+        return retired
 
 
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
