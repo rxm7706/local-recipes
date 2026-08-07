@@ -4,6 +4,8 @@ no filesystem, no I/O."""
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import pytest
 
 from pyforge.marshal.core.conformance import (
@@ -15,6 +17,10 @@ from pyforge.marshal.core.conformance import (
     STATUS_ADDED,
     STATUS_AVAILABLE,
     STATUS_LINK_TARGET_CONFIRMED,
+    STATUS_MATRIX_FAIL,
+    STATUS_MATRIX_NOT_ATTEMPTED,
+    STATUS_MATRIX_PASS,
+    STATUS_MATRIX_UNAVAILABLE,
     STATUS_MODIFIED,
     STATUS_REMOVED,
     STATUS_SMOKE_FAIL,
@@ -25,10 +31,12 @@ from pyforge.marshal.core.conformance import (
     SmokeFacts,
     TreeLiveState,
     _check_symlink_identity,
+    build_matrix_row,
     build_probe_record,
     build_smoke_record,
     evaluate_conformance,
     evaluate_smoke,
+    render_matrix_markdown,
 )
 from pyforge.marshal.ports.harness import AdapterProbe
 
@@ -281,7 +289,26 @@ def test_build_smoke_record_shape():
         "status": STATUS_SMOKE_PASS,
         "failing_stage": None,
         "detail": report.detail,
+        "harness_version": None,
+        "recorded_at": None,
     }
+
+
+def test_build_smoke_record_threads_harness_version_and_recorded_at():
+    """Story 6.6 (FR-45): additive, backward-compatible keyword parameters
+    -- an omitted call (the test above) keeps `None`, a supplied one is
+    threaded through unchanged."""
+    report = evaluate_smoke(_facts(file_changed=True, commit_made=True))
+    record = build_smoke_record(
+        "claude",
+        report,
+        binary="claude",
+        binary_present=True,
+        harness_version="0.9.0",
+        recorded_at="2026-08-07T00:00:00+00:00",
+    )
+    assert record["harness_version"] == "0.9.0"
+    assert record["recorded_at"] == "2026-08-07T00:00:00+00:00"
 
 
 def test_smoke_statuses_never_appear_in_the_tree_drift_or_probe_vocabularies():
@@ -299,3 +326,146 @@ def test_smoke_statuses_never_appear_in_the_tree_drift_or_probe_vocabularies():
     # refactor cannot silently rely on that coincidence for correctness.
     assert STATUS_SMOKE_UNAVAILABLE == STATUS_UNAVAILABLE
     assert STAGE_COMMIT not in (STAGE_READ, STAGE_CHANGE, STAGE_VERIFY)
+
+
+# --- Story 6.6: the conformance matrix ---------------------------------
+
+_NOW = datetime(2026, 8, 7, tzinfo=timezone.utc)
+
+
+def test_matrix_row_not_attempted_when_no_smoke_record():
+    row = build_matrix_row("claude", smoke_record=None, probe_record=None, now=_NOW, stale_after_days=30)
+    assert row.status == STATUS_MATRIX_NOT_ATTEMPTED
+    assert row.adapter_version is None
+    assert row.harness_version is None
+    assert row.date is None
+    assert row.failing_stage is None
+    assert row.stale is False
+
+
+@pytest.mark.parametrize(
+    ("smoke_status", "expected"),
+    [
+        (STATUS_SMOKE_PASS, STATUS_MATRIX_PASS),
+        (STATUS_SMOKE_FAIL, STATUS_MATRIX_FAIL),
+        (STATUS_SMOKE_UNAVAILABLE, STATUS_MATRIX_UNAVAILABLE),
+    ],
+)
+def test_matrix_row_maps_each_real_smoke_status(smoke_status, expected):
+    smoke_record = {
+        "status": smoke_status,
+        "failing_stage": "verify" if smoke_status == STATUS_SMOKE_FAIL else None,
+        "harness_version": "0.9.0",
+        "recorded_at": "2026-08-06T00:00:00+00:00",
+    }
+    probe_record = {"binary_version": "1.2.3"}
+    row = build_matrix_row(
+        "claude", smoke_record=smoke_record, probe_record=probe_record, now=_NOW, stale_after_days=30
+    )
+    assert row.status == expected
+    assert row.adapter_version == "1.2.3"
+    assert row.harness_version == "0.9.0"
+    assert row.date == "2026-08-06T00:00:00+00:00"
+    if smoke_status == STATUS_SMOKE_FAIL:
+        assert row.failing_stage == "verify"
+    else:
+        assert row.failing_stage is None
+
+
+def test_matrix_row_unrecognized_smoke_status_degrades_to_not_attempted():
+    """Defensive: a hand-edited/corrupt adapter-smoke.json entry must never
+    fabricate a pass."""
+    row = build_matrix_row(
+        "claude",
+        smoke_record={"status": "bogus"},
+        probe_record=None,
+        now=_NOW,
+        stale_after_days=30,
+    )
+    assert row.status == STATUS_MATRIX_NOT_ATTEMPTED
+
+
+def test_matrix_row_stale_when_older_than_threshold():
+    smoke_record = {"status": STATUS_SMOKE_PASS, "recorded_at": "2026-06-01T00:00:00+00:00"}
+    row = build_matrix_row("claude", smoke_record=smoke_record, probe_record=None, now=_NOW, stale_after_days=30)
+    assert row.stale is True
+
+
+def test_matrix_row_not_stale_within_threshold():
+    smoke_record = {"status": STATUS_SMOKE_PASS, "recorded_at": "2026-08-06T00:00:00+00:00"}
+    row = build_matrix_row("claude", smoke_record=smoke_record, probe_record=None, now=_NOW, stale_after_days=30)
+    assert row.stale is False
+
+
+def test_matrix_row_naive_recorded_at_is_treated_as_utc():
+    smoke_record = {"status": STATUS_SMOKE_PASS, "recorded_at": "2026-08-06T00:00:00"}
+    row = build_matrix_row("claude", smoke_record=smoke_record, probe_record=None, now=_NOW, stale_after_days=30)
+    assert row.stale is False
+    assert row.date == "2026-08-06T00:00:00"
+
+
+def test_matrix_row_malformed_recorded_at_never_raises_and_is_not_stale():
+    smoke_record = {"status": STATUS_SMOKE_PASS, "recorded_at": "not-a-timestamp"}
+    row = build_matrix_row("claude", smoke_record=smoke_record, probe_record=None, now=_NOW, stale_after_days=30)
+    assert row.stale is False
+    assert row.date == "not-a-timestamp"
+
+
+def test_matrix_row_missing_recorded_at_never_raises():
+    smoke_record = {"status": STATUS_SMOKE_PASS}
+    row = build_matrix_row("claude", smoke_record=smoke_record, probe_record=None, now=_NOW, stale_after_days=30)
+    assert row.stale is False
+    assert row.date is None
+
+
+def test_render_matrix_markdown_empty_rows():
+    text = render_matrix_markdown([], hostname="host1", generated_at="2026-08-07T00:00:00+00:00")
+    assert "host1" in text
+    assert "2026-08-07T00:00:00+00:00" in text
+    assert "| Adapter | Status |" in text
+
+
+def test_render_matrix_markdown_sorts_rows_by_adapter_and_renders_every_column():
+    rows = [
+        build_matrix_row("zeta", smoke_record=None, probe_record=None, now=_NOW, stale_after_days=30),
+        build_matrix_row(
+            "alpha",
+            smoke_record={
+                "status": STATUS_SMOKE_PASS,
+                "failing_stage": None,
+                "harness_version": "0.9.0",
+                "recorded_at": "2026-08-06T00:00:00+00:00",
+            },
+            probe_record={"binary_version": "1.0.0"},
+            now=_NOW,
+            stale_after_days=30,
+        ),
+    ]
+    text = render_matrix_markdown(rows, hostname="host1", generated_at="2026-08-07T00:00:00+00:00")
+    alpha_index = text.index("alpha")
+    zeta_index = text.index("zeta")
+    assert alpha_index < zeta_index
+    assert "1.0.0" in text
+    assert "0.9.0" in text
+    assert STATUS_MATRIX_PASS in text
+    assert STATUS_MATRIX_NOT_ATTEMPTED in text
+
+
+def test_matrix_statuses_never_appear_in_any_other_vocabulary():
+    """A FOURTH, independent fact -- never merged into ALL_STATUSES,
+    STATUS_AVAILABLE/UNAVAILABLE, or the smoke-status pair, even though
+    three of the four literals coincide (AD-31: never conflated as a
+    CONSTANT/classification)."""
+    matrix_statuses = {
+        STATUS_MATRIX_NOT_ATTEMPTED,
+        STATUS_MATRIX_UNAVAILABLE,
+        STATUS_MATRIX_FAIL,
+        STATUS_MATRIX_PASS,
+    }
+    assert matrix_statuses.isdisjoint(ALL_STATUSES)
+    assert STATUS_MATRIX_NOT_ATTEMPTED not in (STATUS_AVAILABLE, STATUS_UNAVAILABLE)
+    # Coincidental string equality, asserted explicitly (mirrors the
+    # smoke-vocabulary test's own precedent above).
+    assert STATUS_MATRIX_UNAVAILABLE == STATUS_SMOKE_UNAVAILABLE
+    assert STATUS_MATRIX_FAIL == STATUS_SMOKE_FAIL
+    assert STATUS_MATRIX_PASS == STATUS_SMOKE_PASS

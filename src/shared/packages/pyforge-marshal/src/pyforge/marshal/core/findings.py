@@ -1031,6 +1031,18 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # reporting surface, never a run precondition" tier MRS-ADP-013/014's own
 # sibling verb (`adapters probe`) already established for the identical
 # real-world fact.
+# Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37) adds
+# `cli/adapters.py`'s own `run_adapters_matrix` (`marshal adapters matrix`)
+# -- a NEW area, `MRS-MATRIX-*`, reusing `MRS-ADP-001` verbatim for its one
+# shared precondition (a malformed project slug). `MRS-MATRIX-001` (a
+# pre-existing `adapter-probes.json`/`adapter-smoke.json` was malformed
+# JSON -- the SAME underlying fact `MRS-ADP-016`/`MRS-SMOKE-007` already
+# name from their own sibling commands, re-reported under this command's
+# own area) classifies WARN, mirroring `MRS-ADP-016`/`MRS-SMOKE-007`'s own
+# "degrades to empty, never blocks" tier. `MRS-MATRIX-002` (writing the
+# tracked matrix file failed) classifies ERROR, mirroring
+# `MRS-ADP-015`/`MRS-SMOKE-006`'s own "a real write was attempted and
+# failed" tier -- the envelope still reports the computed `data.rows`.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1171,6 +1183,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SMOKE-005",
         "MRS-SMOKE-006",
         "MRS-SMOKE-007",
+        "MRS-MATRIX-001",
+        "MRS-MATRIX-002",
     }
 )
 

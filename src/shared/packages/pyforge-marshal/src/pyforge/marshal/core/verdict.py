@@ -782,6 +782,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SMOKE-005": Verdict.UNEVALUABLE,
     "MRS-SMOKE-006": Verdict.ERROR,
     "MRS-SMOKE-007": Verdict.WARN,
+    # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37):
+    # MRS-MATRIX-001 (a pre-existing adapter-probes.json/adapter-smoke.json
+    # was malformed) at WARN, mirroring MRS-ADP-016/MRS-SMOKE-007's own
+    # "degrades to empty, never blocks" tier. MRS-MATRIX-002 (writing the
+    # tracked matrix file failed) at ERROR, mirroring MRS-ADP-015/
+    # MRS-SMOKE-006's own "a real write was attempted and failed" tier.
+    "MRS-MATRIX-001": Verdict.WARN,
+    "MRS-MATRIX-002": Verdict.ERROR,
 }
 
 
