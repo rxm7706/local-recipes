@@ -123,6 +123,10 @@ _UNSETTABLE_KEYS = frozenset(
         "landing_branch_retirement",
         "landing_resync",
         "landing_base_branch",
+        # Story 4.5's `landing_resync_commands` (AD-40) -- a tuple of str,
+        # the same "no string value could ever satisfy this validator"
+        # reason `verify_commands` itself is excluded for.
+        "landing_resync_commands",
     }
 )
 
@@ -146,6 +150,7 @@ _FIELD_ORDER: tuple[str, ...] = (
     "landing_branch_retirement",
     "landing_resync",
     "landing_base_branch",
+    "landing_resync_commands",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -304,7 +309,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 20-key document matching ``schemas/policy.json`` exactly:
+    """The flat 21-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

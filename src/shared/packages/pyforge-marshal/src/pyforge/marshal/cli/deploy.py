@@ -180,15 +180,17 @@ import json
 import os
 import re
 import secrets
+import shlex
 from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.process_posix import PosixProcess
+from ..adapters.harness_bmadloop import BmadLoopHarness
+from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import identity, policy, promotion
+from ..core import identity, policy, promotion, status
 from ..core.egress import Redacted, to_redacted
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
 from ..core.journal import JournalEntryId, Phase, build_entry, fold, mint_run_id, prepare_for_write
@@ -198,6 +200,7 @@ from ..core.promotion import PromotionPlan, SpecCandidate
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
+from ..ports.harness import HarnessPort
 from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .config import (
@@ -370,6 +373,35 @@ def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     batch_pr_parser.set_defaults(handler=run_batch_pr)
+
+    refresh_feed_parser = deploy_subparsers.add_parser(
+        "refresh-feed",
+        help="Reconcile git-sourced and journal-sourced facts, domain-tagged (AD-33).",
+        description=(
+            "Builds one reconciled report from two independently-gathered "
+            "sources: git-sourced repository facts (VcsPort.commit_subjects "
+            "+ core.promotion.merged_story_keys) and journal/harness-sourced "
+            "process facts (HarnessPort.run_status_snapshot's per-task "
+            "commit_sha). Every field is tagged with the domain it came "
+            "from; a journal claim about a repository fact that git does "
+            "not confirm is reported as a reconciliation finding, never "
+            "resolved. Runs the policy-declared landing_resync_commands "
+            "allowlist when landing_resync composes true."
+        ),
+    )
+    refresh_feed_parser.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help=f"The active project slug; falls back to ${ENV_ACTIVE_PROJECT} when omitted.",
+    )
+    refresh_feed_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    refresh_feed_parser.set_defaults(handler=run_refresh_feed)
 
 
 def _discover_candidates(fs: FsPort, tier3_dir: Path) -> tuple[SpecCandidate, ...]:
@@ -2245,6 +2277,373 @@ def _render_text_batch_pr(data: Mapping[str, object], findings: tuple[Finding, .
     labels_applied = data.get("labels_applied")
     if labels_applied:
         lines.append(f"labels applied: {', '.join(labels_applied)}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+# =====================================================================
+# ``marshal deploy refresh-feed`` (Story 4.5, AD-33).
+# =====================================================================
+
+
+def _gather_claimed_commits(
+    fs: FsPort, harness: HarnessPort, home: Path, project_slug: str
+) -> tuple[status.ClaimedCommit, ...]:
+    """The journal/harness-sourced half of ``refresh-feed``'s two
+    independently-gathered sources (AD-33): the most recent Marshal run for
+    ``project_slug`` under ``home``'s own Tier-3 store
+    (``.spin._latest_run_dir``), that run's own ``harness_run_id`` (its
+    launch/resume outcome entry's own field,
+    ``.spin._resolve_harness_run_id_for_resume`` -- the SAME lookup
+    ``marshal factory resume`` already uses, reused rather than
+    reimplemented), and, when both resolve, ``HarnessPort.
+    run_status_snapshot``'s own ``tasks`` (Story 3.8's ``TaskPhaseSnapshot``,
+    every task's ``commit_sha`` -- the story's own worked example of a
+    "journal claim about a repository fact"). Each task's bmad-loop-native
+    ``story_key`` is normalized to Marshal's canonical ``StoryKey`` here, at
+    the CLI boundary (mirrors ``_discover_candidates``'s own established
+    skip-invalid convention: a task whose key does not normalize is
+    skipped, never a hard failure for the whole gather). Returns ``()`` --
+    never raises -- for every "no journal facts available" case (no loop
+    home, no run yet, no resolvable ``harness_run_id``, or
+    ``run_status_snapshot`` itself returns ``None``): this is a legitimate,
+    reportable state (``core.status.reconcile_feed_domains`` then reports
+    git's own answer alone, per the story's own I/O matrix), never an
+    error."""
+    # Local import: `cli/spin.py` imports `from .init import _home_path`,
+    # and `cli/init.py` imports `from . import deploy` -- a module-level
+    # `from .spin import ...` here would create the same cli.deploy <->
+    # cli.init load-order cycle `run_land_story`'s own comment already
+    # documents for `cli/gate.py`.
+    from .spin import _latest_run_dir, _resolve_harness_run_id_for_resume
+
+    # Code review (2026-08-06, P2, both reviewers): broadened from
+    # `except FsError` alone -- `FsPort.exists`'s own established
+    # implementation (`LocalFs.exists`) already swallows `OSError` to
+    # `False` internally and never raises it, but this function's own
+    # "never raises" promise must hold for ANY `FsPort`, not only the one
+    # shipped adapter (a test double, or a future implementation, that
+    # does not honor that internal convention).
+    try:
+        home_present = fs.exists(home)
+    except (FsError, OSError):
+        home_present = False
+    if not home_present:
+        return ()
+
+    run_dir = _latest_run_dir(home, project_slug)
+    if run_dir is None:
+        return ()
+    run_id = run_dir.name
+    harness_run_id = _resolve_harness_run_id_for_resume(fs, run_dir, run_id)
+    if harness_run_id is None:
+        return ()
+
+    # Code review (2026-08-06, P2, both reviewers): `HarnessPort.
+    # run_status_snapshot`'s own docstring promises "never raises", but this
+    # function's OWN docstring makes the identical promise to ITS caller --
+    # wrapped defensively with the SAME guard tuple
+    # `adapters/harness_bmadloop.py::BmadLoopHarness.run_status_snapshot`
+    # already uses internally to hold that promise against a malformed
+    # `state.json` (`OSError`/`ValueError`/`KeyError`/`TypeError`/
+    # `AttributeError`/`ArithmeticError`/`RecursionError`), so an
+    # implementation that does not honor its own contract degrades this
+    # function to "no claim available for this run" rather than crashing
+    # the whole `refresh-feed` invocation.
+    try:
+        snapshot = harness.run_status_snapshot(home, harness_run_id)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError, RecursionError):
+        return ()
+    if snapshot is None:
+        return ()
+
+    claims: list[status.ClaimedCommit] = []
+    for task in snapshot.tasks:
+        try:
+            story_key = identity.normalize(task.story_key)
+        except MalformedStoryKeyError:
+            # A malformed/non-str story_key on one task is this task's own
+            # problem, never the whole gather's -- skipped, mirroring
+            # `_discover_candidates`'s own established convention.
+            # `identity.normalize` raises ONLY `MalformedStoryKeyError`
+            # (verified: it guards non-`str` input itself), so this is
+            # already the complete catch for this call -- no broader
+            # exception reaches here.
+            continue
+        claims.append(
+            status.ClaimedCommit(
+                story_key=story_key,
+                claimed_commit_sha=task.commit_sha,
+                phase=task.phase,
+            )
+        )
+    return tuple(claims)
+
+
+# Code review (2026-08-06, P6, Blind Hunter): `cli/gate.py`'s own
+# `verify_commands` execution deliberately passes NO `timeout_s`
+# (`adapters/process_posix.py`'s own docstring: a verify command's own
+# duration is entirely project-defined, and Marshal has no policy field for
+# a per-command timeout budget) -- so there is no verify_commands timeout
+# precedent to reuse here. `landing_resync_commands` is a materially
+# different shape: its own worked examples (this module's docstring, the
+# spec's own Design Notes) are network-facing resync operations (a fetch/
+# pull against a remote), the SAME class of operation
+# `adapters/vcs_git.py::_GIT_PUSH_TIMEOUT_S` already bounds for this
+# package's own git push calls -- reused here rather than inventing an
+# unrelated ceiling, so a stalled resync command cannot hang the whole
+# `refresh-feed` invocation indefinitely.
+_RESYNC_TIMEOUT_S = 120.0
+
+
+def _run_resync_commands(
+    process: ProcessPort, root: Path, commands: tuple[str, ...]
+) -> tuple[list[dict[str, object]], list[Finding]]:
+    """Executes every ``landing_resync_commands`` entry via ``ProcessPort``
+    -- the SAME allowlist-only execution discipline AD-17 already requires
+    for ``verify_commands`` (``cli/gate.py::run_evaluate``): ``shlex.split``,
+    reject bare shell metacharacters (``.gate._bare_shell_metacharacters``,
+    reused rather than reimplemented -- these commands are NEVER run
+    through a shell, so a caller who wrote ``cmd1 && cmd2`` must be told,
+    not silently handed ``cmd1`` with ``&&``/``cmd2`` as ordinary
+    arguments), run via ``ProcessPort.run`` with ``_RESYNC_TIMEOUT_S``
+    (code review, 2026-08-06, P6: a hung command must not hang this whole
+    command), classify via ``core.status.classify_resync_outcome`` (this
+    story's own MRS-DEPLOY-019/020 codes -- never
+    ``core.gate.classify_outcome``'s hardcoded ``MRS-GATE-*`` codes, a
+    different policy key's own area). Every failure is reported, never
+    silently swallowed -- including a whitespace-only entry (code review,
+    2026-08-06, P1, both reviewers: ``shlex.split(" ")`` parses CLEANLY to
+    an EMPTY token list, distinct from a ``ValueError``, and would
+    otherwise reach ``ProcessPort.run`` with no ``argv[0]`` to exec)."""
+    # Local import -- see `_gather_claimed_commits`'s own comment for why
+    # `cli/gate.py` is never imported at module level here.
+    from .gate import _bare_shell_metacharacters
+
+    reports: list[dict[str, object]] = []
+    findings: list[Finding] = []
+    for command in commands:
+        try:
+            tokens = shlex.split(command)
+        except ValueError as exc:
+            report, finding = status.classify_resync_outcome(
+                command,
+                None,
+                failure_reason=(
+                    f"cannot parse landing_resync_commands entry {command!r}: {exc}"
+                ),
+            )
+        else:
+            if not tokens:
+                # Whitespace-only entry (code review, 2026-08-06, P1): parses
+                # cleanly, produces no argv[0] to exec -- a malformed entry,
+                # reported and skipped, never handed to ProcessPort.run.
+                report, finding = status.classify_resync_outcome(
+                    command,
+                    None,
+                    failure_reason=(
+                        f"landing_resync_commands entry {command!r} is empty "
+                        "after parsing (whitespace-only) -- no executable to run"
+                    ),
+                )
+                reports.append(report)
+                if finding is not None:
+                    findings.append(finding)
+                continue
+            shell_chars = _bare_shell_metacharacters(command)
+            if shell_chars:
+                report, finding = status.classify_resync_outcome(
+                    command,
+                    None,
+                    failure_reason=(
+                        f"landing_resync_commands entry {command!r} uses shell "
+                        f"syntax ({', '.join(repr(char) for char in shell_chars)}) "
+                        "but resync commands are never run through a shell "
+                        "(quote or backslash-escape the character if it is "
+                        "meant as data)"
+                    ),
+                )
+            else:
+                try:
+                    result = process.run(tokens, cwd=root, timeout_s=_RESYNC_TIMEOUT_S)
+                except (ProcessError, OSError, TimeoutError) as exc:
+                    # Code review (2026-08-06, P2, both reviewers): broadened
+                    # from `ProcessError` alone -- `PosixProcess.run` never
+                    # lets a raw `OSError`/timeout escape (it wraps both into
+                    # `ProcessError`), but this function's own "every failure
+                    # is reported, never silently swallowed" promise (the
+                    # module docstring above) must hold for ANY `ProcessPort`
+                    # implementation, not only the one shipped adapter.
+                    report, finding = status.classify_resync_outcome(
+                        command,
+                        None,
+                        failure_reason=(
+                            f"landing_resync_commands entry {command!r} could "
+                            f"not be run: {exc}"
+                        ),
+                    )
+                else:
+                    report, finding = status.classify_resync_outcome(command, result)
+        reports.append(report)
+        if finding is not None:
+            findings.append(finding)
+    return reports, findings
+
+
+def run_refresh_feed(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+    process: ProcessPort | None = None,
+    harness: HarnessPort | None = None,
+) -> int:
+    # Local import -- see `_gather_claimed_commits`'s own comment.
+    from .init import _home_path
+
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    process = process if process is not None else PosixProcess()
+    harness = harness if harness is not None else BmadLoopHarness()
+
+    project_slug = (
+        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
+    )
+    root = repo_root()
+    data: dict[str, object] = {"slug": project_slug, "root": str(root)}
+    # Code review (2026-08-06, P5, Blind Hunter): `resync_skipped`/
+    # `resync_commands` defaulted here, BEFORE any early-return path below,
+    # so every exit -- success or refusal alike -- carries the SAME
+    # envelope keys (AD-14's "one envelope shape for every command"). The
+    # happy path (bottom of this function) always overwrites both with
+    # their real, computed values; only an early refusal ever sees these
+    # defaults survive to `_emit`.
+    data["resync_skipped"] = True
+    data["resync_commands"] = []
+    findings: list[Finding] = []
+
+    project_data: Mapping[str, object] = {}
+    if project_slug and policy._is_valid_project_slug(project_slug):
+        candidate = conventional_project_policy_path(project_slug)
+        try:
+            present = candidate.is_file()
+        except OSError:
+            present = True
+        if present:
+            try:
+                project_data = _read_project_policy(candidate)
+            except PolicyIOError as exc:
+                findings.append(exc.finding)
+                data["stories"] = []
+                return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+    effective, policy_findings = policy.compose(
+        project_slug=project_slug, project=project_data, flags={}
+    )
+    findings.extend(policy_findings)
+
+    if not project_slug or not policy._is_valid_project_slug(project_slug):
+        # Already reported via MRS-POLICY-005/006 above -- nothing further
+        # to reconcile without a real project to look in.
+        data["stories"] = []
+        return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+
+    template = effective.merge_subject_template.value
+
+    # --- git-sourced repository facts (AD-33) --------------------------
+    # Push route: best-effort, never a hard failure (mirrors
+    # `_scan_promotions`'s own AD-29/F-14 precedent) -- a missing/unfetched
+    # origin/main is the ordinary "no push route available" case.
+    try:
+        origin_subjects = vcs.commit_subjects(root, _PUSH_REF)
+    except VcsCommandError:
+        origin_subjects = ()
+    # Merge route: REQUIRED, same as `_scan_promotions` -- its failure means
+    # Marshal cannot honestly determine ANY story's durability this run.
+    try:
+        main_subjects = vcs.commit_subjects(root, _MERGE_BASE_BRANCH)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_003,
+                severity=Severity.ERROR,
+                message=(
+                    "cannot read local main's commit history to determine "
+                    f"repository facts for refresh-feed: {exc}"
+                ),
+            )
+        )
+        data["stories"] = []
+        return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+
+    combined_subjects = tuple(origin_subjects) + tuple(main_subjects)
+    merged_keys = promotion.merged_story_keys(combined_subjects, template, project_slug)
+
+    # --- journal/harness-sourced process facts (AD-33) ------------------
+    home = _home_path(project_slug)
+    claims = _gather_claimed_commits(fs, harness, home, project_slug)
+
+    # --- reconciliation (pure core, AD-4/AD-33) --------------------------
+    report = status.reconcile_feed_domains(merged_keys, claims)
+    findings.extend(report.findings)
+    data["stories"] = [
+        {
+            "story_key": row["story_key"],
+            "durable": status.domain_field_to_dict(row["durable"]),
+            "claimed_commit_sha": status.domain_field_to_dict(row["claimed_commit_sha"]),
+        }
+        for row in report.stories
+    ]
+
+    # --- landing_resync_commands, gated by landing_resync (Story 4.7) ---
+    # Code review (2026-08-06, P7, Blind Hunter): `resync_skipped` alone is
+    # `False` both when a command actually ran AND when `landing_resync` is
+    # true but `landing_resync_commands` is the documented-default empty
+    # tuple -- but `resync_commands` (an empty list only in the "nothing
+    # configured" case, real report dicts otherwise) already distinguishes
+    # the two: `resync_skipped=False` + `resync_commands=[]` means
+    # "attempted, nothing was configured to run"; `resync_skipped=True` +
+    # `resync_commands=[]` means "skipped entirely, the policy toggle is
+    # off". No behavior change needed -- this comment is the fix.
+    if effective.landing_resync.value:
+        data["resync_skipped"] = False
+        resync_reports, resync_findings = _run_resync_commands(
+            process, root, effective.landing_resync_commands.value
+        )
+        data["resync_commands"] = resync_reports
+        findings.extend(resync_findings)
+    else:
+        data["resync_skipped"] = True
+        data["resync_commands"] = []
+
+    return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
+
+
+def _render_text_refresh_feed(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_batch_pr`` convention."""
+    slug = data.get("slug") or "(no active project)"
+    lines = [f"deploy refresh-feed: {slug!r}"]
+    stories = data.get("stories") or []
+    if stories:
+        lines.append(f"stories: {len(stories)}")
+        for row in stories:
+            durable = row["durable"]
+            claimed = row["claimed_commit_sha"]
+            lines.append(
+                f"  {row['story_key']}: durable={durable['value']!r} "
+                f"(git), claimed_commit_sha={claimed['value']!r} (journal)"
+            )
+    else:
+        lines.append("stories: none")
+    if data.get("resync_skipped"):
+        lines.append("resync: skipped (landing_resync is false)")
+    else:
+        resync_commands = data.get("resync_commands") or []
+        lines.append(f"resync commands run: {len(resync_commands)}")
     if findings:
         lines.append("findings:")
         for finding in findings:

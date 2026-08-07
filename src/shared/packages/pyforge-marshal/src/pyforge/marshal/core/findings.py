@@ -528,6 +528,26 @@ same tier: ``update_pr`` must never be called against a PR targeting a
 different base than policy declares -- that PR belongs to some other,
 unrelated intent this command must not silently rewrite.
 
+Story 4.5 (feed refresh with truth partitioned by domain, AD-33) adds two
+more ``MRS-DEPLOY-*`` codes for ``marshal deploy refresh-feed`` plus a new
+area, ``MRS-STATUS-*``. ``MRS-DEPLOY-019`` (a ``landing_resync_commands``
+entry could not be run at all -- it failed to ``shlex.split``, used bare
+shell syntax ``ProcessPort`` would never honor, or ``ProcessPort.run``
+itself raised) classifies ``Verdict.UNEVALUABLE``, the same tier as
+``MRS-GATE-002``/``003``: Marshal could not run the configured command at
+all. ``MRS-DEPLOY-020`` (a ``landing_resync_commands`` entry ran and exited
+non-zero) classifies ``Verdict.GATE_FAILED``, the same tier as
+``MRS-GATE-001``/``MRS-DEPLOY-010``: a real, policy-configured command ran
+and did not pass. ``MRS-STATUS-001`` (``core.status.reconcile_feed_domains``:
+a journal-claimed ``commit_sha`` for a story that git's own
+``core.promotion.merged_story_keys`` does not confirm -- the harness
+believes a commit landed; git disagrees) classifies ``Verdict.WARN``, the
+same tier as this codebase's every other "reported, never blocks
+progression" paper-trail-gap code (``MRS-DEPLOY-001``/``002``/``004``/
+``005``/``009``/``012``): AD-33 forbids resolving the discrepancy either
+way, so it is named, never silently passed over, but never itself
+invalidates the report.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -629,6 +649,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # head branch's resolved tip before changed_files is trusted), and
 # MRS-DEPLOY-018 (P8: an existing PR's own base branch does not match the
 # policy-declared landing_base_branch).
+# Story 4.5's cli/deploy.py/core/status.py add two more MRS-DEPLOY-* codes
+# for `marshal deploy refresh-feed` (MRS-DEPLOY-019: a landing_resync_
+# commands entry could not be run at all; MRS-DEPLOY-020: it ran and exited
+# non-zero) plus a new area, MRS-STATUS-* (MRS-STATUS-001: a journal-claimed
+# commit_sha for a story git's own merged_story_keys does not confirm).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -714,6 +739,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-016",
         "MRS-DEPLOY-017",
         "MRS-DEPLOY-018",
+        "MRS-DEPLOY-019",
+        "MRS-DEPLOY-020",
+        "MRS-STATUS-001",
     }
 )
 

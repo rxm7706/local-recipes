@@ -71,7 +71,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
+from ..ports.process import ProcessResult
+from .identity import StoryKey
 from .model import Finding, Severity
 
 _LOOP_BRANCH_PREFIX = "loop/"
@@ -345,4 +348,288 @@ def evaluate_homes(
 
     return HomesEvaluation(
         homes=tuple(home_rows), main_checkout=main_row, findings=tuple(findings)
+    )
+
+
+# =============================================================================
+# Story 4.5: feed refresh with truth partitioned by domain (AD-33).
+#
+# `cli/deploy.py`'s `marshal deploy refresh-feed` builds ONE reconciled
+# report from two INDEPENDENTLY-gathered sources: git-sourced repository
+# facts (`VcsPort.commit_subjects` + Story 4.1's own
+# `core.promotion.merged_story_keys`) and journal/harness-sourced process
+# facts (`HarnessPort.run_status_snapshot`'s `RunStatusSnapshot.tasks`,
+# Story 3.8's own `TaskPhaseSnapshot.commit_sha` -- this story's own
+# worked example of "a journal claim about a repository fact", per the
+# spec's Design Notes). `DomainField` makes "which domain sourced this
+# value" a checkable TYPE, not a comment: every field
+# `reconcile_feed_domains` emits is wrapped in one, tagged `"git"` or
+# `"journal"`, and no field here is ever constructed from the OTHER
+# domain's source. `ClaimedCommit` carries the journal's own ASSERTION
+# about a repository fact (a `commit_sha`, when the harness has one) --
+# informational only; the REPORTED "is this story durable" answer always
+# comes from `merged_keys` (git), never from a claim's mere presence. A
+# claim that disagrees with git (a non-`None` `claimed_commit_sha` for a
+# story `merged_keys` does not confirm) is a registered `MRS-STATUS-001`
+# `Finding` -- reported, never silently resolved by trusting either side
+# (AD-33's own "a journal claim about a repository fact ... is only ever
+# an input to a reconciliation finding, never a rendered value").
+# =============================================================================
+
+_CLAIMED_MISMATCH_CODE = "MRS-STATUS-001"
+
+
+@dataclass(frozen=True)
+class DomainField:
+    """AD-33's per-field domain partition, made a checkable type rather
+    than a comment: every field ``reconcile_feed_domains``'s report emits
+    wraps its value in one of these. ``domain`` names which of AD-33's two
+    domains the ``value`` was sourced from -- ``"git"`` (populated ONLY
+    from ``VcsPort``/``core.promotion.merged_story_keys``) or
+    ``"journal"`` (populated ONLY from ``core.journal``/
+    ``HarnessPort.run_status_snapshot``). Construction-time validated
+    (``__post_init__``), mirroring ``HomeFacts``'s own shape-guard
+    convention above -- a caller cannot silently construct one with a
+    third, unrecognized domain string."""
+
+    value: object
+    domain: Literal["git", "journal"]
+
+    def __post_init__(self) -> None:
+        if self.domain not in ("git", "journal"):
+            raise ValueError(
+                f"DomainField.domain must be 'git' or 'journal', got {self.domain!r}"
+            )
+
+
+def domain_field_to_dict(field: DomainField) -> dict[str, object]:
+    """The canonical ``DomainField`` -> plain-``dict`` conversion (mirrors
+    ``core.landing.landing_rule_to_dict``'s own single-owner convention):
+    ``cli/deploy.py`` calls this at the CLI/envelope boundary to turn a
+    reconciled report's ``DomainField`` values into the JSON-serializable
+    shape ``core.model.Envelope`` requires -- this module's own report
+    stays typed with real ``DomainField`` instances up to that boundary."""
+    return {"value": field.value, "domain": field.domain}
+
+
+@dataclass(frozen=True)
+class ClaimedCommit:
+    """One journal-sourced claim about a repository fact (Story 4.5,
+    AD-33): ``story_key`` is ALREADY normalized to Marshal's canonical
+    ``StoryKey`` by the CLI boundary (``core.identity.normalize`` --
+    bmad-loop's own native slug spelling, ``TaskPhaseSnapshot.story_key``,
+    is never a Marshal ``StoryKey`` on its own; a task whose raw key does
+    not normalize is skipped before reaching this dataclass, mirroring
+    ``cli/deploy.py::_discover_candidates``'s own established
+    skip-invalid convention). ``claimed_commit_sha`` is
+    ``TaskPhaseSnapshot.commit_sha`` verbatim -- ``None`` means the
+    harness has no opinion for this story (no claim to reconcile), never
+    "git disagrees". ``phase`` is ``TaskPhaseSnapshot.phase`` verbatim
+    (``""`` when the caller has no phase to attach, e.g. a hand-built
+    ``ClaimedCommit`` in a test) -- used ONLY by
+    ``reconcile_feed_domains``'s own duplicate-``story_key`` precedence
+    rule below (code review, 2026-08-06, P3, Edge Case Hunter); never
+    itself rendered into the report."""
+
+    story_key: StoryKey
+    claimed_commit_sha: str | None
+    phase: str = ""
+
+
+@dataclass(frozen=True)
+class FeedRefreshReport:
+    """``reconcile_feed_domains``'s result: one row per story key present
+    in EITHER ``merged_keys`` or ``claims`` (deduplicated, sorted by
+    ``StoryKey`` for a deterministic report over a deterministic input --
+    the property the story's own provable-no-op requirement depends on),
+    plus every reconciliation ``Finding`` (a ``claimed_commit_sha`` whose
+    story is NOT in ``merged_keys`` -- AD-33's own named mismatch case).
+    Each row is ``{"story_key": str, "durable": DomainField, "claimed_commit_sha": DomainField}``."""
+
+    stories: tuple[dict[str, object], ...]
+    findings: tuple[Finding, ...]
+
+
+# Mirrors `bmad_loop.model.Phase`'s own declaration order verbatim --
+# DUPLICATED, not imported (this module sits in `core/`, which AD-3/AD-4
+# forbid from ever importing `bmad_loop`; see this module's own docstring
+# above for the identical "ported, not imported" convention already used
+# for `_slug_from_marker`/`_slug_from_symlink_target`). Used ONLY as a
+# same-story_key tie-break (below) when a run's `state.json` carries more
+# than one `TaskPhaseSnapshot` for the same story (a real shape: separate
+# dev/review/done-phase reads of the same task) -- a later lifecycle phase
+# wins over an earlier one, never accidental `dict`/iteration-order luck
+# (code review, 2026-08-06, P3, Edge Case Hunter). A phase string this
+# tuple does not recognize (e.g. `""`, a hand-built `ClaimedCommit` in a
+# test with no phase) ranks LOWEST, via `.get(..., -1)` below.
+_PHASE_PRECEDENCE = (
+    "pending",
+    "dev-running",
+    "dev-verify",
+    "review-running",
+    "review-verify",
+    "committing",
+    "triage-running",
+    "triage-verify",
+    "done",
+    "deferred",
+    "escalated",
+)
+_PHASE_RANK = {phase: rank for rank, phase in enumerate(_PHASE_PRECEDENCE)}
+
+
+def _select_claim(claims: tuple[ClaimedCommit, ...]) -> ClaimedCommit:
+    """The one ``ClaimedCommit`` that wins when more than one
+    ``TaskPhaseSnapshot`` shares a story key (code review, 2026-08-06, P3):
+    a claim with a non-``None`` ``claimed_commit_sha`` outranks one with
+    ``None`` (AD-33's own claim carries no opinion when there is nothing to
+    claim); among multiple non-``None`` entries, the one attached to the
+    LATER lifecycle ``phase`` (``_PHASE_RANK`` above) wins. Ties (identical
+    sha-presence AND identical/unrecognized phase rank) resolve to the
+    FIRST entry in ``claims``'s own iteration order -- ``state.json``'s own
+    stable ``tasks`` order, so the result is deterministic for a given,
+    unchanged state (the provable-no-op property), never accidental ``dict``
+    insertion-order luck."""
+    return max(
+        claims,
+        key=lambda claim: (
+            claim.claimed_commit_sha is not None,
+            _PHASE_RANK.get(claim.phase, -1),
+        ),
+    )
+
+
+def reconcile_feed_domains(
+    merged_keys: frozenset[StoryKey],
+    claims: tuple[ClaimedCommit, ...],
+) -> FeedRefreshReport:
+    """The pure reconciliation core of ``marshal deploy refresh-feed``
+    (AD-33): for every story key known to either source, tags the git
+    answer (``durable``, from ``merged_keys``) and the journal's own claim
+    (``claimed_commit_sha``, from ``claims``) with their respective
+    ``DomainField`` domain -- never cross-populated. A story whose journal
+    claims a landed commit (``claimed_commit_sha is not None``) but that
+    ``merged_keys`` does not confirm reports one ``MRS-STATUS-001`` WARN
+    finding (the harness believes a commit landed; git disagrees) --
+    reported, never used to override ``durable``, which always comes from
+    ``merged_keys`` alone. ``claimed_commit_sha is None`` (the harness has
+    no opinion) never produces a finding: git's own answer stands alone,
+    per the story's own I/O matrix. When ``claims`` carries MORE THAN ONE
+    entry for the same ``story_key`` (code review, 2026-08-06, P3, Edge
+    Case Hunter -- a realistic shape: a story's own dev/review/done-phase
+    snapshots, each potentially carrying a different ``commit_sha``),
+    ``_select_claim`` above picks the one that wins by an explicit,
+    deterministic precedence, never by which happened to be LAST in a
+    dict-comprehension's own iteration order. Pure: no I/O, no ``VcsPort``/
+    ``HarnessPort`` -- both arguments are the caller's already-gathered
+    facts."""
+    claims_by_key: dict[StoryKey, list[ClaimedCommit]] = {}
+    for claim in claims:
+        claims_by_key.setdefault(claim.story_key, []).append(claim)
+    claim_by_key: dict[StoryKey, ClaimedCommit] = {
+        key: _select_claim(tuple(group)) for key, group in claims_by_key.items()
+    }
+    all_keys = sorted(merged_keys | set(claim_by_key))
+
+    stories: list[dict[str, object]] = []
+    findings: list[Finding] = []
+    for key in all_keys:
+        durable = key in merged_keys
+        claim = claim_by_key.get(key)
+        claimed_sha = claim.claimed_commit_sha if claim is not None else None
+        stories.append(
+            {
+                "story_key": str(key),
+                "durable": DomainField(value=durable, domain="git"),
+                "claimed_commit_sha": DomainField(value=claimed_sha, domain="journal"),
+            }
+        )
+        if claimed_sha is not None and not durable:
+            findings.append(
+                Finding(
+                    code=_CLAIMED_MISMATCH_CODE,
+                    severity=Severity.WARN,
+                    message=(
+                        f"story {key}: the run harness recorded commit "
+                        f"{claimed_sha!r} for this story, but git does not "
+                        "confirm it as merged -- reported only; the "
+                        "durable answer stays git's own, per AD-33"
+                    ),
+                )
+            )
+    return FeedRefreshReport(stories=tuple(stories), findings=tuple(findings))
+
+
+# --- landing_resync_commands execution classification (AD-17) --------------
+
+# Mirrors `cli/gate.py::classify_outcome`'s shape for `verify_commands`
+# exactly (`result is None` means the command never ran at all), but with
+# THIS story's own MRS-DEPLOY-019/020 codes -- a `landing_resync_commands`
+# entry is a distinct policy-declared allowlist (Story 4.7's own
+# `landing_resync` toggle governs it), never `verify_commands`'s own
+# `MRS-GATE-001`/`002`/`003`, which `core.gate.classify_outcome` hardcodes
+# for its own caller.
+_RESYNC_LAUNCH_FAILURE_CODE = "MRS-DEPLOY-019"
+_RESYNC_NONZERO_EXIT_CODE = "MRS-DEPLOY-020"
+
+
+def classify_resync_outcome(
+    command: str,
+    result: ProcessResult | None,
+    *,
+    failure_reason: str | None = None,
+) -> tuple[dict[str, object], Finding | None]:
+    """Classify one ``landing_resync_commands`` entry's already-obtained
+    outcome. ``result is None`` means the command never ran at all (it
+    could not be ``shlex.split``, used bare shell syntax ``ProcessPort``
+    would never honor, or ``ProcessPort.run`` itself raised) --
+    ``failure_reason`` is then required and the report carries
+    ``resolvable: False``. A non-``None`` ``result`` classifies via its
+    ``returncode``: ``0`` is a pass (no finding); non-zero registers one
+    ``MRS-DEPLOY-020`` finding, naming a signal-kill distinctly from an
+    ordinary non-zero exit (mirrors ``classify_outcome``'s own identical
+    signal-vs-exit-code framing)."""
+    if result is None:
+        report: dict[str, object] = {
+            "command": command,
+            "resolvable": False,
+            "returncode": None,
+        }
+        return report, Finding(
+            code=_RESYNC_LAUNCH_FAILURE_CODE,
+            severity=Severity.ERROR,
+            message=failure_reason
+            or f"landing_resync_commands entry {command!r} could not be run",
+        )
+
+    if result.returncode != 0:
+        outcome = (
+            f"was terminated by signal {-result.returncode}"
+            if result.returncode < 0
+            else f"exited {result.returncode}"
+        )
+        return (
+            {
+                "command": command,
+                "resolvable": True,
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+            },
+            Finding(
+                code=_RESYNC_NONZERO_EXIT_CODE,
+                severity=Severity.ERROR,
+                message=f"landing_resync_commands entry {command!r} {outcome}",
+            ),
+        )
+
+    return (
+        {
+            "command": command,
+            "resolvable": True,
+            "returncode": 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        },
+        None,
     )
