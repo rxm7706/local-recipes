@@ -4,6 +4,13 @@
 Only the build-wiring shape is asserted here: version exposure, a clean
 ``deck --help`` exit, and a bare-invocation usage error. The real
 ``seed``/``pull``/``status``/``watch`` subcommands land in later stories.
+
+``test_bare_invocation_is_a_usage_error``'s exit code changed under Story
+6.1: the top-level ``command`` subparsers group is deliberately no longer
+``required=True`` (``deck``'s own nested ``deck_command`` group still is,
+unaffected), so a bare ``herald`` now answers ``1`` (Story 6.1's own AC),
+not argparse's usage-error ``2`` -- ``test_cli_dispatch_*.py`` covers the
+full no-args/--help/unknown-command matrix Epic 6 adds.
 """
 
 import pyforge.herald
@@ -19,7 +26,7 @@ def test_deck_help_exits_zero():
 
 
 def test_bare_invocation_is_a_usage_error():
-    assert main([]) == 2
+    assert main([]) == 1
 
 
 def test_deck_bare_invocation_is_a_usage_error():
