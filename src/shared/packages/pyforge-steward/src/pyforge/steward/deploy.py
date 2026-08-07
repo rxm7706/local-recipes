@@ -6,6 +6,13 @@ Story 2.1 slice: `build_dashboard` — a thin `subprocess` wrap of the existing
 reimplementation of `docs/dashboard/generate.py`'s own logic (AD-1). `DeployDuty`
 is the `Duty`-conforming adapter `cli.py`'s `resolve_duty("deploy")` now
 returns, wiring `steward deploy dashboard --build`.
+
+Story 2.2 slice: `dashboard_diff` (git-diff the freshly built `docs/dashboard/`
+tree against the committed one) and `commit_and_push_dashboard` (git add +
+commit + push to the currently checked-out branch) — together the FR-9
+reconciled-push behavior: bare `steward deploy dashboard` builds, diffs, and
+only commits+pushes on a real difference (AD-4 — no daemon, no new workflow;
+the operator or an existing workflow invokes the CLI).
 """
 
 from __future__ import annotations
@@ -75,19 +82,94 @@ def build_dashboard(
     )
 
 
+# ── Diff + reconciled push (FR-9, Story 2.2) ────────────────────────────────
+
+
+def dashboard_diff(*, cwd: str | Path) -> str:
+    """Return the `git diff` text for `docs/dashboard/` against the committed
+    tree (unstaged changes to already-tracked files only — `dashboard-gen`
+    only ever rewrites the existing tracked `data.js` in place, never adds a
+    new file).
+
+    Empty string means no diff. Raises `subprocess.CalledProcessError` if
+    `git diff` itself fails (e.g. `cwd` is not a git worktree) — propagated,
+    not swallowed.
+    """
+    result = subprocess.run(
+        ["git", "diff", "--", str(_DASHBOARD_RELATIVE_PATH)],
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
+def commit_and_push_dashboard(*, cwd: str | Path) -> str:
+    """`git add` the `docs/dashboard/` diff, commit it, and push to the
+    currently checked-out branch on `origin` — direct push, no new Actions
+    workflow (AD-4). Returns the new commit's full SHA.
+
+    Raises `subprocess.CalledProcessError` on any failing step (nothing to
+    commit, a detached HEAD with no branch, a rejected push) — propagated,
+    not swallowed, caught only at `DeployDuty`'s boundary. Each step runs in
+    sequence rather than a single scripted command so a failure is
+    attributable to a specific step by its own `exc.cmd` (see this story's
+    spec, "Design Notes" — a push failure after a successful local commit is
+    a known, accepted partial-completion state, not silently retried or
+    rolled back).
+    """
+    subprocess.run(
+        ["git", "add", "--", str(_DASHBOARD_RELATIVE_PATH)],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "dashboard: refresh status (steward deploy dashboard)"],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    )
+    sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    branch = subprocess.run(
+        ["git", "symbolic-ref", "--short", "HEAD"],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(
+        ["git", "push", "origin", branch],
+        cwd=str(cwd), check=True, capture_output=True, text=True,
+    )
+    return sha
+
+
 # ── DeployDuty (Duty-protocol adapter) ──────────────────────────────────────
 
 _DEPLOY_VERBS: tuple[str, ...] = ("dashboard",)
 
 
 def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
-    """`deploy dashboard --build` (Story 2.1's only wired flag).
+    """`deploy dashboard [--build]`.
 
-    Builds and returns — no diff/commit/push logic yet (Story 2.2).
+    `--build`: build only, return — no diff/commit/push.
+
+    Bare invocation: build, then diff `docs/dashboard/` against the
+    committed tree. No diff → `ok=True`, "nothing to deploy" (FR-9's
+    zero-commit-on-no-diff property). A real diff → commit + push
+    unconditionally (Story 2.3 adds a `--dry-run` escape hatch on top of
+    this same branch).
     """
     root = repo_root()
     build_dashboard(cwd=root)
-    return DutyResult(ok=True, summary="deploy dashboard: build complete (docs/dashboard/ refreshed)")
+
+    if getattr(ns, "build", False):
+        return DutyResult(ok=True, summary="deploy dashboard: build complete (docs/dashboard/ refreshed)")
+
+    diff_text = dashboard_diff(cwd=root)
+    if not diff_text.strip():
+        return DutyResult(ok=True, summary="deploy dashboard: no diff — nothing to deploy")
+
+    sha = commit_and_push_dashboard(cwd=root)
+    return DutyResult(ok=True, summary=f"deploy dashboard: committed and pushed {sha}")
 
 
 class DeployDuty:
