@@ -26,11 +26,18 @@ separate `--slug` flag.
 Story 3.3 slice: `format_environments` — read-only text/`--json` rendering
 of `load_pixi_environments`'s own output. Wired as `steward provision
 --list [--json]`.
+
+Story 3.4 slice: `check_environment_sync` — wraps the EXACT sync-gate
+comparison `.github/workflows/scripts/linter.py` already runs on every PR
+(read `environment.yaml`, run `pixi project export conda-environment -e
+build`, compare both `.rstrip()`'d) rather than reimplementing the
+comparison a second way (AD-1). Wired as `steward provision --verify`.
 """
 
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import re
 import subprocess
@@ -49,6 +56,7 @@ from .interfaces import DutyResult
 
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _PIXI_TOML_RELATIVE_PATH = Path("pixi.toml")
+_ENVIRONMENT_YAML_RELATIVE_PATH = Path("environment.yaml")
 
 
 def repo_root() -> Path:
@@ -203,9 +211,72 @@ def _run_list(ns: argparse.Namespace) -> DutyResult:
     )
 
 
+# ── Sync-gate check (FR-15, Story 3.4) ──────────────────────────────────────
+
+_SYNC_EXPORT_CMD: tuple[str, ...] = ("pixi", "project", "export", "conda-environment", "-e", "build")
+
+
+def check_environment_sync(*, cwd: str | Path) -> tuple[bool, str]:
+    """Wrap the EXACT sync-gate check `.github/workflows/scripts/linter.py`
+    already runs on every PR to this repo (AD-1: reuse, never reimplement
+    the comparison) — reads `environment.yaml`, runs `pixi project export
+    conda-environment -e build`, and compares both `.rstrip()`'d, exactly
+    like the linter's own logic.
+
+    Returns `(in_sync, diff_text)`. `diff_text` is empty when in sync,
+    otherwise a unified diff (`environment.yaml` vs. the freshly exported
+    text).
+
+    Raises `FileNotFoundError` if `environment.yaml` doesn't exist at `cwd`,
+    and `subprocess.CalledProcessError` if `pixi project export` itself
+    fails — both propagated, not swallowed.
+    """
+    root = Path(cwd)
+    original = (root / _ENVIRONMENT_YAML_RELATIVE_PATH).read_text(encoding="utf-8").rstrip()
+    exported = subprocess.run(
+        list(_SYNC_EXPORT_CMD),
+        cwd=str(root),
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.rstrip()
+    if original == exported:
+        return True, ""
+    diff = "".join(
+        difflib.unified_diff(
+            original.splitlines(keepends=True),
+            exported.splitlines(keepends=True),
+            fromfile="environment.yaml",
+            tofile="pixi project export conda-environment -e build",
+        )
+    )
+    return False, diff
+
+
+def _run_verify(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no flags yet
+    """`provision --verify` (Story 3.4)."""
+    root = repo_root()
+    in_sync, diff = check_environment_sync(cwd=root)
+    if in_sync:
+        return DutyResult(
+            ok=True, summary="provision --verify: environment.yaml is in sync with pixi.toml"
+        )
+    return DutyResult(
+        ok=False,
+        summary=(
+            "provision --verify: environment.yaml is out of sync with pixi.toml. "
+            "Fix by running `pixi project export conda-environment -e build > "
+            f"environment.yaml`.\n{diff}"
+        ),
+    )
+
+
 # ── ProvisionDuty (Duty-protocol adapter) ───────────────────────────────────
 
-_PROVISION_HELP = "available flags: --env <name> | --runner bmad-loop --env <name> | --list [--json]"
+_PROVISION_HELP = (
+    "available flags: --env <name> | --runner bmad-loop --env <name> | "
+    "--list [--json] | --verify"
+)
 
 
 def _run_env(ns: argparse.Namespace) -> DutyResult:
@@ -283,29 +354,31 @@ def _run_runner(ns: argparse.Namespace) -> DutyResult:
 
 
 class ProvisionDuty:
-    """The real `provision` duty — dispatches the `--env`/`--runner`/`--list`
-    flags (Epic 3 grows this class one flag per story; Story 3.3 adds
-    `--list`).
+    """The real `provision` duty — dispatches the `--env`/`--runner`/`--list`/
+    `--verify` flags (Epic 3 grows this class one flag per story; Story 3.4
+    adds `--verify`, the last of the four).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag on the bare `provision` duty parser, matching each
-    story's own `steward provision --env <name>` / `--runner bmad-loop
-    --env <name>` / `--list [--json]` shape. Precedence when more than one
-    flag is passed: `--list` > `--runner` > `--env` (a documented judgment
-    call, not a silent one — mirrors `DeployDuty`'s own `--build`-wins-over-
-    `--dry-run` precedent; no AC defines combining them). Bare `steward
-    provision` (no flags) degrades to `DutyResult(ok=True, ...)` naming the
-    available flags (AD-7), matching `KeysDuty`'s/`DeployDuty`'s identical
-    precedent. A subprocess failure (pixi, bmad-loop-worktree) is caught
-    here as `subprocess.CalledProcessError` and reported as a duty-level
-    failure, never conflated with an internal crash (AD-8 — that boundary
-    is `cli.main()`'s alone).
+    story's own `steward provision --env <name>` shape. Precedence when
+    more than one flag is passed: `--verify` > `--list` > `--runner` >
+    `--env` (a documented judgment call, not a silent one — mirrors
+    `DeployDuty`'s own `--build`-wins-over-`--dry-run` precedent; no AC
+    defines combining them). Bare `steward provision` (no flags) degrades
+    to `DutyResult(ok=True, ...)` naming the available flags (AD-7),
+    matching `KeysDuty`'s/`DeployDuty`'s identical precedent. A subprocess
+    failure (pixi, bmad-loop-worktree) is caught here as `subprocess.
+    CalledProcessError` and reported as a duty-level failure, never
+    conflated with an internal crash (AD-8 — that boundary is
+    `cli.main()`'s alone).
     """
 
     name = "provision"
 
     def run(self, ns: argparse.Namespace) -> DutyResult:
         try:
+            if getattr(ns, "verify", False):
+                return _run_verify(ns)
             if getattr(ns, "list", False):
                 return _run_list(ns)
             if getattr(ns, "runner", None):
