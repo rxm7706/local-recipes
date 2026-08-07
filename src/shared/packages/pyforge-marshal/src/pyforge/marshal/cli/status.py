@@ -56,8 +56,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -114,6 +114,14 @@ _BUDGET_USAGE_KIND = "budget-usage"
 
 _MRS_STATUS_002 = "MRS-STATUS-002"
 
+# Story 5.2 (per-run detail, FR-37/NFR-12): `--run <run_id>` requires
+# `--project <slug>` alongside it -- a run id alone does not name which
+# project's Tier-3 store to look under (run directories nest per-project).
+# Checked BEFORE any I/O, the same pre-I/O shape-gate precedent every
+# sibling command's own `MRS-INIT-001`/`MRS-SPIN-001`/`MRS-TEARDOWN-001`
+# already establishes.
+_MRS_STATUS_003 = "MRS-STATUS-003"
+
 
 def add_status_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register the ``status`` subcommand on ``main.py``'s subparser tree --
@@ -136,6 +144,15 @@ def add_status_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         metavar="SLUG",
         help="Scope the report to one project slug (default: the whole fleet).",
+    )
+    parser.add_argument(
+        "--run",
+        default=None,
+        metavar="RUN_ID",
+        help=(
+            "Show per-run detail for RUN_ID instead of the fleet summary "
+            "(Story 5.2, FR-37/NFR-12) -- requires --project SLUG alongside it."
+        ),
     )
     parser.add_argument(
         "--format",
@@ -167,12 +184,41 @@ class _RunJournalFacts:
     ``launch_pid is None`` is this module's own single "could not recover
     enough to report a real state" signal -- a missing/unreadable journal
     file and a journal that never records a usable launch pid degrade
-    identically."""
+    identically.
+
+    Story 5.2 (per-run detail, FR-37/NFR-12) adds two more fields off the
+    SAME fold this dataclass already carries -- never a second fold of the
+    same run's journal (Story 5.1's own adversarial review already flagged
+    a double-fold as a real, if low-severity, issue). ``budget_by_story``
+    is EVERY ``"budget-usage"`` entry's own ``cost_estimate``, grouped by
+    ``payload["story_key"]`` (already rendered in Marshal's own dot form
+    by ``supervisor/__main__.py::_feed_key_form`` at journal-write time),
+    taking each key's own LATEST entry (fold's own chronological
+    ``(ts, id)`` order makes ``by_kind``'s own iteration order
+    chronological, so "last write wins" here) -- a genuinely different
+    aggregation than ``budget_consumed``'s own single "latest overall"
+    value, per the spec's own Design Notes. ``open_intents`` is
+    ``core.journal.fold``'s own ``FoldResult.open_intents``, already
+    rendered to plain JSON-dicts (``JournalEntry.to_json_dict()``) here at
+    the CLI boundary -- ``core/status.py`` stays pure and never imports
+    ``JournalEntry`` itself."""
 
     launch_pid: int | None
     launched_at: datetime | None
     supervisor_pid: int | None
     budget_consumed: int | float | None
+    budget_by_story: dict[str, int | float] = field(default_factory=dict)
+    open_intents: tuple[dict[str, object], ...] = ()
+    # Code review (2026-08-07, Blind Hunter, the single most severe finding
+    # against Story 5.2): the SAME launch/resume OUTCOME entry this
+    # dataclass already scans for `pid` also carries `harness_run_id` --
+    # captured here so callers (`_gather_home_facts`/`_run_detail`) never
+    # need `cli/spin.py::_resolve_harness_run_id_for_resume`'s OWN
+    # independent read+fold of the identical journal file. The original
+    # version of this story called that helper anyway, reintroducing the
+    # exact double-fold this dataclass's own docstring already claimed
+    # (falsely, in that version) was avoided.
+    harness_run_id: str | None = None
 
 
 def _gather_run_journal_facts(
@@ -200,6 +246,7 @@ def _gather_run_journal_facts(
 
     launch_pid: int | None = None
     launched_at: datetime | None = None
+    harness_run_id: str | None = None
     for kind in (_LAUNCH_KIND, _RESUME_KIND):
         for entry in fold_result.by_kind(kind):
             if entry.run_id != run_id or entry.phase is not Phase.OUTCOME:
@@ -211,6 +258,9 @@ def _gather_run_journal_facts(
                     launched_at = datetime.fromisoformat(entry.ts)
                 except ValueError:
                     launched_at = None
+                candidate_run_id = entry.payload.get("harness_run_id")
+                if isinstance(candidate_run_id, str) and candidate_run_id:
+                    harness_run_id = candidate_run_id
                 break
         if launch_pid is not None:
             break
@@ -233,6 +283,7 @@ def _gather_run_journal_facts(
                 supervisor_pid_ts = entry.ts
 
     budget_consumed: int | float | None = None
+    budget_by_story: dict[str, int | float] = {}
     usage_entries = [
         entry
         for entry in fold_result.by_kind(_BUDGET_USAGE_KIND)
@@ -244,12 +295,38 @@ def _gather_run_journal_facts(
             candidate_cost, bool
         ):
             budget_consumed = candidate_cost
+    # Story 5.2: the SAME `usage_entries`, grouped by `story_key` instead of
+    # collapsed to a single overall latest -- `by_kind`'s own chronological
+    # order (fold's `(ts, id)` sort) means iterating in order and
+    # overwriting per key naturally keeps each key's own LATEST entry.
+    for entry in usage_entries:
+        story_key = entry.payload.get("story_key")
+        cost = entry.payload.get("cost_estimate")
+        if (
+            isinstance(story_key, str)
+            and story_key
+            and isinstance(cost, (int, float))
+            and not isinstance(cost, bool)
+        ):
+            budget_by_story[story_key] = cost
+
+    # Story 5.2: `core.journal.fold`'s own `FoldResult.open_intents` for
+    # THIS run_id only, rendered to plain JSON-dicts here (never inside
+    # `core/status.py`, which stays pure and never imports `JournalEntry`).
+    open_intents = tuple(
+        entry.to_json_dict()
+        for entry in fold_result.open_intents
+        if entry.run_id == run_id
+    )
 
     return _RunJournalFacts(
         launch_pid=launch_pid,
         launched_at=launched_at,
         supervisor_pid=supervisor_pid,
         budget_consumed=budget_consumed,
+        budget_by_story=budget_by_story,
+        open_intents=open_intents,
+        harness_run_id=harness_run_id,
     )
 
 
@@ -284,7 +361,16 @@ def _gather_home_facts(
             slug=slug, branch=branch, has_run=True, journal_unreadable=True
         )
 
-    harness_run_id = resolve_harness_run_id(fs, run_dir, run_id)
+    # Prefer `journal_facts.harness_run_id` (captured off the SAME fold
+    # this function already paid for above) over a second, independent
+    # read+fold of the identical journal via the injected
+    # `resolve_harness_run_id` -- only falls back to that call if the
+    # journal's own launch/resume entry never recorded one (should not
+    # happen in practice, but the injected seam stays available rather
+    # than silently reporting "no run state" for a recoverable gap).
+    harness_run_id = journal_facts.harness_run_id or resolve_harness_run_id(
+        fs, run_dir, run_id
+    )
     snapshot = (
         harness.run_status_snapshot(home, harness_run_id) if harness_run_id else None
     )
@@ -344,6 +430,30 @@ def run_status(
     process = process if process is not None else PosixProcess()
     clock = clock if clock is not None else SystemClock()
 
+    run_id = getattr(args, "run", None)
+
+    # Story 5.2's own Always bullet: `--run` requires `--project` alongside
+    # it -- checked FIRST, before any I/O (the same pre-I/O precedence
+    # `cli/deploy.py::run_land_story`'s own `--justification` check
+    # establishes for `_MRS_DEPLOY_006`).
+    if run_id is not None and args.project is None:
+        finding = Finding(
+            code=_MRS_STATUS_003,
+            severity=Severity.ERROR,
+            message=(
+                "--run requires --project SLUG alongside it -- a run id "
+                "alone does not name which project's Tier-3 store to look "
+                "under"
+            ),
+        )
+        data = {"project": None, "run": run_id}
+        return _emit(args, data, [finding])
+
+    if run_id is not None:
+        return _run_detail(
+            args, run_id=run_id, vcs=vcs, fs=fs, harness=harness
+        )
+
     findings: list[Finding] = []
     data: dict[str, object] = {"project": args.project, "homes": []}
 
@@ -391,6 +501,157 @@ def run_status(
     return _emit(args, data, findings)
 
 
+# =============================================================================
+# Story 5.2: per-run detail (``marshal status --run <run_id> --project
+# <slug>``, FR-37/NFR-12) -- switches this SAME command from the fleet
+# summary above to a single-run drill-down. ``run_status`` has already
+# confirmed ``args.project`` is present before ever calling this.
+# =============================================================================
+
+
+def _run_detail(
+    args: argparse.Namespace,
+    *,
+    run_id: str,
+    vcs: VcsPort,
+    fs: FsPort,
+    harness: HarnessPort,
+) -> int:
+    """One run's full detail view (Story 5.2): the FULL story sequence
+    (``RunStatusSnapshot.tasks``, in ``state.json``'s own order), each
+    story's own gate verdict (``cli/deploy.py::_gather_gate_verdicts``,
+    reused verbatim -- the SAME helper ``run_batch_pr`` already calls),
+    escalation/deferral state (``RunStatusSnapshot``'s own already-shipped
+    fields), per-story consumption (``_gather_run_journal_facts``'s own
+    Story 5.2 ``budget_by_story`` field, off the SAME fold Story 5.1's own
+    ``budget_consumed`` already reads -- never a second fold), and open
+    ``intent``-phase journal entries (the SAME fold's own
+    ``FoldResult.open_intents``, rendered to plain dicts). ``core/
+    status.py::build_run_detail`` (AD-4) does the actual assembly; this
+    function only gathers already-shaped facts via ``VcsPort``/``FsPort``/
+    ``HarnessPort``, mirroring ``run_status``'s own fleet-summary gather."""
+    # Local imports -- `cli/init.py` imports `from . import deploy`, and
+    # `cli/deploy.py`'s own `_gather_claimed_commits`/`cli/retire.py`'s own
+    # `run_retire` both document the identical `cli.deploy`/`cli.init`
+    # load-order-cycle rationale for why `cli/spin.py`/`cli/deploy.py` are
+    # never imported at module level from a sibling module; mirrored here
+    # for the same reason `run_status`'s own local import already is.
+    from .deploy import _gather_gate_verdicts
+    from .spin import _resolve_harness_run_id_for_resume
+
+    slug = args.project
+    findings: list[Finding] = []
+
+    try:
+        git_repo_root = vcs.repo_common_root(Path.cwd())
+    except VcsCommandError as exc:
+        # Code review (2026-08-07, Edge Case Hunter): a `VcsCommandError`
+        # here means the repo root could not even be RESOLVED -- the
+        # filesystem was never consulted, so whether the run exists is
+        # genuinely UNKNOWN, not confirmed absent. The original version
+        # still built a `found=False` row (via `RunDetailFacts`), which
+        # fabricated a second `MRS-STATUS-004` "no run directory found"
+        # finding whose own message explicitly (and, in this branch,
+        # falsely) claims "reported, never fabricated." Mirrors
+        # `run_status`'s own identical `VcsCommandError` handling for the
+        # fleet-summary path, which reports the ONE finding and stops --
+        # never synthesizes a second, unverified claim.
+        findings.append(
+            Finding(
+                code=_MRS_STATUS_002,
+                severity=Severity.WARN,
+                message=f"cannot resolve the repo root: {exc}",
+            )
+        )
+        return _emit(
+            args,
+            {"project": slug, "run": run_id},
+            findings,
+            _render_text_run_detail,
+        )
+
+    run_dir = (
+        git_repo_root
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
+    )
+    if not fs.is_dir(run_dir):
+        row, not_found_finding = status_core.build_run_detail(
+            status_core.RunDetailFacts(project=slug, run_id=run_id, found=False)
+        )
+        if not_found_finding is not None:
+            findings.append(not_found_finding)
+        return _emit(args, row, findings, _render_text_run_detail)
+
+    journal_facts = _gather_run_journal_facts(fs, run_dir, run_id)
+    gate_verdicts = _gather_gate_verdicts(fs, git_repo_root, slug)
+
+    # The loop home currently attached for `slug`, if any -- needed to read
+    # bmad-loop's own live `state.json` (`HarnessPort.run_status_snapshot`).
+    # A read failure here is never fatal to the whole detail view: the
+    # journal-sourced fields (gate verdicts, consumption, open intents)
+    # stay populated regardless (mirrors `run_status`'s own "one bad
+    # enumeration never aborts the report" posture).
+    try:
+        worktrees = vcs.list_worktrees(git_repo_root)
+    except VcsCommandError:
+        worktrees = ()
+
+    home: Path | None = None
+    for entry in worktrees:
+        if entry.branch == f"loop/{slug}":
+            home = entry.path
+            break
+
+    # Code review (2026-08-07, Blind Hunter, the single most severe finding
+    # against this story): `journal_facts.harness_run_id` is already
+    # captured off the SAME fold `_gather_run_journal_facts` just
+    # performed above -- calling `_resolve_harness_run_id_for_resume` here
+    # would independently re-read+re-fold the identical `journal.jsonl`,
+    # exactly the double-fold this module's own docstrings already claim
+    # (elsewhere, correctly) is avoided. Falls back to the resolver only
+    # if the journal's own entry never recorded one.
+    snapshot = None
+    if home is not None:
+        harness_run_id = journal_facts.harness_run_id or _resolve_harness_run_id_for_resume(
+            fs, run_dir, run_id
+        )
+        if harness_run_id:
+            snapshot = harness.run_status_snapshot(home, harness_run_id)
+
+    facts = status_core.RunDetailFacts(
+        project=slug,
+        run_id=run_id,
+        found=True,
+        state_readable=snapshot is not None,
+        finished=snapshot.finished if snapshot is not None else False,
+        paused_stage=snapshot.paused_stage if snapshot is not None else None,
+        paused_story_key=(
+            snapshot.paused_story_key if snapshot is not None else None
+        ),
+        paused_reason=snapshot.paused_reason if snapshot is not None else None,
+        escalated_spec_file=(
+            snapshot.escalated_spec_file if snapshot is not None else None
+        ),
+        escalated_task_phase=(
+            snapshot.escalated_task_phase if snapshot is not None else None
+        ),
+        tasks=snapshot.tasks if snapshot is not None else (),
+        deferred=snapshot.deferred if snapshot is not None else (),
+        gate_verdicts=gate_verdicts,
+        budget_by_story=journal_facts.budget_by_story,
+        open_intents=journal_facts.open_intents,
+    )
+    row, finding = status_core.build_run_detail(facts)
+    if finding is not None:
+        findings.append(finding)
+    return _emit(args, row, findings, _render_text_run_detail)
+
+
 def _render_text_status(
     data: Mapping[str, object], findings: tuple[Finding, ...]
 ) -> str:
@@ -417,11 +678,87 @@ def _render_text_status(
     return "\n".join(lines)
 
 
+def _render_text_run_detail(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (Story 5.2, NFR-12) -- every field this
+    prints has an identical machine-readable counterpart in ``data``, never
+    a human-only fact. Handles both this command's own ``found: False``
+    shape (``build_run_detail``'s "not found" row) and the precondition
+    refusal's own bare ``{"project", "run"}`` shape (``run_status``'s own
+    ``--run`` without ``--project`` gate, which never reaches
+    ``build_run_detail`` at all) via ``Mapping.get``."""
+    project = data.get("project")
+    run_id = data.get("run") or data.get("run_id")
+    lines = [f"status --project {project!r} --run {run_id!r}"]
+
+    if data.get("found") is False:
+        lines.append("found: false")
+    elif "found" in data:
+        lines.append(f"found: {data.get('found')}")
+        lines.append(f"state_readable: {data.get('state_readable')}")
+        lines.append(f"finished: {data.get('finished')}")
+        lines.append(
+            f"paused_stage={data.get('paused_stage')} "
+            f"paused_story_key={data.get('paused_story_key')} "
+            f"paused_reason={data.get('paused_reason')}"
+        )
+        lines.append(
+            f"escalated_spec_file={data.get('escalated_spec_file')} "
+            f"escalated_task_phase={data.get('escalated_task_phase')}"
+        )
+
+        stories = data.get("stories") or []
+        lines.append(f"stories: {len(stories)}")
+        for story in stories:
+            lines.append(
+                f"  {story['story_key']} phase={story['phase']} "
+                f"commit_sha={story['commit_sha']} branch={story['branch']!r} "
+                f"gate_verdict={story['gate_verdict']} "
+                f"budget_consumed={story['budget_consumed']}"
+            )
+
+        deferred = data.get("deferred") or []
+        lines.append(f"deferred: {len(deferred)}")
+        for deferred_story in deferred:
+            lines.append(
+                f"  {deferred_story['story_key']} "
+                f"attempt={deferred_story['attempt']} "
+                f"reason={deferred_story['reason']!r} "
+                f"branch={deferred_story['branch']!r}"
+            )
+
+        open_intents = data.get("open_intents") or []
+        lines.append(f"open_intents: {len(open_intents)}")
+        for intent in open_intents:
+            lines.append(
+                f"  {intent.get('kind')} id={intent.get('id')} "
+                f"payload={intent.get('payload')}"
+            )
+
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(
+                f"  {finding.code} [{finding.severity.value}] {finding.message}"
+            )
+    return "\n".join(lines)
+
+
 def _emit(
-    args: argparse.Namespace, data: dict[str, object], findings: list[Finding]
+    args: argparse.Namespace,
+    data: dict[str, object],
+    findings: list[Finding],
+    render: Callable[[Mapping[str, object], tuple[Finding, ...]], str] = _render_text_status,
 ) -> int:
     """The envelope-build-then-print tail every ``cli/*.py`` command shares
-    (AD-14: one envelope shape per command)."""
+    (AD-14: one envelope shape per command). ``render`` defaults to
+    ``_render_text_status``'s own fleet-summary projection; Story 5.2's
+    ``_run_detail`` passes ``_render_text_run_detail`` instead -- the SAME
+    "value-returning core, distinct text-render callable per data shape"
+    convention ``cli/deploy.py``'s own ``_emit`` (``land-story`` vs.
+    ``batch-pr``) already established."""
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(
         command="status", verdict=verdict_value, data=data, findings=tuple(findings)
@@ -430,7 +767,7 @@ def _emit(
     if args.format == "json":
         rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)
     else:
-        rendered = _render_text_status(envelope.data, envelope.findings)
+        rendered = render(envelope.data, envelope.findings)
 
     try:
         print(rendered, flush=True)
