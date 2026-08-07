@@ -1447,6 +1447,22 @@ def run_preflight(
                 )
             )
 
+    # --- projection conformance (Story 6.3, FR-42/AD-31/AD-36) -- an
+    # additional step, never a wholly separate command: local import to
+    # avoid a load-time circular dependency (`cli/adapters.py` already
+    # imports `_home_path` FROM this module at module level -- mirrors
+    # `cli/deploy.py`'s own identical local-import precedent for the same
+    # reason). Unconditional call whose own output is empty/no-finding
+    # whenever no configured adapter's declared tree differs from
+    # canonical -- see the story's own spec Design Notes for why this
+    # satisfies "runs whenever a non-default adapter is configured"
+    # without a second, narrower predicate.
+    from .adapters import gather_conformance_findings
+
+    conform_data, conform_findings = gather_conformance_findings(home, fs=fs, harness=harness)
+    data["projection_conformance"] = conform_data
+    findings.extend(conform_findings)
+
     return _emit_preflight(args, data, findings)
 
 

@@ -593,6 +593,20 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # destroyed) at WARN; 009/010 (a malformed manifest / the manifest write
 # itself failed) at WARN, the SAME "degrades, never blocks" tier as
 # MRS-SPIN-015.
+# Story 6.3 (projection drift detection, FR-42/AD-31/AD-36) adds ONE new
+# code, MRS-CONFORM-001 (link-target identity drift detected for one or
+# more projected trees -- added/removed/modified, all folded into this one
+# code) at ERROR, alongside MRS-ADP-003/006/008 and MRS-CHECK-002/003's
+# identical "a real, attempted check found a real problem" reasoning --
+# never GATE_FAILED (reserved for a PROJECT's own configured verify
+# command, not Marshal's own projection-mechanism integrity) and never WARN
+# (reserved for a safe refusal or a paper-trail gap that never blocks an
+# otherwise-viable operation, neither of which describes a confirmed drift
+# finding). `gather_conformance_findings` (`cli/adapters.py`, shared by the
+# new `marshal adapters conform` verb and `marshal preflight`'s own
+# additional step) reuses MRS-ADP-001/002/003/004/005/009/011 verbatim --
+# same codes, same tiers, a second call site, per this table's own
+# MRS-DEPLOY-003 precedent.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -719,6 +733,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-ADP-009": Verdict.WARN,
     "MRS-ADP-010": Verdict.WARN,
     "MRS-ADP-011": Verdict.WARN,
+    "MRS-CONFORM-001": Verdict.ERROR,
+    "MRS-ADP-012": Verdict.ERROR,
 }
 
 
