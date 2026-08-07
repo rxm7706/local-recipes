@@ -105,8 +105,9 @@ def _run_promote(source: Path | None) -> None:
         raise typer.Exit(code=0)
 
     results = apply_promotion(_MEMORY_ROOT, proposal)
-    for result in results:
+    for result, entry in zip(results, proposal.promotable):
         typer.echo(f"promoted: {result.path}")
+        typer.echo(f"pointer-stub: {entry.source_path}")
 
 
 def _render_proposal(proposal: PromotionProposal) -> str:

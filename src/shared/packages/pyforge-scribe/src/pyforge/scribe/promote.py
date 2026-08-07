@@ -26,15 +26,21 @@ identifiers, `**Why:**`/`**How to apply:**` labels -- is left untouched. An
 imperfect mechanical rewrite is caught at the human confirm step, not
 silently shipped.
 
-Pointer-stub write-back and the idempotent-skip-on-reinvocation proof are
-Story 1.4 — out of scope here. The source user-local file is never modified
-by anything in this module.
+Pointer-stub write-back (Story 1.4): once an entry's promoted content is
+durably written via `capture()`, `apply_promotion()` overwrites the SOURCE
+user-local file in place with a pointer stub (`promoted: true` frontmatter +
+a one-line redirect naming where the content actually landed). That marker
+is what makes classification's `already-promoted` branch (above) fire on
+the next `--promote` invocation -- re-running promotion is then a no-op for
+that entry: no re-proposal, no re-write, no duplicate `.claude/memory/`
+file (FR-6).
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -150,18 +156,61 @@ def classify_and_draft(source_root: Path, memory_root: Path, repo_root: Path) ->
 
 def apply_promotion(memory_root: Path, proposal: PromotionProposal) -> list[CaptureResult]:
     """Write every `team-relevant` entry in `proposal` via `capture()` --
-    the only write path (AD-2). The source user-local files are never
-    touched here (pointer-stub write-back is Story 1.4)."""
-    return [
-        capture_write(
+    the only write path into `.claude/memory/` (AD-2) -- then rewrite each
+    entry's SOURCE user-local file to a pointer stub (FR-5, Story 1.4) so a
+    later `--promote` re-scan classifies it `already-promoted` and skips it
+    (FR-6). The stub names the file `capture()` actually wrote
+    (`result.path`), not the pre-write preview slug -- `capture()` runs its
+    own independent collision check at write time, so this is the only
+    value guaranteed to match reality.
+    """
+    results: list[CaptureResult] = []
+    for entry in proposal.promotable:
+        result = capture_write(
             memory_root,
             entry.capture_type,
             entry.rewritten_text,
             slug=entry.slug,
             description=entry.rewritten_description,
         )
-        for entry in proposal.promotable
-    ]
+        write_pointer_stub(entry.source_path, entry.capture_type, result.path.stem)
+        results.append(result)
+    return results
+
+
+def write_pointer_stub(
+    source_path: Path,
+    capture_type: CaptureType,
+    slug: str,
+    *,
+    promoted_date: str | None = None,
+) -> None:
+    """Overwrite `source_path` in place with a pointer-stub (FR-5).
+
+    Fixed flat frontmatter shape regardless of the source file's original
+    shape -- `_parse_frontmatter_fields()` already flattens either shape on
+    read, so a fixed shape here is sufficient and simpler than trying to
+    preserve the original. A full overwrite (not an append/patch), so
+    calling this twice with the same arguments is idempotent: byte-identical
+    output both times. The original body content is intentionally NOT
+    preserved (FR-5) -- traceability comes from the stub's redirect, not
+    from keeping a copy.
+    """
+    date_str = promoted_date if promoted_date is not None else _today_iso()
+    target = f".claude/memory/{capture_type}/{slug}.md"
+    stub = (
+        "---\n"
+        f"type: {capture_type}\n"
+        "promoted: true\n"
+        f"promoted_date: {date_str}\n"
+        "---\n"
+        f"Promoted to `{target}` on {date_str}.\n"
+    )
+    source_path.write_text(stub, encoding="utf-8")
+
+
+def _today_iso() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
 
 
 def rewrite_team_voice(text: str) -> str:

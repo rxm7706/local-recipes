@@ -152,13 +152,47 @@ def test_capture_promote_confirm_yes_writes_file_and_prints_proposal(
     output = _combined_output(result)
     assert "team-relevant" in output
     assert "run-tests-first" in output
+    assert "pointer-stub:" in output
 
     memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
     assert "run-tests-first" in memory_md
 
-    # Source untouched.
+    # Source is rewritten to a pointer stub (Story 1.4, FR-5), not left untouched.
     source_content = (source_root / "feedback_run_tests_first.md").read_text(encoding="utf-8")
-    assert "I prefer that contributors run the full test suite" in source_content
+    assert "promoted: true" in source_content
+    assert "I prefer that contributors run the full test suite" not in source_content
+    assert ".claude/memory/feedback/run-tests-first.md" in source_content
+
+
+def test_capture_promote_reinvocation_after_confirm_reports_nothing_to_promote(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    _scaffold_source_entry(
+        source_root,
+        "feedback_run_tests_first.md",
+        "---\nname: run-tests-first\ndescription: Run tests first.\ntype: feedback\n---\n"
+        "Run the full test suite before opening a PR.\n",
+    )
+
+    first = runner.invoke(
+        app, ["capture", "--promote", "--source", str(source_root)], input="y\n"
+    )
+    assert first.exit_code == 0
+    written_after_first = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
+    assert len(written_after_first) == 1
+
+    # Re-invocation: no input needed -- if the code still called
+    # typer.confirm() here (nothing promotable), CliRunner would abort.
+    second = runner.invoke(app, ["capture", "--promote", "--source", str(source_root)])
+
+    assert second.exit_code == 0
+    assert "Nothing to promote" in _combined_output(second)
+    written_after_second = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
+    assert written_after_second == written_after_first
 
 
 def test_capture_promote_confirm_no_writes_nothing_and_exits_0(
