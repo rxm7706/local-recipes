@@ -58,6 +58,7 @@ def capture(
     *,
     slug: str | None = None,
     description: str | None = None,
+    supersedes: str | None = None,
 ) -> CaptureResult:
     """Append one new record under ``memory_root/<capture_type>/`` (AD-1/AD-2/FR-7).
 
@@ -71,6 +72,14 @@ def capture(
     appends a numeric suffix — the original file is never touched. Raises
     ``ValueError`` for an invalid ``capture_type``, blank ``text``, or a
     missing/malformed ``memory_root`` -- always before any filesystem write.
+
+    ``supersedes`` (Wave 2, Story 2.3, AD-9-additive) names the ``<type>/<slug>``
+    of a prior record this one replaces -- ``compile.py`` reads it to mark
+    the prior node's graph validity as ended (AD-4) rather than deleting it.
+    ``None`` (the default) preserves Wave 1 behavior byte-for-byte; this
+    function does NOT validate that the named record exists -- that check
+    belongs to the compile step, which must tolerate a dangling reference
+    without crashing an unattended nightly run.
     """
     if capture_type not in CAPTURE_TYPES:
         raise ValueError(f"invalid capture type {capture_type!r}; must be one of {CAPTURE_TYPES}")
@@ -96,7 +105,11 @@ def capture(
             description if description is not None else text, _DESCRIPTION_MAX_LEN
         )
         record = CaptureRecord(
-            type=capture_type, name=final_slug, description=final_description, text=text
+            type=capture_type,
+            name=final_slug,
+            description=final_description,
+            text=text,
+            supersedes=supersedes,
         )
 
         path = type_dir / f"{final_slug}.md"

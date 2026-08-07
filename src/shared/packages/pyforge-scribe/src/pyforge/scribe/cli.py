@@ -2,10 +2,10 @@
 
 The CLI is the sole public contract: `capture` (direct write, Wave 1, or
 `--promote` scan-classify-propose-confirm, Story 1.3), `graph compile
-[--nightly]` and `recall <query>` (harmless stub subcommands so the
-top-level shape never changes between epics — Epic 2 owns their real
-implementation). Other components integrate with Scribe via this CLI, never
-by importing internal modules directly (AD-7).
+[--nightly]` (Story 2.2/2.3 -- rebuilds the compiled graph, unattended) and
+`recall <query>` (Story 2.4 -- grounded, cited retrieval over that compiled
+graph). Other components integrate with Scribe via this CLI, never by
+importing internal modules directly (AD-7).
 """
 
 from __future__ import annotations
@@ -15,6 +15,8 @@ from pathlib import Path
 import typer
 
 from pyforge.scribe.capture import capture as capture_write
+from pyforge.scribe.compile import compile_graph, default_store_path
+from pyforge.scribe.graph_store import FlatFileGraphStore
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
     PromotionProposal,
@@ -22,6 +24,7 @@ from pyforge.scribe.promote import (
     classify_and_draft,
     default_user_local_root,
 )
+from pyforge.scribe.recall import answer as recall_answer
 
 app = typer.Typer(
     name="scribe",
@@ -137,16 +140,36 @@ def _render_proposal(proposal: PromotionProposal) -> str:
 def graph_compile(
     nightly: bool = typer.Option(False, "--nightly", help="Run in unattended nightly mode."),
 ) -> None:
-    """Stub — Epic 2 (Story 2.1+) owns the real graph-compile projection builder."""
-    typer.echo("scribe graph compile: not yet implemented", err=True)
+    """Rebuild the compiled knowledge graph from `.claude/memory/`,
+    `.memlog.md` files, git history, retros, and CHANGELOGs (Story 2.2/2.3).
+    Never prompts -- safe to run from cron/CI with no human present."""
+    try:
+        result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+    for warning in result.warnings:
+        typer.echo(f"warning: {warning}", err=True)
+    typer.echo(
+        f"compiled {result.node_count} node(s), {result.invalidated_count} invalidated "
+        f"-> {result.store_path}"
+    )
 
 
 @app.command("recall")
 def recall_cmd(
     query: str = typer.Argument(..., help="Natural-language question to recall an answer for."),
 ) -> None:
-    """Stub — Epic 2 (Story 2.1+) owns the real, cited recall query path."""
-    typer.echo("scribe recall: not yet implemented", err=True)
+    """Answer from the compiled graph with a resolvable citation, or report
+    no grounded coverage (Story 2.4, AD-8) -- zero network calls (AD-6)."""
+    repo_root = Path.cwd()
+    store = FlatFileGraphStore(default_store_path(repo_root))
+    result = recall_answer(query, store, repo_root=repo_root)
+    if result.grounded:
+        typer.echo(result.text)
+        typer.echo(f"[source: {result.citation}]")
+    else:
+        typer.echo("no grounded answer found")
 
 
 def main() -> None:
