@@ -22,6 +22,7 @@ from pyforge.herald.deck_pipeline import (
     NpmLocalProver,
     PullResult,
     SeedResult,
+    SubprocessGitCommitter,
     _persona_from_slug,
     pull_marp_source,
     pull_prototype,
@@ -733,6 +734,15 @@ def test_pull_prototype_refuses_when_not_seeded(tmp_path: Path):
 def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
     tmp_path: Path,
 ):
+    """Review finding: the etag used to be recorded BEFORE export ran, so a
+    failed export became permanently unrecoverable via retry -- a rerun's
+    `if_none_match` would already match the just-recorded etag, the server
+    would answer `{unchanged: true}`, and the pull would silently report
+    "unchanged" for a re-derivation that never actually completed. The file
+    write still lands (so the local file reflects the pulled content), but
+    the etag is now recorded only after export succeeds -- so a retry after
+    fixing the transient export failure genuinely re-attempts, rather than
+    short-circuiting."""
     _seed_state(tmp_path, "pyforge-warden")
     transport = FakePullTransport(
         answers=FileRead(path="x", etag="E6", body="<html>x</html>", unchanged=False)
@@ -747,7 +757,7 @@ def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
             exporter=exporter,
             now=lambda: _FIXED_NOW,
         )
-    # The write and state update already happened before export ran.
+    # The write lands even though export later fails...
     local_path = (
         tmp_path
         / "presentations"
@@ -756,8 +766,10 @@ def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
         / "PyForge Warden.dc.html"
     )
     assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
+    # ...but the etag is NOT recorded, so a retry can still re-attempt
+    # re-derivation instead of short-circuiting as "unchanged" forever.
     recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
-    assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E6"
+    assert PROTOTYPE_ARTIFACT_KEY not in recorded.etags
 
 
 # --- CAP-2: --commit (Story 2.2) ---------------------------------------------
@@ -1180,3 +1192,62 @@ def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
     )
     assert committer.calls == []
     assert result.committed is False
+
+
+# --- SubprocessGitCommitter (real subprocess, real scratch git repo) --------
+
+
+def _init_git_repo(work: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=work, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=work, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=work, check=True)
+    (work / "README.md").write_text("scratch repo\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=work, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=work, check=True)
+
+
+def test_subprocess_git_committer_commits_with_an_absolute_repo_root(tmp_path: Path):
+    work = tmp_path / "repo"
+    work.mkdir()
+    _init_git_repo(work)
+    target = work / "presentations" / "warden"
+    target.mkdir(parents=True)
+    (target / "file.txt").write_text("content\n", encoding="utf-8")
+
+    SubprocessGitCommitter().commit(
+        repo_root=work, paths=[target], message="herald: pull warden (prototype)"
+    )
+
+    log = subprocess.run(
+        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+    )
+    assert "presentations/warden/file.txt" in log.stdout
+
+
+def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Path, monkeypatch):
+    """Review finding: `p.is_absolute()` was the wrong branch condition --
+    every `paths` entry callers pass is already prefixed with `repo_root`,
+    whether or not `repo_root` itself is absolute. Invoking with a
+    RELATIVE `repo_root` (e.g. `--repo-root some/subdir`) used to double
+    the prefix (`some/subdir/some/subdir/...`), failing with a git
+    pathspec error even though the pull itself succeeded."""
+    work = tmp_path / "repo"
+    work.mkdir()
+    _init_git_repo(work)
+    target = work / "presentations" / "warden"
+    target.mkdir(parents=True)
+    (target / "file.txt").write_text("content\n", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    relative_root = Path("repo")  # relative to the new cwd, resolves to `work`
+
+    SubprocessGitCommitter().commit(
+        repo_root=relative_root,
+        paths=[relative_root / "presentations" / "warden"],
+        message="herald: pull warden (prototype)",
+    )
+
+    log = subprocess.run(
+        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+    )
+    assert "presentations/warden/file.txt" in log.stdout

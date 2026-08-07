@@ -416,17 +416,24 @@ def _pull_and_land(
     transport: DesignTransport,
     *,
     slug: str,
-    state_path: Path,
     existing: state.DeckState,
     remote_path: str,
     local_path: Path,
     artifact_key: str,
-    now: Callable[[], datetime],
 ) -> FileRead | None:
-    """One ``read_file`` + etag short-circuit + (on change) atomic write +
-    ``state.py`` update. Returns ``None`` on an ``{unchanged: true}`` answer
-    -- the caller must treat that as "stop here", never running prove/export
-    for a no-op pull.
+    """One ``read_file`` + etag short-circuit + (on change) atomic write.
+    Returns ``None`` on an ``{unchanged: true}`` answer -- the caller must
+    treat that as "stop here", never running prove/export for a no-op pull.
+
+    Deliberately does NOT touch ``state.py`` (review finding): the caller
+    must record the new etag only AFTER prove/export/re-derivation
+    genuinely succeeds, via ``_record_pull_etag`` below. Recording it here,
+    before that work runs, would make a failed re-derivation permanently
+    unrecoverable via retry -- a rerun's ``if_none_match`` would already
+    match the just-recorded etag, the server would answer
+    ``{unchanged: true}``, and the pull would short-circuit forever,
+    silently reporting "unchanged" for a re-derivation that never actually
+    completed.
 
     ``FileRead.body`` is used **verbatim, with no further entity-decoding**:
     ``McpTransport.read_file`` / ``AgentSdkTransport.read_file`` already
@@ -452,8 +459,26 @@ def _pull_and_land(
             f"reported a change for {remote_path!r} but returned no body"
         )
     _atomic_write_text(local_path, file_read.body)
+    return file_read
+
+
+def _record_pull_etag(
+    state_path: Path,
+    slug: str,
+    existing: state.DeckState,
+    *,
+    artifact_key: str,
+    etag: str,
+    now: Callable[[], datetime],
+) -> None:
+    """Record ``artifact_key``'s new etag -- called ONLY after prove/export
+    for this pull has genuinely succeeded (review finding: see
+    ``_pull_and_land``'s own docstring for why recording it any earlier
+    makes a failed re-derivation unrecoverable via retry). Must run before
+    ``--commit`` stages this state file, so its own new etag is included in
+    the commit."""
     new_etags = dict(existing.etags)
-    new_etags[artifact_key] = file_read.etag
+    new_etags[artifact_key] = etag
     state.write(
         state_path,
         slug,
@@ -463,7 +488,6 @@ def _pull_and_land(
             last_pull=now().isoformat(),
         ),
     )
-    return file_read
 
 
 @runtime_checkable
@@ -557,9 +581,18 @@ class SubprocessGitCommitter:
         self._timeout = timeout
 
     def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
-        rel_paths = [
-            str(p.relative_to(repo_root)) if p.is_absolute() else str(p) for p in paths
-        ]
+        # Review finding: `p.is_absolute()` was the wrong branch condition
+        # -- every `paths` entry this module's own callers pass IS already
+        # prefixed with `repo_root` (e.g. `repo_root / "presentations" /
+        # slug`), whether or not `repo_root` itself happens to be absolute.
+        # The subprocess runs with `cwd=repo_root`, so a RELATIVE `p` must
+        # still be stripped of that same `repo_root` prefix -- resolving
+        # both sides first makes this correct regardless of whether
+        # `repo_root` (and therefore `p`) was absolute or relative to begin
+        # with, instead of silently doubling the prefix for a relative
+        # `repo_root` (e.g. `--repo-root some/subdir`).
+        resolved_root = repo_root.resolve()
+        rel_paths = [str(p.resolve().relative_to(resolved_root)) for p in paths]
         self._run(repo_root, ["git", "add", "--", *rel_paths])
         self._run(repo_root, ["git", "commit", "-m", message, "--", *rel_paths])
 
@@ -630,12 +663,10 @@ def pull_prototype(
     file_read = _pull_and_land(
         transport,
         slug=slug,
-        state_path=resolved_state_path,
         existing=existing,
         remote_path=prototype_filename,
         local_path=local_path,
         artifact_key=PROTOTYPE_ARTIFACT_KEY,
-        now=resolved_now,
     )
     if file_read is None:
         return PullResult(
@@ -649,6 +680,17 @@ def pull_prototype(
 
     (prover or NpmLocalProver()).prove(deck_dir)
     (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    # Review finding: the etag is now recorded only after prove+export both
+    # succeed -- see `_pull_and_land`'s docstring for why recording it any
+    # earlier makes a failed re-derivation unrecoverable via retry.
+    _record_pull_etag(
+        resolved_state_path,
+        slug,
+        existing,
+        artifact_key=PROTOTYPE_ARTIFACT_KEY,
+        etag=file_read.etag,
+        now=resolved_now,
+    )
 
     committed = False
     if commit:
@@ -731,12 +773,10 @@ def pull_marp_source(
     file_read = _pull_and_land(
         transport,
         slug=slug,
-        state_path=resolved_state_path,
         existing=existing,
         remote_path=remote_path,
         local_path=local_path,
         artifact_key=artifact_key,
-        now=resolved_now,
     )
     if file_read is None:
         return PullResult(
@@ -749,6 +789,16 @@ def pull_marp_source(
         )
 
     (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    # Review finding: see `pull_prototype`'s own note -- record only after
+    # export succeeds.
+    _record_pull_etag(
+        resolved_state_path,
+        slug,
+        existing,
+        artifact_key=artifact_key,
+        etag=file_read.etag,
+        now=resolved_now,
+    )
 
     committed = False
     if commit:
@@ -822,12 +872,10 @@ def pull_standalone_bundle(
     file_read = _pull_and_land(
         transport,
         slug=slug,
-        state_path=resolved_state_path,
         existing=existing,
         remote_path=remote_path,
         local_path=local_path,
         artifact_key=STANDALONE_BUNDLE_ARTIFACT_KEY,
-        now=resolved_now,
     )
     if file_read is None:
         return PullResult(
@@ -840,6 +888,16 @@ def pull_standalone_bundle(
         )
 
     (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    # Review finding: see `pull_prototype`'s own note -- record only after
+    # export succeeds.
+    _record_pull_etag(
+        resolved_state_path,
+        slug,
+        existing,
+        artifact_key=STANDALONE_BUNDLE_ARTIFACT_KEY,
+        etag=file_read.etag,
+        now=resolved_now,
+    )
 
     committed = False
     if commit:
