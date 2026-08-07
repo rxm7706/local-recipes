@@ -29,14 +29,14 @@ development_status:
   3-2-a-bmad-loop-runner-and-its-environment-materialize-together: done
   3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done
   3-4-the-environment-yaml-sync-gate-is-one-command-away-not-a-remembered-incantation: done
-  4-1-a-ceiling-can-be-declared-machine-readably: backlog
-  4-2-the-declared-ceiling-is-one-command-away: backlog
-  4-3-asking-am-i-under-budget-never-lies: backlog
+  4-1-a-ceiling-can-be-declared-machine-readably: done
+  4-2-the-declared-ceiling-is-one-command-away: done
+  4-3-asking-am-i-under-budget-never-lies: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
-  epic-4: backlog
+  epic-4: done
   epic-4-retrospective: optional
