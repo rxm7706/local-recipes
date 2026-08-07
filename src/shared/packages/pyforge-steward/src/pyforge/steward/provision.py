@@ -22,11 +22,16 @@ root. Wired as `steward provision --runner bmad-loop --env <name>`. `<name>`
 doubles as BOTH the pixi environment name AND the `bmad-loop-worktree` BMAD
 project slug — see this story's spec, "Design Notes", for why there is no
 separate `--slug` flag.
+
+Story 3.3 slice: `format_environments` — read-only text/`--json` rendering
+of `load_pixi_environments`'s own output. Wired as `steward provision
+--list [--json]`.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -100,6 +105,27 @@ def load_pixi_environments(*, cwd: str | Path) -> dict[str, tuple[str, ...]]:
     return environments
 
 
+def format_environments(environments: dict[str, tuple[str, ...]], *, as_json: bool) -> str:
+    """Render `environments` for `steward provision --list`.
+
+    `as_json=True`: a JSON object, `{name: [features...]}`, sorted by name —
+    `{}` for no environments, the correct machine-parseable empty state.
+    `as_json=False`: an aligned text table (name + composing features); a
+    plain sentence for no environments.
+    """
+    if as_json:
+        return json.dumps(
+            {name: list(environments[name]) for name in sorted(environments)}, indent=2
+        )
+    if not environments:
+        return "provision --list: no environments found in pixi.toml"
+    width = max(len(name) for name in environments)
+    lines = [
+        f"{name:<{width}}  {', '.join(environments[name])}" for name in sorted(environments)
+    ]
+    return "\n".join(lines)
+
+
 # ── Environment materialization (FR-12, Story 3.1) ──────────────────────────
 
 
@@ -168,9 +194,18 @@ def run_bmad_loop_worktree(name: str, *, root: Path) -> Path:
     return Path(match.group("path"))
 
 
+def _run_list(ns: argparse.Namespace) -> DutyResult:
+    """`provision --list [--json]` (Story 3.3)."""
+    root = repo_root()
+    environments = load_pixi_environments(cwd=root)
+    return DutyResult(
+        ok=True, summary=format_environments(environments, as_json=getattr(ns, "json", False))
+    )
+
+
 # ── ProvisionDuty (Duty-protocol adapter) ───────────────────────────────────
 
-_PROVISION_HELP = "available flags: --env <name> | --runner bmad-loop --env <name>"
+_PROVISION_HELP = "available flags: --env <name> | --runner bmad-loop --env <name> | --list [--json]"
 
 
 def _run_env(ns: argparse.Namespace) -> DutyResult:
@@ -248,28 +283,31 @@ def _run_runner(ns: argparse.Namespace) -> DutyResult:
 
 
 class ProvisionDuty:
-    """The real `provision` duty — dispatches the `--env`/`--runner` flags
-    (Epic 3 grows this class one flag per story; Story 3.2 adds `--runner`).
+    """The real `provision` duty — dispatches the `--env`/`--runner`/`--list`
+    flags (Epic 3 grows this class one flag per story; Story 3.3 adds
+    `--list`).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag on the bare `provision` duty parser, matching each
     story's own `steward provision --env <name>` / `--runner bmad-loop
-    --env <name>` shape. Precedence when more than one flag is passed:
-    `--runner` > `--env` (a documented judgment call, not a silent one —
-    mirrors `DeployDuty`'s own `--build`-wins-over-`--dry-run` precedent; no
-    AC defines combining them). Bare `steward provision` (no flags)
-    degrades to `DutyResult(ok=True, ...)` naming the available flags
-    (AD-7), matching `KeysDuty`'s/`DeployDuty`'s identical precedent. A
-    subprocess failure (pixi, bmad-loop-worktree) is caught here as
-    `subprocess.CalledProcessError` and reported as a duty-level failure,
-    never conflated with an internal crash (AD-8 — that boundary is
-    `cli.main()`'s alone).
+    --env <name>` / `--list [--json]` shape. Precedence when more than one
+    flag is passed: `--list` > `--runner` > `--env` (a documented judgment
+    call, not a silent one — mirrors `DeployDuty`'s own `--build`-wins-over-
+    `--dry-run` precedent; no AC defines combining them). Bare `steward
+    provision` (no flags) degrades to `DutyResult(ok=True, ...)` naming the
+    available flags (AD-7), matching `KeysDuty`'s/`DeployDuty`'s identical
+    precedent. A subprocess failure (pixi, bmad-loop-worktree) is caught
+    here as `subprocess.CalledProcessError` and reported as a duty-level
+    failure, never conflated with an internal crash (AD-8 — that boundary
+    is `cli.main()`'s alone).
     """
 
     name = "provision"
 
     def run(self, ns: argparse.Namespace) -> DutyResult:
         try:
+            if getattr(ns, "list", False):
+                return _run_list(ns)
             if getattr(ns, "runner", None):
                 return _run_runner(ns)
             if getattr(ns, "env", None):

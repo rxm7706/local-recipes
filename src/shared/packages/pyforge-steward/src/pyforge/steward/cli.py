@@ -142,13 +142,13 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:
-    """Add the `--env`/`--runner` flags (Stories 3.1/3.2; later Epic 3
-    stories add `--list`/`--verify` to this same function).
+    """Add the `--env`/`--runner`/`--list`/`--json` flags (Stories 3.1-3.3;
+    Story 3.4 adds `--verify` to this same function).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag directly on the `provision` duty parser, matching each
     story's own `steward provision --env <name>` / `--runner bmad-loop
-    --env <name>` shape verbatim.
+    --env <name>` / `--list [--json]` shape verbatim.
     """
     provision_parser.add_argument(
         "--env", metavar="NAME", help="pixi environment name (pixi.toml's [environments] table)"
@@ -157,6 +157,12 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         "--runner",
         choices=["bmad-loop"],
         help="materialize a runner's worktree together with --env (Story 3.2)",
+    )
+    provision_parser.add_argument(
+        "--list", action="store_true", help="list every environment in pixi.toml's [environments] table"
+    )
+    provision_parser.add_argument(
+        "--json", action="store_true", help="with --list, emit JSON instead of a text table"
     )
 
 
