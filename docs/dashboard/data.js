@@ -2918,7 +2918,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 12:38 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 13:29 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3545,7 +3545,7 @@ window.DASHBOARD_DATA = {
       "title": "kedro-org-tooling-adoption — Spec",
       "caps": 0,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "kedro-org-tooling-adoption",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
     },
@@ -3615,7 +3615,7 @@ window.DASHBOARD_DATA = {
       "title": "herald-moments-2-4-live-backend",
       "caps": 0,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "herald-moments-2-4-live-backend",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
     },
@@ -3715,7 +3715,7 @@ window.DASHBOARD_DATA = {
       "title": "The dashboard derives project paths — slug ≠ directory stops being a bug factory",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "dashboard-project-path-derivation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
     },
@@ -3725,7 +3725,7 @@ window.DASHBOARD_DATA = {
       "title": "dream-to-code-model-self-verification — the detectors get detected",
       "caps": 0,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "dream-to-code-model-self-verification",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification"
     },
@@ -3785,7 +3785,7 @@ window.DASHBOARD_DATA = {
       "title": "jira-github-projects-sync",
       "caps": 5,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "jira-github-projects-sync",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-jira-github-projects-sync"
     },
@@ -3795,7 +3795,7 @@ window.DASHBOARD_DATA = {
       "title": "loop-home fleet refresh",
       "caps": 3,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "loop-home-fleet-refresh",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh"
     },
@@ -3875,7 +3875,7 @@ window.DASHBOARD_DATA = {
       "title": "sprint-status auto-promote",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "sprint-status-auto-promote",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
     },
@@ -3885,7 +3885,7 @@ window.DASHBOARD_DATA = {
       "title": "conda-forge-expert rebuild — Skill-Forge-authored, slice by slice, hard cutover",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "conda-forge-expert-rebuild",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
     },
@@ -3995,7 +3995,7 @@ window.DASHBOARD_DATA = {
       "title": "BMAD modules are provisioned, not hand-installed",
       "caps": 3,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "bmad-module-provisioning",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning"
     },
@@ -4035,7 +4035,7 @@ window.DASHBOARD_DATA = {
       "title": "one container, eight stations",
       "caps": 5,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "unified-container",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container"
     },
@@ -4856,7 +4856,7 @@ window.DASHBOARD_DATA = {
     "sound": 1,
     "live": 31,
     "reached": 9,
-    "gaps": 32,
+    "gaps": 22,
     "findings": 12,
     "rows": [
       {
@@ -5822,7 +5822,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -5840,7 +5840,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -5906,8 +5906,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -5917,7 +5916,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -6763,7 +6762,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -6781,7 +6780,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -6847,8 +6846,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -6858,7 +6856,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -7825,7 +7823,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7843,7 +7841,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -7909,8 +7907,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7920,7 +7917,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -7932,7 +7929,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7950,7 +7947,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8016,8 +8013,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -8027,7 +8023,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -8685,7 +8681,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -8703,7 +8699,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8769,8 +8765,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -8780,7 +8775,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -8792,7 +8787,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -8810,7 +8805,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8876,8 +8871,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -8887,7 +8881,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -9540,7 +9534,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -9558,7 +9552,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9624,8 +9618,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -9635,7 +9628,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -9647,7 +9640,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -9665,7 +9658,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9731,8 +9724,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -9742,7 +9734,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -10710,7 +10702,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -10728,7 +10720,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10794,8 +10786,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -10805,7 +10796,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -11029,7 +11020,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -11047,7 +11038,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11113,8 +11104,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -11124,7 +11114,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -11604,8 +11594,8 @@ window.DASHBOARD_DATA = {
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
         "state": "drift",
-        "findings": 10,
-        "verdict": "DRIFT: 10 integrity + 0 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
+        "findings": 11,
+        "verdict": "DRIFT: 11 integrity + 0 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
       },
       {
@@ -13908,8 +13898,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 12:38 UTC",
-    "generatedEpoch": 1786192683
+    "generatedAt": "2026-08-08 13:29 UTC",
+    "generatedEpoch": 1786195760
   },
   "storySpecs": [
     {
