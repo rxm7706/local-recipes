@@ -20,21 +20,15 @@ development_status:
   1-4-credential-environment-hygiene-check: done
   1-5-doctor-check-cli-wiring-json-and-the-speed-budget: done
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
-  2-2-cve-and-abandonment-watch-axes: done
-  2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
-  3-1-partition-findings-by-actionability: done
-  3-2-rank-the-actionable-partition: done
-  3-3-root-cause-naming: done
-  3-4-doctor-diagnose-target-prescribe-cli-wiring-json: done
-  4-1-health-scoring: done
-  4-2-persistent-fleet-health-surface: done
-  4-3-adoption-tracking-watch-axis: done
-  4-4-safe-upgrade-path-recommendation: done
-  epic-1: done
+  2-2-cve-and-abandonment-watch-axes: backlog
+  2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: backlog
+  3-1-partition-findings-by-actionability: backlog
+  3-2-rank-the-actionable-partition: backlog
+  3-3-root-cause-naming: backlog
+  3-4-doctor-diagnose-target-prescribe-cli-wiring-json: backlog
+  epic-1: backlog
   epic-1-retrospective: optional
-  epic-2: done
+  epic-2: in-progress
   epic-2-retrospective: optional
-  epic-3: done
+  epic-3: backlog
   epic-3-retrospective: optional
-  epic-4: done
-  epic-4-retrospective: optional

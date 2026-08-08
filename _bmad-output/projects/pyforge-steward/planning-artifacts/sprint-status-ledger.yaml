@@ -17,26 +17,26 @@ development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
   1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plaintext: done
-  1-4-rotating-a-key-never-breaks-what-already-trusted-it: done
-  1-5-the-operator-can-see-every-credential-steward-knows-about-never-a-secret-value: done
-  1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: done
-  1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: done
-  2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
-  2-2-nothing-happens-unless-something-actually-changed: done
-  2-3-the-operator-can-see-what-would-change-before-it-changes: done
-  2-4-the-operator-can-ask-when-did-the-dashboard-last-actually-deploy: done
-  3-1-any-named-pixi-environment-materializes-with-one-command: done
-  3-2-a-bmad-loop-runner-and-its-environment-materialize-together: done
-  3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done
-  3-4-the-environment-yaml-sync-gate-is-one-command-away-not-a-remembered-incantation: done
-  4-1-a-ceiling-can-be-declared-machine-readably: done
-  4-2-the-declared-ceiling-is-one-command-away: done
-  4-3-asking-am-i-under-budget-never-lies: done
-  epic-1: done
+  1-4-rotating-a-key-never-breaks-what-already-trusted-it: backlog
+  1-5-the-operator-can-see-every-credential-steward-knows-about-never-a-secret-value: backlog
+  1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: backlog
+  1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: backlog
+  2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: backlog
+  2-2-nothing-happens-unless-something-actually-changed: backlog
+  2-3-the-operator-can-see-what-would-change-before-it-changes: backlog
+  2-4-the-operator-can-ask-when-did-the-dashboard-last-actually-deploy: backlog
+  3-1-any-named-pixi-environment-materializes-with-one-command: backlog
+  3-2-a-bmad-loop-runner-and-its-environment-materialize-together: backlog
+  3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: backlog
+  3-4-the-environment-yaml-sync-gate-is-one-command-away-not-a-remembered-incantation: backlog
+  4-1-a-ceiling-can-be-declared-machine-readably: backlog
+  4-2-the-declared-ceiling-is-one-command-away: backlog
+  4-3-asking-am-i-under-budget-never-lies: backlog
+  epic-1: backlog
   epic-1-retrospective: optional
-  epic-2: done
+  epic-2: backlog
   epic-2-retrospective: optional
-  epic-3: done
+  epic-3: backlog
   epic-3-retrospective: optional
-  epic-4: done
+  epic-4: backlog
   epic-4-retrospective: optional
