@@ -110,3 +110,10 @@ as a true "start here" rather than a third copy of the same content.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **No Prerequisites section explained how to get `herald` onto `PATH`** before the "Getting Started" walkthrough's first example command. Fixed: added a Prerequisites section (`pixi run --frozen -e pyforge-herald herald ...` / `pixi shell -e pyforge-herald`) immediately before "Per-Moment how-to."
+- `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Follow-up review recommendation:** none outstanding for this story.

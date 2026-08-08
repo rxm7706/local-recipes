@@ -2,16 +2,18 @@
 
 Story 12.4 (honestly scoped). The original epics spec for this story asked
 for "webhook not firing," "cron job missed," "auto-extract failed," and
-"stale link warning" diagnoses. None of the first three can happen in this
-codebase, because none of that infrastructure exists — see
-`docs/dreams/herald-moments-2-4-live-backend.md` for the full, unbuilt
-live-backend design and why the first pass was scaled down to a CLI an
-operator runs by hand. This caveat applies to the whole guide; it is not
-repeated per section below.
+"stale link warning" diagnoses. "Webhook not firing" and "cron job
+missed" cannot happen in this codebase, because no webhook or cron
+infrastructure exists — see `docs/dreams/herald-moments-2-4-live-backend.md`
+for the full, unbuilt live-backend design and why the first pass was
+scaled down to a CLI an operator runs by hand. This caveat applies to the
+whole guide; it is not repeated per section below.
 
 What *does* exist, and can genuinely misbehave, is the CLI-triggered
-equivalent of each of those automations. This guide covers those real,
-reproducible failure modes.
+equivalent of each of those automations — including "auto-extract" (see
+below): Epic 9's `herald success create` is its direct replacement, an
+operator-run command rather than a PR-close webhook trigger. This guide
+covers those real, reproducible failure modes.
 
 ## Stale or broken evidence links (the `herald success validate` scope)
 
@@ -21,6 +23,13 @@ presumably alert on breakage. There is no cron; instead, an operator runs
 `herald success validate` by hand whenever they want a check.
 
 ### Diagnosis
+
+*(The claim id below, `a17e2b60-...`, is from a separate scratch session
+than the ones in `cli-runbooks.md`/`operator-guide.md` — every `herald
+success create` mints a fresh UUID, so ids don't match across these docs'
+independently-captured examples. This one's evidence is deliberately
+broken to demonstrate `validate`; the other docs' examples use clean
+evidence to demonstrate the happy path.)*
 
 ```
 $ herald success validate --all
@@ -34,7 +43,7 @@ not reject it) — it updates each evidence item's `validated`/
 which show each item's `(validated)`/`(unvalidated)` status:
 
 ```
-$ herald success review 9c3590d4-01d9-4797-8a43-bf2b3b654195
+$ herald success review a17e2b60-4c8f-4e11-9d02-f6a3b0d8c721
 ...
 evidence:
   - [test_results] test results: https://example.com/nonexistent-9999 (unvalidated)
@@ -43,15 +52,15 @@ evidence:
 Or check a single claim directly:
 
 ```
-$ herald success validate 9c3590d4-01d9-4797-8a43-bf2b3b654195
-revalidated claim 9c3590d4-01d9-4797-8a43-bf2b3b654195: 0/1 evidence link(s) valid
+$ herald success validate a17e2b60-4c8f-4e11-9d02-f6a3b0d8c721
+revalidated claim a17e2b60-4c8f-4e11-9d02-f6a3b0d8c721: 0/1 evidence link(s) valid
 ```
 
 `herald success validate` takes exactly one of `<claim-id>` or `--all` —
 supplying both, or neither, is a usage error:
 
 ```
-$ herald success validate --all 9c3590d4-...
+$ herald success validate --all a17e2b60-...
 herald: HeraldError: herald success validate: supply exactly one of <claim-id> or --all
 ```
 
@@ -77,6 +86,41 @@ see [`cli-runbooks.md`](cli-runbooks.md#evidence-link-validation-failure)
 for that case, which is a hard abort (`EvidenceLinkError`, exit 1, claim
 stays a draft), not a soft flag like `validate` produces on an already-
 published claim.
+
+## "Auto-extract failed" (the `herald success create` scope)
+
+**What it replaces:** the original spec's PR-close webhook, which would
+have auto-extracted a draft claim's `project_name`/`shipped_date`/evidence
+from CI's payload the moment a PR merged with all gates green. There is no
+webhook; instead, an operator runs `herald success create <project>` by
+hand, supplying the same fields explicitly via flags (see
+[`cli-runbooks.md`](cli-runbooks.md#how-to-publish-a-success-claim) for the
+full create -> review -> publish walkthrough).
+
+### Diagnosis
+
+There is no "extraction" step to fail — `create` either succeeds (a draft
+claim is written) or refuses with a `HeraldError` naming what's wrong.
+Two real failure modes:
+
+- **Empty/whitespace-only project name** — refused before any write:
+  ```
+  $ herald success create "   "
+  herald: HeraldError: project_name must not be empty
+  ```
+  Fix: supply a real project name.
+
+`create` takes evidence via three fixed flags — `--evidence-test-results`,
+`--evidence-metrics`, `--evidence-adoption` — each a URL string for that
+evidence type; there's no free-form evidence-type flag to mistype, and no
+validation of the URLs themselves happens at create time (that's
+`success publish`'s job — see [`cli-runbooks.md`](cli-runbooks.md#evidence-link-validation-failure)).
+
+Once created, review the draft with `herald success review <claim-id>`
+before publishing (see [`cli-runbooks.md`](cli-runbooks.md#how-to-publish-a-success-claim))
+to catch anything the create step accepted but shouldn't have (a wrong
+project name, a mistyped evidence URL) before it becomes a published,
+citable record.
 
 ## Malformed local storage file (the `HeraldError` you'll see instead of a "DB corruption" alert)
 

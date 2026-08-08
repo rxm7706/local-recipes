@@ -37,6 +37,27 @@ Two surfaces exist side by side:
   [`web-ux-guide.md`](web-ux-guide.md) for the full tour, especially the
   "you must re-export the snapshot" caveat.
 
+## Prerequisites: getting `herald` on your command line
+
+`herald` is not on `PATH` in a bare shell -- it's a console-script entry
+point inside this repo's `pyforge-herald` pixi environment. Every command
+in this guide (and the other three docs) assumes one of:
+
+```
+$ pixi run --frozen -e pyforge-herald herald <subcommand> ...
+```
+
+or, for a whole session instead of prefixing every command:
+
+```
+$ pixi shell -e pyforge-herald
+(pyforge-herald) $ herald <subcommand> ...
+```
+
+Run either from the repo root. If `herald <subcommand>` on its own returns
+"command not found," this is almost always why -- you're in a bare shell,
+not the `pyforge-herald` pixi environment.
+
 ## Per-Moment how-to
 
 All output below is real, captured by running the built `herald` binary

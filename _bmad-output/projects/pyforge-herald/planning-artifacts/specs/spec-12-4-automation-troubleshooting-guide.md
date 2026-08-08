@@ -119,3 +119,11 @@ CLI-triggered equivalent that does exist and can genuinely misbehave.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **"Auto-extract failed" (one of the original epic's four named failure modes) was never actually addressed anywhere in the guide's body** -- the intro's "None of the first three can happen" line implicitly lumped it in with the genuinely-nonexistent webhook/cron infrastructure, but Epic 9's `herald success create` IS auto-extract's real, CLI-triggered replacement and does have real, reproducible failure modes. A reader searching this guide for "auto-extract" found only the intro paragraph and no actual section. Fixed: reworded the intro to name `herald success create` explicitly as auto-extract's replacement, and added a new "'Auto-extract failed'" section covering its real failure mode (empty/whitespace project name) and clarifying its fixed evidence-flag shape (no free-form type to mistype).
+- `[low]` `[patch]` **The claim id `9c3590d4-...` was reused from `cli-runbooks.md`/`operator-guide.md`'s clean-evidence walkthrough, but shown here with a deliberately-broken evidence link** -- since the docs' whole credibility pitch is "captured real output, not fabricated," a reader cross-referencing the same id across files and seeing it behave inconsistently (valid link vs. broken link) was more likely to read it as a documentation error than the actual explanation (separate, unrelated scratch sessions). Fixed: swapped to a distinct id (`a17e2b60-...`) with an explicit note that example ids don't match across these independently-captured docs.
+- `addressed_findings`: 2 (1 medium, 1 low). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Follow-up review recommendation:** none outstanding for this story.

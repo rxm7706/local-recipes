@@ -136,3 +136,11 @@ matching how every other piece of this repo actually gets support.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **No file told a reader how to get `herald` on their command line** -- every worked example silently assumed an activated `pyforge-herald` pixi environment, with the only hint a footnote saying the *doc's own author* ran it that way. A first-time operator following any doc's first example verbatim in a bare shell hits `command not found`, not any documented `HeraldError`. Fixed: added a Prerequisites section to `operator-guide.md` (the natural "getting started" home for it) plus a one-line cross-reference at the top of `cli-runbooks.md`.
+- `[low]` `[patch]` **The claim id `9c3590d4-...` was reused in this file's own troubleshooting section with contradictory evidence** (the walkthrough shows it published cleanly; the "Evidence link validation failure" section shows the *same id* failing to publish on a broken link) -- both self-contradictory within this one file and, separately, contradictory against `automation-troubleshooting.md`'s reuse of the same id with yet another evidence shape. Fixed: the troubleshooting section now uses a distinct id (`a17e2b60-...`) with an explicit note that it's a separate scratch claim, not the walkthrough's.
+- `addressed_findings`: 2 (1 medium, 1 low). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Follow-up review recommendation:** none outstanding for this story.

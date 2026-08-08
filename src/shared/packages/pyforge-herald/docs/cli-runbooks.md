@@ -15,6 +15,9 @@ runbook documents the system as it exists, not that Dream.
 
 All examples below were captured by actually running `herald` (built via
 `pixi run --frozen -e pyforge-herald herald ...`) in a scratch directory.
+`herald` is not on `PATH` in a bare shell — see
+[`operator-guide.md`'s Prerequisites section](operator-guide.md#prerequisites-getting-herald-on-your-command-line)
+if a copy-pasted command below returns "command not found."
 
 ## How to author a notice
 
@@ -175,12 +178,16 @@ above. Exit code 1 either way.
 ### Evidence link validation failure
 
 `herald success publish` validates every evidence link before writing.
-A broken link aborts the publish entirely — nothing is persisted:
+A broken link aborts the publish entirely — nothing is persisted. (This is
+a separate scratch claim, `a17e2b60-...`, deliberately created with a
+broken evidence link to demonstrate the failure — not the same
+`9c3590d4-...` claim from the walkthrough above, which had a clean link
+and published successfully.)
 
 ```
-$ herald success publish 9c3590d4-... --thesis "Shipped it"
+$ herald success publish a17e2b60-... --thesis "Shipped it"
 Continue? [Y/n] y
-herald: EvidenceLinkError: claim '9c3590d4-...' has 1 broken evidence link(s): https://example.com/nonexistent-9999 (Evidence link broken: https://example.com/nonexistent-9999. Fix or remove before publishing.). Fix or remove before publishing.
+herald: EvidenceLinkError: claim 'a17e2b60-...' has 1 broken evidence link(s): https://example.com/nonexistent-9999 (Evidence link broken: https://example.com/nonexistent-9999. Fix or remove before publishing.). Fix or remove before publishing.
 ```
 
 Exit code 1. Fix: either fix the URL and re-run `herald success review
