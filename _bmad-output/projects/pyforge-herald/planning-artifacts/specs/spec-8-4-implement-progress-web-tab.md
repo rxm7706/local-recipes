@@ -168,3 +168,27 @@ meaningful data; every other test gets a deterministic, silent default.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[high]` `[patch]` **`sync-progress.mjs`'s default source path resolved against
+  `process.cwd()`, not the repo root.** This package's own README documents `npm run dev`/
+  `npm run build` invoked from inside `web/`, while `herald progress <station> --update`
+  resolves `.herald/progress.json` against the repo root -- so following the README exactly
+  meant the sync script always looked in `web/.herald/progress.json` (never populated) and
+  silently wrote an empty `[]` snapshot (only a `console.warn`, no build failure). Under the
+  documented standard workflow, the Progress tab would always render "No progress recorded
+  yet.", even after real `--update` runs -- a direct violation of this story's own "displays
+  latest Progress record per station" AC. Reproduced live and confirmed the fix: the default
+  now derives the repo root from the script's own fixed location
+  (`src/shared/packages/pyforge-herald/web/scripts/`) instead of the caller's cwd, still
+  overridable via `HERALD_PROGRESS_PATH`/an explicit first CLI arg.
+- `addressed_findings`: 1 (high). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `npm run test` -- 22 passed (unchanged
+count, the fix is script-level not component-level); `npm run build` -- succeeds; manually
+verified end-to-end: a real `.herald/progress.json` at the repo root now round-trips into
+`public/progress.json`/`dist/progress.json` when the script is run from `web/` per the
+README's documented workflow.
+
+**Follow-up review recommendation:** none outstanding for this story.

@@ -248,7 +248,19 @@ def upsert(
     """Create today's (or ``date``'s) record for ``station``, or replace it
     in place if one already exists for the same ``(station, date)`` key
     (Story 8.2/8.3's "Creates new Progress record for today (if not
-    exists)" AC). Returns the stored record."""
+    exists)" AC). Returns the stored record.
+
+    Raises ``errors.HeraldError`` for a negative cost field -- none of
+    compute_hours/token_spend/wall_clock_hours can meaningfully be
+    negative, and without this check a typo'd flag was silently stored
+    and rendered as-is (e.g. "-5h compute") with no indication anything
+    was wrong."""
+    if compute_hours < 0:
+        raise errors.HeraldError("compute_hours must not be negative")
+    if token_spend < 0:
+        raise errors.HeraldError("token_spend must not be negative")
+    if wall_clock_hours < 0:
+        raise errors.HeraldError("wall_clock_hours must not be negative")
     records = read_all(progress_path)
     timestamp = now_iso()
     for index, existing in enumerate(records):

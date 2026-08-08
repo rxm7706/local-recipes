@@ -18,11 +18,23 @@ const webRoot = resolve(here, '..');
 const publicDir = resolve(webRoot, 'public');
 const destPath = resolve(publicDir, 'progress.json');
 
-// Override with an explicit path (env var or first CLI arg) for a repo
-// layout where the cwd running this script differs from the cwd `herald`
-// itself was run from; default assumes both are the repo root.
+// Regression: the previous default resolved against `process.cwd()`, which
+// is `web/` under this package's own documented workflow (`npm run
+// dev`/`build` invoked from inside `web/`, per this package's README) --
+// not the repo root `herald progress <station> --update` itself resolves
+// `.herald/progress.json` against. Following the README exactly silently
+// produced an empty snapshot on every build (only a console.warn, no
+// failure), so the Progress tab always rendered "No progress recorded
+// yet." even after real --update runs. Default now derives the repo root
+// from this script's own fixed location
+// (src/shared/packages/pyforge-herald/web/scripts/) rather than the
+// caller's cwd -- still overridable via HERALD_PROGRESS_PATH or an
+// explicit first CLI arg for a nonstandard layout.
+const repoRoot = resolve(webRoot, '..', '..', '..', '..', '..');
 const sourcePath =
-  process.argv[2] || process.env.HERALD_PROGRESS_PATH || resolve(process.cwd(), '.herald', 'progress.json');
+  process.argv[2] ||
+  process.env.HERALD_PROGRESS_PATH ||
+  resolve(repoRoot, '.herald', 'progress.json');
 
 let contents = '[]\n';
 if (existsSync(sourcePath)) {

@@ -150,3 +150,21 @@ exactly like `auth.py`/`evidence.py`/`watch.py` did before it.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **`upsert` had no validation on `compute_hours`/`token_spend`/
+  `wall_clock_hours` sign.** A negative value (a typo'd `--compute-hours -5`) was silently
+  stored and round-tripped cleanly, rendering as e.g. "-5h compute" in the web tab with no
+  indication anything was wrong -- confirmed live and not covered by any AC or edge-case-table
+  row in this spec. Fixed: `upsert` now raises `errors.HeraldError` for any negative cost field,
+  before the record is ever written. New regression test:
+  `test_upsert_refuses_a_negative_cost_field` (parametrized over all three fields).
+- `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 596 passed, 2 skipped.
+
+**Follow-up review recommendation:** none outstanding for this story. The reviewed-but-accepted
+concurrent-write blast radius (whole-array replace, same limitation `state.py` already
+documents) remains an intentional, documented tradeoff -- not a defect.

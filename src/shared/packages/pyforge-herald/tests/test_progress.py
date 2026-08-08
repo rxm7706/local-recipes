@@ -49,6 +49,34 @@ def test_upsert_creates_a_new_record(tmp_path: Path):
     assert read_all(progress_path) == [record]
 
 
+@pytest.mark.parametrize(
+    ("field", "kwargs"),
+    [
+        ("compute_hours", {"compute_hours": -5.0}),
+        ("token_spend", {"token_spend": -1000}),
+        ("wall_clock_hours", {"wall_clock_hours": -3.0}),
+    ],
+)
+def test_upsert_refuses_a_negative_cost_field(tmp_path: Path, field, kwargs):
+    """Regression: no field-level validation meant a negative cost value
+    (a typo'd flag) was silently stored and rendered as-is (e.g. "-5h
+    compute") with no indication anything was wrong."""
+    progress_path = tmp_path / "progress.json"
+    base = {
+        "station": "warden",
+        "date": "2026-08-08",
+        "shipped_capabilities": [],
+        "compute_hours": 1.0,
+        "token_spend": 100,
+        "wall_clock_hours": 1.0,
+        "unblock_narrative": "",
+    }
+    base.update(kwargs)
+    with pytest.raises(HeraldError, match=f"{field} must not be negative"):
+        upsert(progress_path, **base)
+    assert read_all(progress_path) == []
+
+
 def test_upsert_replaces_the_same_station_date_in_place(tmp_path: Path):
     progress_path = tmp_path / "progress.json"
     first = upsert(
