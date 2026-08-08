@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pyforge.herald import cli, watch as watch_module
-from pyforge.herald.errors import HeraldError
+from pyforge.herald.errors import AuthError, HeraldError
 
 
 def test_deck_watch_help_exits_zero():
@@ -117,3 +117,27 @@ def test_deck_watch_herald_error_reaches_dispatch_and_maps_to_its_exit_code(
     err = capsys.readouterr().err
     assert "HeraldError" in err
     assert "no bridge state recorded" in err
+
+
+def test_deck_watch_auth_error_halts_and_reports_structurally_with_nonzero_exit(
+    monkeypatch, capsys
+):
+    """Story 4.3: an ``AuthError`` mid-loop reaches ``dispatch`` exactly
+    like any other ``HeraldError`` -- one structured stderr line, exit code
+    4 (``TransportError``'s mapping, per ``errors.exit_code_for``), no
+    retry attempted by the CLI layer."""
+    calls = []
+
+    def _fake_watch(transport, *, slugs, repo_root, interval):
+        calls.append(1)
+        raise AuthError("credential rejected -- run /design-login")
+
+    monkeypatch.setattr(watch_module, "watch", _fake_watch)
+
+    exit_code = cli.main(["deck", "watch", "pyforge-warden"])
+
+    assert exit_code == 4
+    assert calls == [1]  # dispatch never retries the failed operation
+    err = capsys.readouterr().err
+    assert "AuthError" in err
+    assert "/design-login" in err

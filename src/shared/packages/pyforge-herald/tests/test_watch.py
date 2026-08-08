@@ -1,6 +1,5 @@
 """``herald deck watch`` -- Epic 4: poll loop + quiescence debounce (Story
-4.1) and idle backoff (Story 4.2). 4.3's halt-on-auth-error tests land in
-this same file, in their own story.
+4.1), idle backoff (Story 4.2), halt on auth error (Story 4.3).
 
 Every transport call is against a hand-written ``FakeWatchTransport`` (no
 network, no adapter) exercising only ``read_file`` -- ``watch`` never calls
@@ -20,7 +19,7 @@ from pathlib import Path
 import pytest
 from pyforge.herald import state
 from pyforge.herald.deck_pipeline import PullResult
-from pyforge.herald.errors import HeraldError
+from pyforge.herald.errors import AuthError, HeraldError
 from pyforge.herald.transport.base import FileRead
 from pyforge.herald.watch import (
     DEFAULT_POLL_INTERVAL,
@@ -361,6 +360,40 @@ def test_a_detected_change_resets_the_interval_to_the_default(tmp_path: Path):
     assert events[-2].kind == "settling"
     assert events[-1].kind == "pulled"
     assert events[-1].interval == DEFAULT_POLL_INTERVAL == 60.0
+
+
+def test_auth_error_halts_every_watched_deck_with_no_retry(tmp_path: Path):
+    """Story 4.3, FR-17: an ``AuthError`` on one deck's poll propagates
+    straight out of ``watch`` -- it is never caught or retried here, and no
+    other watched deck is polled again after it fires."""
+    state_path = tmp_path / "bridge-state.json"
+    _seed_state(state_path, "pyforge-alpha", project_id="p-a", etag="E0")
+    _seed_state(state_path, "pyforge-beta", project_id="p-b", etag="E0")
+    idle = FileRead(path="x", etag="E0", body=None, unchanged=True)
+    transport = FakeWatchTransport(
+        answers={"p-a": idle, "p-b": idle},
+        fail_after=1,
+        fail_with=AuthError("credential rejected -- run /design-login"),
+    )
+    pull = FakePull()
+    sleep, _ = _no_sleep_calls()
+
+    with pytest.raises(AuthError):
+        watch(
+            transport,
+            slugs=["pyforge-alpha", "pyforge-beta"],
+            repo_root=tmp_path,
+            state_path=state_path,
+            pull=pull,
+            now=lambda: _FIXED_NOW,
+            sleep=sleep,
+        )
+
+    # Exactly one call succeeded (poll interleaving is deterministic: both
+    # start due at t=0, ties broken by dict order -> alpha, then beta fails
+    # on its own first poll) and no retry of the failed call happened.
+    assert len(transport.calls) == 2
+    assert pull.calls == []
 
 
 def test_watch_requires_at_least_one_slug(tmp_path: Path):
