@@ -2918,7 +2918,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 11:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 11:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4857,10 +4857,10 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-07-25",
           "verify": "2026-07-25",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-02T12:57",
           "research": "2026-07-25",
@@ -4875,7 +4875,7 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-08-07",
           "verify": "2026-08-07",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "sub": {
           "research": {
@@ -4930,21 +4930,22 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "verify"
+          "verify",
+          "retro"
         ],
         "gaps": [],
         "partial": [
           "research"
         ],
         "staleBy": [],
-        "furthest": "verify",
-        "updated": "2026-08-07",
-        "age": 1,
+        "furthest": "retro",
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "16/16",
-        "complete": 13,
-        "of": 13
+        "complete": 14,
+        "of": 14
       },
       {
         "label": "herald",
@@ -4968,10 +4969,10 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-07-25",
           "verify": "2026-07-25",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-02T14:45",
           "research": "2026-08-01",
@@ -4986,7 +4987,7 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-08-07",
           "verify": "2026-08-07",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "sub": {
           "research": {
@@ -5042,21 +5043,22 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "verify"
+          "verify",
+          "retro"
         ],
         "gaps": [],
         "partial": [
           "research"
         ],
         "staleBy": [],
-        "furthest": "verify",
+        "furthest": "retro",
         "updated": "2026-08-08",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "12/19",
-        "complete": 13,
-        "of": 13
+        "complete": 14,
+        "of": 14
       },
       {
         "label": "marshal",
@@ -5298,10 +5300,10 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-07-25",
           "verify": "2026-07-25",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-02T12:59",
           "research": "2026-07-25",
@@ -5316,7 +5318,7 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-07-25",
           "verify": "2026-07-25",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "sub": {
           "research": {
@@ -5371,21 +5373,22 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "verify"
+          "verify",
+          "retro"
         ],
         "gaps": [],
         "partial": [
           "research"
         ],
         "staleBy": [],
-        "furthest": "verify",
-        "updated": "2026-08-07",
-        "age": 1,
+        "furthest": "retro",
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "9/9",
-        "complete": 13,
-        "of": 13
+        "complete": 14,
+        "of": 14
       },
       {
         "label": "steward",
@@ -5409,10 +5412,10 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-07-25",
           "verify": "2026-07-25",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "updatedAt": {
-          "dream": "2026-07-25",
+          "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-01T09:51",
           "research": "2026-07-25",
@@ -5427,7 +5430,7 @@ window.DASHBOARD_DATA = {
           "gates": "2026-08-01",
           "code": "2026-08-07",
           "verify": "2026-08-07",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "sub": {
           "research": {
@@ -5482,21 +5485,22 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "verify"
+          "verify",
+          "retro"
         ],
         "gaps": [],
         "partial": [
           "research"
         ],
         "staleBy": [],
-        "furthest": "verify",
-        "updated": "2026-08-07",
-        "age": 1,
+        "furthest": "retro",
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "18/18",
-        "complete": 13,
-        "of": 13
+        "complete": 14,
+        "of": 14
       },
       {
         "label": "warden",
@@ -5520,7 +5524,7 @@ window.DASHBOARD_DATA = {
           "gates": "2026-07-11",
           "code": "2026-07-14",
           "verify": "2026-07-14",
-          "retro": ""
+          "retro": "2026-07-17"
         },
         "updatedAt": {
           "dream": "2026-07-25",
@@ -5538,7 +5542,7 @@ window.DASHBOARD_DATA = {
           "gates": "2026-07-16",
           "code": "2026-07-24",
           "verify": "2026-07-24",
-          "retro": ""
+          "retro": "2026-08-08"
         },
         "sub": {
           "research": {
@@ -5593,21 +5597,22 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "verify"
+          "verify",
+          "retro"
         ],
         "gaps": [],
         "partial": [
           "research"
         ],
         "staleBy": [],
-        "furthest": "verify",
-        "updated": "2026-08-02",
-        "age": 6,
+        "furthest": "retro",
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
-        "complete": 13,
-        "of": 13
+        "complete": 14,
+        "of": 14
       },
       {
         "label": "kedro-org-tooling-adoption",
@@ -6334,8 +6339,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10329,8 +10334,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10439,8 +10444,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10549,8 +10554,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10660,8 +10665,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10770,8 +10775,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10880,8 +10885,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10991,8 +10996,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-07",
-        "age": 1,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11101,8 +11106,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 6,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11396,7 +11401,7 @@ window.DASHBOARD_DATA = {
               "sprint-status": "✅",
               "code": "✅",
               "tests": "✅",
-              "retro": "◯"
+              "retro": "✅"
             }
           },
           {
@@ -11426,7 +11431,7 @@ window.DASHBOARD_DATA = {
               "sprint-status": "✅",
               "code": "✅",
               "tests": "✅",
-              "retro": "◯"
+              "retro": "✅"
             }
           },
           {
@@ -11446,7 +11451,7 @@ window.DASHBOARD_DATA = {
               "sprint-status": "✅",
               "code": "✅",
               "tests": "✅",
-              "retro": "◯"
+              "retro": "✅"
             }
           },
           {
@@ -11456,7 +11461,7 @@ window.DASHBOARD_DATA = {
               "sprint-status": "✅",
               "code": "✅",
               "tests": "✅",
-              "retro": "◯"
+              "retro": "✅"
             }
           },
           {
@@ -11466,7 +11471,7 @@ window.DASHBOARD_DATA = {
               "sprint-status": "✅",
               "code": "✅",
               "tests": "✅",
-              "retro": "◯"
+              "retro": "✅"
             }
           }
         ]
@@ -13764,8 +13769,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 11:35 UTC",
-    "generatedEpoch": 1786188907
+    "generatedAt": "2026-08-08 11:48 UTC",
+    "generatedEpoch": 1786189716
   },
   "storySpecs": [
     {
@@ -13777,8 +13782,8 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-doctor",
       "done": 16,
-      "tracked": 15,
-      "gap": 1
+      "tracked": 16,
+      "gap": 0
     },
     {
       "station": "pyforge-herald",
@@ -13801,8 +13806,8 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-scribe",
       "done": 9,
-      "tracked": 7,
-      "gap": 2
+      "tracked": 9,
+      "gap": 0
     },
     {
       "station": "pyforge-steward",
