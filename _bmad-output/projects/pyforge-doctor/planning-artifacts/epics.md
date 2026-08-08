@@ -642,6 +642,21 @@ that import exists
 `spec-regenerable-factory` CAP-2
 **And** the two meta-tests that invoke the old paths
 (`test_bmad_artifacts_in_sync.py`, `test_spec_surface_check.py`) are updated, not deleted
+**And** the four detectors that are **governed rather than allowlisted** transfer their
+surface claim: `spec-regenerable-factory`'s `surface:` globs for `spec_surface_check.py`,
+`bmad_drift_check.py`, `dream_chain_check.py` and `deferred_work_check.py` are **deleted**,
+as is `spec-surface-drift-reconciliation`'s claim on `spec_surface_check.py` — the moved
+files are governed by `spec-pyforge-doctor`'s own `src/shared/packages/pyforge-doctor/**`
+glob the moment they land there, so the transfer needs no new Doctor surface entry, only
+retirement of the stale ones
+**And** those retirements are **verified**, not assumed: a `surface:` glob that matches
+nothing is **not** a finding today (only allowlist entries produce `stale-allowlist`), so a
+stale claim rots silently — the same "a too-broad or stale glob is invisible by
+construction" asymmetry `spec-regenerable-factory`'s own memlog records. Confirm each
+retired glob by diffing the governed-file count before and after
+**And** `spec-regenerable-factory`'s surface reaching **zero** ends its governance role —
+recorded in its memlog rather than left implicit, since that Spec is `shipped` and nothing
+else would mark the hand-off
 
 **Status:** backlog
 
