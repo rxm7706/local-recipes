@@ -7,9 +7,9 @@ specs are durable (tracked), NOT Tier-3." After a story merges, its spec is
 promoted from the run's `implementation-artifacts/` into this directory and
 committed here as the source of record.
 
-**Status (2026-08-08):** 15 of 16 done stories have a spec here. **Gap:
-`spec-2-1` (Atlas gather filter / staleness axis / MCP-first with CLI
-fallback) was never promoted** — recover per the priority order in
-`CLAUDE.md`: Claude Code session transcripts first, then bmad-loop
-run-worktree snapshots, then regenerate contract-only from `epics.md` as a
-last resort.
+**Status (2026-08-08):** all 16 done stories have a spec here. `spec-2-1`
+(Atlas gather filter / staleness axis / MCP-first with CLI fallback) was
+recovered the same day — no session transcript or worktree snapshot
+survived (it landed via a manual maintainer-edit PR, not a bmad-loop run),
+so it's a Tier-3 `epics.md`-derived recovery (contract only, plus its
+merged-PR Delivery Record) per the priority order in `CLAUDE.md`.

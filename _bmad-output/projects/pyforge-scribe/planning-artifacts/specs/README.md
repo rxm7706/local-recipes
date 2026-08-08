@@ -7,9 +7,9 @@ specs are durable (tracked), NOT Tier-3." After a story merges, its spec is
 promoted from the run's `implementation-artifacts/` into this directory and
 committed here as the source of record.
 
-**Status (2026-08-08):** 7 of 9 done stories have a spec here. **Gap:
-`spec-1-4` (pointer stub write-back, idempotent re-invocation) and
-`spec-1-5` (seed promotion — the story that closed Epic 1) were never
-promoted** — recover per the priority order in `CLAUDE.md`: Claude Code
-session transcripts first, then bmad-loop run-worktree snapshots, then
-regenerate contract-only from `epics.md` as a last resort.
+**Status (2026-08-08):** all 9 done stories have a spec here. `spec-1-4`
+(pointer stub write-back, idempotent re-invocation) and `spec-1-5` (seed
+promotion — the story that closed Epic 1) were recovered the same day — no
+session transcript or worktree snapshot survived, so both are Tier-3
+`epics.md`-derived recoveries (contract only, plus their merged-PR Delivery
+Records) per the priority order in `CLAUDE.md`.
