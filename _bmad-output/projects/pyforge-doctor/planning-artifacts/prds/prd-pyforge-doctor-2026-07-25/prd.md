@@ -491,6 +491,26 @@ proves itself, per the Spec's own Assumptions.
    — the domain research treats it as a near-universal convention but it's not named
    in the Dream's CLI cadence examples.
 
+## FR-14 — Verdict on the Marshal's durability (Charter §6)
+
+Doctor reports whether every tracked sprint ledger still holds the completions it
+held at HEAD.
+
+**Consequences (testable):**
+- A ledger whose working state un-finishes a story yields a `FAIL` Finding naming the
+  project, the count and the keys, plus a `git checkout HEAD -- <path>` remedy.
+- No regression yields one `OK` Finding stating how many ledgers were checked.
+- Missing ledgers, absent git, or an unreadable file yield `WARN` — never `OK`, never
+  an exception.
+- **`sources/marshal.py` imports no `pyforge.<station>` package.** Enforced by
+  `test_sources_marshal_independence.py`, so the judged station cannot alter the
+  judgement. This is the FR's load-bearing half: the finding is worth nothing if
+  Marshal can change what counts as passing.
+
+*Grounding: on 2026-08-08 one `sprint-ledger-sync` run destroyed 96 `done` markers
+across four stations and reported success. All three guards written in response live
+in Marshal's own surface, which §6 forbids as sufficient.*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential

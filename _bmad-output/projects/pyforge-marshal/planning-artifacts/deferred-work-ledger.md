@@ -578,3 +578,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   status: open
 
   verified: 2026-08-08 — re-measured with the parser after the DW-LEDGER-2026-08-08-3 retraction; these numbers supersede every earlier count in this session.
+
+## DW-DOCTOR-2026-08-08-1 — `doctor check` is 7.04s against its documented 5.0s budget
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`
+  summary: `test_doctor_check_completes_within_the_five_second_budget` fails on `main`. Measured 2026-08-08 against the monorepo root: **6.92s / 7.04s / 6.73s** across three iterations, versus the 5.0s budget the Doctor PRD documents as **SM-C1**. This is a real NFR violation, not a flaky or environment-coupled test — the run does the full work and reports the full finding count, it is simply ~40% over budget.
+  why it was NOT fixed alongside the two tests found with it: the other two failures in the same suite were hermeticity bugs in the tests (an uninjected `cli_runner` falling through to the real on-disk script), contained and correct to fix in place. This one is different in kind. The only two changes available without profiling are a blind performance edit or relaxing the budget, and the second is precisely the "weaken the threshold rather than meet it" move that Charter §6 forbids a station from making about its own gate. It needs a profile first: whether the cost is warden's `--version` subprocesses, the atlas MCP/CLI fallbacks, or the env-hygiene walk is unknown.
+  discovered by: running Doctor's full suite while adding `sources/marshal.py`; confirmed pre-existing by stashing the change and re-running.
+
+  status: open
+
+  verified: 2026-08-08 — three timed iterations, all over budget.

@@ -119,10 +119,13 @@ def test_finding_evidence_is_defensively_copied():
     assert finding.evidence == {"k": "v"}
 
 
-def test_source_has_exactly_eight_members():
-    # Story 4.3 (FR-12, AD-9) extends the closed taxonomy with ADOPTION --
-    # a deliberate, reviewed addition, never an open/stringly-typed
-    # escape hatch (still a fixed, enumerable set).
+def test_source_has_exactly_nine_members():
+    # The taxonomy is CLOSED but extensible by review, never an open/stringly-typed
+    # escape hatch -- it stays a fixed, enumerable set and this test is the gate.
+    # Story 4.3 (FR-12, AD-9) added ADOPTION; 2026-08-08 added MARSHAL_DURABILITY,
+    # Doctor's verdict on the Marshal's own row (Charter §6 -- "the one station that
+    # would otherwise grade itself"), after a sync destroyed 96 `done` markers across
+    # four stations and every guard written in response lived in Marshal's own surface.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -132,6 +135,7 @@ def test_source_has_exactly_eight_members():
         "release-cadence",
         "env-hygiene",
         "adoption",
+        "marshal-durability",
     }
 
 

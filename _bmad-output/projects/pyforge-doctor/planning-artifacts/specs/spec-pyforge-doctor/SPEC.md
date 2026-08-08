@@ -49,6 +49,17 @@ Four further capabilities (CAP-5..8) extend this v1 walking skeleton along a fro
   - **intent:** A Prescription from `diagnose --prescribe` can name a specific next-safe-version target, not just rank and explain.
   - **success:** The recommendation is single-hop only — this package's own next safe version, sourced from atlas's existing `behind-upstream`/version data — never a transitive multi-package resolution; a Prescription with no confidently-known safe version states that plainly rather than guessing one; `prescribe` stays a pure function over already-gathered data (AD-4 preserved — no new subprocess/MCP call added to `prescribe` itself).
 
+- **CAP-9 — the verdict on the Marshal's own row.**
+  - **intent:** Doctor independently judges whether the Marshal's durability
+    guarantee holds, so the station that owns the ledger is not the station that
+    grades it (Charter §6 — *"the one station that would otherwise grade itself"*).
+  - **success:** a `marshal-durability` source reports FAIL naming every story key
+    when a tracked sprint ledger holds fewer completions than its committed state,
+    OK when none does, and WARN — never a crash and never silent OK — when git or
+    the ledgers are unavailable; **the check reads the durable artifacts (tracked
+    ledgers + git) and imports no station package**, asserted by a meta-test, so a
+    Marshal change cannot weaken, re-threshold or disable it.
+
 ## Constraints
 
 - **AD-1 (library, not subprocess):** `doctor check --engines` calls `pyforge.warden.engines.run_doctor_checks` as a library import, never a subprocess reimplementation; `pyforge-doctor` declares `pyforge-warden` as an optional `gate` extra (mirrors `pyforge-atlas`'s identical existing edge to warden). A meta-test asserts `doctor.sources.warden` contains no subprocess import or call.

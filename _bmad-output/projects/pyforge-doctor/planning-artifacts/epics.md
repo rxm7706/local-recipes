@@ -375,3 +375,47 @@ So that "update to X.Y.Z" replaces "here's a ranked problem" as the last mile of
 **Given** `pyforge.doctor.score` (or wherever this recommendation is computed), **When** it runs, **Then** it is single-hop only — this package's own next version, never a transitive resolution across multiple packages (a meta-test or code-review-gated invariant asserts no multi-package graph traversal exists in this module, keeping the PRD §5 "no real dependency-graph resolver" non-goal intact).
 
 **Given** `pyforge.doctor.prescribe`, **When** the upgrade-path recommendation is added, **Then** `prescribe` remains a pure function over already-gathered data (AD-4 preserved) — the recommendation is computed from data Epic 2's gather filters already produced, not a new fetch triggered inside `prescribe` itself.
+
+---
+
+## Epic 5: The verdict on the Marshal's own row
+
+**Value delivered.** The station that owns the sprint ledger stops being the station
+that grades it. Charter §6 has required this since 2026-07-28; nothing implemented it
+until a real loss made the gap concrete.
+
+### Story 5.1: Marshal-durability source, independent by construction
+
+As the operator,
+I want Doctor to tell me when a tracked ledger has lost a completion,
+So that a durability failure in Marshal's own machinery is caught by something Marshal
+does not control.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-14; AD-11, AD-12
+**Surface:** `sources/marshal.py`, `cli_bridge.py` (`run_git`), `models.py`
+(`Source.MARSHAL_DURABILITY`), `tests/unit/test_sources_marshal_independence.py`
+
+**Acceptance Criteria:**
+
+**Given** a tracked sprint ledger whose working state un-finishes a story
+**When** the `marshal-durability` source gathers
+**Then** a `FAIL` Finding names the project, the count and the keys, with a
+`git checkout HEAD -- <path>` remedy
+**And** an aggregate `FAIL` states the total across all ledgers
+
+**Given** no ledger has regressed
+**Then** exactly one `OK` Finding states how many ledgers were checked
+
+**Given** git is unavailable, the target is not a repository, or no ledger exists
+**Then** the result is `WARN` — never `OK`, and never an exception
+
+**Given** any state at all
+**Then** `sources/marshal.py` imports no `pyforge.<station>` package — asserted by
+`test_sources_marshal_independence.py`, including lazy imports and string constants
+that could be fed to `import_module`
+**And** every subprocess call routes through `cli_bridge` (AD-5/AD-12), asserted by
+`test_cli_bridge_sole_subprocess.py`
+
+**Status:** done — verified against the real 2026-08-08 incident (restoring the damaged
+herald ledger yields FAIL/55; a clean tree yields OK/8 ledgers).
+

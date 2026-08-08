@@ -86,6 +86,16 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-08-08** — **Doctor took the verdict on the Marshal's own row.** Charter §6
+  has said since 2026-07-28 that the Doctor holds it, *"the one station that would
+  otherwise grade itself"* — but nothing implemented it. A single `sprint-ledger-sync`
+  run then destroyed 96 `done` markers across four stations and printed success, and
+  all three guards written in response lived in Marshal's own surface. Doctor gained a
+  ninth Source (`marshal-durability`), CAP-9, FR-14, AD-11/AD-12 and Epic 5. The
+  design point worth remembering: unlike the warden source, this one **imports no
+  station package** — a durability verdict assembled from the judged station's own
+  code would fail exactly when that station's machinery is what broke.
+
 - **2026-07-23** — persona defined in [[pyforge-charter]]; chapter deck seeded
   (`presentations/pyforge-doctor/`).
 - **2026-07-25** — full planning chain landed: Spec (CAP-1..CAP-4), PRD

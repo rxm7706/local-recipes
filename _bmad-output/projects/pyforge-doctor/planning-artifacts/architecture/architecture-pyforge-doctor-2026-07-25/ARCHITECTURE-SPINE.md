@@ -291,3 +291,32 @@ src/shared/packages/pyforge-doctor/
   because none is planned.
 - **Waiver-authoring mechanism for the `accepted-risk` partition** — the partition
   exists (AD-4) but nothing populates it in v1; deferred per PRD §6.2.
+
+### AD-11 — The Marshal verdict reads artifacts, never the station (binds FR-14)
+
+**Prevents:** a self-report wearing Doctor's badge; a verdict that fails exactly when
+the judged station is broken.
+**Rule:** `sources/marshal.py` derives its judgement from the **durable artifacts** —
+tracked `sprint-status-ledger.yaml` files and git history — and imports no
+`pyforge.<station>` package, asserted by `test_sources_marshal_independence.py`
+(AST-based, and lazy-import aware because lazy is exactly how AD-1's warden import
+legitimately works).
+**Why this differs from AD-1.** `sources/warden.py` deliberately DOES import warden
+and wraps its `--doctor` self-check — correct, because Doctor is relaying an
+instrument's report about its own environment. A durability verdict is the opposite
+case: assembled from Marshal's code it would fail precisely when Marshal's machinery
+is what broke, which is the only case worth checking. Charter §6 is satisfied
+structurally rather than by policy — the check depends on nothing Marshal ships.
+
+### AD-12 — A new subprocess need is satisfied IN `cli_bridge` (extends AD-5)
+
+**Prevents:** a second shell-out site; AD-5 eroding one exception at a time.
+**Rule:** `cli_bridge` remains the sole subprocess site. Reading a committed blob
+requires `git show`, so the module gained `run_git()` — narrow the same way
+`run_cli_json()` is (argv list never `shell=True`, explicit timeout, `NO_COLOR=1`,
+`--no-pager`, one typed `CliBridgeError`), differing only in returning **raw text**
+because git's payload here is YAML, not JSON.
+*Recorded because the first cut of `sources/marshal.py` called `subprocess` directly
+and `test_cli_bridge_sole_subprocess.py` caught it — the meta-test worked, and the
+fix was to widen the sanctioned site rather than route around it.*
+
