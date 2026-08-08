@@ -11,6 +11,9 @@ created: 2026-07-17
 updated: '2026-08-02'
 currency_review: "Reviewed 2026-08-02 — Story D2's acceptance criteria (line ~675) and the Epic 5 summary (line ~166) still carried the pre-correction '28-CLI, all answerable' overclaim after the PRD's 2026-08-01 CAP-8 fix and architecture.md's matching correction (AUD-ATLAS-041). Both corrected to: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other epic/story referenced the overclaim."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
+# The single canonical story source for this station: every `### Story` heading
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+epics_role: canonical
 ---
 
 # cf_atlas Kedro/Dagster/DuckDB Migration - Epic Breakdown

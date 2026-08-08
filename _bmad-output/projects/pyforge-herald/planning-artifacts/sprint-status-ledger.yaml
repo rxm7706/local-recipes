@@ -12,86 +12,32 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 57
-#
-# Epics 6-12 (below) were added 2026-08-07 to reconcile a real drift: the
-# "Herald Moments 2-4" planning chain (epics.md/epics-with-stories.md,
-# commit 6d5e941032) had overwritten the tracked epics.md content with a
-# NEW, non-overlapping 7-epic/30-story scheme using the SAME epic-1..epic-5
-# numbers this ledger already tracks for the original design-code-bridge
-# CLI scope -- never reconciled back into this ledger. Renumbered as a
-# continuation (epic-6..epic-12), mirroring the precedent set for
-# genesis-installer's own FR-namespace fold into pyforge-marshal, rather
-# than colliding keys or creating a second numbered island.
+# stories: 27
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
-  1-3-fallback-transport-adapter: done
+  1-3-fallback-transport-adapter: backlog
   1-4-bridge-core-skeleton-state-errors-determinism-boundary: done
   1-5-registry-module-readme-design-project: done
-  1-6-herald-deck-seed-slug: done
-  2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
-  2-2-commit-opt-in: done
-  2-3-marp-source-pull: done
-  2-4-standalone-bundle-pull: done
-  3-1-herald-deck-status-slug: done
-  3-2-stale-hand-mirror-detection: done
-  4-1-poll-loop-with-quiescence-debounce: done
-  4-2-idle-backoff: done
-  4-3-halt-on-auth-error: done
-  5-1-push-regenerated-exports-with-etag-guard: done
-  5-2-conflict-refusal-on-export-push: done
-  6-1-implement-herald-cli-dispatcher: done
-  6-2-implement-shared-argument-conventions: done
-  6-3-implement-cli-authentication-and-authorization: done
-  6-4-implement-evidence-link-validation-protocol-shared-infrastructure: done
-  6-5-cli-help-and-first-day-usability: done
-  7-1-design-and-implement-web-layout-header-tabs-sidebar-responsive: done
-  7-2-implement-web-tooltips-and-inline-help: done
-  8-1-implement-progress-data-model-and-database-schema: done
-  8-2-implement-on-ship-webhook-and-weekly-cron-automation: done
-  8-3-implement-progress-cli: done
-  8-4-implement-progress-web-tab: done
-  9-1-implement-claim-data-model-and-database-schema: done
-  9-2-implement-auto-extract-and-operator-review-gate: done
-  9-3-implement-success-cli: done
-  9-4-implement-success-web-archive: done
-  9-5-implement-evidence-validation-sync-and-async: done
-  10-1-notice-data-model-and-archive-storage: done
-  10-2-notice-authoring-workflow-cli: done
-  10-3-notice-archive-and-redirects: done
-  10-4-notice-cli: done
-  10-5-operations-web-tab: done
-  10-6-notice-lifecycle: done
-  11-1-integration-testing-cli-web-and-automation: done
-  11-2-automation-reliability: done
-  11-3-evidence-linking-cross-moment: done
-  11-4-performance-testing: done
-  12-1-cli-runbooks-and-troubleshooting: done
-  12-2-web-surface-ux-guide: done
-  12-3-operator-runbook: done
-  12-4-automation-troubleshooting-guide: done
-  epic-1: done
+  1-6-herald-deck-seed-slug: backlog
+  2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: backlog
+  2-2-commit-opt-in: backlog
+  2-3-marp-source-pull: backlog
+  2-4-standalone-bundle-pull: backlog
+  3-1-herald-deck-status-slug: backlog
+  3-2-stale-hand-mirror-detection: backlog
+  4-1-poll-loop-with-quiescence-debounce: backlog
+  4-2-idle-backoff: backlog
+  4-3-halt-on-auth-error: backlog
+  5-1-push-regenerated-exports-with-etag-guard: backlog
+  5-2-conflict-refusal-on-export-push: backlog
+  epic-1: backlog
   epic-1-retrospective: optional
-  epic-2: done
+  epic-2: backlog
   epic-2-retrospective: optional
-  epic-3: done
+  epic-3: backlog
   epic-3-retrospective: optional
-  epic-4: done
+  epic-4: backlog
   epic-4-retrospective: optional
-  epic-5: done
+  epic-5: backlog
   epic-5-retrospective: optional
-  epic-6: done
-  epic-6-retrospective: optional
-  epic-7: done
-  epic-7-retrospective: optional
-  epic-8: done
-  epic-8-retrospective: optional
-  epic-9: done
-  epic-9-retrospective: optional
-  epic-10: done
-  epic-10-retrospective: optional
-  epic-11: done
-  epic-11-retrospective: optional
-  epic-12: done
-  epic-12-retrospective: optional

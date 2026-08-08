@@ -90,12 +90,12 @@ All 15 ADs (AD-01–AD-15) flow into specific stories. The 12 conflict-preventio
 | FR1–FR3, FR5 | Manifest as data, five classes, deferred state | S-7.4, S-7.5 |
 | FR4 | Coverage check (no unclassified artifact) | S-9.5 |
 | FR6 | Never-write path set declared | S-7.4, S-7.5 |
-| FR7–FR13 | `genesis init` | S-10.7 |
-| FR14–FR19 | `genesis adopt` detect→plan→apply, idempotent | S-10.6, S-9.6, S-12.5 |
+| FR7–FR13 | `marshal seed init` | S-10.7 |
+| FR14–FR19 | `marshal seed adopt` detect→plan→apply, idempotent | S-10.6, S-9.6, S-12.5 |
 | FR15–FR16 | Classification incl. `present-legacy` | S-9.2, S-9.4 |
 | FR17 | Machine-readable plan artifact | S-9.6 |
 | FR20–FR22 | Preconditions, refusals, skips | S-10.4 |
-| FR23–FR28 | `genesis check` | S-10.5, S-9.1 |
+| FR23–FR28 | `marshal seed check` | S-10.5, S-9.1 |
 | FR29 | Two-phase update | S-11.4 |
 | FR30 | Referenced-dependency verification | S-11.5 |
 | FR31–FR32 | Migration ordering, applied-once, seeded opt-in | S-11.3 |
@@ -109,9 +109,9 @@ All 15 ADs (AD-01–AD-15) flow into specific stories. The 12 conflict-preventio
 | FR55–FR56 | Copier public API only; `--unsafe` gate | S-10.1 |
 | FR57 | Distribution (conda + wheel/sdist) | S-12.1 |
 | FR58–FR59 | `--json` / `--quiet` / `--dry-run` | S-12.5 |
-| FR60 | `genesis version` (both versions) | S-11.6 |
+| FR60 | `marshal seed version` (both versions) | S-11.6 |
 | FR61 | Distinct documented exit codes | S-7.2, S-12.5 |
-| FR62 | `genesis explain <artifact>` | S-11.6 |
+| FR62 | `marshal seed explain <artifact>` | S-11.6 |
 
 ### NFR / Story Coverage Matrix
 
@@ -383,7 +383,7 @@ regions
 
 ### Story 8.3: Span substitution — the update primitive
 
-As `genesis update`,
+As `marshal seed update`,
 I want to replace a region's body by pure byte-span substitution,
 So that a half-merged or conflict-marked file is not representable.
 
@@ -408,7 +408,7 @@ belt-and-braces assertion)
 
 ### Story 8.4: Anchor resolution and region insertion
 
-As `genesis adopt`,
+As `marshal seed adopt`,
 I want to insert a region into a pre-existing file at a declared anchor,
 So that a team's `CLAUDE.md` gains the model content without Genesis guessing at structure.
 
@@ -442,7 +442,7 @@ So that I can diverge deliberately without fighting the tool every update.
 **Acceptance Criteria:**
 
 **Given** a repo where a previously-present managed region's markers have been deleted
-**When** `genesis check` or `genesis adopt` runs
+**When** `marshal seed check` or `marshal seed adopt` runs
 **Then** the region is classified `opted-out`, **not** `managed-region-missing`
 **And** the opt-out is recorded in state so later runs do not reinsert it
 **And** `check` reports it at **INFO** severity (never HARD or DRIFT)
@@ -484,7 +484,7 @@ enum
 
 ### Story 9.2: Repo inventory walker and artifact classification
 
-As `genesis adopt`,
+As `marshal seed adopt`,
 I want each manifest artifact classified against the target repo,
 So that the plan reflects what is actually there rather than what the model assumes.
 
@@ -704,7 +704,7 @@ named, so a skip is visible rather than invisible
 **And** dry-run invocations bypass the clean-worktree requirement (reading is always safe)
 **And** each refusal message states the remedy (P-10)
 
-### Story 10.5: `genesis check`
+### Story 10.5: `marshal seed check`
 
 As a CI pipeline,
 I want a read-only conformance verb with a non-zero exit,
@@ -716,7 +716,7 @@ FR25, FR26, FR27, FR28, NFR-P1
 **Acceptance Criteria:**
 
 **Given** an adopted repo
-**When** `genesis check` runs
+**When** `marshal seed check` runs
 **Then** it performs detect + plan and **never writes** — including not writing state, not
 writing `plan.json`, and not creating `.genesis/` (FR23), asserted against a write-blocking
 fixture
@@ -731,7 +731,7 @@ rather than erroring)
 **And** the human-readable report groups findings by severity with counts, in the shape of
 `bmad_drift_check.py`'s report
 
-### Story 10.6: `genesis adopt`
+### Story 10.6: `marshal seed adopt`
 
 As a team with a working repository,
 I want the model layered on without disturbing what already runs,
@@ -743,7 +743,7 @@ FR15, FR16, FR17, FR18, FR19, FR22, AD-10
 **Acceptance Criteria:**
 
 **Given** an existing repository
-**When** `genesis adopt` runs with no flags
+**When** `marshal seed adopt` runs with no flags
 **Then** it is **dry-run**: a plan is written and printed, and no repo file changes (FR14)
 **And** `--apply` executes the plan; `--yes` executes without interactive confirmation
 (unattended/CI use)
@@ -757,7 +757,7 @@ FR15, FR16, FR17, FR18, FR19, FR22, AD-10
 existing `CLAUDE.md` and a legacy convention adopts cleanly, its build-relevant files
 untouched
 
-### Story 10.7: `genesis init`
+### Story 10.7: `marshal seed init`
 
 As a maintainer starting a new project,
 I want a complete Dream-first repository in one command,
@@ -769,7 +769,7 @@ FR12, FR13
 **Acceptance Criteria:**
 
 **Given** an empty target directory
-**When** `genesis init <path> --slug <slug> --agents claude,cursor` runs
+**When** `marshal seed init <path> --slug <slug> --agents claude,cursor` runs
 **Then** every manifest artifact whose `applies_to` includes `init` is materialized
 **And** `docs/dreams/<slug>.md` is seeded with valid Tier-0 frontmatter (`title`, `type: dream`,
 `owner`, `status: seeded`) — and it is the **only** Dream written (FR9)
@@ -782,7 +782,7 @@ the two `_bmad-output` compatibility symlinks, `_bmad/custom/.active-project`,
 **And** state records `mode: init` plus both versions, agents, and per-artifact hashes (FR12)
 **And** init into a **non-empty** directory is refused unless `--force`, with the message
 directing the user to `adopt` (FR13)
-**And** `genesis check` on the fresh repo is green
+**And** `marshal seed check` on the fresh repo is green
 **And** init runs the same `resolve → detect → plan → apply` pipeline as adopt — asserted by a
 test that init produces a plan artifact identical in shape
 
@@ -869,11 +869,11 @@ skips unless `--include-seeded` is passed (FR32)
 **And** a migration targeting a never-write path fails at plan time, not apply time
 **And** **SC-07 is proven**: a simulated model v1 → v2 breaking change (a tier-table rule
 change plus a renamed managed artifact) is absorbed in a fixture repo with **zero manual
-edits**, and `genesis check` is green afterward
+edits**, and `marshal seed check` is green afterward
 **And** a gap in the migration chain (no path from the repo's version to the bundled version)
 is a clear error naming the missing step
 
-### Story 11.4: `genesis update` — two-phase
+### Story 11.4: `marshal seed update` — two-phase
 
 As a maintainer taking a model upgrade,
 I want a plan I can review and then apply,
@@ -885,7 +885,7 @@ FR34, FR35, FR36, SC-01
 **Acceptance Criteria:**
 
 **Given** a repo behind the bundled model version
-**When** `genesis update` runs with no flags
+**When** `marshal seed update` runs with no flags
 **Then** a plan is written naming every migration and every file action, and **nothing is
 changed** (FR29)
 **And** `--run` applies the plan
@@ -923,7 +923,7 @@ severity (not HARD — the repo is still conformant, the machine is not ready)
 rather than duplicating them, marking them as such in the report
 **And** the probe makes no network calls
 
-### Story 11.6: `genesis explain` and `genesis version`
+### Story 11.6: `marshal seed explain` and `marshal seed version`
 
 As an agent reading this repo,
 I want the model to describe its own rules,
@@ -934,13 +934,13 @@ So that the conventions are queryable rather than only narrated in prose.
 **Acceptance Criteria:**
 
 **Given** an artifact id or path
-**When** `genesis explain <artifact>` runs
+**When** `marshal seed explain <artifact>` runs
 **Then** it prints the artifact's class, its rationale from the manifest, its update behavior,
 and (for hybrid) its regions and anchors
 **And** it accepts a path as well as an id, resolving the path to its manifest entry
 **And** an unknown artifact yields a helpful message listing near matches
 **And** `--json` emits the same data structurally
-**And** `genesis version` prints **both** the CLI version and the bundled model version, plus
+**And** `marshal seed version` prints **both** the CLI version and the bundled model version, plus
 the adopted repo's model version when run inside one (FR60)
 **And** both verbs are read-only
 
@@ -995,7 +995,7 @@ AD-10
 **Acceptance Criteria:**
 
 **Given** the `local-recipes` repository at the shipped model version
-**When** `genesis adopt --dry-run` runs against it
+**When** `marshal seed adopt --dry-run` runs against it
 **Then** the resulting plan has **zero actions** (SC-02)
 **And** the test runs in Genesis's own CI so drift in the source repo fails Genesis's build
 (NFR-M2)
@@ -1053,7 +1053,7 @@ NFR-R4
 **And** **P-07** is enforced by an AST scan finding no hash comparison inside `apply/`
 **And** **P-09** is covered by S-12.3's import test
 **And** the layer rule (no upward imports; `detect` never imports `apply`/`engine`) is enforced
-**And** **SC-08 is proven**: `genesis update --run` against a fixture repo cannot write to
+**And** **SC-08 is proven**: `marshal seed update --run` against a fixture repo cannot write to
 `docs/dreams/**` or `**/planning-artifacts/**` — tested by a deliberately malicious manifest
 entry and a deliberately malicious migration, both of which must raise `NeverWriteViolation`
 **And** the symlinked-planning-artifacts case is included in the SC-08 proof

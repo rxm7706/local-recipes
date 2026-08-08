@@ -16,6 +16,9 @@ replan:
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
 updated: '2026-08-02'
 currency_review: "Reviewed 2026-08-02 — the architecture's own currency_review confirms it is unchanged since the 2026-07-16 rebaseline this epic breakdown already reflects (31 stories, FR32-FR40). Re-checked and confirmed current; no changes made."
+# The single canonical story source for this station: every `### Story` heading
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+epics_role: canonical
 ---
 
 # pyforge-warden - Epic Breakdown

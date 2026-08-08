@@ -8,11 +8,9 @@ sources:
   - ../../../../../../docs/dreams/jira-github-projects-sync.md
   - ../../../../../../docs/intake/jira-github-projects-sync/jira-github-projects-sync-prd-and-architecture.md
 open_questions:
-  - "Q1 — target scope undecided: an external GitHub/Jira project pair the operator uses elsewhere, or this repo's own tracking (sprint-status-ledger.yaml / a GitHub Projects board this repo does not yet have). The intake document is written generically ('PROJ' placeholder) and the Dream explicitly leaves this open."
   - "Q2 — no authoritative side is named. The Dream demands zero-loop bidirectional propagation but never says which system wins when the two boards disagree at sync time (simultaneous conflicting moves); the intake document's per-field sync-direction config is a mechanism for expressing an answer, not the answer itself."
   - "Q3 — Mode A (real-time serverless: GitHub Actions + Jira Automations) vs Mode B (scheduled batch: dlt + PostgreSQL) vs a deliberate combination is an architecture-phase decision the Dream refuses to pre-commit."
   - "Q4 — Mode B's data-model shape is unreconciled on purpose: flat single-table (direct custom_status column) vs normalized EAV schema + three-table control-plane bridge, and whether the bridge's entity-linking table replaces or coexists with the simpler custom-field linking."
-  - "Q5 — owner station is provisional: marshal (orchestration / cross-system visibility, and the natural consumer if the sync ever targets this repo's own tracking) vs steward (credential lifecycle — the NFRs lead with token/secret handling). The Dream asks for a deliberate call, not silent inheritance."
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -111,9 +109,10 @@ accidentally DDoS itself.
   deliberate combination) belongs to the architecture phase, informed by real usage patterns
   this contract does not yet have (Q3).
 - **Not picking Mode B's flat vs normalized schema shape** — same reasoning, same phase (Q4).
-- **Not (necessarily) this repo's own project tracking.** External pair vs this repo's
-  `sprint-status-ledger.yaml`/Issues surface is Q1, an open question — not a foregone
-  conclusion in either direction.
+- **Not this repo's own project tracking.** *(Q1 resolved 2026-08-08 — see § Resolved
+  Questions.)* The target is an external GitHub Projects V2 / Jira Cloud pair. This engine
+  never reads or writes `sprint-status-ledger.yaml`, the dashboard feed, or any build-line
+  artifact; wiring it to them would move it back across the seam into Marshal's tree.
 - **Not syncing fields beyond status, assignee, and the identity link.** Comments,
   descriptions, attachments, sprints, and estimates are out of scope for this contract.
 - **Not re-evaluating Steampipe or Octosync.** Both verdicts are on record in the Dream.
@@ -123,16 +122,28 @@ accidentally DDoS itself.
 A card moved once — on either board — shows up on the other board without a human touching
 the second system, and the operator can prove three things on demand: the change never echoed
 back (zero-loop), replaying the delivery changed nothing (idempotency), and every credential
-involved lives in the environment, not the repo or the logs. Until the Q1 scope call is made,
-"either board" means the target GitHub Projects V2 board and Jira Cloud project chosen at
-that decision — not an assumption baked into the engine.
+involved lives in the environment, not the repo or the logs. "Either board" means the
+external GitHub Projects V2 board and Jira Cloud project named at configuration time
+(Q1, resolved) — never this repo's own ledger or dashboard.
+
+## Resolved Questions
+
+- **Q1 — target scope. RESOLVED 2026-08-08 (operator): an external GitHub Projects V2 /
+  Jira Cloud pair**, independent of this repo's own `sprint-status-ledger.yaml`, dashboard
+  or story flow. The engine is not wired to the build line and must not assume it.
+- **Q5 — owner station. RESOLVED 2026-08-08 as a consequence of Q1, not independently.**
+  This Spec previously framed Q1 and Q5 as two open questions; they are one. Under the
+  Marshal/Steward seam (build line vs. the estate it stands on, ratified 2026-08-08),
+  syncing *this repo's own tracking* would make the engine a second consumer of the build
+  line's ledger — Marshal's. Syncing an *external* pair makes it an integration service
+  running on the estate — **Steward's**. Q1 therefore determines Q5 mechanically, and with
+  Q1 answered the ownership call follows: **owner `steward`**, chain relocated from
+  `pyforge-marshal` to `pyforge-steward` per INV-2. The credential-led NFRs land on
+  Steward's existing `keys` surface rather than needing a new one, which is corroborating
+  evidence rather than the reason.
 
 ## Open Questions
 
-- Q1 — target scope undecided: an external GitHub/Jira project pair the operator uses
-  elsewhere, or this repo's own tracking (`sprint-status-ledger.yaml` / a GitHub Projects
-  board this repo does not yet have). The intake document is written generically ("PROJ"
-  placeholder) and the Dream explicitly leaves this open.
 - Q2 — no authoritative side is named. The Dream demands zero-loop bidirectional propagation
   but never says which system wins when the two boards disagree at sync time (simultaneous
   conflicting moves); the intake document's per-field sync-direction config is a mechanism

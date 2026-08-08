@@ -1,6 +1,6 @@
 ---
 spec: genesis-installer-name-retirement
-status: draft
+status: shipped
 owner-dream: docs/dreams/genesis-installer-name-retirement.md
 companions:
   - citation-map.md
@@ -32,6 +32,15 @@ open_questions:
     (near-identical substance) rather than needing a new number at all.
 ---
 
+> **SHIPPED 2026-08-08** — executed in PR #318. All eight capabilities met: one `epics.md`
+> (Epics 1-12, 86 stories, `epics-genesis-installer.md` archived) · one FR space
+> `FR-1..FR-163` with no gaps · every installer-only namespace decided (`NFR-O1` retired
+> into `NFR-12`; `OQ-1..9` → `Q-17..25`; `SC-01..10` and `K-01..03` adopted as-is) · the
+> CLI framework decided (argparse, on measurement) · the `init`/`check` collisions
+> resolved via the `marshal seed` noun group · every `Satellite:` header gone · one
+> dashboard row · and **CAP-8 verified: all 59 `done` story keys byte-identical** to the
+> pre-rewrite snapshot. `.memlog.md` and `archive/` untouched throughout.
+>
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for this cleanup. `docs/dreams/genesis-installer-name-retirement.md` is cited for narrative rationale only.
 
 # SPEC — genesis-installer-name-retirement

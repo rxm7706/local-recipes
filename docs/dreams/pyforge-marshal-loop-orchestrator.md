@@ -1,5 +1,6 @@
 ---
 title: "Dream — PyForge Marshal: Loop Orchestrator"
+type: dream          # added 2026-08-08: this file predates the type: contract
 date: 2026-08-02
 status: archived
 archived-reason: duplicate

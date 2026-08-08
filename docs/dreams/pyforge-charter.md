@@ -34,7 +34,7 @@ specs and drives the build.
 
 ---
 
-## 🌌 The Genesis: The Dream
+## 🌌 The Dream — the absolute foundation
 
 The **Dream** is the absolute foundation of the BMAD Method. It represents the raw,
 ambitious human aspiration — unconstrained by syntax or technical debt — to solve a
@@ -78,7 +78,7 @@ factory successfully brought that dream to life.
 ### CLI Cadence
 ```bash
 # Seed a Dream's deck into Claude Design / pull the designed result back (the bridge)
-herald deck seed pyforge-genesis && herald deck pull pyforge-genesis
+herald deck seed pyforge-charter && herald deck pull pyforge-charter
 
 # Capture a raw vision/dream and generate the initial strategic slide deck
 herald deck generate --prompt "Build More Architect Dreams: AI Platform Concept" --output ./docs/vision_deck.pptx
@@ -483,29 +483,28 @@ Two clarifications, because both were live gaps until 2026-07-25:
   and *package identity* — and forbade the first to protect the second. Only the
   second needed protecting. Consequence: **eight Smiths, eight projects**; there
   is no placeholder project in the target state.
-- **`owner: guild` is reserved** for the two Dreams that *precede* the stations —
-  this Charter, which constitutes the Guild, and [[pyforge-genesis]], the
-  operating-model seed. Nothing else may claim it; a third `guild` is an
+- **`owner: guild` is reserved** for the one Dream that *precedes* the stations —
+  this Charter, which constitutes the Guild and records the Lexicon, the
+  membership, and the seed. Nothing else may claim it; a second `guild` is an
   unassigned Dream hiding behind a collective noun. (The retired `owner: crew`
   was exactly that, on four Dreams.)
 
-  **Their chains live in `pyforge-genesis`** *(clarified 2026-07-28)* — the
-  constitutive project: the origin Dream, and the records of this Charter, the
-  Lexicon, and the Guild's membership. It is the one project not named for a
-  Smith, because the two Dreams it holds precede the Smiths.
+  **Its chain lives in `docs/governance/`** *(amended 2026-08-08; see the
+  Realization log)* — not under `_bmad-output/projects/`, because a constitutive
+  document is not a station's work and no Smith may own the document that
+  constitutes the Smiths. `spec-pyforge-charter/` is the whole of it.
 
   **The seed's *installer* is not constitutive and is not held here.**
-  `genesis init` / `genesis adopt` — standing up a greenfield or brownfield repo
-  with the pixi environment, python, bmad-method, bmad-loop, the multi-project
-  wiring, skill-forge, and the BMM/BMB/TEA modules — is **buildable work owned by
-  the Marshal**, whose toolkit already lists every one of those components and
-  whose cadence already opens with `marshal init`. Constitutive records and the
-  machine that installs them are different nouns: the first authorizes, the
-  second is built.
+  Standing up a greenfield or brownfield repo with the pixi environment, python,
+  bmad-method, bmad-loop, the multi-project wiring, skill-forge, and the
+  BMM/BMB/TEA modules — is **buildable work owned by the Marshal**, whose toolkit
+  already lists every one of those components and whose cadence already opens
+  with `marshal init`. Constitutive records and the machine that installs them
+  are different nouns: the first authorizes, the second is built.
 
 Enforced, not merely asserted: `bmad-drift-check` emits a **`dream-unowned`**
 finding when a Dream names no station, names something outside the eight, or
-claims `guild` without being one of the two — and the Guildhall renders the
+claims `guild` without being this Charter — and the Guildhall renders the
 station on every row, so an unowned one is visible rather than merely blank.
 
 ### 6. The Skills — the unit of *execution* (wielded, never worn)
@@ -555,6 +554,29 @@ computed the answer and was throwing it away.
 
 The station is not a column on the board. It is the condition of appearing on it.
 
+### Outcome and mechanism — where a story lives
+
+*(Added 2026-08-08; see the Realization log. Closes a question four Specs asked
+independently and none could answer alone.)*
+
+Because each Smith works one craft, a single piece of work routinely spans two: the
+**outcome** belongs to one station, the **mechanism** that delivers it to another.
+Atlas wants its pipeline graph published, but publishing is Steward's `deploy`.
+Herald wants a live backend, but running a service is estate work. The question
+"whose backlog carries this story?" has no answer in the roster alone, and four
+Specs stalled on it in the same words.
+
+The rule: **the owner of the outcome writes the story; the owner of the mechanism
+owns the verb it calls.** The story lives in the outcome-owner's epics and consumes
+the mechanism-owner's shipped command as an ordinary dependency — it does not fork
+it, reimplement it, or migrate to the other station's tree. Ownership follows *what
+the work is for*, not *what it touches*.
+
+This is §5's separation applied to collaboration rather than to judgment: the
+station is still the unit of accountability, and a station accountable for an
+outcome it cannot deliver alone is accountable for *obtaining* the mechanism, not
+for owning it.
+
 ### The chain, read both ways
 
 **Forward — authorization** (how anything is allowed to happen): the Charter
@@ -574,6 +596,40 @@ decoration on the system — **the system is the mission, factored into seven no
 every noun does exactly one job, and every job has exactly one noun.** That property
 is the same discipline the architecture reviews enforce in code — sole ownership, one
 writer per contract, no dual homes — applied to the organization itself.
+
+---
+
+## Satellite: The Seed — the operating model, installed anywhere
+
+*(Absorbed 2026-08-08 from the retired `pyforge-genesis` Dream; see the Realization
+log. The name retires, the content does not.)*
+
+The model this Charter constitutes is not only *ours*. It is three things at once:
+
+- **The master idea** — the umbrella narrative describing the personas, the setup,
+  and the vision of a monorepo that builds libraries, skills, agents and crews on
+  the BMAD Method.
+- **The alignment instrument** — one deck that onboards anyone into the whole model
+  in ten minutes.
+- **The seed** — the bootstrapper that installs the operating model anywhere:
+  **greenfield**, a new repository born Dream-first with `docs/dreams/`, the tier
+  layout, the AGENTS.md family, BMAD multi-project wiring and the deck family from
+  day zero; and **brownfield**, layering the model onto an existing repo without
+  disturbing what already runs. **This repo was the first brownfield adoption.**
+
+What is real: the **master vision deck** (`presentations/pyforge-genesis/`, retained
+under its original directory name as a published artifact with a Claude Design twin);
+the **origin document** `archive/docs/bmad-setup-plan.md` — *"greenfield + brownfield,
+multi-project, unattended"* — the plan that set this repo up, of which the seed is the
+generalization beyond one repo; and the operating model itself, proven in production
+here.
+
+**The seed is what gets installed; the installer is what installs it**, and the two
+are different nouns — the first is constitutive and lives here, the second is
+buildable work owned by the Marshal (§ 5). The open extraction question belongs with
+the installer, not with this record: what is *copied* (conventions, skills,
+workflows) versus *referenced* (bmad-method releases) versus *generated* (per-repo
+Dreams).
 
 ---
 
@@ -637,6 +693,33 @@ herald broadcast slack,email --channel engineering-updates
 
 ## Realization log
 
+- **2026-08-08 (amendment)** — **`owner: guild` closes at one Dream; `pyforge-genesis`
+  retires as a name and is absorbed here** (operator decision). §5 previously read
+  *"reserved for the **two** Dreams that precede the stations — this Charter … and
+  [[pyforge-genesis]], the operating-model seed,"* and located both chains in a
+  `pyforge-genesis` project. That project had already dissolved on 2026-08-02, leaving
+  the constitutive pair split across two Dreams and two `docs/governance/` Specs for no
+  remaining reason: the installer half had moved to the Marshal on 2026-07-28, and what
+  was left was one record with two names. The seed's content is preserved verbatim as
+  § *Satellite: The Seed*; the Lexicon and membership capabilities fold into
+  `spec-pyforge-charter` as CAP-5..CAP-8. Retired artifacts are archived, never deleted:
+  `archive/docs/dreams/pyforge-genesis.md` and
+  `archive/docs/governance/spec-pyforge-genesis/`. `GUILD_DREAMS` drops to one entry in
+  **both** mirrors (`scripts/bmad_drift_check.py`, `docs/dashboard/generate.py`) in this
+  same commit, per the standing duplicated-constant constraint. **What did not change:**
+  the constitutive tier still exists and is still owned by no Smith — the circularity
+  argument that kept the Charter out of a station's tree in the first place is
+  untouched; one guild Dream is still not zero.
+- **2026-08-08 (addition)** — **§5 gains *Outcome and mechanism — where a story lives***.
+  Four Specs across four stations independently asked the same unanswerable question —
+  `jira-github-projects-sync` Q5 ("marshal vs steward"), `herald-moments-2-4-live-backend`
+  Q2 ("likely a Herald × Steward estate question, not Herald's call alone"),
+  `kedro-org-tooling-adoption` Q2 ("the Dream blesses owner ≠ mechanism, but the story has
+  to live somewhere"), `bmad-module-provisioning` Q1 — and none could resolve it from the
+  roster alone. The rule stated: the owner of the outcome writes the story; the owner of
+  the mechanism owns the verb it calls. Not a new noun and not a ninth station — a
+  clarification of §5's existing accountability separation, applied to collaboration
+  rather than to judgment.
 - **2026-07-28 (ratified)** — **§6 the Doctor holds the verdict on the Marshal's
   conformance.** The three cross-cutting practices ([[agent-tool-surface]],
   [[agent-portability]], [[agentic-sdlc-autonomy]]) are Marshal-owned but bind all eight

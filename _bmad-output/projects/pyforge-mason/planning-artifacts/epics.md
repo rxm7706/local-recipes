@@ -20,6 +20,9 @@ revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
 updated: '2026-08-02'
 currency_review: "Reviewed 2026-08-02 — the architecture spine's AD-13/AD-15/AD-25/AD-26 now bind FR-47..FR-50, matching this epics doc's own r2 revision (S-1.10, S-3.9, S-5.5), which already fully covered FR-47..FR-50 (see the FR coverage table above). Re-checked and confirmed current; no story changes made."
+# The single canonical story source for this station: every `### Story` heading
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+epics_role: canonical
 ---
 
 # pyforge-mason — Epic Breakdown

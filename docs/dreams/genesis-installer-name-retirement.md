@@ -2,10 +2,15 @@
 title: Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain
 type: dream
 owner: marshal
-status: dreamt
+status: archived
 ---
 
 # Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain
+
+> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
+> here*). This file is archived in place: its **Spec stays live and remains the
+> contract** — archiving the Dream tier never retires the chain below it. Kept, not
+> deleted, so the reasoning that produced the Spec is still readable.
 
 ## The Dream
 

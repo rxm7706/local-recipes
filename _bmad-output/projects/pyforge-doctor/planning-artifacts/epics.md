@@ -10,6 +10,10 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
 updated: '2026-08-02'
 currency_review: "Reviewed 2026-08-02 — added Epic 4 (Stories 4.1-4.4, FR-10..13) decomposing the fresh docs/dreams/pyforge-doctor.md's frontier section. Mechanically verified: all 13 PRD FRs trace to epics.md both directions, 16/16 unique story ids, zero orphans."
+# The single canonical story source for this station: every `### Story` heading
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+epics_role: canonical
+---
 
 # pyforge-doctor - Epic Breakdown
 

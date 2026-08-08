@@ -9,6 +9,9 @@ stepsCompleted:
   - step-03-create-stories
 totalStories: 18
 totalEpics: 7
+# A generated summary of this station's canonical epics.md. Never hand-edited,
+# never the merge target, never the story-key source (AD-72).
+epics_role: derived
 ---
 
 # Herald Moments 2–4 — Complete Epics & Stories (Ready for Development)

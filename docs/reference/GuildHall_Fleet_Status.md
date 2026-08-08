@@ -14,7 +14,7 @@ revision of this table.
 | **Station** | **Dream** | **Deck** | **Spec** | **Rsch** | **Brief** | **PRD** | **UX** | **Arch** | **Context** | **Epics** | **Sprint** | **TEA** | **Gates** | **Code** | **Tested** | **Retro** | **Status** |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
 | **🎺 Herald** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 47/47 stories (Epics 6-12 merged, PRs #307-#316) |
-| **⚔️ Marshal** | 🚀 | 📋 | ✅ | ✅ | 🏗️ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | 🚀 | 🚀 | ◯ | 🚀 In progress — 50/86 stories (Epics 1-6 done; 7-9 backlog, 17 stories) |
+| **⚔️ Marshal** | 🚀 | 📋 | ✅ | ✅ | 🏗️ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | 🚀 | 🚀 | ◯ | 🚀 In progress — 50/86 stories (Epics 1-6 done; 7-12 backlog, 36 stories) |
 | **🗺️ Atlas** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 7/7 stories, epics 0-9 shipped |
 | **🛡️ Warden** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 31/31 stories |
 | **🧱 Mason** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | 🎯 | 🎯 | ◯ | 🎯 Early — 4/38 stories (Epic 1 stories 1.1-1.4 done; 1.5 onward + Epics 2-5 backlog, 34 stories) |
@@ -245,7 +245,7 @@ Standard Markdown doesn't support merged columns (colspans), so to ensure you ca
 | Status        | Count | Stations                                      | Notes                                              |
 | ------------- | :---: | ---------------------------------------------- | -------------------------------------------------- |
 | ✅**Done**    |   6   | Herald, Atlas, Warden, Doctor, Scribe, Steward | All stories merged (Atlas also has tracked retros; the other 5 don't) |
-| 🚀**In progress** |   1   | Marshal                | 50/86 stories done; Epics 7-9 (17 stories) backlog |
+| 🚀**In progress** |   1   | Marshal                | 50/86 stories done; Epics 7-12 (36 stories) backlog |
 | 🎯**Early**   |   1   | Mason                  | 4/38 stories done; Epic 1 story 1.5 onward + Epics 2-5 (34 stories) backlog |
 
 ---
@@ -254,11 +254,18 @@ Standard Markdown doesn't support merged columns (colspans), so to ensure you ca
 
 ### Immediate
 
-1. **Marshal Epics 7-9** 🚀
+1. **Marshal Epics 7-12** 🚀
 
    - Skill: `bmad-create-story` → `bmad-quick-dev` (no story specs written yet for 7-1 onward)
    - Owner: Marshal
-   - Remaining: 17 stories (extraction manifest, marker/region substitution engine, findings/inventory scanner)
+   - Remaining: 36 stories — 7 extraction manifest (6), 8 marker/region substitution engine (5),
+     9 findings/inventory scanner (6), 10 the copier-engine wrapper (7), 11 update + migration
+     registry + agent-adapter fan-out (6), 12 pixi wiring, offline operation, the never-write
+     proof (6). Epics 10-12 are the absorbed installer epics.
+   - **A planning rewrite is in flight (2026-08-08)** that consolidates Marshal's chain to one
+     Dream / Spec / PRD / architecture / epics, absorbs the 10 open Marshal Specs, and adds
+     `pyforge-core`. These epic numbers and counts are the pre-rewrite state; re-read
+     `sprint-status-ledger.yaml` after it lands.
 2. **Mason Epic 1 (story 1.5 onward) + Epics 2-5** 🎯
 
    - Skill: `bmad-create-story` → `bmad-quick-dev` (no story specs written yet)
