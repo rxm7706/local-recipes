@@ -3,8 +3,8 @@ Story 1.6; Epic 6 -- Stories 6.1/6.2/6.3/6.5 -- extends it with the
 ``progress``/``success``/``notice`` Moment subcommands, shared global flags,
 the operator-role write gate, and inline help).
 
-``deck``'s own subparsers gained ``pull`` in Epic 2, ``status`` in Epic 3
-(``watch`` still lands in Epic 4). ``progress``/``success``/``notice`` are
+``deck``'s own subparsers gained ``pull`` in Epic 2, ``status`` in Epic 3,
+and ``watch`` in Epic 4. ``progress``/``success``/``notice`` are
 placeholder handlers only -- their real Moment logic is
 Epics 8/9/10's scope (Story 6.1's own AC says so explicitly: "handler
 returns 'not yet implemented' or placeholder").
@@ -48,7 +48,7 @@ from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 
-from . import __version__, auth, bridge, deck_pipeline, errors
+from . import __version__, auth, bridge, deck_pipeline, errors, watch as watch_module
 from .transport import McpTransport
 
 TOOL_NAME = "herald"
@@ -227,7 +227,32 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
     )
-    # watch lands in Epic 4, under this same deck_subparsers group.
+    watch = deck_subparsers.add_parser(
+        "watch",
+        help=(
+            "poll one or more decks for Design-side edits and pull "
+            "automatically once settled (CAP-4)"
+        ),
+    )
+    watch.add_argument(
+        "slugs", nargs="+", metavar="slug", help="deck slug(s), e.g. pyforge-warden"
+    )
+    watch.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    watch.add_argument(
+        "--interval",
+        type=float,
+        default=watch_module.DEFAULT_POLL_INTERVAL,
+        help=(
+            f"poll interval in seconds (default: "
+            f"{watch_module.DEFAULT_POLL_INTERVAL:g}; floor: "
+            f"{watch_module.MIN_POLL_INTERVAL:g})"
+        ),
+    )
 
     global_flags = _global_flags_parent()
 
@@ -326,6 +351,8 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_pull(args)
     if args.command == "deck" and args.deck_command == "status":
         return _run_deck_status(args)
+    if args.command == "deck" and args.deck_command == "watch":
+        return _run_deck_watch(args)
     if args.command == "progress":
         return _run_progress(args)
     if args.command == "success":
@@ -446,6 +473,34 @@ def _run_deck_status(args: argparse.Namespace) -> int:
                     for result in results
                 ]
             )
+        )
+
+    return dispatch(operation)
+
+
+def _run_deck_watch(args: argparse.Namespace) -> int:
+    """Compose ``bridge.run`` + ``watch.watch`` over the V1-default
+    ``McpTransport`` and hand the whole (long-running) operation to
+    ``dispatch`` (AD-6), mirroring ``_run_deck_seed``/``_run_deck_pull``'s
+    composition shape exactly: ``McpTransport()`` is constructed inside
+    ``operation``, never before ``dispatch`` is called.
+
+    An ``AuthError`` raised mid-loop (Story 4.3) is caught by ``dispatch``
+    exactly like every other ``HeraldError`` -- that is what halts every
+    watched deck at once, with ``dispatch``'s usual one-stderr-line/exit-code
+    reporting and no parallel error path."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        transport = McpTransport()
+        bridge.run(
+            transport,
+            lambda t: watch_module.watch(
+                t,
+                slugs=args.slugs,
+                repo_root=repo_root,
+                interval=args.interval,
+            ),
         )
 
     return dispatch(operation)
