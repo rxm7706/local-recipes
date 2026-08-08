@@ -3237,7 +3237,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 20:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 20:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -14267,8 +14267,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 20:41 UTC",
-    "generatedEpoch": 1786221664
+    "generatedAt": "2026-08-08 20:43 UTC",
+    "generatedEpoch": 1786221807
   },
   "storySpecs": [
     {
@@ -14330,6 +14330,52 @@ window.DASHBOARD_DATA = {
     "rows": [
       {
         "station": "marshal",
+        "project": "pyforge-marshal",
+        "epicsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-agent-tool-surface",
+            "status": "in-progress",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md"
+          },
+          {
+            "slug": "spec-dashboard-project-path-derivation",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md"
+          },
+          {
+            "slug": "spec-dream-to-code-model-self-verification",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification/SPEC.md"
+          },
+          {
+            "slug": "spec-fleet-chain-completeness",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md"
+          },
+          {
+            "slug": "spec-loop-home-fleet-refresh",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/SPEC.md"
+          },
+          {
+            "slug": "spec-pyforge-core",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md"
+          },
+          {
+            "slug": "spec-pyforge-testing-charter",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md"
+          },
+          {
+            "slug": "spec-sprint-status-auto-promote",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md"
+          }
+        ],
         "done": 50,
         "backlog": 35,
         "blocked": 1,
@@ -14338,20 +14384,72 @@ window.DASHBOARD_DATA = {
         "blockedKeys": [
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
         ],
+        "backlogKeys": [
+          "10-1-copier-engine-wrapper-the-single-seam",
+          "10-2-state-schema-and-the-atomic-store",
+          "10-3-the-apply-runner-transactional-guarded",
+          "10-4-preconditions-refusals-and-skips",
+          "10-5-marshal-seed-check",
+          "10-6-marshal-seed-adopt",
+          "10-7-marshal-seed-init",
+          "11-1-neutral-contract-and-agent-adapter-fan-out"
+        ],
         "state": "ready"
       },
       {
         "station": "mason",
+        "project": "pyforge-mason",
+        "epicsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-conda-forge-expert-rebuild",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
+          }
+        ],
         "done": 4,
         "backlog": 34,
         "blocked": 0,
         "total": 38,
         "next": "1-10-configuration-surface-logging-and-child-output-streaming",
         "blockedKeys": [],
+        "backlogKeys": [
+          "1-10-configuration-surface-logging-and-child-output-streaming",
+          "1-5-cfe-root-resolution-chain",
+          "1-6-interpreter-selection-and-cfe-import-floor-probe",
+          "1-7-degradation-when-cfe-is-unavailable",
+          "1-8-mason-doctor",
+          "1-9-fake-cfe-root-fixture-and-test-harness",
+          "2-1-the-cfe-port",
+          "2-10-mason-recipe-update"
+        ],
         "state": "ready"
       },
       {
         "station": "steward",
+        "project": "pyforge-steward",
+        "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-bmad-module-provisioning",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning/SPEC.md"
+          },
+          {
+            "slug": "spec-jira-github-projects-sync",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md"
+          },
+          {
+            "slug": "spec-unified-container",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container/SPEC.md"
+          }
+        ],
         "done": 18,
         "backlog": 10,
         "blocked": 5,
@@ -14364,56 +14462,124 @@ window.DASHBOARD_DATA = {
           "8-4-fail-loud-fail-alone",
           "8-5-explicit-status-vocabulary-translation"
         ],
+        "backlogKeys": [
+          "5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init",
+          "5-2-consume-the-sprint-ledger-never-derive-story-status",
+          "6-1-provision-module-name",
+          "6-2-provision-list-modules",
+          "6-3-partial-install-is-a-named-failure",
+          "7-1-one-build-whole-guild",
+          "7-2-the-repo-at-a-fixed-short-path",
+          "7-3-credentials-never-enter-image-layers"
+        ],
         "state": "ready"
       },
       {
         "station": "atlas",
+        "project": "pyforge-atlas",
+        "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-kedro-org-tooling-adoption",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/SPEC.md"
+          },
+          {
+            "slug": "spec-upstream-discovery",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/SPEC.md"
+          }
+        ],
         "done": 38,
         "backlog": 8,
         "blocked": 0,
         "total": 46,
         "next": "12-1-kedro-skills-audit-then-adopt",
         "blockedKeys": [],
+        "backlogKeys": [
+          "12-1-kedro-skills-audit-then-adopt",
+          "12-2-publish-the-real-dag-continuously",
+          "12-3-record-the-vscode-kedro-verdict",
+          "13-1-trending-ingest",
+          "13-2-tier-classification",
+          "13-3-trending-candidates-operator-surface",
+          "13-4-fixed-source-audit-track",
+          "13-5-downstream-handoff-to-mason"
+        ],
         "state": "ready"
       },
       {
         "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [],
         "done": 17,
         "backlog": 1,
         "blocked": 0,
         "total": 18,
         "next": "5-2-render-the-verdict-through-a-doctor-verb",
         "blockedKeys": [],
+        "backlogKeys": [
+          "5-2-render-the-verdict-through-a-doctor-verb"
+        ],
         "state": "ready"
       },
       {
         "station": "herald",
+        "project": "pyforge-herald",
+        "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-herald-moments-2-4-live-backend",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend/SPEC.md"
+          }
+        ],
         "done": 47,
         "backlog": 0,
         "blocked": 0,
         "total": 47,
         "next": "",
         "blockedKeys": [],
+        "backlogKeys": [],
         "state": "complete"
       },
       {
         "station": "scribe",
+        "project": "pyforge-scribe",
+        "epicsPath": "_bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs",
+        "openSpecs": [],
         "done": 9,
         "backlog": 0,
         "blocked": 0,
         "total": 9,
         "next": "",
         "blockedKeys": [],
+        "backlogKeys": [],
         "state": "complete"
       },
       {
         "station": "warden",
+        "project": "pyforge-warden",
+        "epicsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs",
+        "openSpecs": [],
         "done": 31,
         "backlog": 0,
         "blocked": 0,
         "total": 31,
         "next": "",
         "blockedKeys": [],
+        "backlogKeys": [],
         "state": "complete"
       }
     ],

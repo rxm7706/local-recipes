@@ -1884,14 +1884,36 @@ def scan_readiness() -> dict:
         totals.update(counts)
         nxt = sorted(k for k, v in statuses.items() if v == "backlog")
         blocked = sorted(k for k, v in statuses.items() if v == "blocked")
+        proj = f"pyforge-{key}" if slug.startswith("pyforge-") else slug
+        pa = f"_bmad-output/projects/{slug}/planning-artifacts"
+        specs_dir = REPO_ROOT / pa / "specs"
+        open_specs = []
+        if specs_dir.is_dir():
+            for sm in sorted(specs_dir.glob("spec-*/SPEC.md")):
+                st = ""
+                try:
+                    head = sm.read_text(encoding="utf-8").split("---")[1]
+                    m = re.search(r"^status:\s*(\S+)", head, re.M)
+                    st = m.group(1).strip() if m else ""
+                except Exception:
+                    pass
+                if st in ("draft", "ready", "in-progress"):
+                    open_specs.append({"slug": sm.parent.name, "status": st,
+                                       "path": f"{pa}/specs/{sm.parent.name}/SPEC.md"})
         rows.append({
             "station": key,
+            "project": slug,
+            "epicsPath": f"{pa}/epics.md",
+            "ledgerPath": f"{pa}/sprint-status-ledger.yaml",
+            "specsPath": f"{pa}/specs",
+            "openSpecs": open_specs,
             "done": counts.get("done", 0),
             "backlog": counts.get("backlog", 0),
             "blocked": counts.get("blocked", 0),
             "total": len(statuses),
             "next": nxt[0] if nxt else "",
-            "blockedKeys": blocked[:6],
+            "blockedKeys": blocked[:8],
+            "backlogKeys": nxt[:8],
             # A station with nothing runnable is not "ready" — it is finished or stuck,
             # and the board should say which rather than rendering an empty cell.
             "state": ("complete" if counts.get("done", 0) == len(statuses)

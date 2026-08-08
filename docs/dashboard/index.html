@@ -1143,37 +1143,74 @@
     document.getElementById("commandblocks").innerHTML = tableHtml + summary;
   }
 
-  // ---- Launch Readiness -----------------------------------------------------
+  // ---- Launch Readiness (panels, one per station) ---------------------------
   const RD = window.DASHBOARD_DATA.readiness || null;
   if (RD && RD.rows && RD.rows.length) {
     document.getElementById("readysec").hidden = false;
-    const t = RD.totals;
-    document.getElementById("readyh").textContent =
-      "Launch Readiness · " + t.done + " done · " + t.backlog + " backlog · " +
-      t.blocked + " blocked · " + t.total + " total";
+    const rt = RD.totals;
+    document.getElementById("readyh").innerHTML =
+      'Launch Readiness <span class="zn">· ' + rt.done + ' done · ' + rt.backlog +
+      ' backlog · ' + rt.blocked + ' blocked · ' + rt.total + ' total — click a station to expand</span>';
 
-    const pct = (d, tot) => tot ? Math.round((d / tot) * 100) : 0;
-    let html = '<table class="ztbl"><thead><tr>' +
-      '<th>Station</th><th>Done</th><th>Backlog</th><th>Blocked</th>' +
-      '<th>Progress</th><th>State</th><th>Next runnable</th></tr></thead><tbody>';
+    const rzone = document.getElementById("readyblocks");
+    const link = (path, label) =>
+      '<a href="' + REPO + '/blob/main/' + esc(path) + '">' + esc(label) + '</a>';
+    const keyList = (keys, cls) => keys.map(k =>
+      '<code class="' + (cls || "") + '">' + esc(k) + '</code>').join(" ");
+
     RD.rows.forEach(r => {
-      const cls = r.state === "complete" ? "ok" : r.state === "blocked" ? "bad" : "";
-      html += '<tr>' +
-        '<td><b>' + r.station + '</b></td>' +
-        '<td>' + r.done + '</td>' +
-        '<td>' + (r.backlog || "—") + '</td>' +
-        '<td>' + (r.blocked ? '<span class="bad">' + r.blocked + '</span>' : "—") + '</td>' +
-        '<td>' + r.done + '/' + r.total + ' · ' + pct(r.done, r.total) + '%</td>' +
-        '<td><span class="' + cls + '">' + r.state + '</span></td>' +
-        '<td><code>' + (r.next || "—") + '</code></td>' +
-        '</tr>';
-      if (r.blockedKeys && r.blockedKeys.length) {
-        html += '<tr><td></td><td colspan="6" class="dim">blocked: ' +
-          r.blockedKeys.map(k => '<code>' + k + '</code>').join(", ") + '</td></tr>';
+      const pct = r.total ? Math.round(r.done / r.total * 100) : 0;
+      const det = document.createElement("details");
+      det.id = "ready-" + r.station;
+      det.className = "pconsole " + ({warden: "pw", atlas: "pa"}[r.station] || "pr");
+      const stateCls = r.state === "complete" ? "ok" : r.state === "blocked" ? "bad" : "";
+
+      let body = '<div class="phead">' +
+        '<div><div class="bignum">' + r.done + '<span class="of"> / ' + r.total + '</span></div>' +
+        '<div class="bignum-label">stories complete · ' + esc(r.station) + '</div></div></div>';
+
+      body += '<div class="contractline"><b>State</b> <span class="' + stateCls + '">' +
+        esc(r.state) + '</span>' +
+        (r.next ? ' · <b>next runnable</b> <code>' + esc(r.next) + '</code>'
+                : ' · <b>nothing runnable</b> — ' +
+                  (r.state === "complete" ? "every story done" : "all remaining work is blocked")) +
+        '</div>';
+
+      if (r.backlogKeys && r.backlogKeys.length) {
+        body += '<div class="contractline"><b>Backlog</b> (' + r.backlog + ') ' +
+          keyList(r.backlogKeys) +
+          (r.backlog > r.backlogKeys.length
+            ? ' <span class="dim">+' + (r.backlog - r.backlogKeys.length) + ' more</span>' : "") +
+          '</div>';
       }
+      if (r.blockedKeys && r.blockedKeys.length) {
+        body += '<div class="contractline"><b class="bad">Blocked</b> (' + r.blocked +
+          ') ' + keyList(r.blockedKeys, "bad") +
+          ' <span class="dim">— a blocked story names its gate in the epics doc; it will not be picked up</span></div>';
+      }
+      if (r.openSpecs && r.openSpecs.length) {
+        body += '<div class="contractline"><b>Open Specs</b> (' + r.openSpecs.length + ') ' +
+          r.openSpecs.map(s => link(s.path, s.slug) +
+            ' <span class="dim">' + esc(s.status) + '</span>').join(" · ") + '</div>';
+      }
+      body += '<div class="contractline"><b>Artifacts</b> ' +
+        link(r.epicsPath, "epics.md") + ' · ' +
+        link(r.ledgerPath, "sprint-status-ledger.yaml") + ' · ' +
+        link(r.specsPath, "specs/") + '</div>';
+
+      det.innerHTML =
+        '<summary>' +
+          '<div class="pname"><span class="pdot"></span>' + esc(r.station) +
+            '<span class="' + stateCls + '" style="margin-left:8px;font-size:11px">' +
+            esc(r.state) + '</span></div>' +
+          '<div class="pbar"><div class="pbar-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="pfrac"><b>' + r.done + '</b> / ' + r.total +
+            ' <span class="pct">· ' + pct + '%</span></div>' +
+          '<span class="disclose">▸ detail</span>' +
+        '</summary>' +
+        '<div class="cbody">' + body + '</div>';
+      rzone.appendChild(det);
     });
-    html += '</tbody></table>';
-    document.getElementById("readyblocks").innerHTML = html;
   }
 
   // ---- 2d · Fleet (Dream -> Code state per project) ----
