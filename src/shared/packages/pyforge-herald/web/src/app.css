@@ -540,3 +540,120 @@
     white-space: normal;
   }
 }
+
+/* Operations notice board (Story 10.5) ---------------------------------- */
+
+.operations-panel h2 {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  margin: 0 0 8px;
+}
+
+.operations-panel__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.operations-panel__toolbar label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.operations-panel__toolbar select {
+  min-height: var(--touch-target);
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  border: 1.5px solid var(--color-divider);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.operations-panel__loading {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.notice-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notice-card {
+  border: 1.5px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+.notice-card--closed {
+  opacity: 0.65;
+}
+
+.notice-card__header {
+  width: 100%;
+  min-height: var(--touch-target);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 14px;
+  text-align: left;
+}
+
+.notice-card__badge {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.notice-card__component {
+  font-weight: 700;
+  flex: 1;
+}
+
+.notice-card__status {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.notice-card__deadline {
+  font-size: 12px;
+  color: var(--color-accent-700);
+}
+
+.notice-card__detail {
+  padding: 0 12px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notice-card__closed-note {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* Mobile: one notice per row. */
+@media (max-width: 767px) {
+  .notice-board {
+    grid-template-columns: 1fr;
+  }
+}
+
