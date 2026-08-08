@@ -1049,9 +1049,19 @@ def _status_for_slug(
     else:
         sync = "unchanged"
 
-    stale_mirror = _is_stale_mirror(
-        transport.list_files(project_id=existing.project_id)
-    )
+    try:
+        listed_files = transport.list_files(project_id=existing.project_id)
+    except errors.TransportError:
+        # Same "the far end could not be reached" treatment as the
+        # read_file loop above -- a stale-mirror check that cannot reach
+        # Design tells us nothing new; it was already conflicted, or is
+        # marked so now, rather than crashing this deck's (and every other
+        # known deck's -- see status()'s list comprehension) status report.
+        saw_conflict = True
+        listed_files = []
+    stale_mirror = _is_stale_mirror(listed_files)
+    if saw_conflict:
+        sync = "conflict"
 
     return DeckStatus(
         slug=slug,
@@ -1099,8 +1109,37 @@ def status(
     resolved_state_path = (
         repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     )
-    slugs = [slug] if slug is not None else _known_slugs(repo_root, resolved_state_path)
-    return [
-        _status_for_slug(transport, slug=one, state_path=resolved_state_path)
-        for one in slugs
-    ]
+    if slug is not None:
+        # A single explicit slug: a structural failure (e.g. a bogus
+        # tracked-artifact key -- AD-6) still raises plainly, matching
+        # every other single-deck operation in this module. There is no
+        # "rest of the batch" to protect here.
+        return [_status_for_slug(transport, slug=slug, state_path=resolved_state_path)]
+    slugs = _known_slugs(repo_root, resolved_state_path)
+    return [_status_or_conflict(transport, one, resolved_state_path) for one in slugs]
+
+
+def _status_or_conflict(
+    transport: DesignTransport, slug: str, state_path: Path
+) -> DeckStatus:
+    """``_status_for_slug``, with one deck's structural failure (``state.py``
+    is malformed for this slug, or names an artifact key this version does
+    not recognize -- both raise ``errors.HeraldError``, AD-6) downgraded to
+    a ``"conflict"`` status instead of propagating. Only used for the
+    multi-deck (``slug=None``) path in ``status()``: without this, ONE bad
+    deck would abort the ENTIRE report, discarding every other deck's
+    perfectly valid status -- exactly the "at a glance across the fleet"
+    use case this epic exists for. A single-slug request still raises
+    plainly (see ``status()``'s own branch), matching every other
+    single-deck operation in this module."""
+    try:
+        return _status_for_slug(transport, slug=slug, state_path=state_path)
+    except errors.HeraldError:
+        return DeckStatus(
+            slug=slug,
+            linked=True,
+            project_id=None,
+            sync="conflict",
+            last_pull=None,
+            stale_mirror=False,
+        )

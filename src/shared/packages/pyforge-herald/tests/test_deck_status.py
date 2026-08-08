@@ -15,7 +15,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from pyforge.herald import state
 from pyforge.herald.deck_pipeline import DeckStatus, _is_stale_mirror, status
 from pyforge.herald.errors import HeraldError, TransportCallError
@@ -27,11 +26,14 @@ class FakeStatusTransport:
     ``read_file``/``list_files`` -- every other method raises, since
     ``status`` must never call a write-side transport method (FR-13)."""
 
-    def __init__(self, *, read_answers=None, list_files_answer=None):
+    def __init__(
+        self, *, read_answers=None, list_files_answer=None, list_files_fails=None
+    ):
         self.calls: list[tuple[str, dict]] = []
         # path -> FileRead | Exception | list of either, consumed per call.
         self._read_answers: dict = dict(read_answers or {})
         self._list_files_answer = list(list_files_answer or [])
+        self._list_files_fails = list_files_fails
 
     def read_file(self, **kwargs) -> FileRead:
         self.calls.append(("read_file", kwargs))
@@ -50,6 +52,8 @@ class FakeStatusTransport:
 
     def list_files(self, **kwargs) -> list[ListedFile]:
         self.calls.append(("list_files", kwargs))
+        if self._list_files_fails is not None:
+            raise self._list_files_fails
         return self._list_files_answer
 
     def get_design_prompt(self, **kwargs):
@@ -239,6 +243,52 @@ def test_status_raises_for_an_unrecognized_tracked_artifact_key(tmp_path: Path):
     transport = FakeStatusTransport()
     with pytest.raises(HeraldError, match="bogus-key"):
         status(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+
+def test_status_multi_deck_isolates_one_slugs_malformed_entry(tmp_path: Path):
+    """Regression: a single-slug request still raises plainly (the test
+    above), but a no-slug multi-deck report must not let ONE bad entry
+    abort the whole batch -- the report degrades that one deck to
+    `sync="conflict"` and still returns every other deck's real status."""
+    _seed_state(tmp_path, "pyforge-good", etags={"prototype": "E1"})
+    _seed_state(tmp_path, "pyforge-bad", etags={"bogus-key": "E1"})
+    transport = FakeStatusTransport(
+        read_answers={
+            "PyForge Good.dc.html": FileRead(
+                path="x", etag="E1", body="<html/>", unchanged=True
+            )
+        }
+    )
+
+    results = {r.slug: r for r in status(transport, repo_root=tmp_path)}
+
+    assert results["pyforge-good"].sync == "unchanged"
+    assert results["pyforge-bad"].sync == "conflict"
+
+
+def test_status_list_files_failure_is_reported_as_conflict_not_a_crash(
+    tmp_path: Path,
+):
+    """Regression: the stale-mirror `list_files` call had no exception
+    handling, unlike the `read_file` comparison loop three lines above it
+    -- a transport failure reaching Design for the stale-mirror check
+    crashed the whole status report (and, for a no-slug call, every other
+    deck's report too) instead of degrading gracefully like every other
+    transport failure in this function."""
+    _seed_state(tmp_path, "pyforge-warden", etags={"prototype": "E1"})
+    transport = FakeStatusTransport(
+        read_answers={
+            "PyForge Warden.dc.html": FileRead(
+                path="x", etag="E1", body="<html/>", unchanged=True
+            )
+        },
+        list_files_fails=TransportCallError("list_files: network blip"),
+    )
+
+    [result] = status(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    assert result.sync == "conflict"
+    assert result.stale_mirror is False
 
 
 def test_status_uses_the_short_name_marp_path_and_persona_standalone_path(

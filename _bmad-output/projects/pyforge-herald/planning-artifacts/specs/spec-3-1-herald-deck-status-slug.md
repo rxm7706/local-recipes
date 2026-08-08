@@ -194,3 +194,33 @@ when both occur in the same deck.
   practice of treating a same-agent self-review as insufficient on its own -- an independent second
   pass (and, per Story 2.1's own precedent, an eventual live-MCP smoke test of `list_files` and
   `status` against a real seeded deck) are the two checks this pass could not perform itself.
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[high]` `[patch]` **The stale-mirror `transport.list_files` call was unguarded**, unlike the
+  `read_file` comparison loop three lines above it, which explicitly catches `errors.TransportError`
+  and downgrades to `sync: "conflict"`. A transport failure reaching Design for the stale-mirror
+  check (a network blip, a deleted/renamed Design project -- exactly the scenario the `read_file`
+  loop already handles gracefully) propagated uncaught out of `_status_for_slug`, and for a no-slug
+  multi-deck report, aborted the ENTIRE report for every other deck too -- directly contradicting
+  the epic's own "at a glance across the fleet" purpose. Found independently by both reviewers.
+  Fixed: `list_files` is now wrapped in the same `try/except errors.TransportError` pattern as
+  `read_file`, downgrading to `sync: "conflict"` for that one deck. New regression test:
+  `test_status_list_files_failure_is_reported_as_conflict_not_a_crash`.
+- `[high]` `[patch]` **A single deck's structurally malformed `state.py` entry (or an unrecognized
+  tracked-artifact key) also aborted the entire multi-deck report** -- `status()`'s no-slug list
+  comprehension called `_status_for_slug` for every known slug with no per-slug isolation, so one
+  bad entry propagated and discarded every other deck's perfectly valid status (Edge Case Hunter
+  finding). Fixed: the multi-deck path now routes through a new `_status_or_conflict` wrapper that
+  catches `errors.HeraldError` per slug and degrades to `sync: "conflict"` for that deck only. A
+  single explicit-slug request (`herald deck status <slug>`) is deliberately **unaffected** and
+  still raises plainly -- confirmed by keeping `test_status_raises_for_an_unrecognized_tracked_artifact_key`
+  green rather than weakening it, matching every other single-deck operation in this module. New
+  regression test: `test_status_multi_deck_isolates_one_slugs_malformed_entry`.
+- `addressed_findings`: 2 (both high). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 504 passed, 2 skipped; `ruff format --check`/`ruff check` clean.
+
+**Follow-up review recommendation:** none outstanding beyond the pre-existing, already-disclosed
+deferred live-MCP smoke test of `list_files`/`status` against a real seeded deck.
