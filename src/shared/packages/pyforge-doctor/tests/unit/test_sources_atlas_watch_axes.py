@@ -317,6 +317,13 @@ def test_abandonment_one_sub_call_failing_does_not_hide_the_others():
         mcp_caller=_abandonment_mcp_caller(
             raise_for=frozenset({("feedstock_health", "stuck")})
         ),
+        # The CLI fallback MUST be injected. Without it `gather` falls through to the
+        # real `.claude/scripts/conda-forge-expert/feedstock_health.py` on disk, which
+        # exists and succeeds -- so `_FetchFailed` never raises, no degraded sentinel
+        # is emitted, and this test silently asserts nothing. It passed only on a
+        # machine where that script was missing. This suite's own docstring promises
+        # it "never spawns a real subprocess"; these two tests were the exceptions.
+        cli_runner=_cli_raises(CliBridgeError("simulated: script missing")),
     )
     by_source = {}
     for f in findings:
@@ -500,6 +507,10 @@ def test_adoption_one_sub_call_failing_does_not_hide_the_other():
         "adoption",
         target="stable-package",
         mcp_caller=_adoption_mcp_caller(raise_for=frozenset({"version_downloads"})),
+        # Same hermeticity fix as test_abandonment_one_sub_call_failing_… above: the
+        # real adoption_stage.py/version_downloads.py exist on disk, so an uninjected
+        # CLI fallback succeeds and the degrade path under test never runs.
+        cli_runner=_cli_raises(CliBridgeError("simulated: script missing")),
     )
     by_source_check = {(f.source, f.check) for f in findings}
     assert (Source.ADOPTION, "silent-package") in by_source_check
