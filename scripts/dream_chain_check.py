@@ -83,13 +83,40 @@ def expected_spec_dir(owner: str, slug: str) -> str:
     return f"{project}/planning-artifacts/specs/spec-{slug}/"
 
 
+def _satellite_titles(path: pathlib.Path) -> set[str]:
+    """Titles named by a `## Satellite: <Title>` / `### Satellite: <Title>` heading in a
+    consolidating SPEC.md body — the convention used when a Dream's whole chain is folded
+    into another station's Spec (2026-08-02, explicit user override of the default
+    dream-level-only consolidation). Normalized (lowercased, punctuation stripped) so it can
+    be matched against a Dream's own `title:` frontmatter regardless of exact wording drift."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    import re
+    titles = set()
+    for m in re.finditer(r"^#{2,3}\s+Satellite:\s*(.+?)\s*$", text, flags=re.MULTILINE):
+        norm = re.sub(r"[^a-z0-9 ]", "", m.group(1).lower()).strip()
+        if norm:
+            titles.add(norm)
+    return titles
+
+
+def _normalize_title(title: str) -> str:
+    import re
+    return re.sub(r"[^a-z0-9 ]", "", title.lower()).strip()
+
+
 def collect() -> tuple[dict, list]:
     dreams = {}
     for p in sorted(DREAMS.glob("*.md")):
         if p.name == "README.md":
             continue
         fm = frontmatter(p)
-        dreams[p.stem] = {"owner": fm.get("owner", ""), "status": fm.get("status", "")}
+        dreams[p.stem] = {
+            "owner": fm.get("owner", ""), "status": fm.get("status", ""),
+            "title": fm.get("title", ""),
+        }
 
     specs = []
     for sp in sorted(PROJECTS.glob("*/planning-artifacts/specs/*/SPEC.md")):
@@ -98,6 +125,16 @@ def collect() -> tuple[dict, list]:
             "project": sp.parts[len(PROJECTS.parts)],
             "spec": sp.parent.name,
             "dream": (fm.get("owner-dream") or "").split("/")[-1].removesuffix(".md"),
+            # `covers-dreams:` — a consolidating Spec's explicit, structured declaration that
+            # it also satisfies INV-1 for OTHER Dreams whose whole chain was folded in here
+            # (2026-08-02 satellite-consolidation convention). Primary mechanism; the
+            # Satellite-heading scan below is a fallback for Specs that use the heading
+            # convention without (yet) declaring covers-dreams explicitly.
+            "covers": [
+                (c or "").split("/")[-1].removesuffix(".md")
+                for c in (fm.get("covers-dreams") or [])
+            ],
+            "satellite_titles": _satellite_titles(sp),
             "path": str(sp.relative_to(ROOT)),
         })
     for sp in sorted(GOVERNANCE.glob("spec-*/SPEC.md")):
@@ -106,6 +143,11 @@ def collect() -> tuple[dict, list]:
             "project": GOVERNANCE_PROJECT,
             "spec": sp.parent.name,
             "dream": (fm.get("owner-dream") or "").split("/")[-1].removesuffix(".md"),
+            "covers": [
+                (c or "").split("/")[-1].removesuffix(".md")
+                for c in (fm.get("covers-dreams") or [])
+            ],
+            "satellite_titles": _satellite_titles(sp),
             "path": str(sp.relative_to(ROOT)),
         })
     return dreams, specs
@@ -139,6 +181,21 @@ def check() -> list[dict]:
     covered = {s["dream"] for s in specs if s["dream"]}
     covered |= {s["spec"].removeprefix("spec-") for s in specs
                 if not s["dream"] and s["spec"].removeprefix("spec-") in dreams}
+
+    # Satellite consolidation (2026-08-02): a Dream's whole chain can be folded into ANOTHER
+    # Dream's Spec, verbatim, as an explicit user override of the default dream-level-only
+    # convention (Charter §5). That Dream is genuinely specified — just not under its own
+    # spec-<slug>/ directory — so INV-1 must not re-flag it as missing. Two mechanisms, either
+    # is sufficient: (1) the consolidating Spec's `covers-dreams:` frontmatter names it
+    # explicitly (authoritative), or (2) a `## Satellite: <Title>` / `### Satellite: <Title>`
+    # heading in the Spec body matches the Dream's own `title:` (fallback, for Specs using the
+    # heading convention without yet declaring covers-dreams).
+    for s in specs:
+        covered |= set(s.get("covers", ()))
+        if s.get("satellite_titles"):
+            for slug, d in dreams.items():
+                if _normalize_title(d.get("title", "")) in s["satellite_titles"]:
+                    covered.add(slug)
 
     # INV-1 — every Dream has a Spec
     for slug, d in sorted(dreams.items()):

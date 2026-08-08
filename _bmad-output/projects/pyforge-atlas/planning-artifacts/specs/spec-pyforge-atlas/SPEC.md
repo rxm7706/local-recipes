@@ -9,6 +9,9 @@ shipped_scope_note: |
   DW-G3, DW-H4) are all still outstanding. See § Success signal. Added 2026-07-27 per
   AUD-ATLAS-047 / AUD-ATLAS-049.
 owner-dream: docs/dreams/pyforge-atlas.md
+covers-dreams:
+  - docs/dreams/unity-data-stack.md    # folded in 2026-08-02 as CAP-18..26 (see below); satisfies INV-1 for this Dream
+  - docs/dreams/wasm-analytics-stack.md # folded in 2026-08-02 as CAP-27..31 (see below); satisfies INV-1 for this Dream
 program: regenerable-factory
 # consolidated: 2026-08-02 — this Spec also carries spec-unity-data-stack and
 # spec-wasm-analytics-stack (per explicit user override of the dream-level-only
