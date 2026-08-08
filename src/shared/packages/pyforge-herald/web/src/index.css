@@ -1,0 +1,55 @@
+/* Modernist tokens — lifted verbatim from
+   presentations/pyforge-herald/project/PyForge Herald Infographic standalone.html
+   so the web surface matches the rest of the repo's house style. */
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #ffffff;
+  --color-text: #201e1d;
+  --color-text-muted: color-mix(in srgb, #201e1d 60%, transparent);
+  --color-accent: #ec3013;
+  --color-accent-700: #c22a10;
+  --color-divider: #d3d0cf;
+  --font-body: 'Archivo', Arial, sans-serif;
+  --font-heading: 'Archivo Expanded', 'Archivo', Arial, sans-serif;
+
+  --header-height: 64px;
+  --sidebar-width: 260px;
+  --touch-target: 44px;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  height: 100%;
+}
+
+a {
+  color: var(--color-accent-700);
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Mobile floor: never let body text drop below 16px (AC requirement). */
+@media (max-width: 767px) {
+  body {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,305 @@
+/* Layout shell -------------------------------------------------------- */
+
+.app-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  padding: 24px 32px;
+  overflow-x: hidden;
+}
+
+/* Header ---------------------------------------------------------------- */
+
+.app-header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  background: var(--color-surface);
+  border-bottom: 3px solid var(--color-text);
+  flex-wrap: nowrap;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-header__logo {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.app-header__hamburger {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: 1.5px solid var(--color-text);
+  background: var(--color-bg);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab-nav__item {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 14px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.tab-nav__item:hover,
+.tab-nav__item:focus-visible {
+  color: var(--color-accent-700);
+}
+
+.tab-nav__item--active {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-accent-700);
+}
+
+.tab-nav__item--external {
+  color: var(--color-text-muted);
+}
+
+/* Sidebar ----------------------------------------------------------------- */
+
+.sidebar {
+  width: var(--sidebar-width);
+  flex: none;
+  padding: 20px;
+  background: var(--color-surface);
+  border-right: 2px solid var(--color-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar--collapsed {
+  display: none;
+}
+
+.sidebar__close {
+  align-self: flex-end;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.sidebar__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar__field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar__field label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.sidebar__field select,
+.sidebar__field input {
+  min-height: var(--touch-target);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  border: 1.5px solid var(--color-divider);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Tablet: sidebar collapses to a hamburger-triggered drawer. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .sidebar:not(.sidebar--collapsed) {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    bottom: 0;
+    z-index: 20;
+    box-shadow: 4px 0 12px rgba(32, 30, 29, 0.15);
+  }
+}
+
+/* Mobile: everything stacks, sidebar becomes a full-width drawer inline
+   in the normal flow (no fixed overlay -- the header's height is variable
+   here since the tabs wrap onto their own row). */
+@media (max-width: 767px) {
+  .app-body {
+    flex-direction: column;
+  }
+
+  .sidebar:not(.sidebar--collapsed) {
+    width: 100%;
+  }
+
+  .app-content {
+    padding: 16px;
+  }
+
+  .app-header {
+    height: auto;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .tab-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tab-nav__item {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+}
+
+/* Moment panels ----------------------------------------------------------- */
+
+.moment-panel h2 {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  margin: 0 0 8px;
+}
+
+.moment-panel__notice {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.moment-panel__filters {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.moment-panel__filters dt {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.moment-panel__filters dd {
+  margin: 0;
+}
+
+/* Empty / error states ------------------------------------------------- */
+
+.empty-state,
+.error-state {
+  margin-top: 16px;
+  padding: 20px;
+  border: 2px dashed var(--color-divider);
+}
+
+.error-state {
+  border-color: var(--color-accent);
+  border-style: solid;
+  background: #fbe4de;
+}
+
+.empty-state__command {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+}
+
+/* Tooltip ------------------------------------------------------------- */
+
+.tooltip-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  padding: 6px 10px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Help icon ------------------------------------------------------------ */
+
+.help-icon-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.help-icon {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-text);
+  background: var(--color-bg);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.help-icon-panel {
+  display: block;
+  margin-top: 6px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-divider);
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 280px;
+}
