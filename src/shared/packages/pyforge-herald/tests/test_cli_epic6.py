@@ -82,27 +82,30 @@ def test_unknown_command_exits_2_and_names_it(capsys):
 # --- Story 6.2: shared global flags -------------------------------------
 
 
-def test_json_flag_prints_valid_json_no_ansi(capsys):
-    """Exercised on ``notice`` (still a placeholder) rather than
-    ``progress``/``success``: Stories 8.3/9.3 gave those real behavior, so
-    their own ``--json`` shapes are covered by their own test files
-    instead -- this test's job is the shared ``--json`` plumbing itself."""
+def test_json_flag_prints_valid_json_no_ansi(capsys, tmp_path, monkeypatch):
+    """Exercised on ``notice`` -- all three Moment subcommands (Epics
+    8/9/10) are real now, so this test's job is only the shared ``--json``
+    plumbing itself: the flag parses, and a fresh repo with no notices
+    yet produces a clean, valid, empty JSON array."""
+    monkeypatch.chdir(tmp_path)
     assert cli.main(["notice", "--json"]) == 0
     out = capsys.readouterr().out.strip()
     payload = json.loads(out)  # raises if not valid JSON
     assert "\x1b" not in out
-    assert payload["status"] == "not yet implemented"
+    assert payload == []
 
 
-def test_json_short_flag_alias(capsys):
+def test_json_short_flag_alias(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     assert cli.main(["notice", "-j"]) == 0
     json.loads(capsys.readouterr().out.strip())
 
 
-def test_date_range_valid_filters_and_exits_0(capsys):
+def test_date_range_valid_filters_and_exits_0(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     assert cli.main(["notice", "--json", "--date-range", "2026-08-01..2026-08-31"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
-    assert payload["date_range"] == ["2026-08-01", "2026-08-31"]
+    assert payload == []
 
 
 def test_date_range_invalid_exits_1_and_names_the_problem(capsys):
@@ -141,16 +144,18 @@ def test_json_flag_renders_error_as_json_on_stderr(capsys):
     assert "Invalid date format" in payload["message"]
 
 
-def test_station_flag_filters(capsys):
+def test_station_flag_filters(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     assert cli.main(["notice", "--json", "--station", "warden"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
-    assert payload["station"] == "warden"
+    assert payload == []
 
 
-def test_station_short_flag_alias(capsys):
+def test_station_short_flag_alias(capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     assert cli.main(["notice", "--json", "-s", "warden"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
-    assert payload["station"] == "warden"
+    assert payload == []
 
 
 def test_unknown_global_flag_exits_2_and_names_it(capsys):
