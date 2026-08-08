@@ -2,10 +2,15 @@
 title: The dashboard assumes slug == project directory — it isn't, and won't stay
 type: dream
 owner: marshal
-status: dreamt
+status: archived
 ---
 
 # The dashboard assumes slug == project directory — it isn't, and won't stay
+
+> **Consolidated into [[pyforge-marshal]] on 2026-08-08** (§ *Eight more, consolidated
+> here*). This file is archived in place: its **Spec stays live and remains the
+> contract** — archiving the Dream tier never retires the chain below it. Kept, not
+> deleted, so the reasoning that produced the Spec is still readable.
 
 ## The Dream
 

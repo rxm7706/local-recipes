@@ -2893,7 +2893,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 18:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 18:08 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2942,7 +2942,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "bmad-loop-forward-dependency-blindness",
       "title": "bmad-loop can't see a story's own documented dependency",
-      "status": "realized",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -2962,7 +2962,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "bmad-output-hygiene",
       "title": "One fabricated commit, eight stations of debris",
-      "status": "realized",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -2993,7 +2993,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "dashboard-project-path-derivation",
       "title": "The dashboard assumes slug == project directory — it isn't, and won't stay",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -3014,7 +3014,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "dream-to-code-model-self-verification",
       "title": "The Dream-to-Code model has never verified itself",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -3088,7 +3088,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "genesis-installer-name-retirement",
       "title": "Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -3157,7 +3157,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "loop-home-fleet-refresh",
       "title": "Refreshing every loop-home from main is a hand-run ritual",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -3225,7 +3225,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
       "status": "archived",
       "owner": "atlas",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas-intelligence-platform"
       },
@@ -3257,7 +3257,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-core",
       "title": "One primitive, one home — the shared floor under eight stations",
-      "status": "specified",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -3269,7 +3269,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
       "status": "archived",
       "owner": "doctor",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor-dependency-health"
       },
@@ -3304,7 +3304,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
       "status": "archived",
       "owner": "marshal",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal-loop-orchestrator"
       },
@@ -3327,7 +3327,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Mason: Recipe Validator\"",
       "status": "archived",
       "owner": "mason",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason-recipe-validator"
       },
@@ -3350,7 +3350,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
       "status": "archived",
       "owner": "scribe",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe-team-memory"
       },
@@ -3373,7 +3373,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
       "status": "archived",
       "owner": "steward",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance"
       },
@@ -3396,7 +3396,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
       "status": "archived",
       "owner": "marshal",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
       },
@@ -3407,7 +3407,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Warden: Compliance Gates\"",
       "status": "archived",
       "owner": "warden",
-      "type": "dream",
+      "type": "dream          # added 2026-08-08: this file predates the type: contract",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates"
       },
@@ -3451,7 +3451,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "sprint-status-auto-promote",
       "title": "The dashboard goes stale because promotion is a remembered step",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -4311,6 +4311,20 @@ window.DASHBOARD_DATA = {
       "link": "docs/dreams/artifact-console.md"
     },
     {
+      "name": "bmad-loop can't see a story's own documented dependency",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "bmad-loop can't see a story's own documented dependency",
+      "link": "docs/dreams/bmad-loop-forward-dependency-blindness.md"
+    },
+    {
+      "name": "One fabricated commit, eight stations of debris",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "One fabricated commit, eight stations of debris",
+      "link": "docs/dreams/bmad-output-hygiene.md"
+    },
+    {
       "name": "copilot-cli on conda-forge — blocked at the license",
       "reason": "blocked",
       "owner": "mason",
@@ -4318,11 +4332,25 @@ window.DASHBOARD_DATA = {
       "link": "docs/dreams/copilot-cli-packaging.md"
     },
     {
+      "name": "The dashboard assumes slug == project directory — it isn't, and won't stay",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "The dashboard assumes slug == project directory — it isn't, and won't stay",
+      "link": "docs/dreams/dashboard-project-path-derivation.md"
+    },
+    {
       "name": "DB-GPT on conda-forge — the multi-output agent stack",
       "reason": "terminal",
       "owner": "mason",
       "note": "DB-GPT on conda-forge — the multi-output agent stack",
       "link": "docs/dreams/db-gpt-packaging.md"
+    },
+    {
+      "name": "The Dream-to-Code model has never verified itself",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "The Dream-to-Code model has never verified itself",
+      "link": "docs/dreams/dream-to-code-model-self-verification.md"
     },
     {
       "name": "Durable runs — work survives the machine that made it",
@@ -4353,6 +4381,13 @@ window.DASHBOARD_DATA = {
       "link": "docs/dreams/fleet-chain-completeness.md"
     },
     {
+      "name": "Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain",
+      "link": "docs/dreams/genesis-installer-name-retirement.md"
+    },
+    {
       "name": "Genesis installer — the seed, made executable",
       "reason": "absorbed",
       "owner": "marshal",
@@ -4372,6 +4407,13 @@ window.DASHBOARD_DATA = {
       "owner": "herald",
       "note": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
       "link": "docs/dreams/herald-pitch.md"
+    },
+    {
+      "name": "Refreshing every loop-home from main is a hand-run ritual",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "Refreshing every loop-home from main is a hand-run ritual",
+      "link": "docs/dreams/loop-home-fleet-refresh.md"
     },
     {
       "name": "Microsoft org sweep — audit one upstream org, package what is missing",
@@ -4407,6 +4449,13 @@ window.DASHBOARD_DATA = {
       "owner": "atlas",
       "note": "\"Dream — PyForge Atlas Intelligence Platform\"",
       "link": "docs/dreams/pyforge-atlas-intelligence-platform.md"
+    },
+    {
+      "name": "One primitive, one home — the shared floor under eight stations",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "One primitive, one home — the shared floor under eight stations",
+      "link": "docs/dreams/pyforge-core.md"
     },
     {
       "name": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
@@ -4463,6 +4512,13 @@ window.DASHBOARD_DATA = {
       "owner": "scribe",
       "note": "Sentinel — the AI Software Factory (the ancestor)",
       "link": "docs/dreams/sentinel.md"
+    },
+    {
+      "name": "The dashboard goes stale because promotion is a remembered step",
+      "reason": "retired",
+      "owner": "marshal",
+      "note": "The dashboard goes stale because promotion is a remembered step",
+      "link": "docs/dreams/sprint-status-auto-promote.md"
     },
     {
       "name": "Team memory — what the team knows, the agents know",
@@ -4819,9 +4875,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 31,
+    "live": 23,
     "reached": 8,
-    "gaps": 23,
+    "gaps": 15,
     "findings": 11,
     "rows": [
       {
@@ -7429,8 +7485,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "realized",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "bmad-loop-forward-dependency-blindness",
         "noDream": false,
         "unowned": false,
@@ -7641,8 +7697,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "realized",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "bmad-output-hygiene",
         "noDream": false,
         "unowned": false,
@@ -7747,8 +7803,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "dashboard-project-path-derivation",
         "noDream": false,
         "unowned": false,
@@ -7853,8 +7909,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "dream-to-code-model-self-verification",
         "noDream": false,
         "unowned": false,
@@ -8490,8 +8546,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "genesis-installer-name-retirement",
         "noDream": false,
         "unowned": false,
@@ -8596,8 +8652,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "loop-home-fleet-refresh",
         "noDream": false,
         "unowned": false,
@@ -9020,8 +9076,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "specified",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "pyforge-core",
         "noDream": false,
         "unowned": false,
@@ -9449,8 +9505,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "sprint-status-auto-promote",
         "noDream": false,
         "unowned": false,
@@ -11602,36 +11658,6 @@ window.DASHBOARD_DATA = {
         }
       },
       {
-        "slug": "dashboard-project-path-derivation",
-        "title": "The dashboard assumes slug == project directory — it isn't, and won't stay",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
-        }
-      },
-      {
-        "slug": "dream-to-code-model-self-verification",
-        "title": "The Dream-to-Code model has never verified itself",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification"
-        }
-      },
-      {
-        "slug": "genesis-installer-name-retirement",
-        "title": "Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer-name-retirement"
-        }
-      },
-      {
         "slug": "herald-moments-2-4-live-backend",
         "title": "Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered",
         "status": "dreamt",
@@ -11662,26 +11688,6 @@ window.DASHBOARD_DATA = {
         }
       },
       {
-        "slug": "loop-home-fleet-refresh",
-        "title": "Refreshing every loop-home from main is a hand-run ritual",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh"
-        }
-      },
-      {
-        "slug": "sprint-status-auto-promote",
-        "title": "The dashboard goes stale because promotion is a remembered step",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
-        }
-      },
-      {
         "slug": "unified-container",
         "title": "One container, eight stations",
         "status": "dreamt",
@@ -11690,23 +11696,12 @@ window.DASHBOARD_DATA = {
         "chain": {
           "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container"
         }
-      },
-      {
-        "slug": "pyforge-core",
-        "title": "One primitive, one home — the shared floor under eight stations",
-        "status": "specified",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core"
-        }
       }
     ],
     "blocked": 0,
     "byOwner": {
       "steward": 3,
       "mason": 1,
-      "marshal": 6,
       "herald": 1,
       "atlas": 1
     },
@@ -11824,15 +11819,15 @@ window.DASHBOARD_DATA = {
         "station": "marshal",
         "total": 23,
         "counts": {
-          "dreamt": 5,
+          "dreamt": 0,
           "pitched": 0,
-          "specified": 1,
-          "realized": 3,
-          "archived": 10,
+          "specified": 0,
+          "realized": 1,
+          "archived": 18,
           "practice": 4
         },
         "line": "paused 7.1",
-        "load": 6,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -11845,6 +11840,34 @@ window.DASHBOARD_DATA = {
           {
             "slug": "artifact-console",
             "title": "Artifact console — the factory board, hosted as a chat artifact",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-loop-forward-dependency-blindness",
+            "title": "bmad-loop can't see a story's own documented dependency",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-output-hygiene",
+            "title": "One fabricated commit, eight stations of debris",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "dashboard-project-path-derivation",
+            "title": "The dashboard assumes slug == project directory — it isn't, and won't stay",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "dream-to-code-model-self-verification",
+            "title": "The Dream-to-Code model has never verified itself",
             "status": "archived",
             "type": "dream",
             "blockedOn": ""
@@ -11885,6 +11908,20 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "genesis-installer-name-retirement",
+            "title": "Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "loop-home-fleet-refresh",
+            "title": "Refreshing every loop-home from main is a hand-run ritual",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "one-front-door",
             "title": "One front door — Marshal drives everything BMAD installs",
             "status": "archived",
@@ -11899,51 +11936,30 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "pyforge-core",
+            "title": "One primitive, one home — the shared floor under eight stations",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "pyforge-marshal-loop-orchestrator",
             "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
             "status": "archived",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
             "slug": "pyforge-testing-charter",
             "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
             "status": "archived",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "dashboard-project-path-derivation",
-            "title": "The dashboard assumes slug == project directory — it isn't, and won't stay",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "dream-to-code-model-self-verification",
-            "title": "The Dream-to-Code model has never verified itself",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "genesis-installer-name-retirement",
-            "title": "Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "loop-home-fleet-refresh",
-            "title": "Refreshing every loop-home from main is a hand-run ritual",
-            "status": "dreamt",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
             "slug": "sprint-status-auto-promote",
             "title": "The dashboard goes stale because promotion is a remembered step",
-            "status": "dreamt",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -11962,20 +11978,6 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "bmad-loop-forward-dependency-blindness",
-            "title": "bmad-loop can't see a story's own documented dependency",
-            "status": "realized",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "bmad-output-hygiene",
-            "title": "One fabricated commit, eight stations of debris",
-            "status": "realized",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
             "slug": "pyforge-marshal",
             "title": "Marshal — autonomy a human can trust",
             "status": "realized",
@@ -11987,13 +11989,6 @@ window.DASHBOARD_DATA = {
             "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
             "status": "realized",
             "type": "practice",
-            "blockedOn": ""
-          },
-          {
-            "slug": "pyforge-core",
-            "title": "One primitive, one home — the shared floor under eight stations",
-            "status": "specified",
-            "type": "dream",
             "blockedOn": ""
           }
         ]
@@ -12024,7 +12019,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-atlas-intelligence-platform",
             "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
             "status": "archived",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
@@ -12083,7 +12078,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-warden-compliance-gates",
             "title": "\"Dream — PyForge Warden: Compliance Gates\"",
             "status": "archived",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
@@ -12135,7 +12130,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-mason-recipe-validator",
             "title": "\"Dream — PyForge Mason: Recipe Validator\"",
             "status": "archived",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
@@ -12187,7 +12182,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-doctor-dependency-health",
             "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
             "status": "archived",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
@@ -12218,7 +12213,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-scribe-team-memory",
             "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
             "status": "archived",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
@@ -12263,7 +12258,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
             "status": "archived",
-            "type": "dream",
+            "type": "dream          # added 2026-08-08: this file predates the type: contract",
             "blockedOn": ""
           },
           {
@@ -13907,8 +13902,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 18:05 UTC",
-    "generatedEpoch": 1786212314
+    "generatedAt": "2026-08-08 18:08 UTC",
+    "generatedEpoch": 1786212526
   },
   "storySpecs": [
     {

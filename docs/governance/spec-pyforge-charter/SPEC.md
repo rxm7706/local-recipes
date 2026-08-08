@@ -6,7 +6,7 @@ owner-dream: docs/dreams/pyforge-charter.md
 covers-dreams:
   # Absorbed 2026-08-08 as CAP-5..CAP-8 + the Dream's § Satellite: The Seed.
   # `owner: guild` closed at one; this Spec is the whole constitutive chain.
-  - docs/dreams/pyforge-genesis.md
+  - archive/docs/dreams/pyforge-genesis.md   # moved out of docs/dreams/ in the same commit
 surface:
   - docs/dreams/pyforge-charter.md
   - docs/dreams/README.md          # the Tier-0 frontmatter contract (absorbed: was spec-pyforge-genesis's surface)
@@ -45,7 +45,7 @@ The Charter governs the *workers*; this Spec governs *the Charter*.
   not exist. *Success:* each "enforced, not merely asserted" claim names a detector, and that
   detector fails when the claim is violated.
 - **CAP-3 — constants match their readers.** *Intent:* a value the Charter fixes (the eight
-  stations, the two `guild` Dreams) equals what the code enforcing it holds. *Success:*
+  stations, the one `guild` Dream) equals what the code enforcing it holds. *Success:*
   `STATIONS` and `GUILD_DREAMS` agree across `bmad_drift_check.py` and `generate.py`.
 - **CAP-4 — the Lexicon stays exhaustive.** *Intent:* every noun does one job, every job has
   one noun. *Success:* a new organizational concept either maps to one of the seven or the
