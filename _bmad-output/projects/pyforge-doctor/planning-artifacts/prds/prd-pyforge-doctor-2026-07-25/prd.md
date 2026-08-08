@@ -511,6 +511,43 @@ held at HEAD.
 across four stations and reported success. All three guards written in response live
 in Marshal's own surface, which §6 forbids as sufficient.*
 
+## FR-15 — Doctor holds the verdict for every conformance detector (Charter §6, generalized)
+
+Added 2026-08-08 (operator decision). FR-14 applied §6 to exactly one artifact — the
+sprint ledger. A detector-ownership audit the same day found the clause is violated
+fleet-wide: of **13** repo-level detectors, **10 judge an artifact another station
+produces**, and none of those 10 belongs to Doctor.
+
+Doctor becomes the home for every detector whose subject is another station's artifact.
+The producing station keeps its **pre-write operational guards**; it loses only the
+authority to be the final word on itself.
+
+**Consequences (testable):**
+- The 10 judging detectors resolve as Doctor sources: `ledger_regression`,
+  `story_status`, `chain_completeness`, `dashboard_drift`, `check_layout`,
+  `dream_chain`, `spec_surface`, `forward_dependency`, `deferred_work`, `bmad_drift`.
+- `loop_stall` and `unpushed_work` stay Marshal's — operational watchdogs over live
+  runs, not conformance verdicts on an artifact. `llms_full` stays Steward's (its own
+  platform catalog; no §6 conflict).
+- **No Doctor source imports the station it judges** — the `sources/marshal.py` rule,
+  generalized and meta-tested across every source. `sources/warden.py` remains the
+  deliberate exception: it relays an instrument's self-report about its own
+  environment, which is a different act from judging an artifact.
+- Every detector resolves to exactly one owning station, and a newly added detector
+  with no owner is a finding rather than a silent exemption.
+- `doctor check` remains inside **SM-C1 (5.0s)** after the additions — measured, not
+  assumed.
+
+**Non-goals:** Marshal's pre-write guards are not removed. `promote_sprint_status.py`
+keeps refusing regressions; `--project` scoping stays. Two layers, not a transfer.
+
+*Grounding: measured 2026-08-08. `scripts/spec_surface_allowlist.txt` carried a blanket
+`scripts/**` exemption whose stated reason named 2 detectors; the directory had grown to
+12, and the glob silently absorbed 20 tracked files including 6 detectors and the
+registry itself, emitting no finding. Doctor's `sources/marshal.py` — the fleet's only
+§6-compliant verdict — is not wired to any verb (Story 5.2, backlog), so an operator
+cannot currently reach it.*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential

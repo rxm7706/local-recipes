@@ -39,6 +39,16 @@ complete. Found 2026-08-03 setting Marshal up to run its own backlog unattended 
   Marshal's three forward dependencies are the only real ones across the fleet, and that Atlas
   and Mason's presenton-pixi-image satellite (both structured enough to carry a mechanical Deps
   field) are otherwise clean.
+  > **CORRECTED 2026-08-08 — the parenthetical claim was false.** Measured with the detector
+  > itself: **Mason** carries 30 dependency declarations of which **zero** are machine-readable
+  > (`'Story 1.4 (informs cost of …)'`, `'none (runs manually, …)'`), and **Atlas** carries 43
+  > of which only 5 are (`'A1, A2.'`, `'B1 (Core pipeline datasets).'`, `'Epic 3 complete'`).
+  > Neither was "structured enough to carry a mechanical Deps field." Mason nonetheless reported
+  > MEASURED-and-clean from the day this shipped, because the coverage gate asked whether any
+  > Deps *text* existed rather than whether any *reference parsed* — a false green in the
+  > detector's own bookkeeping. Atlas reported UNMEASURED for an unrelated reason: its
+  > alias-first headings (`### Story A1 (2.1):`) never matched `STORY_HEADING_RE`, so none of its
+  > 46 stories parsed at all. Both are fixed; see § Refinements.
 - **CAP-2 — a found forward-dependent story is set to a non-actionable status.** *Intent:*
   make the engine structurally unable to dispatch the story early. *Success:* status `blocked`
   in both the loop-home's live Tier-3 feed and the tracked `sprint-status-ledger.yaml` twin;
@@ -81,6 +91,52 @@ Shipped via PR #238 (`dream+detector: bmad-loop can't see a story's forward depe
 commit `a825ac0749`, 2026-08-03T08:01:58Z. Stories 2-3 and 2-7 (the mechanical fix) shipped
 earlier the same session in PR #237; 8-5 and the permanent detector landed in #238.
 https://github.com/rxm7706/local-recipes/pull/238
+
+## Refinements — 2026-08-08
+
+Found while acting on the fleet-readiness note that four stations read `[unmeasured]`. The
+premise turned out to be wrong in both directions: the data was fine, the detector was not.
+
+**R-1 — CAP-4 gains a fourth coverage class, and coverage is keyed on *readable* references.**
+CAP-4 as written had one non-clean bucket, which conflated two unrelated situations and let a
+third go unnoticed. The classes are now `NO-DISPATCH` (ledger positively shows zero actionable
+stories — nothing can be dispatched, so no forward dep can fire; a measured fact, explicitly
+**not** a parse-clean claim), `MEASURED` (every declaration resolved or explicitly declared
+none), `PARTIAL` (a real dependency is stated in a grammar `DEP_RE` cannot read — readable refs
+are still checked, but the ratio is reported so the station can never read as fully verified),
+and `UNMEASURED` (no declaration and work remains, or the ledger is unreadable). `NO-DISPATCH`
+requires **positive** ledger evidence — a missing ledger falls to `UNMEASURED`, never to
+`NO-DISPATCH`, or absence would read as reassurance.
+
+*This does not weaken CAP-4.* CAP-4's requirement is that an unparseable format never be
+reported as clean, and none of the three non-`MEASURED` classes asserts cleanliness. What
+changed is that "measured" now means what it says.
+
+**R-2 — the `**Deps:**` grammar gains a whole-epic and a cross-station form.** Declarations
+legitimately depend on an entire epic (`'Epic 3 complete'`, `'Epics 4–6'`) or on another
+station (Atlas 12.2 → `Steward S-2.1`), and neither was expressible — which is *why* those
+declarations were written as prose the detector could not read. `S-<epic>.*` and
+`<station>:S-<epic>.<num>` close that. The cross-station form also fixes a live misread: Atlas
+12.2's `Steward S-2.1` parsed as *Atlas's own* epic 2, benign only because 2 < 12 and Atlas's
+epic 2 is shipped. Canonical grammar, binding on all stations:
+
+```
+**Type:** feature • **Effort:** S • **Deps:** S-5.1, S-3.* • **FR/AD:** FR-14
+    S-5.1            same-station story        S-3.*   whole epic, same station
+    steward:S-2.1    cross-station story       —       genuinely no dependency
+Prose is allowed ONLY as trailing context, never alone:  S-3.1 (consumes its handoff contract)
+```
+
+**R-3 — atlas's alias-first headings are parsed.** A second, deliberately-enumerated regex
+branch handles `### Story A1 (2.1):`, with the parenthetical canonical. Atlas went from 0 to 46
+stories parsed; every other station's extracted tuples are byte-identical (verified by diff).
+
+**Still open, deliberately.** The 59 prose declarations in atlas/mason/steward are **not**
+migrated by this refinement, and the fleet therefore reports `PARTIAL` for those stations rather
+than `MEASURED`. A by-hand audit of all 62 confirmed **no prose declaration hides a forward
+dependency** — mason's chain is strictly backward, atlas's likewise — so this is a legibility
+gap, not a live risk. Migration plus a gate that fails on `PARTIAL` is tracked separately; it
+must land in one change, because the gate reds CI until the migration completes.
 
 ## Success signal
 

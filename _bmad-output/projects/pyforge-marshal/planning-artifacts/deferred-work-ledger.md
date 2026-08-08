@@ -603,3 +603,29 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   status: open
 
   verified: 2026-08-08 — both story sets read directly and compared; zero id overlap.
+
+## DW-SURFACE-2026-08-08-1 — memlog movement is surface-wide, so one entry launders every pending drift finding
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory/SPEC.md`
+  summary: `spec_surface_check`'s drift pass short-circuits **per SPEC, not per file** — `if b["memlog"] != cur["memlog"]: continue  # spec moved — code changes are presumed reconciled`. So appending ANY memlog entry marks every governed file in that surface as reconciled, including files the author never touched.
+  evidence: Observed live 2026-08-08. Appending an allowlist-split note to `spec-regenerable-factory/.memlog.md` cleared two pre-existing findings — `scripts/bmad_drift_check.py` and `scripts/dream_chain_check.py` "changed but the spec's memlog did not move" — neither of which was touched by that work. Findings went 63 → 61 with no reconciliation performed. Confirmed by stash-diffing the checker's output before and after.
+  impact: the drift half of this detector is defeatable by unrelated activity, and silently. The larger a surface's governed set, the more it launders: this surface governs four detectors. Worse, the disappearance is indistinguishable from a real fix in the findings count, which is what the dashboard renders.
+  remedy: make the reconciliation claim per-file rather than per-spec — e.g. require the memlog entry to NAME the governed paths it reconciles, and only clear drift for those. A cheaper interim: report `[drift-presumed]` (informational) for governed files whose hash moved while the memlog also moved, so the set is at least visible rather than absent.
+  note: the two unreconciled files are recorded verbatim in that memlog under a `(NOT RECONCILED …)` entry, so the information survives the finding.
+
+  status: open
+
+  verified: 2026-08-08 — reproduced by stash/unstash around the memlog append.
+
+## DW-SURFACE-2026-08-08-2 — `--write-baseline` is all-or-nothing, so no spec can be reconciled in isolation
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory/SPEC.md`
+  summary: `spec_surface_check --write-baseline` stamps `current` for **every** spec in one write. There is no per-spec stamping, so settling one legitimately-reconciled spec necessarily accepts every other spec's pending drift as correct.
+  evidence: Measured 2026-08-08 on `main`: **61 findings**, of which **24 are `[no-baseline]`** and ~35 are `[drift]`, overwhelmingly `pyforge-steward/spec-pyforge-steward` (a 20-file Epic-2/3 delivery) plus three `no-baseline` specs in steward/warden. Running `--write-baseline` to register the one spec that needed it (`spec-bmad-loop-forward-dependency-blindness`, which had no baseline entry) would have silently blessed all of them.
+  impact: the sanctioned way to fix a `[no-baseline]` finding cannot be used without destroying the evidence for ~35 others — so the honest move is to leave the finding standing, which is why this detector has carried a large red for weeks. A gate nobody can safely clear stops being a gate.
+  remedy: `--write-baseline [<project>/<spec-dir> ...]` stamping only the named specs and leaving other entries byte-identical.
+  note: NOT run during the 2026-08-08 detector-honesty work for exactly this reason; the `[no-baseline]` finding for `spec-bmad-loop-forward-dependency-blindness` is left standing and is pre-existing.
+
+  status: open
+
+  verified: 2026-08-08 — finding classes counted directly from the checker's output.

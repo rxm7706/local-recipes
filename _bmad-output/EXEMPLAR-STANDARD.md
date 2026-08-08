@@ -6,11 +6,23 @@ project in this repo under bmad-method ≥ 6.10 with bmad-loop.
 
 ---
 
-## The three invariants
+## The invariants
 
 Decided 2026-07-28 (operator). **Consistency first: one operating model, one ownership
 model, one build tree — across every Dream-to-Code chain, with no per-artifact
 exceptions.** These are not guidelines; a violation is a detector finding.
+
+INV-0..INV-3 were the original three plus `owner-dream:`. **INV-4 and INV-5 were added
+2026-08-08** and extend the same principle from the artifacts to the *instruments*: a
+detector must itself be owned (INV-4) and must read one shared declaration of convention
+rather than carry its own (INV-5). Both came from measurement, not theory — see each.
+
+*Enforcement is stated per invariant and is not uniform.* INV-0..3 are enforced by
+`dream-chain-check`; INV-4's ownership half is enforced by `spec-surface-check`, its §6 half
+is not yet enforced (`pyforge-doctor` S-6.10); INV-5's canonical forms are partly enforced
+by `forward-dependency-check`'s coverage classes, and its "detectors read the register" rule
+is **not yet mechanically checked** — that is honest status, not an aspiration dressed as a
+gate.
 
 ### INV-0 — Every Spec declares `owner-dream:`
 
@@ -137,6 +149,103 @@ non-conformant.
 pyforge-warden, pyforge-genesis, deckcraft); 2 with no `epics.md` at all
 (unity-data-stack, wasm-analytics-stack).*
 
+### INV-4 — Every detector has an owning station, and it is never the station it judges
+
+Added 2026-08-08. The instruments that enforce this model must themselves be inside it —
+the same argument INV-0..3 make about artifacts, applied to the checks.
+
+**Two halves, both required:**
+
+1. **Ownership is explicit.** Every detector resolves to exactly one owning station via a
+   Spec's `surface:` globs. A detector no Spec claims is a finding, never a silent
+   exemption.
+2. **The owner is not the subject.** A detector whose subject is station X's artifact may
+   not be owned by station X. Charter §6: *"the Doctor holds the verdict on the Marshal's
+   conformance — the one station that would otherwise grade itself,"* and *"the Marshal may
+   not weaken, re-threshold or disable a check that judges the Marshal."* The producing
+   station keeps its **pre-write operational guards**; it loses only the authority to be
+   the final word on itself. Two layers, not a transfer.
+
+**Why this became an invariant.** Measured 2026-08-08: `scripts/spec_surface_allowlist.txt`
+carried a blanket `scripts/**` exemption whose stated reason named 2 detectors. The
+directory had grown to 12, and the glob silently absorbed **20 tracked files — 6 detectors
+plus the registry itself** — with no finding emitted, because the checker reports a glob
+matching *nothing* (`stale-allowlist`) but never one matching *too much*. Of the 13
+detectors, **10 judge an artifact another station produces, and none belonged to Doctor.**
+Marshal owns the ledger, the board, the Dream→Spec chain and the spec surface — and owned
+the detectors grading all four.
+
+**Enforcement, stated honestly.** Half is live: the blanket glob was split into per-file
+entries on 2026-08-08, so a newly added unclaimed detector now produces `[ungoverned]`
+(verified by mutation — a throwaway `scripts/zz_fake_detector.py` was flagged where the
+glob had absorbed it). Half is **not yet enforced**: no check asserts owner ≠ subject. That
+is `pyforge-doctor` Story 6.10's meta-test, behind Epic 6's re-home of the 10 judging
+detectors — itself sequenced behind S-6.1, because `doctor check` is 7.04s against a
+documented 5.0s budget and 10 new gathers land on it.
+
+*The one deliberate exception, and why it is not a loophole:* `sources/warden.py` **does**
+import warden, because it relays an instrument's self-report about its own environment.
+That is a different act from judging an artifact. The exception is allowlisted with its
+reason recorded, not assumed.
+
+### INV-5 — One convention, and exactly one register of its exceptions
+
+Added 2026-08-08, after the root cause of four separate defects turned out to be the same
+thing: **detectors accommodating variant conventions privately instead of reading one
+declaration.**
+
+**The canonical conventions** (normative for all new work, every station, every artifact):
+
+| Surface | Canonical form |
+|---|---|
+| Story heading | `### Story <epic>.<num>: Title` |
+| Ledger / sprint key | `<epic>-<num>-<kebab-title>` |
+| Board story id | `<epic>.<num>` |
+| Epic heading | `## Epic <n>: Title` |
+| `**Deps:**` | `S-<epic>.<num>` · `S-<epic>.*` · `<station>:S-<epic>.<num>` · `—` (see row 11) |
+
+*Measured 2026-08-08 — the convention is already near-universal:* 7 of 8 stations are
+**100% conformant** on headings and ledger keys (marshal 86, herald 47, mason 38, steward
+33, warden 31, doctor 28, scribe 9 — all plain/numeric, zero alias). `pyforge-atlas` is the
+single outlier.
+
+**Why "just normalize atlas" is the wrong answer, and what to do instead.** Atlas's alias
+heading (`### Story A1 (2.1):`) exists *because* its ledger key is alias-based (`a1-…`) —
+the two are coupled. Its completion signal for Epics 1–10 is a `story(A1)` commit subject,
+and 31 keys trace to merged PRs #58–#105. Renaming the heading orphans the key; renaming
+the key orphans the shipped record. This was attempted and reverted 2026-07-30
+(*"DO NOT fix this by teaching the parser atlas's convention"*).
+
+So the variance is **irreducible** — but the *duplication of knowledge about it* is not.
+That duplication is the actual defect. As of 2026-08-08 four codebases each carried a
+private accommodation: `generate.py` (refuse-to-overwrite guard), `dashboard_drift_check`
+(*"accepts either id form and stays agnostic"*), `chain_completeness_check` (matches alias
+**or** parenthetical), and `forward_dependency_check` (an alias regex branch added that very
+day — the fourth copy, added while fixing the third). Four independent guesses at one
+station's shape, each able to drift from the others, none aware of the rest.
+
+**The rule:**
+
+1. **New work uses the canonical form. No exceptions, no size-based carve-outs** (see below).
+2. **Legacy deviations live in ONE register — the table below — closed and dated.** A
+   deviation absent from it is a bug, not a variant.
+3. **Detectors read the register; they never re-derive an accommodation.** A detector that
+   pattern-matches a station-specific shape inline is non-conformant, even when it works.
+
+**The legacy register** (closed 2026-08-08; entries are removed only by retiring the
+artifact, never by loosening a detector):
+
+| Station | Deviation | Scope | Why frozen |
+|---|---|---|---|
+| `pyforge-atlas` | Alias story headings `### Story A1 (2.1):` and alias ledger keys `a1-`/`b2-` | **Epics 1–10 only** (37 headings, 31 keys) | Completion signal is a `story(A1)` commit subject across merged PRs #58–#105. Renaming either half orphans the other; renaming the key orphans the shipped record. |
+
+*Already closed rather than registered:* atlas Epics 12–13 were dual-labelled (`### Story J1
+(12.1):`) with **numeric** ledger keys and **zero** shipped stories — the alias earned
+nothing and cost a real blind spot, so it was removed on 2026-08-08 (headings, board titles,
+and board story ids together, all six gates green). That is the disposition for any future
+deviation on unshipped work: **fix it, do not register it.** The register is for history
+that cannot be rewritten, not for convenience.
+
 ### Why no size-based exemption
 
 The tempting rule is "small artifacts skip the PRD/epics tier." It was considered and
@@ -253,6 +362,7 @@ The standard exists so that question has a mechanical answer.
 | **8** | Every story has a delivery record — in its spec and in `epics.md` | Otherwise the planning chain reads as pre-implementation forever, no matter what shipped. |
 | **9** | The deferred-work ledger is tracked in `planning-artifacts/` | The bmad-loop ledger is Tier-3 and gets truncated. If it matters after the run, it belongs in Tier-2. |
 | **10** | `planning-artifacts/README.md` explains the layout and any deliberate asymmetry | The next reader is an agent with no session context. |
+| **11** | A story's `**Deps:**` field is **machine-readable**: `S-<epic>.<num>` (story) · `S-<epic>.*` (whole epic) · `<station>:S-<epic>.<num>` (cross-station) · `—` (none). Prose is allowed only as *trailing context* after the refs, never as the whole declaration. | A dependency the harness cannot parse is a dependency it dispatches into. `bmad-loop`'s picker has no `depends_on` concept, so `epics.md` is the only place a dependency is stated — and until 2026-08-08 two stations stated theirs in prose. **Mason reported measured-and-clean with 0 of 30 declarations parseable**; atlas had 5 of 43. Enforced by `forward-dependency-check`'s coverage classes (`PARTIAL` names the ratio); it reports today and gates once the 59-declaration migration lands. |
 
 ## The kernel/companion rule
 
