@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 const SHOW_DELAY_MS = 200;
 
@@ -11,6 +11,7 @@ const SHOW_DELAY_MS = 200;
 export default function Tooltip({ label, children }) {
   const [visible, setVisible] = useState(false);
   const timerRef = useRef(null);
+  const wrapRef = useRef(null);
   const tooltipId = useId();
 
   const clearTimer = () => {
@@ -19,6 +20,13 @@ export default function Tooltip({ label, children }) {
       timerRef.current = null;
     }
   };
+
+  // Regression: a pending show(200) timer that fires after this component
+  // unmounts called setVisible on an unmounted component. Harmless today
+  // (every Tooltip usage stays mounted for the app's lifetime), but a real
+  // gap the moment a future story renders one inside conditionally-mounted
+  // content.
+  useEffect(() => clearTimer, []);
 
   const show = (delay) => {
     clearTimer();
@@ -34,11 +42,24 @@ export default function Tooltip({ label, children }) {
     setVisible(false);
   };
 
+  // Regression: a stray mouseleave (mouse moves onto and off the element
+  // without touching focus) hid a tooltip that was shown because the
+  // element was focused -- the visible tooltip state stopped matching the
+  // documented focus-based trigger for any user with both a mouse and
+  // keyboard. Only hide on mouse-leave when focus isn't still inside.
+  const hideUnlessFocused = () => {
+    if (wrapRef.current && wrapRef.current.contains(document.activeElement)) {
+      return;
+    }
+    hide();
+  };
+
   return (
     <span
+      ref={wrapRef}
       className="tooltip-wrap"
       onMouseEnter={() => show(SHOW_DELAY_MS)}
-      onMouseLeave={hide}
+      onMouseLeave={hideUnlessFocused}
       onFocus={() => show(0)}
       onBlur={hide}
     >

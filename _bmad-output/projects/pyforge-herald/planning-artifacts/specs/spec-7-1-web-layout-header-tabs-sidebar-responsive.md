@@ -157,3 +157,40 @@ overlay would.
 
 ## Review Triage Log
 
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+Both reviewers independently drove a real Playwright session against `npm run preview` rather than
+trusting this spec's own verification claims -- the same discipline used for the original pass.
+
+- `[high]` `[patch]` **The "?" `HelpIcon` button was hardcoded to 20x20px**, ignoring
+  `var(--touch-target)` (44px) that every other interactive control in this app already uses. The
+  spec's own "Always" boundary requires `>=44px` touch targets at tablet/mobile; measured live at
+  every breakpoint it was 20x20px, under half the floor. The original Playwright verification note
+  above only checked the four tab items, never the help icon, so this slipped through. Fixed:
+  `.help-icon` now sizes to `min-width/min-height: var(--touch-target)` with flex-centered content
+  (the visible circle grows to 44px; still legible). Re-verified live at desktop (1400px) and
+  tablet-with-drawer-open (900px): `{width: 44, height: 44}` at both.
+- `[medium]` `[patch]` **The tablet/mobile hamburger's `aria-expanded` was hardcoded to
+  `undefined`**, always -- `App.jsx` never passed the `sidebarOpen` state down to `Header`, so the
+  disclosure-button pattern was stubbed but never wired; a screen-reader user toggling the drawer
+  got no open/closed state announced. Fixed: `App.jsx` now passes `sidebarOpen` to `Header`, which
+  sets `aria-expanded={sidebarOpen}`. Re-verified live: `false` before click, `true` after, `false`
+  after a second click. New regression test:
+  `reflects the drawer open/closed state via aria-expanded on the hamburger` (`App.test.jsx`).
+- `[low]` `[patch]` **An invalid/unknown URL hash (`#bogus`) fell back to the default tab
+  in-memory but left `window.location.hash` itself unchanged** -- a reload, bookmark, or share of
+  that URL kept showing `#bogus` in the address bar while always rendering Progress, permanently
+  desynced. Fixed: `useHashTab` now corrects the URL via `history.replaceState` on mount when the
+  hash is present but not a known tab. Re-verified live (fresh browser context, to rule out a
+  same-page navigation artifact from the reviewer's own combined test script): `#bogus-tab-xyz` ->
+  `#progress`. New regression test: `corrects an invalid URL hash to the default tab instead of
+  leaving it desynced` (`App.test.jsx`).
+- `addressed_findings`: 3 (1 high, 1 medium, 1 low). No `intent_gap`, no `bad_spec`, no `defer`,
+  no `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `npm run test` -- 13 passed (was 9); `npm run
+build` clean; live Playwright re-check of all three findings above, plus the original breakpoint/
+tab-persistence/sidebar-collapse checks, still hold.
+
+**Follow-up review recommendation:** none outstanding for this story.
+

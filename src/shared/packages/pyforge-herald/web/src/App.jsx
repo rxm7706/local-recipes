@@ -33,6 +33,7 @@ export default function App() {
         onSelectTab={setActiveTab}
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         showHamburger={showHamburger}
+        sidebarOpen={sidebarOpen}
       />
       <div className="app-body">
         <Sidebar

@@ -38,6 +38,14 @@ describe('tab navigation', () => {
 
     expect(screen.getByRole('heading', { name: 'Operations' })).toBeInTheDocument();
   });
+
+  it('corrects an invalid URL hash to the default tab instead of leaving it desynced', () => {
+    window.location.hash = '#bogus-tab-xyz';
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: 'Progress' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('#progress');
+  });
 });
 
 describe('sidebar responsiveness', () => {
@@ -62,6 +70,21 @@ describe('sidebar responsiveness', () => {
     expect(screen.getByLabelText('Filters')).not.toHaveClass('sidebar--collapsed');
   });
 
+  it('reflects the drawer open/closed state via aria-expanded on the hamburger', async () => {
+    setViewportWidth(900);
+    const user = userEvent.setup();
+    render(<App />);
+
+    const hamburger = screen.getByLabelText('Toggle filters menu');
+    expect(hamburger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(hamburger);
+    expect(hamburger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(hamburger);
+    expect(hamburger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('collapses the sidebar behind a hamburger at mobile width', () => {
     setViewportWidth(375);
     render(<App />);
@@ -80,5 +103,17 @@ describe('sidebar filters reacting in the content area', () => {
 
     const panel = screen.getByRole('heading', { name: 'Progress' }).closest('section');
     expect(within(panel).getByText('warden')).toBeInTheDocument();
+  });
+
+  it('reconciles a stale/unknown persisted station instead of desyncing the dropdown from the panel', () => {
+    window.localStorage.setItem(
+      'herald.filters.v1',
+      JSON.stringify({ station: 'nonexistent-station' })
+    );
+    render(<App />);
+
+    expect(screen.getByLabelText('Station')).toHaveValue('');
+    const panel = screen.getByRole('heading', { name: 'Progress' }).closest('section');
+    expect(within(panel).queryByText('nonexistent-station')).not.toBeInTheDocument();
   });
 });

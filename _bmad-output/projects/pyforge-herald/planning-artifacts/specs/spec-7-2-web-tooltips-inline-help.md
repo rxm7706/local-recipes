@@ -141,3 +141,42 @@ treated as the AC's evident intent rather than a literal timer applied everywher
 
 ## Review Triage Log
 
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **A tooltip shown because the element was focused could be dismissed by a
+  stray mouse movement.** `Tooltip.jsx`'s `onMouseLeave` and `onBlur` both called the same
+  unconditional `hide()`, with no check of whether focus was still present. Reproduced live:
+  Tab-focus a target (tooltip shows per the focus-trigger AC), move the mouse onto and back off the
+  same element without touching focus -- `document.activeElement` still reported the element
+  focused, but the tooltip vanished anyway. For any user with both a mouse and keyboard (the common
+  case, not just keyboard-only), a tooltip shown "because you focused this" could be silently
+  dismissed by incidental cursor movement while focus was unchanged. Fixed: `onMouseLeave` now
+  checks whether the wrapper still contains `document.activeElement` before hiding; `onBlur` is
+  unchanged (blur is the correct, unconditional hide trigger once focus genuinely leaves). New
+  regression test: `stays visible on a stray mouse leave while the element is still focused`
+  (`Tooltip.test.jsx`).
+- `[low]` `[patch]` **A pending 200ms show-timer had no unmount cleanup.** Harmless today (every
+  `Tooltip` usage stays mounted for the app's lifetime -- tab switches swap content, not the
+  sidebar/tab-nav), but a real gap the moment a future story renders one inside conditionally-mounted
+  content. Fixed: added a mount-scoped `useEffect` clearing the pending timer on unmount.
+- `[medium]` `[patch]` **A stale/unknown persisted `station` filter value desynced the dropdown
+  from the panel's live filter echo** (Edge Case Hunter finding, cross-cutting with Story 7.1's
+  `useFilters` hook, recorded here since it's this story's inline-help/empty-state-adjacent "does
+  the UI ever show contradictory state" concern). Reproduced live: hand-set
+  `localStorage['herald.filters.v1']` to `{station: 'nonexistent-station'}`, reload -- the
+  `&lt;select&gt;` silently fell back to "All stations" (`value: ''`) while `filters.station` still held
+  the stale string, and the panel's filter echo showed it, with `EmptyState` suppressed as if a
+  real filter were active. Fixed: `useFilters`'s `loadInitial` now reconciles an unknown `station`
+  value to `''` at load, mirroring `useHashTab`'s existing `validTabs` pattern. New regression
+  test: `reconciles a stale/unknown persisted station instead of desyncing the dropdown from the
+  panel` (`App.test.jsx`).
+- `addressed_findings`: 3 (2 medium, 1 low). No `intent_gap`, no `bad_spec`, no `defer`, no
+  `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `npm run test` -- 13 passed (was 9); `npm run
+build` clean; live Playwright re-check confirms the tooltip stays visible on a stray mouseleave
+while focused, and a reloaded page with a stale persisted station shows neither the stale value in
+the dropdown nor in the panel echo.
+
+**Follow-up review recommendation:** none outstanding for this story.
+

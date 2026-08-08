@@ -1,6 +1,12 @@
 import TabNav from './TabNav.jsx';
 
-export default function Header({ activeTab, onSelectTab, onToggleSidebar, showHamburger }) {
+export default function Header({
+  activeTab,
+  onSelectTab,
+  onToggleSidebar,
+  showHamburger,
+  sidebarOpen,
+}) {
   return (
     <header className="app-header">
       <div className="app-header__brand">
@@ -9,7 +15,7 @@ export default function Header({ activeTab, onSelectTab, onToggleSidebar, showHa
             type="button"
             className="app-header__hamburger"
             aria-label="Toggle filters menu"
-            aria-expanded={undefined}
+            aria-expanded={sidebarOpen}
             onClick={onToggleSidebar}
           >
             <span aria-hidden="true">☰</span>
