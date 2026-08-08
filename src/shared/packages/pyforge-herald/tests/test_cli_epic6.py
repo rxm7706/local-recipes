@@ -14,8 +14,7 @@ from __future__ import annotations
 import json
 
 import pytest
-
-from pyforge.herald import auth, cli
+from pyforge.herald import auth, claims, cli, evidence
 
 # --- Story 6.1: dispatcher ---------------------------------------------
 
@@ -84,11 +83,11 @@ def test_unknown_command_exits_2_and_names_it(capsys):
 
 
 def test_json_flag_prints_valid_json_no_ansi(capsys):
-    """Exercised on ``success`` (still a placeholder) rather than
-    ``progress``: Story 8.3 gave ``progress`` real behavior, so its own
-    ``--json`` shape is covered by ``test_cli_progress.py`` instead -- this
-    test's job is the shared ``--json`` plumbing itself."""
-    assert cli.main(["success", "--json"]) == 0
+    """Exercised on ``notice`` (still a placeholder) rather than
+    ``progress``/``success``: Stories 8.3/9.3 gave those real behavior, so
+    their own ``--json`` shapes are covered by their own test files
+    instead -- this test's job is the shared ``--json`` plumbing itself."""
+    assert cli.main(["notice", "--json"]) == 0
     out = capsys.readouterr().out.strip()
     payload = json.loads(out)  # raises if not valid JSON
     assert "\x1b" not in out
@@ -96,14 +95,12 @@ def test_json_flag_prints_valid_json_no_ansi(capsys):
 
 
 def test_json_short_flag_alias(capsys):
-    assert cli.main(["success", "-j"]) == 0
+    assert cli.main(["notice", "-j"]) == 0
     json.loads(capsys.readouterr().out.strip())
 
 
 def test_date_range_valid_filters_and_exits_0(capsys):
-    assert (
-        cli.main(["success", "--json", "--date-range", "2026-08-01..2026-08-31"]) == 0
-    )
+    assert cli.main(["notice", "--json", "--date-range", "2026-08-01..2026-08-31"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["date_range"] == ["2026-08-01", "2026-08-31"]
 
@@ -145,13 +142,13 @@ def test_json_flag_renders_error_as_json_on_stderr(capsys):
 
 
 def test_station_flag_filters(capsys):
-    assert cli.main(["success", "--json", "--station", "warden"]) == 0
+    assert cli.main(["notice", "--json", "--station", "warden"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["station"] == "warden"
 
 
 def test_station_short_flag_alias(capsys):
-    assert cli.main(["success", "--json", "-s", "warden"]) == 0
+    assert cli.main(["notice", "--json", "-s", "warden"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["station"] == "warden"
 
@@ -185,22 +182,46 @@ def test_success_publish_with_no_auth_context_names_the_remediation(capsys):
     assert "HERALD_TOKEN" in err
 
 
-def test_success_publish_with_operator_role_proceeds_to_the_stub(capsys, monkeypatch):
+def test_success_publish_with_operator_role_proceeds_to_the_real_publish(
+    capsys, monkeypatch, tmp_path
+):
+    """Epic 9 replaces the Epic 6 stub with a real publish -- this test now
+    creates a draft claim first (via ``claims.create`` directly, ahead of
+    the ``--repo-root``-scoped CLI call) and asserts the gate still runs
+    *before* the real work, same as the stub always did."""
+    monkeypatch.setattr(evidence, "validate_for_publish", lambda url, **_k: None)
+    claim = claims.create(tmp_path / claims.DEFAULT_CLAIMS_PATH, project_name="warden")
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: True)
-    assert cli.main(["success", "publish", "claim-123"]) == 0
+    assert (
+        cli.main(
+            [
+                "success",
+                "--repo-root",
+                str(tmp_path),
+                "publish",
+                claim.id,
+                "--thesis",
+                "Shipped it",
+            ]
+        )
+        == 0
+    )
     out = capsys.readouterr().out
-    assert "authorized" in out
-    assert "claim-123" in out
+    assert claim.id in out
+    assert "published" in out
 
 
-def test_success_publish_confirmation_declined_takes_no_action(capsys, monkeypatch):
+def test_success_publish_confirmation_declined_takes_no_action(
+    capsys, monkeypatch, tmp_path
+):
+    claim = claims.create(tmp_path / claims.DEFAULT_CLAIMS_PATH, project_name="warden")
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: False)
-    assert cli.main(["success", "publish", "claim-123"]) == 0
+    assert cli.main(["success", "--repo-root", str(tmp_path), "publish", claim.id]) == 0
     out = capsys.readouterr().out
     assert "aborted" in out
-    assert "authorized" not in out
+    assert "published" not in out
 
 
 def test_notice_author_without_operator_role_is_refused_exit_1(capsys, monkeypatch):

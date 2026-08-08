@@ -52,11 +52,11 @@ development_status:
   8-2-implement-on-ship-webhook-and-weekly-cron-automation: done
   8-3-implement-progress-cli: done
   8-4-implement-progress-web-tab: done
-  9-1-implement-claim-data-model-and-database-schema: backlog
-  9-2-implement-auto-extract-and-operator-review-gate: backlog
-  9-3-implement-success-cli: backlog
-  9-4-implement-success-web-archive: backlog
-  9-5-implement-evidence-validation-sync-and-async: backlog
+  9-1-implement-claim-data-model-and-database-schema: done
+  9-2-implement-auto-extract-and-operator-review-gate: done
+  9-3-implement-success-cli: done
+  9-4-implement-success-web-archive: done
+  9-5-implement-evidence-validation-sync-and-async: done
   10-1-notice-data-model-and-archive-storage: backlog
   10-2-notice-authoring-workflow-cli: backlog
   10-3-notice-archive-and-redirects: backlog
@@ -87,7 +87,7 @@ development_status:
   epic-7-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
-  epic-9: backlog
+  epic-9: done
   epic-9-retrospective: optional
   epic-10: backlog
   epic-10-retrospective: optional

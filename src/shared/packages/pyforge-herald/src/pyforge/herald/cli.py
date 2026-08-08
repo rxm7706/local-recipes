@@ -53,8 +53,9 @@ from dataclasses import asdict
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from . import __version__, auth, bridge, deck_pipeline, errors, progress
+from . import __version__, auth, bridge, claims, deck_pipeline, errors, progress
 from . import watch as watch_module
+from .claims import CLAIM_STATUSES
 from .transport import McpTransport
 
 TOOL_NAME = "herald"
@@ -344,19 +345,104 @@ def _build_parser() -> _HeraldArgumentParser:
         parents=[global_flags],
         help="manage success claims (Moment 3; publish requires operator role)",
         description=(
-            "List or publish success claims. Listing is read-only; "
-            "publishing requires the operator role (AD-16)."
+            "List, review, or publish success claims. Listing/review is "
+            "read-only; create/publish/validate write local storage, and "
+            "publish requires the operator role (AD-16)."
         ),
-        epilog="examples:\n  herald success\n  herald success publish claim-123\n",
+        epilog=(
+            "examples:\n"
+            "  herald success create warden --evidence-test-results "
+            "https://example/tests\n"
+            "  herald success review claim-123\n"
+            "  herald success publish claim-123 --thesis 'Shipped X'\n"
+            "  herald success list --status draft\n"
+            "  herald success get claim-123\n"
+            "  herald success validate claim-123\n"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    success.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing .herald/claims.json (default: cwd)",
     )
     success_subparsers = success.add_subparsers(
         dest="success_command", required=False, metavar="success_command"
     )
+    success_create = success_subparsers.add_parser(
+        "create",
+        help=(
+            "create a draft success claim from CLI flags (Story 9.2 -- "
+            "scaled down from a CI webhook to an operator-run command)"
+        ),
+    )
+    success_create.add_argument(
+        "project_name", help="the project name, e.g. 'Marshal S-1.10'"
+    )
+    success_create.add_argument(
+        "--shipped-date",
+        metavar="YYYY-MM-DD",
+        default=None,
+        help="shipped date (default: today)",
+    )
+    success_create.add_argument(
+        "--evidence-test-results",
+        metavar="<url>",
+        default=None,
+        help="evidence link: test results",
+    )
+    success_create.add_argument(
+        "--evidence-metrics",
+        metavar="<url>",
+        default=None,
+        help="evidence link: metrics",
+    )
+    success_create.add_argument(
+        "--evidence-adoption",
+        metavar="<url>",
+        default=None,
+        help="evidence link: adoption signal",
+    )
+    success_review = success_subparsers.add_parser(
+        "review", help="show a draft claim's evidence before publishing"
+    )
+    success_review.add_argument("claim_id", help="the claim id to review")
     publish = success_subparsers.add_parser(
         "publish", help="publish a success claim (requires operator role)"
     )
     publish.add_argument("claim_id", help="the claim id to publish")
+    publish.add_argument(
+        "--thesis",
+        default=None,
+        help="the published thesis text (required if the claim has none yet)",
+    )
+    success_list = success_subparsers.add_parser(
+        "list", help="list success claims (same as `herald success` with no subcommand)"
+    )
+    success_list.add_argument(
+        "--status",
+        choices=CLAIM_STATUSES,
+        default=None,
+        help="filter to one status (default: every status)",
+    )
+    success_get = success_subparsers.add_parser(
+        "get", help="show full detail for one claim"
+    )
+    success_get.add_argument("claim_id", help="the claim id")
+    success_validate = success_subparsers.add_parser(
+        "validate",
+        help=(
+            "re-check evidence links for one claim or every claim (Story "
+            "9.5 -- scaled down from a weekly cron to an operator-run check)"
+        ),
+    )
+    success_validate.add_argument(
+        "claim_id", nargs="?", default=None, help="the claim id (omit with --all)"
+    )
+    success_validate.add_argument(
+        "--all", action="store_true", help="re-validate every claim's evidence links"
+    )
 
     notice = subparsers.add_parser(
         "notice",
@@ -428,8 +514,17 @@ def _route(args: argparse.Namespace) -> int:
     if args.command == "progress":
         return _run_progress(args)
     if args.command == "success":
-        if getattr(args, "success_command", None) == "publish":
+        success_command = getattr(args, "success_command", None)
+        if success_command == "create":
+            return _run_success_create(args)
+        if success_command == "review":
+            return _run_success_review(args)
+        if success_command == "publish":
             return _run_success_publish(args)
+        if success_command == "get":
+            return _run_success_get(args)
+        if success_command == "validate":
+            return _run_success_validate(args)
         return _run_success_list(args)
     if args.command == "notice":
         if getattr(args, "notice_command", None) == "author":
@@ -798,44 +893,94 @@ def _run_progress(args: argparse.Namespace) -> int:
     return dispatch(operation, json_output=args.json)
 
 
-def _run_success_list(args: argparse.Namespace) -> int:
-    """``herald success`` with no ``publish`` subcommand -- read-only
-    listing placeholder, same shape as ``_run_progress``."""
+def _success_claims_path(args: argparse.Namespace) -> Path:
+    """Resolve ``.herald/claims.json`` under ``args.repo_root`` (default:
+    cwd) -- shared by every ``success`` subcommand handler below."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+    return repo_root / claims.DEFAULT_CLAIMS_PATH
+
+
+def _run_success_create(args: argparse.Namespace) -> int:
+    """``herald success create <project>`` (Story 9.2, scaled down): the
+    CLI-triggered replacement for the original spec's PR-close webhook --
+    an operator supplies the fields the webhook payload would have carried
+    (project name, shipped date, evidence links) directly as flags. No
+    operator-role gate: creating a *draft* is the scaled-down equivalent of
+    the webhook firing automatically, which the original spec never gated
+    on a role either -- only *publishing* is gated (AD-16)."""
+    claims_path = _success_claims_path(args)
 
     def operation() -> None:
-        date_range = (
-            _parse_date_range(args.date_range) if args.date_range is not None else None
-        )
-        if args.json:
-            print(
-                json.dumps(
-                    {
-                        "status": "not yet implemented",
-                        "station": args.station,
-                        "date_range": (
-                            [d.isoformat() for d in date_range]
-                            if date_range is not None
-                            else None
-                        ),
-                    }
+        evidence = []
+        if args.evidence_test_results:
+            evidence.append(
+                claims.Evidence(
+                    type="test_results",
+                    url=args.evidence_test_results,
+                    label="test results",
                 )
             )
-        else:
-            print("success: not yet implemented")
+        if args.evidence_metrics:
+            evidence.append(
+                claims.Evidence(
+                    type="metrics", url=args.evidence_metrics, label="metrics"
+                )
+            )
+        if args.evidence_adoption:
+            evidence.append(
+                claims.Evidence(
+                    type="adoption", url=args.evidence_adoption, label="adoption"
+                )
+            )
+        claim = claims.create(
+            claims_path,
+            project_name=args.project_name,
+            shipped_date=args.shipped_date,
+            evidence=evidence,
+        )
+        print(f"created draft claim {claim.id} for {claim.project_name!r}")
+        print(f"review with: herald success review {claim.id}")
 
-    return dispatch(operation, json_output=args.json)
+    return dispatch(operation)
+
+
+def _run_success_review(args: argparse.Namespace) -> int:
+    """``herald success review <claim-id>`` (Story 9.2/9.3's review gate):
+    read-only display of a claim's evidence, ahead of the operator-gated
+    ``herald success publish``. Deliberately does not itself prompt to
+    publish inline -- keeping ``publish`` as the sole path through
+    ``auth.require_operator_role`` (Story 6.3's existing gate boundary)
+    means there is exactly one place a bypass would have to defeat."""
+    claims_path = _success_claims_path(args)
+
+    def operation() -> None:
+        claim = claims.read_one(claims_path, args.claim_id)
+        print(f"claim {claim.id}: {claim.project_name} (status={claim.status})")
+        print(f"shipped: {claim.shipped_date or '(unset)'}")
+        print(f"thesis: {claim.thesis or '(none yet)'}")
+        if claim.evidence:
+            print("evidence:")
+            for item in claim.evidence:
+                mark = "validated" if item.validated else "unvalidated"
+                print(f"  - [{item.type}] {item.label}: {item.url} ({mark})")
+        else:
+            print("evidence: (none)")
+        if claim.status == "draft":
+            print(f'to publish: herald success publish {claim.id} --thesis "..."')
+
+    return dispatch(operation)
 
 
 def _run_success_publish(args: argparse.Namespace) -> int:
-    """``herald success publish <claim-id>`` -- Story 6.3's write-gated
-    stub. ``auth.require_operator_role`` runs *before* anything else in
+    """``herald success publish <claim-id> [--thesis ...]`` -- Story 6.3's
+    write-gated stub, now doing the real work (Story 9.3 + 9.5).
+    ``auth.require_operator_role`` runs *before* anything else in
     ``operation``: a bypass would have to skip this call itself, not merely
-    fail a check reachable after the "real" work already ran.
-
-    The actual publish (validating evidence links via ``evidence.py``,
-    persisting the claim) is Epic 9's scope -- this story's own AC says a
-    stub that reaches "authorized, would proceed" is sufficient once past
-    the gate."""
+    fail a check reachable after the "real" work already ran. Evidence
+    links are validated via ``evidence.validate_for_publish`` (Story 6.4's
+    shared protocol) inside ``claims.publish`` -- a broken link raises
+    ``EvidenceLinkError`` before anything is persisted."""
+    claims_path = _success_claims_path(args)
 
     def operation() -> None:
         auth.require_operator_role(
@@ -844,10 +989,98 @@ def _run_success_publish(args: argparse.Namespace) -> int:
         if not auth.confirm("Continue? [Y/n] "):
             print("aborted: publish not confirmed")
             return
+        claim = claims.publish(claims_path, args.claim_id, thesis=args.thesis)
         print(
-            f"authorized: would publish claim {args.claim_id!r} "
-            f"(Epic 9 implements the actual publish)"
+            f"published claim {claim.id} for {claim.project_name} "
+            f"on {claim.shipped_date}"
         )
+
+    return dispatch(operation)
+
+
+def _run_success_list(args: argparse.Namespace) -> int:
+    """``herald success`` with no subcommand, or ``herald success list``
+    (Story 9.3): read-only listing over ``claims.json``, optionally
+    filtered by ``--status`` and/or the shared ``--date-range`` (matched
+    against each claim's ``shipped_date``)."""
+    claims_path = _success_claims_path(args)
+
+    def operation() -> None:
+        date_range = (
+            _parse_date_range(args.date_range) if args.date_range is not None else None
+        )
+        status = getattr(args, "status", None)
+        results = claims.list_claims(claims_path, status=status, date_range=date_range)
+        if args.json:
+            for claim in results:
+                print(json.dumps(claims.to_dict(claim)))
+        elif not results:
+            print("success: no claims found")
+        else:
+            for claim in results:
+                print(
+                    f"{claim.id}  {claim.status:<9}  {claim.project_name}  "
+                    f"{claim.shipped_date or '-'}  evidence={len(claim.evidence)}"
+                )
+
+    return dispatch(operation, json_output=args.json)
+
+
+def _run_success_get(args: argparse.Namespace) -> int:
+    """``herald success get <claim-id>`` (Story 9.3): full claim detail,
+    read-only."""
+    claims_path = _success_claims_path(args)
+
+    def operation() -> None:
+        claim = claims.read_one(claims_path, args.claim_id)
+        if args.json:
+            print(json.dumps(claims.to_dict(claim)))
+            return
+        print(f"id: {claim.id}")
+        print(f"project_name: {claim.project_name}")
+        print(f"status: {claim.status}")
+        print(f"thesis: {claim.thesis or '(none)'}")
+        print(f"shipped_date: {claim.shipped_date or '(unset)'}")
+        print(f"created_at: {claim.created_at}")
+        print(f"published_at: {claim.published_at or '(unset)'}")
+        print(f"closed_at: {claim.closed_at or '(unset)'}")
+        print(f"updated_at: {claim.updated_at}")
+        print("evidence:")
+        for item in claim.evidence:
+            mark = "validated" if item.validated else "unvalidated"
+            print(f"  - [{item.type}] {item.label}: {item.url} ({mark})")
+        print("edit_history:")
+        for version in claim.edit_history:
+            print(f"  - {version.edited_at}: {version.thesis}")
+
+    return dispatch(operation, json_output=args.json)
+
+
+def _run_success_validate(args: argparse.Namespace) -> int:
+    """``herald success validate <claim-id> | --all`` (Story 9.5, scaled
+    down): the operator-run replacement for the original spec's weekly
+    async re-validation cron -- re-checks evidence links via
+    ``evidence.validate_link`` (never raises; this command's whole point is
+    to surface breakage, not reject it) and updates
+    ``validated``/``validated_at``."""
+    claims_path = _success_claims_path(args)
+
+    def operation() -> None:
+        if bool(args.claim_id) == bool(args.all):
+            raise errors.HeraldError(
+                "herald success validate: supply exactly one of <claim-id> or --all"
+            )
+        if args.all:
+            updated = claims.revalidate_all(claims_path)
+            print(f"revalidated evidence for {len(updated)} claim(s)")
+        else:
+            claim = claims.revalidate(claims_path, args.claim_id)
+            broken = sum(1 for item in claim.evidence if not item.validated)
+            total = len(claim.evidence)
+            print(
+                f"revalidated claim {claim.id}: {total - broken}/{total} "
+                f"evidence link(s) valid"
+            )
 
     return dispatch(operation)
 

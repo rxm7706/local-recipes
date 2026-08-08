@@ -15,12 +15,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 import pyforge.herald as herald_pkg
+import pytest
 from pyforge.herald import (
     auth,
     bridge,
+    claims,
     deck_pipeline,
     errors,
     evidence,
@@ -134,6 +134,7 @@ _BRIDGE_CORE_MODULES = (
     deck_pipeline,
     auth,
     evidence,
+    claims,
     watch,
     progress,
 )
@@ -152,6 +153,9 @@ or ``_FORBIDDEN_INFERENCE_PACKAGES`` below, so sweeping it in costs nothing
 and pins the same invariant onto Epic 6's new modules that Epic 1's already
 hold. ``watch.py`` (Epic 4, CAP-4) joins for the identical reason: it is
 bridge-core's own poll loop, not the CLI layer or a transport adapter.
+``claims.py`` (Story 9.1, Epic 9) joins for the same reason once more:
+local claim storage, not the CLI layer or a transport adapter -- it never
+imports a concrete ``DesignTransport`` adapter or an inference SDK either.
 ``progress.py`` (Story 8.1, the scaled-down Epic 8 local-storage module)
 joins for the same reason again: it is a plain local-JSON persistence
 module with no transport or argv-parsing concerns of its own."""
