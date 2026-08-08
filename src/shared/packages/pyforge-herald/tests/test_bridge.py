@@ -15,9 +15,18 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pyforge.herald as herald_pkg
 import pytest
-from pyforge.herald import bridge, deck_pipeline, errors, registry, state
+
+import pyforge.herald as herald_pkg
+from pyforge.herald import (
+    auth,
+    bridge,
+    deck_pipeline,
+    errors,
+    evidence,
+    registry,
+    state,
+)
 from pyforge.herald import transport as transport_pkg
 from pyforge.herald.cli import dispatch
 from pyforge.herald.errors import (
@@ -111,13 +120,21 @@ def test_run_propagates_any_herald_error_unchanged(error):
 
 # --- determinism boundary: bridge-core's own source -------------------------
 
-_BRIDGE_CORE_MODULES = (bridge, state, errors, registry, deck_pipeline)
+_BRIDGE_CORE_MODULES = (bridge, state, errors, registry, deck_pipeline, auth, evidence)
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
 neither belongs in this sweep. ``registry.py`` (Story 1.5) and
 ``deck_pipeline.py`` (Story 1.6, CAP-1 ``seed``) join here: both are
 bridge-core, not the CLI layer or a transport adapter, so neither has cause
-for exclusion."""
+for exclusion. ``auth.py`` and ``evidence.py`` (Epic 6, Stories 6.3/6.4)
+join for the same reason: neither is the CLI layer itself (``cli.py``
+calls them; they do not parse argv) nor a transport adapter, and neither
+has any legitimate reason to import a concrete ``DesignTransport`` adapter
+or an inference SDK -- ``evidence.py``'s own ``httpx2`` import is an
+ordinary third-party HTTP client, not one of ``_FORBIDDEN_ADAPTER_MODULES``
+or ``_FORBIDDEN_INFERENCE_PACKAGES`` below, so sweeping it in costs nothing
+and pins the same invariant onto Epic 6's new modules that Epic 1's already
+hold."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name

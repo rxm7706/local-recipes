@@ -1538,6 +1538,7 @@ pytest = ">=9.1.1"                       # test runner
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 mcp = ">=2.0.0"                         # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
+httpx2 = ">=2.5.0"                      # Story 6.4 evidence-link HTTP client (also a package run-dep; mirrors mcp's own transitive pin)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner

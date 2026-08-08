@@ -41,11 +41,11 @@ development_status:
   4-3-halt-on-auth-error: backlog
   5-1-push-regenerated-exports-with-etag-guard: backlog
   5-2-conflict-refusal-on-export-push: backlog
-  6-1-implement-herald-cli-dispatcher: backlog
-  6-2-implement-shared-argument-conventions: backlog
-  6-3-implement-cli-authentication-and-authorization: backlog
-  6-4-implement-evidence-link-validation-protocol-shared-infrastructure: backlog
-  6-5-cli-help-and-first-day-usability: backlog
+  6-1-implement-herald-cli-dispatcher: done
+  6-2-implement-shared-argument-conventions: done
+  6-3-implement-cli-authentication-and-authorization: done
+  6-4-implement-evidence-link-validation-protocol-shared-infrastructure: done
+  6-5-cli-help-and-first-day-usability: done
   7-1-design-and-implement-web-layout-header-tabs-sidebar-responsive: backlog
   7-2-implement-web-tooltips-and-inline-help: backlog
   8-1-implement-progress-data-model-and-database-schema: backlog
@@ -81,7 +81,7 @@ development_status:
   epic-4-retrospective: optional
   epic-5: backlog
   epic-5-retrospective: optional
-  epic-6: backlog
+  epic-6: done
   epic-6-retrospective: optional
   epic-7: backlog
   epic-7-retrospective: optional
