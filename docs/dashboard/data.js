@@ -1332,7 +1332,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 20 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 33 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -1359,12 +1359,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "18/20",
+            "18/33",
             "stories complete",
             "var(--done)"
           ],
           [
-            "2",
+            "15",
             "remaining",
             ""
           ]
@@ -1517,6 +1517,89 @@ window.DASHBOARD_DATA = {
               "5.2",
               "pending",
               "Consume the sprint ledger; never derive story status"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Module provisioning",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "`provision --module <name>`"
+            ],
+            [
+              "6.2",
+              "pending",
+              "`provision --list-modules`"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Partial install is a named failure"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "The one-container Guild",
+          "stories": [
+            [
+              "7.1",
+              "pending",
+              "One build, whole Guild"
+            ],
+            [
+              "7.2",
+              "pending",
+              "The repo at a fixed short path"
+            ],
+            [
+              "7.3",
+              "pending",
+              "Credentials never enter image layers"
+            ],
+            [
+              "7.4",
+              "pending",
+              "State outlives the container"
+            ],
+            [
+              "7.5",
+              "pending",
+              "The image proves itself at build time"
+            ]
+          ]
+        },
+        {
+          "badge": "E8",
+          "title": "Two boards, one truth",
+          "stories": [
+            [
+              "8.1",
+              "pending",
+              "Bidirectional propagation"
+            ],
+            [
+              "8.2",
+              "pending",
+              "Zero-loop guarantee"
+            ],
+            [
+              "8.3",
+              "pending",
+              "Idempotent update processing"
+            ],
+            [
+              "8.4",
+              "pending",
+              "Fail loud, fail alone"
+            ],
+            [
+              "8.5",
+              "pending",
+              "Explicit status-vocabulary translation"
             ]
           ]
         }
@@ -3102,7 +3185,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 20:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 20:21 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4992,7 +5075,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "next free slot",
           "done": 18,
-          "total": 20
+          "total": 33
         },
         {
           "slug": "pyforge-mason",
@@ -5923,7 +6006,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "18/20",
+        "progress": "18/33",
         "complete": 14,
         "of": 14
       },
@@ -14132,8 +14215,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 20:18 UTC",
-    "generatedEpoch": 1786220287
+    "generatedAt": "2026-08-08 20:21 UTC",
+    "generatedEpoch": 1786220468
   },
   "storySpecs": [
     {

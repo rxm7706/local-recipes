@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 30
+# stories: 49
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -34,6 +34,19 @@ development_status:
   4-3-asking-am-i-under-budget-never-lies: done
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: backlog
   5-2-consume-the-sprint-ledger-never-derive-story-status: backlog
+  6-1-provision-module-name: backlog
+  6-2-provision-list-modules: backlog
+  6-3-partial-install-is-a-named-failure: backlog
+  7-1-one-build-whole-guild: backlog
+  7-2-the-repo-at-a-fixed-short-path: backlog
+  7-3-credentials-never-enter-image-layers: backlog
+  7-4-state-outlives-the-container: backlog
+  7-5-the-image-proves-itself-at-build-time: backlog
+  8-1-bidirectional-propagation: blocked
+  8-2-zero-loop-guarantee: blocked
+  8-3-idempotent-update-processing: blocked
+  8-4-fail-loud-fail-alone: blocked
+  8-5-explicit-status-vocabulary-translation: blocked
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -44,3 +57,9 @@ development_status:
   epic-4-retrospective: optional
   epic-5: backlog
   epic-5-retrospective: optional
+  epic-6: backlog
+  epic-6-retrospective: optional
+  epic-7: backlog
+  epic-7-retrospective: optional
+  epic-8: blocked
+  epic-8-retrospective: optional

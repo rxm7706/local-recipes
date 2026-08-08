@@ -278,3 +278,88 @@ Sequenced per the domain-research report's recommendation (proven urgency first,
 
 **Research grounding:** `_bmad-output/projects/pyforge-steward/planning-artifacts/research/domain-steward-platform-ops-tooling-research-2026-07-25.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-steward-pixi-workspace-member-research-2026-07-25.md`.
 **Brief:** `_bmad-output/projects/pyforge-steward/planning-artifacts/briefs/brief-pyforge-steward-2026-07-25/brief.md`.
+
+---
+
+## The station's own backlog — three Specs decomposed 2026-08-08
+
+Until today this PRD decomposed Steward's **shipped** surface (`FR-1..FR-18`: keys,
+deploy, provision, budget) and nothing else, while three `status: draft` Specs sat in
+`planning-artifacts/specs/` with no FR, no epic and no story. Steward therefore rendered
+**18/18 · 100%** while owning three undecomposed Dreams.
+
+This is the same rule Marshal's PRD adopted the same day, applied here: **a capability
+decomposes into this PRD iff its Dream is `owner: steward`** — not iff it touches a
+particular directory. Two of the three arrived at Steward today (`jira-github-projects-sync`
+re-owned under the build-line/estate seam), which is precisely why the gap was invisible.
+
+### Module provisioning — `spec-bmad-module-provisioning` (FR-19..FR-21)
+
+*Sequencing: land before the container work — `provision --module` inside an image build
+only exists if the backend exists first.*
+
+#### FR-19: One-command module provisioning
+An operator materializes a named BMAD module without recalling its installer's syntax.
+**Consequences:** `provision --module <name>` succeeds for each supported module; an
+unknown name lists valid ones rather than surfacing the underlying tool's raw error;
+the implementation is a **subprocess wrap of the module's own installer** (AD-1), never
+a reimplementation.
+
+#### FR-20: Module discovery
+An operator can ask what modules exist and which are installed before choosing.
+**Consequences:** `provision --list-modules` enumerates supported modules with installed
+state; state is **derived from the filesystem**, not from a hand-maintained declaration.
+
+#### FR-21: Partial state is named, never silent
+**Consequences:** an installer that exits non-zero, or succeeds while leaving the module
+unimportable, is reported as a named failure — never counted as provisioned.
+
+### The one-container Guild — `spec-unified-container` (FR-22..FR-26)
+
+#### FR-22: One build, whole Guild
+**Consequences:** a single `Containerfile` produces an image carrying all eight station
+CLIs; each answers `--version` inside the container.
+
+#### FR-23: The image ships the repo at a fixed short path
+**Consequences:** the checkout lives at a path short enough to avoid the documented
+`pixi-build-python` path-length panic; the path is fixed and documented, not derived
+from the build host.
+
+#### FR-24: Credentials never enter image layers
+**Consequences:** no secret is present in any layer — asserted by a build-time scan;
+credentials arrive at run time only, through Steward's existing `keys` surface.
+
+#### FR-25: State outlives the container
+**Consequences:** loop homes, the Tier-3 store and mutable runtime caches resolve to
+mounted volumes; a container restart loses no durable state, proven by a round-trip test.
+
+#### FR-26: The image proves itself at build time
+**Consequences:** the build runs a smoke gate that fails the build — not a later run —
+when any station CLI is missing, unimportable, or over its documented start-up budget.
+
+### Two boards, one truth — `spec-jira-github-projects-sync` (FR-27..FR-31)
+
+*Greenfield: nothing exists today. Three open questions remain in the Spec (authoritative
+side, Mode A vs B, Mode B's schema); **Q1/Q5 were resolved 2026-08-08** — an external
+board pair, hence Steward's, hence these FRs.*
+
+#### FR-27: Bidirectional propagation
+**Consequences:** a status/assignee/link change on either board reaches the other with no
+human action on the receiving side, demonstrated against a live pair.
+
+#### FR-28: Zero-loop guarantee
+**Consequences:** N round-trips of one human change produce **exactly one** propagation,
+not N — demonstrated by test, never asserted.
+
+#### FR-29: Idempotent update processing
+**Consequences:** delivering an identical payload twice leaves both systems byte-identical
+to delivering it once.
+
+#### FR-30: Fail loud, fail alone
+**Consequences:** an item missing its cross-system link emits a named, greppable error and
+does not stop the batch for every other item.
+
+#### FR-31: Explicit status-vocabulary translation
+**Consequences:** every status crossing the boundary passes through a reviewable mapping;
+an unmapped value is a hard logged failure, never a pass-through that invents a state.
+

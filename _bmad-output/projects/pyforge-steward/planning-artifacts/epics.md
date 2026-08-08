@@ -553,3 +553,117 @@ Tier-3 feed, or any re-derivation
 
 **Status:** backlog
 
+---
+
+## Epic 6: Module provisioning
+
+**Value delivered.** A BMAD module is materialized by one command instead of a
+remembered installer incantation. **Sequenced before Epic 7** — `provision --module`
+inside an image build only exists if the backend exists first.
+
+### Story 6.1: `provision --module <name>`
+**FR/AD:** FR-19; AD-1 (wrap, never reimplement) • **Effort:** S • **Surface:** `provision.py`, `cli.py`
+**Given** a supported module name **When** `provision --module <name>` runs **Then** the
+module's own installer is invoked as a subprocess and the result reported; **And** an
+unknown name lists the valid ones rather than surfacing a raw tool error; **And** no
+module's install logic is reimplemented here.
+**Status:** backlog
+
+### Story 6.2: `provision --list-modules`
+**FR/AD:** FR-20 • **Effort:** XS • **Surface:** `provision.py`
+**Given** any state **When** the operator lists modules **Then** each supported module is
+shown with its installed state, **derived from the filesystem** rather than a
+hand-maintained list (derive-don't-declare).
+**Status:** backlog
+
+### Story 6.3: Partial install is a named failure
+**FR/AD:** FR-21; AD-7 • **Effort:** XS • **Surface:** `provision.py`, `tests/`
+**Given** an installer that exits non-zero, or exits 0 leaving the module unimportable
+**Then** the result is a named failure — never counted as provisioned, never silent.
+**Status:** backlog
+
+---
+
+## Epic 7: The one-container Guild
+
+**Value delivered.** The whole factory ships as one deployable boundary. **Deps: Epic 6.**
+Marshal's unification research recommends two image tiers; this epic commits only to the
+lean all-stations image, with the packaging tier explicitly out of scope.
+
+### Story 7.1: One build, whole Guild
+**FR/AD:** FR-22 • **Effort:** M • **Surface:** `Containerfile`, `pixi.toml`
+**Given** the Containerfile **When** the image builds **Then** all eight station CLIs are
+present and each answers `--version` inside the container.
+**Status:** backlog
+
+### Story 7.2: The repo at a fixed short path
+**FR/AD:** FR-23 • **Effort:** S • **Surface:** `Containerfile`
+**Given** the image **Then** the checkout sits at a path short enough to avoid the
+documented `pixi-build-python` path-length panic, fixed and documented rather than
+derived from the build host.
+**Status:** backlog
+
+### Story 7.3: Credentials never enter image layers
+**FR/AD:** FR-24; AD-2, AD-3 • **Effort:** S • **Surface:** `Containerfile`, `scripts/container-gates`
+**Given** a built image **Then** a build-time scan finds no secret in any layer, and the
+build FAILS if one is present; **And** credentials arrive at run time only, through the
+existing `keys` surface.
+**Status:** backlog
+
+### Story 7.4: State outlives the container
+**FR/AD:** FR-25 • **Effort:** M • **Surface:** `Containerfile`, `scripts/container-gates`
+**Given** loop homes, the Tier-3 store and mutable caches **Then** each resolves to a
+mounted volume, and a restart loses no durable state — proven by a round-trip test, not
+by inspection.
+**Status:** backlog
+
+### Story 7.5: The image proves itself at build time
+**FR/AD:** FR-26 • **Effort:** S • **Surface:** `scripts/container-gates`
+**Given** the build **Then** a smoke gate fails the BUILD — not a later run — when any
+station CLI is missing, unimportable, or over its documented start-up budget.
+**Status:** backlog
+
+---
+
+## Epic 8: Two boards, one truth
+
+**Value delivered.** A card moved once shows up on the other board, with no SaaS bridge
+and no human re-typing. **Greenfield** — nothing exists today.
+
+**Blocked on decisions, not on engineering.** Three open questions remain in the Spec:
+which side is authoritative on a simultaneous conflicting edit, Mode A (real-time
+serverless) vs Mode B (scheduled batch), and Mode B's schema shape. `Q1`/`Q5` were
+resolved 2026-08-08 — an **external** board pair, which is what makes this Steward's at
+all. **Do not start 8.1 before the remaining three are answered**; the Spec says so and
+this epic repeats it because an epic is what gets picked up.
+
+### Story 8.1: Bidirectional propagation
+**FR/AD:** FR-27 • **Effort:** L • **Deps:** the three open questions
+**Given** a status/assignee/link change on either board **Then** it reaches the other with
+no human action on the receiving side, demonstrated against a live pair.
+**Status:** blocked
+
+### Story 8.2: Zero-loop guarantee
+**FR/AD:** FR-28 • **Effort:** M • **Deps:** S-8.1
+**Given** one human change **Then** N round-trips produce exactly ONE propagation, not N —
+demonstrated by test, never asserted.
+**Status:** blocked
+
+### Story 8.3: Idempotent update processing
+**FR/AD:** FR-29 • **Effort:** S • **Deps:** S-8.1
+**Given** an identical payload delivered twice **Then** both systems are byte-identical to
+a single delivery.
+**Status:** blocked
+
+### Story 8.4: Fail loud, fail alone
+**FR/AD:** FR-30 • **Effort:** XS • **Deps:** S-8.1
+**Given** a batch containing one unlinked item **Then** every other item completes and the
+unlinked one emits a named, greppable error.
+**Status:** blocked
+
+### Story 8.5: Explicit status-vocabulary translation
+**FR/AD:** FR-31 • **Effort:** S • **Deps:** S-8.1
+**Given** any status crossing the boundary **Then** it passes through a reviewable mapping;
+an unmapped value is a hard logged failure, never a pass-through inventing a state.
+**Status:** blocked
+
