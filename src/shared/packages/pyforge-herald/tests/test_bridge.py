@@ -24,6 +24,7 @@ from pyforge.herald import (
     deck_pipeline,
     errors,
     evidence,
+    notices,
     progress,
     registry,
     state,
@@ -137,6 +138,7 @@ _BRIDGE_CORE_MODULES = (
     claims,
     watch,
     progress,
+    notices,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -158,7 +160,10 @@ local claim storage, not the CLI layer or a transport adapter -- it never
 imports a concrete ``DesignTransport`` adapter or an inference SDK either.
 ``progress.py`` (Story 8.1, the scaled-down Epic 8 local-storage module)
 joins for the same reason again: it is a plain local-JSON persistence
-module with no transport or argv-parsing concerns of its own."""
+module with no transport or argv-parsing concerns of its own.
+``notices.py`` (Epic 10, Moment 4) joins for the same reason again: local
+markdown/JSON storage only, no transport call and no inference SDK, so it
+has no legitimate reason to import either denylist below."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name
