@@ -1149,6 +1149,8 @@ def _status_or_conflict(
             last_pull=None,
             stale_mirror=False,
         )
+
+
 # --- CAP-5: export push-back, Epic 5 -----------------------------------------
 #
 # `bridge-protocol.md` § *Export push-back*: after `deck-export` regenerates the
