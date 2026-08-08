@@ -452,6 +452,15 @@ def _build_parser() -> _HeraldArgumentParser:
         default=None,
         help="evidence link: adoption signal",
     )
+    success_create.add_argument(
+        "--evidence-notice",
+        metavar="<component>",
+        default=None,
+        help=(
+            "evidence link: an operations notice's component name "
+            "(Story 11.3 cross-Moment backlink; must already exist)"
+        ),
+    )
     success_review = success_subparsers.add_parser(
         "review", help="show a draft claim's evidence before publishing"
     )
@@ -1067,6 +1076,21 @@ def _run_success_create(args: argparse.Namespace) -> int:
                     type="adoption", url=args.evidence_adoption, label="adoption"
                 )
             )
+        if args.evidence_notice:
+            # Verify the referenced notice actually exists before citing it
+            # -- `notices.get_notice` raises `errors.HeraldError` (caught by
+            # `dispatch` like any other) naming the unresolved component,
+            # rather than letting a claim silently cite a notice that was
+            # never authored (or was mistyped).
+            repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+            notices.get_notice(repo_root, args.evidence_notice)
+            evidence.append(
+                claims.Evidence(
+                    type="notice",
+                    url=args.evidence_notice,
+                    label=f"notice: {args.evidence_notice}",
+                )
+            )
         claim = claims.create(
             claims_path,
             project_name=args.project_name,
@@ -1225,7 +1249,9 @@ def _notice_summary_line(notice: notices.Notice) -> str:
     return f"[{notice.status}] {notice.type}/{notice.component}{deadline}"
 
 
-def _notice_to_json(notice: notices.Notice) -> dict:
+def _notice_to_json(
+    notice: notices.Notice, *, referenced_by: list[claims.Claim] = ()
+) -> dict:
     return {
         "type": notice.type,
         "component": notice.component,
@@ -1242,6 +1268,10 @@ def _notice_to_json(notice: notices.Notice) -> dict:
         "closed_by": notice.closed_by,
         "close_reason": notice.close_reason,
         "revisions": list(notice.revisions),
+        "referenced_by_claims": [
+            {"id": c.id, "project_name": c.project_name, "status": c.status}
+            for c in referenced_by
+        ],
     }
 
 
@@ -1342,18 +1372,28 @@ def _run_notice_publish(args: argparse.Namespace) -> int:
 
 def _run_notice_get(args: argparse.Namespace) -> int:
     """``herald notice get <component>`` -- read-only full detail,
-    following a rename redirect (Story 10.3)."""
+    following a rename redirect (Story 10.3). Also shows Story 11.3's
+    cross-Moment backlink: every claim citing this notice as evidence
+    (``claims.referenced_by_claims``, computed fresh from ``claims.json`` --
+    not stored on the notice itself, see ``claims.py``'s module docstring)."""
 
     def operation() -> None:
         notice = notices.get_notice(Path.cwd(), args.component)
+        referenced_by = claims.referenced_by_claims(
+            Path.cwd() / claims.DEFAULT_CLAIMS_PATH, notice.component
+        )
         if args.json:
-            print(json.dumps(_notice_to_json(notice)))
+            print(json.dumps(_notice_to_json(notice, referenced_by=referenced_by)))
         else:
             print(_notice_summary_line(notice))
             print(f"what: {notice.what}")
             print(f"why: {notice.why}")
             print(f"migration: {notice.migration}")
             print(f"path: {notice.path}")
+            if referenced_by:
+                print("referenced by claims:")
+                for c in referenced_by:
+                    print(f"  - {c.id}  {c.project_name}  ({c.status})")
 
     return dispatch(operation, json_output=args.json)
 

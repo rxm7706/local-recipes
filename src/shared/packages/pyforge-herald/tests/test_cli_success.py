@@ -86,6 +86,57 @@ def test_create_all_three_evidence_flags(tmp_path):
     assert types == {"test_results", "metrics", "adoption"}
 
 
+# --- Story 11.3: --evidence-notice (cross-Moment evidence linking) -------
+
+
+def test_create_with_evidence_notice_cites_an_existing_notice(tmp_path):
+    from pyforge.herald import notices
+
+    notices.author_notice(
+        tmp_path,
+        notice_type="deprecation",
+        component="auth-api-v1",
+        what="w",
+        why="w",
+        migration="m",
+        deadline=None,
+        reason_link=None,
+        publish=True,
+    )
+    rc = cli.main(
+        [
+            "success",
+            "--repo-root",
+            str(tmp_path),
+            "create",
+            "warden",
+            "--evidence-notice",
+            "auth-api-v1",
+        ]
+    )
+    assert rc == 0
+    stored = claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)
+    assert stored[0].evidence[0].type == "notice"
+    assert stored[0].evidence[0].url == "auth-api-v1"
+
+
+def test_create_with_evidence_notice_for_an_unknown_component_exits_1(capsys, tmp_path):
+    rc = cli.main(
+        [
+            "success",
+            "--repo-root",
+            str(tmp_path),
+            "create",
+            "warden",
+            "--evidence-notice",
+            "does-not-exist",
+        ]
+    )
+    assert rc == 1
+    assert "no notice found" in capsys.readouterr().err
+    assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
+
+
 # --- Story 9.3: review / list / get --------------------------------------
 
 

@@ -231,6 +231,46 @@ def test_archive_rename_then_get_follows_redirect(monkeypatch, tmp_path, capsys)
     assert payload["component"] == "auth-api-v2"
 
 
+# --- Story 11.3: cross-Moment evidence-linking backlink ------------------
+
+
+def test_get_shows_referenced_by_claims_backlink(monkeypatch, tmp_path, capsys):
+    from pyforge.herald import claims
+
+    _author(monkeypatch, tmp_path, extra=["--publish"])
+    claim = claims.create(
+        tmp_path / claims.DEFAULT_CLAIMS_PATH,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
+            )
+        ],
+    )
+    capsys.readouterr()
+
+    assert cli.main(["notice", "--json", "get", "auth-api-v1"]) == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["referenced_by_claims"] == [
+        {"id": claim.id, "project_name": "warden", "status": "draft"}
+    ]
+
+    assert cli.main(["notice", "get", "auth-api-v1"]) == 0
+    text = capsys.readouterr().out
+    assert "referenced by claims:" in text
+    assert claim.id in text
+
+
+def test_get_referenced_by_claims_empty_when_no_claim_cites_it(
+    monkeypatch, tmp_path, capsys
+):
+    _author(monkeypatch, tmp_path, extra=["--publish"])
+    capsys.readouterr()
+    assert cli.main(["notice", "--json", "get", "auth-api-v1"]) == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["referenced_by_claims"] == []
+
+
 # --- interactive prompting for missing author fields --------------------
 
 

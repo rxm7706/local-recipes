@@ -411,3 +411,108 @@ def test_snapshot_empty_when_no_claims_match(tmp_path):
     path = tmp_path / "claims.json"
     claims.create(path, project_name="draft-only")
     assert claims.snapshot(path, status="published") == []
+
+
+# --- Story 11.3: cross-Moment evidence linking (claim -> notice) --------
+
+
+def test_notice_type_evidence_is_a_valid_evidence_type(tmp_path):
+    path = tmp_path / "claims.json"
+    claim = claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
+            )
+        ],
+    )
+    assert claim.evidence[0].type == "notice"
+    assert claim.evidence[0].url == "auth-api-v1"
+
+
+def test_publish_never_http_validates_notice_type_evidence(tmp_path):
+    """A `notice`-type evidence entry's `url` is a component name, not an
+    HTTP URL -- `publish` must never hand it to `validate`, or a real
+    validator would try to HEAD a bare component name and always fail."""
+    path = tmp_path / "claims.json"
+    claim = claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
+            )
+        ],
+    )
+
+    def _validate_that_always_raises(url):
+        raise errors.EvidenceLinkError(f"Evidence link broken: {url}.")
+
+    published = claims.publish(
+        path, claim.id, thesis="Shipped it", validate=_validate_that_always_raises
+    )
+    assert published.status == "published"
+    assert published.evidence[0].validated is True
+
+
+def test_revalidate_never_http_validates_notice_type_evidence(tmp_path):
+    path = tmp_path / "claims.json"
+    claim = claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
+            ),
+            claims.Evidence(type="test_results", url="https://ok", label="tests"),
+        ],
+    )
+
+    class _Result:
+        def __init__(self, is_valid):
+            self.is_valid = is_valid
+
+    def _validate_link(url):
+        # Would raise/misbehave if ever called with the notice's component
+        # name instead of a real URL.
+        return _Result(is_valid=(url == "https://ok"))
+
+    updated = claims.revalidate(path, claim.id, validate=_validate_link)
+    by_url = {item.url: item.validated for item in updated.evidence}
+    assert by_url == {"auth-api-v1": True, "https://ok": True}
+
+
+def test_referenced_by_claims_finds_claims_citing_a_notice(tmp_path):
+    path = tmp_path / "claims.json"
+    citing = claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
+            )
+        ],
+    )
+    claims.create(path, project_name="marshal")  # no evidence -- not a match
+    claims.create(
+        path,
+        project_name="mason",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="other-component", label="notice: other-component"
+            )
+        ],
+    )
+    result = claims.referenced_by_claims(path, "auth-api-v1")
+    assert [c.id for c in result] == [citing.id]
+
+
+def test_referenced_by_claims_empty_when_no_claim_cites_it(tmp_path):
+    path = tmp_path / "claims.json"
+    claims.create(path, project_name="warden")
+    assert claims.referenced_by_claims(path, "auth-api-v1") == []
+
+
+def test_referenced_by_claims_on_missing_file_is_empty(tmp_path):
+    assert claims.referenced_by_claims(tmp_path / "claims.json", "auth-api-v1") == []
