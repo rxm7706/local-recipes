@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Herald web dashboard: unified 4-tab surface (Pitch, Progress, Success, Operations) for the PyForge factory.",
   "scripts": {
+    "sync-progress": "node scripts/sync-progress.mjs",
+    "predev": "npm run sync-progress",
     "dev": "vite",
+    "prebuild": "npm run sync-progress",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"

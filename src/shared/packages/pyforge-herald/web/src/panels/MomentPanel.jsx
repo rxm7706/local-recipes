@@ -1,10 +1,11 @@
 import EmptyState from '../components/EmptyState.jsx';
 
 /**
- * Shared placeholder panel for the three Moment tabs (Progress/Success/
- * Operations). Real data-fetching lands with Epics 8/9/10 -- for now this
- * just proves the content area reacts to the active filters, per Story
- * 7.1's AC.
+ * Shared placeholder panel for the Success/Operations Moment tabs. Real
+ * data-fetching lands with Epics 9/10 -- for now this just proves the
+ * content area reacts to the active filters, per Story 7.1's AC.
+ * ``ProgressPanel`` (Epic 8, Story 8.4) no longer uses this -- it has real
+ * card-based rendering over a static ``progress.json`` snapshot.
  */
 export default function MomentPanel({ title, epic, emptyMessage, emptyCommand, filters }) {
   const hasAnyFilter =

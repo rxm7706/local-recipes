@@ -39,20 +39,25 @@ describe('tab navigation', () => {
     expect(screen.getByRole('heading', { name: 'Operations' })).toBeInTheDocument();
   });
 
-  it('corrects an invalid URL hash to the default tab instead of leaving it desynced', () => {
+  it('corrects an invalid URL hash to the default tab instead of leaving it desynced', async () => {
     window.location.hash = '#bogus-tab-xyz';
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Progress' })).toBeInTheDocument();
+    // `findBy` (not `getBy`) so ProgressPanel's own async progress.json
+    // fetch settles before the test ends -- otherwise its state update
+    // lands outside any `act()`, and React warns.
+    expect(await screen.findByRole('heading', { name: 'Progress' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#progress');
   });
 });
 
 describe('sidebar responsiveness', () => {
-  it('shows the sidebar uncollapsed at desktop width', () => {
+  it('shows the sidebar uncollapsed at desktop width', async () => {
     setViewportWidth(1280);
     render(<App />);
 
+    // Same `findBy` reasoning as the invalid-hash test above.
+    await screen.findByRole('heading', { name: 'Progress' });
     expect(screen.getByLabelText('Filters')).not.toHaveClass('sidebar--collapsed');
     expect(screen.queryByLabelText('Toggle filters menu')).not.toBeInTheDocument();
   });
@@ -85,10 +90,12 @@ describe('sidebar responsiveness', () => {
     expect(hamburger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('collapses the sidebar behind a hamburger at mobile width', () => {
+  it('collapses the sidebar behind a hamburger at mobile width', async () => {
     setViewportWidth(375);
     render(<App />);
 
+    // Same `findBy` reasoning as the invalid-hash test above.
+    await screen.findByRole('heading', { name: 'Progress' });
     expect(screen.getByLabelText('Filters')).toHaveClass('sidebar--collapsed');
     expect(screen.getByLabelText('Toggle filters menu')).toBeInTheDocument();
   });
@@ -102,10 +109,14 @@ describe('sidebar filters reacting in the content area', () => {
     await user.selectOptions(screen.getByLabelText('Station'), 'warden');
 
     const panel = screen.getByRole('heading', { name: 'Progress' }).closest('section');
-    expect(within(panel).getByText('warden')).toBeInTheDocument();
+    // ProgressPanel (Story 8.4) renders real content (an empty state naming
+    // the filtered station) rather than a bare filter echo -- a substring
+    // match, not an exact one, and there may be more than one (the message
+    // and the copy-paste command both name the station).
+    expect(within(panel).getAllByText(/warden/).length).toBeGreaterThan(0);
   });
 
-  it('reconciles a stale/unknown persisted station instead of desyncing the dropdown from the panel', () => {
+  it('reconciles a stale/unknown persisted station instead of desyncing the dropdown from the panel', async () => {
     window.localStorage.setItem(
       'herald.filters.v1',
       JSON.stringify({ station: 'nonexistent-station' })
@@ -113,7 +124,8 @@ describe('sidebar filters reacting in the content area', () => {
     render(<App />);
 
     expect(screen.getByLabelText('Station')).toHaveValue('');
-    const panel = screen.getByRole('heading', { name: 'Progress' }).closest('section');
-    expect(within(panel).queryByText('nonexistent-station')).not.toBeInTheDocument();
+    // Same `findBy` reasoning as the invalid-hash test above.
+    const panel = (await screen.findByRole('heading', { name: 'Progress' })).closest('section');
+    expect(within(panel).queryByText(/nonexistent-station/)).not.toBeInTheDocument();
   });
 });

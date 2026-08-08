@@ -1,2 +1,6 @@
 node_modules/
 dist/
+
+# Story 8.4: the local progress snapshot `sync-progress` writes from the
+# operator's `.herald/progress.json` -- generated data, not source.
+public/progress.json
