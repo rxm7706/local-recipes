@@ -129,3 +129,22 @@ reset-on-change branch missing one of its two trigger points (candidate-seen vs.
   for a story mutating shared per-deck scheduling state with no independent second reviewer yet.
 
 **Verification:** `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- 493 passed, 2 skipped.
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **`_clamp_interval` only enforced the 30s floor, not the 600s
+  `IDLE_BACKOFF_CAP` ceiling.** `herald deck watch --interval 100000` was honored literally for the
+  first ~9 idle polls (recorded sleep sequence `[100000.0]*9 + [600.0]` in the reviewer's probe) --
+  the reactive backoff logic only caught up once `idle_streak` crossed `IDLE_BACKOFF_THRESHOLD`. A
+  real edit landing during that window went undetected for `interval * IDLE_BACKOFF_THRESHOLD`
+  seconds (~11.5 days at that interval) before self-correcting to the cap -- a silent footgun for a
+  typo'd `--interval` value, not a crash. Fixed: `_clamp_interval` now clamps to
+  `[MIN_POLL_INTERVAL, IDLE_BACKOFF_CAP]`, applied once at loop entry (same call site as the
+  existing floor clamp). New regression test:
+  `test_interval_above_the_idle_backoff_cap_is_clamped_to_600s`.
+- `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 496 passed, 2 skipped.
+
+**Follow-up review recommendation:** none outstanding for this story.

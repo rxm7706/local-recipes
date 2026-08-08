@@ -119,7 +119,13 @@ class _DeckWatch:
 
 
 def _clamp_interval(interval: float) -> float:
-    return max(interval, MIN_POLL_INTERVAL)
+    """Clamp to ``[MIN_POLL_INTERVAL, IDLE_BACKOFF_CAP]``. Without the upper
+    bound, a caller-requested interval above the 10-minute backoff cap was
+    honored literally until the reactive backoff logic eventually caught up
+    -- e.g. ``--interval 100000`` polled at that literal value for the first
+    9 idle cycles, leaving a real edit undetected for days before
+    self-correcting to the cap."""
+    return min(max(interval, MIN_POLL_INTERVAL), IDLE_BACKOFF_CAP)
 
 
 def _make_deck(slug: str, *, state_path: Path, interval: float) -> _DeckWatch:

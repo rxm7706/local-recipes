@@ -248,6 +248,35 @@ def test_interval_below_the_floor_is_clamped_to_30s(tmp_path: Path):
     assert events[0].interval == MIN_POLL_INTERVAL == 30.0
 
 
+def test_interval_above_the_idle_backoff_cap_is_clamped_to_600s(tmp_path: Path):
+    """Regression: without an upper clamp, ``--interval 100000`` was honored
+    literally for the first ~9 idle polls before the reactive backoff logic
+    caught up and capped it -- a real edit could go undetected for days.
+    The ceiling clamp applies immediately, at loop entry."""
+    state_path = tmp_path / "bridge-state.json"
+    _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
+    transport = FakeWatchTransport(
+        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
+    )
+    events: list[WatchEvent] = []
+    sleep, _ = _no_sleep_calls()
+
+    watch(
+        transport,
+        slugs=["pyforge-warden"],
+        repo_root=tmp_path,
+        state_path=state_path,
+        interval=100_000.0,
+        max_polls_per_deck=1,
+        pull=FakePull(),
+        now=lambda: _FIXED_NOW,
+        sleep=sleep,
+        on_event=events.append,
+    )
+
+    assert events[0].interval == IDLE_BACKOFF_CAP == 600.0
+
+
 def test_a_default_interval_request_is_left_at_60s(tmp_path: Path):
     state_path = tmp_path / "bridge-state.json"
     _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
