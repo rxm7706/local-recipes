@@ -800,6 +800,12 @@
     <div id="commandblocks"></div>
   </details>
 
+  <details class="dreams zsec" id="readysec" hidden open>
+    <summary><span class="program-h" id="readyh">Launch Readiness</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>What can actually be launched right now</b> — derived from each station's tracked sprint ledger, not from a plan. Distinct from Command Center, which reports whether an <i>artifact exists</i> per SDLC phase; this reports whether <i>work can start</i>. A station with nothing runnable is named <b>complete</b> or <b>blocked</b>, never left as an empty cell.</div>
+    <div id="readyblocks"></div>
+  </details>
+
   <details class="dreams zsec" id="fleetsec" hidden open>
     <summary><span class="program-h" id="fleeth">Fleet</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>Dream → Code, per project</b> — every stage of the chain, its furthest reach, when it last moved, and the shipped version. Dots left→right: <b>Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics · Sprint · TEA · Gates · Code · Tested · Retro</b>; hover a dot for its date, click a row for the full ledger.<br><b>These are chain <em>stages</em>, not Dream states</b> — a different axis from The Guild below, which counts Dreams per state. <b>backfilled</b> = the chain was retro-fitted after the fact (mandated for anything that shipped before the model existed) — true history, not an error. <b>overtaken</b> = the Spec still carries open questions while its PRD and architecture already exist.</div>
@@ -1135,6 +1141,39 @@
       '</div>';
 
     document.getElementById("commandblocks").innerHTML = tableHtml + summary;
+  }
+
+  // ---- Launch Readiness -----------------------------------------------------
+  const RD = window.DASHBOARD_DATA.readiness || null;
+  if (RD && RD.rows && RD.rows.length) {
+    document.getElementById("readysec").hidden = false;
+    const t = RD.totals;
+    document.getElementById("readyh").textContent =
+      "Launch Readiness · " + t.done + " done · " + t.backlog + " backlog · " +
+      t.blocked + " blocked · " + t.total + " total";
+
+    const pct = (d, tot) => tot ? Math.round((d / tot) * 100) : 0;
+    let html = '<table class="ztbl"><thead><tr>' +
+      '<th>Station</th><th>Done</th><th>Backlog</th><th>Blocked</th>' +
+      '<th>Progress</th><th>State</th><th>Next runnable</th></tr></thead><tbody>';
+    RD.rows.forEach(r => {
+      const cls = r.state === "complete" ? "ok" : r.state === "blocked" ? "bad" : "";
+      html += '<tr>' +
+        '<td><b>' + r.station + '</b></td>' +
+        '<td>' + r.done + '</td>' +
+        '<td>' + (r.backlog || "—") + '</td>' +
+        '<td>' + (r.blocked ? '<span class="bad">' + r.blocked + '</span>' : "—") + '</td>' +
+        '<td>' + r.done + '/' + r.total + ' · ' + pct(r.done, r.total) + '%</td>' +
+        '<td><span class="' + cls + '">' + r.state + '</span></td>' +
+        '<td><code>' + (r.next || "—") + '</code></td>' +
+        '</tr>';
+      if (r.blockedKeys && r.blockedKeys.length) {
+        html += '<tr><td></td><td colspan="6" class="dim">blocked: ' +
+          r.blockedKeys.map(k => '<code>' + k + '</code>').join(", ") + '</td></tr>';
+      }
+    });
+    html += '</tbody></table>';
+    document.getElementById("readyblocks").innerHTML = html;
   }
 
   // ---- 2d · Fleet (Dream -> Code state per project) ----

@@ -3237,7 +3237,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 20:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 20:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5259,7 +5259,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-04",
           "epics": "2026-08-02",
-          "sprint": "2026-08-02",
+          "sprint": "2026-08-08",
           "tea": "2026-07-30",
           "gates": "2026-08-02",
           "code": "2026-07-29",
@@ -14267,8 +14267,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 20:34 UTC",
-    "generatedEpoch": 1786221257
+    "generatedAt": "2026-08-08 20:41 UTC",
+    "generatedEpoch": 1786221664
   },
   "storySpecs": [
     {
@@ -14325,5 +14325,103 @@ window.DASHBOARD_DATA = {
       "tracked": 31,
       "gap": 0
     }
-  ]
+  ],
+  "readiness": {
+    "rows": [
+      {
+        "station": "marshal",
+        "done": 50,
+        "backlog": 35,
+        "blocked": 1,
+        "total": 86,
+        "next": "10-1-copier-engine-wrapper-the-single-seam",
+        "blockedKeys": [
+          "8-5-marker-deletion-as-a-sanctioned-opt-out"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "mason",
+        "done": 4,
+        "backlog": 34,
+        "blocked": 0,
+        "total": 38,
+        "next": "1-10-configuration-surface-logging-and-child-output-streaming",
+        "blockedKeys": [],
+        "state": "ready"
+      },
+      {
+        "station": "steward",
+        "done": 18,
+        "backlog": 10,
+        "blocked": 5,
+        "total": 33,
+        "next": "5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init",
+        "blockedKeys": [
+          "8-1-bidirectional-propagation",
+          "8-2-zero-loop-guarantee",
+          "8-3-idempotent-update-processing",
+          "8-4-fail-loud-fail-alone",
+          "8-5-explicit-status-vocabulary-translation"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "atlas",
+        "done": 38,
+        "backlog": 8,
+        "blocked": 0,
+        "total": 46,
+        "next": "12-1-kedro-skills-audit-then-adopt",
+        "blockedKeys": [],
+        "state": "ready"
+      },
+      {
+        "station": "doctor",
+        "done": 17,
+        "backlog": 1,
+        "blocked": 0,
+        "total": 18,
+        "next": "5-2-render-the-verdict-through-a-doctor-verb",
+        "blockedKeys": [],
+        "state": "ready"
+      },
+      {
+        "station": "herald",
+        "done": 47,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 47,
+        "next": "",
+        "blockedKeys": [],
+        "state": "complete"
+      },
+      {
+        "station": "scribe",
+        "done": 9,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 9,
+        "next": "",
+        "blockedKeys": [],
+        "state": "complete"
+      },
+      {
+        "station": "warden",
+        "done": 31,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 31,
+        "next": "",
+        "blockedKeys": [],
+        "state": "complete"
+      }
+    ],
+    "totals": {
+      "done": 214,
+      "backlog": 88,
+      "blocked": 6,
+      "total": 308
+    }
+  }
 };
