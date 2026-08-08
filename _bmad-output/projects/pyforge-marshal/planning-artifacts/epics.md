@@ -2123,6 +2123,114 @@ cannot go stale
 
 ---
 
+## Epic 13: Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted
+
+**Goal:** Repair the instrument Marshal already owns. `scripts/spec_surface_check.py` has
+carried **61 findings on `main`** for weeks, and the repo is not 61 kinds of broken — the
+detector makes its reconciliation claim at the wrong granularity, twice, so its verdict is
+unactionable in one direction and untrustworthy in the other. Decomposes
+`spec-surface-drift-reconciliation` (FR-164..FR-167).
+
+**Why the two fixes are one epic.** They are the same disease at two levels: baselines stamp
+all-or-nothing when they should be per-spec; drift clears per-spec when it should be per-file.
+Fixing one without the other leaves the gate either unclearable or untrustworthy, and the
+finding-clearing stories need both levers.
+
+**Sequenced, not parallel.** S-13.3 and S-13.4 exist to *use* the levers S-13.1/S-13.2 build;
+running them first would mean clearing findings with the blanket tools this epic exists to
+replace. Every dependency is within-epic and earlier — no forward-epic reference.
+
+### Story 13.1: A baseline can be stamped for one spec
+
+As the operator,
+I want to settle one spec's baseline without accepting any other spec's pending drift,
+So that the sanctioned fix for a single finding stops destroying the evidence for 34 others.
+
+**Type:** change • **Effort:** S • **Deps:** — • **FR/AD:** FR-164, FR-167
+
+**Acceptance Criteria:**
+
+**Given** a committed `scripts/.spec-surface-baseline.json`
+**When** `--write-baseline --spec <name>` runs (repeatable)
+**Then** only the named specs' entries change and every other entry is **byte-identical**
+**And** an unknown spec name exits **2** and prints the known set — never a silent no-op
+**And** unscoped `--write-baseline` still works, and its `--help` states plainly that it
+accepts every other spec's pending drift as correct
+**And** the stamp **merges** into the committed file rather than rewriting from the in-memory
+set, so a spec absent from this invocation is not silently dropped
+**And** a mutation test proves the guard both ways: removing the scoping re-reds the isolation
+test, restoring it passes
+
+### Story 13.2: A moved contract reconciles only the paths it names
+
+As the operator,
+I want a memlog entry to stop speaking for governed files it never mentions,
+So that unrelated activity cannot silently launder pending drift.
+
+**Type:** change • **Effort:** M • **Deps:** — • **FR/AD:** FR-165, FR-167
+
+**Acceptance Criteria:**
+
+**Given** a spec whose memlog moved and whose governed files drifted
+**When** the drift pass runs
+**Then** a drifted file **named** in the memlog clears, and an **unnamed** one reports
+`[drift-presumed]`
+**And** `[drift-presumed]` is **informational** — it never contributes to the exit code
+**And** a memlog naming no paths is still legal: every drifted file degrades to
+`[drift-presumed]`, never to a hard failure (or the gate reds for every historical entry)
+**And** matching is literal substring on the repo-relative path — no prose inference
+**And** no `.memlog.md` is edited, reordered, or normalized by this change
+**And** a laundering test replays the live incident — appending an unrelated entry to
+`spec-regenerable-factory`'s memlog no longer clears the drift on
+`scripts/bmad_drift_check.py` / `scripts/dream_chain_check.py`
+**And** a mutation test proves it both ways: restoring the per-spec short-circuit re-reds that
+laundering test
+
+### Story 13.3: The no-baseline, ungoverned and stale-allowlist findings are cleared
+
+As the operator,
+I want the 27 mechanically-clearable findings dispositioned,
+So that what remains is only the drift that needs real judgment.
+
+**Type:** change • **Effort:** M • **Deps:** S-13.1 • **FR/AD:** FR-166
+
+**Acceptance Criteria:**
+
+**Given** S-13.1's scoped stamp
+**When** the 24 `[no-baseline]` specs are registered
+**Then** each is stamped **individually**, and no `[drift]` finding disappears as a side effect
+— verified by diffing the finding set before and after
+**And** the two `[ungoverned]` files (`docs/governance/spec-pyforge-charter/{SPEC.md,.memlog.md}`)
+are given a surface **or** an allowlist entry, with the choice recorded (this is the Spec's own
+open question — the Charter defines the chain this detector polices)
+**And** the `[stale-allowlist]` entry `pixi.toml` is removed
+**And** anything that cannot be honestly cleared is filed as deferred work with its reason,
+never suppressed
+
+### Story 13.4: The 34 drift findings are reconciled or recorded
+
+As the operator,
+I want each drifted file either genuinely reconciled or stamped with stated reasoning,
+So that a green gate means the contracts actually match the code.
+
+**Type:** change • **Effort:** L • **Deps:** S-13.1, S-13.2 • **FR/AD:** FR-166
+
+**Acceptance Criteria:**
+
+**Given** the 34 `[drift]` findings across five specs (steward/spec-pyforge-steward **23**,
+scribe/spec-team-memory **5**, marshal/{fidelity-enforcement, factory-console, durable-runs}
+**2** each)
+**When** each spec is worked
+**Then** every finding is partitioned into *genuine surface change* (the contract moves — the
+spec is re-derived) or *already reconciled, unstamped* (scoped-stamped), and the partition is
+recorded in that spec's own memlog
+**And** the 23-file steward cluster is **not** bulk-stamped on the strength of being large —
+if that surface changed, its contract moves
+**And** `pixi run -e local-recipes spec-surface-check` exits **0**
+**And** the epic's own changes to `scripts/spec_surface_check.py` are themselves reconciled
+against `spec-surface-drift-reconciliation` — the detector must not be the one file that
+escapes its own gate
+
 ---
 
 ## Story DAG (critical path and key dependencies)
