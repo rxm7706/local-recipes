@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 26
+# stories: 30
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -32,6 +32,8 @@ development_status:
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
+  5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: backlog
+  5-2-consume-the-sprint-ledger-never-derive-story-status: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -40,3 +42,5 @@ development_status:
   epic-3-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
+  epic-5: backlog
+  epic-5-retrospective: optional

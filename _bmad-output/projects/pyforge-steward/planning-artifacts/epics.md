@@ -490,3 +490,66 @@ Carried forward from the PRD/architecture chain, still unresolved at story-writi
 
 - Exact `.steward/budget.yaml` and `.steward/keys-inventory.yaml` schemas (field names, types) are implementation detail for Stories 1.5/4.1 to fix, not pre-decided here.
 - Whether `steward keys audit --drift`'s fixture-based detection (Story 1.2/1.6) should ship as a static-analysis pattern match or something more structured (AST-based) is a Story 1.2 implementation decision, not an architecture-level one.
+
+---
+
+## Epic 5: The Marshal seam — obligations from the 2026-08-08 seam ratification
+
+**Value delivered.** The two stations stop overlapping. Marshal's AD-71 named both of
+these as "actioned in Steward's chain" when the build-line/estate seam was ratified;
+until this epic they existed only as a claim in another station's architecture, which is
+exactly the unowned-obligation shape the seam was meant to end.
+
+### Story 5.1: Retire `provision --runner bmad-loop` in favour of `marshal init`
+
+As the operator,
+I want one command that provisions a loop home,
+So that two stations do not ship two ways to make the same thing, one of them wrapping
+a legacy script.
+
+**Type:** change • **Effort:** S • **Deps:** — • **FR/AD:** AD-5 (this station), Marshal AD-71
+**Surface:** `provision.py`, `cli.py`, `tests/`
+
+**Why.** Steward's **own AD-5** already calls this "Marshal-owned machinery", and
+`provision --runner bmad-loop` shells to the *legacy* `scripts/bmad-loop-worktree` while
+`marshal init` (Epic 1, 10 shipped stories) is a strict superset — worktree plus the
+marker↔symlink agreement invariant, the AD-11 never-write proof, and an idempotent
+`done | skipped | failed` step report.
+
+**Acceptance Criteria:**
+
+**Given** an operator runs `steward provision --runner bmad-loop --env <name>`
+**Then** it either delegates to `marshal init` or exits with a finding naming
+`marshal init <slug>` as the supported path — never silently provisions via the legacy
+script
+**And** `--env <name>` (pixi environments, genuinely Steward's) is unaffected
+**And** the removal is recorded in this station's own architecture, not only in Marshal's
+
+**Status:** backlog
+
+### Story 5.2: Consume the sprint ledger; never derive story status
+
+As the operator,
+I want `steward deploy dashboard` to publish exactly what the ledger says,
+So that the durable record has one writer and the publisher cannot invent a second
+version of the truth.
+
+**Type:** feature • **Effort:** XS • **Deps:** — • **FR/AD:** Marshal FR-136..FR-139, AD-71
+**Surface:** `deploy.py`, `tests/`
+
+**Why.** AD-71 makes the ledger a two-sided contract: Marshal produces it and is
+accountable for its currency; Steward publishes what it says and **never derives status
+itself**. The producer half shipped 2026-08-08 (the monotonic guard); the consumer half
+was never written down here.
+
+**Acceptance Criteria:**
+
+**Given** a tracked `sprint-status-ledger.yaml`
+**When** `steward deploy dashboard` runs
+**Then** it reads story status from the ledger only — never from git subjects, the
+Tier-3 feed, or any re-derivation
+**And** a ledger that is absent or unreadable is a named refusal, not a silent fallback
+**And** a test asserts `deploy.py` contains no story-status derivation of its own
+
+**Status:** backlog
+
