@@ -175,3 +175,22 @@ inconsistently applied?
 **Verification:** `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- 488 passed, 2 skipped
 (combined Story 5.1 + 5.2 total; see spec-5-1's own Verification section for the pre-Epic-5
 baseline). `ruff format --check` / `ruff check` clean on every file this story touches.
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **The self-disclosed `AuthError`-misreported-as-a-conflict gap above was
+  confirmed real and fixed** -- see spec-5-1's Review Triage Log entry for the fix (narrowed the
+  per-file catch from `errors.TransportError` to `errors.TransportCallError`) and its new
+  regression test. Recorded here too since this story's conflict-refusal contract is exactly the
+  boundary the fix clarifies: a genuine per-file Design-side conflict still degrades gracefully and
+  keeps the batch going; a genuine transport failure now halts it immediately instead of being
+  absorbed into the conflict-refusal path.
+- `addressed_findings`: 1 (medium, shared with spec-5-1). No new code defects specific to this
+  story's own conflict-continuation logic (batch-continues-past-one-conflict, state-preserved-for-
+  successes-only) -- re-verified against the patched code and still holds.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 491 passed, 2 skipped.
+
+**Follow-up review recommendation:** none outstanding beyond the pre-existing, already-disclosed
+PPTX-export and deferred-live-MCP-proof gaps.

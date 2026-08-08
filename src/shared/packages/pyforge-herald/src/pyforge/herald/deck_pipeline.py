@@ -51,7 +51,7 @@ import subprocess
 import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
@@ -366,16 +366,21 @@ class PullResult:
     committed: bool = False
 
 
-def _require_seeded_state(state_path: Path, slug: str) -> state.DeckState:
+def _require_seeded_state(
+    state_path: Path, slug: str, *, verb: str = "pull"
+) -> state.DeckState:
     """The deck's recorded ``state.DeckState``, or a ``HeraldError`` naming
-    ``herald deck seed`` -- pulling needs a ``project_id`` to read from, and
-    ``state.py`` is the only source of one this module has (unlike
-    ``seed``'s registry-bootstrap fallback, there is no analogous "adopt an
-    already-linked deck" path here yet; see the story spec's Design Notes)."""
+    ``herald deck seed`` -- pulling (and, since Story 5.1, pushing) needs a
+    ``project_id`` to read from, and ``state.py`` is the only source of one
+    this module has (unlike ``seed``'s registry-bootstrap fallback, there is
+    no analogous "adopt an already-linked deck" path here yet; see the
+    story spec's Design Notes). ``verb`` names the calling operation in the
+    error message -- ``push_exports`` passes ``"push"`` so the message
+    matches the command the operator actually ran."""
     existing = state.read(state_path, slug)
     if existing is None:
         raise errors.HeraldError(
-            f"cannot pull {slug!r}: no bridge state recorded at {state_path} "
+            f"cannot {verb} {slug!r}: no bridge state recorded at {state_path} "
             f"-- run 'herald deck seed {slug}' first"
         )
     return existing
@@ -1219,13 +1224,27 @@ def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
     marp_dir = deck_dir / "src" / "marp"
     if not marp_dir.is_dir():
         return []
-    matches = sorted(marp_dir.glob(f"{slug}-infographic-standalone-*.html"))
-    if not matches:
+    prefix = f"{slug}-infographic-standalone-"
+    dated: list[tuple[str, Path]] = []
+    for candidate_path in marp_dir.glob(f"{prefix}*.html"):
+        date_segment = candidate_path.stem.removeprefix(prefix)
+        try:
+            date.fromisoformat(date_segment)
+        except ValueError:
+            # Not a dated export -- a stray backup/draft/renamed file that
+            # happens to share the prefix (e.g. "-old-backup.html",
+            # "-FINAL.html"). Plain lexicographic sort would put these
+            # AFTER every real dated file (letters sort after digits),
+            # silently selecting stale/unrelated content instead of the
+            # genuine newest export. Excluded rather than risk pushing it.
+            continue
+        dated.append((date_segment, candidate_path))
+    if not dated:
         return []
-    # Sorting by name sorts by date (ISO 8601 dates compare lexicographically
-    # in filename order) -- the same "newest by name" rule deck_export.py's
-    # own `find_source` uses for its Marp sources.
-    local_path = matches[-1]
+    # ISO 8601 dates compare lexicographically in filename order -- the
+    # same "newest by name" rule deck_export.py's own `find_source` uses
+    # for its Marp sources, now applied only to confirmed-dated matches.
+    local_path = max(dated, key=lambda pair: pair[0])[1]
     try:
         text = local_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
@@ -1268,11 +1287,18 @@ def push_exports(
     not exist there yet -- FR-18).
 
     **Conflict handling (Story 5.2, FR-20/NFR-02).** A per-file
-    ``write_files`` call that raises ``errors.TransportError`` (the shape a
-    real conditional-write rejection takes -- see ``transport.base``'s
-    ``require_conditional``/``_call_json`` failure path) is treated as a
-    structural conflict for *that file only*: it is recorded, and the loop
-    continues to the next candidate rather than aborting the whole batch.
+    ``write_files`` call that raises ``errors.TransportCallError`` (the
+    server was reached and answered with a rejection -- see
+    ``transport.base``'s ``require_conditional``/``_call_json`` failure
+    path) is treated as a structural conflict for *that file only*: it is
+    recorded, and the loop continues to the next candidate rather than
+    aborting the whole batch. A broader failure -- ``AuthError``,
+    ``TransportUnreachableError`` -- means the transport itself is broken,
+    not that Design rejected one write; those propagate immediately and
+    halt the whole batch (deliberately narrower than the base
+    ``TransportError``, so a mid-batch credential expiry or outage is never
+    mistaken for a per-file conflict, and the caller isn't left hammering
+    the remaining files against a connection that's still broken).
     ``state.py`` is updated once, after every file has been attempted, and
     only with the files that actually succeeded -- a conflicted file's own
     ``export:`` record is left exactly as it was, so a retry sees it as
@@ -1283,7 +1309,7 @@ def push_exports(
     resolved_state_path = (
         repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
     )
-    existing = _require_seeded_state(resolved_state_path, slug)
+    existing = _require_seeded_state(resolved_state_path, slug, verb="push")
     deck_dir = repo_root / "presentations" / slug
     resolved_export_dir = deck_dir if export_dir is None else export_dir
 
@@ -1323,7 +1349,7 @@ def push_exports(
                 ],
                 plan_token=plan.plan_token,
             )
-        except errors.TransportError as exc:
+        except errors.TransportCallError as exc:
             conflicts.append(f"{candidate.filename} ({exc})")
             continue
         new_etags[f"{_EXPORT_ARTIFACT_PREFIX}{candidate.filename}"] = (

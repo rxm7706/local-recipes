@@ -34,6 +34,7 @@ from pyforge.herald.deck_pipeline import (
     seed,
 )
 from pyforge.herald.errors import (
+    AuthError,
     ExportConflictError,
     HeraldError,
     SeedConflictError,
@@ -1208,7 +1209,9 @@ def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
 
 def _init_git_repo(work: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=work, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=work, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=work, check=True
+    )
     subprocess.run(["git", "config", "user.name", "Test"], cwd=work, check=True)
     (work / "README.md").write_text("scratch repo\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=work, check=True)
@@ -1228,12 +1231,18 @@ def test_subprocess_git_committer_commits_with_an_absolute_repo_root(tmp_path: P
     )
 
     log = subprocess.run(
-        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+        ["git", "log", "-1", "--name-only", "--format="],
+        cwd=work,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert "presentations/warden/file.txt" in log.stdout
 
 
-def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Path, monkeypatch):
+def test_subprocess_git_committer_commits_with_a_relative_repo_root(
+    tmp_path: Path, monkeypatch
+):
     """Review finding: `p.is_absolute()` was the wrong branch condition --
     every `paths` entry callers pass is already prefixed with `repo_root`,
     whether or not `repo_root` itself is absolute. Invoking with a
@@ -1257,7 +1266,11 @@ def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Pa
     )
 
     log = subprocess.run(
-        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+        ["git", "log", "-1", "--name-only", "--format="],
+        cwd=work,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert "presentations/warden/file.txt" in log.stdout
 
@@ -1406,9 +1419,50 @@ def test_push_exports_refuses_when_not_seeded(tmp_path: Path):
     _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
     transport = FakePushTransport()
 
-    with pytest.raises(HeraldError, match="herald deck seed"):
+    with pytest.raises(HeraldError, match="cannot push .*herald deck seed"):
         push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
     assert transport.finalize_plan_calls == []
+
+
+def test_discover_export_files_ignores_a_non_dated_stray_file(tmp_path: Path):
+    """Regression: a plain lexicographic sort put a stray same-prefix file
+    (a hand-copied backup, an aborted draft) AFTER every real dated file --
+    letters sort after digits -- so `matches[-1]` silently picked the
+    stale/unrelated file over the genuine current export. The date segment
+    must actually parse as `YYYY-MM-DD` to be considered a candidate."""
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>REAL</html>")
+    stray = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "src"
+        / "marp"
+        / "pyforge-warden-infographic-standalone-old-backup.html"
+    )
+    stray.write_text("<html>STALE</html>", encoding="utf-8")
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    assert len(candidates) == 1
+    assert (
+        candidates[0].filename
+        == "pyforge-warden-infographic-standalone-2026-08-07.html"
+    )
+    assert candidates[0].data == "<html>REAL</html>"
+
+
+def test_discover_export_files_picks_the_newest_of_several_dated_files(tmp_path: Path):
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-01", "<html>older</html>")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>newer</html>")
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].data == "<html>newer</html>"
 
 
 def test_push_exports_no_derived_file_on_disk_yet_is_a_no_op(tmp_path: Path):
@@ -1531,3 +1585,22 @@ def test_push_exports_conflict_preserves_an_already_recorded_unrelated_etag(
 
     recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
     assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E-prototype-untouched"
+
+
+def test_push_exports_auth_error_propagates_instead_of_being_treated_as_a_conflict(
+    tmp_path: Path,
+):
+    """Regression: catching the base `errors.TransportError` conflated a
+    genuine transport failure (expired credential, network outage) with a
+    per-file conflict -- reporting it as "refused rather than risk
+    clobbering a Design-side edit" and continuing to hammer the rest of the
+    batch against a connection/credential that's still broken. `AuthError`
+    (a `TransportError` subclass, not a `TransportCallError`) must
+    propagate immediately instead."""
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    transport = FakePushTransport(write_fails={filename: AuthError("no credential")})
+
+    with pytest.raises(AuthError):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)

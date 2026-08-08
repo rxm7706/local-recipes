@@ -169,3 +169,44 @@ ever reach the transport without a valid `if_match` precondition.
 (was 470 passed, 2 skipped before Epic 5; +18 net new tests across Stories 5.1/5.2 combined: 11 in
 `test_deck_pipeline.py`, 7 in `test_cli_push.py`). `ruff format --check` / `ruff check` clean on
 every file this story touches.
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[high]` `[patch]` **`_discover_export_files`'s plain lexicographic sort picked a stale/unrelated
+  file over the genuine newest export whenever a non-dated file shared the glob prefix** (a
+  hand-copied backup, an aborted draft, e.g. `pyforge-warden-infographic-standalone-old-backup.html`
+  -- a realistic state since `presentations/<slug>/src/marp/` is a directory operators/deck authors
+  work in directly). Letters sort after digits, so `matches[-1]` silently selected the stray file
+  and would have pushed its content to Design with no error or indication anything was wrong --
+  found independently by both reviewers. Fixed: each glob match's wildcard segment must now parse
+  as `date.fromisoformat` to be considered a candidate at all; the newest genuinely-dated file is
+  then selected by `max()` over the confirmed-dated set. New regression tests:
+  `test_discover_export_files_ignores_a_non_dated_stray_file`,
+  `test_discover_export_files_picks_the_newest_of_several_dated_files`.
+- `[medium]` `[patch]` **The `except errors.TransportError` catch in the per-file write loop was
+  broader than the Story 5.2 conflict-refusal contract intended**, conflating a genuine transport
+  failure (`AuthError`, `TransportUnreachableError`) with a per-file Design-side conflict
+  (`TransportCallError`) -- a mid-batch expired credential or network outage would have been
+  silently reported as "refused rather than risk clobbering a Design-side edit" (exit code 3)
+  while the loop kept hammering the remaining files against a connection/credential that was
+  almost certainly still broken, contradicting this package's own established "halt on auth error,
+  never retry" convention (`watch.py`). This gap was self-disclosed in this spec's own prior
+  Verification-gap section before the adversarial pass confirmed it as a real, reproducible defect.
+  Fixed: narrowed the catch to `errors.TransportCallError` specifically; `AuthError`/
+  `TransportUnreachableError` now propagate immediately and halt the whole batch, same as every
+  other transport-failure path in this package. New regression test:
+  `test_push_exports_auth_error_propagates_instead_of_being_treated_as_a_conflict`.
+- `[low]` `[patch]` **`_require_seeded_state`'s hardcoded "cannot pull" message was reused verbatim
+  by `push_exports`**, so `herald deck push <unseeded-slug>` told the operator "cannot pull" --
+  found independently by both reviewers. Fixed: `_require_seeded_state` gained a keyword-only
+  `verb` parameter (default `"pull"`, unchanged for every existing caller); `push_exports` passes
+  `verb="push"`. Regression coverage: existing `test_push_exports_refuses_when_not_seeded`
+  tightened to assert on `"cannot push"` rather than just the remediation substring.
+- `addressed_findings`: 3 (1 high, 2 medium/low collapsed per finding above). No `intent_gap`, no
+  `bad_spec`, no `defer`, no `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 491 passed, 2 skipped; `ruff format --check`/`ruff check` clean.
+
+**Follow-up review recommendation:** none outstanding for this story beyond the pre-existing,
+already-disclosed PPTX-export and deferred-live-MCP-proof gaps.
