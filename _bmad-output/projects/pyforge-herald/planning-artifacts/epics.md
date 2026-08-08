@@ -4,6 +4,9 @@ stepsCompleted:
 inputDocuments:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-pyforge-herald-2026-08-01/prd.md (formerly prds/prd-herald-moments-2-4-2026-08-02/prd.md, folded in 2026-08-02 as its "## Satellite: Herald's Proclamation Surfaces — Moments 2–4" section; original archived at archive/_bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-herald-moments-2-4-2026-08-02/)
   - _bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md (formerly architecture/architecture-herald-moments-2-4-2026-08-02/ARCHITECTURE-SPINE.md, folded in 2026-08-02 as AD-11..AD-20; original archived at archive/_bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-moments-2-4-2026-08-02/)
+# The single canonical story source for this station: every `### Story` heading
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+epics_role: canonical
 ---
 
 # Herald Moments 2–4 - Epics & Stories
