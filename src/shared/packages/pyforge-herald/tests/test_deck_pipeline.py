@@ -10,16 +10,23 @@ network, no adapter); every local-prove call is against a hand-written
 from __future__ import annotations
 
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-
 from pyforge.herald import state
 from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
+    PROTOTYPE_ARTIFACT_KEY,
+    STANDALONE_BUNDLE_ARTIFACT_KEY,
     NpmLocalProver,
+    PullResult,
     SeedResult,
+    SubprocessGitCommitter,
     _persona_from_slug,
+    pull_marp_source,
+    pull_prototype,
+    pull_standalone_bundle,
     seed,
 )
 from pyforge.herald.errors import HeraldError, SeedConflictError
@@ -464,3 +471,783 @@ def test_npm_local_prover_maps_a_timeout_to_a_herald_error(monkeypatch, tmp_path
     monkeypatch.setattr(subprocess, "run", _raise)
     with pytest.raises(HeraldError, match="exceeded"):
         NpmLocalProver(timeout=1).prove(tmp_path)
+
+
+# --- CAP-2: pull_prototype (Story 2.1) ---------------------------------------
+
+
+class FakePullTransport:
+    """A hand-written ``DesignTransport`` double exercising only
+    ``read_file`` -- every other method raises, since ``pull_prototype``
+    never calls them."""
+
+    def __init__(self, *, answers=None):
+        self.calls: list[dict] = []
+        # Consumed one per call (a list), or a single canned FileRead reused
+        # for every call.
+        self._answers = answers
+
+    def read_file(self, **kwargs) -> FileRead:
+        self.calls.append(kwargs)
+        answer = self._answers
+        if isinstance(answer, list):
+            assert answer, "FakePullTransport ran out of canned read_file answers"
+            return answer.pop(0)
+        return answer
+
+    def get_design_prompt(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls get_design_prompt")
+
+    def create_project(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls create_project")
+
+    def finalize_plan(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls finalize_plan")
+
+    def create_support_js(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls create_support_js")
+
+    def copy_files(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls copy_files")
+
+    def write_files(self, **kwargs):
+        raise NotImplementedError("pull_prototype never calls write_files")
+
+    def render_preview(self, **kwargs) -> PreviewRef:
+        raise NotImplementedError("pull_prototype never calls render_preview")
+
+
+class FakeExporter:
+    def __init__(self, *, fails: HeraldError | None = None):
+        self.calls: list[tuple[str, Path]] = []
+        self._fails = fails
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        self.calls.append((slug, repo_root))
+        if self._fails is not None:
+            raise self._fails
+
+
+class FakeCommitter:
+    def __init__(self, *, fails: HeraldError | None = None):
+        self.calls: list[dict] = []
+        self._fails = fails
+
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+        self.calls.append(
+            {"repo_root": repo_root, "paths": list(paths), "message": message}
+        )
+        if self._fails is not None:
+            raise self._fails
+
+
+_FIXED_NOW = datetime(2026, 8, 7, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def _seed_state(tmp_path: Path, slug: str, *, project_id="p-1", etags=None) -> None:
+    state.write(
+        tmp_path / state.DEFAULT_STATE_PATH,
+        slug,
+        state.DeckState(project_id=project_id, etags=dict(etags or {}), last_pull=None),
+    )
+
+
+def test_pull_prototype_short_circuits_on_unchanged_and_skips_every_downstream_step(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
+    )
+    prover = FakeProver()
+    exporter = FakeExporter()
+
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=prover,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    assert result == PullResult(
+        slug="pyforge-warden",
+        artifact=PROTOTYPE_ARTIFACT_KEY,
+        local_path=None,
+        unchanged=True,
+        etag="E1",
+        committed=False,
+    )
+    # Nothing downstream of the etag check ran.
+    assert prover.calls == []
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "project").exists()
+    # state.py is untouched -- last_pull stays None, proving no re-write happened.
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.last_pull is None
+
+
+def test_pull_prototype_if_none_match_uses_the_last_seen_etag(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
+    )
+    pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert transport.calls[0]["if_none_match"] == "E1"
+    assert transport.calls[0]["project_id"] == "p-1"
+    assert transport.calls[0]["path"] == "PyForge Warden.dc.html"
+
+
+def test_pull_prototype_writes_the_decoded_body_and_re_derives(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="E2", body="<html>edited & saved</html>", unchanged=False
+        )
+    )
+    prover = FakeProver()
+    exporter = FakeExporter()
+
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=prover,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert result.local_path == local_path
+    assert result.unchanged is False
+    assert result.etag == "E2"
+    assert local_path.read_text(encoding="utf-8") == "<html>edited & saved</html>"
+    assert prover.calls == [tmp_path / "presentations" / "pyforge-warden"]
+    assert exporter.calls == [("pyforge-warden", tmp_path)]
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E2"
+    assert recorded.last_pull == _FIXED_NOW.isoformat()
+
+
+def test_pull_prototype_body_is_not_re_decoded(tmp_path: Path):
+    """`FileRead.body` is already entity-decoded by
+    `transport.base.parse_read_response` -- `pull_prototype` must use it
+    verbatim. A body containing a literal `&amp;` (e.g. the file's own prior
+    content already had one) must survive unchanged, not be decoded a
+    second time into `&`."""
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="E3", body="already &amp; decoded once", unchanged=False
+        )
+    )
+    pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert local_path.read_text(encoding="utf-8") == "already &amp; decoded once"
+
+
+def test_pull_prototype_refuses_a_truncated_answer_before_writing(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x",
+            etag="E4",
+            body="partial",
+            unchanged=False,
+            first_line=1,
+            last_line=5,
+            total_lines=20,
+        )
+    )
+    prover = FakeProver()
+    exporter = FakeExporter()
+    with pytest.raises(HeraldError, match="truncated"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=prover,
+            exporter=exporter,
+            now=lambda: _FIXED_NOW,
+        )
+    assert prover.calls == []
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "project").exists()
+
+
+def test_pull_prototype_refuses_a_changed_answer_with_no_body(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E5", body=None, unchanged=False)
+    )
+    with pytest.raises(HeraldError, match="no body"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+            exporter=FakeExporter(),
+            now=lambda: _FIXED_NOW,
+        )
+
+
+def test_pull_prototype_refuses_when_not_seeded(tmp_path: Path):
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="herald deck seed"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_prototype_propagates_an_export_failure_after_the_write_lands(
+    tmp_path: Path,
+):
+    """Review finding: the etag used to be recorded BEFORE export ran, so a
+    failed export became permanently unrecoverable via retry -- a rerun's
+    `if_none_match` would already match the just-recorded etag, the server
+    would answer `{unchanged: true}`, and the pull would silently report
+    "unchanged" for a re-derivation that never actually completed. The file
+    write still lands (so the local file reflects the pulled content), but
+    the etag is now recorded only after export succeeds -- so a retry after
+    fixing the transient export failure genuinely re-attempts, rather than
+    short-circuiting."""
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E6", body="<html>x</html>", unchanged=False)
+    )
+    exporter = FakeExporter(fails=HeraldError("deck-export exited 1"))
+    with pytest.raises(HeraldError, match="deck-export exited 1"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            prover=FakeProver(),
+            exporter=exporter,
+            now=lambda: _FIXED_NOW,
+        )
+    # The write lands even though export later fails...
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
+    # ...but the etag is NOT recorded, so a retry can still re-attempt
+    # re-derivation instead of short-circuiting as "unchanged" forever.
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert PROTOTYPE_ARTIFACT_KEY not in recorded.etags
+
+
+# --- CAP-2: --commit (Story 2.2) ---------------------------------------------
+
+
+def test_pull_prototype_without_commit_never_calls_the_committer(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E7", body="<html>x</html>", unchanged=False)
+    )
+    committer = FakeCommitter()
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False
+
+
+def test_pull_prototype_commit_true_stages_and_commits_after_a_real_change(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E8", body="<html>x</html>", unchanged=False)
+    )
+    committer = FakeCommitter()
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result.committed is True
+    assert len(committer.calls) == 1
+    call = committer.calls[0]
+    assert call["repo_root"] == tmp_path
+    assert tmp_path / "presentations" / "pyforge-warden" in call["paths"]
+    assert tmp_path / state.DEFAULT_STATE_PATH in call["paths"]
+    assert "pyforge-warden" in call["message"]
+
+
+def test_pull_prototype_commit_true_never_commits_an_unchanged_pull(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E1", body=None, unchanged=True)
+    )
+    committer = FakeCommitter()
+    result = pull_prototype(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        prover=FakeProver(),
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False
+    assert result.unchanged is True
+
+
+def test_pull_prototype_propagates_a_commit_failure(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="E9", body="<html>x</html>", unchanged=False)
+    )
+    committer = FakeCommitter(fails=HeraldError("git commit failed: nothing to commit"))
+    with pytest.raises(HeraldError, match="nothing to commit"):
+        pull_prototype(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            commit=True,
+            prover=FakeProver(),
+            exporter=FakeExporter(),
+            committer=committer,
+            now=lambda: _FIXED_NOW,
+        )
+    # The write and state update already landed before the commit failed --
+    # not rolled back (see the story spec's Design Notes).
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "project"
+        / "PyForge Warden.dc.html"
+    )
+    assert local_path.read_text(encoding="utf-8") == "<html>x</html>"
+
+
+# --- CAP-2: pull_marp_source (Story 2.3) -------------------------------------
+
+
+def test_pull_marp_source_short_circuits_on_unchanged(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "M1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M1", body=None, unchanged=True)
+    )
+    exporter = FakeExporter()
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result == PullResult(
+        slug="pyforge-warden",
+        artifact="marp:deck",
+        local_path=None,
+        unchanged=True,
+        etag="M1",
+        committed=False,
+    )
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "src").exists()
+
+
+def test_pull_marp_source_uses_the_short_name_remote_path(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M2", body="# Deck", unchanged=False)
+    )
+    pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="executive-summary",
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert transport.calls[0]["path"] == "warden-executive-summary.md"
+
+
+def test_pull_marp_source_lands_at_the_dated_src_marp_path_and_calls_no_prover(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M3", body="# Infographic", unchanged=False)
+    )
+    exporter = FakeExporter()
+
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="infographic",
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "src"
+        / "marp"
+        / "pyforge-warden-infographic-2026-08-07.md"
+    )
+    assert result.local_path == local_path
+    assert result.artifact == "marp:infographic"
+    assert local_path.read_text(encoding="utf-8") == "# Infographic"
+    assert exporter.calls == [("pyforge-warden", tmp_path)]
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags["marp:infographic"] == "M3"
+
+
+def test_pull_marp_source_refuses_an_unknown_kind(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="unknown Marp source kind"):
+        pull_marp_source(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            kind="cover",
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_marp_source_refuses_when_not_seeded(tmp_path: Path):
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="herald deck seed"):
+        pull_marp_source(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            kind="deck",
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_marp_source_commit_true_stages_after_a_real_change(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M4", body="# Deck", unchanged=False)
+    )
+    committer = FakeCommitter()
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result.committed is True
+    assert len(committer.calls) == 1
+    assert "marp:deck" in committer.calls[0]["message"]
+
+
+def test_pull_marp_source_commit_true_never_commits_an_unchanged_pull(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={"marp:deck": "M1"})
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M1", body=None, unchanged=True)
+    )
+    committer = FakeCommitter()
+    result = pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="deck",
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False
+
+
+# --- CAP-2: pull_standalone_bundle (Story 2.4) -------------------------------
+
+
+def test_pull_standalone_bundle_short_circuits_on_unchanged(tmp_path: Path):
+    _seed_state(
+        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"}
+    )
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="S1", body=None, unchanged=True)
+    )
+    exporter = FakeExporter()
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result == PullResult(
+        slug="pyforge-warden",
+        artifact=STANDALONE_BUNDLE_ARTIFACT_KEY,
+        local_path=None,
+        unchanged=True,
+        etag="S1",
+        committed=False,
+    )
+    assert exporter.calls == []
+    assert not (tmp_path / "presentations" / "pyforge-warden" / "src").exists()
+
+
+def test_pull_standalone_bundle_uses_the_persona_remote_path(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S2", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert transport.calls[0]["path"] == "Warden Infographic standalone.html"
+
+
+def test_pull_standalone_bundle_lands_at_the_dated_export_path(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S3", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    exporter = FakeExporter()
+
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=exporter,
+        now=lambda: _FIXED_NOW,
+    )
+
+    local_path = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "src"
+        / "marp"
+        / "pyforge-warden-infographic-standalone-2026-08-07.html"
+    )
+    assert result.local_path == local_path
+    assert result.artifact == STANDALONE_BUNDLE_ARTIFACT_KEY
+    assert local_path.read_text(encoding="utf-8") == "<html>bundle</html>"
+    assert exporter.calls == [("pyforge-warden", tmp_path)]
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[STANDALONE_BUNDLE_ARTIFACT_KEY] == "S3"
+
+
+def test_pull_standalone_bundle_write_completes_before_export_runs(tmp_path: Path):
+    """The bundle-supersedes-marp-render logic belongs to `deck-export`
+    (out of scope); this module's own responsibility is to guarantee no
+    check-then-act race by finishing the atomic write strictly before
+    invoking the exporter. Asserted here by an exporter fake that reads the
+    file back at call time -- if the write had not completed, this would
+    read stale/missing content instead of the just-pulled body."""
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S4", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    seen_at_export_time = {}
+
+    class ReadingExporter:
+        def export(self, *, slug: str, repo_root: Path) -> None:
+            local_path = (
+                repo_root
+                / "presentations"
+                / slug
+                / "src"
+                / "marp"
+                / "pyforge-warden-infographic-standalone-2026-08-07.html"
+            )
+            seen_at_export_time["body"] = local_path.read_text(encoding="utf-8")
+
+    pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        exporter=ReadingExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert seen_at_export_time["body"] == "<html>bundle</html>"
+
+
+def test_pull_standalone_bundle_refuses_when_not_seeded(tmp_path: Path):
+    transport = FakePullTransport(answers=None)
+    with pytest.raises(HeraldError, match="herald deck seed"):
+        pull_standalone_bundle(
+            transport,
+            slug="pyforge-warden",
+            repo_root=tmp_path,
+            exporter=FakeExporter(),
+        )
+    assert transport.calls == []
+
+
+def test_pull_standalone_bundle_commit_true_stages_after_a_real_change(
+    tmp_path: Path,
+):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePullTransport(
+        answers=FileRead(
+            path="x", etag="S5", body="<html>bundle</html>", unchanged=False
+        )
+    )
+    committer = FakeCommitter()
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert result.committed is True
+    assert len(committer.calls) == 1
+    assert STANDALONE_BUNDLE_ARTIFACT_KEY in committer.calls[0]["message"]
+
+
+def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
+    tmp_path: Path,
+):
+    _seed_state(
+        tmp_path, "pyforge-warden", etags={STANDALONE_BUNDLE_ARTIFACT_KEY: "S1"}
+    )
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="S1", body=None, unchanged=True)
+    )
+    committer = FakeCommitter()
+    result = pull_standalone_bundle(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        commit=True,
+        exporter=FakeExporter(),
+        committer=committer,
+        now=lambda: _FIXED_NOW,
+    )
+    assert committer.calls == []
+    assert result.committed is False
+
+
+# --- SubprocessGitCommitter (real subprocess, real scratch git repo) --------
+
+
+def _init_git_repo(work: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=work, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=work, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=work, check=True)
+    (work / "README.md").write_text("scratch repo\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=work, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=work, check=True)
+
+
+def test_subprocess_git_committer_commits_with_an_absolute_repo_root(tmp_path: Path):
+    work = tmp_path / "repo"
+    work.mkdir()
+    _init_git_repo(work)
+    target = work / "presentations" / "warden"
+    target.mkdir(parents=True)
+    (target / "file.txt").write_text("content\n", encoding="utf-8")
+
+    SubprocessGitCommitter().commit(
+        repo_root=work, paths=[target], message="herald: pull warden (prototype)"
+    )
+
+    log = subprocess.run(
+        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+    )
+    assert "presentations/warden/file.txt" in log.stdout
+
+
+def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Path, monkeypatch):
+    """Review finding: `p.is_absolute()` was the wrong branch condition --
+    every `paths` entry callers pass is already prefixed with `repo_root`,
+    whether or not `repo_root` itself is absolute. Invoking with a
+    RELATIVE `repo_root` (e.g. `--repo-root some/subdir`) used to double
+    the prefix (`some/subdir/some/subdir/...`), failing with a git
+    pathspec error even though the pull itself succeeded."""
+    work = tmp_path / "repo"
+    work.mkdir()
+    _init_git_repo(work)
+    target = work / "presentations" / "warden"
+    target.mkdir(parents=True)
+    (target / "file.txt").write_text("content\n", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    relative_root = Path("repo")  # relative to the new cwd, resolves to `work`
+
+    SubprocessGitCommitter().commit(
+        repo_root=relative_root,
+        paths=[relative_root / "presentations" / "warden"],
+        message="herald: pull warden (prototype)",
+    )
+
+    log = subprocess.run(
+        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+    )
+    assert "presentations/warden/file.txt" in log.stdout

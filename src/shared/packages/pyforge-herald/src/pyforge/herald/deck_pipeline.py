@@ -45,15 +45,19 @@ the story spec's Design Notes:**
 
 from __future__ import annotations
 
+import os
 import subprocess
+import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from . import errors, registry, state
 
 if TYPE_CHECKING:
-    from .transport.base import DesignTransport, ProjectRef
+    from .transport.base import DesignTransport, FileRead, ProjectRef
 
 PILOT_SUPPORT_SOURCE_PROJECT_ID = "ad84d4f6-c292-42c8-98bf-ede78a567773"
 """The already-seeded ``pyforge-marshal`` Design project (``bridge-protocol.md``
@@ -328,4 +332,587 @@ def seed(
     )
     return SeedResult(
         project=project, persona=persona, prototype_filename=prototype_filename
+    )
+
+
+# --- CAP-2: pull (Design -> repo), Story 2.1 --------------------------------
+#
+# `bridge-protocol.md` § *Pull*: `read_file(path, if_none_match: <last-seen
+# etag>)` -> `{unchanged: true}` short-circuits (no body transferred, nothing
+# written) -> otherwise write the (already entity-decoded -- see
+# `_pull_and_land`'s own docstring) body, record the new etag, re-derive
+# (`npm run extract` -> `npm run build` -> `deck-export`). `--commit` lands in
+# Story 2.2; Marp-source and standalone-bundle pull land in Stories 2.3/2.4.
+
+PROTOTYPE_ARTIFACT_KEY = "prototype"
+"""The ``state.DeckState.etags`` key for the main ``.dc.html`` prototype."""
+
+_DEFAULT_EXPORT_TIMEOUT = 300.0
+
+
+@dataclass(frozen=True)
+class PullResult:
+    """What a ``pull_*`` function returns: which artifact, whether the pull
+    was a no-op (etag short-circuit), where it landed locally when it
+    wasn't, the etag now on record, and whether ``--commit`` (Story 2.2)
+    actually committed it."""
+
+    slug: str
+    artifact: str
+    local_path: Path | None
+    unchanged: bool
+    etag: str | None
+    committed: bool = False
+
+
+def _require_seeded_state(state_path: Path, slug: str) -> state.DeckState:
+    """The deck's recorded ``state.DeckState``, or a ``HeraldError`` naming
+    ``herald deck seed`` -- pulling needs a ``project_id`` to read from, and
+    ``state.py`` is the only source of one this module has (unlike
+    ``seed``'s registry-bootstrap fallback, there is no analogous "adopt an
+    already-linked deck" path here yet; see the story spec's Design Notes)."""
+    existing = state.read(state_path, slug)
+    if existing is None:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r}: no bridge state recorded at {state_path} "
+            f"-- run 'herald deck seed {slug}' first"
+        )
+    return existing
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Write ``text`` to ``path`` atomically (temp file in ``path``'s own
+    directory, then ``os.replace``), mirroring ``state.write`` /
+    ``registry.register``'s existing crash-safety convention: a process
+    crash mid-write must never leave a corrupt half-written pulled file."""
+    could_not = f"could not write {path}"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle, tmp_name = tempfile.mkstemp(
+            dir=path.parent, prefix=f".{path.name}-", suffix=".tmp"
+        )
+    except OSError as exc:
+        raise errors.HeraldError(f"{could_not}: {exc}") from exc
+    try:
+        try:
+            fh = os.fdopen(handle, "w", encoding="utf-8")
+        except BaseException:
+            os.close(handle)
+            raise
+        with fh:
+            fh.write(text)
+        os.replace(tmp_name, path)
+    except BaseException as exc:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        if isinstance(exc, (OSError, ValueError)):
+            raise errors.HeraldError(f"{could_not}: {exc}") from exc
+        raise
+
+
+def _pull_and_land(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    existing: state.DeckState,
+    remote_path: str,
+    local_path: Path,
+    artifact_key: str,
+) -> FileRead | None:
+    """One ``read_file`` + etag short-circuit + (on change) atomic write.
+    Returns ``None`` on an ``{unchanged: true}`` answer -- the caller must
+    treat that as "stop here", never running prove/export for a no-op pull.
+
+    Deliberately does NOT touch ``state.py`` (review finding): the caller
+    must record the new etag only AFTER prove/export/re-derivation
+    genuinely succeeds, via ``_record_pull_etag`` below. Recording it here,
+    before that work runs, would make a failed re-derivation permanently
+    unrecoverable via retry -- a rerun's ``if_none_match`` would already
+    match the just-recorded etag, the server would answer
+    ``{unchanged: true}``, and the pull would short-circuit forever,
+    silently reporting "unchanged" for a re-derivation that never actually
+    completed.
+
+    ``FileRead.body`` is used **verbatim, with no further entity-decoding**:
+    ``McpTransport.read_file`` / ``AgentSdkTransport.read_file`` already
+    return ``transport.base.parse_read_response(...)``, which decodes the
+    wire's ``&amp;``/``&lt;``/``&gt;`` escaping internally. Re-decoding here
+    would silently corrupt any pulled file that legitimately contains one of
+    those substrings."""
+    last_etag = existing.etags.get(artifact_key)
+    file_read = transport.read_file(
+        project_id=existing.project_id, path=remote_path, if_none_match=last_etag
+    )
+    if file_read.unchanged:
+        return None
+    if file_read.truncated:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r} artifact {artifact_key!r}: read_file "
+            f"returned a truncated window for {remote_path!r}; a partial "
+            f"read must never be mistaken for the whole file"
+        )
+    if file_read.body is None:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r} artifact {artifact_key!r}: read_file "
+            f"reported a change for {remote_path!r} but returned no body"
+        )
+    _atomic_write_text(local_path, file_read.body)
+    return file_read
+
+
+def _record_pull_etag(
+    state_path: Path,
+    slug: str,
+    existing: state.DeckState,
+    *,
+    artifact_key: str,
+    etag: str,
+    now: Callable[[], datetime],
+) -> None:
+    """Record ``artifact_key``'s new etag -- called ONLY after prove/export
+    for this pull has genuinely succeeded (review finding: see
+    ``_pull_and_land``'s own docstring for why recording it any earlier
+    makes a failed re-derivation unrecoverable via retry). Must run before
+    ``--commit`` stages this state file, so its own new etag is included in
+    the commit."""
+    new_etags = dict(existing.etags)
+    new_etags[artifact_key] = etag
+    state.write(
+        state_path,
+        slug,
+        state.DeckState(
+            project_id=existing.project_id,
+            etags=new_etags,
+            last_pull=now().isoformat(),
+        ),
+    )
+
+
+@runtime_checkable
+class DeckExporter(Protocol):
+    """The injectable ``deck-export`` seam (re-derive step 4:
+    ``pixi run -e local-recipes deck-export <slug>``), mirroring
+    ``LocalProver``'s pattern: a real implementation shells a bounded
+    subprocess; every test injects a hand-written fake."""
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        """Raise ``errors.HeraldError`` naming what failed; return normally
+        on success."""
+        ...
+
+
+class PixiDeckExporter:
+    """The real ``DeckExporter``: ``pixi run -e local-recipes deck-export
+    <slug>`` in ``repo_root``, one bounded subprocess call. Never invoked by
+    this package's own tests (every pull test injects a fake)."""
+
+    def __init__(self, *, timeout: float = _DEFAULT_EXPORT_TIMEOUT) -> None:
+        self._timeout = timeout
+
+    def export(self, *, slug: str, repo_root: Path) -> None:
+        try:
+            completed = subprocess.run(
+                ["pixi", "run", "-e", "local-recipes", "deck-export", slug],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"{slug}' in {repo_root} exceeded {self._timeout}s ({exc})"
+            ) from exc
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"deck-export failed: could not run 'pixi run -e "
+                f"local-recipes deck-export {slug}' in {repo_root} ({exc})"
+            ) from exc
+        if completed.returncode != 0:
+            tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
+            raise errors.HeraldError(
+                f"deck-export failed: 'pixi run -e local-recipes deck-export "
+                f"{slug}' in {repo_root} exited {completed.returncode}: {tail}"
+            )
+
+
+def _default_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+# --- CAP-2: --commit, Story 2.2 ----------------------------------------------
+#
+# `bridge-protocol.md` § *Pull* step 5: "Commit is the operator's (or
+# `--commit`'s) move -- never implicit." Herald has no pre-existing
+# git-wrapping convention of its own (Epic 1 never touched git); this seam's
+# shape (`git add -- <paths>` then `git commit -m <message> -- <paths>`)
+# mirrors `pyforge-marshal`'s own `GitVcs.commit_paths` -- the one real,
+# persistent git-commit convention already established anywhere in this
+# monorepo -- rather than inventing a new one.
+
+_DEFAULT_GIT_TIMEOUT = 60.0
+
+
+@runtime_checkable
+class GitCommitter(Protocol):
+    """The injectable git-commit seam, mirroring ``LocalProver`` /
+    ``DeckExporter``'s pattern: a real implementation shells two bounded
+    subprocess calls; every test injects a hand-written fake."""
+
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+        """Raise ``errors.HeraldError`` naming what failed; return normally
+        on success (including when there was nothing new to stage under
+        ``paths`` -- callers only invoke this when a real change is known to
+        exist)."""
+        ...
+
+
+class SubprocessGitCommitter:
+    """The real ``GitCommitter``: ``git add -- <paths>`` then ``git commit
+    -m <message> -- <paths>`` in ``repo_root``, using the operator's own git
+    identity/signing config -- this commit is meant to survive, unlike
+    ``pyforge-marshal``'s throwaway ``commit-tree`` comparisons. Never
+    invoked by this package's own tests (every pull test injects a fake)."""
+
+    def __init__(self, *, timeout: float = _DEFAULT_GIT_TIMEOUT) -> None:
+        self._timeout = timeout
+
+    def commit(self, *, repo_root: Path, paths: list[Path], message: str) -> None:
+        # Review finding: `p.is_absolute()` was the wrong branch condition
+        # -- every `paths` entry this module's own callers pass IS already
+        # prefixed with `repo_root` (e.g. `repo_root / "presentations" /
+        # slug`), whether or not `repo_root` itself happens to be absolute.
+        # The subprocess runs with `cwd=repo_root`, so a RELATIVE `p` must
+        # still be stripped of that same `repo_root` prefix -- resolving
+        # both sides first makes this correct regardless of whether
+        # `repo_root` (and therefore `p`) was absolute or relative to begin
+        # with, instead of silently doubling the prefix for a relative
+        # `repo_root` (e.g. `--repo-root some/subdir`).
+        resolved_root = repo_root.resolve()
+        rel_paths = [str(p.resolve().relative_to(resolved_root)) for p in paths]
+        self._run(repo_root, ["git", "add", "--", *rel_paths])
+        self._run(repo_root, ["git", "commit", "-m", message, "--", *rel_paths])
+
+    def _run(self, repo_root: Path, args: list[str]) -> None:
+        try:
+            completed = subprocess.run(
+                args,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise errors.HeraldError(
+                f"git commit failed: {' '.join(args)!r} in {repo_root} "
+                f"exceeded {self._timeout}s ({exc})"
+            ) from exc
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"git commit failed: could not run {' '.join(args)!r} in "
+                f"{repo_root} ({exc})"
+            ) from exc
+        if completed.returncode != 0:
+            tail = (completed.stderr or completed.stdout or "").strip()[-2000:]
+            raise errors.HeraldError(
+                f"git commit failed: {' '.join(args)!r} in {repo_root} exited "
+                f"{completed.returncode}: {tail}"
+            )
+
+
+def pull_prototype(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    repo_root: Path,
+    commit: bool = False,
+    state_path: Path | None = None,
+    prover: LocalProver | None = None,
+    exporter: DeckExporter | None = None,
+    committer: GitCommitter | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> PullResult:
+    """CAP-2, Story 2.1: pull the main prototype (``bridge-protocol.md`` §
+    Pull, steps 1-4). Requires a prior ``seed`` (``_require_seeded_state``).
+
+    On ``{unchanged: true}``: returns immediately with
+    ``PullResult(unchanged=True)`` -- no write, no state update, no
+    extract/build/export, and (Story 2.2) never a commit even when
+    ``commit=True``. On a real change: writes the decoded body to
+    ``presentations/<slug>/project/PyForge <Persona>.dc.html``, records the
+    new etag, then re-derives via ``prover`` (default ``NpmLocalProver``,
+    reused from Story 1.6) and ``exporter`` (default ``PixiDeckExporter``).
+    When ``commit=True`` and the pull was a real change, stages and commits
+    the whole ``presentations/<slug>/`` directory plus the bridge-state file
+    via ``committer`` (default ``SubprocessGitCommitter``, Story 2.2) --
+    commit is opt-in, never implicit."""
+    resolved_now = now or _default_now
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = _require_seeded_state(resolved_state_path, slug)
+    persona = _persona_from_slug(slug)
+    prototype_filename = f"PyForge {persona}.dc.html"
+    deck_dir = repo_root / "presentations" / slug
+    local_path = deck_dir / "project" / prototype_filename
+
+    file_read = _pull_and_land(
+        transport,
+        slug=slug,
+        existing=existing,
+        remote_path=prototype_filename,
+        local_path=local_path,
+        artifact_key=PROTOTYPE_ARTIFACT_KEY,
+    )
+    if file_read is None:
+        return PullResult(
+            slug=slug,
+            artifact=PROTOTYPE_ARTIFACT_KEY,
+            local_path=None,
+            unchanged=True,
+            etag=existing.etags.get(PROTOTYPE_ARTIFACT_KEY),
+            committed=False,
+        )
+
+    (prover or NpmLocalProver()).prove(deck_dir)
+    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    # Review finding: the etag is now recorded only after prove+export both
+    # succeed -- see `_pull_and_land`'s docstring for why recording it any
+    # earlier makes a failed re-derivation unrecoverable via retry.
+    _record_pull_etag(
+        resolved_state_path,
+        slug,
+        existing,
+        artifact_key=PROTOTYPE_ARTIFACT_KEY,
+        etag=file_read.etag,
+        now=resolved_now,
+    )
+
+    committed = False
+    if commit:
+        (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir, resolved_state_path],
+            message=f"herald: pull {slug} ({PROTOTYPE_ARTIFACT_KEY})",
+        )
+        committed = True
+
+    return PullResult(
+        slug=slug,
+        artifact=PROTOTYPE_ARTIFACT_KEY,
+        local_path=local_path,
+        unchanged=False,
+        etag=file_read.etag,
+        committed=committed,
+    )
+
+
+# --- CAP-2: authored-source pull (Marp sources), Story 2.3 -------------------
+#
+# `bridge-protocol.md` § *Authored-source pull*: same read/etag/decode loop as
+# the prototype pull, different landing path, NO extract/build step --
+# `deck-export` regenerates the derived set instead.
+
+_MARP_KINDS = ("deck", "executive-summary", "infographic")
+"""The three Marp source kinds `bridge-protocol.md`'s own worked example
+names (`warden-deck.md`, `warden-executive-summary.md`,
+`warden-infographic.md`)."""
+
+
+def _short_name(slug: str) -> str:
+    """`pyforge-<name>` -> `<name>`, the prefix the Design-side Marp source
+    filenames themselves carry (`bridge-protocol.md`'s own example: the
+    `pyforge-warden` deck's sources are named `warden-deck.md`, not
+    `pyforge-warden-deck.md`, inside its own Design project)."""
+    return slug.removeprefix("pyforge-")
+
+
+def pull_marp_source(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    repo_root: Path,
+    kind: str,
+    commit: bool = False,
+    state_path: Path | None = None,
+    exporter: DeckExporter | None = None,
+    committer: GitCommitter | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> PullResult:
+    """CAP-2, Story 2.3: pull one authored Marp source (``bridge-protocol.md``
+    § Authored-source pull). ``kind`` must be one of ``_MARP_KINDS``.
+
+    Same read/etag/decode loop as ``pull_prototype`` (``_pull_and_land``,
+    Story 2.1) -- no re-decoding, a truncated answer refuses, the write is
+    atomic, the etag is recorded under the per-kind key ``f"marp:{kind}"``.
+    Unlike ``pull_prototype``, there is no local-prove (extract/build) step:
+    ``deck-export`` alone regenerates the derived set from a Marp source.
+    ``--commit`` behaves identically to Story 2.2's (opt-in, never on an
+    unchanged pull)."""
+    if kind not in _MARP_KINDS:
+        raise errors.HeraldError(
+            f"cannot pull {slug!r}: unknown Marp source kind {kind!r}; "
+            f"expected one of {', '.join(sorted(_MARP_KINDS))}"
+        )
+    resolved_now = now or _default_now
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = _require_seeded_state(resolved_state_path, slug)
+    short = _short_name(slug)
+    remote_path = f"{short}-{kind}.md"
+    artifact_key = f"marp:{kind}"
+    date_str = resolved_now().strftime("%Y-%m-%d")
+    deck_dir = repo_root / "presentations" / slug
+    local_path = deck_dir / "src" / "marp" / f"{slug}-{kind}-{date_str}.md"
+
+    file_read = _pull_and_land(
+        transport,
+        slug=slug,
+        existing=existing,
+        remote_path=remote_path,
+        local_path=local_path,
+        artifact_key=artifact_key,
+    )
+    if file_read is None:
+        return PullResult(
+            slug=slug,
+            artifact=artifact_key,
+            local_path=None,
+            unchanged=True,
+            etag=existing.etags.get(artifact_key),
+            committed=False,
+        )
+
+    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    # Review finding: see `pull_prototype`'s own note -- record only after
+    # export succeeds.
+    _record_pull_etag(
+        resolved_state_path,
+        slug,
+        existing,
+        artifact_key=artifact_key,
+        etag=file_read.etag,
+        now=resolved_now,
+    )
+
+    committed = False
+    if commit:
+        (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir, resolved_state_path],
+            message=f"herald: pull {slug} ({artifact_key})",
+        )
+        committed = True
+
+    return PullResult(
+        slug=slug,
+        artifact=artifact_key,
+        local_path=local_path,
+        unchanged=False,
+        etag=file_read.etag,
+        committed=committed,
+    )
+
+
+# --- CAP-2: authored-source pull (standalone bundle), Story 2.4 -------------
+#
+# `bridge-protocol.md` § *Authored-source pull*: the Design-authored
+# "standalone bundle" (a richer, self-contained infographic HTML poster)
+# lands at the export path `src/marp/<slug>-infographic-standalone-<date>.html`,
+# superseding any `marp --html` render. That preference is `deck-export`'s
+# own responsibility (unmodified by this story, out of this module's code
+# map) -- see this story's spec Design Notes for the full boundary. This
+# module's ONLY job is landing the bundle file, identically to how
+# `pull_marp_source` lands a Marp source: same `_pull_and_land` loop, no
+# local-prove step, `exporter.export` after a real change.
+
+STANDALONE_BUNDLE_ARTIFACT_KEY = "standalone-bundle"
+
+
+def pull_standalone_bundle(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    repo_root: Path,
+    commit: bool = False,
+    state_path: Path | None = None,
+    exporter: DeckExporter | None = None,
+    committer: GitCommitter | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> PullResult:
+    """CAP-2, Story 2.4: pull the Design-authored standalone infographic
+    bundle (``bridge-protocol.md`` § Authored-source pull). Same
+    read/etag/decode loop as ``pull_marp_source`` (``_pull_and_land``, Story
+    2.1/2.3 reused unchanged) -- no re-decoding, a truncated answer refuses,
+    the write is atomic, the etag is recorded under
+    ``STANDALONE_BUNDLE_ARTIFACT_KEY``. No local-prove step. Renders no HTML
+    itself: landing this bundle at its fixed canonical path is what lets
+    ``deck-export`` (unmodified, out of scope here) prefer it over its own
+    ``marp --html`` fallback -- see the story spec's Design Notes for why
+    that boundary is deliberate. ``--commit`` behaves identically to Stories
+    2.2/2.3's (opt-in, never on an unchanged pull)."""
+    resolved_now = now or _default_now
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = _require_seeded_state(resolved_state_path, slug)
+    persona = _persona_from_slug(slug)
+    remote_path = f"{persona} Infographic standalone.html"
+    date_str = resolved_now().strftime("%Y-%m-%d")
+    deck_dir = repo_root / "presentations" / slug
+    local_path = (
+        deck_dir / "src" / "marp" / f"{slug}-infographic-standalone-{date_str}.html"
+    )
+
+    file_read = _pull_and_land(
+        transport,
+        slug=slug,
+        existing=existing,
+        remote_path=remote_path,
+        local_path=local_path,
+        artifact_key=STANDALONE_BUNDLE_ARTIFACT_KEY,
+    )
+    if file_read is None:
+        return PullResult(
+            slug=slug,
+            artifact=STANDALONE_BUNDLE_ARTIFACT_KEY,
+            local_path=None,
+            unchanged=True,
+            etag=existing.etags.get(STANDALONE_BUNDLE_ARTIFACT_KEY),
+            committed=False,
+        )
+
+    (exporter or PixiDeckExporter()).export(slug=slug, repo_root=repo_root)
+    # Review finding: see `pull_prototype`'s own note -- record only after
+    # export succeeds.
+    _record_pull_etag(
+        resolved_state_path,
+        slug,
+        existing,
+        artifact_key=STANDALONE_BUNDLE_ARTIFACT_KEY,
+        etag=file_read.etag,
+        now=resolved_now,
+    )
+
+    committed = False
+    if commit:
+        (committer or SubprocessGitCommitter()).commit(
+            repo_root=repo_root,
+            paths=[deck_dir, resolved_state_path],
+            message=f"herald: pull {slug} ({STANDALONE_BUNDLE_ARTIFACT_KEY})",
+        )
+        committed = True
+
+    return PullResult(
+        slug=slug,
+        artifact=STANDALONE_BUNDLE_ARTIFACT_KEY,
+        local_path=local_path,
+        unchanged=False,
+        etag=file_read.etag,
+        committed=committed,
     )

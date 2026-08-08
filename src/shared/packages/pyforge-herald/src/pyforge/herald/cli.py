@@ -72,8 +72,37 @@ def _build_parser() -> argparse.ArgumentParser:
             "already-seeded pyforge-marshal pilot project)"
         ),
     )
-    # pull/status/watch land in Epics 2-4, under this same deck_subparsers
-    # group.
+    pull = deck_subparsers.add_parser(
+        "pull", help="pull a deck's prototype from Claude Design into the repo (CAP-2)"
+    )
+    pull.add_argument("slug", help="deck slug, e.g. pyforge-warden")
+    pull.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    pull.add_argument(
+        "--commit",
+        action="store_true",
+        help=(
+            "commit the pulled + re-derived files to git (default: leave "
+            "them uncommitted; never commits when the pull was unchanged)"
+        ),
+    )
+    pull.add_argument(
+        "--target",
+        choices=[
+            "prototype",
+            "marp-deck",
+            "marp-executive-summary",
+            "marp-infographic",
+            "standalone",
+        ],
+        default="prototype",
+        help="which Design-side artifact to pull (default: prototype)",
+    )
+    # status/watch land in Epics 3-4, under this same deck_subparsers group.
     return parser
 
 
@@ -96,6 +125,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.command == "deck" and args.deck_command == "seed":
         return _run_deck_seed(args)
+    if args.command == "deck" and args.deck_command == "pull":
+        return _run_deck_pull(args)
     return 0
 
 
@@ -122,6 +153,53 @@ def _run_deck_seed(args: argparse.Namespace) -> int:
             ),
         )
         print(f"seeded {args.slug}: {result.project.url}")
+
+    return dispatch(operation)
+
+
+def _pull_operation(
+    args: argparse.Namespace, repo_root: Path, transport: McpTransport
+) -> deck_pipeline.PullResult:
+    """Compose the right ``deck_pipeline.pull_*`` call for ``args.target``.
+    ``prototype`` (the default) dispatches to ``pull_prototype`` (Story 2.1);
+    every ``marp-*`` choice dispatches to ``pull_marp_source`` with the
+    ``marp-`` prefix stripped back to its ``kind`` (Story 2.3)."""
+    if args.target == "prototype":
+        return deck_pipeline.pull_prototype(
+            transport, slug=args.slug, repo_root=repo_root, commit=args.commit
+        )
+    if args.target == "standalone":
+        return deck_pipeline.pull_standalone_bundle(
+            transport, slug=args.slug, repo_root=repo_root, commit=args.commit
+        )
+    kind = args.target.removeprefix("marp-")
+    return deck_pipeline.pull_marp_source(
+        transport,
+        slug=args.slug,
+        repo_root=repo_root,
+        kind=kind,
+        commit=args.commit,
+    )
+
+
+def _run_deck_pull(args: argparse.Namespace) -> int:
+    """Compose ``bridge.run`` + the right ``deck_pipeline.pull_*`` call over
+    the V1-default ``McpTransport`` and hand the whole operation to
+    ``dispatch`` (AD-6), mirroring ``_run_deck_seed``'s composition shape
+    exactly: ``McpTransport()`` is constructed inside ``operation``, never
+    before ``dispatch`` is called."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        transport = McpTransport()
+        result = bridge.run(transport, lambda t: _pull_operation(args, repo_root, t))
+        if result.unchanged:
+            print(f"pull {args.slug} ({result.artifact}): unchanged")
+        else:
+            suffix = " (committed)" if result.committed else ""
+            print(
+                f"pulled {args.slug} ({result.artifact}) -> {result.local_path}{suffix}"
+            )
 
     return dispatch(operation)
 
