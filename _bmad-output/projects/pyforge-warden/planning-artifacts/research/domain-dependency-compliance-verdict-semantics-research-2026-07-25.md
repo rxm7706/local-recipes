@@ -90,3 +90,50 @@ The companion market-research report freshly confirmed Renovate's `ignoreDeps`/`
 - Internal: `_bmad-output/projects/pyforge-warden/planning-artifacts/architecture.md` (pinned axis-data-contracts frontmatter: cisa-kev, first-epss, endoflife-date, lts-registry) — the claims being cross-checked, not external evidence
 - Internal (cross-project): `_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md` § 2 (SARIF) and its own Dependabot/KEV/EPSS citations — reused here as already-verified cross-project grounding rather than re-fetching the same sources twice in one day
 - Companion report: `_bmad-output/projects/pyforge-warden/planning-artifacts/research/market-dependency-compliance-sca-landscape-research-2026-07-25.md` (this project) — the Renovate/Dependabot waiver-expiry findings this report builds on
+
+---
+
+# Refreshed 2026-08-08 — does "the gate that never lies" survive contact with reality?
+
+Two weeks after ship (31/31, PR #110), the question this domain report can now answer empirically rather than by design review: did the never-false-green contract actually hold, and where does dishonesty risk *actually* live in a shipped four-axis gate? Grounding: the 8 tracked epic retros (`planning-artifacts/retros/`, promoted 2026-07-25) and the per-entry-verified deferred-work ledger (2026-07-30 pass). Companion: `technical-warden-dependency-gate-refresh-2026-08-08.md` for the full debt map.
+
+## 1. The verdict layer held — and the near-misses prove the threat model was right
+
+No false-green incident is recorded anywhere in the retros, the ledger, or the dogfood/corpus evidence. Stronger than absence-of-evidence: the validation teeth caught the exact failure class the domain thesis predicted, *before merge*, repeatedly:
+
+- **Cross-package fixed-version attribution (5.1):** `_extract_fixed_version` read `fixed` events from every `affected[]` entry of a multi-package advisory — a wrong "upgrade to ≥X" remediation, named in the retro as "Warden's cardinal false-green risk." Caught by adversarial review, fixed with tests pre-merge.
+- **Alias-collision silent-misroute (6.3)** — same class, same outcome.
+- The **frozen-trio scope-check** (`report-schema.json`/`models.py`/`verdict.py`, frozen at 6.1) came back zero-diff on all 8 subsequent Epic-6 gates — no axis producer widened the contract.
+- The **strace egress counter** (5.2) upgraded "never fetch silently" from a trusted claim to a measured one across the whole subprocess tree — closing a gap the ledger itself had flagged (the in-process socket-deny harness couldn't see child processes).
+
+Domain conclusion: the `indeterminate`-above-`warn` lattice (this report's §5 novelty finding) was the right bet, and the *discipline stack around it* (sole-ownership meta-test, frozen-trio scope-check, differential oracle, egress proof) is inseparable from the claim. The lattice alone is a design; the stack is what made "never lies" empirical.
+
+## 2. The refined thesis: dishonesty risk migrated from the verdict to the report's edges
+
+What real use exposed is that with the verdict layer machine-guarded, the remaining honesty gaps live in surfaces the guards don't cover — each ledger-verified open:
+
+- **The advice layer can still lie while the verdict tells the truth.** DW-5-1-6/7/8: a remediation line can advise an upgrade bound already satisfied (oldest-branch `fixed` selection), or point at the manifest declaring the *non-vulnerable* version. The exit code is right; the sentence next to it isn't. The domain lesson generalizes: **a compliance gate's contract must cover its prose, not just its projection** — no surveyed comparable treats remediation text as contract either, so this is an unclaimed honesty frontier, not a Warden-specific lapse.
+- **Suppression state is under-told in the machine contract.** DW-6-8-3 (an expired suppression is invisible in `suppressions[]`) and DW-6-5-2 (`warn-as-error` leaves no trace in the persisted report — report and exit code can disagree about why the process failed). Both are "the report under-reports" rather than "the verdict over-promises" — a distinct, milder dishonesty class this report's original taxonomy didn't separate. It should: *verdict honesty* (never false-green) vs *narrative honesty* (the report fully explains the verdict).
+- **The gate doesn't gate itself.** DW-5-2-5: the corpus/differential-oracle suite — the strongest extraction-honesty check — is wired to no CI or scheduler; an extractor render-parity break merges green today. For the domain thesis this is the sharpest finding: fail-closed *runtime* semantics do not substitute for fail-closed *regression* coverage.
+- **Expiry-as-honesty has a calendar failure mode.** The 6.8 design (expiry forces re-review) is validated by use, but all 19 baseline entries share one `expires_at` (2027-07-24) — a deterministic future red-day an unattended consumer would misread as a code regression (DW-5-2-7). Domain refinement for any waivers-as-code adopter: **stagger expiries at issuance; a shared cliff converts an honesty mechanism into a false alarm.**
+
+## 3. Cross-station: is Warden's verdict logic being duplicated? (checked in code, 2026-08-08)
+
+The four-axis gate is consumed by sibling stations; the specific question was whether Doctor's health surface or Marshal's gate mechanics overlap Warden's verdict logic.
+
+- **Doctor — wraps, with a managed (not eliminated) duplicate.** `pyforge-doctor`'s `sources/warden.py` calls `pyforge.warden.engines.run_doctor_checks` as a **library import, never a subprocess reimplementation** (its dream names this rule). But `doctor/checks/registry.py` carries a *deliberately static mirror* of Warden's check-name catalog — its own docstring admits it is "Doctor's OWN duplicate of warden's" list, defended by a meta-test that runs `sources.warden.gather()` once and fails on any rename/reorder/addition. Verdict: overlap exists, is self-aware, and is machine-guarded — the fix that would retire it is a cheap Warden API (`run_doctor_checks` exposing check names without executing) rather than any change on Doctor's side. Worth adding to Warden's backlog as a one-function courtesy export.
+- **Marshal — parallel lattice by design, shared discipline, zero shared code.** `marshal/core/verdict.py` is an independent 6-rung lattice (`error > gate-failed > scope-violation > unevaluable > warn > clean`, exits 0–4) whose docstring *cites Warden's lattice as precedent* (explicitly matching Warden's warn→0 treatment) and reuses the sole-ownership + `EXIT_SIGINT=130` conventions. The rungs don't map 1:1 (Marshal gates *process* outcomes, Warden gates *dependency* outcomes), so unifying the lattices would be false economy — but the pattern has now been hand-copied three times (Warden, Doctor's `DoctorReport` envelope, Marshal), and Marshal's concurrent unification research (being written in parallel; not visible to this report) is the right owner for whether the *skeleton* (rung-table + total exit projection + sole-ownership meta-test) becomes shared infra. From Warden's side: its `verdict.py` (140 lines) is the reference implementation, and its `_engine_env()` subprocess seam is the other proven generalization candidate (see technical refresh §5).
+- No station re-implements Warden's *decision* logic (which findings mean what) — the duplication is confined to check *catalogs* (Doctor, guarded) and lattice *shape* (Marshal, deliberate). The domain risk to watch is drift between three hand-maintained exit-code contracts consumed by the same CI surfaces.
+
+## 4. Refresh verdict on this report's original findings
+
+- The **`indeterminate` novelty claim (§5) stands** — nothing in the 2026-08-08 market re-check (osv-scanner v2.5.0, Scalibr, Safety CLI) surfaced a comparable non-collapsible partial-coverage state.
+- The **waivers-as-code claim (§6) must be restated**: Snyk's `.snyk` *does* support `expires` (2026-07-25's open question, now resolved — see the market refresh §2). The domain gap survives but narrows to failure direction: Warden is fail-closed (mandatory expiry, malformed → never suppresses), the domain norm is fail-open (optional expiry; Snyk's own docs: a malformed date "will be respected and persist indefinitely").
+- **New domain finding this refresh adds:** verdict honesty and narrative honesty are separable properties, and the shipped v1 proves the first while the ledger shows the second is where all remaining risk concentrates (§2). Any v1.x scope should treat "the report fully explains the verdict" as a contract surface of equal rank with the exit code.
+
+## Refresh sources
+
+- `planning-artifacts/retros/` — all 8 epic retros (read 2026-08-08); `planning-artifacts/deferred-work-ledger.md` (2026-07-30 verification pass) — every DW-* citation above
+- Code read 2026-08-08: `pyforge/warden/verdict.py`; `pyforge-doctor/src/pyforge/doctor/checks/registry.py` + `checks/env_hygiene.py`; `pyforge-marshal/src/pyforge/marshal/core/verdict.py`
+- `docs/dreams/pyforge-doctor.md` (the wrap-don't-reimplement rule), `docs/dreams/pyforge-charter.md` §4 (Warden's mandate)
+- Market refresh companion: `market-dependency-compliance-sca-landscape-research-2026-07-25.md` § "Refreshed 2026-08-08" (the Snyk `expires` resolution reused here)

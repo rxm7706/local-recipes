@@ -1,5 +1,10 @@
 # Technical research — BMAD ecosystem live verification (round 1)
 
+> **Refreshed by** `technical-marshal-orchestration-refresh-2026-08-08.md`
+> (§ 5 carries this doc's verdicts forward) and
+> `technical-pyforge-unification-2026-08-08.md` (§ 5 ecosystem posture);
+> this document remains the verification record.
+
 > **Scope:** operator-directed deep research (2026-07-31) on everything related to
 > BMAD-method, bmad-loop, and the bmad-code-org ecosystem of skills, plugins,
 > features and capabilities — the genesis tooling Marshal inits and drives.

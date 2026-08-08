@@ -579,3 +579,26 @@ All fetched 2026-07-25.
 **Local evidence (not web):** `{project-root}/pixi.toml`, `{project-root}/src/`,
 `{project-root}/docs/dreams/unity-data-stack.md`, and the three intake gists under
 `{project-root}/docs/intake/gists/`.
+
+---
+
+## Refreshed 2026-08-08 — subject archived-as-satellite; positioning and defect findings stand unexercised
+
+- **Status change (2026-08-02):** the Unity Data Stack chain this market report positions was
+  folded into Atlas's own brief/PRD/Architecture/Spec as `## Satellite:` sections
+  (`CAP-18`..`CAP-31`; standalone folders preserved under `archive/`), per explicit user override;
+  `docs/dreams/unity-data-stack.md` is archived/absorbed. **No epics, no stories, no code** —
+  planning-complete, unscheduled. Nothing in the interval tested the four-qualifier wedge
+  (§ 3.1) either way; it remains a hypothesis, not a validated position.
+- **§ 3.2's "live worked example" evidence base moved slightly:** this repo's env/package layout
+  continues to evolve (e.g. the `src/shared/packages/` tree now carries eight pyforge station
+  packages incl. the shipped `pyforge-doctor`), which *strengthens* lesson 2 (environments and
+  packages justified individually) — no lesson is weakened.
+- **§ 3.3's risk table gains one dated data point:** the "experimental/preview dependencies in the
+  production path" class now has an in-family precedent to cite — the Atlas post-ship audit
+  (`technical-atlas-post-ship-debt-and-cross-station-integration-research-2026-08-08.md`) shows
+  even a fully-shipped, contract-tested platform can sit for weeks with its production cutover
+  gated on attended events. For Unity (integration-heavy by § 6.2's own strategic read), the
+  planning implication is to schedule *activation events*, not just build stories.
+- OQ-M4/OQ-M11 and the lockfile risks remain open; no interval movement observed in this pass
+  (PEP 751 / pixi ecosystem currency not re-checked here — out of this refresh's scope).

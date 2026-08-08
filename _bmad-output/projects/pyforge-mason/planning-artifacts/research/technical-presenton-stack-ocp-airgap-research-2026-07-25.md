@@ -25,6 +25,17 @@ mode: 'headless-express'
 
 ---
 
+> **Scope status (annotated 2026-08-08, station research refresh):** Presenton-satellite
+> report (`docs/dreams/presenton-pixi-image.md` — archived, blocked on Phase 0), not the
+> `mason` CLI product; informs none of the 38 mason stories. See the matching banner on the
+> companion `domain-regulated-enterprise-airgap-ai-deck-market-research-2026-07-25.md` for
+> the full consolidation account. Not refreshed 2026-08-08 — but note this report's own
+> § 1.4 measured presenton-export shipping a release every ~3 days; **every upstream pin in
+> here (llmai 0.2.8, presenton-export v0.4.2, the dependency closure, the Dockerfile shape)
+> must be re-verified from live upstream at Phase-0, not trusted from this snapshot.**
+
+---
+
 ## Research Overview
 
 This report verifies the pre-existing `presenton-pixi-image` PRD's technical claims against the **live** `presenton/presenton` upstream (fetched 2026-07-25, `pushed_at` same day — an actively developed repo, not the snapshot the original Dream/PRD was drafted against). Three of the PRD's load-bearing architectural claims are **contradicted by current upstream source** and one major new gap (memory/embedding subsystem) was found that the original scope never covered. Full findings, with citations, follow; the Executive Summary below is the fast path for PRD revision.

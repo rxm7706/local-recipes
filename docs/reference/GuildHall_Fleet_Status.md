@@ -268,11 +268,32 @@ Standard Markdown doesn't support merged columns (colspans), so to ensure you ca
 
 ### Backlog (Conformance Debt)
 
-- **Retro gap** (found 2026-08-08): promote Marshal's 4 and Warden's 8 gitignored `implementation-artifacts/` epic retros to a tracked `planning-artifacts/retros/` doc (mirroring Atlas's convention); backfill retros for Herald, Doctor, Scribe, Steward, which have none at all. Decide whether a tracked retro becomes a required per-epic gate (CLAUDE.md's Rule 2 already mandates this for conda-forge-touching efforts specifically; no fleet-wide equivalent exists yet).
-- **Marshal**: Reshard flat PRD/ARCH to dated folders (6 items debt)
-- **Warden**: Reshard flat PRD/ARCH to dated folders (5 items debt)
-- **Genesis**: Add story specs + delivery records (bootstrap-only project)
-- **All**: Add README.md to planning-artifacts (explains layout + asymmetries)
+**Resolved 2026-08-08** (kept here for the record, not because they're still open):
+- Retro gap for the 6 fully-done stations — Warden's 8 epic retros promoted from gitignored
+  `implementation-artifacts/` to tracked `planning-artifacts/retros/`; Herald/Doctor/Scribe/Steward
+  each got a first-ever grounded retro. Atlas already had tracked retros. Only **Marshal**
+  (in-progress, 50/86) still has zero tracked retros — reasonable to defer until closer to done.
+- `planning-artifacts/README.md` — was missing for Herald and Warden, now present for all 8.
+- Dream status stuck at `specified` for Herald/Doctor/Scribe/Steward despite being fully
+  shipped — flipped to `realized`.
+- Story-spec promotion gaps — Doctor's `spec-2-1` and Scribe's `spec-1-4`/`spec-1-5` were never
+  promoted; recovered as honest Tier-3 `epics.md`-derived contracts with real Delivery Records.
+- **The "reshard flat PRD/ARCH" claims below were themselves wrong**, found while re-verifying
+  this list 2026-08-08: Warden has zero flat PRD/architecture files (already fully sharded, this
+  entry never should have existed). Marshal's flat `PRD.md`/`architecture*.md` files are not
+  unsharded debt — they're deliberately-maintained "living" factory-documentation, explicitly
+  tracked by `scripts/bmad_drift_check.py` (`tracked:living`/`tracked:plan`/`snapshot`
+  classifications) as a *separate* doc genre from Marshal-the-CLI's own sharded BMAD Spec chain.
+  Confirmed by reading the drift-checker's own docstring before acting, not by assumption.
+- Genesis — the BMAD project dissolved 2026-08-02; its constitutive Dreams moved to
+  `docs/governance/`, no longer applicable.
+
+**Still open:**
+- `planning-artifacts/specs/README.md` missing for **Marshal** and **Mason** (present for the
+  other 6 — this is the newer, warden-driven convention documenting spec-recovery provenance).
+- Dream-chain INV-1 backlog — was 16 findings as of 2026-08-08 morning, closed to 0 the same day
+  (10 real `dreamt`-status Dreams each got a `status: draft` Spec; see
+  `_bmad-output/DREAM-TRIAGE-2026-08-08.md` for the fold-in-vs-archive triage of each).
 
 ---
 

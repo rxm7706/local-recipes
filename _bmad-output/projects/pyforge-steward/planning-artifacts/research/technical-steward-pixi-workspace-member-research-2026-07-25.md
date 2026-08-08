@@ -23,6 +23,13 @@ mode: 'headless-express'
 **Author:** Rxm7706
 **Research Type:** Technical research (headless/express — see the sibling domain-research report's frontmatter for the mode rationale; identical here)
 
+> **Refreshed 2026-08-08** — Steward is now fully shipped (18/18 stories, PRs
+> #157/#291/#297/#302/#305). The pre-ship body below is preserved unchanged; the dated
+> **Addendum** at the end reconciles it against the shipped code, mines the whole-build
+> retrospective (written today) for real technical debt, and adds the feasibility
+> assessment of the steward-owned `unified-container.md` Dream against the real
+> `provision`/`deploy`/`keys` implementations.
+
 ---
 
 ## Research Overview
@@ -271,3 +278,207 @@ Feed this alongside the domain-research report into `bmad-product-brief`, then `
 
 - **OQ1** (carried forward, now technically scoped): should `steward deploy dashboard` push directly and rely on GitHub's native branch-based Pages workflow (matches today's manual process, zero new Actions workflow), or introduce a formal `upload-pages-artifact`/`deploy-pages` (or `peaceiris/actions-gh-pages`) Actions workflow for scheduled/push-button reconciliation? Both are valid 2026 patterns; PRD/architecture should decide based on how much automation v1 actually wants.
 - **OQ2**: Does Steward vendor its own `age`/SOPS invocation, or does it require `age`/`sops` as external pixi run-deps (mirroring how Warden treats `deptry`/`osv-scanner` as conda run-deps rather than reimplementing them)? Recommend the latter for consistency with Warden's own dependency posture (§ 2) — architecture should confirm.
+
+---
+
+# Addendum — 2026-08-08 post-ship technical refresh
+
+**Refresh date:** 2026-08-08. **Basis:** direct read of the shipped modules
+(`src/shared/packages/pyforge-steward/src/pyforge/steward/{cli,interfaces,keys,deploy,provision,budget}.py`),
+`../retros/retro-steward-2026-08-08.md` (written today), `epics.md`, and the steward-owned
+Dreams `docs/dreams/unified-container.md` (read in full), `bmad-module-provisioning.md`,
+and `enterprise-airgap.md`.
+
+## A1. How the shipped code resolved this report's open items
+
+- **CLI framework** (§ 2's flagged assumption) → **`argparse`**, matching Warden, codified
+  as NFR-5/AD-8: one dispatcher (`cli.py::main`) owns every process exit code; no duty
+  module ever calls `sys.exit`. Duty-specific exit codes flow through
+  `DutyResult.details["exit_code"]` (established for `budget check`'s
+  `EXIT_BUDGET_NOT_CONFIGURED`). Not Typer, not Click — this report's "read Warden's cli.py
+  before defaulting to Typer" caution was vindicated.
+- **OQ1 (deploy mechanism)** → resolved as **(a)-shaped**: `steward deploy dashboard` is a
+  CLI-invoked build → diff → commit+push-only-on-real-difference loop on the current branch
+  (FR-9), no new Actions workflow, no `deploy-pages` artifact path. NFR-2 pins the
+  no-standing-controller property.
+- **OQ2 (vendor vs external `age`)** → external run-deps, as recommended: `age`/`age-keygen`
+  are subprocess-wrapped with real hardening (rejected `-` stdin sentinel, closed stdin,
+  lenient stderr decode) and zero vendored crypto (AD-3).
+- **The engine model** shipped leaner than § 4 sketched: a 5-line `Duty` protocol +
+  `DutyResult` dataclass in `interfaces.py` (51 lines), one module per duty, lazily resolved
+  by `cli.py::resolve_duty` — not a null-engine registry. Right-sized; nothing to fix.
+
+## A2. Real technical debt (mined from the 2026-08-08 retro — every item is a shipped, fixed defect or a live deferral)
+
+The close-out adversarial review found **a real, distinct bug in every one of the four
+epics** (retro: "zero 'nothing found' passes"). The debt-relevant residue:
+
+1. **The `--json` error-path bug is a systemic *class*, patched twice, prevented never.**
+   Epic 3's close-out found every error inside `ProvisionDuty.run` rendered plain text
+   regardless of `--json` (a `json.loads()`-ing caller crashes on any error path); Story
+   4.2's self-review found the identical shape in `BudgetDuty` pre-ship, explicitly
+   crediting Epic 3's finding. The fix exists per-module
+   (`ProvisionDuty._render_error`, `provision.py:397-408`) but the shared primitive does
+   not. **Live deferral, by design**: the retro flags "introduce a shared
+   `render_error(ns, message)` helper in `interfaces.py` *if a fifth duty module is ever
+   added*." Note for planning: **the unified-container and `--module` work are both
+   plausible fifth-duty triggers** — whichever lands first inherits this action item.
+2. **`_canonical_host` took three review passes to converge** (empty/garbage hosts pass 1;
+   IPv6 corrupted by naive `rsplit(":", 1)` — two *different* IPv6 addresses canonicalizing
+   to the same wrong string — pass 2; any single-colon suffix treated as a port, so
+   `"https:artifactory.example.com"` silently became `"https"` — pass 3). It is now correct
+   with regression tests at each step (`keys.py:179-204` documents all three), but the
+   retro's lesson stands as a standing constraint: **security-critical string
+   normalization gets its own story-sized surface next time**, never one AC inside a larger
+   story. This is the highest-stakes code in the package (it implements FR-7).
+3. **git-sequencing logic is a distinct risk class**: Epic 2's single review pass found four
+   related defects (unscoped commit sweeping pre-staged files; branch resolution after
+   commit → detached-HEAD orphan; failed push permanently invisible; `status` reporting an
+   unpushed commit as deployed) — all under-specified ordering/partial-failure, not
+   isolated bugs. Any future multi-step git reconcile (container-image publish would be
+   one) needs an explicit ordering/partial-failure review pass.
+4. **Race protection was decided three different ways, each justified** (Epic 1: real
+   `fcntl.flock` + atomic replace for the bespoke YAML inventory; Epic 2: deliberate no-lock
+   because `.git/index.lock` already serializes; Epic 4: never arose). A future duty adding
+   shared state should be pointed at Story 1.4's and 2.2's Design Notes rather than
+   re-deriving the tradeoff — and the flock choice has a documented boundary directly
+   relevant below: **POSIX `flock` is not effective over NFS** (`keys.py:707-709`), fine for
+   a local-only store, a real constraint the moment the inventory lands on a shared volume.
+
+## A3. Feasibility: the `unified-container.md` Dream against the real shipped code
+
+The Dream (dreamt 2026-08-02, steward-owned): one Docker/Podman image containing all eight
+stations' installed packages, one entrypoint (likely `marshal`), the whole Guild bootable
+from one `podman run`. This section evaluates what that actually takes, given Steward's real
+`provision`/`deploy`/`keys` implementations — the provisioning/credential/environment half
+(Marshal's parallel research covers the orchestration half).
+
+### A3.1 The controlling constraint: Steward (and the factory) is checkout-anchored, so the image must ship the repo, not just wheels
+
+This is the single most important shipped-code fact for the Dream. Every duty module locates
+the repo root by walking up from its own installed location to a marker file:
+`scripts/bmad-loop-worktree` (provision.py:62-78, budget.py:68-83),
+`docs/dashboard/generate.py` (deploy.py:47-62), and
+`.claude/skills/conda-forge-expert/scripts/_http.py` (keys.py:81-97). `keys.py` goes
+further: **at import time** it inserts the CFE scripts dir onto `sys.path` and does
+`from _http import auth_headers_for` (keys.py:100-104), raising if no checkout encloses it —
+`cli.py`'s lazy `resolve_duty` exists partly for this reason. Consequences:
+
+- A "pip-install eight wheels into a distroless image" build **does not boot**. The image
+  is *checkout + materialized environments + packages installed editable/path-wise*, i.e.
+  exactly "wired the way `marshal init`/genesis already wire a bare-metal install" — the
+  Dream's own "What it looks like when real" bullet, confirmed from the code side.
+- The upside: the walk-up design is **mount-point agnostic**. Nothing hardcodes
+  `/home/...`; the checkout can live at `/pyforge` inside the image and every marker search
+  works unchanged. And a short fixed root is not just tolerable but *actively beneficial*:
+  the known worktree path-length limit (repo root >~173 bytes panics pixi-build-python —
+  auto-memory `project_bmad_loop_worktree_path_length_limit`) is trivially satisfied at
+  `/pyforge` where host checkouts routinely flirt with it.
+
+### A3.2 "Distroless" is off the table; "minimal + pinned pixi env" is the real target
+
+Steward's architecture is AD-1 subprocess-wrapping all the way down: `age`, `age-keygen`,
+`pixi`, `git`, plus the `gh` convention and Python itself — and the other stations add their
+own tool surfaces. A strict distroless image (no shell, no external binaries) contradicts
+the factory's load-bearing wrap-never-reimplement doctrine. The realistic shape is a
+minimal base + a **lean composed pixi environment** baked via multi-stage build. The repo
+already has the exact precedent: the `pyforge-ci` environment
+(`no-default-feature = true`, repo `pixi.toml` — created because `local-recipes` at
+**1102 packages / ~9.8 GB** was untenable per Pages deploy against a 10 GB cache ceiling).
+The same math rules the image: **do not bake `local-recipes`**; compose a
+`pyforge-container` env from the lean `pyforge-*` family the same way, and let heavyweight
+capabilities (full recipe-build) be an explicit named exception per the Dream's "or an
+explicit, named reason it doesn't need one" clause.
+
+### A3.3 Two modes, as the operator framed it
+
+**Mode L — local, no server infrastructure (the v1 target).** Rootless Podman, single
+image, entrypoint `marshal` (per [[one-front-door]]). Composition:
+- *Baked*: checkout at `/pyforge`, pre-materialized lean env(s) (`pixi install` in a build
+  stage — this IS `steward provision --env` run at image-build time; FR-12's code path is
+  reusable as the build step's implementation), the eight station packages.
+- *Mounted*: the operator's work — either bind-mount a live checkout over `/pyforge`
+  (dev mode) or mount only state dirs (`.steward/`, loop homes) over the baked tree.
+- *Rootless specifics*: `fcntl.flock` works fine in a single rootless container (local fs);
+  git needs `safe.directory` for UID-mapped bind mounts; no daemon, no compose file —
+  matching NFR-1/NFR-2's no-standing-service posture at the container layer too.
+
+**Mode I — with infrastructure.** The same image pushed to a registry (JFrog-mirrored per
+the air-gap doctrine) and used ARC-style: each bmad-loop runner is a container from the
+image + a worktree volume, quotas applied at the container boundary. This is where two
+currently-honest stubs get their first real enforcement points: the container boundary is
+the first admission point `budget check` has ever had (see the market report § 3), and
+per-container CPU/memory/pids limits are the LimitRange analogue. Mode I is explicitly not
+v1 — it needs nothing designed now beyond not foreclosing it (the image must not assume it
+is the only instance: the flock-over-NFS boundary in A2.4 is the one shipped assumption
+that breaks on a shared volume, so Mode I requires either one-writer-per-inventory or a
+lock upgrade).
+
+### A3.4 How Steward's credential machinery maps onto container isolation
+
+The mapping is unusually clean because Epic 1 chose files + env vars over a service:
+
+- **`age` identity files → Podman secrets** (`podman secret create` / `--secret`,
+  tmpfs-mounted at runtime). The hard rule: **identities are never baked into image
+  layers** — a layer-committed identity is exactly the committed-plaintext shape
+  `scan_file_for_secrets` exists to catch. Cheap, high-value extension: run `steward keys
+  audit --secrets <unpacked-image-rootfs>` as an image-build gate — the shipped scanner
+  needs zero changes to scan an unpacked layer tree, giving the container pipeline the same
+  fail-loud secret gate the repo has.
+- **`_http.py` routing is already 12-factor**: env-var-only (`*_BASE_URL`, truststore,
+  `.netrc` chain), nothing committed — it passes through `podman run -e`/`--env-file`
+  unchanged. This is `enterprise-airgap.md`'s realized machinery paying off directly: the
+  air-gapped container is the *same* container with different env vars, and the image
+  itself is the "offline bundle format" that Dream's frontier asks for.
+- **Host-scoped resolution is runtime-evaluated**, so an in-container JFrog mirror hostname
+  is just another `hosts` entry — no rebuild. (And `_canonical_host` now handles the
+  bracketed-IPv6/port forms container networking actually produces — the three-pass
+  hardening in A2.2 was accidentally also container-readiness work.)
+- **`.steward/` state (`keys-inventory.yaml`, `budget.yaml`)** mounts as a volume so
+  rotation/ceiling history survives container replacement; single-writer per A2.4.
+
+### A3.5 What each shipped verb needs for the Dream, concretely
+
+| Verb | Works in-container today? | Delta needed |
+|---|---|---|
+| `keys` (all 6 verbs) | Yes, given checkout + `age`/`age-keygen` in the env and identity/inventory mounts | None to function; `audit --secrets` as an image gate is pure upside |
+| `provision --env/--list/--verify` | Yes — pixi + checkout present | `--env` doubles as the image build step; `--verify` becomes an image smoke gate |
+| `provision --runner bmad-loop` | Mechanically yes (script + git present) | Semantics decision: worktree inside container fs (ephemeral) vs on a volume (durable) — this is Mode I's core design question, shared with Marshal's half |
+| `deploy dashboard` | Build+diff yes; **push needs write credentials in-container** | Likely stays host-side in Mode L v1, or takes a mounted token — a named exception, not a blocker |
+| `budget` | Yes (pure file ops) | Container boundary later becomes its first enforcement point (Mode I) |
+
+### A3.6 Verdict and sizing
+
+**Feasible, and cheaper than the Dream's "nothing built yet" status suggests — because the
+expensive prerequisites already happened.** The 2026-08-02 station consolidation (the
+Dream's own stated precursor), the lean-env precedent (`pyforge-ci`), the realized air-gap
+env-var doctrine, and Steward's mount-point-agnostic checkout anchoring mean Mode L is
+approximately: one `Containerfile` (multi-stage: pixi-install a lean composed env → copy
+checkout to `/pyforge` → entrypoint `marshal`), one composed `pyforge-container` pixi env,
+a secret-hygiene image gate (`keys audit --secrets` over the rootfs), and smoke gates
+(`steward provision --verify`, each station's CLI `--help`) — **an epic-sized effort
+(roughly 4-6 stories), not a rearchitecture**, with `bmad-spec` on the Dream as the correct
+next step. The two genuine design decisions to resolve at Spec time: (1) baked-checkout vs
+bind-mount as the primary mode (recommend: baked, bind-mount as dev override), (2) worktree
+placement for in-container runners (defer to Mode I; Mode L can run loops against a mounted
+host checkout exactly as today). One dependency to sequence: the `bmad-module-provisioning`
+Dream's headless-installer constraint ("non-interactive by construction") is *also* an
+image-build-time constraint — TTY-only npm installers cannot run in a `RUN` layer either —
+so shipping `provision --module` first makes the container build strictly simpler, and both
+are steward-owned.
+
+## A4. Refreshed recommendations
+
+1. Treat A3 as the pre-read for running `bmad-spec` on `unified-container.md`; the Spec
+   should bind to the checkout-anchoring constraint (A3.1) and the no-baked-secrets rule
+   (A3.4) as invariants, and to `pyforge-ci` as the env-composition precedent (A3.2).
+2. Sequence `provision --module` (bmad-module-provisioning) ahead of or alongside the
+   container Spec — it removes the one hand-driven install step a reproducible image build
+   cannot tolerate.
+3. Whichever effort adds Steward's fifth duty module first must execute the retro's
+   deferred action item: shared `render_error(ns, message)` in `interfaces.py` (A2.1), so
+   the `--json`-error-path class cannot recur a third time.
+4. Keep the A2 lessons as review-pass checklists for the container work specifically:
+   image-publish is git/registry sequencing (A2.3's risk class), and any shared-volume
+   deployment must re-decide the locking question with A2.4's flock/NFS boundary on the
+   table.

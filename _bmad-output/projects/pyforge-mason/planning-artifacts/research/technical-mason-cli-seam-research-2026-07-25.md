@@ -365,3 +365,81 @@ Local, all under the `pyforge-mason` worktree, measured 2026-07-25:
 - `src/shared/packages/pyforge-atlas/pyproject.toml`
 - `CLAUDE.md` — Rules 1 & 2; the 3-tier CFE layout
 - Companion: `research/domain-packaging-automation-tooling-research-2026-07-25.md`
+
+---
+
+## Refresh addendum — 2026-08-08: technical watch items for the 34 remaining stories
+
+Epic 1 S-1.1–S-1.4 shipped 2026-08-02 exactly on this report's Part-2 shape (hatchling +
+pixi-build-python member, argparse, PEP-420 namespace, 495 LOC in
+`src/pyforge/mason/{cli,errors,exit_codes,render}.py`, meta-tests for exit-code/render
+ownership and dependency direction). The seam recommendation held its first real test: the
+`pyforge-mason-recipe-validator` sibling Dream (2026-08-02) proposed native recipe linting
+inside Mason and was retired same-day against D-1. What follows is what the *unbuilt* 34
+stories should watch for, given a fresh web + on-disk pass (market companion:
+`market-mason-packaging-automation-2026-08-08.md`).
+
+**W1 — The measured surface has already drifted; S-2.1's script table must derive, not
+copy.** Ground truth 2026-08-08: **67** canonical scripts (was 66), **60** public wrappers
+(was 57), skill **v8.81.0** (was v8.79.1). Three CFE MINOR/PATCH releases landed in two
+weeks. S-2.1's module-level script table and S-2.2's deny-list ("each entry cites the CFE
+artifact it derives from") should treat the July numbers as stale on arrival and re-measure
+at story start — and per this repo's `feedback_derive_dont_declare` memory, prefer deriving
+the deny-list's pattern sources from the live skill files over hardcoding a snapshot.
+
+**W2 — The engine under the seam is changing how it is invoked (S-1.9, S-2.1, S-2.6).** As
+of the May 2026 conda releases, v1 `recipe.yaml` builds in the broader ecosystem route
+through the **py-rattler-build Python API** instead of shelling the rattler-build CLI. If
+CFE's `local_builder.py` follows, child stdout/stderr shapes under Mason's tolerant parser
+may change without any Mason release. Mitigation is cheap and already in-scope: S-1.9's fake
+CFE root should include stubs exercising *both* output shapes (leading progress line + clean
+JSON; interleaved build-log stream), and S-2.1's `CfeResult` parsing tests should not
+overfit to today's exact stdout.
+
+**W3 — pixi-build is still preview, but the risk shrank (A-T4 update).** Still requires
+`workspace.preview = ["pixi-build"]`; backends now release *stable on conda-forge*
+(`pixi-build-python` pinned `0.*` per S-1.1's AC, matching upstream's own `==0.x` guidance),
+and CPython/SciPy/Xarray/Dask build with it. Watch item narrows to: a breaking preview-era
+change in `pixi build` CLI semantics would hit the build triad and S-3.2 simultaneously —
+the root `pixi.toml` comment already notes `pixi build` has no `--manifest-path` (0.73.0),
+i.e. Mason's S-3.2 engine adapter must run pixi *by cwd*, exactly as the triad tasks do.
+
+**W4 — Engine decisions now have market-informed defaults (S-3.1, S-3.4, S-3.5, S-4.1).**
+Detailed in the market report §§ 2, 4:
+- PyPI uploader: name the adapter neutrally (`pypi_upload`); engine twine *or* uv —
+  `uv publish` now carries native OIDC trusted publishing and TestPyPI via index config
+  (serves S-3.9's `pypi-test` target through configuration, matching its "same code path,
+  differing only in repository configuration" AC).
+- Channel uploader (OQ-T3's synchronous half / epics OQ-E2): the pixi/rattler-build upload
+  family — shared credential store, targets prefix.dev/anaconda.org/Quetz/**JFrog
+  Artifactory**/S3, auto-init+reindex for S3/filesystem channels. `anaconda upload` is no
+  longer needed as a candidate.
+- Lock engine (epics OQ-E3): **pixi first, conda-lock second**, each mapped to a manifest
+  population (pixi.toml projects vs bare environment.yml/requirements.txt) — conda-lock's
+  maintainer endorses pixi as the future and conda itself now reads both lock formats
+  natively. S-4.1's two-adapter provenance reporting gets a concrete test case for free.
+
+**W5 — Credential model is drifting from "token" to "identity + attestation" (S-3.4,
+S-3.7).** PyPI trusted publishing, prefix.dev OIDC, rattler-build Sigstore attestations.
+Two spec-level nudges, no new stories: S-3.4's preflight should detect "no viable auth path"
+(token OR ambient OIDC) rather than "no token"; S-3.7's `ShipTargetResult` should stay open
+to a future provenance field (the FR-31 envelope's `schema_version` already permits this).
+
+**W6 — S-3.7's interrogation targets are the epic's real integration risk (unchanged, now
+sharper).** Assumption A-3 in the epics sized S-3.7 L for PyPI/GitHub API interrogation.
+Note the idempotence check for the `channel:` target has no named API in any AC — "already
+shipped?" against an arbitrary channel means reading repodata.json for the exact
+name/version/build string. That is a read-side conda operation with no CFE counterpart and
+no engine named yet; flag it when S-3.7's spec is drafted so it doesn't become improvised
+repodata parsing inside `package.py`.
+
+**W7 — Open-question status roll-up.** OQ-T1 answered (floor `>=3.12`, shipped in S-1.1's
+pyproject). OQ-T2 (replace vs coexist with the ~105 pixi tasks) **still unanswered** — it is
+the atlas question, and S-3.8/SM-1 will force it: recommend the Epic 3 retro state
+explicitly whether the `pyforge-mason-build` triad becomes `mason package build`'s first
+consumer. OQ-T3 resolved by the PRD's three-target vocabulary (both async PR and sync
+channel exist, distinctly named). OQ-T4 → W5. OQ-T5 (CFE path defects) is now wired into
+S-5.5's ACs verbatim — nothing to do until closeout. OQ-T6 answered by S-1.6/S-1.10
+(`--cfe-python` is in v1). OQ-T7 (MCP surface) remains deferred per recommendation — no
+story regressed on it. OQ-T8 (T3 no-`.claude/` target) answered by AD-6/S-1.7: degrade,
+never vendor.

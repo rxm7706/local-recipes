@@ -55,3 +55,11 @@ git history, or on disk. **There is nothing to recover — only to honestly reco
   against the web-session archive. Verbatim originals do not exist to recover.
 
 Migration is COMPLETE (32/32, PRs #58–#105 merged to `main`).
+
+## Dream-level Specs (2026-08-08)
+
+This directory also holds Dream-level Specs (`spec-<dream-slug>/SPEC.md`, distinct from the
+per-story specs above): `spec-kedro-org-tooling-adoption` (`status: draft`, fold-in-ready as a
+small audit-and-decide story), plus the pre-existing `spec-pyforge-atlas-intelligence-platform`,
+`spec-microsoft-org-sweep`, `spec-upstream-discovery`. See
+`_bmad-output/DREAM-TRIAGE-2026-08-08.md` for the newest one's readiness signal.

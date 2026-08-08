@@ -1,6 +1,8 @@
 ---
 id: SPEC-pyforge-mason
 owner-dream: docs/dreams/pyforge-mason.md
+covers-dreams:
+  - docs/dreams/presenton-pixi-image.md   # folded in 2026-08-02 as CAP-8..CAP-13 (see § Satellite below); satisfies INV-1 for this Dream
 surface:
   - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds (not yet created)
 companions:

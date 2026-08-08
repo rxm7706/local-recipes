@@ -7,6 +7,11 @@ version: 1.0
 
 # Herald Pitch Expansion — Market & Requirements Analysis
 
+> **Partially superseded 2026-08-08** — the Moments-2–4 status rows ("Planned Tier 2
+> feature") are stale (shipped, scaled down), and Part II's market sizing is unverifiable;
+> the Moment 1 requirements content remains valid PRD grounding. See
+> `market-herald-post-ship-landscape-research-2026-08-08.md` §3 for the item-by-item verdict.
+
 ## Executive Summary
 
 Herald Pitch Expansion orchestrates four proven Tier 1 capabilities (design-code-bridge, deckcraft, video-scripts, modernist-identity) to deliver six-artifact pitch decks for 9 pyforge stations. This research validates the market opportunity, capability readiness, and implementation requirements.

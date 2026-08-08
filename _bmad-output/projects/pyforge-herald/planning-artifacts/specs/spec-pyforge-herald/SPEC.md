@@ -3,6 +3,8 @@ id: SPEC-pyforge-herald
 spec: pyforge-herald
 status: specified
 owner-dream: docs/dreams/pyforge-herald.md
+covers-dreams:
+  - docs/dreams/herald-pitch.md   # folded in 2026-08-02 as HER-4..HER-10 (see below); satisfies INV-1 for this Dream
 surface:
   - src/shared/packages/pyforge-herald/**
   - presentations/**

@@ -112,3 +112,31 @@ This is the one component the PRD explicitly flagged as at-risk: *"Dagster under
 - `gh repo view mckinsey/vizro` (2026-07-25)
 - `gh repo view CycloneDX/specification` (2026-07-25)
 - Internal: `_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` § 10 ("Why Now"), § 11 (Risks & Mitigations, Q2); `.../architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md` AD-1/AD-4/AD-6/AD-8 — the claims being re-verified, not new evidence
+
+---
+
+## Refreshed 2026-08-08 — SUPERSEDED (currency findings) by the 2026-08-08 report
+
+The §§ 1–6 currency findings of this report are superseded by
+`technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md`, which re-ran the same
+`gh`-telemetry method three weeks post-ship. Headlines from the re-run, recorded here so a reader
+of this file alone is not misled by 07-25 data:
+
+- **Every component re-verified live; none archived.** Dagster shipped v1.13.16/v1.13.17
+  (latest 2026-08-07) — release cadence **still intact ~4 weeks after the Prefect acquisition**;
+  the Q2 risk remains "noted, not materialized." Vizro released 0.1.60 (2026-07-30); BSL v0.3.16.
+- **`kedro-dagster` watch sharpened:** still 23★ / single-maintainer, pushed 2026-08-08 but no
+  release since v0.7.0 (2026-06-03). The 08-08 report answers this file's open question
+  ("what counts as concrete deterioration?") with a two-condition tripwire: an upstream
+  Kedro/Dagster release breaks the AD-16 `kedro-test` import smoke **and** no fix/acknowledged
+  issue within 60 days → take the AD-1 exit ramp.
+- **New scope the 08-08 report adds that this one never had:** the full kedro-org tooling sweep
+  (`kedro-skills` v0.1.1 released 2026-08-07 at 1★ — younger than the
+  `docs/dreams/kedro-org-tooling-adoption.md` Dream assumed; `publish-kedro-viz` dormant since
+  2025-11-25; `vscode-kedro` active; `kedro-mcp` 9-months quiet, vindicating FR-7's
+  wrapped-not-load-bearing call) and the cross-station stack-adoption analysis (verdict: the
+  stack does NOT generalize to Doctor/Warden/Mason; Atlas-as-shared-data-platform does).
+- This file's second open question (extend the drift gate into a scheduled stack-currency check)
+  is carried forward there as a Doctor `stack-currency`-axis candidate.
+
+This report stays in place as the 9-days-post-ship baseline the 08-08 deltas are measured against.
