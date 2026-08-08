@@ -141,12 +141,36 @@ def main() -> int:
             )
             if drifted:
                 shown = ", ".join(drifted[:4]) + ("…" if len(drifted) > 4 else "")
-                findings.append(
-                    f"[twin-stale] {key}: the tracked sprint-status ledger disagrees "
-                    f"with the Tier-3 feed on {len(drifted)} story(ies) ({shown}). CI "
-                    f"reads the TWIN, so the deploy would render the stale set: run "
-                    f"`pixi run -e local-recipes sprint-ledger-sync` and commit."
+                # DIRECTION MATTERS, and getting it wrong destroys data. This finding
+                # used to say "run sprint-ledger-sync" unconditionally, which is only
+                # correct when the FEED is ahead. When the TWIN is ahead — it holds a
+                # `done` the feed has lost, e.g. after a worktree teardown truncated
+                # Tier-3 — that advice tells the operator to run the exact command that
+                # overwrites the durable record with the lossy one. That is not
+                # hypothetical: it destroyed 96 `done` markers across four stations on
+                # 2026-08-08 (DW-SYNC-2026-08-08-1).
+                regressing = sorted(
+                    k for k in drifted
+                    if twin_map.get(k) == "done" and feed_map.get(k) != "done"
                 )
+                if regressing:
+                    rshown = ", ".join(regressing[:4]) + ("…" if len(regressing) > 4 else "")
+                    findings.append(
+                        f"[twin-ahead] {key}: the Tier-3 feed is BEHIND the tracked "
+                        f"ledger — it would un-finish {len(regressing)} story(ies) "
+                        f"({rshown}). **Do NOT run sprint-ledger-sync**: the twin is "
+                        f"the durable record and the feed is the lossy one. Repair the "
+                        f"feed from the twin (`sprint-ledger-sync --repair-feed "
+                        f"--project {key}`), then re-check."
+                    )
+                else:
+                    findings.append(
+                        f"[twin-stale] {key}: the tracked sprint-status ledger disagrees "
+                        f"with the Tier-3 feed on {len(drifted)} story(ies) ({shown}), "
+                        f"none of them un-finishing a story. CI reads the TWIN, so the "
+                        f"deploy would render the stale set: run `pixi run -e "
+                        f"local-recipes sprint-ledger-sync --project {key}` and commit."
+                    )
         elif feed_p and feed_p.is_file() and not twin.is_file():
             findings.append(
                 f"[twin-missing] {key}: has a Tier-3 sprint feed but no tracked "

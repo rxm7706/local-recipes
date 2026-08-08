@@ -123,6 +123,14 @@ def main(argv: list[str] | None = None) -> int:
              "work is scoped.",
     )
     ap.add_argument(
+        "--repair-feed",
+        action="store_true",
+        help="Reverse direction: where the tracked twin holds a `done` the Tier-3 feed "
+             "has lost, write it BACK into the feed. Closes the loop a one-way sync "
+             "leaves open — a truncated feed otherwise makes every later sync refuse "
+             "forever, with no sanctioned way to converge.",
+    )
+    ap.add_argument(
         "--allow-regression",
         action="store_true",
         help="Write even when the feed would move a key out of `done` or drop it. "
@@ -168,7 +176,37 @@ def main(argv: list[str] | None = None) -> int:
         # Per-key monotonic guard (DW-SYNC-2026-08-08-1). Read the twin we are about
         # to overwrite and refuse to un-finish anything, unless explicitly allowed.
         if dest.is_file():
-            lost = regressions(gen.parse_sprint_status(dest), statuses)
+            existing = gen.parse_sprint_status(dest)
+            lost = regressions(existing, statuses)
+            # Repair triggers on EITHER a terminal regression or a key the feed has
+            # simply lost. The first cut keyed only on regression, so a feed already
+            # carrying every `done` still silently dropped the twin's seven
+            # `epic-N-retrospective: optional` rows — absence is loss whatever the state.
+            missing = [k for k in existing if k not in statuses]
+            if (lost or missing) and args.repair_feed:
+                # The twin is the durable record; the feed is the lossy one. Push the
+                # twin's terminal states back into the feed so the two converge, then
+                # proceed with a now-clean promotion.
+                # Union, not just the terminal keys: a key the twin has and the feed
+                # lacks is lost information whatever its state. The first cut restored
+                # only `done` keys and silently dropped seven `epic-N-retrospective:
+                # optional` entries — benign, but still the twin's record vanishing
+                # through a command whose whole purpose is to preserve it.
+                merged = dict(statuses)
+                for k, v in existing.items():
+                    if k not in merged:
+                        merged[k] = v
+                for k, old, _new in lost:
+                    merged[k] = old
+                feed_body = "".join(f"  {k}: {v}\n" for k, v in sorted(merged.items()))
+                head = src.read_text(encoding="utf-8").split("development_status:")[0]
+                src.write_text(head + "development_status:\n" + feed_body, encoding="utf-8")
+                print(f"  REPAIRED  {key}: restored {len(lost)} regressed + "
+                      f"{len(missing)} missing key(s) into the Tier-3 feed from the "
+                      f"tracked twin")
+                statuses = merged
+                text = render(key, rel, statuses)
+                lost = []
             if lost:
                 detail = ", ".join(f"{k} ({old} -> {new})" for k, old, new in lost)
                 if not args.allow_regression:
