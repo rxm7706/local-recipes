@@ -33,12 +33,23 @@ DETECTOR = {"scope": "repo"}
 import argparse
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 LEDGER_GLOB = "_bmad-output/projects/*/planning-artifacts/sprint-status-ledger.yaml"
 TERMINAL = frozenset({"done"})
+
+# A story key is `<id>-<kebab-title>`, where `<id>` is either the canonical
+# `<epic>-<num>[suffix]` or a legacy alias (`a1`, `b10`). The TAIL is what
+# survives a convention migration, so it is what identifies a story across one.
+_ID_PREFIX_RE = re.compile(r"^(?:\d+-\d+[a-z]?|[a-z]+\d+)-")
+
+
+def _tail(key: str) -> str:
+    """`2-1-scaffold-the-kedro` and `a1-scaffold-the-kedro` share a tail."""
+    return _ID_PREFIX_RE.sub("", key, count=1)
 
 
 def _git(*args: str) -> str | None:
@@ -109,12 +120,28 @@ def check(base: str, head: str) -> list[dict]:
             continue
 
         after = parse_statuses(after_text)
+        # A RENAME is not a loss, and the difference is decidable rather than a
+        # matter of trust: the completion must still EXIST in this same ledger,
+        # terminal, under a key whose descriptive tail is byte-identical. Only
+        # the numeric/alias id prefix may differ.
+        #
+        # This does NOT weaken the guard — it narrows a false positive. A genuine
+        # loss still fires, because a deleted key has no surviving twin to match;
+        # the 96-marker incident of 2026-08-08 would still be caught in full (its
+        # keys vanished outright, with no renamed counterpart). What it stops
+        # punishing is a convention migration: normalizing atlas's alias ids to
+        # the canonical `<epic>-<num>` form (EXEMPLAR-STANDARD INV-5) moved 32
+        # `done` keys with every status preserved, and the old check reported that
+        # as 32 lost completions.
+        surviving_tails = {_tail(k) for k, v in after.items() if v in TERMINAL}
         lost = []
         for key, old in sorted(before.items()):
             if old not in TERMINAL:
                 continue
             new = after.get(key)
             if new is None:
+                if _tail(key) in surviving_tails:
+                    continue  # renamed, still done — continuity, not regression
                 lost.append((key, old, "<absent>"))
             elif new not in TERMINAL:
                 lost.append((key, old, new))
