@@ -209,42 +209,53 @@ declaration.**
 33, warden 31, doctor 28, scribe 9 — all plain/numeric, zero alias). `pyforge-atlas` is the
 single outlier.
 
-**Why "just normalize atlas" is the wrong answer, and what to do instead.** Atlas's alias
-heading (`### Story A1 (2.1):`) exists *because* its ledger key is alias-based (`a1-…`) —
-the two are coupled. Its completion signal for Epics 1–10 is a `story(A1)` commit subject,
-and 31 keys trace to merged PRs #58–#105. Renaming the heading orphans the key; renaming
-the key orphans the shipped record. This was attempted and reverted 2026-07-30
-(*"DO NOT fix this by teaching the parser atlas's convention"*).
-
-So the variance is **irreducible** — but the *duplication of knowledge about it* is not.
-That duplication is the actual defect. As of 2026-08-08 four codebases each carried a
-private accommodation: `generate.py` (refuse-to-overwrite guard), `dashboard_drift_check`
-(*"accepts either id form and stays agnostic"*), `chain_completeness_check` (matches alias
-**or** parenthetical), and `forward_dependency_check` (an alias regex branch added that very
-day — the fourth copy, added while fixing the third). Four independent guesses at one
-station's shape, each able to drift from the others, none aware of the rest.
-
 **The rule:**
 
-1. **New work uses the canonical form. No exceptions, no size-based carve-outs** (see below).
-2. **Legacy deviations live in ONE register — the table below — closed and dated.** A
-   deviation absent from it is a bug, not a variant.
-3. **Detectors read the register; they never re-derive an accommodation.** A detector that
-   pattern-matches a station-specific shape inline is non-conformant, even when it works.
+1. **All work uses the canonical form. No exceptions, no size-based carve-outs** (see below).
+2. **Detectors never carry a private accommodation.** A detector that pattern-matches a
+   station-specific shape inline is non-conformant *even when it works* — it is a second
+   copy of a convention, free to drift from the first.
+3. **A deviation is fixed in the DATA, not tolerated in the parser.** If normalizing the
+   data is genuinely impossible, the exception is registered below with its reason — and the
+   register is empty, which is the target state.
 
-**The legacy register** (closed 2026-08-08; entries are removed only by retiring the
-artifact, never by loosening a detector):
+**The legacy register: EMPTY.**
 
-| Station | Deviation | Scope | Why frozen |
-|---|---|---|---|
-| `pyforge-atlas` | Alias story headings `### Story A1 (2.1):` and alias ledger keys `a1-`/`b2-` | **Epics 1–10 only** (37 headings, 31 keys) | Completion signal is a `story(A1)` commit subject across merged PRs #58–#105. Renaming either half orphans the other; renaming the key orphans the shipped record. |
+It had exactly one entry for about an hour. Recording why it closed, because the reasoning
+generalizes:
 
-*Already closed rather than registered:* atlas Epics 12–13 were dual-labelled (`### Story J1
-(12.1):`) with **numeric** ledger keys and **zero** shipped stories — the alias earned
-nothing and cost a real blind spot, so it was removed on 2026-08-08 (headings, board titles,
-and board story ids together, all six gates green). That is the disposition for any future
-deviation on unshipped work: **fix it, do not register it.** The register is for history
-that cannot be rewritten, not for convenience.
+Atlas's alias heading (`### Story A1 (2.1):`) was coupled to its alias ledger key (`a1-…`),
+and the first instinct was that the pair was irreducible — its completion signal for Epics
+1–10 was a `story(A1)` commit subject across merged PRs #58–#105, so renaming the heading
+would orphan the key and renaming the key would orphan the shipped record. A 2026-07-30
+attempt had already failed and left a warning in `generate.py`: *"DO NOT fix this by teaching
+the parser atlas's convention. Tried and reverted."*
+
+**That warning is about the parser, and it was obeyed. The data was fixed instead.** Two
+things made it safe, both checkable rather than argued: since 2026-07-30 the *tracked ledger*
+is the completion signal — it exists precisely so doneness is not reconstructed from commit
+subjects, which remain valid history but stop being load-bearing; and the alias→canonical map
+is **derivable from atlas's own headings** (38 entries, never hand-typed). So on 2026-08-08
+all four surfaces moved in lockstep — 38 headings, 32 tracked ledger keys, 64 Tier-3 feed
+keys (`development_status` *and* `story_meta`), 32 story-spec filenames (`git mv`), 32 board
+story ids — with 57 `done` before and 57 after.
+
+**What the register's emptiness bought.** Four codebases had each grown a private
+accommodation for that one station: `generate.py`'s refuse-to-overwrite guard,
+`dashboard_drift_check`'s *"accepts either id form and stays agnostic"*,
+`chain_completeness_check`'s alias-**or**-parenthetical matcher, and — added the same morning,
+while fixing the third — an alias branch in `forward_dependency_check`. Three were deleted
+outright, each verified by **byte-identical detector output** before and after.
+`generate.py`'s guard stays, because it protects *every* project from a parse failure
+blanking curated state; what left it is the atlas special case.
+
+`ledger_regression_check` also gained a real capability rather than an exemption: a vanished
+`done` key is excused only when the completion still exists in the same ledger, still
+terminal, under a key with a byte-identical descriptive tail. A genuine loss has no surviving
+twin, so it still fires — mutation-tested both ways.
+
+**The disposition for any future deviation:** fix the data. Register nothing you have not
+first tried to normalize.
 
 ### Why no size-based exemption
 

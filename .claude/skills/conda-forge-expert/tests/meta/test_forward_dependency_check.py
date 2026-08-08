@@ -30,24 +30,37 @@ fdc = pytest.importorskip(
 # --- heading grammar -------------------------------------------------------
 
 @pytest.mark.parametrize("line, epic, num", [
-    ("### Story 2.3: Marshal-shaped plain heading", "2", "3"),
+    ("### Story 2.3: A plain heading", "2", "3"),
     ("### Story 2.3a: A lettered sub-story", "2", "3a"),
-    ("### Story A1 (2.1): atlas alias-first", "2", "1"),
-    ("### Story J2 (12.2): two-digit epic via parenthetical", "12", "2"),
-    ("### Story 0.1 (1.1): numeric alias — parenthetical must win", "1", "1"),
+    ("### Story 12.2: A two-digit epic", "12", "2"),
+    ("### Story 1.1: The former 0.1, normalized", "1", "1"),
 ])
-def test_both_heading_shapes_resolve(line, epic, num):
+def test_the_canonical_heading_resolves(line, epic, num):
     m = fdc.STORY_HEADING_RE.match(line)
     assert m, f"heading did not parse: {line!r}"
-    assert (m.group("pe") or m.group("ae")) == epic
-    assert (m.group("pn") or m.group("an")) == num
+    assert m.group("pe") == epic and m.group("pn") == num
 
 
-def test_plain_branch_wins_over_alias_branch():
-    """A plain heading whose TITLE holds a `(n.n)` must not be read as an alias."""
+@pytest.mark.parametrize("line", [
+    "### Story A1 (2.1): atlas's former alias-first shape",
+    "### Story J2 (12.2): likewise",
+    "### Story 0.1 (1.1): numeric alias with a disagreeing parenthetical",
+])
+def test_the_retired_alias_shape_is_no_longer_accepted(line):
+    """INV-5: one convention. The alias branch was this detector's private
+    accommodation for one station — the FOURTH such copy in the repo — and was
+    deleted once atlas's data was normalized on 2026-08-08. Re-adding it would
+    reintroduce the root cause, so this asserts its absence deliberately.
+
+    Not silently clean if a station regresses: zero parsed headings means zero
+    declarations, which reports UNMEASURED, never MEASURED.
+    """
+    assert fdc.STORY_HEADING_RE.match(line) is None
+
+
+def test_a_parenthetical_in_the_title_is_not_an_id():
     m = fdc.STORY_HEADING_RE.match("### Story 8.5: Marker deletion (10.2) discussed")
     assert m and m.group("pe") == "8" and m.group("pn") == "5"
-    assert m.group("ae") is None
 
 
 # --- dependency grammar ----------------------------------------------------

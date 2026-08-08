@@ -102,39 +102,27 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PROJECTS = ROOT / "_bmad-output" / "projects"
 
-# Story headings, as TWO deliberately-enumerated shapes rather than one loose
-# pattern. Alternation order matters: the plain branch is tried first, so a
-# plain heading whose *title* happens to contain a `(<n>.<n>)` parenthetical can
-# never be re-read as an alias.
+# `### Story 2.3: Title *(optional trailing note)*` — the ONE canonical shape
+# (EXEMPLAR-STANDARD INV-5), used by all 8 stations.
 #
-#   plain        `### Story 2.3: Title *(optional trailing note)*`
-#                marshal, mason's satellite, doctor, steward
-#   alias-first  `### Story A1 (2.1): Scaffold the Kedro + pixi project`
-#                `### Story J2 (12.2): Publish the real DAG continuously (FR-62)`
-#                `### Story 0.1 (1.1): Generate legacy contextual skill`
-#                atlas only. The PARENTHETICAL is canonical, not the alias.
+# This deliberately carries NO station-specific accommodation, and that is the
+# point. On 2026-08-08 an alias-first branch was added here to see atlas's
+# `### Story A1 (2.1):` headings — making this the FOURTH codebase carrying a
+# private guess at one station's shape, alongside `docs/dashboard/generate.py`,
+# `dashboard_drift_check.py` and `chain_completeness_check.py`. The branch was
+# removed the same day once atlas's data was normalized instead: 38 headings,
+# 32 ledger keys, 32 story-spec filenames and 32 board ids renamed in lockstep,
+# so there is exactly one convention left to parse. INV-5's rule is that a
+# detector reads the (now empty) legacy register rather than re-deriving an
+# accommodation — a detector that pattern-matches a station-specific shape
+# inline is non-conformant even when it works.
 #
-# Why the parenthetical wins, and why that is safe despite atlas being
-# internally inconsistent about it: atlas keys `0.1` from its *alias* (`0-1-…`)
-# but `J1 (12.1)` from its *parenthetical* (`12-1-…`). A story whose derived key
-# therefore misses the ledger is not a new hazard — a finding is only ever
-# emitted for a story that HAS a `**Deps:**` field, and all five of atlas's sit
-# in Epics 12–13, whose ledger keys are parenthetical-derived (verified against
-# `sprint-status-ledger.yaml`, 2026-08-08). Everything else is skipped exactly
-# as before.
-#
-# Superseded justification (kept so the reasoning is auditable): this pattern
-# used to match only the plain shape, accepting atlas as UNMEASURED because
-# "atlas is already 100% shipped and was confirmed clean by direct read." That
-# premise expired — atlas has 8 actionable stories in Epics 12–13, which is
-# precisely where its Deps fields live. The shipped SPEC's CAP-1 also already
-# claims atlas was swept clean, so CAP-3's detector had to be able to verify
-# that continuously instead of asserting it once by hand.
+# A station that regresses to an unparseable heading is NOT silently clean: zero
+# parsed stories means zero declarations, which reports UNMEASURED (or
+# NO-DISPATCH when its ledger proves nothing is actionable) — never MEASURED.
 STORY_HEADING_RE = re.compile(
-    r"^### Story (?:"
-    r"(?P<pe>\d+)\.(?P<pn>\d+[a-z]?)"           # plain: 2.3
-    r"|\S+ \((?P<ae>\d+)\.(?P<an>\d+[a-z]?)\)"  # alias-first: A1 (2.1)
-    r"): ?(?P<title>.*?)(?:\s*\*\(.*?\)\*)?\s*$",
+    r"^### Story (?P<pe>\d+)\.(?P<pn>\d+[a-z]?): ?"
+    r"(?P<title>.*?)(?:\s*\*\(.*?\)\*)?\s*$",
     re.M,
 )
 # `**Deps:**` (marshal, mason's satellite) or `**Depends on:**` (atlas's field
@@ -211,10 +199,8 @@ def story_deps(epics_file: Path) -> list[tuple[int, str, str, str]]:
         block = text[m.end():block_end]
         dm = DEPS_FIELD_RE.search(block)
         deps = dm.group(1).strip() if dm else ""
-        # Exactly one of the two heading branches matched (see STORY_HEADING_RE).
-        epic = m.group("pe") or m.group("ae")
-        num = m.group("pn") or m.group("an")
-        out.append((int(epic), num, (m.group("title") or "").strip(), deps))
+        out.append((int(m.group("pe")), m.group("pn"),
+                    (m.group("title") or "").strip(), deps))
     return out
 
 
