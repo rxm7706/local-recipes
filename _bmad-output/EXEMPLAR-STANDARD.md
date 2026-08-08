@@ -253,6 +253,7 @@ The standard exists so that question has a mechanical answer.
 | **8** | Every story has a delivery record — in its spec and in `epics.md` | Otherwise the planning chain reads as pre-implementation forever, no matter what shipped. |
 | **9** | The deferred-work ledger is tracked in `planning-artifacts/` | The bmad-loop ledger is Tier-3 and gets truncated. If it matters after the run, it belongs in Tier-2. |
 | **10** | `planning-artifacts/README.md` explains the layout and any deliberate asymmetry | The next reader is an agent with no session context. |
+| **11** | A story's `**Deps:**` field is **machine-readable**: `S-<epic>.<num>` (story) · `S-<epic>.*` (whole epic) · `<station>:S-<epic>.<num>` (cross-station) · `—` (none). Prose is allowed only as *trailing context* after the refs, never as the whole declaration. | A dependency the harness cannot parse is a dependency it dispatches into. `bmad-loop`'s picker has no `depends_on` concept, so `epics.md` is the only place a dependency is stated — and until 2026-08-08 two stations stated theirs in prose. **Mason reported measured-and-clean with 0 of 30 declarations parseable**; atlas had 5 of 43. Enforced by `forward-dependency-check`'s coverage classes (`PARTIAL` names the ratio); it reports today and gates once the 59-declaration migration lands. |
 
 ## The kernel/companion rule
 

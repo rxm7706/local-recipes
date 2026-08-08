@@ -14,7 +14,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 18 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 28 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -49,12 +49,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "17/18",
+            "17/28",
             "stories complete",
             "var(--done)"
           ],
           [
-            "1",
+            "11",
             "remaining",
             ""
           ]
@@ -199,6 +199,62 @@ window.DASHBOARD_DATA = {
               "5.2",
               "pending",
               "Render the verdict through a `doctor` verb"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Every verdict comes home (Charter §6, generalized)",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Profile `doctor check` and bring it inside its budget"
+            ],
+            [
+              "6.2",
+              "pending",
+              "A source registry Doctor owns"
+            ],
+            [
+              "6.3",
+              "pending",
+              "The repo/runtime split survives the move"
+            ],
+            [
+              "6.4",
+              "pending",
+              "The ledger verdicts come home"
+            ],
+            [
+              "6.5",
+              "pending",
+              "The board verdicts come home"
+            ],
+            [
+              "6.6",
+              "pending",
+              "The chain verdicts come home"
+            ],
+            [
+              "6.7",
+              "pending",
+              "`forward_dependency` comes home, and the harness coupling is decided"
+            ],
+            [
+              "6.8",
+              "pending",
+              "`bmad_drift` comes home without breaking the board"
+            ],
+            [
+              "6.9",
+              "pending",
+              "The `scripts/` shims retire"
+            ],
+            [
+              "6.10",
+              "pending",
+              "Independence is structural, for every source"
             ]
           ]
         }
@@ -3237,7 +3293,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 20:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 21:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5109,7 +5165,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "line 2 — consolidative wrap",
           "done": 17,
-          "total": 18
+          "total": 28
         },
         {
           "slug": "pyforge-scribe",
@@ -5466,7 +5522,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "17/18",
+        "progress": "17/28",
         "complete": 14,
         "of": 14
       },
@@ -7788,7 +7844,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-08T00:00",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11965,8 +12021,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 63,
-        "verdict": "FINDINGS (63):",
+        "findings": 61,
+        "verdict": "FINDINGS (61):",
         "runbook": ""
       },
       {
@@ -14260,15 +14316,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "herald",
-      "story": "12.4",
-      "epoch": 1786184322,
-      "sha": "66b70edc0",
-      "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
+      "station": "doctor",
+      "story": "5.1",
+      "epoch": 1786220068,
+      "sha": "18a5ac49f",
+      "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 20:43 UTC",
-    "generatedEpoch": 1786221807
+    "generatedAt": "2026-08-08 21:43 UTC",
+    "generatedEpoch": 1786225395
   },
   "storySpecs": [
     {
@@ -14428,6 +14484,31 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 17,
+        "backlog": 11,
+        "blocked": 0,
+        "total": 28,
+        "next": "5-2-render-the-verdict-through-a-doctor-verb",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "5-2-render-the-verdict-through-a-doctor-verb",
+          "6-1-profile-doctor-check-and-bring-it-inside-its-budget",
+          "6-10-independence-is-structural-for-every-source",
+          "6-2-a-source-registry-doctor-owns",
+          "6-3-the-repo-runtime-split-survives-the-move",
+          "6-4-the-ledger-verdicts-come-home",
+          "6-5-the-board-verdicts-come-home",
+          "6-6-the-chain-verdicts-come-home"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "steward",
         "project": "pyforge-steward",
         "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
@@ -14511,24 +14592,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [],
-        "done": 17,
-        "backlog": 1,
-        "blocked": 0,
-        "total": 18,
-        "next": "5-2-render-the-verdict-through-a-doctor-verb",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "5-2-render-the-verdict-through-a-doctor-verb"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "herald",
         "project": "pyforge-herald",
         "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
@@ -14585,9 +14648,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 214,
-      "backlog": 88,
+      "backlog": 98,
       "blocked": 6,
-      "total": 308
+      "total": 318
     }
   }
 };

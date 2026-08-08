@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 28
+# stories: 40
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -32,6 +32,16 @@ development_status:
   4-4-safe-upgrade-path-recommendation: done
   5-1-marshal-durability-source-independent-by-construction: done
   5-2-render-the-verdict-through-a-doctor-verb: backlog
+  6-1-profile-doctor-check-and-bring-it-inside-its-budget: backlog
+  6-10-independence-is-structural-for-every-source: backlog
+  6-2-a-source-registry-doctor-owns: backlog
+  6-3-the-repo-runtime-split-survives-the-move: backlog
+  6-4-the-ledger-verdicts-come-home: backlog
+  6-5-the-board-verdicts-come-home: backlog
+  6-6-the-chain-verdicts-come-home: backlog
+  6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided: backlog
+  6-8-bmad-drift-comes-home-without-breaking-the-board: backlog
+  6-9-the-scripts-shims-retire: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -42,3 +52,5 @@ development_status:
   epic-4-retrospective: optional
   epic-5: in-progress
   epic-5-retrospective: optional
+  epic-6: backlog
+  epic-6-retrospective: optional
