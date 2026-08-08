@@ -320,6 +320,14 @@ def test_revalidate_all_shares_one_timestamp(tmp_path):
     assert timestamps == {fixed_now.isoformat()}
 
 
+def test_revalidate_all_on_a_completely_missing_file_is_a_noop(tmp_path):
+    """Story 11.2: no ``claims.json`` at all yet -- ``revalidate_all`` must
+    not raise, and must still (harmlessly) round-trip an empty document."""
+    path = tmp_path / "claims.json"
+    assert claims.revalidate_all(path) == []
+    assert claims.read_all(path) == []
+
+
 def test_is_stale_true_when_never_validated():
     item = claims.Evidence(type="test_results", url="https://x", label="x")
     assert claims.is_stale(item, now=datetime.now(UTC)) is True
