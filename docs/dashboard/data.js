@@ -2918,7 +2918,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 12:27 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 12:38 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2980,7 +2980,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "steward",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning"
+      }
     },
     {
       "slug": "bmad-output-hygiene",
@@ -2998,7 +3000,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "mason",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
+      }
     },
     {
       "slug": "copilot-cli-packaging",
@@ -3017,7 +3021,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
+      }
     },
     {
       "slug": "db-gpt-packaging",
@@ -3036,7 +3042,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification"
+      }
     },
     {
       "slug": "durable-runs",
@@ -3127,7 +3135,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "herald",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
+      }
     },
     {
       "slug": "herald-moments-2-4-missing-surface",
@@ -3155,7 +3165,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-jira-github-projects-sync"
+      }
     },
     {
       "slug": "kedro-org-tooling-adoption",
@@ -3163,7 +3175,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "atlas",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
+      }
     },
     {
       "slug": "loop-home-fleet-refresh",
@@ -3171,7 +3185,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh"
+      }
     },
     {
       "slug": "microsoft-org-sweep",
@@ -3463,7 +3479,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
+      }
     },
     {
       "slug": "team-memory",
@@ -3482,7 +3500,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "steward",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container"
+      }
     },
     {
       "slug": "unity-data-stack",
@@ -3520,6 +3540,16 @@ window.DASHBOARD_DATA = {
   ],
   "specs": [
     {
+      "slug": "kedro-org-tooling-adoption",
+      "project": "pyforge-atlas",
+      "title": "kedro-org-tooling-adoption — Spec",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "kedro-org-tooling-adoption",
+      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
+    },
+    {
       "slug": "microsoft-org-sweep",
       "project": "pyforge-atlas",
       "title": "microsoft-org-sweep — retirement record",
@@ -3535,7 +3565,7 @@ window.DASHBOARD_DATA = {
       "title": "consolidated: 2026-08-02 — this Spec also carries spec-unity-data-stack and",
       "caps": 31,
       "companions": 5,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
@@ -3580,6 +3610,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor-dependency-health"
     },
     {
+      "slug": "herald-moments-2-4-live-backend",
+      "project": "pyforge-herald",
+      "title": "herald-moments-2-4-live-backend",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "herald-moments-2-4-live-backend",
+      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
+    },
+    {
       "slug": "herald-moments-2-4-missing-surface",
       "project": "pyforge-herald",
       "title": "herald-moments-2-4-missing-surface — retirement record",
@@ -3595,7 +3635,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-herald",
       "caps": 3,
       "companions": 6,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "pyforge-herald",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
     },
@@ -3645,7 +3685,7 @@ window.DASHBOARD_DATA = {
       "title": "bmad-loop's forward-dependency blindness, closed",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "bmad-loop-forward-dependency-blindness",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-forward-dependency-blindness"
     },
@@ -3668,6 +3708,26 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-02",
       "dream": "bmad-output-hygiene",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-output-hygiene"
+    },
+    {
+      "slug": "dashboard-project-path-derivation",
+      "project": "pyforge-marshal",
+      "title": "The dashboard derives project paths — slug ≠ directory stops being a bug factory",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "dashboard-project-path-derivation",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
+    },
+    {
+      "slug": "dream-to-code-model-self-verification",
+      "project": "pyforge-marshal",
+      "title": "dream-to-code-model-self-verification — the detectors get detected",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "dream-to-code-model-self-verification",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification"
     },
     {
       "slug": "durable-runs",
@@ -3720,6 +3780,26 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer-name-retirement"
     },
     {
+      "slug": "jira-github-projects-sync",
+      "project": "pyforge-marshal",
+      "title": "jira-github-projects-sync",
+      "caps": 5,
+      "companions": 0,
+      "updated": "",
+      "dream": "jira-github-projects-sync",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-jira-github-projects-sync"
+    },
+    {
+      "slug": "loop-home-fleet-refresh",
+      "project": "pyforge-marshal",
+      "title": "loop-home fleet refresh",
+      "caps": 3,
+      "companions": 0,
+      "updated": "",
+      "dream": "loop-home-fleet-refresh",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh"
+    },
+    {
       "slug": "multi-loop-isolation",
       "project": "pyforge-marshal",
       "title": "multi-loop isolation harness",
@@ -3755,7 +3835,7 @@ window.DASHBOARD_DATA = {
       "title": "marshal CLI — graduated autonomy, productized",
       "caps": 18,
       "companions": 7,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
     },
@@ -3788,6 +3868,26 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-01",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
+    },
+    {
+      "slug": "sprint-status-auto-promote",
+      "project": "pyforge-marshal",
+      "title": "sprint-status auto-promote",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "sprint-status-auto-promote",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
+    },
+    {
+      "slug": "conda-forge-expert-rebuild",
+      "project": "pyforge-mason",
+      "title": "conda-forge-expert rebuild — Skill-Forge-authored, slice by slice, hard cutover",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "conda-forge-expert-rebuild",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
     },
     {
       "slug": "copilot-cli-packaging",
@@ -3835,7 +3935,7 @@ window.DASHBOARD_DATA = {
       "title": "mason CLI — the packaging factory, made portable",
       "caps": 13,
       "companions": 5,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "pyforge-mason",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason"
     },
@@ -3890,6 +3990,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-team-memory"
     },
     {
+      "slug": "bmad-module-provisioning",
+      "project": "pyforge-steward",
+      "title": "BMAD modules are provisioned, not hand-installed",
+      "caps": 3,
+      "companions": 0,
+      "updated": "",
+      "dream": "bmad-module-provisioning",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning"
+    },
+    {
       "slug": "enterprise-airgap",
       "project": "pyforge-steward",
       "title": "the factory behind the firewall",
@@ -3918,6 +4028,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-02",
       "dream": "pyforge-steward-feedstock-maintenance",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance"
+    },
+    {
+      "slug": "unified-container",
+      "project": "pyforge-steward",
+      "title": "one container, eight stations",
+      "caps": 5,
+      "companions": 0,
+      "updated": "",
+      "dream": "unified-container",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container"
     },
     {
       "slug": "pyforge-warden",
@@ -4736,8 +4856,8 @@ window.DASHBOARD_DATA = {
     "sound": 1,
     "live": 31,
     "reached": 9,
-    "gaps": 33,
-    "findings": 8,
+    "gaps": 32,
+    "findings": 12,
     "rows": [
       {
         "label": "atlas",
@@ -4766,7 +4886,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-02T14:50",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -4844,6 +4964,13 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-08",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "retro",
@@ -4998,7 +5125,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-02T14:45",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-02",
@@ -5076,6 +5203,13 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-08-02"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-08",
+            "other": "2026-08-02"
           }
         ],
         "furthest": "retro",
@@ -5114,7 +5248,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-08-01",
-          "spec": "2026-08-02T14:36",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-02",
@@ -5191,6 +5325,13 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-08-02"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-08",
+            "other": "2026-08-02"
           }
         ],
         "furthest": "verify",
@@ -5229,7 +5370,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-02T14:38",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -5306,6 +5447,13 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-08",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "verify",
@@ -5742,17 +5890,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "kedro-org-tooling-adoption",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 4,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -5769,8 +5917,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "microsoft-org-sweep",
@@ -6683,17 +6831,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "herald-moments-2-4-live-backend",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 4,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -6710,8 +6858,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "herald-moments-2-4-missing-surface",
@@ -7359,7 +7507,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7377,7 +7525,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-03",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -7443,8 +7591,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7454,7 +7601,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -7746,17 +7893,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "dashboard-project-path-derivation",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7773,8 +7920,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "dream-to-code-model-self-verification",
@@ -7853,17 +8000,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "dream-to-code-model-self-verification",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7880,8 +8027,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "durable-runs",
@@ -8606,17 +8753,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "jira-github-projects-sync",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 5,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8633,8 +8780,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "loop-home-fleet-refresh",
@@ -8713,17 +8860,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "loop-home-fleet-refresh",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8740,8 +8887,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "multi-loop-isolation",
@@ -9461,17 +9608,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "sprint-status-auto-promote",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -9488,8 +9635,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "conda-forge-expert-rebuild",
@@ -9568,17 +9715,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "conda-forge-expert-rebuild",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -9595,8 +9742,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "copilot-cli-packaging",
@@ -10631,17 +10778,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "bmad-module-provisioning",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -10658,8 +10805,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "enterprise-airgap",
@@ -10950,17 +11097,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "unified-container",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 4,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -10977,8 +11124,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "warden-compliance-gates",
@@ -11466,8 +11613,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 52,
-        "verdict": "FINDINGS (52):",
+        "findings": 63,
+        "verdict": "FINDINGS (63):",
         "runbook": ""
       },
       {
@@ -11495,7 +11642,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "steward",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning"
+        }
       },
       {
         "slug": "conda-forge-expert-rebuild",
@@ -11503,7 +11652,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "mason",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
+        }
       },
       {
         "slug": "dashboard-project-path-derivation",
@@ -11511,7 +11662,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
+        }
       },
       {
         "slug": "dream-to-code-model-self-verification",
@@ -11519,7 +11672,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification"
+        }
       },
       {
         "slug": "genesis-installer-name-retirement",
@@ -11537,7 +11692,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "herald",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
+        }
       },
       {
         "slug": "jira-github-projects-sync",
@@ -11545,7 +11702,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-jira-github-projects-sync"
+        }
       },
       {
         "slug": "kedro-org-tooling-adoption",
@@ -11553,7 +11712,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "atlas",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
+        }
       },
       {
         "slug": "loop-home-fleet-refresh",
@@ -11561,7 +11722,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh"
+        }
       },
       {
         "slug": "sprint-status-auto-promote",
@@ -11569,7 +11732,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
+        }
       },
       {
         "slug": "unified-container",
@@ -11577,7 +11742,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "steward",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container"
+        }
       }
     ],
     "blocked": 0,
@@ -13741,8 +13908,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 12:27 UTC",
-    "generatedEpoch": 1786192036
+    "generatedAt": "2026-08-08 12:38 UTC",
+    "generatedEpoch": 1786192683
   },
   "storySpecs": [
     {
