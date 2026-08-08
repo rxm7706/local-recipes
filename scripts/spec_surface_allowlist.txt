@@ -8,7 +8,41 @@ docs/specs/**            # LEGACY Tier-1 specs (frozen; drift-check --specs gove
 archive/**               # discarded material, retained for history
 _bmad/**                 # BMAD installer tree (vendor-managed, regenerated)
 _bmad-output/**          # the contracts themselves (bmad-drift-check governs)
-scripts/**               # sync-loop detectors (bmad_drift_check, llms_full_check: SYNC-RUNBOOK reconciler loop governs) + misc harness
+# --- scripts/ : formerly ONE blanket `scripts/**` glob, split 2026-08-08 ----------
+# The blanket entry's reason named two detectors (bmad_drift_check, llms_full_check)
+# and "misc harness" — true when written. The directory has since grown to 12
+# detectors plus the promote/sync machinery, and the glob silently absorbed every
+# one that no Spec claimed: 20 tracked files, including 6 detectors AND the detector
+# registry itself, were ungoverned with NO finding emitted. `allow_hits` only reports
+# a glob matching *nothing*, so a too-BROAD glob is invisible by construction — which
+# is how the Deps-grammar drift (see forward_dependency_check.py § COVERAGE) went
+# unnoticed. Entries are now per-file: a new unclaimed detector is a finding, not a
+# silent exemption.
+#
+# NOT ownership. These are exemptions pending the Charter §6 re-home that moves each
+# verdict to Doctor (`sources/*.py`, structurally barred from importing the station it
+# judges — the pattern sources/marshal.py established 2026-08-08). Delete each line as
+# its detector lands in Doctor.
+scripts/chain_completeness_check.py   # detector, unowned — §6 re-home to Doctor pending (judges every station's board incl. Marshal's)
+scripts/dashboard_drift_check.py      # detector, unowned — §6 re-home to Doctor pending (judges Marshal's board)
+scripts/ledger_regression_check.py    # detector, unowned — §6 re-home to Doctor pending; Doctor's sources/marshal.py already holds the independent verdict
+scripts/story_status_check.py         # detector, unowned — §6 re-home to Doctor pending (judges Marshal's ledger)
+scripts/loop_stall_check.py           # detector — stays Marshal's: an operational watchdog over live runs, not a conformance verdict on an artifact
+scripts/unpushed_work_check.py        # detector — stays Marshal's: same operational class as loop_stall_check
+scripts/detectors.py                  # the detector REGISTRY itself — governs the others, governed by none; §6 re-home decides its home
+scripts/.spec-surface-baseline.json   # derived: this checker's own drift baseline (--write-baseline)
+scripts/spec_surface_allowlist.txt    # this file — the allowlist cannot govern itself
+scripts/dashboard_watch.py            # local dev watcher (rebuilds the board on save), not a gate
+scripts/loop_push_watch.py            # local dev watcher over loop homes, not a gate
+scripts/deck_export.py                # deck build helper (presentation-deck workflow governs)
+scripts/normalize_deferred_ledgers.py # one-off ledger-format migration utility
+scripts/seed_claude_consent.py        # local harness bootstrap (agent consent seeding)
+scripts/sync_pypi_mappings.py         # CFE mapping-cache refresh helper (skill surface governs the cache)
+scripts/mirror-channels.py            # air-gap/JFrog channel mirroring helper (enterprise-deployment governs)
+scripts/load-env.sh                   # shell env bootstrap
+scripts/offline-build.sh              # air-gapped build entry
+scripts/submit_pr.sh                  # staged-recipes submission helper
+scripts/sync-upstream-conda-forge.sh  # upstream sync helper
 tests/**                 # inherited staged-recipes lint tests (upstream-owned shape)
 _skf-learn/**            # vendored skill-forge learning corpus (upstream module docs)
 azure-pipelines.yml      # inherited staged-recipes CI entry (upstream-owned shape)
