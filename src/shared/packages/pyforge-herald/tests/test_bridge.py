@@ -15,9 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 import pyforge.herald as herald_pkg
+import pytest
 from pyforge.herald import (
     auth,
     bridge,
