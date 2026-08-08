@@ -19,10 +19,25 @@ The twin is written in the SAME shape the Tier-3 feed uses, so
 
 Idempotent: re-running with no upstream change rewrites nothing, so it is safe in
 a pre-commit hook or a loop's post-story step.
+
+**Monotonic in terminal states** (added 2026-08-08, DW-SYNC-2026-08-08-1). The Tier-3
+feed is a statement of *intent* — bmad-loop marks a story `done` at DEV completion, and
+a feed can lag, be truncated by a worktree teardown, or predate work that landed by
+another route. The tracked twin is the record of *fact*. So a sync that let the feed
+overwrite the twin wholesale could — and did — destroy real completions: on 2026-08-08
+a stale marshal feed silently dropped six `done` keys and printed success. Measured the
+same day, `pyforge-atlas` was one command away from losing **35**.
+
+This script therefore refuses any write that moves a key backwards out of `done`, or
+drops a `done` key entirely, naming every affected key and exiting non-zero. Override
+with `--allow-regression` only when the twin is genuinely the wrong one. The pre-existing
+empty-feed guard below is the same idea at whole-file granularity; this is its per-key
+counterpart, which is where the real losses happen.
 """
 
 from __future__ import annotations
 
+import argparse
 import importlib.util
 import sys
 from pathlib import Path
@@ -70,9 +85,45 @@ def render(project: str, src_rel: str, statuses: dict[str, str]) -> str:
     return _HEADER.format(src=src_rel, project=project, count=len(statuses)) + body
 
 
-def main() -> int:
+# Statuses that must never move backwards. `done` is the only terminal state in this
+# vocabulary — everything else (backlog / in-progress / blocked / optional) is a
+# legitimate two-way transition and is deliberately NOT guarded.
+TERMINAL = frozenset({"done"})
+
+
+def regressions(existing: dict[str, str], incoming: dict[str, str]) -> list[tuple[str, str, str]]:
+    """Keys the incoming feed would move OUT of a terminal state, as
+    ``(key, old, new)`` where ``new`` is ``"<absent>"`` if the feed drops the key
+    entirely. Dropping a `done` key is the more dangerous of the two — it leaves no
+    trace in the rendered file at all — so it is reported the same way, not skipped."""
+    out: list[tuple[str, str, str]] = []
+    for key, old in sorted(existing.items()):
+        if old not in TERMINAL:
+            continue
+        new = incoming.get(key)
+        if new is None:
+            out.append((key, old, "<absent>"))
+        elif new not in TERMINAL:
+            out.append((key, old, new))
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        prog="sprint-ledger-sync",
+        description="Promote each project's Tier-3 story-status map to its tracked twin.",
+    )
+    ap.add_argument(
+        "--allow-regression",
+        action="store_true",
+        help="Write even when the feed would move a key out of `done` or drop it. "
+             "Every affected key is still named. Use only when the tracked twin is "
+             "genuinely the wrong one.",
+    )
+    args = ap.parse_args(argv)
+
     gen = _load_generate()
-    wrote, unchanged, skipped = [], [], []
+    wrote, unchanged, skipped, refused = [], [], [], []
 
     for key, rel in sorted(gen.PROJECT_SOURCES.items()):
         src = REPO_ROOT / rel
@@ -94,14 +145,36 @@ def main() -> int:
         if dest.is_file() and dest.read_text(encoding="utf-8") == text:
             unchanged.append(f"{key} ({len(statuses)})")
             continue
+
+        # Per-key monotonic guard (DW-SYNC-2026-08-08-1). Read the twin we are about
+        # to overwrite and refuse to un-finish anything, unless explicitly allowed.
+        if dest.is_file():
+            lost = regressions(gen.parse_sprint_status(dest), statuses)
+            if lost:
+                detail = ", ".join(f"{k} ({old} -> {new})" for k, old, new in lost)
+                if not args.allow_regression:
+                    refused.append(
+                        f"{key} — feed would un-finish {len(lost)} key(s): {detail}"
+                    )
+                    continue
+                print(f"  WARNING   {key}: --allow-regression, un-finishing "
+                      f"{len(lost)} key(s): {detail}")
+
         dest.write_text(text, encoding="utf-8")
         wrote.append(f"{key} ({len(statuses)})")
 
     print(f"sprint-status ledger sync — wrote {len(wrote)}, unchanged {len(unchanged)}, "
-          f"skipped {len(skipped)}")
-    for label, items in (("wrote", wrote), ("unchanged", unchanged), ("skipped", skipped)):
+          f"skipped {len(skipped)}, refused {len(refused)}")
+    for label, items in (("wrote", wrote), ("unchanged", unchanged),
+                         ("skipped", skipped), ("refused", refused)):
         for i in items:
             print(f"  {label:9} {i}")
+    if refused:
+        print("\nREFUSED: the Tier-3 feed is BEHIND the tracked twin for the project(s)\n"
+              "above. The feed states intent; the twin is the record of fact — so this\n"
+              "is far more often a stale feed than a wrong twin. Reconcile the feed, or\n"
+              "pass --allow-regression if the twin really is the wrong one.")
+        return 1
     if not wrote and not unchanged:
         print("\nNOTHING promoted — every feed was missing or unparseable.")
         return 1
