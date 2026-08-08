@@ -1,6 +1,6 @@
-"""``herald deck watch`` -- Epic 4 Story 4.1: poll loop + quiescence
-debounce (4.2's idle backoff and 4.3's halt-on-auth-error tests land in
-this same file, in their own stories).
+"""``herald deck watch`` -- Epic 4: poll loop + quiescence debounce (Story
+4.1) and idle backoff (Story 4.2). 4.3's halt-on-auth-error tests land in
+this same file, in their own story.
 
 Every transport call is against a hand-written ``FakeWatchTransport`` (no
 network, no adapter) exercising only ``read_file`` -- ``watch`` never calls
@@ -24,6 +24,8 @@ from pyforge.herald.errors import HeraldError
 from pyforge.herald.transport.base import FileRead
 from pyforge.herald.watch import (
     DEFAULT_POLL_INTERVAL,
+    IDLE_BACKOFF_CAP,
+    IDLE_BACKOFF_THRESHOLD,
     MIN_POLL_INTERVAL,
     WatchEvent,
     watch,
@@ -269,6 +271,96 @@ def test_a_default_interval_request_is_left_at_60s(tmp_path: Path):
     )
 
     assert events[0].interval == DEFAULT_POLL_INTERVAL == 60.0
+
+
+def test_ten_consecutive_unchanged_polls_double_the_interval(tmp_path: Path):
+    """Story 4.2, FR-16: ~10 consecutive unchanged polls double a deck's
+    poll interval."""
+    state_path = tmp_path / "bridge-state.json"
+    _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
+    transport = FakeWatchTransport(
+        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
+    )
+    events: list[WatchEvent] = []
+    sleep, _ = _no_sleep_calls()
+
+    watch(
+        transport,
+        slugs=["pyforge-warden"],
+        repo_root=tmp_path,
+        state_path=state_path,
+        max_polls_per_deck=IDLE_BACKOFF_THRESHOLD,
+        pull=FakePull(),
+        now=lambda: _FIXED_NOW,
+        sleep=sleep,
+        on_event=events.append,
+    )
+
+    assert len(events) == IDLE_BACKOFF_THRESHOLD
+    assert events[-1].kind == "backoff"
+    assert events[-1].interval == DEFAULT_POLL_INTERVAL * 2
+    assert all(event.interval == DEFAULT_POLL_INTERVAL for event in events[:-1])
+
+
+def test_idle_backoff_never_exceeds_the_ten_minute_cap(tmp_path: Path):
+    """Story 4.2: repeated backoffs (60 -> 120 -> 240 -> 480 -> 600 capped)
+    never exceed ``IDLE_BACKOFF_CAP``, however many idle polls accumulate."""
+    state_path = tmp_path / "bridge-state.json"
+    _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
+    transport = FakeWatchTransport(
+        answers={"p-1": FileRead(path="x", etag="E0", body=None, unchanged=True)}
+    )
+    events: list[WatchEvent] = []
+    sleep, _ = _no_sleep_calls()
+
+    watch(
+        transport,
+        slugs=["pyforge-warden"],
+        repo_root=tmp_path,
+        state_path=state_path,
+        max_polls_per_deck=IDLE_BACKOFF_THRESHOLD * 5,
+        pull=FakePull(),
+        now=lambda: _FIXED_NOW,
+        sleep=sleep,
+        on_event=events.append,
+    )
+
+    backoff_events = [event for event in events if event.kind == "backoff"]
+    assert [event.interval for event in backoff_events] == [120.0, 240.0, 480.0, 600.0, 600.0]
+    assert max(event.interval for event in events) == IDLE_BACKOFF_CAP
+
+
+def test_a_detected_change_resets_the_interval_to_the_default(tmp_path: Path):
+    """Story 4.2's second AC: once a change is detected (and pulled), the
+    next cycle's interval is back to ``DEFAULT_POLL_INTERVAL`` -- even after
+    backoff had raised it."""
+    state_path = tmp_path / "bridge-state.json"
+    _seed_state(state_path, "pyforge-warden", project_id="p-1", etag="E0")
+    idle_answer = FileRead(path="x", etag="E0", body=None, unchanged=True)
+    answers = [idle_answer] * IDLE_BACKOFF_THRESHOLD
+    answers.append(FileRead(path="x", etag="E1", body="edited", unchanged=False))
+    answers.append(FileRead(path="x", etag="E1", body=None, unchanged=True))
+    transport = FakeWatchTransport(answers={"p-1": answers})
+    events: list[WatchEvent] = []
+    sleep, _ = _no_sleep_calls()
+
+    watch(
+        transport,
+        slugs=["pyforge-warden"],
+        repo_root=tmp_path,
+        state_path=state_path,
+        max_polls_per_deck=len(answers),
+        pull=FakePull(etag="E1"),
+        now=lambda: _FIXED_NOW,
+        sleep=sleep,
+        on_event=events.append,
+    )
+
+    assert events[IDLE_BACKOFF_THRESHOLD - 1].kind == "backoff"
+    assert events[IDLE_BACKOFF_THRESHOLD - 1].interval == 120.0
+    assert events[-2].kind == "settling"
+    assert events[-1].kind == "pulled"
+    assert events[-1].interval == DEFAULT_POLL_INTERVAL == 60.0
 
 
 def test_watch_requires_at_least_one_slug(tmp_path: Path):

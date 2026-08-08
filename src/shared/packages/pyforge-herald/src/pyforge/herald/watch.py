@@ -1,9 +1,8 @@
 """``herald deck watch`` -- Epic 4's CAP-4 (Design -> repo autopull).
 
-Story 4.1: the poll loop + quiescence debounce (4.2's idle backoff and 4.3's
-halt-on-auth-error land in this same module, in their own stories). Each
-watched deck is polled independently, on its own schedule, for its
-prototype's etag via ``transport.read_file`` with
+Story 4.1 (poll loop + quiescence debounce), 4.2 (idle backoff), 4.3 (halt
+on auth error). Each watched deck is polled independently, on its own
+schedule, for its prototype's etag via ``transport.read_file`` with
 ``if_none_match`` set to the deck's last confirmed-stable etag -- a
 steady-state poll (nothing has changed since that etag) therefore never
 transfers a body: the ``if_none_match`` hit short-circuits to
@@ -31,6 +30,13 @@ etag ``pull`` last landed, seeded from ``state.py``) and an optional
   re-reads, re-derives, and records the new ``confirmed_etag`` in
   ``state.py``). Changed again -> the edit is still in flight; replace
   ``pending_etag`` with the newer candidate and keep waiting.
+
+**Idle backoff (Story 4.2, FR-16).** A deck's own poll interval doubles
+(capped at ``IDLE_BACKOFF_CAP``) every ``IDLE_BACKOFF_THRESHOLD`` consecutive
+truly-idle polls (the first bullet's "unchanged" branch only -- a poll that
+is settling a real edit is not idle). Any detected change (either bullet's
+"changed" branch, or a pull firing) resets the interval to
+``DEFAULT_POLL_INTERVAL`` and the idle counter to 0.
 
 **Halt on auth error (Story 4.3, FR-17).** ``AuthError`` (a
 ``TransportError`` subclass) is never caught here -- it propagates out of
@@ -78,6 +84,13 @@ MIN_POLL_INTERVAL = 30.0
 """NFR-09's hard floor -- a caller-requested interval below this is clamped
 up, never honored as given."""
 
+IDLE_BACKOFF_THRESHOLD = 10
+"""FR-16: this many consecutive truly-idle polls before a deck's interval
+doubles."""
+
+IDLE_BACKOFF_CAP = 600.0
+"""FR-16: the 10-minute cap a backed-off interval never exceeds."""
+
 
 def _default_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -90,7 +103,7 @@ class WatchEvent:
     CLI could log it. Never required for the loop's own correctness."""
 
     slug: str
-    kind: str  # "idle" | "settling" | "pulled"
+    kind: str  # "idle" | "settling" | "pulled" | "backoff"
     interval: float
 
 
@@ -102,6 +115,7 @@ class _DeckWatch:
     interval: float
     confirmed_etag: str | None
     pending_etag: str | None = None
+    idle_streak: int = 0
 
 
 def _clamp_interval(interval: float) -> float:
@@ -150,15 +164,26 @@ def _poll_deck(
                 now=now,
             )
             deck.confirmed_etag = result.etag or deck.confirmed_etag
+            deck.interval = DEFAULT_POLL_INTERVAL
+            deck.idle_streak = 0
             if on_event is not None:
                 on_event(WatchEvent(deck.slug, "pulled", deck.interval))
             return
         # Truly idle: nothing has changed since the last confirmed etag.
+        deck.idle_streak += 1
+        if deck.idle_streak >= IDLE_BACKOFF_THRESHOLD:
+            deck.interval = min(deck.interval * 2, IDLE_BACKOFF_CAP)
+            deck.idle_streak = 0
+            if on_event is not None:
+                on_event(WatchEvent(deck.slug, "backoff", deck.interval))
+            return
         if on_event is not None:
             on_event(WatchEvent(deck.slug, "idle", deck.interval))
         return
     # Changed since the reference etag: a new (or still-moving) candidate.
     deck.pending_etag = file_read.etag
+    deck.interval = DEFAULT_POLL_INTERVAL
+    deck.idle_streak = 0
     if on_event is not None:
         on_event(WatchEvent(deck.slug, "settling", deck.interval))
 
