@@ -4,10 +4,10 @@ Story 1.6; Epic 6 -- Stories 6.1/6.2/6.3/6.5 -- extends it with the
 the operator-role write gate, and inline help).
 
 ``deck``'s own subparsers gained ``pull`` in Epic 2, ``status`` in Epic 3,
-and ``watch`` in Epic 4. ``progress``/``success``/``notice`` are
-placeholder handlers only -- their real Moment logic is
-Epics 8/9/10's scope (Story 6.1's own AC says so explicitly: "handler
-returns 'not yet implemented' or placeholder").
+``watch`` in Epic 4, and ``push`` in Epic 5 (Story 5.1 -- CAP-5 export
+push-back). ``progress``/``success``/``notice`` are placeholder handlers
+only -- their real Moment logic is Epics 8/9/10's scope (Story 6.1's own AC
+says so explicitly: "handler returns 'not yet implemented' or placeholder").
 
 **Dispatcher (Story 6.1, AD-11).** One ``herald`` entry point; every
 subcommand routes through ``_route``. Exit-code shape, reconciled with
@@ -253,6 +253,17 @@ def _build_parser() -> _HeraldArgumentParser:
             f"{watch_module.MIN_POLL_INTERVAL:g})"
         ),
     )
+    push = deck_subparsers.add_parser(
+        "push",
+        help="push regenerated derived exports back into Claude Design (CAP-5)",
+    )
+    push.add_argument("slug", help="deck slug, e.g. pyforge-warden")
+    push.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
 
     global_flags = _global_flags_parent()
 
@@ -353,6 +364,8 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_status(args)
     if args.command == "deck" and args.deck_command == "watch":
         return _run_deck_watch(args)
+    if args.command == "deck" and args.deck_command == "push":
+        return _run_deck_push(args)
     if args.command == "progress":
         return _run_progress(args)
     if args.command == "success":
@@ -502,6 +515,45 @@ def _run_deck_watch(args: argparse.Namespace) -> int:
                 interval=args.interval,
             ),
         )
+
+    return dispatch(operation)
+
+
+def _run_deck_push(args: argparse.Namespace) -> int:
+    """Compose ``bridge.run`` + ``deck_pipeline.push_exports`` over the
+    V1-default ``McpTransport`` and hand the whole operation to
+    ``dispatch`` (AD-6), mirroring ``_run_deck_seed``/``_run_deck_pull``'s
+    composition shape exactly: ``McpTransport()`` is constructed inside
+    ``operation``, never before ``dispatch`` is called.
+
+    ``herald deck push`` is a standalone subcommand rather than an
+    auto-trigger tacked onto ``deck pull``'s completion (Story 5.1's own
+    design choice, recorded in its spec's Dev Notes): a pull's own
+    re-derivation already runs ``deck-export`` for every artifact kind
+    (prototype, each Marp source, the standalone bundle) and each can
+    fail or be re-run independently of any other, so folding a Design
+    write into that same call would make ``deck pull``'s success/failure
+    story conditional on ``deck push``'s too. Keeping them as separate
+    subcommands mirrors ``deck seed``/``deck pull``'s own separation and
+    lets an operator re-run just the push after fixing a conflict without
+    re-pulling anything."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        transport = McpTransport()
+        result = bridge.run(
+            transport,
+            lambda t: deck_pipeline.push_exports(
+                t, slug=args.slug, repo_root=repo_root
+            ),
+        )
+        if not result.pushed and not result.skipped:
+            print(f"push {args.slug}: nothing to push")
+        else:
+            print(
+                f"pushed {args.slug}: {len(result.pushed)} file(s) pushed, "
+                f"{len(result.skipped)} unchanged"
+            )
 
     return dispatch(operation)
 

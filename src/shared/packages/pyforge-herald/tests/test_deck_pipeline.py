@@ -9,16 +9,19 @@ network, no adapter); every local-prove call is against a hand-written
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pyforge.herald import deck_pipeline as deck_pipeline_module
 from pyforge.herald import state
 from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
     PROTOTYPE_ARTIFACT_KEY,
     STANDALONE_BUNDLE_ARTIFACT_KEY,
+    ExportPushResult,
     NpmLocalProver,
     PullResult,
     SeedResult,
@@ -27,9 +30,16 @@ from pyforge.herald.deck_pipeline import (
     pull_marp_source,
     pull_prototype,
     pull_standalone_bundle,
+    push_exports,
     seed,
 )
-from pyforge.herald.errors import HeraldError, SeedConflictError
+from pyforge.herald.errors import (
+    AuthError,
+    ExportConflictError,
+    HeraldError,
+    SeedConflictError,
+    TransportCallError,
+)
 from pyforge.herald.registry import read as read_registry
 from pyforge.herald.registry import register
 from pyforge.herald.transport.base import FileRead, PlanHandle, PreviewRef, ProjectRef
@@ -1199,7 +1209,9 @@ def test_pull_standalone_bundle_commit_true_never_commits_an_unchanged_pull(
 
 def _init_git_repo(work: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=work, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=work, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=work, check=True
+    )
     subprocess.run(["git", "config", "user.name", "Test"], cwd=work, check=True)
     (work / "README.md").write_text("scratch repo\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=work, check=True)
@@ -1219,12 +1231,18 @@ def test_subprocess_git_committer_commits_with_an_absolute_repo_root(tmp_path: P
     )
 
     log = subprocess.run(
-        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+        ["git", "log", "-1", "--name-only", "--format="],
+        cwd=work,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert "presentations/warden/file.txt" in log.stdout
 
 
-def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Path, monkeypatch):
+def test_subprocess_git_committer_commits_with_a_relative_repo_root(
+    tmp_path: Path, monkeypatch
+):
     """Review finding: `p.is_absolute()` was the wrong branch condition --
     every `paths` entry callers pass is already prefixed with `repo_root`,
     whether or not `repo_root` itself is absolute. Invoking with a
@@ -1248,6 +1266,341 @@ def test_subprocess_git_committer_commits_with_a_relative_repo_root(tmp_path: Pa
     )
 
     log = subprocess.run(
-        ["git", "log", "-1", "--name-only", "--format="], cwd=work, capture_output=True, text=True, check=True
+        ["git", "log", "-1", "--name-only", "--format="],
+        cwd=work,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     assert "presentations/warden/file.txt" in log.stdout
+
+
+# --- CAP-5: push_exports (Story 5.1/5.2) -------------------------------------
+
+
+class FakePushTransport:
+    """A hand-written ``DesignTransport`` double exercising only
+    ``finalize_plan``/``write_files`` -- every other method raises, since
+    ``push_exports`` never calls them.
+
+    ``write_fails`` maps a filename to the exception ``write_files`` should
+    raise for that entry -- how Story 5.2's per-file conflict is simulated
+    (the real wire shape for a conditional-write rejection is unproven, per
+    DW-1-2-5; ``errors.TransportError`` is what a real rejection would
+    surface through ``McpTransport``'s ``_call_json``/``require_conditional``
+    failure path)."""
+
+    def __init__(
+        self,
+        *,
+        plan: PlanHandle | None = None,
+        write_fails: dict[str, Exception] | None = None,
+    ):
+        self.finalize_plan_calls: list[dict] = []
+        self.write_files_calls: list[dict] = []
+        self._plan = plan or PlanHandle(plan_token="tok", base_etags={})
+        self._write_fails = dict(write_fails or {})
+
+    def finalize_plan(self, **kwargs):
+        self.finalize_plan_calls.append(kwargs)
+        return self._plan
+
+    def write_files(self, **kwargs):
+        self.write_files_calls.append(kwargs)
+        path = kwargs["files"][0]["path"]
+        if path in self._write_fails:
+            raise self._write_fails[path]
+        return {}
+
+    def get_design_prompt(self, **kwargs):
+        raise NotImplementedError("push_exports never calls get_design_prompt")
+
+    def create_project(self, **kwargs):
+        raise NotImplementedError("push_exports never calls create_project")
+
+    def create_support_js(self, **kwargs):
+        raise NotImplementedError("push_exports never calls create_support_js")
+
+    def copy_files(self, **kwargs):
+        raise NotImplementedError("push_exports never calls copy_files")
+
+    def read_file(self, **kwargs):
+        raise NotImplementedError("push_exports never calls read_file")
+
+    def render_preview(self, **kwargs):
+        raise NotImplementedError("push_exports never calls render_preview")
+
+
+def _write_export_html(tmp_path: Path, slug: str, date: str, body: str) -> Path:
+    marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
+    marp_dir.mkdir(parents=True, exist_ok=True)
+    path = marp_dir / f"{slug}-infographic-standalone-{date}.html"
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def test_push_exports_first_push_uses_the_0_sentinel_etag(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    assert result == ExportPushResult(
+        slug="pyforge-warden", pushed=(filename,), skipped=()
+    )
+    assert transport.finalize_plan_calls == [
+        {"project_id": "p-1", "writes": [filename]}
+    ]
+    write_call = transport.write_files_calls[0]
+    assert write_call["files"][0]["path"] == filename
+    assert write_call["files"][0]["data"] == "<html>v1</html>"
+    assert write_call["files"][0]["if_match"] == "0"
+
+
+def test_push_exports_records_the_local_hash_after_a_successful_push(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    push_exports(FakePushTransport(), slug="pyforge-warden", repo_root=tmp_path)
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    key = f"export:{filename}"
+    assert key in recorded.etags
+    assert recorded.etags[key] == hashlib.sha256(b"<html>v1</html>").hexdigest()
+
+
+def test_push_exports_skips_a_file_whose_local_hash_is_unchanged(tmp_path: Path):
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    stored_hash = hashlib.sha256(b"<html>v1</html>").hexdigest()
+    _seed_state(tmp_path, "pyforge-warden", etags={f"export:{filename}": stored_hash})
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    assert result == ExportPushResult(
+        slug="pyforge-warden", pushed=(), skipped=(filename,)
+    )
+    assert transport.finalize_plan_calls == []
+    assert transport.write_files_calls == []
+
+
+def test_push_exports_pushes_a_changed_file_even_with_a_prior_record(tmp_path: Path):
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    _seed_state(tmp_path, "pyforge-warden", etags={f"export:{filename}": "stale-hash"})
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v2</html>")
+    transport = FakePushTransport(
+        plan=PlanHandle(plan_token="tok", base_etags={filename: "E9"})
+    )
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    assert result.pushed == (filename,)
+    assert transport.write_files_calls[0]["files"][0]["if_match"] == "E9"
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    expected_hash = hashlib.sha256(b"<html>v2</html>").hexdigest()
+    assert recorded.etags[f"export:{filename}"] == expected_hash
+
+
+def test_push_exports_nothing_to_push_makes_no_transport_calls(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    assert result == ExportPushResult(slug="pyforge-warden", pushed=(), skipped=())
+    assert transport.finalize_plan_calls == []
+    assert transport.write_files_calls == []
+
+
+def test_push_exports_refuses_when_not_seeded(tmp_path: Path):
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    transport = FakePushTransport()
+
+    with pytest.raises(HeraldError, match="cannot push .*herald deck seed"):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+    assert transport.finalize_plan_calls == []
+
+
+def test_discover_export_files_ignores_a_non_dated_stray_file(tmp_path: Path):
+    """Regression: a plain lexicographic sort put a stray same-prefix file
+    (a hand-copied backup, an aborted draft) AFTER every real dated file --
+    letters sort after digits -- so `matches[-1]` silently picked the
+    stale/unrelated file over the genuine current export. The date segment
+    must actually parse as `YYYY-MM-DD` to be considered a candidate."""
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>REAL</html>")
+    stray = (
+        tmp_path
+        / "presentations"
+        / "pyforge-warden"
+        / "src"
+        / "marp"
+        / "pyforge-warden-infographic-standalone-old-backup.html"
+    )
+    stray.write_text("<html>STALE</html>", encoding="utf-8")
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    assert len(candidates) == 1
+    assert (
+        candidates[0].filename
+        == "pyforge-warden-infographic-standalone-2026-08-07.html"
+    )
+    assert candidates[0].data == "<html>REAL</html>"
+
+
+def test_discover_export_files_picks_the_newest_of_several_dated_files(tmp_path: Path):
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-01", "<html>older</html>")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>newer</html>")
+
+    candidates = deck_pipeline_module._discover_export_files(
+        tmp_path / "presentations" / "pyforge-warden", "pyforge-warden"
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].data == "<html>newer</html>"
+
+
+def test_push_exports_no_derived_file_on_disk_yet_is_a_no_op(tmp_path: Path):
+    """`deck-export` has never run for this deck -- nothing to push, not an
+    error (mirrors the pull-side "nothing changed" no-op ethos)."""
+    _seed_state(tmp_path, "pyforge-warden")
+    transport = FakePushTransport()
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    assert result == ExportPushResult(slug="pyforge-warden", pushed=(), skipped=())
+
+
+# --- CAP-5: push_exports conflict handling (Story 5.2) -----------------------
+
+
+def test_push_exports_conflict_raises_export_conflict_error(tmp_path: Path):
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    transport = FakePushTransport(
+        write_fails={filename: TransportCallError("write_files: etag mismatch")}
+    )
+
+    with pytest.raises(ExportConflictError, match=filename):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+
+def test_push_exports_conflict_does_not_record_state_for_the_conflicted_file(
+    tmp_path: Path,
+):
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    transport = FakePushTransport(
+        write_fails={filename: TransportCallError("write_files: etag mismatch")}
+    )
+
+    with pytest.raises(ExportConflictError):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert f"export:{filename}" not in recorded.etags
+
+
+def test_push_exports_conflict_on_one_file_does_not_abort_the_rest_of_the_batch(
+    tmp_path: Path, monkeypatch
+):
+    """`_discover_export_files` only ever surfaces one candidate today (the
+    scope note in `deck_pipeline.py`'s own CAP-5 section), so this test
+    exercises the batch-continues-past-a-conflict loop directly by
+    monkeypatching discovery to return two candidates -- proving the loop
+    itself (not just today's single-file discovery) honors FR-20/NFR-02:
+    a conflict on one file must not clobber, or block, another file's own
+    successful push."""
+    _seed_state(tmp_path, "pyforge-warden")
+    bad_candidate = deck_pipeline_module._ExportCandidate(
+        filename="bad.pptx",
+        local_path=tmp_path / "bad.pptx",
+        data="BAD",
+        local_hash="hash-bad",
+    )
+    ok_candidate = deck_pipeline_module._ExportCandidate(
+        filename="ok.html",
+        local_path=tmp_path / "ok.html",
+        data="OK",
+        local_hash="hash-ok",
+    )
+    monkeypatch.setattr(
+        deck_pipeline_module,
+        "_discover_export_files",
+        lambda *args, **kwargs: [bad_candidate, ok_candidate],
+    )
+    transport = FakePushTransport(
+        write_fails={"bad.pptx": TransportCallError("etag mismatch")}
+    )
+
+    with pytest.raises(ExportConflictError, match="bad.pptx"):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    # Both writes were attempted -- the conflict did not stop the loop.
+    written_paths = [c["files"][0]["path"] for c in transport.write_files_calls]
+    assert written_paths == ["bad.pptx", "ok.html"]
+
+    # Only the successful file's record landed; the conflicted file's own
+    # state entry is untouched (absent, since it was never pushed before).
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags == {"export:ok.html": "hash-ok"}
+
+
+def test_push_exports_conflict_preserves_an_already_recorded_unrelated_etag(
+    tmp_path: Path, monkeypatch
+):
+    """A conflict on one file must not disturb ANY other slug etag already
+    on record -- including one belonging to a different artifact kind
+    entirely (e.g. the prototype's own pull-side etag), proving `push_exports`
+    never blindly overwrites `existing.etags` wholesale."""
+    _seed_state(
+        tmp_path,
+        "pyforge-warden",
+        etags={PROTOTYPE_ARTIFACT_KEY: "E-prototype-untouched"},
+    )
+    bad_candidate = deck_pipeline_module._ExportCandidate(
+        filename="bad.pptx",
+        local_path=tmp_path / "bad.pptx",
+        data="BAD",
+        local_hash="hash-bad",
+    )
+    monkeypatch.setattr(
+        deck_pipeline_module,
+        "_discover_export_files",
+        lambda *args, **kwargs: [bad_candidate],
+    )
+    transport = FakePushTransport(
+        write_fails={"bad.pptx": TransportCallError("etag mismatch")}
+    )
+
+    with pytest.raises(ExportConflictError):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
+
+    recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
+    assert recorded.etags[PROTOTYPE_ARTIFACT_KEY] == "E-prototype-untouched"
+
+
+def test_push_exports_auth_error_propagates_instead_of_being_treated_as_a_conflict(
+    tmp_path: Path,
+):
+    """Regression: catching the base `errors.TransportError` conflated a
+    genuine transport failure (expired credential, network outage) with a
+    per-file conflict -- reporting it as "refused rather than risk
+    clobbering a Design-side edit" and continuing to hammer the rest of the
+    batch against a connection/credential that's still broken. `AuthError`
+    (a `TransportError` subclass, not a `TransportCallError`) must
+    propagate immediately instead."""
+    _seed_state(tmp_path, "pyforge-warden")
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", "<html>v1</html>")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    transport = FakePushTransport(write_fails={filename: AuthError("no credential")})
+
+    with pytest.raises(AuthError):
+        push_exports(transport, slug="pyforge-warden", repo_root=tmp_path)
