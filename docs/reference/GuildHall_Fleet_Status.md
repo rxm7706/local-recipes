@@ -1,5 +1,10 @@
 # BMAD Complete Tracking Dashboard
 
+**Last refreshed:** 2026-08-08, against `main` @ `774acc7e13` (Herald Epic 12 merge, PR #316). Nothing is
+currently running — no open PRs, no active bmad-loop sessions, no in-flight worktrees. Figures below are
+read live from each project's `sprint-status-ledger.yaml`, not carried over from the prior (2026-08-02)
+revision of this table.
+
 ## PyForge Guild — Dream-to-Code Pipeline State
 
 ### Fleet Status: 8 Stations + Infrastructure (16-Stage Pipeline)
@@ -8,14 +13,14 @@
 
 | **Station** | **Dream** | **Deck** | **Spec** | **Rsch** | **Brief** | **PRD** | **UX** | **Arch** | **Context** | **Epics** | **Sprint** | **TEA** | **Gates** | **Code** | **Tested** | **Retro** | **Status** |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
-| **🎺 Herald** | 🚀 | ✅ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🚀 | ⏳ | ⏳ | 🚀 Coding |
-| **⚔️ Marshal** | 🚀 | 📋 | ✅ | ✅ | 🏗️ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 📋 | ⏳ | ⏳ | 📋 Queued |
-| **🗺️ Atlas** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🏗️ | ⏳ | ⏳ | 🏗️ Ready |
-| **🛡️ Warden** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🏗️ | ⏳ | ⏳ | 🏗️ Ready |
-| **🧱 Mason** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🎯 | ⏳ | ⏳ | 🎯 Next |
-| **🏥 Doctor** | 🚀 | 📋 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🏗️ | ⏳ | ⏳ | 🏗️ Ready |
-| **📖 Scribe** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🎯 | ⏳ | ⏳ | 🎯 Next |
-| **👑 Steward** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🎯 | ⏳ | ⏳ | 🎯 Next |
+| **🎺 Herald** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 47/47 stories (Epics 6-12 merged, PRs #307-#316) |
+| **⚔️ Marshal** | 🚀 | 📋 | ✅ | ✅ | 🏗️ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | 🚀 | 🚀 | ◯ | 🚀 In progress — 50/86 stories (Epics 1-6 done; 7-9 backlog, 17 stories) |
+| **🗺️ Atlas** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 7/7 stories, epics 0-9 shipped |
+| **🛡️ Warden** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 31/31 stories |
+| **🧱 Mason** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | 🎯 | 🎯 | ◯ | 🎯 Early — 4/38 stories (Epic 1 stories 1.1-1.4 done; 1.5 onward + Epics 2-5 backlog, 34 stories) |
+| **🏥 Doctor** | 🚀 | 📋 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 16/16 stories |
+| **📖 Scribe** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 9/9 stories |
+| **👑 Steward** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ◯ | ✅ Done — 18/18 stories |
 
 ---
 
@@ -53,14 +58,24 @@
 
 | **Station** | **DREAM** | **SPEC** | **Domain-Res** | **Market-Res** | **Tech-Res** | **BRIEF** | **PRD** | **ARCH** | **EPIC** | **STORY-SPECS** | **DEV** | **TEST** | **DELIVERY** | **RETRO** | **Status**          |
 | ----------- | :-------: | :------: | :------------: | :------------: | :----------: | :-------: | :-----: | :------: | :------: | :-------------: | :-----: | :------: | :----------: | :-------: | ------------------- |
-| **Herald**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   🚀   |    ⏳    |      ⏳      |    ⏳    | Moments 2–4 coding |
-| **Marshal** |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |   🏗️   |   ✅   |    ✅    |    ✅    |       ✅       |   📋   |    ⏳    |      ⏳      |    ⏳    | Ready for DEV       |
-| **Atlas**   |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |  🏗️  |    ⏳    |      ⏳      |    ⏳    | Ready for DEV       |
-| **Warden**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |  🏗️  |    ⏳    |      ⏳      |    ⏳    | Ready for DEV       |
-| **Mason**   |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   🎯   |    ⏳    |      ⏳      |    ⏳    | Queued              |
-| **Doctor**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |  🏗️  |    ⏳    |      ⏳      |    ⏳    | Ready for DEV       |
-| **Scribe**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   🎯   |    ⏳    |      ⏳      |    ⏳    | Queued              |
-| **Steward** |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   🎯   |    ⏳    |      ⏳      |    ⏳    | Queued              |
+| **Herald**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   ✅   |    ✅    |      ✅      |    ⏳    | Done — 47/47 stories; no tracked retro |
+| **Marshal** |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |   🏗️   |   ✅   |    ✅    |    ✅    |       ✅       |   🚀   |    ✅    |      🚀      |    ⏳    | 50/86 stories; epic retros exist but only in gitignored implementation-artifacts (4 found), not promoted to a tracked doc |
+| **Atlas**   |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |  ✅  |    ✅    |      ✅      |    ✅    | Done — 7/7 stories; **only station with tracked retros** (`planning-artifacts/retros/`, 10 epics) |
+| **Warden**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |  ✅  |    ✅    |      ✅      |    ⏳    | Done — 31/31 stories; epic retros exist but only in gitignored implementation-artifacts (8 found), not promoted to a tracked doc |
+| **Mason**   |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   🎯   |    ✅    |      ⏳      |    ⏳    | 4/38 stories; earliest-stage station          |
+| **Doctor**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |  ✅  |    ✅    |      ✅      |    ⏳    | Done — 16/16 stories; no tracked retro |
+| **Scribe**  |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   ✅   |    ✅    |      ✅      |    ⏳    | Done — 9/9 stories; no tracked retro |
+| **Steward** |    ✅    |    ✅    |       ✅       |       ✅       |      ✅      |    ✅    |   ✅   |    ✅    |    ✅    |       ✅       |   ✅   |    ✅    |      ✅      |    ⏳    | Done — 18/18 stories; no tracked retro |
+
+**Retro gap (found 2026-08-08):** 6 of 8 stations have zero tracked retrospective. Atlas is the only
+station with retros promoted to a tracked doc (`planning-artifacts/retros/`). Marshal and Warden ran
+per-epic retros, but they live only in each project's gitignored `implementation-artifacts/` — Tier-3
+scratch that never gets promoted, so from the repo's point of view they don't exist. Herald, Doctor,
+Scribe, Steward have none at all, tracked or otherwise. This mirrors CLAUDE.md's Rule 2 (every
+conda-forge-touching BMAD effort must close with a retro that updates `conda-forge-expert`) but there is
+no equivalent always-on rule yet for non-recipe PyForge station epics — closing that gap (promote
+Marshal/Warden's existing retros, backfill one for Herald/Doctor/Scribe/Steward, and decide whether a
+retro becomes a required per-epic gate) is unscheduled backlog, not yet actioned.
 
 ---
 
@@ -120,14 +135,18 @@
 
 | **Station** | **sprint-status** | **TEA** | **code** ✓ | **tests** ✓ | **PR** | **merged** ✓ | **retro** ✓ | **e2e-tests** | **Status** |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
-| **🎺 Herald** | ✅ | 🚀 | 🚀 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Moments 2–4 coding |
-| **⚔️ Marshal** | ✅ | 🚀 | 📋 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
-| **🗺️ Atlas** | ✅ | 🚀 | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
-| **🛡️ Warden** | ✅ | 🚀 | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
-| **🧱 Mason** | ✅ | 🚀 | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Queued |
-| **🏥 Doctor** | ✅ | 🚀 | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
-| **📖 Scribe** | ✅ | 🚀 | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Queued |
-| **👑 Steward** | ✅ | 🚀 | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Queued |
+| **🎺 Herald** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ◯ | Done, no tracked retro |
+| **⚔️ Marshal** | ✅ | ✅ | 🚀 | 🚀 | 🚀 | 🚀 | ⏳ | ◯ | 50/86 stories in progress |
+| **🗺️ Atlas** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ◯ | Done, retros tracked |
+| **🛡️ Warden** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ◯ | Done, no tracked retro |
+| **🧱 Mason** | ✅ | ✅ | 🎯 | 🎯 | 🎯 | 🎯 | ⏳ | ◯ | 4/38 stories, earliest-stage |
+| **🏥 Doctor** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ◯ | Done, no tracked retro |
+| **📖 Scribe** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ◯ | Done, no tracked retro |
+| **👑 Steward** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ◯ | Done, no tracked retro |
+
+Per this table's own exit criterion ("Tested = Code + Tests + PR + Merged + **Retro**"), only Atlas
+actually clears IMPLEMENTATION in full — the other 5 finished stations are done on every axis except
+retro.
 
 ---
 
@@ -135,10 +154,10 @@
 
 | **Phase** | **Status** |
 | --- | --- |
-| **ANALYSIS** (Dream → Pitch) | ✅ Complete |
-| **PLANNING** (PRD) | ✅ Complete |
-| **SOLUTIONING** (Arch → Epics) | ✅ Complete |
-| **IMPLEMENTATION** (Code → Retro) | 🚀 Herald coding; 7 queued |
+| **ANALYSIS** (Dream → Pitch) | ✅ Complete (8/8) |
+| **PLANNING** (PRD) | ✅ Complete (8/8) |
+| **SOLUTIONING** (Arch → Epics) | ✅ Complete (8/8) |
+| **IMPLEMENTATION** (Code → Retro) | 6/8 stations done on code+tests+PR+merged; 1/8 (Atlas) also has a tracked retro; Marshal in progress (50/86), Mason early (4/38) |
 
 ---
 
@@ -148,14 +167,14 @@ Here is the PyForge Guild Fleet sequence expanded out with columns matching the 
 
 | **Station** | **DREAMS** | **res-domain** | **res-market** | **res-tech** | **prod-brief** | **prfaq** | **brainstorm** | **forge-idea** | **PITCH-DECKS** | **PRD** | **valid-report** | **arch** | **epics** | **specs** | **ready-report** | **sprint-status** | **code** | **tests** | **PR** | **merged** | **retro** | **e2e-tests** | **TESTS-ARCH** | **Status** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Herald** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🚀 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Moments 2–4 coding |
-| **Marshal** | 🚀 | ✅ | ✅ | ✅ | 🏗️ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 📋 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Atlas** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Warden** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Mason** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
-| **Doctor** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Scribe** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
-| **Steward** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
+| **Herald** | ✅ | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 47/47, no tracked retro |
+| **Marshal** | 🚀 | ✅ | ✅ | ✅ | 🏗️ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🚀 | 🚀 | 🚀 | 🚀 | ⏳ | ✅ | ✅ | 50/86 in progress |
+| **Atlas** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Done — 7/7, retros tracked |
+| **Warden** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 31/31, no tracked retro |
+| **Mason** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | 🎯 | 🎯 | 🎯 | ⏳ | ✅ | ✅ | 4/38, earliest-stage |
+| **Doctor** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 16/16, no tracked retro |
+| **Scribe** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 9/9, no tracked retro |
+| **Steward** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 18/18, no tracked retro |
 
 
 ### BMAD System Infrastructure
@@ -167,14 +186,14 @@ Standard Markdown doesn't support merged columns (colspans), so to ensure you ca
 | **Station** | **DREAMS** | **res-domain** | **res-market** | **res-tech** | **prod-brief** | **prfaq** | **brainstorm** | **forge-idea** | **PITCH-DECKS** | **PRD** | **valid-report** | **arch** | **epics** | **specs** | **ready-report** | **sprint-status** | **code** | **tests** | **PR** | **merged** | **retro** | **e2e-tests** | **TESTS-ARCH** | **Status** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **SDLC PHASE** | *ANALYSIS* | *ANALYSIS* | *ANALYSIS* | *ANALYSIS* | *ANALYSIS* | *ANALYSIS* | *ANALYSIS* | *ANALYSIS* | *ANALYSIS* | *PLANNING* | *PLANNING* | *SOLUTIONING* | *SOLUTIONING* | *SOLUTIONING* | *SOLUTIONING* | *IMPLEMENT* | *IMPLEMENT* | *IMPLEMENT* | *IMPLEMENT* | *IMPLEMENT* | *IMPLEMENT* | *IMPLEMENT* | *IMPLEMENT* | *IMPLEMENT* |
-| **Herald** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🚀 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Moments 2–4 coding |
-| **Marshal** | 🚀 | ✅ | ✅ | ✅ | 🏗️ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 📋 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Atlas** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Warden** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Mason** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
-| **Doctor** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **Scribe** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
-| **Steward** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
+| **Herald** | ✅ | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 47/47, no tracked retro |
+| **Marshal** | 🚀 | ✅ | ✅ | ✅ | 🏗️ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🚀 | 🚀 | 🚀 | 🚀 | ⏳ | ✅ | ✅ | 50/86 in progress |
+| **Atlas** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Done — 7/7, retros tracked |
+| **Warden** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 31/31, no tracked retro |
+| **Mason** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | 🎯 | 🎯 | 🎯 | 🎯 | ⏳ | ✅ | ✅ | 4/38, earliest-stage |
+| **Doctor** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 16/16, no tracked retro |
+| **Scribe** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 9/9, no tracked retro |
+| **Steward** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | ✅ | ◯ | ✅ | ✅ | ✅ | ◯ | ✅ | ✅ | ✅ | ✅ | ✅ | ⏳ | ✅ | ✅ | Done — 18/18, no tracked retro |
 
 
 
@@ -215,58 +234,41 @@ Standard Markdown doesn't support merged columns (colspans), so to ensure you ca
 | PRD (bmad-prd)                       | ✅ Complete |                8/8                | 0                          |
 | ARCH (bmad-architecture)             | ✅ Complete |                8/8                | 0                          |
 | EPIC (bmad-create-epics-and-stories) | ✅ Complete |                8/8                | 0                          |
-| STORY (per-story specs)              | ✅ Complete |                8/8                | 0 (partial implementation) |
-| **TEST** (bmad-tea-playwright)       | ⏳ Pending  |     1/8 (Herald ✅; others ⏳)     | 7 stations                 |
+| STORY (per-story specs)              | ✅ Complete |                8/8                | 0 (2 stations still finishing implementation) |
+| **TEST** (bmad-tea-playwright)       | ✅ Complete |     8/8 (`test-architecture.md` present for every station)     | 0                 |
 | **Decks** (Herald family)            | 🏗️ Ready  | 8/8 (all designed; some in flight) | 0 (execution ongoing)      |
+| **RETRO** (tracked, `planning-artifacts/retros/`) | ⏳ Pending | 1/8 (Atlas ✅; Marshal/Warden have retros but only gitignored; Herald/Doctor/Scribe/Steward have none) | 7 stations |
 
 ### Development Status (Code Implementation)
 
 
-| Status        | Count | Stations               | Notes                                              |
-| ------------- | :---: | ---------------------- | -------------------------------------------------- |
-| 🚀**Coding**  |   1   | Herald                 | Active story development (Moments 2–4 gaps)       |
-| 🏗️**Ready** |   3   | Atlas, Warden, Doctor  | PRD + Architecture complete; stories ready for dev |
-| 📋**Queued**  |   1   | Marshal                | Planned for next phase; stories documented         |
-| 🎯**Next**    |   3   | Mason, Scribe, Steward | Prioritized; starting soon                        |
+| Status        | Count | Stations                                      | Notes                                              |
+| ------------- | :---: | ---------------------------------------------- | -------------------------------------------------- |
+| ✅**Done**    |   6   | Herald, Atlas, Warden, Doctor, Scribe, Steward | All stories merged (Atlas also has tracked retros; the other 5 don't) |
+| 🚀**In progress** |   1   | Marshal                | 50/86 stories done; Epics 7-9 (17 stories) backlog |
+| 🎯**Early**   |   1   | Mason                  | 4/38 stories done; Epic 1 story 1.5 onward + Epics 2-5 (34 stories) backlog |
 
 ---
 
 ## Next Actions (Sequenced)
 
-### Immediate (This Sprint)
+### Immediate
 
-1. **Herald Moments 2–4 completion** 🚀
+1. **Marshal Epics 7-9** 🚀
 
-   - Skill: `bmad-quick-dev`
-   - Owner: Herald
-   - Input: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-moments-2-4.md`
-   - Output: Code + tests + Delivery Record
-2. **PyForge-Testing-Kit creation** ⏳ → 🚀
+   - Skill: `bmad-create-story` → `bmad-quick-dev` (no story specs written yet for 7-1 onward)
+   - Owner: Marshal
+   - Remaining: 17 stories (extraction manifest, marker/region substitution engine, findings/inventory scanner)
+2. **Mason Epic 1 (story 1.5 onward) + Epics 2-5** 🎯
 
-   - Create shared fixtures package (CLI runner, web pages, DB factories, auth mocks)
-   - 6–8 hours work; unblocks fleet test deployment
-   - Owner: Guild Crew
-3. **Atlas test-architecture generation** ⏳ → ✅
-
-   - Skill: `bmad_tea_playwright.py` (one-command)
-   - Verify full cycle on pyforge-atlas
-   - 30 minutes; validates automation script
-
-### Near-Term (1–2 Weeks)
-
-4. **Fleet test deployment** 📋 → ✅
-
-   - Run `bmad_tea_playwright.py` on 7 remaining stations (marshal, mason, doctor, scribe, steward, warden, genesis)
-   - 30 minutes total; each station gets test-architecture.md + scaffold
-   - Owner: Guild Crew
-5. **Deck family execution** 🏗️ → ✅
-
-   - Finalize 8 station decks (Herald complete; others in flight)
-   - Push presentations/ to main
-   - Owner: Herald + Station teams
+   - Skill: `bmad-create-story` → `bmad-quick-dev` (no story specs written yet)
+   - Owner: Mason
+   - Remaining: 34 stories (CFE root resolution through ship targets, package builds, lock/environment mgmt)
+   - Independent package from Marshal — safe to run in parallel, worktree-isolated
 
 ### Backlog (Conformance Debt)
 
+- **Retro gap** (found 2026-08-08): promote Marshal's 4 and Warden's 8 gitignored `implementation-artifacts/` epic retros to a tracked `planning-artifacts/retros/` doc (mirroring Atlas's convention); backfill retros for Herald, Doctor, Scribe, Steward, which have none at all. Decide whether a tracked retro becomes a required per-epic gate (CLAUDE.md's Rule 2 already mandates this for conda-forge-touching efforts specifically; no fleet-wide equivalent exists yet).
 - **Marshal**: Reshard flat PRD/ARCH to dated folders (6 items debt)
 - **Warden**: Reshard flat PRD/ARCH to dated folders (5 items debt)
 - **Genesis**: Add story specs + delivery records (bootstrap-only project)
