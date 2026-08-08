@@ -120,6 +120,20 @@ class EvidenceLinkError(HeraldError):
     ``TransportError``'s exit code ``4``)."""
 
 
+class ClaimNotFoundError(HeraldError):
+    """A ``herald success`` subcommand (``review``, ``publish``, ``get``,
+    ``validate``) named a claim id that does not exist in ``claims.json``
+    (Story 9.1/9.3). Falls through to the default exit code (``1``) -- a
+    bad claim id is a usage problem for the operator to fix, not a
+    transport outage."""
+
+
+class ClaimStateError(HeraldError):
+    """``herald success publish`` was called on a claim that is not
+    currently ``draft`` (Story 9.3) -- e.g. already ``published``. Falls
+    through to the default exit code (``1``)."""
+
+
 _EXIT_BY_ERROR: tuple[tuple[type[HeraldError], int], ...] = (
     (SeedConflictError, 3),
     (PullConflictError, 3),
