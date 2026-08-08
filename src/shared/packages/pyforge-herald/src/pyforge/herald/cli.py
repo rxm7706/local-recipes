@@ -419,6 +419,10 @@ def _parse_date_range(raw: str) -> tuple[date, date]:
         end = date.fromisoformat(end_raw)
     except ValueError as exc:
         raise errors.InvalidDateRangeError(f"{problem} ({exc})") from exc
+    if start > end:
+        raise errors.InvalidDateRangeError(
+            f"Invalid date range: {raw!r}; start ({start}) is after end ({end})"
+        )
     return start, end
 
 
@@ -428,7 +432,9 @@ def _run_progress(args: argparse.Namespace) -> int:
     operator-role check for this path, and none is made."""
 
     def operation() -> None:
-        date_range = _parse_date_range(args.date_range) if args.date_range else None
+        date_range = (
+            _parse_date_range(args.date_range) if args.date_range is not None else None
+        )
         if args.json:
             print(
                 json.dumps(
@@ -446,7 +452,7 @@ def _run_progress(args: argparse.Namespace) -> int:
         else:
             print("progress: not yet implemented")
 
-    return dispatch(operation)
+    return dispatch(operation, json_output=args.json)
 
 
 def _run_success_list(args: argparse.Namespace) -> int:
@@ -454,7 +460,9 @@ def _run_success_list(args: argparse.Namespace) -> int:
     listing placeholder, same shape as ``_run_progress``."""
 
     def operation() -> None:
-        date_range = _parse_date_range(args.date_range) if args.date_range else None
+        date_range = (
+            _parse_date_range(args.date_range) if args.date_range is not None else None
+        )
         if args.json:
             print(
                 json.dumps(
@@ -472,7 +480,7 @@ def _run_success_list(args: argparse.Namespace) -> int:
         else:
             print("success: not yet implemented")
 
-    return dispatch(operation)
+    return dispatch(operation, json_output=args.json)
 
 
 def _run_success_publish(args: argparse.Namespace) -> int:
@@ -506,7 +514,9 @@ def _run_notice_list(args: argparse.Namespace) -> int:
     placeholder, same shape as ``_run_progress``."""
 
     def operation() -> None:
-        date_range = _parse_date_range(args.date_range) if args.date_range else None
+        date_range = (
+            _parse_date_range(args.date_range) if args.date_range is not None else None
+        )
         if args.json:
             print(
                 json.dumps(
@@ -524,7 +534,7 @@ def _run_notice_list(args: argparse.Namespace) -> int:
         else:
             print("notice: not yet implemented")
 
-    return dispatch(operation)
+    return dispatch(operation, json_output=args.json)
 
 
 def _run_notice_author(args: argparse.Namespace) -> int:
@@ -548,7 +558,7 @@ def _run_notice_author(args: argparse.Namespace) -> int:
     return dispatch(operation)
 
 
-def dispatch(operation: Callable[[], None]) -> int:
+def dispatch(operation: Callable[[], None], *, json_output: bool = False) -> int:
     """Run ``operation``, catching ``HeraldError`` at the CLI boundary
     (AD-6): bridge-core raises, this is the sole place that catches.
 
@@ -561,12 +571,28 @@ def dispatch(operation: Callable[[], None]) -> int:
     ``errors.exit_code_for``'s mapped exit code; returns 0 when
     ``operation`` completes without raising. Wired to ``deck seed`` (Story
     1.6), ``progress``/``success``/``notice`` (Epic 6); also exercised
-    directly in tests."""
+    directly in tests.
+
+    ``json_output`` (Epic 6 review fix): callers that parsed ``--json``
+    pass ``args.json`` through so a ``HeraldError`` on those paths renders
+    as one JSON object on stderr instead of the plain-text line -- a
+    ``--json`` caller parsing stderr as JSON on failure would otherwise get
+    a parse error instead of the real one. Subcommands with no ``--json``
+    flag (``deck seed``, ``success publish``, ``notice author``) never
+    pass it, so their error rendering is unchanged."""
     try:
         operation()
     except errors.HeraldError as exc:
         flat = " ".join(str(exc).splitlines())
         message = "".join(ch if ch.isprintable() else " " for ch in flat)
-        print(f"{TOOL_NAME}: {type(exc).__name__}: {message}", file=sys.stderr)
+        if json_output:
+            print(
+                json.dumps(
+                    {"tool": TOOL_NAME, "error": type(exc).__name__, "message": message}
+                ),
+                file=sys.stderr,
+            )
+        else:
+            print(f"{TOOL_NAME}: {type(exc).__name__}: {message}", file=sys.stderr)
         return errors.exit_code_for(exc)
     return 0

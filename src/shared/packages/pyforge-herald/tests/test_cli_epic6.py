@@ -104,6 +104,36 @@ def test_date_range_invalid_exits_1_and_names_the_problem(capsys):
     assert "Invalid date format" in err
 
 
+def test_date_range_inverted_start_after_end_exits_1(capsys):
+    """Regression: ``_parse_date_range`` only validated each half in
+    isolation -- ``2026-08-31..2026-08-01`` parsed fine and silently
+    returned a nonsensical (start-after-end) pair."""
+    assert cli.main(["progress", "--date-range", "2026-08-31..2026-08-01"]) == 1
+    err = capsys.readouterr().err
+    assert "Invalid date range" in err
+
+
+def test_date_range_empty_string_is_validated_not_treated_as_absent(capsys):
+    """Regression: ``if args.date_range else None`` treated an explicit
+    empty ``--date-range ""`` the same as no flag at all (falsy), silently
+    skipping validation instead of raising ``InvalidDateRangeError``."""
+    assert cli.main(["progress", "--date-range", ""]) == 1
+    err = capsys.readouterr().err
+    assert "Invalid date format" in err
+
+
+def test_json_flag_renders_error_as_json_on_stderr(capsys):
+    """Regression: a ``--json`` caller got a plain-text error line on a
+    ``HeraldError`` (e.g. a bad ``--date-range``), even though it asked
+    for machine-readable output -- parsing stderr as JSON on failure would
+    have raised instead of surfacing the real error."""
+    assert cli.main(["progress", "--json", "--date-range", "invalid..dates"]) == 1
+    err = capsys.readouterr().err.strip()
+    payload = json.loads(err)
+    assert payload["error"] == "InvalidDateRangeError"
+    assert "Invalid date format" in payload["message"]
+
+
 def test_station_flag_filters(capsys):
     assert cli.main(["progress", "--json", "--station", "warden"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
