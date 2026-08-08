@@ -150,6 +150,45 @@ def _global_flags_parent() -> argparse.ArgumentParser:
     return parent
 
 
+def _global_flags_parent_for_nested_subparser() -> argparse.ArgumentParser:
+    """The same three flags as ``_global_flags_parent``, but with
+    ``default=argparse.SUPPRESS`` -- for a SECOND-level subparser nested
+    under a first-level one that already carries ``parents=[_global_flags_parent()]``
+    (``notice list`` under ``notice``, both wanting ``--json`` et al).
+
+    Regression: attaching a plain (non-suppressed) copy of these flags to
+    ``notice list`` made ``herald notice list --json`` work, but broke
+    ``herald notice --json list`` -- argparse's nested-subparsers action
+    parses each level into its OWN fresh sub-namespace before merging it
+    into the outer one, so ``list``'s own unset ``--json`` (default
+    ``False``) silently overwrote the value `notice`'s own parser had
+    already set to ``True``. With ``SUPPRESS``, an unset flag at the
+    ``list`` level is simply absent from that merge instead of clobbering
+    the outer value with a stale default -- verified against all three
+    orderings (flag before the subcommand, after it, and absent)."""
+    parent = argparse.ArgumentParser(add_help=False)
+    parent.add_argument(
+        "--json",
+        "-j",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="machine-readable JSON output (no colorization)",
+    )
+    parent.add_argument(
+        "--date-range",
+        metavar="<start>..<end>",
+        default=argparse.SUPPRESS,
+        help="filter to a date range, e.g. 2026-08-01..2026-08-31 (YYYY-MM-DD)",
+    )
+    parent.add_argument(
+        "--station",
+        "-s",
+        default=argparse.SUPPRESS,
+        help="filter to one station, e.g. warden",
+    )
+    return parent
+
+
 def _build_parser() -> _HeraldArgumentParser:
     parser = _HeraldArgumentParser(
         prog=TOOL_NAME,
@@ -480,7 +519,9 @@ def _build_parser() -> _HeraldArgumentParser:
     )
 
     notice_list = notice_subparsers.add_parser(
-        "list", help="list operational notices (read-only)"
+        "list",
+        parents=[_global_flags_parent_for_nested_subparser()],
+        help="list operational notices (read-only)",
     )
     notice_list.add_argument(
         "--category",

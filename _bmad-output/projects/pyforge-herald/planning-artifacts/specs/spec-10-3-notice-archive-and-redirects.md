@@ -103,3 +103,28 @@ not just to inputs this module's own writers can produce.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[investigated]` `[not applied]` **Blind Hunter flagged that `archive_rename` doesn't
+  refuse redirecting a component that already has its own, distinct, live notice** --
+  described as "silent shadowing" (redirecting `svc-a` to `svc-b` when both are
+  independently authored notices leaves `svc-a`'s own content unreachable via `get`, while
+  `list`/the web export still enumerate both). On investigation this is NOT a defect: this
+  spec's own function docstring and this file's own tests
+  (`test_archive_rename_redirects_get_to_the_new_component`,
+  `test_publish_follows_a_redirect` in `test_notices.py`) explicitly exercise and assert
+  on exactly this shape as the documented normal workflow -- author under the old name,
+  author under the new name (the "requires `new_component` to already have a notice"
+  precondition literally cannot be satisfied any other way), then redirect old -> new. An
+  initial patch adding the refusal broke 8 previously-green tests across
+  `test_notices.py`/`test_cli_notice_epic10.py` and was reverted once the contradiction
+  with this spec's own tested contract was confirmed. No code change made.
+- `addressed_findings`: 0 (1 finding investigated and correctly not applied). No
+  `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Re-verification (2026-08-08):** `pixi run --frozen -e pyforge-herald pyforge-herald-test`
+-- 599 passed, 2 skipped (all pre-existing rename/redirect tests for this story remain
+green, unmodified).
+
+**Follow-up review recommendation:** none outstanding for this story.

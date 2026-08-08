@@ -226,12 +226,39 @@ def _write_index_document(index_path: Path, document: dict[str, object]) -> None
         raise
 
 
+_REQUIRED_NOTICE_FIELDS = frozenset(
+    (
+        "type",
+        "component",
+        "what",
+        "why",
+        "migration",
+        "deadline",
+        "reason_link",
+        "status",
+        "path",
+        "created_at",
+    )
+)
+"""``Notice`` fields with no dataclass default -- ``_entry_to_notice`` must
+check these are present before constructing, or a missing one surfaces as
+a raw ``TypeError`` (``Notice.__init__() missing N required positional
+argument(s)``) instead of the structural ``errors.HeraldError`` every
+other corruption check in this function raises (AD-6)."""
+
+
 def _entry_to_notice(entry: dict[str, object]) -> Notice:
     unknown = sorted(set(entry) - _INDEX_FIELDS)
     if unknown:
         raise errors.HeraldError(
             f"notices index entry for {entry.get('component')!r} carries "
             f"unknown field(s): {', '.join(map(repr, unknown))}"
+        )
+    missing = sorted(_REQUIRED_NOTICE_FIELDS - set(entry))
+    if missing:
+        raise errors.HeraldError(
+            f"notices index entry for {entry.get('component')!r} is "
+            f"missing field(s): {', '.join(map(repr, missing))}"
         )
     revisions = entry.get("revisions", [])
     if not isinstance(revisions, list):
@@ -414,9 +441,34 @@ def author_notice(
         published_at=published_at,
         revisions=revisions,
     )
+    # Markdown written BEFORE the index (regression fix): a markdown-write
+    # failure here now leaves the index untouched -- no phantom "live"
+    # entry pointing at a file that was never created. The reverse order
+    # only ever risked an orphaned, harmless markdown file with no index
+    # entry (invisible to every read path, since get/list/the web export
+    # only ever consult the index).
+    _write_markdown(repo_root, notice)
     document["notices"][component] = _notice_to_entry(notice)
     _write_index_document(index_path, document)
-    _write_markdown(repo_root, notice)
+    if (
+        existing is not None
+        and existing.path != relative_path
+        and (repo_root / existing.path).exists()
+    ):
+        # Regression: re-authoring a draft with a changed `notice_type`
+        # relocates its markdown path (the type is part of the path), but
+        # the OLD file was never removed -- a stale, git-diffable "record"
+        # carrying the old content sat alongside the new one indefinitely,
+        # indistinguishable from a real current notice to anyone browsing
+        # `notices/` directly. Removed now that the new file has landed.
+        try:
+            (repo_root / existing.path).unlink()
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"stale notice markdown file {repo_root / existing.path} "
+                f"could not be removed after re-authoring under a new "
+                f"path: {exc}"
+            ) from exc
     return notice
 
 
@@ -450,9 +502,10 @@ def publish_notice(
         revisions=notice.revisions
         + ({"edited_at": timestamp, "summary": "published"},),
     )
+    # Markdown before index -- see author_notice's own comment for why.
+    _write_markdown(repo_root, notice)
     document["notices"][resolved] = _notice_to_entry(notice)
     _write_index_document(index_path, document)
-    _write_markdown(repo_root, notice)
     return notice
 
 
@@ -493,9 +546,10 @@ def close_notice(
         close_reason=reason,
         revisions=notice.revisions + ({"edited_at": timestamp, "summary": "closed"},),
     )
+    # Markdown before index -- see author_notice's own comment for why.
+    _write_markdown(repo_root, notice)
     document["notices"][resolved] = _notice_to_entry(notice)
     _write_index_document(index_path, document)
-    _write_markdown(repo_root, notice)
     return notice
 
 

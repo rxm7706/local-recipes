@@ -8,7 +8,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from pyforge.herald import notices
 from pyforge.herald.errors import HeraldError
 
@@ -63,6 +62,49 @@ def test_re_authoring_a_draft_appends_a_revision_and_keeps_created_at(tmp_path: 
     assert second.revisions[-1]["summary"] == "re-authored"
 
 
+def test_re_authoring_with_a_changed_type_removes_the_stale_markdown_file(
+    tmp_path: Path,
+):
+    """Regression: the path is derived from `notice_type`, so re-authoring
+    a still-draft component under a different type relocates its markdown
+    file -- but the OLD file was never removed, leaving a stale,
+    git-diffable "record" with the old content sitting alongside the new
+    one indefinitely."""
+    first = _author(tmp_path, notice_type="deprecation")
+    old_path = tmp_path / first.path
+    assert old_path.exists()
+
+    second = _author(tmp_path, notice_type="fix")
+
+    new_path = tmp_path / second.path
+    assert new_path.exists()
+    assert new_path != old_path
+    assert not old_path.exists()
+
+
+def test_author_publish_close_write_markdown_before_the_index(
+    tmp_path: Path, monkeypatch
+):
+    """Regression: the index was written before the markdown file, so a
+    markdown-write failure left a phantom index entry pointing at a file
+    that was never created -- reported by get/list/the web export as a
+    real, live notice with no reachable content. Markdown now writes
+    first; a failure there must leave the index untouched."""
+    import pyforge.herald.notices as notices_module
+
+    def _boom(repo_root, notice):
+        raise HeraldError("simulated markdown write failure")
+
+    monkeypatch.setattr(notices_module, "_write_markdown", _boom)
+
+    with pytest.raises(HeraldError, match="simulated markdown write failure"):
+        _author(tmp_path)
+
+    # The index must still have no entry for this component.
+    with pytest.raises(HeraldError, match="no notice found"):
+        notices.get_notice(tmp_path, "auth-api-v1")
+
+
 def test_invalid_notice_type_is_refused(tmp_path: Path):
     with pytest.raises(HeraldError, match="invalid notice type"):
         _author(tmp_path, notice_type="bogus")
@@ -78,6 +120,29 @@ def test_index_file_round_trips_through_a_fresh_load(tmp_path: Path):
     fetched = notices.get_notice(tmp_path, "auth-api-v1")
     assert fetched.component == "auth-api-v1"
     assert fetched.what == "auth-api-v1 is deprecated"
+
+
+def test_a_corrupted_index_entry_missing_a_required_field_raises_herald_error(
+    tmp_path: Path,
+):
+    """Regression: `_entry_to_notice` checked for unknown extra fields and
+    a malformed `revisions` type, but never that every field the `Notice`
+    dataclass requires (no default) was present -- a missing one raised a
+    raw `TypeError` from `Notice.__init__`, not the structural
+    `errors.HeraldError` every other corruption check in this function
+    raises (AD-6). Since `dispatch()` only catches `HeraldError`, this
+    crashed as an unhandled traceback instead of the tool's usual
+    one-stderr-line/exit-code reporting."""
+    import json
+
+    _author(tmp_path)
+    index_path = tmp_path / notices.DEFAULT_INDEX_PATH
+    document = json.loads(index_path.read_text(encoding="utf-8"))
+    del document["notices"]["auth-api-v1"]["what"]
+    index_path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(HeraldError, match="missing field.*'what'"):
+        notices.get_notice(tmp_path, "auth-api-v1")
 
 
 # --- Story 10.6: lifecycle --------------------------------------------------

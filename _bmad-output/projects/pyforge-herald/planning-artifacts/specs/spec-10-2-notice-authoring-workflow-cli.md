@@ -115,3 +115,22 @@ absence of any prompt at all (a link is opt-in, not merely optional-with-a-defau
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **Re-authoring a still-draft component with a changed `--type`
+  orphaned the old markdown file.** The path is derived from `notice_type`
+  (`notices/YYYY-MM/<type>/<component>.md`), so re-authoring under a different type
+  relocates the file -- but the old one was never removed, leaving a stale, git-diffable
+  "record" carrying the OLD content sitting alongside the new one indefinitely,
+  indistinguishable from a real current notice to anyone browsing `notices/` directly.
+  Reproduced live before the fix. Fixed: `author_notice` now removes the old markdown
+  file after the new one lands, whenever re-authoring changed the path. New regression
+  test: `test_re_authoring_with_a_changed_type_removes_the_stale_markdown_file`.
+- `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no
+  `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 599 passed, 2 skipped.
+
+**Follow-up review recommendation:** none outstanding for this story.

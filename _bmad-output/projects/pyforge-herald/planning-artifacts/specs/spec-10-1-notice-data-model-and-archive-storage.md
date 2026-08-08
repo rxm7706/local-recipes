@@ -123,3 +123,44 @@ by `_render_markdown`, no parser needed on read since the index is authoritative
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[high]` `[patch]` **The index was written before the markdown file in `author_notice`/
+  `publish_notice`/`close_notice`.** A markdown-write failure (permissions, disk full, a
+  component name long enough to hit a filesystem's filename-length limit -- reproduced
+  live with a 300-character component name) left a phantom index entry pointing at a file
+  that was never created; `get_notice`/`list_notices`/the web export all reported it as a
+  real, live notice with no reachable content, directly contradicting this module's own
+  "always written together and always in lock-step" claim. Fixed: markdown now writes
+  FIRST in all three functions -- a failure there now leaves the index genuinely
+  untouched. The reverse risk (a markdown-write success followed by an index-write
+  failure) is strictly safer: an orphaned markdown file is invisible to every read path
+  (get/list/the web export all consult the index only), never reported as live. New
+  regression test: `test_author_publish_close_write_markdown_before_the_index`.
+- `[medium]` `[patch]` **`_entry_to_notice` never checked that every field the `Notice`
+  dataclass requires (no default) was present**, only unknown extras and a malformed
+  `revisions` type -- a missing required field (e.g. a hand-edited or corrupted
+  `.herald/notices-index.json`) raised a raw `Notice.__init__() missing ... argument`
+  `TypeError`, not the structural `errors.HeraldError` every other corruption check in
+  this function raises (AD-6). Since `dispatch()` only catches `HeraldError`, this
+  propagated as an unhandled traceback through `herald notice list`/`get` instead of the
+  tool's normal one-stderr-line/exit-code reporting. Fixed: added a required-fields
+  presence check before construction. New regression test:
+  `test_a_corrupted_index_entry_missing_a_required_field_raises_herald_error`.
+- `addressed_findings`: 2 (1 high, 1 medium). No `intent_gap`, no `bad_spec`, no `defer`,
+  no `reject`.
+- **Reviewed and NOT applied** (a Blind Hunter finding that, on investigation, contradicts
+  this module's own deliberate, already-tested design): `archive_rename` allowing
+  `old_component` to already have its own live notice was flagged as "silent shadowing."
+  Both `spec-10-3`'s own tests and `test_publish_follows_a_redirect` explicitly rely on
+  BOTH components legitimately having pre-existing notices before a rename -- that is the
+  documented normal workflow (author under the old name, author under the new name,
+  redirect old -> new), not an accident. An initial patch attempting to refuse this case
+  broke 8 previously-green tests and was reverted after re-reading `spec-10-3`'s own ACs.
+  See `spec-10-3`'s own Review Triage Log entry for the full reasoning.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 599 passed, 2 skipped; `ruff format --check`/`ruff check` clean.
+
+**Follow-up review recommendation:** none outstanding for this story.

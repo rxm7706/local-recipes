@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
 from pyforge.herald import auth, cli, notices
 
 
@@ -169,6 +168,28 @@ def test_list_status_draft_flag(monkeypatch, tmp_path, capsys):
     assert cli.main(["notice", "--json", "list", "--status", "draft"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert [n["component"] for n in payload] == ["auth-api-v1"]
+
+
+def test_json_flag_works_both_before_and_after_the_list_subcommand(
+    monkeypatch, tmp_path, capsys
+):
+    """Regression: `--json`/`--date-range`/`--station` were only attached
+    to the `notice` parser itself, not `notice list`'s own sub-subparser
+    -- `herald notice list --json` (the natural, expected order) failed
+    with "unknown flag '--json'", exit 2, while `herald notice --json
+    list` silently worked. `--help` on `notice list` gave no hint either,
+    since the flags belonged to the parent parser."""
+    _author(monkeypatch, tmp_path, extra=["--publish"])
+
+    capsys.readouterr()
+    assert cli.main(["notice", "list", "--json"]) == 0
+    after = json.loads(capsys.readouterr().out.strip())
+
+    assert cli.main(["notice", "--json", "list"]) == 0
+    before = json.loads(capsys.readouterr().out.strip())
+
+    assert after == before
+    assert [n["component"] for n in after] == ["auth-api-v1"]
 
 
 def test_get_of_unknown_component_exits_1(capsys, monkeypatch, tmp_path):

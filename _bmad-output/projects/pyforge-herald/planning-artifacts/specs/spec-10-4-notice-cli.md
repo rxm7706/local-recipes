@@ -105,3 +105,30 @@ costs nothing and preserves both contracts.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **`--json`/`--date-range`/`--station` only worked BEFORE the `list`
+  subcommand, not after.** The three flags were attached only to the `notice` parser
+  itself (`parents=[global_flags]`), not to `notice list`'s own sub-subparser -- so
+  `herald notice list --json` (the natural, expected order) failed with "unknown flag
+  '--json'", exit 2, while `herald notice --json list` worked silently. `notice list
+  --help` gave no hint either, since the flags belonged to the parent parser.
+  **First attempted fix was itself wrong**: naively adding a second, plain copy of the
+  three flags to `notice_list` (`parents=[global_flags]` again) made `list --json` work
+  but broke `--json list` -- argparse's nested-subparsers action parses each level into
+  its own fresh sub-namespace before merging into the outer one, so `list`'s own unset
+  `--json` (default `False`) silently clobbered the value `notice`'s own parser had
+  already set to `True`. Correct fix: a new `_global_flags_parent_for_nested_subparser()`
+  helper with `default=argparse.SUPPRESS` on all three flags, used only by `notice_list`
+  -- an unset flag at that level is then simply absent from the merge instead of
+  overwriting the outer value with a stale default. Verified against all three orderings
+  (flag before, flag after, flag absent). New regression test:
+  `test_json_flag_works_both_before_and_after_the_list_subcommand`.
+- `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no
+  `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 599 passed, 2 skipped.
+
+**Follow-up review recommendation:** none outstanding for this story.
