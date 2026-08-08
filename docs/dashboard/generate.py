@@ -169,8 +169,15 @@ def sprint_to_dashboard_status(sprint_status: str, current: str) -> str:
 
 # Editorial metadata only. Everything STRUCTURAL (epics, stories, titles) is
 # derived from epics.md by scan_projects() — see its docstring for why.
+# Keys carried forward verbatim when a project's row is rebuilt. `sub` joined the
+# list 2026-08-08: normalizing atlas made its story set derivable for the first
+# time, so its row was rebuilt rather than preserved wholesale — and silently
+# dropped a 1,200-character curated narrative (the Waves 0–H closeout, merged-PR
+# citations, and the "Wave I is NOT part of the migration" distinction). Nothing
+# regenerates prose like that; it is written once by a human and must survive
+# every rebuild.
 _EDITORIAL = ("label", "accentVar", "branch", "contract", "seglabels",
-              "inflight", "velocity", "timing", "lineState")
+              "inflight", "velocity", "timing", "lineState", "sub", "roadmap")
 
 # Dashboard key -> BMAD project slug, where they differ.
 _KEY_SLUG_OVERRIDE = {"regen": "local-recipes"}
@@ -226,23 +233,31 @@ def scan_projects(existing: dict) -> dict:
         # silently overwrote 32 real stories. A project whose epics.md uses a
         # different convention keeps its previous entry and says so loudly.
         #
-        # DO NOT "fix" this by teaching the parser atlas's convention. Tried and
-        # reverted 2026-07-30. Its headings do carry a canonical pair —
-        # `### Story A1 (2.1):` — but the sprint-status keys it must match are
-        # MIXED: waves A–H key off the DISPLAY letter (`A1` -> `a1-scaffold-…`)
-        # while Epic 10 keys off the PARENS (`I0 (10.1)` -> `10-1-restore-…`).
-        # Deriving either one alone drops the other half: emitting the canonical
-        # pair took atlas from 38 matched / 0 unmatched to 6 / 32, and the board
-        # still rendered and still looked plausible. The hand-authored line is
-        # correct and deliberate; this warning is the guard announcing it, not a
-        # defect to chase.
+        # DO NOT "fix" this by teaching the parser a station's convention. Tried
+        # and reverted 2026-07-30 for atlas, whose headings carried a canonical
+        # pair (`### Story A1 (2.1):`) while its sprint-status keys were MIXED —
+        # waves A–H keyed off the DISPLAY letter (`A1` -> `a1-scaffold-…`), Epic
+        # 10 off the PARENS (`I0 (10.1)` -> `10-1-restore-…`). Deriving either
+        # alone dropped the other half: emitting the canonical pair took atlas
+        # from 38 matched / 0 unmatched to 6 / 32, and the board still rendered
+        # and still looked plausible.
+        #
+        # RESOLVED 2026-08-08 by fixing the DATA, not the parser: atlas was
+        # normalized to the canonical `<epic>.<num>` across headings, ledger
+        # keys, story-spec filenames and board ids in lockstep
+        # (EXEMPLAR-STANDARD INV-5), so no project carries a dual id any more.
+        #
+        # This guard STAYS — it is not an atlas accommodation. It protects EVERY
+        # project from a parse failure silently blanking curated state, which is
+        # how 32 real stories were once overwritten. What was removed is the
+        # atlas-specific "EXPECTED for this project" message below.
         if sum(len(e["stories"]) for e in epics) == 0:
             if prev:
-                extra = (" — EXPECTED for this project, see the note above; the "
-                         "hand-authored line is correct" if slug == "pyforge-atlas" else "")
                 print(f"[projects] WARN {slug}: epics.md parsed {len(epics)} epic(s) "
                       f"but NO stories (unrecognised story-heading convention) — "
-                      f"keeping the existing hand-authored line, NOT overwriting it{extra}")
+                      f"keeping the existing line, NOT overwriting it. Fix the "
+                      f"headings to `### Story <epic>.<num>:` (EXEMPLAR-STANDARD "
+                      f"INV-5); do not teach this parser a new shape.")
             continue
         row = {k: prev[k] for k in _EDITORIAL if k in prev}
         row.setdefault("label", key.capitalize())
@@ -1928,6 +1943,36 @@ def scan_readiness() -> dict:
     }
 
 
+def _implementation_gate() -> str:
+    """The IMPLEMENTATION phase gate, derived from each station's tracked ledger.
+
+    Replaces a hardcoded literal. Reads the SAME tracked ledgers the readiness
+    view uses, via `parse_sprint_status`, so the gate cannot disagree with the
+    numbers rendered beside it — and never re-parses with an ad-hoc regex, which
+    under-counts any station keying stories outside `<int>-<int>`.
+    """
+    complete, building = [], []
+    for station in sorted(STATIONS):  # STATIONS is a tuple of station names
+        ledger = (REPO_ROOT / "_bmad-output" / "projects" / f"pyforge-{station}"
+                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        if not ledger.is_file():
+            continue
+        statuses = parse_sprint_status(ledger)
+        stories = {k: v for k, v in statuses.items() if not k.startswith("epic-")}
+        if not stories:
+            continue
+        done = sum(1 for v in stories.values() if v == "done")
+        (complete if done == len(stories) else building).append(station)
+    if not (complete or building):
+        return "no tracked ledger readable — status unknown"
+    parts = []
+    if complete:
+        parts.append(f"{len(complete)} complete ({', '.join(complete)})")
+    if building:
+        parts.append(f"{len(building)} building ({', '.join(building)})")
+    return "; ".join(parts)
+
+
 def scan_command_center(fleet: dict) -> dict:
     """PyForge Guild Fleet view grouped by SDLC phases.
 
@@ -2012,7 +2057,13 @@ def scan_command_center(fleet: dict) -> dict:
             "name": "IMPLEMENTATION Phase",
             "flow": "Code → ship + retro",
             "artifacts": ["sprint-status", "code", "tests", "retro"],
-            "gate": "Herald coding; others queued or ready"
+            # DERIVED, not asserted. This read "Herald coding; others queued or
+            # ready" as a hardcoded literal until 2026-08-08 — stale prose from an
+            # era when that was true. Herald has been 47/47 for days and five
+            # stations are mid-build, so the gate was describing a fleet that no
+            # longer existed. A hand-typed status line has no refresh path and
+            # therefore no way to stop being wrong.
+            "gate": _implementation_gate()
         }
     }
 

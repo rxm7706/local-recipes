@@ -102,26 +102,29 @@ def _norm_id(token: str) -> str:
 def _story_ids_from_epics(path: pathlib.Path) -> list[set[str]]:
     """One id-SET per story — every id a `### Story` heading declares for it.
 
-    Atlas writes a DUAL id: `### Story I0 (10.1): Restore atlas dependency-completeness`
-    declares both the wave id `i0` and the numeric `10-1`, and its ledger keys on the
-    numeric one for Epic 10 while keying on the wave one for Waves A-H. Both are that
-    story's id. Matching on only the first token reported six phantom orphans in each
-    direction — the same story counted as missing twice, once under each name.
+    Atlas USED TO write a DUAL id: `### Story I0 (10.1): …` declared both the wave id
+    `i0` and the numeric `10-1`, and its ledger keyed on the numeric one for Epic 10
+    while keying on the wave one for Waves A-H. Matching on only the first token
+    reported six phantom orphans in each direction — the same story counted as missing
+    twice, once under each name — so this accepted either id.
 
-    Returning a set per story rather than one flat set is what lets INV-B ask "is ANY
-    of this story's ids in the ledger?", which is the actual question.
+    That ended 2026-08-08: atlas was normalized to the canonical `<epic>.<num>`
+    (EXEMPLAR-STANDARD INV-5) across headings, ledger keys, story-spec filenames and
+    board ids together, so a heading now declares exactly one id. The dual-id branch is
+    removed rather than left dormant — INV-5's rule is that a detector must not carry a
+    private accommodation for one station's shape. Verified by byte-identical output.
+
+    Still returns a SET per story, not a bare string: INV-B's question is "is ANY of
+    this story's ids in the ledger?", and keeping the set keeps that shape available
+    without re-encoding a scheme.
     """
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return []
     out: list[set[str]] = []
-    for m in re.finditer(r"^###\s+Story\s+([A-Za-z0-9.]+)(?:\s*\(([A-Za-z0-9.]+)\))?",
-                         text, re.MULTILINE):
-        ids = {_norm_id(m.group(1))}
-        if m.group(2):
-            ids.add(_norm_id(m.group(2)))
-        out.append(ids)
+    for m in re.finditer(r"^###\s+Story\s+(\d+\.\d+[a-z]?)", text, re.MULTILINE):
+        out.append({_norm_id(m.group(1))})
     return out
 
 

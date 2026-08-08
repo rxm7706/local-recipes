@@ -110,6 +110,14 @@ An operator triaging a specific feedstock or finding runs `doctor diagnose --tar
 An operator gets four extensions to the walking skeleton, each strictly derived from Epics 1-3's already-shipped output rather than a new gather path: a composite health grade, a persistent fleet-health surface, an adoption-tracking watch axis, and a single-hop safe-upgrade recommendation. Sequenced after Epics 1-3 ship and prove themselves — this epic requires all three, uniquely among Doctor's epics.
 **FRs covered:** FR-10, FR-11, FR-12, FR-13
 
+### Epic 5: The verdict on the Marshal's own row
+The station that owns the sprint ledger stops being the station that grades it. Charter §6 has required this since 2026-07-28; nothing implemented it until a real loss made the gap concrete.
+**FRs covered:** FR-14
+
+### Epic 6: Every verdict comes home (Charter §6, generalized — added 2026-08-08)
+Epic 5 applied §6 to one artifact. An ownership audit found the clause violated fleet-wide: 10 of 13 repo-level detectors judge an artifact another station produces, and none belongs to Doctor. This epic re-homes those 10 as Doctor sources, each structurally barred from importing the station it judges — and does it behind a profile, because the verb they land on is already over its budget.
+**FRs covered:** FR-15
+
 ---
 
 ## Epic 1: Pre-flight Check (walking skeleton)
@@ -426,7 +434,7 @@ As the operator,
 I want `doctor` to actually show me the Marshal-durability verdict,
 So that the check is something I see, not something that merely exists.
 
-**Type:** feature • **Effort:** XS • **Deps:** S-5.1 • **FR/AD:** FR-14; AD-11
+**Type:** feature • **Effort:** XS • **Deps:** S-5.1, S-6.1 (the profile this is sequenced behind) • **FR/AD:** FR-14; AD-11
 **Surface:** `__main__.py`
 
 **Why this is its own story, not part of 5.1.** `sources/marshal.py` shipped with **no
@@ -451,3 +459,191 @@ not assumed
 
 **Status:** backlog
 
+
+---
+
+## Epic 6: Every verdict comes home (Charter §6, generalized)
+
+**Value delivered.** Epic 5 moved one verdict. This moves the rest. A detector-ownership
+audit on 2026-08-08 measured the clause Charter §6 has asserted since 2026-07-28 and found
+it violated fleet-wide: of **13** repo-level detectors, **10 judge an artifact another
+station produces**, and not one of those 10 is Doctor's. Marshal owns the ledger, the board,
+the Dream→Spec chain and the spec surface — and owns the detectors that grade all four.
+
+**The rule, stated once.** *Marshal may own the operational guard; Doctor must own the
+verdict.* Two layers, not a transfer. `promote_sprint_status.py` keeps refusing bad writes
+and `--project` scoping stays; what moves is the authority to be the final word.
+
+**Why this epic is sequenced, not parallel.** Every story lands a gather on `doctor check`,
+measured at **7.04s against its documented 5.0s budget** (SM-C1, `DW-DOCTOR-2026-08-08-1`).
+Adding 10 gathers to a verb already 40% over is not a detail to discover at the end — so
+S-6.1 is the profile, and nothing else starts until it passes.
+
+**Blockers found during the audit, recorded here so they are not rediscovered:**
+1. `scripts/detectors.py` discovers detectors by AST-scanning `scripts/*.py`. Moving them
+   into `pyforge.doctor.sources.*` returns an empty registry — the registry must be
+   rewritten (S-6.2), and it is itself currently ungoverned.
+2. `docs/dashboard/generate.py:650` does `from bmad_drift_check import …` for
+   `GUILD_DREAMS`/`STATIONS`. PR #317 created that import deliberately to kill a
+   hand-mirrored copy that had already caused a false positive. Moving `bmad_drift_check`
+   breaks board generation unless the shared constants move first (S-6.8).
+3. The `pyforge-doctor` env carries no `yaml` (needed by `chain_completeness`,
+   `dream_chain`) and no `bmad_loop` (needed by `forward_dependency`). `yaml` is a plain
+   library add; `bmad_loop` is a real coupling decision — the import is deliberate
+   (`ACTIONABLE_STATUSES` is *derived, never restated*, so the check stays tied to real
+   engine behaviour), and restating it breaks that invariant.
+4. Three detectors are `runtime` scope (`dashboard_drift`, `loop_stall`, `unpushed_work`)
+   and read host state (tmux, `~/.bmad-loops`); they cannot run in CI. Doctor must preserve
+   the repo/runtime split internally or lose CI-ability (S-6.3).
+
+### Story 6.1: Profile `doctor check` and bring it inside its budget
+
+As the operator,
+I want `doctor check` measured and inside SM-C1 before anything is added to it,
+So that §6 compliance is not bought by breaking Doctor's own performance contract.
+
+**Type:** change • **Effort:** M • **Deps:** — • **FR/AD:** FR-15; SM-C1
+**Surface:** `sources/*.py`, `cli/check.py`, `tests/`
+
+**Why first.** `DW-DOCTOR-2026-08-08-1` records three timed iterations — 6.92s / 7.04s /
+6.73s against 5.0s — and states the cost is unattributed: warden's `--version`
+subprocesses, the atlas MCP/CLI fallbacks, and the env-hygiene walk are all candidates.
+Charter §6 forbids the judged station relaxing its own threshold, so the budget is fixed
+and the work must meet it.
+
+**Acceptance Criteria:**
+
+**Given** the monorepo root
+**When** `doctor check` is profiled per-source
+**Then** the cost of each gather is attributed and recorded, not estimated
+**And** `test_doctor_check_completes_within_the_five_second_budget` passes on `main`
+**And** the budget itself is unchanged — no re-thresholding
+
+**Status:** backlog
+
+### Story 6.2: A source registry Doctor owns
+
+**Type:** feature • **Effort:** M • **Deps:** S-6.1 • **FR/AD:** FR-15
+**Surface:** `sources/__init__.py`, `models.py` (`Source`), `scripts/detectors.py`
+
+**Given** detectors resolve as Doctor sources rather than `scripts/*.py` files
+**Then** discovery no longer depends on AST-scanning a directory, and every source is
+enumerable with its scope, subject station and owning station
+**And** a source with no declared subject is a startup error, not a default
+
+**Status:** backlog
+
+### Story 6.3: The repo/runtime split survives the move
+
+**Type:** feature • **Effort:** S • **Deps:** S-6.2 • **FR/AD:** FR-15
+**Surface:** `sources/__init__.py`, `cli/check.py`
+
+**Given** three sources read host state and cannot run in CI
+**When** Doctor runs where that state is absent
+**Then** those sources report `WARN`/unknown — never `OK`, never an exception
+**And** a CI-only invocation can select the repo-scope set explicitly
+
+**Status:** backlog
+
+### Story 6.4: The ledger verdicts come home
+
+**Type:** change • **Effort:** M • **Deps:** S-6.2, S-6.3 • **FR/AD:** FR-15
+**Surface:** `sources/marshal.py`, `sources/ledger.py`, `tests/`
+
+**Given** `ledger_regression_check` and `story_status_check` both judge Marshal's ledger
+**When** they resolve as Doctor sources beside the existing `marshal-durability`
+**Then** each reports through Doctor's Finding contract and exit-code lattice
+**And** neither imports `pyforge.marshal`
+**And** Marshal's pre-write guards remain in place, unmodified
+
+**Status:** backlog
+
+### Story 6.5: The board verdicts come home
+
+**Type:** change • **Effort:** M • **Deps:** S-6.2, S-6.3 • **FR/AD:** FR-15
+**Surface:** `sources/board.py`, `tests/`
+
+**Given** `chain_completeness`, `dashboard_drift` and `check_layout` judge Marshal's board
+**Then** all three resolve as Doctor sources, `dashboard_drift` declared `runtime` scope
+**And** `chain_completeness`'s INV-A..D findings survive the move verbatim — same
+invariants, same messages, proven by a mutation test per invariant
+
+**Status:** backlog
+
+### Story 6.6: The chain verdicts come home
+
+**Type:** change • **Effort:** M • **Deps:** S-6.2, S-6.3 • **FR/AD:** FR-15
+**Surface:** `sources/chain.py`, `tests/`, `pixi.toml`
+
+**Given** `dream_chain`, `spec_surface` and `deferred_work` judge the artifact chain every
+station shares
+**Then** all three resolve as Doctor sources
+**And** `yaml` is added to the `pyforge-doctor` env for the two that need it — a library
+add, never a feature union (the isolation rule that broke `main` twice, PRs #113/#115)
+
+**Status:** backlog
+
+### Story 6.7: `forward_dependency` comes home, and the harness coupling is decided
+
+**Type:** change • **Effort:** M • **Deps:** S-6.6 • **FR/AD:** FR-15
+**Surface:** `sources/deps.py`, `pixi.toml`, `tests/`
+
+**Why it is its own story.** This is the only detector whose move requires a decision
+rather than a port. It imports `bmad_loop.sprintstatus.ACTIONABLE_STATUSES` deliberately —
+*derived, never restated*, so the check cannot drift from real engine behaviour. Adding the
+harness to Doctor's lean env couples Doctor to Marshal's toolchain; restating the enum
+breaks the invariant that makes the check trustworthy. Neither is free.
+
+**Acceptance Criteria:**
+
+**Given** the two options are stated with their costs
+**When** one is chosen
+**Then** the decision is recorded as an AD with its rejected alternative
+**And** if the enum is restated, a conformance test fails when it diverges from the
+installed library — the invariant is preserved by a different mechanism, not dropped
+
+**Status:** backlog
+
+### Story 6.8: `bmad_drift` comes home without breaking the board
+
+**Type:** change • **Effort:** M • **Deps:** S-6.6 • **FR/AD:** FR-15
+**Surface:** `sources/factory.py`, `docs/dashboard/generate.py`, `tests/`
+
+**Given** `docs/dashboard/generate.py` imports `GUILD_DREAMS`/`STATIONS` from
+`scripts/bmad_drift_check.py`
+**When** that detector moves
+**Then** the shared constants have exactly one home and both consumers derive from it
+**And** no hand-mirrored copy is reintroduced — the 2026-07-28 false positive is the reason
+that import exists
+
+**Status:** backlog
+
+### Story 6.9: The `scripts/` shims retire
+
+**Type:** change • **Effort:** S • **Deps:** S-6.4, S-6.5, S-6.7, S-6.8 • **FR/AD:** FR-15
+**Surface:** `scripts/`, `pixi.toml`, `scripts/spec_surface_allowlist.txt`, meta-tests
+
+**Given** all 10 verdicts resolve as Doctor sources
+**Then** the `scripts/` detector files are removed, their pixi tasks re-point at Doctor
+**And** each retired file's allowlist entry is deleted — the allowlist shrinks, per
+`spec-regenerable-factory` CAP-2
+**And** the two meta-tests that invoke the old paths
+(`test_bmad_artifacts_in_sync.py`, `test_spec_surface_check.py`) are updated, not deleted
+
+**Status:** backlog
+
+### Story 6.10: Independence is structural, for every source
+
+**Type:** feature • **Effort:** S • **Deps:** S-6.9 • **FR/AD:** FR-15; AD-11, AD-12
+**Surface:** `tests/meta/test_source_independence.py`
+
+**Given** every Doctor source declares the station it judges
+**When** the meta-test runs
+**Then** no source imports the package of the station it judges — including lazy imports
+and string constants that could reach `import_module`
+**And** `sources/warden.py` is an explicitly allowlisted exception with its reason recorded
+(it relays an instrument's self-report about its own environment, which is not judging an
+artifact)
+**And** a newly added source with no declared subject fails the test
+
+**Status:** backlog

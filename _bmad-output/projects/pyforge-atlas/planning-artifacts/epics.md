@@ -211,7 +211,7 @@ would inherit a failing gate).
 Convert the legacy orchestrator into queryable, provenance-grade context so
 Wave-B ports are grounded in fact, not model memory.
 
-### Story 0.1 (1.1): Generate legacy contextual skill
+### Story 1.1: Generate legacy contextual skill
 
 - **Delivered 2026-07-17 — PR #69.** Full record: `specs/spec-0-1-generate-legacy-contextual-skill.md`.
 
@@ -241,7 +241,7 @@ So that I can query hallucination-free legacy provenance while porting phases.
 Build the harness: scaffold, catalog, incremental dataset class — and the
 first two verify gates the loop needs before it may run anything.
 
-### Story A1 (2.1): Scaffold the Kedro + pixi project via `nebi`
+### Story 2.1: Scaffold the Kedro + pixi project via `nebi`
 
 - **Delivered 2026-07-17 — PR #70.** Full record: `specs/spec-a1-scaffold-the-kedro-pixi-project-via-nebi.md`.
 
@@ -269,7 +269,7 @@ So that every later story lands in a provisioned, verifiable, worktree-affordabl
 - **Verify gate:** **builds `kedro-test`**.
 - **Depends on:** 0.1.
 
-### Story A2 (2.2): Define the Data Catalog for all sources + outputs
+### Story 2.2: Define the Data Catalog for all sources + outputs
 
 - **Delivered 2026-07-17 — PR #71.** Full record: `specs/spec-a2-define-the-data-catalog-for-all-sources-outputs.md`.
 
@@ -293,7 +293,7 @@ So that no data-access logic ever lives in node functions and credentials scope 
 - **Verify gate:** **builds `kedro-catalog-check`**.
 - **Depends on:** A1.
 
-### Story A3 (2.3): Implement `IncrementalParquetDataset` for TTL gating
+### Story 2.3: Implement `IncrementalParquetDataset` for TTL gating
 
 - **Delivered 2026-07-17 — PR #72.** Full record: `specs/spec-a3-implement-incrementalparquetdataset-for-ttl-gating.md`.
 
@@ -325,7 +325,7 @@ signals. Wave-B verify assets are TEA `atdd` red-phase fixtures; the
 `parity-diff` harness is built incrementally through B1–B3 and consumed at the
 attended B4 event. B8/B9/B10 are additive, never parity-gated.
 
-### Story B1 (3.1): Port the conda-side backbone phases into Kedro nodes
+### Story 3.1: Port the conda-side backbone phases into Kedro nodes
 
 - **Delivered 2026-07-17 — PR #73.** Full record: `specs/spec-b1-port-the-conda-side-backbone-phases-into-kedro-nodes.md`.
 
@@ -351,7 +351,7 @@ So that the conda-side backbone resolves from the DAG with its legacy behavioral
 - **Verify gate:** `kedro-test` + begins building **`parity-diff`** (B1–B3 build, B4 consumes).
 - **Depends on:** A1–A3 (catalog + dataset class + gates).
 
-### Story B2 (3.2): Port the PyPI & Vulnerability pipelines
+### Story 3.2: Port the PyPI & Vulnerability pipelines
 
 - **Delivered 2026-07-17 — PR #75.** Full record: `specs/spec-b2-port-the-pypi-vulnerability-pipelines.md`.
 
@@ -376,7 +376,7 @@ So that PyPI and vulnerability intelligence run as unit-testable DAG nodes with 
 - **Verify gate:** `kedro-test` + `parity-diff` (building).
 - **Depends on:** B1 (Core pipeline datasets).
 
-### Story B3 (3.3): Re-expose the data surface as Kedro-API-native MCP tools
+### Story 3.3: Re-expose the data surface as Kedro-API-native MCP tools
 
 - **Delivered 2026-07-17 — PR #76.** Full record: `specs/spec-b3-re-expose-the-data-surface-as-kedro-api-native-mcp-tools.md`.
 
@@ -401,7 +401,7 @@ So that I can trigger named pipelines and read datasets via MCP with no load-bea
 - **Verify gate:** `kedro-test` + `parity-diff` (build completes at B3).
 - **Depends on:** B1, B2 (datasets to expose).
 
-### Story B4 (3.4): Verify dataset parity against the legacy orchestrator
+### Story 3.4: Verify dataset parity against the legacy orchestrator
 
 - **Delivered 2026-07-18 — PR #77.** Full record: `specs/spec-b4-verify-dataset-parity-against-the-legacy-orchestrator.md`.
 
@@ -425,7 +425,7 @@ So that the legacy orchestrator (and `phase_state`) can be retired on recorded e
 - **Verify gate:** **consumes `parity-diff`** (fixture mode in-loop; credentialed full run at the event).
 - **Depends on:** B1, B2, B3.
 
-### Story B5 (3.5): Port the external-refresh assets (§ 3.4)
+### Story 3.5: Port the external-refresh assets (§ 3.4)
 
 - **Delivered 2026-07-18 — PR #78.** Full record: `specs/spec-b5-port-the-external-refresh-assets-3-4.md`.
 
@@ -450,7 +450,7 @@ So that the three separately-built stores refresh with retries and observability
 - **Verify gate:** `kedro-test` (+ `dagster-dryrun` once C1 exists; schedule assertions land as fixtures here).
 - **Depends on:** B4 sequence position per § 14 (runs after parity; needs B1/B2 pipelines; Q6 drained first).
 
-### Story B6 (3.6): Port the Seed-Gaps pipeline
+### Story 3.6: Port the Seed-Gaps pipeline
 
 - **Delivered 2026-07-18 — PR #79.** Full record: `specs/spec-b6-port-the-seed-gaps-pipeline.md`.
 
@@ -474,7 +474,7 @@ So that seed-freshness reports regenerate after every rebuild without ever mutat
 - **Verify gate:** `kedro-test` (byte-identical-seed fixture + report-node fixtures).
 - **Depends on:** B1, B2 (upstream datasets); § 14 position after B5.
 
-### Story B7 (3.7): Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)
+### Story 3.7: Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)
 
 - **Delivered 2026-07-18 — PR #80.** Full record: `specs/spec-b7-extend-the-universal-sbom-intake-resolver-formats-universe-bom-buckets.md`.
 
@@ -499,7 +499,7 @@ So that any manifest normalizes to CycloneDX and matches against the full conda-
 - **Verify gate:** `kedro-test` (format fixtures, six-bucket fixture, NBSP fixture).
 - **Depends on:** B1, B2; § 14 position after B6.
 
-### Story B8 (3.8): Basilisk conda-native vulnerability ingestion
+### Story 3.8: Basilisk conda-native vulnerability ingestion
 
 - **Delivered 2026-07-18 — PR #81.** Full record: `specs/spec-b8-basilisk-conda-native-vulnerability-ingestion.md`.
 
@@ -524,7 +524,7 @@ So that conda-native advisories reach the read surface without conflating versio
 - **Verify gate:** `kedro-test` (the three binding-constraint fixtures + offline-skip fixture).
 - **Depends on:** B2 (Vulnerability pipeline exists); NOT gated on B4 parity.
 
-### Story B9 (3.9): Release-to-availability velocity columns
+### Story 3.9: Release-to-availability velocity columns
 
 - **Delivered 2026-07-18 — PR #82.** Full record: `specs/spec-b9-release-to-availability-velocity-columns.md`.
 
@@ -548,7 +548,7 @@ So that packaging velocity is measurable without the false "47% behind" failure 
 - **Verify gate:** `kedro-test` (both failure-mode fixtures).
 - **Depends on:** B2 (Phase H dataset); NOT gated on B4 parity.
 
-### Story B10 (3.10): Migration-readiness datasets + classification node
+### Story 3.10: Migration-readiness datasets + classification node
 
 - **Delivered 2026-07-18 — PR #83.** Full record: `specs/spec-b10-migration-readiness-datasets-classification-node.md`.
 
@@ -583,7 +583,7 @@ start — § 11 default adopted: on-demand/scheduled local invocation, no
 persistent daemon unless Wave-G sensors force it; switch to an exit ramp only
 on concrete deterioration.
 
-### Story C1 (4.1): Integrate `kedro-dagster` for scheduling + execution
+### Story 4.1: Integrate `kedro-dagster` for scheduling + execution
 
 - **Delivered 2026-07-18 — PR #84.** Full record: `specs/spec-c1-integrate-kedro-dagster-for-scheduling-execution.md`.
 
@@ -609,7 +609,7 @@ So that I watch runs in the Dagster UI and the 1800 s silent-phase-drop defect i
 - **Verify gate:** **builds `dagster-dryrun`**.
 - **Depends on:** Epic 3 complete (nodes + refresh assets to schedule).
 
-### Story C2 (4.2): Integrate `kedro-viz` + expose a pixi task
+### Story 4.2: Integrate `kedro-viz` + expose a pixi task
 
 - **Delivered 2026-07-18 — PR #85.** Full record: `specs/spec-c2-integrate-kedro-viz-expose-a-pixi-task.md`.
 
@@ -639,7 +639,7 @@ Invert the read surface: 28 fixed questions become declared metrics + pages +
 one NL field. Frontend precondition: the CIS two-spine specs (`DESIGN.md` +
 `EXPERIENCE.md`) precede D2/D3 frontend work (spec § 2.4).
 
-### Story D1 (5.1): Define the Boring Semantic Layer (BSL) models
+### Story 5.1: Define the Boring Semantic Layer (BSL) models
 
 - **Delivered 2026-07-18 — PR #86.** Full record: `specs/spec-d1-define-the-boring-semantic-layer-bsl-models.md`.
 
@@ -663,7 +663,7 @@ So that every read surface translates through one semantic interface with proven
 - **Verify gate:** **builds `bsl-metric-check`**.
 - **Depends on:** Epic 4 (stable orchestrated datasets); B4 (canonical Parquet store).
 
-### Story D2 (5.2): Build the Vizro dashboard + port the 28 CLIs to pages
+### Story 5.2: Build the Vizro dashboard + port the 28 CLIs to pages
 
 - **Delivered 2026-07-18 — PR #87.** Full record: `specs/spec-d2-build-the-vizro-dashboard-port-the-28-clis-to-pages.md`.
 
@@ -688,7 +688,7 @@ So that every read-only question is answerable from a page meeting the agent-leg
 - **Verify gate:** `bsl-metric-check` (+ `kedro-test`); D2 page inventory detail resolves in the CIS specs (Spine Deferred).
 - **Depends on:** D1.
 
-### Story D3 (5.3): Integrate Vizro-AI + expose the NL interface as an MCP tool
+### Story 5.3: Integrate Vizro-AI + expose the NL interface as an MCP tool
 
 - **Delivered 2026-07-18 — PR #88.** Full record: `specs/spec-d3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool.md`.
 
@@ -718,7 +718,7 @@ So that ad-hoc questions need no SQL and are callable from Claude Code.
 Wave E adds no new verify gate (§ 2.5 assigns it none); its stories verify
 against the existing gates plus their own fixture assets.
 
-### Story E1 (6.1): Implement the A2A communication interfaces
+### Story 6.1: Implement the A2A communication interfaces
 
 - **Delivered 2026-07-18 — PR #90.** Full record: `specs/spec-e1-implement-the-a2a-communication-interfaces.md`.
 
@@ -741,7 +741,7 @@ So that insights, contract violations, and policy breaches arrive as structured 
 - **Verify gate:** existing gates + payload round-trip fixture in `kedro-test`.
 - **Depends on:** B3 (MCP surface), Epic 5 (BSL insights to carry).
 
-### Story E2 (6.2): Integrate OpenLineage + OpenTelemetry
+### Story 6.2: Integrate OpenLineage + OpenTelemetry
 
 - **Delivered 2026-07-18 — PR #91.** Full record: `specs/spec-e2-integrate-openlineage-opentelemetry.md`.
 
@@ -770,7 +770,7 @@ So that lineage, per-node metrics, and end-to-end traces are observable down to 
 
 One engine, contracts that halt, the policy gate CI consumes.
 
-### Story F1 (7.1): Complete the DuckDB consolidation + prove the cold-start claim
+### Story 7.1: Complete the DuckDB consolidation + prove the cold-start claim
 
 - **Delivered 2026-07-18 — PR #92.** Full record: `specs/spec-f1-complete-the-duckdb-consolidation-prove-the-cold-start-claim.md`.
 
@@ -793,7 +793,7 @@ So that DuckDB/Parquet is the sole store and AC-7's claims are evidence, not pro
 - **Verify gate:** grep gate + `kedro-test`; benchmark evidence at the attended event; wave-boundary `test-all`.
 - **Depends on:** B4 (retirement decided), Epics 4–6 (surfaces that might still read legacy).
 
-### Story F2 (7.2): Implement the data-validation hook and inline Pandera contracts
+### Story 7.2: Implement the data-validation hook and inline Pandera contracts
 
 - **Delivered 2026-07-18 — PR #93.** Full record: `specs/spec-f2-implement-the-data-validation-hook-and-inline-pandera-contracts.md`.
 
@@ -817,7 +817,7 @@ So that bad data halts the pipeline before persisting, with an A2A alert.
 - **Verify gate:** `kedro-test` (halt fixture + stub-validator fixture).
 - **Depends on:** E1 (A2A alert channel), C1 (Dagster halt propagation).
 
-### Story F3 (7.3): Implement Vector Similarity Search (RAG) via DuckDB `vss`
+### Story 7.3: Implement Vector Similarity Search (RAG) via DuckDB `vss`
 
 - **Delivered 2026-07-18 — PR #94.** Full record: `specs/spec-f3-implement-vector-similarity-search-rag-via-duckdb-vss.md`.
 
@@ -839,7 +839,7 @@ So that semantic retrieval over embedded artifacts runs in the same single engin
 - **Verify gate:** `kedro-test` (ranked-results fixture).
 - **Depends on:** F1 (consolidated store).
 
-### Story F4 (7.4): Dependency-hygiene node + unified CI policy gate
+### Story 7.4: Dependency-hygiene node + unified CI policy gate
 
 - **Delivered 2026-07-18 — PR #95.** Full record: `specs/spec-f4-dependency-hygiene-node-unified-ci-policy-gate.md`.
 
@@ -871,7 +871,7 @@ So that one schema-validated `ComplianceReport` and one frozen exit code replace
 Zero-backend read surface + event-driven ingestion. Sensor event sources and
 the daemon revisit (Q2 tension) resolve at G3.
 
-### Story G1 (8.1): Compile the intelligence layer to Pyodide / DuckDB-WASM
+### Story 8.1: Compile the intelligence layer to Pyodide / DuckDB-WASM
 
 - **Delivered 2026-07-18 — PR #96.** Full record: `specs/spec-g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm.md`.
 
@@ -893,7 +893,7 @@ So that the intelligence surface needs no backend at all.
 - **Verify gate:** **builds `wasm-smoke`**.
 - **Depends on:** Epic 5 (dashboard + BSL), F1 (canonical store).
 
-### Story G2 (8.2): Emit Parquet artifacts to a static web host
+### Story 8.2: Emit Parquet artifacts to a static web host
 
 - **Delivered 2026-07-18 — PR #97.** Full record: `specs/spec-g2-emit-parquet-artifacts-to-a-static-web-host.md`.
 
@@ -916,7 +916,7 @@ So that the WASM runtime reads live data with zero backend.
 - **Verify gate:** **consumes `wasm-smoke`** (against the published artifact at the attended event; fixture-hosted in-loop).
 - **Depends on:** G1.
 
-### Story G3 (8.3): Implement Dagster Sensors for near-real-time ingestion
+### Story 8.3: Implement Dagster Sensors for near-real-time ingestion
 
 As the operator,
 I want the pipeline event-driven via Dagster Sensors on upstream events (PyPI/GitHub webhooks or RSS),
@@ -944,7 +944,7 @@ So that ingestion is near-real-time and incremental instead of purely scheduled.
 The factory layer consumes pipeline outputs and writes only wiki/CMS (AD-22).
 MinIO server provisioning is an H1 precondition (Spine Deferred).
 
-### Story H1 (9.1): Scaffold the Karpathy Wiki folder structure and Agent Personas
+### Story 9.1: Scaffold the Karpathy Wiki folder structure and Agent Personas
 
 As the operator,
 I want the `wiki/raw/ → compiled/ → outputs/` tree and the 5 BMAD personas (Ingester, Compiler, Linker, Linter, Oracle) defined,
@@ -966,7 +966,7 @@ So that the knowledge-base factory has its storage shape and workforce.
 - **Depends on:** Epic 8 complete (wave order); pipeline outputs to consume exist from Epic 3+.
 - **DELIVERED (2026-07-18 — opens Wave H):** new `pyforge.atlas.factory` package. `factory/wiki.py` = the single-owner `raw/→compiled/→outputs/` layout contract (`WIKI_STAGES`/`WikiLayout`/`scaffold_wiki`) with a per-segment `stage_path` traversal guard enforcing the AD-22 write-boundary; `factory/personas.py` = the 5 § 2.2 personas + `resolve_personas(*overlays)` (BMAD customization layers, highest-priority-last; overlay may only refine — unknown name / rename rejected; workforce frozen at five); `factory/storage.py` = env-driven resolver defaulting to the OFFLINE filesystem backend (MinIO selected only when `ATLAS_WIKI_S3_ENDPOINT` set; host-agnostic AD-2). MinIO/PostgreSQL SERVER bring-up DEFERRED (DW-H1). Gate `tests/factory/` (26). AD-1 import-ban green. PR #99.
 
-### Story H2 (9.2): Implement Agno Compilation, Linting, and Q&A Crews
+### Story 9.2: Implement Agno Compilation, Linting, and Q&A Crews
 
 As the operator,
 I want `agno` crews that compile raw docs, lint the wiki, and answer questions,
@@ -987,7 +987,7 @@ So that the wiki maintains itself with agent labor.
 - **Depends on:** H1.
 - **DELIVERED (2026-07-18):** `factory/crews.py` — `CompileCrew` (raw→compiled, per-doc-resilient, forwards source staleness from BOTH the inline `stale:` frontmatter AND the `.staleness.json` sidecar into compiled frontmatter + a visible body banner — AD-13/AD-22, republication never launders freshness), `LintCrew` (reports `missing-frontmatter`/`missing-title`/`empty-body`/`broken-link` [path-resolved, recursive]/`laundered-staleness`/`malformed-frontmatter`; never raises), `QACrew` (grounded answers over compiled content; deterministic keyword retriever + extractive synthesizer defaults). agno-Agent/LLM synthesis + F3-vss production retriever are injectable seams, offline by default — live bring-up DEFERRED (DW-H2). Gate `tests/factory/test_crews.py` (26). AD-1 import-ban green (yaml+stdlib only). An independent adversarial review found 2 MUST-FIX (inline-staleness laundering; lint/QA crash-on-malformed) + 1 SHOULD-FIX (leaf-only broken-link) — all fixed + regression-tested before merge.
 
-### Story H3 (9.3): Integrate La Suite Docs REST API Sync
+### Story 9.3: Integrate La Suite Docs REST API Sync
 
 As the operator,
 I want `LaSuiteClient` + `WikiSyncer` pushing compiled wiki files to the Layer-1 CMS via the Wagtail/Django REST API,
@@ -1007,7 +1007,7 @@ So that humans read the factory's knowledge in the presentation layer.
 - **Depends on:** H1, H2.
 - **DELIVERED (2026-07-18):** `factory/lasuite.py` — `LaSuiteClient` (create/update/get/list over the Wagtail/Django REST shape; clear `LaSuiteError` on non-2xx AND on a 2xx-without-id, per § 2.1) + `WikiSyncer` (idempotent **outputs/**→CMS push keyed by content sha: new→create, changed→update, unchanged→SKIP with NO remote call). CMS source is `outputs/` (the Oracle's final reports, per the H1 layout contract + § 7.4), not internal `compiled/` (`source_stage` override available). Transport is the injected `opener` seam — package code holds no HTTP client (AC-2, no-inline-IO gate green); the default opener refuses clearly. Mapping sidecar lives at the wiki ROOT (AD-22), written ATOMICALLY (tmp+os.replace) and corruption-loud on load. Verified against an in-memory mock Wagtail (push/update/idempotent-re-push/mapping-resume). Live Wagtail server + httpx opener bring-up DEFERRED (DW-H3). Independent review found 3 SHOULD-FIX (malformed-2xx KeyError; non-atomic sidecar write; compiled-vs-outputs contract contradiction) + NITs — all fixed + regression-tested. Gate `tests/factory/test_lasuite.py`.
 
-### Story H4 (9.4): Orchestrate Crews via Dagster
+### Story 9.4: Orchestrate Crews via Dagster
 
 As the operator,
 I want Dagster assets, sensors (new raw files), and schedules (weekly linting) triggering the Agno crews autonomously,
@@ -1049,7 +1049,7 @@ Two conventions govern this epic:
   fixed in whichever is wrong — the audit's value was in the disagreement, not in
   assuming the code was right.
 
-### Story I0 (10.1): Restore atlas dependency-completeness so the suite can collect
+### Story 10.1: Restore atlas dependency-completeness so the suite can collect
 
 As the operator,
 I want the pyforge-atlas package to declare every module it imports,
@@ -1070,7 +1070,7 @@ So that the test suite collects at all.
   deliberately EXCLUDED as PyPI-only (no conda-forge feedstock) and is carried as a
   known gap rather than silently vendored. 17 collection errors → 781 passed.
 
-### Story I1 (10.2): Truth-up the Spec kernel and its companions
+### Story 10.2: Truth-up the Spec kernel and its companions
 
 As a reader of the Spec,
 I want its Constraints and Success signal to state what actually shipped,
@@ -1092,7 +1092,7 @@ So that the contract is not overclaiming.
   Success signal gained a scope note; `shipped_scope_note` added to frontmatter
   recording that top-level `status: shipped` covers waves 0–H, not the F1 benchmark.
 
-### Story I2 (10.3): Uniform story-spec frontmatter, without laundering provenance
+### Story 10.3: Uniform story-spec frontmatter, without laundering provenance
 
 As a maintainer,
 I want the story specs to carry consistent frontmatter,
@@ -1115,7 +1115,7 @@ So that they are machine-readable — without rewriting recovered originals.
   linter destroys the only evidence of what was actually written. Catalog-entry counts
   corrected 73 → 86 in spec-a2/spec-b6.
 
-### Story I3 (10.4): Preserve NULL identity under pandas 3.0
+### Story 10.4: Preserve NULL identity under pandas 3.0
 
 As a consumer of the semantic layer,
 I want a NULL group key to come back as `None`, not `NaN`,
@@ -1155,7 +1155,7 @@ cannot pass.
 - **Verify gate:** `kedro-test` GREEN (781 → 787 passing), `kedro-catalog-check`.
 - **Depends on:** I0. **Blocks I4 and I5** — the gate is red until this lands.
 
-### Story I4 (10.5): Stamp advisory data with its build provenance (AD-17)
+### Story 10.5: Stamp advisory data with its build provenance (AD-17)
 
 As an agent reading atlas data,
 I want every advisory response to carry the build stamp of the data behind it,
@@ -1235,7 +1235,7 @@ provenance of the data it displays, not the time it was rendered.
   the rejected implementation passed exactly that test.
 - **Depends on:** I3 (gate).
 
-### Story I5 (10.6): Make run admission real, or stop claiming it
+### Story 10.6: Make run admission real, or stop claiming it
 
 As the operator,
 I want concurrent triggers on one dataset set to be genuinely serialized,
@@ -1456,7 +1456,7 @@ or a minimal structural inference flagged as such.
 invariant-heavy island: the org's tooling is evaluated against it on the record, and the
 pipeline DAG is published continuously rather than screenshotted.
 
-### Story J1 (12.1): kedro-skills audit-then-adopt (FR-61)
+### Story 12.1: kedro-skills audit-then-adopt (FR-61)
 **Effort:** S • **Status:** backlog
 **Given** `kedro-skills` pinned at the evaluated version **When** it runs against the real
 `pyforge-atlas` project **Then** every piece of generated guidance is audited against the
@@ -1464,13 +1464,13 @@ AD-invariants; passing content lands in `.claude/skills/` reproducibly; contradi
 content is excluded **with the contradiction recorded**; **And** "not yet" is a valid
 final verdict that closes the story.
 
-### Story J2 (12.2): Publish the real DAG continuously (FR-62)
+### Story 12.2: Publish the real DAG continuously (FR-62)
 **Effort:** S • **Deps:** Steward S-2.1 (`deploy dashboard`) • **Status:** backlog
 **Given** a push touching the pipelines tree **Then** CI builds Kedro-Viz from the **real**
 package, never the stub-mirror, and publishes **through `steward deploy dashboard`** —
 Atlas owns the outcome, Steward owns the mechanism.
 
-### Story J3 (12.3): Record the `vscode-kedro` verdict (FR-63)
+### Story 12.3: Record the `vscode-kedro` verdict (FR-63)
 **Effort:** XS • **Status:** backlog
 **Given** the evaluation **Then** a dated adopt/defer decision exists; if deferred, an
 optional `.vscode/extensions.json` recommendation is the whole deliverable. The
@@ -1483,28 +1483,28 @@ optional `.vscode/extensions.json` recommendation is the whole deliverable. The
 **Value delivered.** The factory stops picking packaging targets by hand. Atlas proposes;
 Mason packages.
 
-### Story K1 (13.1): Trending ingest (FR-64)
+### Story 13.1: Trending ingest (FR-64)
 **Effort:** M • **Status:** backlog
 **Given** a schedule **Then** GitHub-trending candidates land in a named dataset under the
 `<domain>_<entity>` convention, via an **injected** fetcher (AD-1), never inline IO.
 
-### Story K2 (13.2): Tier classification (FR-65)
+### Story 13.2: Tier classification (FR-65)
 **Effort:** M • **Deps:** S-13.1 • **Status:** backlog
 **Given** ingested candidates **Then** each is tiered by declared rules, and an
 unclassifiable candidate is **reported**, never silently tiered.
 
-### Story K3 (13.3): `trending-candidates` operator surface (FR-66)
+### Story 13.3: `trending-candidates` operator surface (FR-66)
 **Effort:** S • **Deps:** S-13.2 • **Status:** backlog
 **Given** a classified set **Then** a CLI/MCP tool answers "what is worth packaging next?"
 with `--json`, read-only and offline-safe like every other atlas read surface.
 
-### Story K4 (13.4): Fixed-source audit track (FR-67)
+### Story 13.4: Fixed-source audit track (FR-67)
 **Effort:** S • **Deps:** S-13.2 • **Status:** backlog
 **Given** the declared org-audit list **Then** each candidate's CURRENT state is
 re-verified before proposal — one that shipped independently since the list was written is
 dropped, not re-proposed.
 
-### Story K5 (13.5): Downstream handoff to Mason (FR-68)
+### Story 13.5: Downstream handoff to Mason (FR-68)
 **Effort:** XS • **Deps:** S-13.3 • **Status:** backlog
 **Given** a selected candidate **Then** it hands off as structured data, not prose; Atlas
 proposes and never authors a recipe.

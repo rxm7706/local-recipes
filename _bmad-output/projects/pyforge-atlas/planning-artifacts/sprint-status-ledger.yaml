@@ -14,7 +14,7 @@
 # project: atlas
 # stories: 67
 development_status:
-  0-1-generate-legacy-contextual-skill: done
+  1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
   10-2-truth-up-the-spec-kernel-and-its-companions: done
   10-3-uniform-story-spec-frontmatter-without-laundering-provenance: done
@@ -29,26 +29,26 @@ development_status:
   13-3-trending-candidates-operator-surface: backlog
   13-4-fixed-source-audit-track: backlog
   13-5-downstream-handoff-to-mason: backlog
-  a1-scaffold-the-kedro-pixi-project-via-nebi: done
-  a2-define-the-data-catalog-for-all-sources-outputs: done
-  a3-implement-incrementalparquetdataset-for-ttl-gating: done
-  b1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
-  b10-migration-readiness-datasets-classification-node: done
-  b2-port-the-pypi-and-vulnerability-pipelines: done
-  b3-re-expose-the-data-surface-as-kedro-api-native-mcp-tools: done
-  b4-verify-dataset-parity-against-the-legacy-orchestrator: done
-  b5-port-the-external-refresh-assets: done
-  b6-port-the-seed-gaps-pipeline: done
-  b7-extend-the-universal-sbom-intake: done
-  b8-basilisk-conda-native-vulnerability-ingestion: done
-  b9-release-to-availability-velocity-columns: done
-  c1-integrate-kedro-dagster-for-scheduling-execution: done
-  c2-integrate-kedro-viz-expose-a-pixi-task: done
-  d1-define-the-boring-semantic-layer-bsl-models: done
-  d2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
-  d3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
-  e1-implement-the-a2a-communication-interfaces: done
-  e2-integrate-openlineage-opentelemetry: done
+  2-1-scaffold-the-kedro-pixi-project-via-nebi: done
+  2-2-define-the-data-catalog-for-all-sources-outputs: done
+  2-3-implement-incrementalparquetdataset-for-ttl-gating: done
+  3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
+  3-10-migration-readiness-datasets-classification-node: done
+  3-2-port-the-pypi-and-vulnerability-pipelines: done
+  3-3-re-expose-the-data-surface-as-kedro-api-native-mcp-tools: done
+  3-4-verify-dataset-parity-against-the-legacy-orchestrator: done
+  3-5-port-the-external-refresh-assets: done
+  3-6-port-the-seed-gaps-pipeline: done
+  3-7-extend-the-universal-sbom-intake: done
+  3-8-basilisk-conda-native-vulnerability-ingestion: done
+  3-9-release-to-availability-velocity-columns: done
+  4-1-integrate-kedro-dagster-for-scheduling-execution: done
+  4-2-integrate-kedro-viz-expose-a-pixi-task: done
+  5-1-define-the-boring-semantic-layer-bsl-models: done
+  5-2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
+  5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
+  6-1-implement-the-a2a-communication-interfaces: done
+  6-2-integrate-openlineage-opentelemetry: done
   epic-1: done
   epic-1-retrospective: done
   epic-10: done
@@ -70,14 +70,14 @@ development_status:
   epic-8-retrospective: done
   epic-9: done
   epic-9-retrospective: done
-  f1-complete-the-duckdb-consolidation-prove-the-cold-start-claim: done
-  f2-implement-the-data-validation-hook-and-inline-pandera-contracts: done
-  f3-implement-vector-similarity-search-rag-via-duckdb-vss: done
-  f4-dependency-hygiene-node-unified-ci-policy-gate: done
-  g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm: done
-  g2-emit-parquet-artifacts-to-a-static-web-host: done
-  g3-implement-dagster-sensors-for-near-real-time-ingestion: done
-  h1-scaffold-the-karpathy-wiki-folder-structure-and-agent-personas: done
-  h2-implement-agno-compilation-linting-and-qa-crews: done
-  h3-integrate-la-suite-docs-rest-api-sync: done
-  h4-orchestrate-crews-via-dagster: done
+  7-1-complete-the-duckdb-consolidation-prove-the-cold-start-claim: done
+  7-2-implement-the-data-validation-hook-and-inline-pandera-contracts: done
+  7-3-implement-vector-similarity-search-rag-via-duckdb-vss: done
+  7-4-dependency-hygiene-node-unified-ci-policy-gate: done
+  8-1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm: done
+  8-2-emit-parquet-artifacts-to-a-static-web-host: done
+  8-3-implement-dagster-sensors-for-near-real-time-ingestion: done
+  9-1-scaffold-the-karpathy-wiki-folder-structure-and-agent-personas: done
+  9-2-implement-agno-compilation-linting-and-qa-crews: done
+  9-3-integrate-la-suite-docs-rest-api-sync: done
+  9-4-orchestrate-crews-via-dagster: done

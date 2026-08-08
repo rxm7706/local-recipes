@@ -1,5 +1,475 @@
 window.DASHBOARD_DATA = {
   "projects": {
+    "atlas": {
+      "label": "Atlas",
+      "accentVar": "--atlas",
+      "branch": "Waves 0–H shipped · Wave I post-audit truth-up in progress",
+      "contract": "Kedro + pixi · DuckDB singularity · nebi-scaffolded · 8 Vizro pages shipped (28-CLI inventory deferred, DW-D2-1) · migrates cf_atlas (phases B→N) to a typed, incremental data pipeline",
+      "seglabels": [
+        "W0",
+        "WA–WB",
+        "WC–WE",
+        "WF–WH",
+        "WI · post-audit"
+      ],
+      "inflight": null,
+      "velocity": {
+        "derived": true,
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 46 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "bars": [
+          [
+            "10.4",
+            68
+          ],
+          [
+            "10.5",
+            499
+          ],
+          [
+            "10.6",
+            194
+          ]
+        ],
+        "foot": [
+          [
+            "~194 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "68–499 min",
+            "observed range",
+            ""
+          ],
+          [
+            "38/46",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "8",
+            "remaining",
+            ""
+          ]
+        ]
+      },
+      "timing": {
+        "metric": "wall-clock between story landings (create → dev → review → merge) — from PR timestamps; includes gate waits & idle, NOT active compute",
+        "totalLabel": "25.0 h wall-clock",
+        "note": "Full calendar span 2026-07-17 09:58 → 2026-07-18 11:00 UTC; the per-story intervals partition it exactly (no double-counting). Wave B’s total is idle-inflated — B1 (227m) and B3 (217m) each absorbed a long overnight / interleaved gap, not active work.",
+        "perStory": {
+          "0.1": 44,
+          "A1": 55,
+          "A2": 71,
+          "A3": 118,
+          "B1": 227,
+          "B2": 78,
+          "B3": 217,
+          "B4": 34,
+          "B5": 57,
+          "B6": 30,
+          "B7": 50,
+          "B8": 42,
+          "B9": 16,
+          "B10": 23,
+          "C1": 34,
+          "C2": 4,
+          "D1": 30,
+          "D2": 26,
+          "D3": 27,
+          "E1": 76,
+          "E2": 24,
+          "F1": 8,
+          "F2": 25,
+          "F3": 23,
+          "F4": 32,
+          "G1": 28,
+          "G2": 26,
+          "G3": 22,
+          "H1": 11,
+          "H2": 14,
+          "H3": 14,
+          "H4": 17
+        },
+        "epicMin": {
+          "0": 44,
+          "A": 244,
+          "B": 775,
+          "C": 38,
+          "D": 82,
+          "E": 100,
+          "F": 88,
+          "G": 76,
+          "H": 56
+        },
+        "total": 1502
+      },
+      "lineState": {
+        "state": "paused",
+        "at": "12.1"
+      },
+      "roadmap": {
+        "sub": "Complete: all of Waves 0–H are shipped (per merged PRs #69–#102) — the Kedro port, MCP surface, parity harness, Universal SBOM intake, orchestration, the BSL + Vizro + Vizro-AI dashboards, A2A + OpenLineage/OTel, the full DuckDB singularity (cold-start gate, Pandera contracts, vss RAG, F4’s hygiene node importing Warden’s ComplianceReport), Wave G’s WASM read surface + static-host Parquet emitter + Dagster sensors, and Wave H’s AI software factory (Karpathy wiki + 5 factory personas, agno crews, La Suite sync, Dagster orchestration). The migration was closed out by the CFE Rule-2 retro #103 (v8.79.0) — 32/32. Wave I is NOT part of the migration: it is post-audit remediation, opened 2026-07-27 after an independent Round-3 spec-to-code audit raised 49 findings (PR #131, branch abandoned — the incorporation record is the only surviving account). Six stories close the verified atlas subset at source and all six landed (merged as PR #132, 6/6, kedro-test 803 -> 901 passed); it is ordered by the tested gate rather than by wave, because kedro-test was red on main until I3 landed.",
+        "stops": [
+          [
+            "0",
+            "Legacy skill",
+            "done"
+          ],
+          [
+            "A",
+            "nebi scaffold",
+            "done"
+          ],
+          [
+            "B",
+            "node porting",
+            "done"
+          ],
+          [
+            "C",
+            "orchestration",
+            "done"
+          ],
+          [
+            "D",
+            "semantic layer",
+            "done"
+          ],
+          [
+            "E",
+            "lineage / A2A",
+            "done"
+          ],
+          [
+            "F",
+            "DuckDB",
+            "done"
+          ],
+          [
+            "G",
+            "WASM",
+            "done"
+          ],
+          [
+            "H",
+            "AI factory",
+            "done"
+          ],
+          [
+            "I",
+            "post-audit truth-up",
+            "done"
+          ]
+        ]
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Wave 0 — Legacy Translation via Skill Forge (SKF)",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Generate legacy contextual skill"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Wave A — `nebi` Scaffold & Catalog",
+          "stories": [
+            [
+              "2.1",
+              "done",
+              "Scaffold the Kedro + pixi project via `nebi`"
+            ],
+            [
+              "2.2",
+              "done",
+              "Define the Data Catalog for all sources + outputs"
+            ],
+            [
+              "2.3",
+              "done",
+              "Implement `IncrementalParquetDataset` for TTL gating"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Wave B — Pipeline Node Porting & MCP Integration",
+          "stories": [
+            [
+              "3.1",
+              "done",
+              "Port the conda-side backbone phases into Kedro nodes"
+            ],
+            [
+              "3.2",
+              "done",
+              "Port the PyPI & Vulnerability pipelines"
+            ],
+            [
+              "3.3",
+              "done",
+              "Re-expose the data surface as Kedro-API-native MCP tools"
+            ],
+            [
+              "3.4",
+              "done",
+              "Verify dataset parity against the legacy orchestrator"
+            ],
+            [
+              "3.5",
+              "done",
+              "Port the external-refresh assets (§ 3.4)"
+            ],
+            [
+              "3.6",
+              "done",
+              "Port the Seed-Gaps pipeline"
+            ],
+            [
+              "3.7",
+              "done",
+              "Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)"
+            ],
+            [
+              "3.8",
+              "done",
+              "Basilisk conda-native vulnerability ingestion"
+            ],
+            [
+              "3.9",
+              "done",
+              "Release-to-availability velocity columns"
+            ],
+            [
+              "3.10",
+              "done",
+              "Migration-readiness datasets + classification node"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Wave C — Orchestration & Visualization",
+          "stories": [
+            [
+              "4.1",
+              "done",
+              "Integrate `kedro-dagster` for scheduling + execution"
+            ],
+            [
+              "4.2",
+              "done",
+              "Integrate `kedro-viz` + expose a pixi task"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Wave D — Semantic Layer & Dashboards",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Define the Boring Semantic Layer (BSL) models"
+            ],
+            [
+              "5.2",
+              "done",
+              "Build the Vizro dashboard + port the 28 CLIs to pages"
+            ],
+            [
+              "5.3",
+              "done",
+              "Integrate Vizro-AI + expose the NL interface as an MCP tool"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Wave E — A2A Integration, Lineage & Observability",
+          "stories": [
+            [
+              "6.1",
+              "done",
+              "Implement the A2A communication interfaces"
+            ],
+            [
+              "6.2",
+              "done",
+              "Integrate OpenLineage + OpenTelemetry"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "Wave F — The DuckDB Singularity",
+          "stories": [
+            [
+              "7.1",
+              "done",
+              "Complete the DuckDB consolidation + prove the cold-start claim"
+            ],
+            [
+              "7.2",
+              "done",
+              "Implement the data-validation hook and inline Pandera contracts"
+            ],
+            [
+              "7.3",
+              "done",
+              "Implement Vector Similarity Search (RAG) via DuckDB `vss`"
+            ],
+            [
+              "7.4",
+              "done",
+              "Dependency-hygiene node + unified CI policy gate"
+            ]
+          ]
+        },
+        {
+          "badge": "E8",
+          "title": "Wave G — WebAssembly Portability & Event-Driven Sensors",
+          "stories": [
+            [
+              "8.1",
+              "done",
+              "Compile the intelligence layer to Pyodide / DuckDB-WASM"
+            ],
+            [
+              "8.2",
+              "done",
+              "Emit Parquet artifacts to a static web host"
+            ],
+            [
+              "8.3",
+              "done",
+              "Implement Dagster Sensors for near-real-time ingestion"
+            ]
+          ]
+        },
+        {
+          "badge": "E9",
+          "title": "Wave H — The AI Software Factory & Karpathy Wiki",
+          "stories": [
+            [
+              "9.1",
+              "done",
+              "Scaffold the Karpathy Wiki folder structure and Agent Personas"
+            ],
+            [
+              "9.2",
+              "done",
+              "Implement Agno Compilation, Linting, and Q&A Crews"
+            ],
+            [
+              "9.3",
+              "done",
+              "Integrate La Suite Docs REST API Sync"
+            ],
+            [
+              "9.4",
+              "done",
+              "Orchestrate Crews via Dagster"
+            ]
+          ]
+        },
+        {
+          "badge": "E10",
+          "title": "Post-Audit Remediation — Round-3 Findings",
+          "stories": [
+            [
+              "10.1",
+              "done",
+              "Restore atlas dependency-completeness so the suite can collect"
+            ],
+            [
+              "10.2",
+              "done",
+              "Truth-up the Spec kernel and its companions"
+            ],
+            [
+              "10.3",
+              "done",
+              "Uniform story-spec frontmatter, without laundering provenance"
+            ],
+            [
+              "10.4",
+              "done",
+              "Preserve NULL identity under pandas 3.0"
+            ],
+            [
+              "10.5",
+              "done",
+              "Stamp advisory data with its build provenance (AD-17)"
+            ],
+            [
+              "10.6",
+              "done",
+              "Make run admission real, or stop claiming it"
+            ]
+          ]
+        },
+        {
+          "badge": "E12",
+          "title": "Kedro-org tooling — audit, publish, decide",
+          "stories": [
+            [
+              "12.1",
+              "pending",
+              "kedro-skills audit-then-adopt (FR-61)"
+            ],
+            [
+              "12.2",
+              "pending",
+              "Publish the real DAG continuously (FR-62)"
+            ],
+            [
+              "12.3",
+              "pending",
+              "Record the `vscode-kedro` verdict (FR-63)"
+            ]
+          ]
+        },
+        {
+          "badge": "E13",
+          "title": "Upstream discovery — what to package next",
+          "stories": [
+            [
+              "13.1",
+              "pending",
+              "Trending ingest (FR-64)"
+            ],
+            [
+              "13.2",
+              "pending",
+              "Tier classification (FR-65)"
+            ],
+            [
+              "13.3",
+              "pending",
+              "`trending-candidates` operator surface (FR-66)"
+            ],
+            [
+              "13.4",
+              "pending",
+              "Fixed-source audit track (FR-67)"
+            ],
+            [
+              "13.5",
+              "pending",
+              "Downstream handoff to Mason (FR-68)"
+            ]
+          ]
+        }
+      ],
+      "owner": "atlas",
+      "practice": false
+    },
     "doctor": {
       "label": "Doctor",
       "accentVar": "--warden",
@@ -14,7 +484,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 18 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 28 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -49,12 +519,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "17/18",
+            "17/28",
             "stories complete",
             "var(--done)"
           ],
           [
-            "1",
+            "11",
             "remaining",
             ""
           ]
@@ -79,7 +549,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "5.2"
+        "at": "6.1"
       },
       "epics": [
         {
@@ -199,6 +669,62 @@ window.DASHBOARD_DATA = {
               "5.2",
               "pending",
               "Render the verdict through a `doctor` verb"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Every verdict comes home (Charter §6, generalized)",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Profile `doctor check` and bring it inside its budget"
+            ],
+            [
+              "6.2",
+              "pending",
+              "A source registry Doctor owns"
+            ],
+            [
+              "6.3",
+              "pending",
+              "The repo/runtime split survives the move"
+            ],
+            [
+              "6.4",
+              "pending",
+              "The ledger verdicts come home"
+            ],
+            [
+              "6.5",
+              "pending",
+              "The board verdicts come home"
+            ],
+            [
+              "6.6",
+              "pending",
+              "The chain verdicts come home"
+            ],
+            [
+              "6.7",
+              "pending",
+              "`forward_dependency` comes home, and the harness coupling is decided"
+            ],
+            [
+              "6.8",
+              "pending",
+              "`bmad_drift` comes home without breaking the board"
+            ],
+            [
+              "6.9",
+              "pending",
+              "The `scripts/` shims retire"
+            ],
+            [
+              "6.10",
+              "pending",
+              "Independence is structural, for every source"
             ]
           ]
         }
@@ -2765,479 +3291,9 @@ window.DASHBOARD_DATA = {
       ],
       "owner": "mason",
       "practice": false
-    },
-    "atlas": {
-      "label": "Atlas",
-      "accentVar": "--atlas",
-      "branch": "Waves 0–H shipped · Wave I post-audit truth-up in progress",
-      "contract": "Kedro + pixi · DuckDB singularity · nebi-scaffolded · 8 Vizro pages shipped (28-CLI inventory deferred, DW-D2-1) · migrates cf_atlas (phases B→N) to a typed, incremental data pipeline",
-      "seglabels": [
-        "W0",
-        "WA–WB",
-        "WC–WE",
-        "WF–WH",
-        "WI · post-audit"
-      ],
-      "epics": [
-        {
-          "badge": "0",
-          "title": "Wave 0 — Legacy translation via Skill Forge",
-          "stories": [
-            [
-              "0.1",
-              "done",
-              "Generate legacy contextual skill (cf-atlas-legacy@8.78.0)"
-            ]
-          ]
-        },
-        {
-          "badge": "A",
-          "title": "Wave A — nebi scaffold & catalog",
-          "stories": [
-            [
-              "A1",
-              "done",
-              "Scaffold the Kedro + pixi project via nebi"
-            ],
-            [
-              "A2",
-              "done",
-              "Define the Data Catalog for all sources + outputs"
-            ],
-            [
-              "A3",
-              "done",
-              "IncrementalParquetDataset for TTL gating"
-            ]
-          ]
-        },
-        {
-          "badge": "B",
-          "title": "Wave B — Pipeline node porting & MCP integration",
-          "stories": [
-            [
-              "B1",
-              "done",
-              "Port the conda-side backbone phases into Kedro nodes"
-            ],
-            [
-              "B2",
-              "done",
-              "Port the PyPI & vulnerability pipelines"
-            ],
-            [
-              "B3",
-              "done",
-              "Re-expose the data surface as Kedro-API-native MCP tools"
-            ],
-            [
-              "B4",
-              "done",
-              "Verify dataset parity against the legacy orchestrator"
-            ],
-            [
-              "B5",
-              "done",
-              "Port the external-refresh assets"
-            ],
-            [
-              "B6",
-              "done",
-              "Port the Seed-Gaps pipeline"
-            ],
-            [
-              "B7",
-              "done",
-              "Extend the Universal SBOM intake (resolver, formats, buckets)"
-            ],
-            [
-              "B8",
-              "done",
-              "Basilisk conda-native vulnerability ingestion"
-            ],
-            [
-              "B9",
-              "done",
-              "Release-to-availability velocity columns"
-            ],
-            [
-              "B10",
-              "done",
-              "Migration-readiness datasets + classification node"
-            ]
-          ]
-        },
-        {
-          "badge": "C",
-          "title": "Wave C — Orchestration & visualization",
-          "stories": [
-            [
-              "C1",
-              "done",
-              "Integrate kedro-dagster for scheduling + execution"
-            ],
-            [
-              "C2",
-              "done",
-              "Integrate kedro-viz + expose a pixi task"
-            ]
-          ]
-        },
-        {
-          "badge": "D",
-          "title": "Wave D — Semantic layer & dashboards",
-          "stories": [
-            [
-              "D1",
-              "done",
-              "Define the Boring Semantic Layer (BSL) models"
-            ],
-            [
-              "D2",
-              "done",
-              "Build the Vizro dashboard + port the 28 CLIs to pages"
-            ],
-            [
-              "D3",
-              "done",
-              "Integrate Vizro-AI + expose the NL interface as an MCP tool"
-            ]
-          ]
-        },
-        {
-          "badge": "E",
-          "title": "Wave E — A2A integration, lineage & observability",
-          "stories": [
-            [
-              "E1",
-              "done",
-              "Implement the A2A communication interfaces"
-            ],
-            [
-              "E2",
-              "done",
-              "Integrate OpenLineage + OpenTelemetry"
-            ]
-          ]
-        },
-        {
-          "badge": "F",
-          "title": "Wave F — The DuckDB singularity",
-          "stories": [
-            [
-              "F1",
-              "done",
-              "DuckDB consolidation + prove the cold-start claim"
-            ],
-            [
-              "F2",
-              "done",
-              "Data-validation hook + inline Pandera contracts"
-            ],
-            [
-              "F3",
-              "done",
-              "Vector Similarity Search (RAG) via DuckDB vss"
-            ],
-            [
-              "F4",
-              "done",
-              "Dependency-hygiene node + unified CI policy gate  ·  imports Warden's ComplianceReport"
-            ]
-          ]
-        },
-        {
-          "badge": "G",
-          "title": "Wave G — WebAssembly portability & sensors",
-          "stories": [
-            [
-              "G1",
-              "done",
-              "Compile the intelligence layer to Pyodide / DuckDB-WASM"
-            ],
-            [
-              "G2",
-              "done",
-              "Emit Parquet artifacts to a static web host (HTTP-Range gate)"
-            ],
-            [
-              "G3",
-              "done",
-              "Dagster Sensors for near-real-time ingestion"
-            ]
-          ]
-        },
-        {
-          "badge": "H",
-          "title": "Wave H — The AI software factory & Karpathy wiki",
-          "stories": [
-            [
-              "H1",
-              "done",
-              "Scaffold the Karpathy Wiki structure + 5 factory personas"
-            ],
-            [
-              "H2",
-              "done",
-              "Agno compilation, linting & Q&A crews"
-            ],
-            [
-              "H3",
-              "done",
-              "Integrate La Suite / Wagtail Docs REST API sync"
-            ],
-            [
-              "H4",
-              "done",
-              "Orchestrate crews via Dagster"
-            ]
-          ]
-        },
-        {
-          "badge": "10",
-          "title": "Wave I — Post-audit truth-up (Round-3 findings, PR #131 branch abandoned)",
-          "stories": [
-            [
-              "10.1",
-              "done",
-              "I0 — Atlas dependency completeness — unblock kedro-test (AUD-ATLAS-010/013)"
-            ],
-            [
-              "10.2",
-              "done",
-              "I1 — Kernel + companion truth-up: retract the false run-admission claim (AUD-ATLAS-046/041/047/049)"
-            ],
-            [
-              "10.3",
-              "done",
-              "I2 — Uniform story-spec frontmatter + README reversal (AUD-ATLAS-045/048)"
-            ],
-            [
-              "10.4",
-              "done",
-              "I3 — pandas 3.0 None-identity contracts — FIRST loop story, kedro-test is red until it lands (AUD-ATLAS-011)"
-            ],
-            [
-              "10.5",
-              "done",
-              "I4 — AD-17 advisory timestamps: MCP read_dataset envelope + per-page build stamps (AUD-ATLAS-043/044)"
-            ],
-            [
-              "10.6",
-              "done",
-              "I5 — Run admission / single-writer — DW-AD23-1, re-promotes AD-23 (AUD-ATLAS-046 impl half)"
-            ]
-          ]
-        },
-        {
-          "badge": "E12",
-          "title": "Wave J — Kedro-org tooling",
-          "stories": [
-            [
-              "J1",
-              "pending",
-              "kedro-skills audit-then-adopt"
-            ],
-            [
-              "J2",
-              "pending",
-              "Publish the real DAG continuously"
-            ],
-            [
-              "J3",
-              "pending",
-              "Record the vscode-kedro verdict"
-            ]
-          ]
-        },
-        {
-          "badge": "E13",
-          "title": "Wave K — Upstream discovery",
-          "stories": [
-            [
-              "K1",
-              "pending",
-              "Trending ingest"
-            ],
-            [
-              "K2",
-              "pending",
-              "Tier classification"
-            ],
-            [
-              "K3",
-              "pending",
-              "trending-candidates operator surface"
-            ],
-            [
-              "K4",
-              "pending",
-              "Fixed-source audit track"
-            ],
-            [
-              "K5",
-              "pending",
-              "Downstream handoff to Mason"
-            ]
-          ]
-        }
-      ],
-      "roadmap": {
-        "sub": "Complete: all of Waves 0–H are shipped (per merged PRs #69–#102) — the Kedro port, MCP surface, parity harness, Universal SBOM intake, orchestration, the BSL + Vizro + Vizro-AI dashboards, A2A + OpenLineage/OTel, the full DuckDB singularity (cold-start gate, Pandera contracts, vss RAG, F4’s hygiene node importing Warden’s ComplianceReport), Wave G’s WASM read surface + static-host Parquet emitter + Dagster sensors, and Wave H’s AI software factory (Karpathy wiki + 5 factory personas, agno crews, La Suite sync, Dagster orchestration). The migration was closed out by the CFE Rule-2 retro #103 (v8.79.0) — 32/32. Wave I is NOT part of the migration: it is post-audit remediation, opened 2026-07-27 after an independent Round-3 spec-to-code audit raised 49 findings (PR #131, branch abandoned — the incorporation record is the only surviving account). Six stories close the verified atlas subset at source and all six landed (merged as PR #132, 6/6, kedro-test 803 -> 901 passed); it is ordered by the tested gate rather than by wave, because kedro-test was red on main until I3 landed.",
-        "stops": [
-          [
-            "0",
-            "Legacy skill",
-            "done"
-          ],
-          [
-            "A",
-            "nebi scaffold",
-            "done"
-          ],
-          [
-            "B",
-            "node porting",
-            "done"
-          ],
-          [
-            "C",
-            "orchestration",
-            "done"
-          ],
-          [
-            "D",
-            "semantic layer",
-            "done"
-          ],
-          [
-            "E",
-            "lineage / A2A",
-            "done"
-          ],
-          [
-            "F",
-            "DuckDB",
-            "done"
-          ],
-          [
-            "G",
-            "WASM",
-            "done"
-          ],
-          [
-            "H",
-            "AI factory",
-            "done"
-          ],
-          [
-            "I",
-            "post-audit truth-up",
-            "done"
-          ]
-        ]
-      },
-      "timing": {
-        "metric": "wall-clock between story landings (create → dev → review → merge) — from PR timestamps; includes gate waits & idle, NOT active compute",
-        "totalLabel": "25.0 h wall-clock",
-        "note": "Full calendar span 2026-07-17 09:58 → 2026-07-18 11:00 UTC; the per-story intervals partition it exactly (no double-counting). Wave B’s total is idle-inflated — B1 (227m) and B3 (217m) each absorbed a long overnight / interleaved gap, not active work.",
-        "perStory": {
-          "0.1": 44,
-          "A1": 55,
-          "A2": 71,
-          "A3": 118,
-          "B1": 227,
-          "B2": 78,
-          "B3": 217,
-          "B4": 34,
-          "B5": 57,
-          "B6": 30,
-          "B7": 50,
-          "B8": 42,
-          "B9": 16,
-          "B10": 23,
-          "C1": 34,
-          "C2": 4,
-          "D1": 30,
-          "D2": 26,
-          "D3": 27,
-          "E1": 76,
-          "E2": 24,
-          "F1": 8,
-          "F2": 25,
-          "F3": 23,
-          "F4": 32,
-          "G1": 28,
-          "G2": 26,
-          "G3": 22,
-          "H1": 11,
-          "H2": 14,
-          "H3": 14,
-          "H4": 17
-        },
-        "epicMin": {
-          "0": 44,
-          "A": 244,
-          "B": 775,
-          "C": 38,
-          "D": 82,
-          "E": 100,
-          "F": 88,
-          "G": 76,
-          "H": 56
-        },
-        "total": 1502
-      },
-      "lineState": {
-        "state": "paused",
-        "at": "12.1"
-      },
-      "owner": "atlas",
-      "practice": false,
-      "inflight": null,
-      "velocity": {
-        "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 46 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
-        "bars": [
-          [
-            "10.4",
-            68
-          ],
-          [
-            "10.5",
-            499
-          ],
-          [
-            "10.6",
-            194
-          ]
-        ],
-        "foot": [
-          [
-            "~194 min",
-            "median / story",
-            "var(--done)"
-          ],
-          [
-            "68–499 min",
-            "observed range",
-            ""
-          ],
-          [
-            "38/46",
-            "stories complete",
-            "var(--done)"
-          ],
-          [
-            "8",
-            "remaining",
-            ""
-          ]
-        ]
-      }
     }
   },
-  "snapshot": "<span>2026-08-08 20:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 22:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4184,7 +4240,7 @@ window.DASHBOARD_DATA = {
       "title": "regenerable-factory program",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-01",
+      "updated": "2026-08-08",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
     },
@@ -4244,7 +4300,7 @@ window.DASHBOARD_DATA = {
       "title": "the packaging factory (conda-forge-expert machinery)",
       "caps": 4,
       "companions": 2,
-      "updated": "2026-07-29",
+      "updated": "2026-08-08",
       "dream": "packaging-factory",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
     },
@@ -5109,7 +5165,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "line 2 — consolidative wrap",
           "done": 17,
-          "total": 18
+          "total": 28
         },
         {
           "slug": "pyforge-scribe",
@@ -5466,7 +5522,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "17/18",
+        "progress": "17/28",
         "complete": 14,
         "of": 14
       },
@@ -7788,7 +7844,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-08T00:00",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11863,7 +11919,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "Herald coding; others queued or ready",
+        "gate": "3 complete (herald, scribe, warden); 5 building (atlas, doctor, marshal, mason, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -11965,8 +12021,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 63,
-        "verdict": "FINDINGS (63):",
+        "findings": 61,
+        "verdict": "FINDINGS (61):",
         "runbook": ""
       },
       {
@@ -12525,7 +12581,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 5.2",
+        "line": "paused 6.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12659,15 +12715,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 197,
+    "open": 199,
     "done": 19,
-    "triaged": 141,
+    "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 2,
       "low": 11,
-      "unspecified": 183
+      "unspecified": 185
     },
     "projects": [
       {
@@ -13081,9 +13137,9 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 43,
+        "open": 45,
         "done": 8,
-        "triaged": 23,
+        "triaged": 25,
         "entries": [
           {
             "id": "DW-1-1-1",
@@ -13438,6 +13494,20 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-BOARD-2026-08-08-1",
             "title": "Herald's build line and Herald's ledger describe DIFFERENT sto…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-SURFACE-2026-08-08-1",
+            "title": "memlog movement is surface-wide, so one entry launders every pending drift finding",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-SURFACE-2026-08-08-2",
+            "title": "`--write-baseline` is all-or-nothing, so no spec can be reconciled in isolation",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
@@ -14260,15 +14330,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "herald",
-      "story": "12.4",
-      "epoch": 1786184322,
-      "sha": "66b70edc0",
-      "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
+      "station": "doctor",
+      "story": "5.1",
+      "epoch": 1786220068,
+      "sha": "18a5ac49f",
+      "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 20:43 UTC",
-    "generatedEpoch": 1786221807
+    "generatedAt": "2026-08-08 22:18 UTC",
+    "generatedEpoch": 1786227526
   },
   "storySpecs": [
     {
@@ -14428,6 +14498,33 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 17,
+        "backlog": 10,
+        "blocked": 1,
+        "total": 28,
+        "next": "6-1-profile-doctor-check-and-bring-it-inside-its-budget",
+        "blockedKeys": [
+          "5-2-render-the-verdict-through-a-doctor-verb"
+        ],
+        "backlogKeys": [
+          "6-1-profile-doctor-check-and-bring-it-inside-its-budget",
+          "6-10-independence-is-structural-for-every-source",
+          "6-2-a-source-registry-doctor-owns",
+          "6-3-the-repo-runtime-split-survives-the-move",
+          "6-4-the-ledger-verdicts-come-home",
+          "6-5-the-board-verdicts-come-home",
+          "6-6-the-chain-verdicts-come-home",
+          "6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "steward",
         "project": "pyforge-steward",
         "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
@@ -14511,24 +14608,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [],
-        "done": 17,
-        "backlog": 1,
-        "blocked": 0,
-        "total": 18,
-        "next": "5-2-render-the-verdict-through-a-doctor-verb",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "5-2-render-the-verdict-through-a-doctor-verb"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "herald",
         "project": "pyforge-herald",
         "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
@@ -14585,9 +14664,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 214,
-      "backlog": 88,
-      "blocked": 6,
-      "total": 308
+      "backlog": 97,
+      "blocked": 7,
+      "total": 318
     }
   }
 };

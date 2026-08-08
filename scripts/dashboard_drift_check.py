@@ -54,11 +54,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 GENERATE = REPO_ROOT / "docs" / "dashboard" / "generate.py"
 DATA_JS = REPO_ROOT / "docs" / "dashboard" / "data.js"
 
-# `### Story A1 (2.1): title` and `### Story 1.1: title` both. Group 1 is the
-# leading id, group 2 the parenthesised alternate (absent for the simple form).
-_STORY_HEADING = re.compile(
-    r"^###\s+Story\s+([A-Za-z0-9.]+)\s*(?:\(\s*([A-Za-z0-9.]+)\s*\))?\s*[:—-]"
-)
+# `### Story 1.1: title` — the ONE canonical shape (EXEMPLAR-STANDARD INV-5).
+#
+# This used to also accept a parenthesised alternate (`### Story A1 (2.1):`)
+# because atlas carried a dual id. That era ended 2026-08-08: atlas's data was
+# normalized to the canonical form across all four of its surfaces, so the
+# alternate is dead. Removing it is INV-5's rule in practice — a detector must
+# not carry a private accommodation for one station's shape. Verified by
+# byte-identical output before and after removal.
+_STORY_HEADING = re.compile(r"^###\s+Story\s+([0-9]+\.[0-9]+[a-z]?)\s*[:—-]")
 
 # Terminal statuses: a story here is finished and the board must say so.
 _DONE = {"done"}
@@ -92,22 +96,26 @@ def _board_stories(proj: dict) -> list[list]:
 
 
 def _epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
-    """Every story heading in an epics.md as (leading_id, parenthesised_id|None).
+    """Every story heading in an epics.md as (id, None).
 
-    Parsed for COMPARISON ONLY. Deriving the board's story list from these would
-    have to pick one id per heading, and atlas proves there is no single right
-    choice: Waves 0-H are keyed by the LEADING id (`A1`) because their completion
-    signal is a `story(A1)` commit subject, while Epic 10 is keyed by the
-    PARENTHESISED id (`10.6`) because its signal is a bmad-loop `10-6-…` merge.
-    Each epic's ids match whatever its era's signal emits, so a mechanical
-    derivation would break one half. Accepting EITHER id as a match keeps this
-    check agnostic instead of encoding that scheme.
+    Parsed for COMPARISON ONLY — the board's story list is still not derived from
+    these. That restraint predates the convention cleanup and outlives it: the
+    board legitimately carries curated in-flight state that a heading cannot
+    express.
+
+    The second tuple slot is retained as `None` rather than removed so callers
+    keep their shape. It used to hold a parenthesised alternate id, because atlas
+    keyed Waves 0-H off a `story(A1)` commit subject while Epic 10 keyed off a
+    bmad-loop `10-6-…` merge — one station, two schemes, so this check accepted
+    either. Both halves were normalized to the canonical id on 2026-08-08
+    (EXEMPLAR-STANDARD INV-5), so there is one id per heading and nothing left to
+    be agnostic about.
     """
     out: list[tuple[str, str | None]] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         m = _STORY_HEADING.match(line)
         if m:
-            out.append((m.group(1), m.group(2)))
+            out.append((m.group(1), None))
     return out
 
 
