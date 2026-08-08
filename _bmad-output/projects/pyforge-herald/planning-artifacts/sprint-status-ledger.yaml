@@ -57,12 +57,12 @@ development_status:
   9-3-implement-success-cli: done
   9-4-implement-success-web-archive: done
   9-5-implement-evidence-validation-sync-and-async: done
-  10-1-notice-data-model-and-archive-storage: backlog
-  10-2-notice-authoring-workflow-cli: backlog
-  10-3-notice-archive-and-redirects: backlog
-  10-4-notice-cli: backlog
-  10-5-operations-web-tab: backlog
-  10-6-notice-lifecycle: backlog
+  10-1-notice-data-model-and-archive-storage: done
+  10-2-notice-authoring-workflow-cli: done
+  10-3-notice-archive-and-redirects: done
+  10-4-notice-cli: done
+  10-5-operations-web-tab: done
+  10-6-notice-lifecycle: done
   11-1-integration-testing-cli-web-and-automation: backlog
   11-2-automation-reliability: backlog
   11-3-evidence-linking-cross-moment: backlog
@@ -89,7 +89,7 @@ development_status:
   epic-8-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
-  epic-10: backlog
+  epic-10: done
   epic-10-retrospective: optional
   epic-11: backlog
   epic-11-retrospective: optional

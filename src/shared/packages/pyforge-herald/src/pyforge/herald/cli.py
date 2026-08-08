@@ -5,13 +5,13 @@ the operator-role write gate, and inline help).
 
 ``deck``'s own subparsers gained ``pull`` in Epic 2, ``status`` in Epic 3,
 ``watch`` in Epic 4, and ``push`` in Epic 5 (Story 5.1 -- CAP-5 export
-push-back). ``success``/``notice`` remain placeholder handlers -- their real
-Moment logic is Epics 9/10's scope. ``progress`` (Epic 8, Stories 8.1-8.3)
-is real as of this module: local-JSON-backed (``progress.py``, scaled down
-from the epics doc's live-database/webhook design per the 2026-08-08 scope
-decision -- see ``docs/dreams/herald-moments-2-4-live-backend.md``), with
-``--update`` as the sole record-creation path (an operator runs it by hand
-after a ship; there is no webhook).
+push-back). ``progress``/``success``/``notice`` are all real as of Epics
+8/9/10: each is local-storage-backed (``progress.py``/``claims.py``/
+``notices.py``, all scaled down from the epics doc's live-database/
+webhook/cron design per the 2026-08-08 scope decision -- see
+``docs/dreams/herald-moments-2-4-live-backend.md``), with an explicit CLI
+command as the sole record-creation path (an operator runs it by hand;
+there is no webhook anywhere in this module).
 
 **Dispatcher (Story 6.1, AD-11).** One ``herald`` entry point; every
 subcommand routes through ``_route``. Exit-code shape, reconciled with
@@ -53,7 +53,16 @@ from dataclasses import asdict
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from . import __version__, auth, bridge, claims, deck_pipeline, errors, progress
+from . import (
+    __version__,
+    auth,
+    bridge,
+    claims,
+    deck_pipeline,
+    errors,
+    notices,
+    progress,
+)
 from . import watch as watch_module
 from .claims import CLAIM_STATUSES
 from .transport import McpTransport
@@ -136,6 +145,45 @@ def _global_flags_parent() -> argparse.ArgumentParser:
         "--station",
         "-s",
         default=None,
+        help="filter to one station, e.g. warden",
+    )
+    return parent
+
+
+def _global_flags_parent_for_nested_subparser() -> argparse.ArgumentParser:
+    """The same three flags as ``_global_flags_parent``, but with
+    ``default=argparse.SUPPRESS`` -- for a SECOND-level subparser nested
+    under a first-level one that already carries ``parents=[_global_flags_parent()]``
+    (``notice list`` under ``notice``, both wanting ``--json`` et al).
+
+    Regression: attaching a plain (non-suppressed) copy of these flags to
+    ``notice list`` made ``herald notice list --json`` work, but broke
+    ``herald notice --json list`` -- argparse's nested-subparsers action
+    parses each level into its OWN fresh sub-namespace before merging it
+    into the outer one, so ``list``'s own unset ``--json`` (default
+    ``False``) silently overwrote the value `notice`'s own parser had
+    already set to ``True``. With ``SUPPRESS``, an unset flag at the
+    ``list`` level is simply absent from that merge instead of clobbering
+    the outer value with a stale default -- verified against all three
+    orderings (flag before the subcommand, after it, and absent)."""
+    parent = argparse.ArgumentParser(add_help=False)
+    parent.add_argument(
+        "--json",
+        "-j",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="machine-readable JSON output (no colorization)",
+    )
+    parent.add_argument(
+        "--date-range",
+        metavar="<start>..<end>",
+        default=argparse.SUPPRESS,
+        help="filter to a date range, e.g. 2026-08-01..2026-08-31 (YYYY-MM-DD)",
+    )
+    parent.add_argument(
+        "--station",
+        "-s",
+        default=argparse.SUPPRESS,
         help="filter to one station, e.g. warden",
     )
     return parent
@@ -447,21 +495,99 @@ def _build_parser() -> _HeraldArgumentParser:
     notice = subparsers.add_parser(
         "notice",
         parents=[global_flags],
-        help="manage operational notices (Moment 4; author requires operator role)",
+        help="manage operational notices (Moment 4; author/publish/close/archive require operator role)",
         description=(
-            "List or author operational notices. Listing is read-only; "
-            "authoring requires the operator role (AD-16)."
+            "List, author, publish, close, or archive operational notices. "
+            "Listing and `get` are read-only; author/publish/close/archive "
+            "require the operator role (AD-16)."
         ),
-        epilog="examples:\n  herald notice\n  herald notice author weekly-update\n",
+        epilog=(
+            "examples:\n"
+            "  herald notice\n"
+            "  herald notice list --category deprecation\n"
+            "  herald notice author --type deprecation --component auth-api-v1 "
+            '--what "..." --why "..." --migration "..." --deadline 2026-09-01\n'
+            "  herald notice publish auth-api-v1\n"
+            "  herald notice get auth-api-v1\n"
+            '  herald notice close auth-api-v1 --reason "migration complete"\n'
+            "  herald notice archive --rename old-name new-name\n"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     notice_subparsers = notice.add_subparsers(
         dest="notice_command", required=False, metavar="notice_command"
     )
-    author = notice_subparsers.add_parser(
-        "author", help="author a notice (requires operator role)"
+
+    notice_list = notice_subparsers.add_parser(
+        "list",
+        parents=[_global_flags_parent_for_nested_subparser()],
+        help="list operational notices (read-only)",
     )
-    author.add_argument("name", help="the notice name/slug")
+    notice_list.add_argument(
+        "--category",
+        choices=notices.NOTICE_TYPES,
+        default=None,
+        help="filter to one notice type",
+    )
+    notice_list.add_argument(
+        "--status",
+        choices=(*notices.NOTICE_STATUSES, "all"),
+        default=None,
+        help="filter to one lifecycle status (default: published + closed, no drafts)",
+    )
+
+    author = notice_subparsers.add_parser(
+        "author", help="author (or re-author a draft) notice (requires operator role)"
+    )
+    author.add_argument(
+        "--type", dest="notice_type", choices=notices.NOTICE_TYPES, default=None
+    )
+    author.add_argument("--component", default=None, help="the notice's component name")
+    author.add_argument("--what", default=None)
+    author.add_argument("--why", default=None)
+    author.add_argument("--migration", default=None)
+    author.add_argument("--deadline", default=None, help="YYYY-MM-DD (optional)")
+    author.add_argument(
+        "--reason-link",
+        dest="reason_link",
+        default=None,
+        help="evidence URL (optional)",
+    )
+    author.add_argument(
+        "--publish",
+        action="store_true",
+        help="publish immediately instead of leaving it a draft",
+    )
+
+    notice_publish = notice_subparsers.add_parser(
+        "publish", help="publish a draft notice (requires operator role)"
+    )
+    notice_publish.add_argument("component", help="the notice's component name")
+
+    notice_get = notice_subparsers.add_parser(
+        "get", help="show one notice's full detail, following any rename redirect"
+    )
+    notice_get.add_argument("component", help="the notice's component name")
+
+    notice_close = notice_subparsers.add_parser(
+        "close", help="close a published notice (requires operator role)"
+    )
+    notice_close.add_argument("component", help="the notice's component name")
+    notice_close.add_argument(
+        "--reason", default=None, help="why it was closed (optional)"
+    )
+
+    notice_archive = notice_subparsers.add_parser(
+        "archive",
+        help="archive bookkeeping: record a rename redirect (requires operator role)",
+    )
+    notice_archive.add_argument(
+        "--rename",
+        nargs=2,
+        metavar=("OLD", "NEW"),
+        required=True,
+        help="redirect OLD component's lookups to NEW (NEW must already have a notice)",
+    )
 
     return parser
 
@@ -527,8 +653,17 @@ def _route(args: argparse.Namespace) -> int:
             return _run_success_validate(args)
         return _run_success_list(args)
     if args.command == "notice":
-        if getattr(args, "notice_command", None) == "author":
+        notice_command = getattr(args, "notice_command", None)
+        if notice_command == "author":
             return _run_notice_author(args)
+        if notice_command == "publish":
+            return _run_notice_publish(args)
+        if notice_command == "get":
+            return _run_notice_get(args)
+        if notice_command == "close":
+            return _run_notice_close(args)
+        if notice_command == "archive":
+            return _run_notice_archive(args)
         return _run_notice_list(args)
     return 0
 
@@ -1085,53 +1220,215 @@ def _run_success_validate(args: argparse.Namespace) -> int:
     return dispatch(operation)
 
 
+def _notice_summary_line(notice: notices.Notice) -> str:
+    deadline = f" (deadline {notice.deadline})" if notice.deadline else ""
+    return f"[{notice.status}] {notice.type}/{notice.component}{deadline}"
+
+
+def _notice_to_json(notice: notices.Notice) -> dict:
+    return {
+        "type": notice.type,
+        "component": notice.component,
+        "what": notice.what,
+        "why": notice.why,
+        "migration": notice.migration,
+        "deadline": notice.deadline,
+        "reason_link": notice.reason_link,
+        "status": notice.status,
+        "path": notice.path,
+        "created_at": notice.created_at,
+        "published_at": notice.published_at,
+        "closed_at": notice.closed_at,
+        "closed_by": notice.closed_by,
+        "close_reason": notice.close_reason,
+        "revisions": list(notice.revisions),
+    }
+
+
 def _run_notice_list(args: argparse.Namespace) -> int:
-    """``herald notice`` with no ``author`` subcommand -- read-only listing
-    placeholder, same shape as ``_run_progress``."""
+    """``herald notice`` (bare) or ``herald notice list`` -- read-only
+    listing (Story 10.3/10.4/10.6). Draft notices are excluded unless
+    ``--status draft``/``--status all`` was explicitly requested (Story
+    10.6's AC: drafts are invisible by default, same as Success's
+    draft/published distinction)."""
+    category = getattr(args, "category", None)
+    status = getattr(args, "status", None)
 
     def operation() -> None:
         date_range = (
             _parse_date_range(args.date_range) if args.date_range is not None else None
         )
+        str_date_range = (
+            (date_range[0].isoformat(), date_range[1].isoformat())
+            if date_range is not None
+            else None
+        )
+        results = notices.list_notices(
+            Path.cwd(), category=category, date_range=str_date_range, status=status
+        )
         if args.json:
-            print(
-                json.dumps(
-                    {
-                        "status": "not yet implemented",
-                        "station": args.station,
-                        "date_range": (
-                            [d.isoformat() for d in date_range]
-                            if date_range is not None
-                            else None
-                        ),
-                    }
-                )
-            )
+            print(json.dumps([_notice_to_json(n) for n in results]))
+        elif not results:
+            print("notice: no notices found")
         else:
-            print("notice: not yet implemented")
+            for notice in results:
+                print(_notice_summary_line(notice))
 
     return dispatch(operation, json_output=args.json)
 
 
 def _run_notice_author(args: argparse.Namespace) -> int:
-    """``herald notice author <name>`` -- Story 6.3's write-gated stub,
-    identical shape to ``_run_success_publish`` (same middleware, second
-    caller -- proof it is a genuine reusable gate, not a one-off check
-    wired to a single command)."""
+    """``herald notice author`` (Story 10.2/10.4) -- Story 6.3's write gate,
+    still the first thing this handler does, followed by an interactive
+    prompt for any required field not given on the command line, then the
+    usual ``Continue? [Y/n]`` confirmation before anything is written."""
 
     def operation() -> None:
         auth.require_operator_role(
             auth.resolve_auth_context(), action="herald notice author"
         )
+        notice_type = args.notice_type or _prompt(
+            f"type ({'/'.join(notices.NOTICE_TYPES)})",
+            validate=lambda v: v in notices.NOTICE_TYPES,
+        )
+        component = args.component or _prompt("component")
+        what = args.what or _prompt("what")
+        why = args.why or _prompt("why")
+        migration = args.migration or _prompt("migration")
+        deadline = (
+            args.deadline
+            if args.deadline
+            else _prompt("deadline (YYYY-MM-DD, optional)", required=False)
+        )
+        reason_link = args.reason_link
+
         if not auth.confirm("Continue? [Y/n] "):
-            print("aborted: notice not confirmed")
+            print("aborted: notice not authored")
             return
+        notice = notices.author_notice(
+            Path.cwd(),
+            notice_type=notice_type,
+            component=component,
+            what=what,
+            why=why,
+            migration=migration,
+            deadline=deadline or None,
+            reason_link=reason_link,
+            publish=args.publish,
+        )
         print(
-            f"authorized: would author notice {args.name!r} "
-            f"(Epic 10 implements the actual authoring)"
+            f"authored notice {notice.component!r} ({notice.status}) -> {notice.path}"
         )
 
     return dispatch(operation)
+
+
+def _run_notice_publish(args: argparse.Namespace) -> int:
+    """``herald notice publish <component>`` (Story 10.2/10.6) -- draft ->
+    published, gated the same as ``notice author``."""
+
+    def operation() -> None:
+        auth.require_operator_role(
+            auth.resolve_auth_context(), action="herald notice publish"
+        )
+        if not auth.confirm("Continue? [Y/n] "):
+            print("aborted: notice not published")
+            return
+        notice = notices.publish_notice(Path.cwd(), args.component)
+        print(f"published notice {notice.component!r}")
+
+    return dispatch(operation)
+
+
+def _run_notice_get(args: argparse.Namespace) -> int:
+    """``herald notice get <component>`` -- read-only full detail,
+    following a rename redirect (Story 10.3)."""
+
+    def operation() -> None:
+        notice = notices.get_notice(Path.cwd(), args.component)
+        if args.json:
+            print(json.dumps(_notice_to_json(notice)))
+        else:
+            print(_notice_summary_line(notice))
+            print(f"what: {notice.what}")
+            print(f"why: {notice.why}")
+            print(f"migration: {notice.migration}")
+            print(f"path: {notice.path}")
+
+    return dispatch(operation, json_output=args.json)
+
+
+def _run_notice_close(args: argparse.Namespace) -> int:
+    """``herald notice close <component> [--reason ...]`` (Story 10.6) --
+    published -> closed, gated the same as ``notice author``. ``closed_by``
+    is best-effort (see ``notices.py``'s module docstring on the operator-
+    identity gap): the resolved auth context's role/source string when one
+    is available, else ``notices.UNKNOWN_OPERATOR``."""
+
+    def operation() -> None:
+        context = auth.require_operator_role(
+            auth.resolve_auth_context(), action="herald notice close"
+        )
+        if not auth.confirm("Continue? [Y/n] "):
+            print("aborted: notice not closed")
+            return
+        notice = notices.close_notice(
+            Path.cwd(),
+            args.component,
+            reason=args.reason,
+            closed_by=f"{context.role}:{context.source}",
+        )
+        print(f"closed notice {notice.component!r}")
+
+    return dispatch(operation)
+
+
+def _run_notice_archive(args: argparse.Namespace) -> int:
+    """``herald notice archive --rename OLD NEW`` (Story 10.3) -- file-based
+    redirect bookkeeping only (no HTTP redirect; no server exists to serve
+    one), gated the same as ``notice author``."""
+
+    def operation() -> None:
+        auth.require_operator_role(
+            auth.resolve_auth_context(), action="herald notice archive"
+        )
+        old_component, new_component = args.rename
+        if not auth.confirm(f"Redirect {old_component!r} -> {new_component!r}? [Y/n] "):
+            print("aborted: redirect not recorded")
+            return
+        notices.archive_rename(Path.cwd(), old_component, new_component)
+        print(f"redirect recorded: {old_component!r} -> {new_component!r}")
+
+    return dispatch(operation)
+
+
+def _prompt(
+    field: str,
+    *,
+    reader: Callable[[str], str] = input,
+    required: bool = True,
+    validate: Callable[[str], bool] | None = None,
+) -> str:
+    """A ``"<field>: "``-shaped prompt for any required notice field not
+    given on the command line (Story 10.2's AC), mirroring ``auth.confirm``'s
+    injectable-``reader`` convention so a test never blocks on real stdin.
+    Re-prompts on an empty answer when ``required`` (default), or on an
+    answer ``validate`` rejects; returns the first blank answer unchanged
+    when ``required=False``."""
+    while True:
+        try:
+            answer = reader(f"{field}: ").strip()
+        except EOFError:
+            answer = ""
+        if not answer:
+            if not required:
+                return answer
+            print(f"{field} is required.")
+            continue
+        if validate is not None and not validate(answer):
+            print(f"invalid value for {field}.")
+            continue
+        return answer
 
 
 def dispatch(operation: Callable[[], None], *, json_output: bool = False) -> int:
