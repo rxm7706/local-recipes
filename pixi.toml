@@ -443,6 +443,10 @@ cmd = "python scripts/spec_surface_check.py"
 description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Flags: -- --json, -- --inv INV-2. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
 cmd = "python scripts/dream_chain_check.py"
 
+[feature.local-recipes.tasks.ledger-regression-check]
+description = "Detector: no commit un-finishes a story in a tracked sprint ledger. The OUTERMOST of three guards on the same failure: promote_sprint_status.py refuses the write, --project bounds the blast radius, and this compares two TRACKED files across a revision range so it holds even when those are bypassed, hand-edited, or --allow-regression-ed. Reads only the tracked twin via git show, so it runs in bare CI where the gitignored Tier-3 feeds are invisible — the asymmetry that let one sync destroy 96 `done` markers across four stations on 2026-08-08 while printing success. `done` is the only guarded state; reopening a story is legitimate but must be its own commit. Exit 2 (never green) when the base revision cannot be resolved. Flags: -- --base <rev>, -- --head <rev>, -- --json."
+cmd = "python scripts/ledger_regression_check.py"
+
 [feature.local-recipes.tasks.dashboard-layout-check]
 description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
 cmd = "python docs/dashboard/check_layout.py"

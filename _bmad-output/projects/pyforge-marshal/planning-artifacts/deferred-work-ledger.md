@@ -517,18 +517,21 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   verified: 2026-08-08 — reproduced and recovered in the same session; the tracked ledger was restored via `git checkout` before the bad state was committed.
 
-## DW-LEDGER-2026-08-08-1 — Herald's tracked ledger under-reports a COMPLETE station by 43 …
+## DW-LEDGER-2026-08-08-1 — RETRACTED. Herald's "34 orphan story specs" was damage I caus…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
-  summary: `pyforge-herald`'s `sprint-status-ledger.yaml` holds **17 story keys, 4 done**, while the station has **47 tracked story specs** and is recorded complete across 12 epics. The board therefore renders a finished station as 4/17.
-  evidence: Measured 2026-08-08, re-verified with `generate.py::parse_sprint_status` after the DW-LEDGER-2026-08-08-3 retraction. Ledger: 27 keys total, **17 story keys / 4 `done`**. Tracked story specs under `planning-artifacts/specs/spec-[0-9]*.md`: **47**, of which **34 have no ledger key at all**. The Tier-3 feed agrees with the ledger exactly (27 keys / 4 done), so this is **not** sync drift — the ledger was never wrong relative to its source. Root cause: Herald's `epics.md` is titled "Herald Moments 2–4 - Epics & Stories" and covers only that epic set; the other ~30 stories (the deck-bridge work) were never fed into the sprint feed at all. Nothing detects a story spec with no corresponding ledger key.
-  remedy: FR-137 (standalone staleness check — "is the ledger behind git?") would surface this class directly. A story-spec-without-ledger-key reconciliation belongs in the same check.
+  summary: **Retracted.** This entry reported Herald rendering 4/17 for a complete station, with 34 tracked story specs having no ledger key, and framed it as a pre-existing fleet condition. It was not pre-existing. It was **caused by commit `cfaa9a01ed` earlier in the same session** — my own — which ran `sprint-ledger-sync` after editing marshal's Tier-3 feed. The sync writes **every** project, and four stations' stale Tier-3 feeds overwrote their good tracked twins.
+  measured damage: herald 71 keys/59 done -> 27/4 (**55 done destroyed**) · doctor 24/20 -> 18/6 (**14**) · scribe 13/11 -> 13/3 (**8**) · steward 26/22 -> 26/3 (**19**). **96 `done` markers total across 4 stations.** marshal, atlas, warden and mason were untouched.
+  how it was missed: CAP-8 was verified for **marshal only** — the project being worked on — while the command mutates all eight. The before/after `done`-key diff that caught nothing wrong was scoped to one project out of the eight it wrote.
+  how it was found: tracing Herald's "missing" keys through `git log` on its ledger, which showed 47 stories/59 done at `14a43c2544` (05:16 the same day) and 17/4 immediately after `cfaa9a01ed`.
+  resolution: all four ledgers restored byte-identical to their pre-session state from `a3b5fefae8^`. Verified: seven of eight now diff clean against pre-session, and marshal differs only by the five intended story-key renames.
+  the entry that stands: DW-LEDGER-2026-08-08-4's table was measured **after** the damage and is likewise void; the real pre-existing orphan counts are zero for every station.
 
-  status: open
+  status: retracted
 
-  verified: 2026-08-08 — found while building the fleet-wide artifact inventory; counts re-measured directly from the filesystem, not from a summary.
+  verified: 2026-08-08 — self-inflicted, found and fully restored the same session. This is the second retraction in this ledger today (see also -3); both came from measuring an artifact without first establishing that the measurement's baseline was sound.
 
-## DW-LEDGER-2026-08-08-2 — Doctor has more tracked story specs than ledger stories
+## DW-LEDGER-2026-08-08-2 — VOID (measured after the DW-LEDGER-1 damage; doctor's real orpha…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
   summary: `pyforge-doctor` carries **16 tracked story specs** against **12 ledger story keys** — at least 4 landed stories have a durable spec but no ledger entry, so the board under-reports Doctor too.
@@ -551,7 +554,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   verified: 2026-08-08 — retracted within hours of filing, on re-measurement with the parser rather than a regex.
 
-## DW-LEDGER-2026-08-08-4 — Story specs with no ledger key, fleet-wide (the corrected measure…
+## DW-LEDGER-2026-08-08-4 — VOID. Its table was measured after the damage, not before it.
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md`
   summary: Six of eight stations carry tracked story specs that have **no corresponding key in their sprint ledger**, so the board under-reports them. Measured 2026-08-08 with `generate.py::parse_sprint_status` (not a regex — see DW-LEDGER-2026-08-08-3 for why that distinction is on the record).

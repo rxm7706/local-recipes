@@ -49,12 +49,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "6/16",
+            "16/16",
             "stories complete",
             "var(--done)"
           ],
           [
-            "10",
+            "0",
             "remaining",
             ""
           ]
@@ -78,8 +78,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "2.2"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -124,12 +124,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "2.2",
-              "pending",
+              "done",
               "cve and abandonment watch axes (FR-4)"
             ],
             [
               "2.3",
-              "pending",
+              "done",
               "`doctor monitor --fleet` CLI wiring, default axis set, `--json` (FR-9)"
             ]
           ]
@@ -140,22 +140,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "3.1",
-              "pending",
+              "done",
               "Partition findings by actionability (FR-6, AD-4)"
             ],
             [
               "3.2",
-              "pending",
+              "done",
               "Rank the actionable partition (FR-7, AD-4)"
             ],
             [
               "3.3",
-              "pending",
+              "done",
               "Root-cause naming (FR-8)"
             ],
             [
               "3.4",
-              "pending",
+              "done",
               "`doctor diagnose --target … --prescribe` CLI wiring, `--json` (FR-9)"
             ]
           ]
@@ -166,22 +166,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "4.1",
-              "pending",
+              "done",
               "Health scoring (FR-10)"
             ],
             [
               "4.2",
-              "pending",
+              "done",
               "Persistent fleet-health surface (FR-11)"
             ],
             [
               "4.3",
-              "pending",
+              "done",
               "Adoption-tracking watch axis (FR-12)"
             ],
             [
               "4.4",
-              "pending",
+              "done",
               "Safe upgrade-path recommendation (FR-13)"
             ]
           ]
@@ -1209,12 +1209,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "3/9",
+            "9/9",
             "stories complete",
             "var(--done)"
           ],
           [
-            "6",
+            "0",
             "remaining",
             ""
           ]
@@ -1237,8 +1237,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "1.4"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -1262,12 +1262,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "pending",
+              "done",
               "Pointer-stub write-back + idempotent re-invocation"
             ],
             [
               "1.5",
-              "pending",
+              "done",
               "Seed promotion — the end-to-end proof"
             ]
           ]
@@ -1278,22 +1278,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "pending",
+              "done",
               "`GraphStore` port + flat-file v1 adapter"
             ],
             [
               "2.2",
-              "pending",
+              "done",
               "Nightly compile from named tool surfaces"
             ],
             [
               "2.3",
-              "pending",
+              "done",
               "Fact supersession in the compiled graph"
             ],
             [
               "2.4",
-              "pending",
+              "done",
               "`scribe recall` — grounded, cited answers"
             ]
           ]
@@ -1343,12 +1343,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "3/18",
+            "18/18",
             "stories complete",
             "var(--done)"
           ],
           [
-            "15",
+            "0",
             "remaining",
             ""
           ]
@@ -1370,8 +1370,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "1.4"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -1395,22 +1395,22 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "pending",
+              "done",
               "Rotating a key never breaks what already trusted it"
             ],
             [
               "1.5",
-              "pending",
+              "done",
               "The operator can see every credential Steward knows about, never a secret value"
             ],
             [
               "1.6",
-              "pending",
+              "done",
               "The operator can ask \"is anything host-unscoped right now?\" and get a real answer"
             ],
             [
               "1.7",
-              "pending",
+              "done",
               "Retiring a credential leaves a record, not a silent gap"
             ]
           ]
@@ -1421,22 +1421,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "pending",
+              "done",
               "The dashboard builds through Steward, not a bare pixi task the operator has to remember"
             ],
             [
               "2.2",
-              "pending",
+              "done",
               "Nothing happens unless something actually changed"
             ],
             [
               "2.3",
-              "pending",
+              "done",
               "The operator can see what would change before it changes"
             ],
             [
               "2.4",
-              "pending",
+              "done",
               "The operator can ask \"when did the dashboard last actually deploy?\""
             ]
           ]
@@ -1447,22 +1447,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "3.1",
-              "pending",
+              "done",
               "Any named pixi environment materializes with one command"
             ],
             [
               "3.2",
-              "pending",
+              "done",
               "A bmad-loop runner and its environment materialize together"
             ],
             [
               "3.3",
-              "pending",
+              "done",
               "The operator can see every environment that exists, before picking one"
             ],
             [
               "3.4",
-              "pending",
+              "done",
               "The environment.yaml sync gate is one command away, not a remembered incantation"
             ]
           ]
@@ -1473,17 +1473,17 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "4.1",
-              "pending",
+              "done",
               "A ceiling can be declared, machine-readably"
             ],
             [
               "4.2",
-              "pending",
+              "done",
               "The declared ceiling is one command away"
             ],
             [
               "4.3",
-              "pending",
+              "done",
               "Asking \"am I under budget?\" never lies"
             ]
           ]
@@ -1926,12 +1926,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "3/19",
+            "12/19",
             "stories complete",
             "var(--done)"
           ],
           [
-            "16",
+            "7",
             "remaining",
             ""
           ]
@@ -1956,7 +1956,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "1.3"
+        "at": "0.1"
       },
       "epics": [
         {
@@ -1996,7 +1996,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.3",
-              "pending",
+              "done",
               "Extract markdown sources from Design prototypes"
             ],
             [
@@ -2012,22 +2012,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "pending",
+              "done",
               "Implement deckcraft pipeline (Markdown → PPTX with tokens)"
             ],
             [
               "2.2",
-              "pending",
+              "done",
               "Implement SVG infographic extraction from Design"
             ],
             [
               "2.3",
-              "pending",
+              "done",
               "Build interactive HTML decks via Vite (gitignored, regenerable)"
             ],
             [
               "2.4",
-              "pending",
+              "done",
               "Validate all 9 decks via dashboard-check"
             ],
             [
@@ -2043,12 +2043,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "3.1",
-              "pending",
+              "done",
               "Implement mechanical narration extraction from Design speaker notes"
             ],
             [
               "3.2",
-              "pending",
+              "done",
               "Implement narration linter (voice bible + blacklist enforcement)"
             ],
             [
@@ -2074,12 +2074,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "5.1",
-              "pending",
+              "done",
               "Run comprehensive artifact validation (render, format, consistency checks)"
             ],
             [
               "5.2",
-              "pending",
+              "done",
               "Verify 62% footprint reduction (tracked vs. unoptimized)"
             ],
             [
@@ -2893,7 +2893,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 18:08 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 19:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3750,7 +3750,7 @@ window.DASHBOARD_DATA = {
       "title": "genesis-installer-name-retirement",
       "caps": 8,
       "companions": 1,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "genesis-installer-name-retirement",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer-name-retirement"
     },
@@ -4755,34 +4755,34 @@ window.DASHBOARD_DATA = {
           "stories": 17,
           "state": "running",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
-          "done": 3,
+          "done": 12,
           "total": 19
         },
         {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "running",
+          "state": "done",
           "note": "line 2 — consolidative wrap",
-          "done": 6,
+          "done": 16,
           "total": 16
         },
         {
           "slug": "pyforge-scribe",
           "pkey": "scribe",
           "stories": 9,
-          "state": "running",
+          "state": "done",
           "note": "line 3 — team memory + graph",
-          "done": 3,
+          "done": 9,
           "total": 9
         },
         {
           "slug": "pyforge-steward",
           "pkey": null,
           "stories": 18,
-          "state": "running",
+          "state": "done",
           "note": "next free slot",
-          "done": 3,
+          "done": 18,
           "total": 18
         },
         {
@@ -5115,7 +5115,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "6/16",
+        "progress": "16/16",
         "complete": 14,
         "of": 14
       },
@@ -5238,7 +5238,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "3/19",
+        "progress": "12/19",
         "complete": 14,
         "of": 14
       },
@@ -5267,7 +5267,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "2026-08-01",
           "spec": "2026-08-08",
           "research": "2026-08-08",
@@ -5591,7 +5591,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "3/9",
+        "progress": "9/9",
         "complete": 14,
         "of": 14
       },
@@ -5707,7 +5707,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "3/18",
+        "progress": "18/18",
         "complete": 14,
         "of": 14
       },
@@ -7435,7 +7435,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-03",
+          "dream": "2026-08-08",
           "deck": "",
           "spec": "2026-08-08",
           "research": "2026-08-08",
@@ -7647,7 +7647,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "",
           "spec": "2026-08-02T17:11",
           "research": "2026-08-08",
@@ -7753,7 +7753,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "",
           "spec": "2026-08-08",
           "research": "2026-08-08",
@@ -7859,7 +7859,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-03",
+          "dream": "2026-08-08",
           "deck": "",
           "spec": "2026-08-08",
           "research": "2026-08-08",
@@ -8496,9 +8496,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-02T19:30",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8602,7 +8602,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-03",
+          "dream": "2026-08-08",
           "deck": "",
           "spec": "2026-08-08",
           "research": "2026-08-08",
@@ -9455,7 +9455,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-03",
+          "dream": "2026-08-08",
           "deck": "",
           "spec": "2026-08-08",
           "research": "2026-08-08",
@@ -11781,7 +11781,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "paused 1.3",
+        "line": "paused 0.1",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -12174,7 +12174,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 2.2",
+        "line": "complete",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12205,7 +12205,7 @@ window.DASHBOARD_DATA = {
           "archived": 3,
           "practice": 0
         },
-        "line": "paused 1.4",
+        "line": "complete",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12250,7 +12250,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 1
         },
-        "line": "paused 1.4",
+        "line": "complete",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -13051,14 +13051,14 @@ window.DASHBOARD_DATA = {
           },
           {
             "id": "DW-LEDGER-2026-08-08-1",
-            "title": "Herald's tracked ledger under-reports a COMPLETE station by 43 …",
+            "title": "RETRACTED. Herald's \"34 orphan story specs\" was damage I caus…",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
           },
           {
             "id": "DW-LEDGER-2026-08-08-2",
-            "title": "Doctor has more tracked story specs than ledger stories",
+            "title": "VOID (measured after the DW-LEDGER-1 damage; doctor's real orpha…",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
@@ -13072,7 +13072,7 @@ window.DASHBOARD_DATA = {
           },
           {
             "id": "DW-LEDGER-2026-08-08-4",
-            "title": "Story specs with no ledger key, fleet-wide (the corrected measure…",
+            "title": "VOID. Its table was measured after the damage, not before it.",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
@@ -13902,8 +13902,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 18:08 UTC",
-    "generatedEpoch": 1786212526
+    "generatedAt": "2026-08-08 19:33 UTC",
+    "generatedEpoch": 1786217587
   },
   "storySpecs": [
     {
@@ -13914,7 +13914,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 6,
+      "done": 16,
       "tracked": 16,
       "gap": 0
     },
@@ -13926,7 +13926,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-herald",
-      "done": 4,
+      "done": 47,
       "tracked": 47,
       "gap": 0
     },
@@ -13944,13 +13944,13 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-scribe",
-      "done": 3,
+      "done": 9,
       "tracked": 9,
       "gap": 0
     },
     {
       "station": "pyforge-steward",
-      "done": 3,
+      "done": 18,
       "tracked": 18,
       "gap": 0
     },
