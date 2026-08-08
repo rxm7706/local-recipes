@@ -114,6 +114,15 @@ def main(argv: list[str] | None = None) -> int:
         description="Promote each project's Tier-3 story-status map to its tracked twin.",
     )
     ap.add_argument(
+        "--project",
+        metavar="KEY",
+        action="append",
+        help="Limit the sync to this dashboard key (repeatable). Default is EVERY "
+             "project, which is how a single-project task destroyed 96 `done` markers "
+             "across four other stations on 2026-08-08 — scope deliberately when the "
+             "work is scoped.",
+    )
+    ap.add_argument(
         "--allow-regression",
         action="store_true",
         help="Write even when the feed would move a key out of `done` or drop it. "
@@ -125,7 +134,17 @@ def main(argv: list[str] | None = None) -> int:
     gen = _load_generate()
     wrote, unchanged, skipped, refused = [], [], [], []
 
+    selected = set(args.project or [])
+    if selected:
+        unknown = selected - set(gen.PROJECT_SOURCES)
+        if unknown:
+            print(f"unknown --project key(s): {', '.join(sorted(unknown))}; "
+                  f"valid: {', '.join(sorted(gen.PROJECT_SOURCES))}")
+            return 2
+
     for key, rel in sorted(gen.PROJECT_SOURCES.items()):
+        if selected and key not in selected:
+            continue
         src = REPO_ROOT / rel
         slug = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
         if not src.is_file():
