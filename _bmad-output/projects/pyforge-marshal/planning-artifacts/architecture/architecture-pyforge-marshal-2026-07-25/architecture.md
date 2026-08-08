@@ -7,7 +7,8 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-65 / NFR-1..NFR-14.
 status: final
 created: 2026-07-25
-updated: 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
+updated: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
+# 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
 binds:
   - FR-1..FR-65
@@ -985,7 +986,15 @@ unused in V1. Format is chosen by file extension, declared per artifact in the m
 never sniffed. Nested or overlapping regions are a hard error (FR-113). `sha` covers the
 region **body only**, so the marker line itself is not self-referential.
 
-#### AD-54 — `genesis check` **re-implements** the generic subset; does not extract or vendor `bmad_drift_check.py` (resolves Q-20)
+#### AD-54 — `marshal seed check` **re-implements** the generic subset; does not extract or vendor `bmad_drift_check.py` (resolves Q-20) — *verb settled 2026-08-08*
+
+> **Verb collision closed.** This AD and Marshal's shipped `marshal check` (FR-65/AD-50) were
+> flagged as contradictory because both were about to be spelled `check` in one binary. They
+> are not the same verb and never needed reconciling: `marshal check` asks *"does **this** repo
+> pass its own detector registry?"* and routes to `scripts/detectors.py`; this one asks *"does
+> an **installed, external** repo still conform to the model it adopted?"* and re-implements a
+> generic subset. The installer's lives under the `seed` group, so both keep their meaning and
+> neither is renamed. The rule below is unchanged in substance.
 
 **Binds:** the detect/findings layer. **Prevents:** coupling `local-recipes` to a Genesis
 release; importing 662 lines of repo-specific probes.
@@ -1242,3 +1251,114 @@ mitigated by build order (regions are component 3 of 14) and by being the most h
 tested unit in the package.
 
 **Ready for `bmad-create-epics-and-stories`.**
+
+---
+
+## Part III — The shared floor and the station seam (added 2026-08-08)
+
+Decisions for the capabilities absorbed into the PRD as § 16 and § 17. These continue this
+document's own `AD-` sequence past `AD-65`.
+
+#### AD-66 — `pyforge-core` is a **leaf**, enforced structurally (binds FR-157)
+
+**Binds:** every station package. **Prevents:** the shared floor becoming the cross-station
+coupling the architecture has refused for eight stations.
+**Rule:** `pyforge-core` is pure stdlib and imports **no** `pyforge.<station>` module. This is
+not a convention — a meta-test enumerates its imports and fails the build on any station
+import, the same sole-ownership pattern marshal and warden already use. Stations depend on it;
+it depends on nothing in the fleet. If a primitive needs a station's type, the extraction was
+wrong and the primitive stays where it is.
+**Why a leaf is not the coupling:** the two existing cross-station edges (doctor→warden,
+atlas→warden) are supplied at the pixi *feature* level precisely so standalone conda installs
+stay optional. `pyforge-core` is different in kind — mandatory and universal — which is
+exactly why it must carry no station knowledge. A leaf every station shares adds no edges
+*between* stations.
+
+#### AD-67 — Extraction retires the copy in the same story (binds FR-158..FR-162)
+
+**Binds:** every extraction story. **Prevents:** a second live path; a "shipped" claim over
+unchanged runtime behaviour.
+**Rule:** a story that extracts a primitive **removes every copy it replaces in that same
+story**. No deprecation window, no parallel implementation, no follow-up ticket.
+**Grounding, from this repo's own record:** the Atlas Kedro migration merged ~29k LOC and was
+marked `shipped` while the 8,902-LOC legacy module remained the live runtime, because the
+rebuild had no migration step. An extraction that leaves copies standing has changed nothing
+and claimed something.
+**Order** follows the measured census, heaviest and most mechanical first: atomic write (20
+copies) → verdict lattice (5) → report envelope (3) → roster (pending Q-26) → exception root
+→ subprocess guard. Subprocess is **last on purpose**: it is the only entry that is a design
+reconciliation rather than a de-duplication.
+
+#### AD-68 — Observable behaviour is frozen across every extraction (binds FR-159..FR-161)
+
+**Binds:** the extraction stories. **Prevents:** a refactor silently changing a contract other
+things already depend on.
+**Rule:** exit codes, report payloads and exception-catch semantics are contracts. Each
+extraction proves preservation **by test**, not by review: the same inputs yield the same
+process exit codes; a captured real report from each station validates unchanged against the
+composed schema; and re-parenting an exception changes no existing `except` clause's behaviour
+— asserted explicitly, because re-parenting can silently *widen* a catch and a widened catch
+is invisible in review.
+
+#### AD-69 — The subprocess seam is one guard, and Marshal is its first subject (binds FR-162)
+
+**Binds:** every subprocess invocation in the fleet. **Prevents:** ungated process execution;
+and, specifically, this station grading itself lightly.
+**Rule:** one guard in `pyforge-core`, chosen deliberately between doctor's
+`cli_bridge.run_cli_json` (AD-5, sole-site meta-test) and marshal's `ProcessPort` /
+`process_posix`, with the rationale recorded rather than decided by copy count. **Marshal's own
+7 importing modules route through it** — measured 2026-08-08, that is the widest ungated
+subprocess surface in the fleet. Steward's deliberate raw-`CalledProcessError` propagation is
+folded in or recorded as a tested opt-out, never silently overridden. Warden's existing seam
+(`engines.py`, one importing module, already annotated *"the sole seam"*) is confirmed
+conforming, not "fixed."
+**Correction on the record:** the 2026-08-08 unification research named warden as the outlier
+with *"~20 modules importing subprocess with no sole-site guard"* and called fixing it *"the
+one item worth doing even if nothing else is."* That counted **mentions, not imports**. Warden
+has one. Marshal has seven. The station that owns this decision is the one at fault, which is
+why it is written here rather than quietly corrected.
+
+#### AD-70 — The seed installer renders through the shipped argparse tree (binds FR-66..FR-127)
+
+**Binds:** the `marshal seed` verb group. **Prevents:** two parsers in one binary; a second
+rendering path.
+**Rule:** `marshal seed <verb>` is a noun-group subparser on the same tree as the 14 shipped
+subcommands (AD-51), matching the shape `config` / `gate` / `factory` / `deploy` / `adapters` /
+`upstream` already use. Plan rendering is an envelope projection (NFR-12), not a second
+presentation stack. `marshal init` and `marshal check` keep their shipped meanings; the
+installer's same-named verbs live under `seed` and are therefore not collisions (AD-54).
+
+#### AD-71 — The Marshal↔Steward seam: build line versus estate (binds FR-136..FR-139)
+
+**Binds:** every capability touching provisioning, deployment or credentials. **Prevents:** two
+stations owning one pipeline with the hand-off owned by neither.
+**Rule:** Marshal owns the factory's own machinery; Steward owns the platform beneath it. The
+test is *is this the build line, or the ground it stands on?* Concretely:
+- **Loop homes are the build line.** `steward provision --runner bmad-loop` retires in favour
+  of `marshal init` — Steward's own **AD-5** already calls this "Marshal-owned machinery," and
+  it wraps the *legacy* `scripts/bmad-loop-worktree` while `marshal init` (10 shipped stories)
+  is a strict superset.
+- **The ledger is a contract, not a shared mutable.** Marshal produces
+  `sprint-status-ledger.yaml` and is accountable for its currency; Steward publishes what it
+  says and never derives status. Neither writes into the other's half.
+- **Terminal states are monotonic.** Any write moving a story key out of `done` is refused and
+  named. Shipped 2026-08-08 in `scripts/promote_sprint_status.py` after a stale feed silently
+  destroyed six `done` keys and reported success.
+- **Setup routes by kind:** judgment stays with the owning station, install mechanics go to
+  Steward, the front door is Marshal's.
+
+#### AD-72 — `epics.md` is the single canonical story source per station (binds FR-148..FR-152)
+
+**Binds:** the chain-completeness checks. **Prevents:** two live epics documents feeding one
+ledger; a merge that injects phantom stories.
+**Rule:** each station has exactly one epics document whose stories map 1:1 to its ledger
+story keys. Role is **declared, not inferred**, via `epics_role: canonical | derived |
+historical` — `status:` cannot carry this, since it already means generation-workflow state
+and is provably blind to the distinction (marshal's live installer epics and mason's
+historical presenton epics are both `status: complete`). Consequence: the merge rule is
+mechanical — *merge iff a station has more than one `canonical`* — and a `historical` document
+is never merged. Measured 2026-08-08: Marshal was the only station with two `canonical`
+documents; `epics-regenerable-factory.md` (shipped Dream, 0 stories in the current format) and
+mason's `epics-presenton-pixi-image.md` (archived Dream, 30 stories, 0 ledger keys) are
+`historical` and merging them would have injected 15 phantom epics and 30 phantom stories
+respectively.
