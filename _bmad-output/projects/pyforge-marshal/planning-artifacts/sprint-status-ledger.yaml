@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 110
+# stories: 116
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -43,6 +43,10 @@ development_status:
   12-4-pattern-meta-tests-and-the-never-write-proof: backlog
   12-5-cli-contract-idempotence-harness-and-performance-gates: backlog
   12-6-readme-adoption-guide-and-the-finding-remedy-reference: backlog
+  13-1-a-baseline-can-be-stamped-for-one-spec: backlog
+  13-2-a-moved-contract-reconciles-only-the-paths-it-names: backlog
+  13-3-the-no-baseline-ungoverned-and-stale-allowlist-findings-are-cleared: backlog
+  13-4-the-34-drift-findings-are-reconciled-or-recorded: backlog
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done
@@ -108,6 +112,8 @@ development_status:
   epic-11-retrospective: optional
   epic-12: backlog
   epic-12-retrospective: optional
+  epic-13: backlog
+  epic-13-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
   epic-3: done
