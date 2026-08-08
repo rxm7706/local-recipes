@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 57
+# stories: 67
 development_status:
   0-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -21,6 +21,14 @@ development_status:
   10-4-preserve-null-identity-under-pandas-3-0: done
   10-5-stamp-advisory-data-with-its-build-provenance: done
   10-6-make-run-admission-real-or-stop-claiming-it: done
+  12-1-kedro-skills-audit-then-adopt: backlog
+  12-2-publish-the-real-dag-continuously: backlog
+  12-3-record-the-vscode-kedro-verdict: backlog
+  13-1-trending-ingest: backlog
+  13-2-tier-classification: backlog
+  13-3-trending-candidates-operator-surface: backlog
+  13-4-fixed-source-audit-track: backlog
+  13-5-downstream-handoff-to-mason: backlog
   a1-scaffold-the-kedro-pixi-project-via-nebi: done
   a2-define-the-data-catalog-for-all-sources-outputs: done
   a3-implement-incrementalparquetdataset-for-ttl-gating: done
@@ -44,6 +52,8 @@ development_status:
   epic-1: done
   epic-1-retrospective: done
   epic-10: done
+  epic-12: backlog
+  epic-13: backlog
   epic-2: done
   epic-2-retrospective: done
   epic-3: done

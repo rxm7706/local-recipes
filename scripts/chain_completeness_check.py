@@ -87,14 +87,42 @@ def frontmatter(path: pathlib.Path) -> dict:
         return {}
 
 
-def _story_ids_from_epics(path: pathlib.Path) -> set[str]:
-    """`### Story <epic>.<seq>` headings — the canonical story set."""
+def _norm_id(token: str) -> str:
+    """One normal form for a story id, across both shapes this repo uses.
+
+    Marshal/doctor/warden key stories `1.1`; atlas keys them by WAVE — `A1`, `B10`,
+    `I0` — with the numeric form in parentheses (`### Story A1 (2.1):`), because its
+    completion signal is a `story(A1)` commit subject rather than a bmad-loop merge.
+    Both are legitimate; a detector that understands only one reports the other as
+    unmeasurable, which is what the first cut of this module did.
+    """
+    return token.strip().lower().replace(".", "-")
+
+
+def _story_ids_from_epics(path: pathlib.Path) -> list[set[str]]:
+    """One id-SET per story — every id a `### Story` heading declares for it.
+
+    Atlas writes a DUAL id: `### Story I0 (10.1): Restore atlas dependency-completeness`
+    declares both the wave id `i0` and the numeric `10-1`, and its ledger keys on the
+    numeric one for Epic 10 while keying on the wave one for Waves A-H. Both are that
+    story's id. Matching on only the first token reported six phantom orphans in each
+    direction — the same story counted as missing twice, once under each name.
+
+    Returning a set per story rather than one flat set is what lets INV-B ask "is ANY
+    of this story's ids in the ledger?", which is the actual question.
+    """
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
-        return set()
-    return {f"{m.group(1)}.{m.group(2)}"
-            for m in re.finditer(r"^###\s+Story\s+(\d+)\.(\d+)", text, re.MULTILINE)}
+        return []
+    out: list[set[str]] = []
+    for m in re.finditer(r"^###\s+Story\s+([A-Za-z0-9.]+)(?:\s*\(([A-Za-z0-9.]+)\))?",
+                         text, re.MULTILINE):
+        ids = {_norm_id(m.group(1))}
+        if m.group(2):
+            ids.add(_norm_id(m.group(2)))
+        out.append(ids)
+    return out
 
 
 def _ledger_rows(path: pathlib.Path) -> dict[str, str]:
@@ -130,17 +158,20 @@ def _ledger_rows(path: pathlib.Path) -> dict[str, str]:
     return out
 
 
-def _numeric_story_ids(rows: dict[str, str]) -> set[str]:
-    """`<epic>.<seq>` for the numerically-keyed stories only — the subset comparable
-    against `### Story N.M` headings. A project whose keys are not all numeric is
-    reported as UNMEASURABLE for INV-B rather than partially compared, because a
-    partial comparison manufactures orphans that do not exist."""
-    out: set[str] = set()
+#: A ledger story key's leading id, in either shape: `1-1-package-spine…` -> `1-1`,
+#: `10-6-make-run-admission…` -> `10-6`, `a1-scaffold-the-kedro…` -> `a1`.
+_LEDGER_ID = re.compile(r"^(\d+-\d+|[a-z]+\d+)-")
+
+
+def _ledger_story_ids(rows: dict[str, str]) -> tuple[set[str], set[str]]:
+    """`(recognised ids, unrecognised keys)`. An unrecognised key is REPORTED rather
+    than dropped — silently ignoring a key it cannot parse is how a detector claims a
+    clean set it never actually compared."""
+    ids, unknown = set(), set()
     for key in rows:
-        m = re.match(r"^(\d+)-(\d+)-", key)
-        if m:
-            out.add(f"{m.group(1)}.{m.group(2)}")
-    return out
+        m = _LEDGER_ID.match(key)
+        (ids.add(_norm_id(m.group(1))) if m else unknown.add(key))
+    return ids, unknown
 
 
 def _story_keys_from_ledger(path: pathlib.Path) -> set[str]:
@@ -235,25 +266,37 @@ def check() -> list[dict]:
         ledger = pa / "sprint-status-ledger.yaml"
         rows = _ledger_rows(ledger) if ledger.is_file() else {}
         story_rows = {k: v for k, v in rows.items() if not k.startswith("epic-")}
-        numeric = _numeric_story_ids(story_rows)
-        all_numeric = bool(story_rows) and len(numeric) == len(story_rows)
+        led, unparsed = _ledger_story_ids(story_rows)
 
-        if epics_md and story_rows and not all_numeric:
+        if epics_md and unparsed:
             findings.append({
-                "inv": "INV-B", "kind": "unmeasurable-mixed-key-shapes",
-                "project": project, "subject": f"{len(story_rows) - len(numeric)} non-numeric key(s)",
-                "status": "reported, never assumed clean",
-                "detail": ("this project keys some stories non-numerically (by design), so "
-                           "epics-vs-ledger cannot be compared by id without inventing "
-                           "orphans — INV-B is UNMEASURABLE here, not passing"),
-                "remedy": "compare by hand, or give the epics doc ids matching the ledger",
+                "inv": "INV-B", "kind": "unparseable-ledger-key",
+                "project": project, "subject": f"{len(unparsed)} key(s)",
+                "status": ", ".join(sorted(unparsed)[:6]),
+                "detail": ("no recognisable story id — reported rather than dropped, "
+                           "because silently skipping a key is how a detector claims a "
+                           "clean set it never compared"),
+                "remedy": "rename to <epic>-<seq>-… or <wave><n>-…, or retire the key",
             })
-        if epics_md and story_rows and all_numeric:
-            ep = _story_ids_from_epics(epics_md)
-            led = numeric
-            if ep and led:
-                only_epics = sorted(ep - led, key=lambda s: [int(x) for x in s.split(".")])
-                only_ledger = sorted(led - ep, key=lambda s: [int(x) for x in s.split(".")])
+        if epics_md and story_rows and not _story_ids_from_epics(epics_md):
+            findings.append({
+                "inv": "INV-D", "kind": "canonical-epics-declares-no-stories",
+                "project": project, "subject": epics_md.name,
+                "status": f"0 `### Story` headings vs {len(story_rows)} ledger key(s)",
+                "detail": ("the canonical epics doc declares NO stories in the shape every "
+                           "other station uses, so INV-B has nothing to compare and would "
+                           "silently pass — an empty set trivially matches nothing"),
+                "remedy": ("rewrite as `## Epic N: Title` + `### Story <id>: Title`, "
+                           "covering every ledger story"),
+            })
+        if epics_md and story_rows:
+            ep_sets = _story_ids_from_epics(epics_md)
+            ep_all = {i for s in ep_sets for i in s}
+            if ep_sets and led:
+                # A story is covered if ANY of its declared ids is in the ledger; a
+                # ledger key is covered if it matches any declared id.
+                only_epics = sorted(next(iter(sorted(s))) for s in ep_sets if not (s & led))
+                only_ledger = sorted(led - ep_all)
                 if only_epics:
                     findings.append({
                         "inv": "INV-B", "kind": "story-without-ledger-key",
@@ -295,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Every open Spec is decomposed; epics, ledger and board agree.",
     )
     ap.add_argument("--json", action="store_true", help="machine-readable output")
-    ap.add_argument("--inv", choices=("INV-A", "INV-B", "INV-C"),
+    ap.add_argument("--inv", choices=("INV-A", "INV-B", "INV-C", "INV-D"),
                     help="report only one invariant")
     args = ap.parse_args(argv)
 

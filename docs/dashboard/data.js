@@ -206,6 +206,399 @@ window.DASHBOARD_DATA = {
       "owner": "doctor",
       "practice": false
     },
+    "herald": {
+      "label": "Herald",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-herald",
+      "contract": "SPEC-design-code-bridge CAP-1..5 · FR-01–FR-26 · AD-1–AD-8 · deterministic no-LLM core · dist pyforge-herald / module pyforge.herald / CLI herald",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "inflight": null,
+      "velocity": {
+        "derived": true,
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 47 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "bars": [
+          [
+            "1.1",
+            60
+          ],
+          [
+            "1.2",
+            98
+          ],
+          [
+            "1.3",
+            29
+          ],
+          [
+            "1.4",
+            108
+          ],
+          [
+            "1.5",
+            417
+          ]
+        ],
+        "foot": [
+          [
+            "~98 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "29–417 min",
+            "observed range",
+            ""
+          ],
+          [
+            "47/47",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "0",
+            "remaining",
+            ""
+          ]
+        ]
+      },
+      "timing": {
+        "derived": true,
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "total": 712,
+        "totalLabel": "~11.9 h active compute",
+        "note": "Derived from 5 measured stories; a story still in flight contributes only its closed sessions.",
+        "perStory": {
+          "1.1": 60,
+          "1.2": 98,
+          "1.3": 29,
+          "1.4": 108,
+          "1.5": 417
+        },
+        "epicMin": {
+          "E1": 712
+        }
+      },
+      "lineState": {
+        "state": "complete",
+        "at": ""
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Foundation — package spine & transport",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Package scaffold for pyforge herald"
+            ],
+            [
+              "1.2",
+              "done",
+              "Transport port primary mcp client adapter the transport spike"
+            ],
+            [
+              "1.3",
+              "done",
+              "Fallback transport adapter"
+            ],
+            [
+              "1.4",
+              "done",
+              "Bridge core skeleton state errors determinism boundary"
+            ],
+            [
+              "1.5",
+              "done",
+              "Registry module readme design project"
+            ],
+            [
+              "1.6",
+              "done",
+              "Herald deck seed slug"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Deck pull — prototype, marp, bundle",
+          "stories": [
+            [
+              "2.1",
+              "done",
+              "Herald deck pull slug prototype pull with etag short circuit"
+            ],
+            [
+              "2.2",
+              "done",
+              "Commit opt in"
+            ],
+            [
+              "2.3",
+              "done",
+              "Marp source pull"
+            ],
+            [
+              "2.4",
+              "done",
+              "Standalone bundle pull"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Deck status & stale-mirror detection",
+          "stories": [
+            [
+              "3.1",
+              "done",
+              "Herald deck status slug"
+            ],
+            [
+              "3.2",
+              "done",
+              "Stale hand mirror detection"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Watch — poll, backoff, halt",
+          "stories": [
+            [
+              "4.1",
+              "done",
+              "Poll loop with quiescence debounce"
+            ],
+            [
+              "4.2",
+              "done",
+              "Idle backoff"
+            ],
+            [
+              "4.3",
+              "done",
+              "Halt on auth error"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Export push-back",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Push regenerated exports with etag guard"
+            ],
+            [
+              "5.2",
+              "done",
+              "Conflict refusal on export push"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Foundation — CLI architecture & shared infrastructure",
+          "stories": [
+            [
+              "6.1",
+              "done",
+              "Implement Herald CLI Dispatcher"
+            ],
+            [
+              "6.2",
+              "done",
+              "Implement Shared Argument Conventions"
+            ],
+            [
+              "6.3",
+              "done",
+              "Implement CLI Authentication & Authorization"
+            ],
+            [
+              "6.4",
+              "done",
+              "Implement Evidence Link Validation Protocol (Shared Infrastructure)"
+            ],
+            [
+              "6.5",
+              "done",
+              "CLI Help & First-Day Usability (Inline)"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "Foundation — web surface",
+          "stories": [
+            [
+              "7.1",
+              "done",
+              "Design & Implement Web Layout (Header, Tabs, Sidebar, Responsive)"
+            ],
+            [
+              "7.2",
+              "done",
+              "Implement Web Tooltips & Inline Help"
+            ]
+          ]
+        },
+        {
+          "badge": "E8",
+          "title": "Moment 2 — progress visibility",
+          "stories": [
+            [
+              "8.1",
+              "done",
+              "Implement Progress Data Model & Database Schema"
+            ],
+            [
+              "8.2",
+              "done",
+              "Implement On-Ship Webhook & Weekly Cron Automation"
+            ],
+            [
+              "8.3",
+              "done",
+              "Implement Progress CLI (`herald progress` subcommand)"
+            ],
+            [
+              "8.4",
+              "done",
+              "Implement Progress Web Tab"
+            ]
+          ]
+        },
+        {
+          "badge": "E9",
+          "title": "Moment 3 — success proclamation",
+          "stories": [
+            [
+              "9.1",
+              "done",
+              "Implement Claim Data Model & Database Schema"
+            ],
+            [
+              "9.2",
+              "done",
+              "Implement Auto-Extract & Operator Review Gate"
+            ],
+            [
+              "9.3",
+              "done",
+              "Implement Success CLI"
+            ],
+            [
+              "9.4",
+              "done",
+              "Implement Success Web Archive"
+            ],
+            [
+              "9.5",
+              "done",
+              "Implement Evidence Validation (Sync + Async)"
+            ]
+          ]
+        },
+        {
+          "badge": "E10",
+          "title": "Moment 4 — operations notices",
+          "stories": [
+            [
+              "10.1",
+              "done",
+              "Notice Data Model & Archive Storage"
+            ],
+            [
+              "10.2",
+              "done",
+              "Notice Authoring Workflow (CLI)"
+            ],
+            [
+              "10.3",
+              "done",
+              "Notice Archive & Redirects"
+            ],
+            [
+              "10.4",
+              "done",
+              "Notice CLI"
+            ],
+            [
+              "10.5",
+              "done",
+              "Operations Web Tab"
+            ],
+            [
+              "10.6",
+              "done",
+              "Notice Lifecycle"
+            ]
+          ]
+        },
+        {
+          "badge": "E11",
+          "title": "Integration testing & automation reliability",
+          "stories": [
+            [
+              "11.1",
+              "done",
+              "Integration Testing (CLI + Web + Automation)"
+            ],
+            [
+              "11.2",
+              "done",
+              "Automation Reliability"
+            ],
+            [
+              "11.3",
+              "done",
+              "Evidence Linking (Cross-Moment)"
+            ],
+            [
+              "11.4",
+              "done",
+              "Performance Testing"
+            ]
+          ]
+        },
+        {
+          "badge": "E12",
+          "title": "Documentation & operator experience",
+          "stories": [
+            [
+              "12.1",
+              "done",
+              "CLI Runbooks & Troubleshooting"
+            ],
+            [
+              "12.2",
+              "done",
+              "Web Surface UX Guide"
+            ],
+            [
+              "12.3",
+              "done",
+              "Operator Runbook"
+            ],
+            [
+              "12.4",
+              "done",
+              "Automation Troubleshooting Guide"
+            ]
+          ]
+        }
+      ],
+      "owner": "herald",
+      "practice": false
+    },
     "marshal": {
       "label": "Marshal",
       "accentVar": "--accent",
@@ -1992,399 +2385,6 @@ window.DASHBOARD_DATA = {
       "owner": "warden",
       "practice": false
     },
-    "herald": {
-      "label": "Herald",
-      "accentVar": "--warden",
-      "branch": "loop/pyforge-herald",
-      "contract": "SPEC-design-code-bridge CAP-1..5 · FR-01–FR-26 · AD-1–AD-8 · deterministic no-LLM core · dist pyforge-herald / module pyforge.herald / CLI herald",
-      "seglabels": [
-        "E1 · spine",
-        "E2 · wedge",
-        "E3–E5",
-        "E6 · multi-axis"
-      ],
-      "inflight": null,
-      "velocity": {
-        "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 47 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
-        "bars": [
-          [
-            "1.1",
-            60
-          ],
-          [
-            "1.2",
-            98
-          ],
-          [
-            "1.3",
-            29
-          ],
-          [
-            "1.4",
-            108
-          ],
-          [
-            "1.5",
-            417
-          ]
-        ],
-        "foot": [
-          [
-            "~98 min",
-            "median / story",
-            "var(--done)"
-          ],
-          [
-            "29–417 min",
-            "observed range",
-            ""
-          ],
-          [
-            "47/47",
-            "stories complete",
-            "var(--done)"
-          ],
-          [
-            "0",
-            "remaining",
-            ""
-          ]
-        ]
-      },
-      "timing": {
-        "derived": true,
-        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 712,
-        "totalLabel": "~11.9 h active compute",
-        "note": "Derived from 5 measured stories; a story still in flight contributes only its closed sessions.",
-        "perStory": {
-          "1.1": 60,
-          "1.2": 98,
-          "1.3": 29,
-          "1.4": 108,
-          "1.5": 417
-        },
-        "epicMin": {
-          "E1": 712
-        }
-      },
-      "lineState": {
-        "state": "complete",
-        "at": ""
-      },
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Foundation — package spine & transport",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Package scaffold for pyforge herald"
-            ],
-            [
-              "1.2",
-              "done",
-              "Transport port primary mcp client adapter the transport spike"
-            ],
-            [
-              "1.3",
-              "done",
-              "Fallback transport adapter"
-            ],
-            [
-              "1.4",
-              "done",
-              "Bridge core skeleton state errors determinism boundary"
-            ],
-            [
-              "1.5",
-              "done",
-              "Registry module readme design project"
-            ],
-            [
-              "1.6",
-              "done",
-              "Herald deck seed slug"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Deck pull — prototype, marp, bundle",
-          "stories": [
-            [
-              "2.1",
-              "done",
-              "Herald deck pull slug prototype pull with etag short circuit"
-            ],
-            [
-              "2.2",
-              "done",
-              "Commit opt in"
-            ],
-            [
-              "2.3",
-              "done",
-              "Marp source pull"
-            ],
-            [
-              "2.4",
-              "done",
-              "Standalone bundle pull"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Deck status & stale-mirror detection",
-          "stories": [
-            [
-              "3.1",
-              "done",
-              "Herald deck status slug"
-            ],
-            [
-              "3.2",
-              "done",
-              "Stale hand mirror detection"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Watch — poll, backoff, halt",
-          "stories": [
-            [
-              "4.1",
-              "done",
-              "Poll loop with quiescence debounce"
-            ],
-            [
-              "4.2",
-              "done",
-              "Idle backoff"
-            ],
-            [
-              "4.3",
-              "done",
-              "Halt on auth error"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Export push-back",
-          "stories": [
-            [
-              "5.1",
-              "done",
-              "Push regenerated exports with etag guard"
-            ],
-            [
-              "5.2",
-              "done",
-              "Conflict refusal on export push"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "Foundation — CLI architecture + shared infrastructure",
-          "stories": [
-            [
-              "6.1",
-              "done",
-              "Implement herald cli dispatcher"
-            ],
-            [
-              "6.2",
-              "done",
-              "Implement shared argument conventions"
-            ],
-            [
-              "6.3",
-              "done",
-              "Implement cli authentication and authorization"
-            ],
-            [
-              "6.4",
-              "done",
-              "Implement evidence link validation protocol shared infrastructure"
-            ],
-            [
-              "6.5",
-              "done",
-              "Cli help and first day usability"
-            ]
-          ]
-        },
-        {
-          "badge": "E7",
-          "title": "Foundation — web surface",
-          "stories": [
-            [
-              "7.1",
-              "done",
-              "Design and implement web layout header tabs sidebar responsive"
-            ],
-            [
-              "7.2",
-              "done",
-              "Implement web tooltips and inline help"
-            ]
-          ]
-        },
-        {
-          "badge": "E8",
-          "title": "Moment 2 — progress visibility",
-          "stories": [
-            [
-              "8.1",
-              "done",
-              "Implement progress data model and database schema"
-            ],
-            [
-              "8.2",
-              "done",
-              "Implement on ship webhook and weekly cron automation"
-            ],
-            [
-              "8.3",
-              "done",
-              "Implement progress cli"
-            ],
-            [
-              "8.4",
-              "done",
-              "Implement progress web tab"
-            ]
-          ]
-        },
-        {
-          "badge": "E9",
-          "title": "Moment 3 — success proclamation",
-          "stories": [
-            [
-              "9.1",
-              "done",
-              "Implement claim data model and database schema"
-            ],
-            [
-              "9.2",
-              "done",
-              "Implement auto extract and operator review gate"
-            ],
-            [
-              "9.3",
-              "done",
-              "Implement success cli"
-            ],
-            [
-              "9.4",
-              "done",
-              "Implement success web archive"
-            ],
-            [
-              "9.5",
-              "done",
-              "Implement evidence validation sync and async"
-            ]
-          ]
-        },
-        {
-          "badge": "E10",
-          "title": "Moment 4 — operations notices",
-          "stories": [
-            [
-              "10.1",
-              "done",
-              "Notice data model and archive storage"
-            ],
-            [
-              "10.2",
-              "done",
-              "Notice authoring workflow cli"
-            ],
-            [
-              "10.3",
-              "done",
-              "Notice archive and redirects"
-            ],
-            [
-              "10.4",
-              "done",
-              "Notice cli"
-            ],
-            [
-              "10.5",
-              "done",
-              "Operations web tab"
-            ],
-            [
-              "10.6",
-              "done",
-              "Notice lifecycle"
-            ]
-          ]
-        },
-        {
-          "badge": "E11",
-          "title": "Integration testing & automation reliability",
-          "stories": [
-            [
-              "11.1",
-              "done",
-              "Integration testing cli web and automation"
-            ],
-            [
-              "11.2",
-              "done",
-              "Automation reliability"
-            ],
-            [
-              "11.3",
-              "done",
-              "Evidence linking cross moment"
-            ],
-            [
-              "11.4",
-              "done",
-              "Performance testing"
-            ]
-          ]
-        },
-        {
-          "badge": "E12",
-          "title": "Documentation & operator experience",
-          "stories": [
-            [
-              "12.1",
-              "done",
-              "Cli runbooks and troubleshooting"
-            ],
-            [
-              "12.2",
-              "done",
-              "Web surface ux guide"
-            ],
-            [
-              "12.3",
-              "done",
-              "Operator runbook"
-            ],
-            [
-              "12.4",
-              "done",
-              "Automation troubleshooting guide"
-            ]
-          ]
-        }
-      ],
-      "owner": "herald",
-      "practice": false
-    },
     "regen": {
       "label": "Regen",
       "accentVar": "--regen",
@@ -3028,6 +3028,58 @@ window.DASHBOARD_DATA = {
               "I5 — Run admission / single-writer — DW-AD23-1, re-promotes AD-23 (AUD-ATLAS-046 impl half)"
             ]
           ]
+        },
+        {
+          "badge": "E12",
+          "title": "Wave J — Kedro-org tooling",
+          "stories": [
+            [
+              "J1",
+              "pending",
+              "kedro-skills audit-then-adopt"
+            ],
+            [
+              "J2",
+              "pending",
+              "Publish the real DAG continuously"
+            ],
+            [
+              "J3",
+              "pending",
+              "Record the vscode-kedro verdict"
+            ]
+          ]
+        },
+        {
+          "badge": "E13",
+          "title": "Wave K — Upstream discovery",
+          "stories": [
+            [
+              "K1",
+              "pending",
+              "Trending ingest"
+            ],
+            [
+              "K2",
+              "pending",
+              "Tier classification"
+            ],
+            [
+              "K3",
+              "pending",
+              "trending-candidates operator surface"
+            ],
+            [
+              "K4",
+              "pending",
+              "Fixed-source audit track"
+            ],
+            [
+              "K5",
+              "pending",
+              "Downstream handoff to Mason"
+            ]
+          ]
         }
       ],
       "roadmap": {
@@ -3137,15 +3189,15 @@ window.DASHBOARD_DATA = {
         "total": 1502
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "12.1"
       },
       "owner": "atlas",
       "practice": false,
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 46 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "10.4",
@@ -3172,12 +3224,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "38/38",
+            "38/46",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "8",
             "remaining",
             ""
           ]
@@ -3185,7 +3237,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 20:21 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 20:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3517,7 +3569,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
       "status": "archived",
       "owner": "atlas",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas-intelligence-platform"
       },
@@ -3561,7 +3613,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
       "status": "archived",
       "owner": "doctor",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor-dependency-health"
       },
@@ -3596,7 +3648,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
       "status": "archived",
       "owner": "marshal",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal-loop-orchestrator"
       },
@@ -3619,7 +3671,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Mason: Recipe Validator\"",
       "status": "archived",
       "owner": "mason",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason-recipe-validator"
       },
@@ -3642,7 +3694,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
       "status": "archived",
       "owner": "scribe",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe-team-memory"
       },
@@ -3665,7 +3717,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
       "status": "archived",
       "owner": "steward",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance"
       },
@@ -3688,7 +3740,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
       "status": "archived",
       "owner": "marshal",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
       },
@@ -3699,7 +3751,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Warden: Compliance Gates\"",
       "status": "archived",
       "owner": "warden",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates"
       },
@@ -5291,7 +5343,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "38/38",
+        "progress": "38/46",
         "complete": 14,
         "of": 14
       },
@@ -12245,14 +12297,14 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-marshal-loop-orchestrator",
             "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
             "slug": "pyforge-testing-charter",
             "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12303,7 +12355,7 @@ window.DASHBOARD_DATA = {
           "archived": 5,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 12.1",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -12318,7 +12370,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-atlas-intelligence-platform",
             "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12377,7 +12429,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-warden-compliance-gates",
             "title": "\"Dream — PyForge Warden: Compliance Gates\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12429,7 +12481,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-mason-recipe-validator",
             "title": "\"Dream — PyForge Mason: Recipe Validator\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12481,7 +12533,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-doctor-dependency-health",
             "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12512,7 +12564,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-scribe-team-memory",
             "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12557,7 +12609,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -14215,8 +14267,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 20:21 UTC",
-    "generatedEpoch": 1786220468
+    "generatedAt": "2026-08-08 20:34 UTC",
+    "generatedEpoch": 1786221257
   },
   "storySpecs": [
     {
