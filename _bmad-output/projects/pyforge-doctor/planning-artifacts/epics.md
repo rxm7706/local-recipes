@@ -417,5 +417,37 @@ that could be fed to `import_module`
 `test_cli_bridge_sole_subprocess.py`
 
 **Status:** done — verified against the real 2026-08-08 incident (restoring the damaged
-herald ledger yields FAIL/55; a clean tree yields OK/8 ledgers).
+herald ledger yields FAIL/55; a clean tree yields OK/8 ledgers). Scope is the SOURCE
+only; rendering it is Story 5.2, deliberately split rather than folded in (see below).
+
+### Story 5.2: Render the verdict through a `doctor` verb
+
+As the operator,
+I want `doctor` to actually show me the Marshal-durability verdict,
+So that the check is something I see, not something that merely exists.
+
+**Type:** feature • **Effort:** XS • **Deps:** S-5.1 • **FR/AD:** FR-14; AD-11
+**Surface:** `__main__.py`
+
+**Why this is its own story, not part of 5.1.** `sources/marshal.py` shipped with **no
+caller** — `__main__.py:47` imports `atlas` and `warden`, not `marshal`. Marking 5.1
+done while the source is unreachable would be the "merged, marked done, never became the
+runtime" shape this repo already carries as the Atlas Kedro precedent and forbids in
+Marshal's AD-67. Splitting states the truth: the verdict is built and provably
+independent, and it is not yet rendered.
+
+**Sequenced behind a profile, not blocked on nothing.** `doctor check` is measured at
+**7.04s against its documented 5.0s budget** (SM-C1, `DW-DOCTOR-2026-08-08-1`). Adding a
+gather filter to that verb before profiling would knowingly worsen a live NFR breach.
+
+**Acceptance Criteria:**
+
+**Given** a repo with tracked sprint ledgers
+**When** the operator runs the verb this story wires
+**Then** the `marshal-durability` Findings appear in both human and `--json` output
+**And** a FAIL Finding participates in the exit-code lattice like any other
+**And** `doctor check` is inside its documented budget after the addition — measured,
+not assumed
+
+**Status:** backlog
 

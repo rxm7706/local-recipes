@@ -14,7 +14,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 16 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 18 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -49,12 +49,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "16/16",
+            "17/18",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -78,8 +78,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "5.2"
       },
       "epics": [
         {
@@ -183,6 +183,22 @@ window.DASHBOARD_DATA = {
               "4.4",
               "done",
               "Safe upgrade-path recommendation (FR-13)"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "The verdict on the Marshal's own row",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Marshal-durability source, independent by construction"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Render the verdict through a `doctor` verb"
             ]
           ]
         }
@@ -2893,7 +2909,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 19:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 20:13 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3568,9 +3584,9 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-doctor",
       "project": "pyforge-doctor",
       "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
-      "caps": 8,
+      "caps": 9,
       "companions": 1,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "pyforge-doctor",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
@@ -4762,10 +4778,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "done",
+          "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 16,
-          "total": 16
+          "done": 17,
+          "total": 18
         },
         {
           "slug": "pyforge-scribe",
@@ -4878,7 +4894,7 @@ window.DASHBOARD_DATA = {
     "live": 23,
     "reached": 8,
     "gaps": 15,
-    "findings": 11,
+    "findings": 12,
     "rows": [
       {
         "label": "atlas",
@@ -5030,7 +5046,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-02T12:57",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
@@ -5039,7 +5055,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-02",
           "sprint": "2026-08-08",
-          "tea": "2026-08-07",
+          "tea": "2026-08-08",
           "gates": "2026-08-01",
           "code": "2026-08-07",
           "verify": "2026-08-07",
@@ -5108,6 +5124,13 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-08",
+            "other": "2026-08-02"
           }
         ],
         "furthest": "retro",
@@ -5115,7 +5138,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "16/16",
+        "progress": "17/18",
         "complete": 14,
         "of": 14
       },
@@ -12174,7 +12197,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 5.2",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12308,15 +12331,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 195,
+    "open": 196,
     "done": 19,
-    "triaged": 139,
+    "triaged": 140,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 2,
       "low": 11,
-      "unspecified": 181
+      "unspecified": 182
     },
     "projects": [
       {
@@ -12730,9 +12753,9 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 41,
+        "open": 42,
         "done": 8,
-        "triaged": 21,
+        "triaged": 22,
         "entries": [
           {
             "id": "DW-1-1-1",
@@ -13073,6 +13096,13 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-LEDGER-2026-08-08-4",
             "title": "VOID. Its table was measured after the damage, not before it.",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-DOCTOR-2026-08-08-1",
+            "title": "`doctor check` is 7.04s against its documented 5.0s budget",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
@@ -13902,8 +13932,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 19:33 UTC",
-    "generatedEpoch": 1786217587
+    "generatedAt": "2026-08-08 20:13 UTC",
+    "generatedEpoch": 1786219989
   },
   "storySpecs": [
     {
@@ -13914,9 +13944,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 16,
+      "done": 17,
       "tracked": 16,
-      "gap": 0
+      "gap": 1
     },
     {
       "station": "pyforge-genesis",
