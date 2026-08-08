@@ -1,221 +1,287 @@
 ---
-stepsCompleted:
-  - step-01-validate-prerequisites
-inputDocuments:
-  - _bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-pyforge-herald-2026-08-01/prd.md (formerly prds/prd-herald-moments-2-4-2026-08-02/prd.md, folded in 2026-08-02 as its "## Satellite: Herald's Proclamation Surfaces — Moments 2–4" section; original archived at archive/_bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-herald-moments-2-4-2026-08-02/)
-  - _bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md (formerly architecture/architecture-herald-moments-2-4-2026-08-02/ARCHITECTURE-SPINE.md, folded in 2026-08-02 as AD-11..AD-20; original archived at archive/_bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-moments-2-4-2026-08-02/)
-# The single canonical story source for this station: every `### Story` heading
-# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
+# The single canonical story source for this station: every `### Story` heading here maps
+# 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (AD-72).
+project_name: pyforge-herald
+epicCount: 12
+storyCount: 47
+status: complete
 ---
 
-# Herald Moments 2–4 - Epics & Stories
+# pyforge-herald — Epic Breakdown
 
-## ✅ REQUIREMENTS EXTRACTED & VERIFIED
+Rebuilt 2026-08-08 from `sprint-status-ledger.yaml`. The previous file was a
+planning-workflow scratch document ("REQUIREMENTS EXTRACTED & VERIFIED", "READY FOR NEXT
+STEP", "APPROVED EPIC STRUCTURE (Step 2 Complete)") that listed stories as **bullets**
+rather than `### Story` headings and covered only Epics 6-12 — so it declared **zero**
+stories in the shape every other station uses, against a 47-story ledger. `INV-D` in
+`chain_completeness_check.py` exists because of it, and now fails on that shape.
 
-**Functional Requirements**: 24 FRs extracted  
-**Non-Functional Requirements**: 6 NFRs extracted  
-**Architecture Requirements**: 10 ADs (decisions) mapped to implementation  
-**Total Coverage**: 100% of PRD + Architecture + Spec captured
+The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 
----
+## Epic List
 
-## EPIC BREAKDOWN
-
-### Epic 6: Foundation — CLI Architecture (2–3 stories)
-- Story 6.1: CLI Dispatcher (subcommands, routing)
-- Story 6.2: Shared Argument Conventions (--json, --date-range, --station)
-- Story 6.3: CLI Authentication & Authorization (role gates)
-
-**Blocks**: All downstream stories (foundation required)
-
----
-
-### Epic 7: Foundation — Web Surface (2–3 stories)
-- Story 7.1: Web Layout Design (nav, sidebar, responsive)
-- Story 7.2: Header, Tabs, Sidebar Implementation (4 Moments)
-- Story 7.3: Responsive Design & Mobile Support
-
-**Blocks**: Stories 8.4, 9.4, 10.5 (web foundation needed)  
-**Depends On**: Epic 6
-
----
-
-### Epic 8: Moment 2 — Progress Visibility (2–3 stories)
-- Story 8.1: Progress Data Model & DB Schema
-- Story 8.2: On-Ship Webhook + Weekly Cron Automation
-- Story 8.3: Progress CLI (herald progress subcommand)
-- Story 8.4: Progress Web Tab (cards, filters, detail)
-
-**Depends On**: Epics 6, 7
-
----
-
-### Epic 9: Moment 3 — Success Proclamation (2–3 stories)
-- Story 9.1: Claim Data Model & DB Schema
-- Story 9.2: Auto-Extract + Operator Review Gate
-- Story 9.3: Success CLI (review, publish, list, get)
-- Story 9.4: Success Web Archive (chronological, evidence badges)
-- Story 9.5: Evidence Validation (sync + async stale-link checks)
-
-**Depends On**: Epics 6, 7
-
----
-
-### Epic 10: Moment 4 — Operations Notices (2–3 stories)
-- Story 10.1: Notice Data Model & Archive Storage
-- Story 10.2: Notice Authoring Workflow (CLI + form)
-- Story 10.3: Notice Archive (YYYY-MM folders, redirects)
-- Story 10.4: Notice CLI (author, list, archive, get)
-- Story 10.5: Operations Web Tab (notice board, filters)
-- Story 10.6: Notice Lifecycle (Draft → Published → Closed)
-
-**Depends On**: Epics 6, 7
-
----
-
-### Epic 11: Integration Testing & Automation (1–2 stories)
-- Story 11.1: Integration Testing (CLI + web + automation together)
-- Story 11.2: Automation Reliability (webhook retries, cron, gates)
-- Story 11.3: Evidence Linking (cross-Moment: claim ↔ notice)
-- Story 11.4: Performance Testing (latency, scalability)
-
-**Depends On**: Epics 8, 9, 10
-
----
-
-### Epic 12: Documentation & Operator Experience (0.5–1 story)
-- Story 12.1: Comprehensive CLI Help
-- Story 12.2: Web Surface UX Guide (inline help, tooltips)
-- Story 12.3: Operator Runbook (how-to guides)
-- Story 12.4: Automation Troubleshooting Guide
-
-**Depends On**: All other epics
-
----
-
-## READY FOR NEXT STEP
-
-✅ All requirements extracted and organized into 7 epics  
-✅ 24+ individual stories identified  
-✅ Dependencies mapped (critical path: 1 → 2 → {3,4,5} → 6 → 7)  
-✅ Effort estimates provided (12–18 stories total)
-
-**Current Status**: Step 1 complete. Ready to proceed to Step 2 (Design Epics with detailed acceptance criteria).
-
-**[C] Continue to Story Design** — Press C to move to Step 2 and develop detailed ACs for each story.
+| Epic | Title | Stories | Done |
+|---|---|---|---|
+| **E1** | Foundation — package spine & transport | 6 | 6 |
+| **E2** | Deck pull — prototype, marp, bundle | 4 | 4 |
+| **E3** | Deck status & stale-mirror detection | 2 | 2 |
+| **E4** | Watch — poll, backoff, halt | 3 | 3 |
+| **E5** | Export push-back | 2 | 2 |
+| **E6** | Foundation — CLI architecture & shared infrastructure | 5 | 5 |
+| **E7** | Foundation — web surface | 2 | 2 |
+| **E8** | Moment 2 — progress visibility | 4 | 4 |
+| **E9** | Moment 3 — success proclamation | 5 | 5 |
+| **E10** | Moment 4 — operations notices | 6 | 6 |
+| **E11** | Integration testing & automation reliability | 4 | 4 |
+| **E12** | Documentation & operator experience | 4 | 4 |
+| **Total** | | **47** | **47** |
 
 
 ---
 
-## APPROVED EPIC STRUCTURE (Step 2 Complete)
+## Epic 1: Foundation — package spine & transport
 
-### Epic 6: Foundation — CLI Architecture
-**Outcome**: Unified CLI interface for all three Moments (consistent flags, extensible routing).  
-**FRs**: FR-1.1–1.3 | **Dependencies**: None
+### Story 1.1: Package scaffold for pyforge herald
 
-### Epic 7: Foundation — Web Surface  
-**Outcome**: Unified web dashboard (4-tab nav, responsive layout, shared UX patterns).  
-**FRs**: FR-2.1–2.3 | **Dependencies**: Epic 6
+**Status:** done  ·  **Ledger key:** `1-1-package-scaffold-for-pyforge-herald`
 
-### Epic 8: Moment 2 — Progress Visibility
-**Outcome**: Shipping motion visible (progress + costs + unblocks via webhook + cron automation).  
-**FRs**: FR-3.1–3.4 | **Dependencies**: Epics 6, 2
+### Story 1.2: Transport port primary mcp client adapter the transport spike
 
-### Epic 9: Moment 3 — Success Proclamation
-**Outcome**: Auto-extracted claims backed by evidence (tests, metrics, adoption).  
-**FRs**: FR-4.1–4.5 | **Dependencies**: Epics 6, 2
+**Status:** done  ·  **Ledger key:** `1-2-transport-port-primary-mcp-client-adapter-the-transport-spike`
 
-### Epic 10: Moment 4 — Operations Notices
-**Outcome**: Deprecations/EOL announced with permanent URLs and redirects.  
-**FRs**: FR-5.1–5.6 | **Dependencies**: Epics 6, 2
+### Story 1.3: Fallback transport adapter
 
-### Epic 11: Integration Testing & Automation
-**Outcome**: All Moments work together; automation reliable; evidence links validated.  
-**FRs**: FR-6.1–7.4 | **Dependencies**: Epics 8, 4, 5
+**Status:** done  ·  **Ledger key:** `1-3-fallback-transport-adapter`
 
-### Epic 12: Documentation & Operator Experience
-**Outcome**: CLI help, web guides, runbooks, troubleshooting documented.  
-**FRs**: Implicit (NFRs) | **Dependencies**: All other epics
+### Story 1.4: Bridge core skeleton state errors determinism boundary
 
----
+**Status:** done  ·  **Ledger key:** `1-4-bridge-core-skeleton-state-errors-determinism-boundary`
 
-**Total Effort**: 12–18 stories | **Parallel Path**: Epics 6 → 2 → {3,4,5 parallel} → 6 → 7
+### Story 1.5: Registry module readme design project
 
-**Status**: ✅ READY FOR STEP 3 (Story Creation with detailed acceptance criteria)
+**Status:** done  ·  **Ledger key:** `1-5-registry-module-readme-design-project`
+
+### Story 1.6: Herald deck seed slug
+
+**Status:** done  ·  **Ledger key:** `1-6-herald-deck-seed-slug`
 
 
 ---
 
-## REFINED STRUCTURE (Advanced Elicitation + Party Mode)
+## Epic 2: Deck pull — prototype, marp, bundle
 
-**Key Changes**:
-1. Epic 6 expanded: Evidence Protocol added (Story 6.4 + CLI help inline)
-2. Epic 8 prioritized first (week 3 delivery of real value)
-3. Epic 11 simplified (cross-Moment focused, not foundational re-testing)
-4. Sequencing: value-driven (1 → 2 → 3-fast → {4,5 parallel} → 6 → 7)
+### Story 2.1: Herald deck pull slug prototype pull with etag short circuit
 
-### FINAL EPIC BREAKDOWN
+**Status:** done  ·  **Ledger key:** `2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit`
 
-**Epic 6: Foundation — CLI + Shared Infrastructure** (3–4 stories)
-- 6.1: CLI Dispatcher
-- 6.2: Shared Argument Conventions
-- 6.3: Authorization Layer
-- **6.4: Evidence Protocol (NEW)** — Shared link validation framework for Moments 3–5
-- CLI help inline (first-day usability)
+### Story 2.2: Commit opt in
 
-**Epic 7: Foundation — Web Surface** (2–3 stories)
-- 7.1: Web Layout Design
-- 7.2: Header, Tabs, Sidebar
-- 7.3: Responsive Design & Mobile
-- Web tooltips/inline help
+**Status:** done  ·  **Ledger key:** `2-2-commit-opt-in`
 
-**Epic 8: Moment 2 — Progress Visibility** (2–3 stories) **[PRIORITY 1]**
-- 8.1: Progress Data Model
-- 8.2: Webhook + Cron Automation
-- 8.3: Progress CLI
-- 8.4: Progress Web Tab
-- **Week 3 delivery: First real user value**
+### Story 2.3: Marp source pull
 
-**Epic 9: Moment 3 — Success Proclamation** (2–3 stories) **[Parallel with 3 & 5]**
-- 9.1: Claim Data Model
-- 9.2: Auto-Extract + Review Gate
-- 9.3: Success CLI
-- 9.4: Success Web Archive
-- 9.5: Evidence Validation (uses Epic 6.4 protocol)
+**Status:** done  ·  **Ledger key:** `2-3-marp-source-pull`
 
-**Epic 10: Moment 4 — Operations Notices** (2–3 stories) **[Parallel with 3 & 4]**
-- 10.1: Notice Data Model
-- 10.2: Notice Authoring
-- 10.3: Notice Archive
-- 10.4: Notice CLI
-- 10.5: Operations Web Tab
-- 10.6: Notice Lifecycle
+### Story 2.4: Standalone bundle pull
 
-**Epic 11: Integration Testing & Automation** (1–2 stories) **[SIMPLIFIED]**
-- 11.1: Cross-Moment Integration
-- 11.2: Automation Reliability
-- 11.3: Evidence Linking Tests
-- (Foundation testing moved to Epic 6; performance testing optional)
+**Status:** done  ·  **Ledger key:** `2-4-standalone-bundle-pull`
 
-**Epic 12: Documentation & Operator Experience** (0.5–1 story)
-- 12.1: CLI Runbooks (not help; help in Epic 6)
-- 12.2: Web UX Guides
-- 12.3: Operator Runbook
-- 12.4: Troubleshooting Guide
-
-**Total Effort**: 12–19 stories (refined +0.5 net)
-
-**Sequencing**:
-- Week 1: Epic 6 (CLI + evidence protocol foundation)
-- Week 2: Epic 7 (web foundation)
-- Week 3: Epic 8 *fast-track* (Progress → real value)
-- Week 4: Epics 9 & 5 parallel (Success + Notices)
-- Week 5: Epic 11 (integration)
-- Week 6: Epic 12 (docs)
 
 ---
 
-**Status**: ✅ STEP 2 COMPLETE (refined structure approved)  
-**Next**: STEP 3 (Detailed story creation with acceptance criteria)
+## Epic 3: Deck status & stale-mirror detection
+
+### Story 3.1: Herald deck status slug
+
+**Status:** done  ·  **Ledger key:** `3-1-herald-deck-status-slug`
+
+### Story 3.2: Stale hand mirror detection
+
+**Status:** done  ·  **Ledger key:** `3-2-stale-hand-mirror-detection`
+
+
+---
+
+## Epic 4: Watch — poll, backoff, halt
+
+### Story 4.1: Poll loop with quiescence debounce
+
+**Status:** done  ·  **Ledger key:** `4-1-poll-loop-with-quiescence-debounce`
+
+### Story 4.2: Idle backoff
+
+**Status:** done  ·  **Ledger key:** `4-2-idle-backoff`
+
+### Story 4.3: Halt on auth error
+
+**Status:** done  ·  **Ledger key:** `4-3-halt-on-auth-error`
+
+
+---
+
+## Epic 5: Export push-back
+
+### Story 5.1: Push regenerated exports with etag guard
+
+**Status:** done  ·  **Ledger key:** `5-1-push-regenerated-exports-with-etag-guard`
+
+### Story 5.2: Conflict refusal on export push
+
+**Status:** done  ·  **Ledger key:** `5-2-conflict-refusal-on-export-push`
+
+
+---
+
+## Epic 6: Foundation — CLI architecture & shared infrastructure
+
+### Story 6.1: Implement Herald CLI Dispatcher
+
+**Status:** done  ·  **Ledger key:** `6-1-implement-herald-cli-dispatcher`
+
+### Story 6.2: Implement Shared Argument Conventions
+
+**Status:** done  ·  **Ledger key:** `6-2-implement-shared-argument-conventions`
+
+### Story 6.3: Implement CLI Authentication & Authorization
+
+**Status:** done  ·  **Ledger key:** `6-3-implement-cli-authentication-and-authorization`
+
+### Story 6.4: Implement Evidence Link Validation Protocol (Shared Infrastructure)
+
+**Status:** done  ·  **Ledger key:** `6-4-implement-evidence-link-validation-protocol-shared-infrastructure`
+
+### Story 6.5: CLI Help & First-Day Usability (Inline)
+
+**Status:** done  ·  **Ledger key:** `6-5-cli-help-and-first-day-usability`
+
+
+---
+
+## Epic 7: Foundation — web surface
+
+### Story 7.1: Design & Implement Web Layout (Header, Tabs, Sidebar, Responsive)
+
+**Status:** done  ·  **Ledger key:** `7-1-design-and-implement-web-layout-header-tabs-sidebar-responsive`
+
+### Story 7.2: Implement Web Tooltips & Inline Help
+
+**Status:** done  ·  **Ledger key:** `7-2-implement-web-tooltips-and-inline-help`
+
+
+---
+
+## Epic 8: Moment 2 — progress visibility
+
+### Story 8.1: Implement Progress Data Model & Database Schema
+
+**Status:** done  ·  **Ledger key:** `8-1-implement-progress-data-model-and-database-schema`
+
+### Story 8.2: Implement On-Ship Webhook & Weekly Cron Automation
+
+**Status:** done  ·  **Ledger key:** `8-2-implement-on-ship-webhook-and-weekly-cron-automation`
+
+### Story 8.3: Implement Progress CLI (`herald progress` subcommand)
+
+**Status:** done  ·  **Ledger key:** `8-3-implement-progress-cli`
+
+### Story 8.4: Implement Progress Web Tab
+
+**Status:** done  ·  **Ledger key:** `8-4-implement-progress-web-tab`
+
+
+---
+
+## Epic 9: Moment 3 — success proclamation
+
+### Story 9.1: Implement Claim Data Model & Database Schema
+
+**Status:** done  ·  **Ledger key:** `9-1-implement-claim-data-model-and-database-schema`
+
+### Story 9.2: Implement Auto-Extract & Operator Review Gate
+
+**Status:** done  ·  **Ledger key:** `9-2-implement-auto-extract-and-operator-review-gate`
+
+### Story 9.3: Implement Success CLI
+
+**Status:** done  ·  **Ledger key:** `9-3-implement-success-cli`
+
+### Story 9.4: Implement Success Web Archive
+
+**Status:** done  ·  **Ledger key:** `9-4-implement-success-web-archive`
+
+### Story 9.5: Implement Evidence Validation (Sync + Async)
+
+**Status:** done  ·  **Ledger key:** `9-5-implement-evidence-validation-sync-and-async`
+
+
+---
+
+## Epic 10: Moment 4 — operations notices
+
+### Story 10.1: Notice Data Model & Archive Storage
+
+**Status:** done  ·  **Ledger key:** `10-1-notice-data-model-and-archive-storage`
+
+### Story 10.2: Notice Authoring Workflow (CLI)
+
+**Status:** done  ·  **Ledger key:** `10-2-notice-authoring-workflow-cli`
+
+### Story 10.3: Notice Archive & Redirects
+
+**Status:** done  ·  **Ledger key:** `10-3-notice-archive-and-redirects`
+
+### Story 10.4: Notice CLI
+
+**Status:** done  ·  **Ledger key:** `10-4-notice-cli`
+
+### Story 10.5: Operations Web Tab
+
+**Status:** done  ·  **Ledger key:** `10-5-operations-web-tab`
+
+### Story 10.6: Notice Lifecycle
+
+**Status:** done  ·  **Ledger key:** `10-6-notice-lifecycle`
+
+
+---
+
+## Epic 11: Integration testing & automation reliability
+
+### Story 11.1: Integration Testing (CLI + Web + Automation)
+
+**Status:** done  ·  **Ledger key:** `11-1-integration-testing-cli-web-and-automation`
+
+### Story 11.2: Automation Reliability
+
+**Status:** done  ·  **Ledger key:** `11-2-automation-reliability`
+
+### Story 11.3: Evidence Linking (Cross-Moment)
+
+**Status:** done  ·  **Ledger key:** `11-3-evidence-linking-cross-moment`
+
+### Story 11.4: Performance Testing
+
+**Status:** done  ·  **Ledger key:** `11-4-performance-testing`
+
+
+---
+
+## Epic 12: Documentation & operator experience
+
+### Story 12.1: CLI Runbooks & Troubleshooting
+
+**Status:** done  ·  **Ledger key:** `12-1-cli-runbooks-and-troubleshooting`
+
+### Story 12.2: Web Surface UX Guide
+
+**Status:** done  ·  **Ledger key:** `12-2-web-surface-ux-guide`
+
+### Story 12.3: Operator Runbook
+
+**Status:** done  ·  **Ledger key:** `12-3-operator-runbook`
+
+### Story 12.4: Automation Troubleshooting Guide
+
+**Status:** done  ·  **Ledger key:** `12-4-automation-troubleshooting-guide`
 

@@ -1447,3 +1447,65 @@ or a minimal structural inference flagged as such.
     warden-side story); shared third-party deps co-resolve at workspace
     level. Both tools install and run independently. Proposal:
     `sprint-change-proposal-2026-07-17.md`; spine Decisions § 10.
+
+---
+
+## Epic 12: Kedro-org tooling — audit, publish, decide
+
+**Value delivered.** Atlas's own Kedro deployment stops being an unusually
+invariant-heavy island: the org's tooling is evaluated against it on the record, and the
+pipeline DAG is published continuously rather than screenshotted.
+
+### Story J1 (12.1): kedro-skills audit-then-adopt (FR-61)
+**Effort:** S • **Status:** backlog
+**Given** `kedro-skills` pinned at the evaluated version **When** it runs against the real
+`pyforge-atlas` project **Then** every piece of generated guidance is audited against the
+AD-invariants; passing content lands in `.claude/skills/` reproducibly; contradicting
+content is excluded **with the contradiction recorded**; **And** "not yet" is a valid
+final verdict that closes the story.
+
+### Story J2 (12.2): Publish the real DAG continuously (FR-62)
+**Effort:** S • **Deps:** Steward S-2.1 (`deploy dashboard`) • **Status:** backlog
+**Given** a push touching the pipelines tree **Then** CI builds Kedro-Viz from the **real**
+package, never the stub-mirror, and publishes **through `steward deploy dashboard`** —
+Atlas owns the outcome, Steward owns the mechanism.
+
+### Story J3 (12.3): Record the `vscode-kedro` verdict (FR-63)
+**Effort:** XS • **Status:** backlog
+**Given** the evaluation **Then** a dated adopt/defer decision exists; if deferred, an
+optional `.vscode/extensions.json` recommendation is the whole deliverable. The
+**decision** closes this, not an installation.
+
+---
+
+## Epic 13: Upstream discovery — what to package next
+
+**Value delivered.** The factory stops picking packaging targets by hand. Atlas proposes;
+Mason packages.
+
+### Story K1 (13.1): Trending ingest (FR-64)
+**Effort:** M • **Status:** backlog
+**Given** a schedule **Then** GitHub-trending candidates land in a named dataset under the
+`<domain>_<entity>` convention, via an **injected** fetcher (AD-1), never inline IO.
+
+### Story K2 (13.2): Tier classification (FR-65)
+**Effort:** M • **Deps:** S-13.1 • **Status:** backlog
+**Given** ingested candidates **Then** each is tiered by declared rules, and an
+unclassifiable candidate is **reported**, never silently tiered.
+
+### Story K3 (13.3): `trending-candidates` operator surface (FR-66)
+**Effort:** S • **Deps:** S-13.2 • **Status:** backlog
+**Given** a classified set **Then** a CLI/MCP tool answers "what is worth packaging next?"
+with `--json`, read-only and offline-safe like every other atlas read surface.
+
+### Story K4 (13.4): Fixed-source audit track (FR-67)
+**Effort:** S • **Deps:** S-13.2 • **Status:** backlog
+**Given** the declared org-audit list **Then** each candidate's CURRENT state is
+re-verified before proposal — one that shipped independently since the list was written is
+dropped, not re-proposed.
+
+### Story K5 (13.5): Downstream handoff to Mason (FR-68)
+**Effort:** XS • **Deps:** S-13.3 • **Status:** backlog
+**Given** a selected candidate **Then** it hands off as structured data, not prose; Atlas
+proposes and never authors a recipe.
+

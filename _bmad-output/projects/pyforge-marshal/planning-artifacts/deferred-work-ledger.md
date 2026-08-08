@@ -589,3 +589,17 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   status: open
 
   verified: 2026-08-08 — three timed iterations, all over budget.
+
+## DW-BOARD-2026-08-08-1 — Herald's build line and Herald's ledger describe DIFFERENT sto…
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md`
+  summary: The Guildhall renders Herald as **12/19, "paused 0.1"** while Herald's tracked ledger holds **47 story keys, 47 done**. Neither is wrong about its own source; they are describing **two different bodies of work** under one station, and only one of them reaches the board.
+  evidence: Measured 2026-08-08. `data.js`'s `projects.herald.epics` is a hand-curated array whose story ids run `0.1`/`0.2`/`0.3` (E0 "Foundation & Infrastructure" — *"Set up Modernist-Identity design system"*, *"Design-Code-Bridge etagged pull protocol"*) and `1.1`..`1.4` (E1 "Design Authoring & Seeding" — *"Create 9 Design projects"*, *"six-act framework"*). Herald's `sprint-status-ledger.yaml` holds an entirely disjoint set: `1-1-package-scaffold-for-pyforge-herald` … `12-4-automation-troubleshooting-guide`. No id in one set appears in the other.
+  why it persists: `scan_projects` only ever UPGRADES a hand-authored line (the deliberate guard that stops a parse failure blanking curated state), so the seeded `epics` array is never reconciled against the ledger and cannot self-heal. The same "only upgrades" property that protects curated in-flight state also freezes a divergence.
+  impact: a station whose ledger says 47/47 renders as 63% and "paused". This is the visible half of the story-set question; the invisible half is that no detector compares a build line's story ids against the ledger's, so the divergence is silent.
+  NOT the earlier claim: `DW-LEDGER-2026-08-08-1` alleged 34 orphan story specs and was retracted as self-inflicted damage. This is a different, genuinely pre-existing thing — the ledger is correct and complete; the BOARD's story set is the one that diverges.
+  remedy: belongs with `spec-dashboard-project-path-derivation` (FR-140..FR-143) — derive the build line's story set from the ledger, or declare explicitly that a station may carry two and render both.
+
+  status: open
+
+  verified: 2026-08-08 — both story sets read directly and compared; zero id overlap.

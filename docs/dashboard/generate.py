@@ -28,6 +28,7 @@ CI (in-workflow): python docs/dashboard/generate.py --source git
 from __future__ import annotations
 
 import argparse
+import collections
 import glob
 import json
 import os
@@ -1855,6 +1856,78 @@ def scan_pitch() -> list[dict]:
 
 # ---- command center (SDLC phase-grouped view) --------------------------------
 
+def scan_readiness() -> dict:
+    """"What can actually be launched right now" — the question the board could not
+    answer before 2026-08-08.
+
+    Distinct from the Command Center, which reports whether an ARTIFACT EXISTS per SDLC
+    phase. This reports whether WORK CAN START: how much of each station is done, what
+    the next runnable story is, what is blocked, and — critically — where readiness is
+    UNKNOWN rather than green.
+
+    Derived entirely from the tracked ledgers via `parse_sprint_status` (never a regex:
+    atlas keys stories `a1-`/`b2-` by design, and an `^\d+-\d+` assumption produced
+    three wrong findings on 2026-08-08, one of them published and retracted).
+    """
+    rows, totals = [], collections.Counter()
+    for key, rel in sorted(PROJECT_SOURCES.items()):
+        slug = _KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
+        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
+                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        if not ledger.is_file():
+            continue
+        statuses = {k: v for k, v in parse_sprint_status(ledger).items()
+                    if not k.startswith("epic-")}
+        if not statuses:
+            continue
+        counts = collections.Counter(statuses.values())
+        totals.update(counts)
+        nxt = sorted(k for k, v in statuses.items() if v == "backlog")
+        blocked = sorted(k for k, v in statuses.items() if v == "blocked")
+        proj = f"pyforge-{key}" if slug.startswith("pyforge-") else slug
+        pa = f"_bmad-output/projects/{slug}/planning-artifacts"
+        specs_dir = REPO_ROOT / pa / "specs"
+        open_specs = []
+        if specs_dir.is_dir():
+            for sm in sorted(specs_dir.glob("spec-*/SPEC.md")):
+                st = ""
+                try:
+                    head = sm.read_text(encoding="utf-8").split("---")[1]
+                    m = re.search(r"^status:\s*(\S+)", head, re.M)
+                    st = m.group(1).strip() if m else ""
+                except Exception:
+                    pass
+                if st in ("draft", "ready", "in-progress"):
+                    open_specs.append({"slug": sm.parent.name, "status": st,
+                                       "path": f"{pa}/specs/{sm.parent.name}/SPEC.md"})
+        rows.append({
+            "station": key,
+            "project": slug,
+            "epicsPath": f"{pa}/epics.md",
+            "ledgerPath": f"{pa}/sprint-status-ledger.yaml",
+            "specsPath": f"{pa}/specs",
+            "openSpecs": open_specs,
+            "done": counts.get("done", 0),
+            "backlog": counts.get("backlog", 0),
+            "blocked": counts.get("blocked", 0),
+            "total": len(statuses),
+            "next": nxt[0] if nxt else "",
+            "blockedKeys": blocked[:8],
+            "backlogKeys": nxt[:8],
+            # A station with nothing runnable is not "ready" — it is finished or stuck,
+            # and the board should say which rather than rendering an empty cell.
+            "state": ("complete" if counts.get("done", 0) == len(statuses)
+                      else "blocked" if not nxt and blocked
+                      else "ready" if nxt else "idle"),
+        })
+    rows.sort(key=lambda r: (-r["backlog"], r["station"]))
+    return {
+        "rows": rows,
+        "totals": {"done": totals.get("done", 0), "backlog": totals.get("backlog", 0),
+                   "blocked": totals.get("blocked", 0), "total": sum(totals.values())},
+    }
+
+
 def scan_command_center(fleet: dict) -> dict:
     """PyForge Guild Fleet view grouped by SDLC phases.
 
@@ -2607,6 +2680,7 @@ def main() -> int:
     data["pitch"] = scan_pitch()
     data["fleet"] = scan_fleet(data["projects"], data["pitch"])
     data["commandCenter"] = scan_command_center(data["fleet"])
+    data["readiness"] = scan_readiness()
     data["campaigns"] = [
         {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
          "kind": "planning", "status": "completed", "completed": "2026-07-25",

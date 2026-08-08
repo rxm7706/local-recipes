@@ -2892,3 +2892,65 @@ here.
 pending § 8 Q4 (operational ownership/SLA). No SLA, RTO/RPO, or support-tier
 commitment is made in this PRD. Architecture should not assume a specific
 uptime target without this being resolved first.
+
+---
+
+## Two open Specs, decomposed 2026-08-08
+
+Until today Atlas owned two `status: draft` Specs with no FR, no epic and no story, so
+the station could render 38/38 · 100% while owing both. Same rule Marshal and Steward
+adopted the same day: **a capability decomposes into this PRD iff its Dream is
+`owner: atlas`.**
+
+### Kedro-org tooling — `spec-kedro-org-tooling-adoption` (FR-61..FR-63)
+
+*Deliberately audit-and-decide, not adopt-on-sight. `kedro-skills` was one day old at
+v0.1.1 / 1 star when the Spec was written; "not yet" is a legitimate outcome.*
+
+#### FR-61: kedro-skills audit-then-adopt
+**Consequences:** the tool is run **pinned at the evaluated version** against the real
+`pyforge-atlas` project; every piece of generated guidance is audited against Atlas's
+AD-invariants (AD-1 no-inline-IO AST scan, injected-fetcher seams,
+`kedro-catalog-check=38`, the credential-scoping allowlist); passing content is committed
+to `.claude/skills/` **reproducibly**; contradicting content is excluded **with the
+contradiction recorded**, not silently dropped. A verdict of "not yet" is a valid, final
+outcome and closes the FR.
+
+#### FR-62: Always-current published DAG view
+**Consequences:** CI builds Kedro-Viz from the **real** package — never the 77-node
+stub-mirror prototype — on pushes touching the pipelines tree, and publishes it the way
+`docs/dashboard/` already does. Per the Spec's own *owner ≠ mechanism* constraint, the
+publish runs through **`steward deploy dashboard`**, not a second bespoke Action; Atlas
+owns the outcome, Steward owns the mechanism (Charter §5).
+
+#### FR-63: A recorded verdict on `vscode-kedro`
+**Consequences:** an adopt/defer decision exists as a dated record; if deferred, an
+optional one-line `.vscode/extensions.json` recommendation is the whole deliverable. The
+FR is closed by the **decision**, not by an installation.
+
+### Upstream discovery — `spec-upstream-discovery` (FR-64..FR-68)
+
+#### FR-64: Trending ingest
+**Consequences:** a discovery pipeline ingests GitHub-trending candidates on a schedule,
+writing to a named dataset under the shipped `<domain>_<entity>` convention; the fetcher
+is injected at the seam, never inlined (AD-1).
+
+#### FR-65: Tier classification
+**Consequences:** each candidate is classified into a packaging tier by declared rules,
+and an unclassifiable candidate is reported rather than silently tiered.
+
+#### FR-66: Operator surface
+**Consequences:** a `trending-candidates` CLI/MCP tool answers "what is worth packaging
+next?" with `--json`; it is read-only and offline-safe like every other atlas read-side
+surface.
+
+#### FR-67: Fixed-source audit track
+**Consequences:** the org-audit track (the June-2026 `github.com/microsoft/*` sweep) runs
+from a declared candidate list rather than trending, and re-verifies each candidate's
+current state before proposing it — a candidate that shipped independently since the list
+was written is dropped, not re-proposed.
+
+#### FR-68: Downstream handoff
+**Consequences:** a selected candidate hands off to Mason's packaging flow as structured
+data, not prose; Atlas proposes and never authors a recipe (Charter §4 — one craft each).
+

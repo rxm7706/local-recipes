@@ -14,7 +14,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 16 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 18 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -49,12 +49,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "16/16",
+            "17/18",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -78,8 +78,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "5.2"
       },
       "epics": [
         {
@@ -185,9 +185,418 @@ window.DASHBOARD_DATA = {
               "Safe upgrade-path recommendation (FR-13)"
             ]
           ]
+        },
+        {
+          "badge": "E5",
+          "title": "The verdict on the Marshal's own row",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Marshal-durability source, independent by construction"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Render the verdict through a `doctor` verb"
+            ]
+          ]
         }
       ],
       "owner": "doctor",
+      "practice": false
+    },
+    "herald": {
+      "label": "Herald",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-herald",
+      "contract": "SPEC-design-code-bridge CAP-1..5 · FR-01–FR-26 · AD-1–AD-8 · deterministic no-LLM core · dist pyforge-herald / module pyforge.herald / CLI herald",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "inflight": null,
+      "velocity": {
+        "derived": true,
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 47 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "bars": [
+          [
+            "1.1",
+            60
+          ],
+          [
+            "1.2",
+            98
+          ],
+          [
+            "1.3",
+            29
+          ],
+          [
+            "1.4",
+            108
+          ],
+          [
+            "1.5",
+            417
+          ]
+        ],
+        "foot": [
+          [
+            "~98 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "29–417 min",
+            "observed range",
+            ""
+          ],
+          [
+            "47/47",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "0",
+            "remaining",
+            ""
+          ]
+        ]
+      },
+      "timing": {
+        "derived": true,
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "total": 712,
+        "totalLabel": "~11.9 h active compute",
+        "note": "Derived from 5 measured stories; a story still in flight contributes only its closed sessions.",
+        "perStory": {
+          "1.1": 60,
+          "1.2": 98,
+          "1.3": 29,
+          "1.4": 108,
+          "1.5": 417
+        },
+        "epicMin": {
+          "E1": 712
+        }
+      },
+      "lineState": {
+        "state": "complete",
+        "at": ""
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Foundation — package spine & transport",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Package scaffold for pyforge herald"
+            ],
+            [
+              "1.2",
+              "done",
+              "Transport port primary mcp client adapter the transport spike"
+            ],
+            [
+              "1.3",
+              "done",
+              "Fallback transport adapter"
+            ],
+            [
+              "1.4",
+              "done",
+              "Bridge core skeleton state errors determinism boundary"
+            ],
+            [
+              "1.5",
+              "done",
+              "Registry module readme design project"
+            ],
+            [
+              "1.6",
+              "done",
+              "Herald deck seed slug"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Deck pull — prototype, marp, bundle",
+          "stories": [
+            [
+              "2.1",
+              "done",
+              "Herald deck pull slug prototype pull with etag short circuit"
+            ],
+            [
+              "2.2",
+              "done",
+              "Commit opt in"
+            ],
+            [
+              "2.3",
+              "done",
+              "Marp source pull"
+            ],
+            [
+              "2.4",
+              "done",
+              "Standalone bundle pull"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Deck status & stale-mirror detection",
+          "stories": [
+            [
+              "3.1",
+              "done",
+              "Herald deck status slug"
+            ],
+            [
+              "3.2",
+              "done",
+              "Stale hand mirror detection"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Watch — poll, backoff, halt",
+          "stories": [
+            [
+              "4.1",
+              "done",
+              "Poll loop with quiescence debounce"
+            ],
+            [
+              "4.2",
+              "done",
+              "Idle backoff"
+            ],
+            [
+              "4.3",
+              "done",
+              "Halt on auth error"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Export push-back",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Push regenerated exports with etag guard"
+            ],
+            [
+              "5.2",
+              "done",
+              "Conflict refusal on export push"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Foundation — CLI architecture & shared infrastructure",
+          "stories": [
+            [
+              "6.1",
+              "done",
+              "Implement Herald CLI Dispatcher"
+            ],
+            [
+              "6.2",
+              "done",
+              "Implement Shared Argument Conventions"
+            ],
+            [
+              "6.3",
+              "done",
+              "Implement CLI Authentication & Authorization"
+            ],
+            [
+              "6.4",
+              "done",
+              "Implement Evidence Link Validation Protocol (Shared Infrastructure)"
+            ],
+            [
+              "6.5",
+              "done",
+              "CLI Help & First-Day Usability (Inline)"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "Foundation — web surface",
+          "stories": [
+            [
+              "7.1",
+              "done",
+              "Design & Implement Web Layout (Header, Tabs, Sidebar, Responsive)"
+            ],
+            [
+              "7.2",
+              "done",
+              "Implement Web Tooltips & Inline Help"
+            ]
+          ]
+        },
+        {
+          "badge": "E8",
+          "title": "Moment 2 — progress visibility",
+          "stories": [
+            [
+              "8.1",
+              "done",
+              "Implement Progress Data Model & Database Schema"
+            ],
+            [
+              "8.2",
+              "done",
+              "Implement On-Ship Webhook & Weekly Cron Automation"
+            ],
+            [
+              "8.3",
+              "done",
+              "Implement Progress CLI (`herald progress` subcommand)"
+            ],
+            [
+              "8.4",
+              "done",
+              "Implement Progress Web Tab"
+            ]
+          ]
+        },
+        {
+          "badge": "E9",
+          "title": "Moment 3 — success proclamation",
+          "stories": [
+            [
+              "9.1",
+              "done",
+              "Implement Claim Data Model & Database Schema"
+            ],
+            [
+              "9.2",
+              "done",
+              "Implement Auto-Extract & Operator Review Gate"
+            ],
+            [
+              "9.3",
+              "done",
+              "Implement Success CLI"
+            ],
+            [
+              "9.4",
+              "done",
+              "Implement Success Web Archive"
+            ],
+            [
+              "9.5",
+              "done",
+              "Implement Evidence Validation (Sync + Async)"
+            ]
+          ]
+        },
+        {
+          "badge": "E10",
+          "title": "Moment 4 — operations notices",
+          "stories": [
+            [
+              "10.1",
+              "done",
+              "Notice Data Model & Archive Storage"
+            ],
+            [
+              "10.2",
+              "done",
+              "Notice Authoring Workflow (CLI)"
+            ],
+            [
+              "10.3",
+              "done",
+              "Notice Archive & Redirects"
+            ],
+            [
+              "10.4",
+              "done",
+              "Notice CLI"
+            ],
+            [
+              "10.5",
+              "done",
+              "Operations Web Tab"
+            ],
+            [
+              "10.6",
+              "done",
+              "Notice Lifecycle"
+            ]
+          ]
+        },
+        {
+          "badge": "E11",
+          "title": "Integration testing & automation reliability",
+          "stories": [
+            [
+              "11.1",
+              "done",
+              "Integration Testing (CLI + Web + Automation)"
+            ],
+            [
+              "11.2",
+              "done",
+              "Automation Reliability"
+            ],
+            [
+              "11.3",
+              "done",
+              "Evidence Linking (Cross-Moment)"
+            ],
+            [
+              "11.4",
+              "done",
+              "Performance Testing"
+            ]
+          ]
+        },
+        {
+          "badge": "E12",
+          "title": "Documentation & operator experience",
+          "stories": [
+            [
+              "12.1",
+              "done",
+              "CLI Runbooks & Troubleshooting"
+            ],
+            [
+              "12.2",
+              "done",
+              "Web Surface UX Guide"
+            ],
+            [
+              "12.3",
+              "done",
+              "Operator Runbook"
+            ],
+            [
+              "12.4",
+              "done",
+              "Automation Troubleshooting Guide"
+            ]
+          ]
+        }
+      ],
+      "owner": "herald",
       "practice": false
     },
     "marshal": {
@@ -1316,7 +1725,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 18 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 33 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -1343,12 +1752,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "18/18",
+            "18/33",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "15",
             "remaining",
             ""
           ]
@@ -1370,8 +1779,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "5.1"
       },
       "epics": [
         {
@@ -1485,6 +1894,105 @@ window.DASHBOARD_DATA = {
               "4.3",
               "done",
               "Asking \"am I under budget?\" never lies"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "The Marshal seam — obligations from the 2026-08-08 seam ratification",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Retire `provision --runner bmad-loop` in favour of `marshal init`"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Consume the sprint ledger; never derive story status"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Module provisioning",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "`provision --module <name>`"
+            ],
+            [
+              "6.2",
+              "pending",
+              "`provision --list-modules`"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Partial install is a named failure"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "The one-container Guild",
+          "stories": [
+            [
+              "7.1",
+              "pending",
+              "One build, whole Guild"
+            ],
+            [
+              "7.2",
+              "pending",
+              "The repo at a fixed short path"
+            ],
+            [
+              "7.3",
+              "pending",
+              "Credentials never enter image layers"
+            ],
+            [
+              "7.4",
+              "pending",
+              "State outlives the container"
+            ],
+            [
+              "7.5",
+              "pending",
+              "The image proves itself at build time"
+            ]
+          ]
+        },
+        {
+          "badge": "E8",
+          "title": "Two boards, one truth",
+          "stories": [
+            [
+              "8.1",
+              "pending",
+              "Bidirectional propagation"
+            ],
+            [
+              "8.2",
+              "pending",
+              "Zero-loop guarantee"
+            ],
+            [
+              "8.3",
+              "pending",
+              "Idempotent update processing"
+            ],
+            [
+              "8.4",
+              "pending",
+              "Fail loud, fail alone"
+            ],
+            [
+              "8.5",
+              "pending",
+              "Explicit status-vocabulary translation"
             ]
           ]
         }
@@ -1875,222 +2383,6 @@ window.DASHBOARD_DATA = {
         }
       ],
       "owner": "warden",
-      "practice": false
-    },
-    "herald": {
-      "label": "Herald",
-      "accentVar": "--warden",
-      "branch": "loop/pyforge-herald",
-      "contract": "SPEC-design-code-bridge CAP-1..5 · FR-01–FR-26 · AD-1–AD-8 · deterministic no-LLM core · dist pyforge-herald / module pyforge.herald / CLI herald",
-      "seglabels": [
-        "E1 · spine",
-        "E2 · wedge",
-        "E3–E5",
-        "E6 · multi-axis"
-      ],
-      "inflight": null,
-      "velocity": {
-        "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 19 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
-        "bars": [
-          [
-            "1.1",
-            60
-          ],
-          [
-            "1.2",
-            98
-          ],
-          [
-            "1.3",
-            29
-          ],
-          [
-            "1.4",
-            108
-          ],
-          [
-            "1.5",
-            417
-          ]
-        ],
-        "foot": [
-          [
-            "~98 min",
-            "median / story",
-            "var(--done)"
-          ],
-          [
-            "29–417 min",
-            "observed range",
-            ""
-          ],
-          [
-            "12/19",
-            "stories complete",
-            "var(--done)"
-          ],
-          [
-            "7",
-            "remaining",
-            ""
-          ]
-        ]
-      },
-      "timing": {
-        "derived": true,
-        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 712,
-        "totalLabel": "~11.9 h active compute",
-        "note": "Derived from 5 measured stories; a story still in flight contributes only its closed sessions.",
-        "perStory": {
-          "1.1": 60,
-          "1.2": 98,
-          "1.3": 29,
-          "1.4": 108,
-          "1.5": 417
-        },
-        "epicMin": {
-          "E1": 712
-        }
-      },
-      "lineState": {
-        "state": "paused",
-        "at": "0.1"
-      },
-      "epics": [
-        {
-          "badge": "E0",
-          "title": "Foundation & Infrastructure",
-          "stories": [
-            [
-              "0.1",
-              "pending",
-              "Set up Modernist-Identity design system and token exports"
-            ],
-            [
-              "0.2",
-              "pending",
-              "Establish .gitignore strategy and artifact tracking matrix"
-            ],
-            [
-              "0.3",
-              "pending",
-              "Implement Design-Code-Bridge etagged pull protocol"
-            ]
-          ]
-        },
-        {
-          "badge": "E1",
-          "title": "Design Authoring & Seeding",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Create 9 Design projects (seed per station)"
-            ],
-            [
-              "1.2",
-              "done",
-              "Establish six-act framework structure in Design prototypes"
-            ],
-            [
-              "1.3",
-              "done",
-              "Extract markdown sources from Design prototypes"
-            ],
-            [
-              "1.4",
-              "done",
-              "Validate station-specific narrative content in all 9 decks"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Multi-Format Export Pipeline",
-          "stories": [
-            [
-              "2.1",
-              "done",
-              "Implement deckcraft pipeline (Markdown → PPTX with tokens)"
-            ],
-            [
-              "2.2",
-              "done",
-              "Implement SVG infographic extraction from Design"
-            ],
-            [
-              "2.3",
-              "done",
-              "Build interactive HTML decks via Vite (gitignored, regenerable)"
-            ],
-            [
-              "2.4",
-              "done",
-              "Validate all 9 decks via dashboard-check"
-            ],
-            [
-              "2.5",
-              "pending",
-              "Establish Modernist design token application across all 9 PPTX files"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Narration Extraction & Validation",
-          "stories": [
-            [
-              "3.1",
-              "done",
-              "Implement mechanical narration extraction from Design speaker notes"
-            ],
-            [
-              "3.2",
-              "done",
-              "Implement narration linter (voice bible + blacklist enforcement)"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Stage narration scripts for bmad-manticore video pipeline"
-            ],
-            [
-              "3.4",
-              "pending",
-              "Enforce \"no fabricated demos\" constraint"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Station-Specific Customization",
-          "stories": []
-        },
-        {
-          "badge": "E5",
-          "title": "Build, Validation & Shipping",
-          "stories": [
-            [
-              "5.1",
-              "done",
-              "Run comprehensive artifact validation (render, format, consistency checks)"
-            ],
-            [
-              "5.2",
-              "done",
-              "Verify 62% footprint reduction (tracked vs. unoptimized)"
-            ],
-            [
-              "5.3",
-              "pending",
-              "Commit tracked artifacts and stage narration for video pipeline"
-            ]
-          ]
-        }
-      ],
-      "owner": "herald",
       "practice": false
     },
     "regen": {
@@ -2736,6 +3028,58 @@ window.DASHBOARD_DATA = {
               "I5 — Run admission / single-writer — DW-AD23-1, re-promotes AD-23 (AUD-ATLAS-046 impl half)"
             ]
           ]
+        },
+        {
+          "badge": "E12",
+          "title": "Wave J — Kedro-org tooling",
+          "stories": [
+            [
+              "J1",
+              "pending",
+              "kedro-skills audit-then-adopt"
+            ],
+            [
+              "J2",
+              "pending",
+              "Publish the real DAG continuously"
+            ],
+            [
+              "J3",
+              "pending",
+              "Record the vscode-kedro verdict"
+            ]
+          ]
+        },
+        {
+          "badge": "E13",
+          "title": "Wave K — Upstream discovery",
+          "stories": [
+            [
+              "K1",
+              "pending",
+              "Trending ingest"
+            ],
+            [
+              "K2",
+              "pending",
+              "Tier classification"
+            ],
+            [
+              "K3",
+              "pending",
+              "trending-candidates operator surface"
+            ],
+            [
+              "K4",
+              "pending",
+              "Fixed-source audit track"
+            ],
+            [
+              "K5",
+              "pending",
+              "Downstream handoff to Mason"
+            ]
+          ]
         }
       ],
       "roadmap": {
@@ -2845,15 +3189,15 @@ window.DASHBOARD_DATA = {
         "total": 1502
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "12.1"
       },
       "owner": "atlas",
       "practice": false,
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 46 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "10.4",
@@ -2880,12 +3224,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "38/38",
+            "38/46",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "8",
             "remaining",
             ""
           ]
@@ -2893,7 +3237,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 19:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 20:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3225,7 +3569,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
       "status": "archived",
       "owner": "atlas",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas-intelligence-platform"
       },
@@ -3269,7 +3613,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
       "status": "archived",
       "owner": "doctor",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor-dependency-health"
       },
@@ -3304,7 +3648,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
       "status": "archived",
       "owner": "marshal",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal-loop-orchestrator"
       },
@@ -3327,7 +3671,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Mason: Recipe Validator\"",
       "status": "archived",
       "owner": "mason",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason-recipe-validator"
       },
@@ -3350,7 +3694,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
       "status": "archived",
       "owner": "scribe",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe-team-memory"
       },
@@ -3373,7 +3717,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
       "status": "archived",
       "owner": "steward",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance"
       },
@@ -3396,7 +3740,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
       "status": "archived",
       "owner": "marshal",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
       },
@@ -3407,7 +3751,7 @@ window.DASHBOARD_DATA = {
       "title": "\"Dream — PyForge Warden: Compliance Gates\"",
       "status": "archived",
       "owner": "warden",
-      "type": "dream          # added 2026-08-08: this file predates the type: contract",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates"
       },
@@ -3568,9 +3912,9 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-doctor",
       "project": "pyforge-doctor",
       "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
-      "caps": 8,
+      "caps": 9,
       "companions": 1,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "pyforge-doctor",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
@@ -4753,19 +5097,19 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-herald",
           "pkey": "herald",
           "stories": 17,
-          "state": "running",
+          "state": "done",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
-          "done": 12,
-          "total": 19
+          "done": 47,
+          "total": 47
         },
         {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "done",
+          "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 16,
-          "total": 16
+          "done": 17,
+          "total": 18
         },
         {
           "slug": "pyforge-scribe",
@@ -4780,10 +5124,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-steward",
           "pkey": null,
           "stories": 18,
-          "state": "done",
+          "state": "running",
           "note": "next free slot",
           "done": 18,
-          "total": 18
+          "total": 33
         },
         {
           "slug": "pyforge-mason",
@@ -4878,7 +5222,7 @@ window.DASHBOARD_DATA = {
     "live": 23,
     "reached": 8,
     "gaps": 15,
-    "findings": 11,
+    "findings": 12,
     "rows": [
       {
         "label": "atlas",
@@ -4915,7 +5259,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-04",
           "epics": "2026-08-02",
-          "sprint": "2026-08-02",
+          "sprint": "2026-08-08",
           "tea": "2026-07-30",
           "gates": "2026-08-02",
           "code": "2026-07-29",
@@ -4999,7 +5343,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "38/38",
+        "progress": "38/46",
         "complete": 14,
         "of": 14
       },
@@ -5030,7 +5374,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-02T12:57",
+          "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
@@ -5039,7 +5383,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-02",
           "sprint": "2026-08-08",
-          "tea": "2026-08-07",
+          "tea": "2026-08-08",
           "gates": "2026-08-01",
           "code": "2026-08-07",
           "verify": "2026-08-07",
@@ -5108,6 +5452,13 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-08",
+            "other": "2026-08-02"
           }
         ],
         "furthest": "retro",
@@ -5115,7 +5466,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "16/16",
+        "progress": "17/18",
         "complete": 14,
         "of": 14
       },
@@ -5238,7 +5589,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "12/19",
+        "progress": "47/47",
         "complete": 14,
         "of": 14
       },
@@ -5707,7 +6058,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "18/18",
+        "progress": "18/33",
         "complete": 14,
         "of": 14
       },
@@ -11781,7 +12132,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "paused 0.1",
+        "line": "complete",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -11946,14 +12297,14 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-marshal-loop-orchestrator",
             "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
             "slug": "pyforge-testing-charter",
             "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12004,7 +12355,7 @@ window.DASHBOARD_DATA = {
           "archived": 5,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 12.1",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -12019,7 +12370,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-atlas-intelligence-platform",
             "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12078,7 +12429,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-warden-compliance-gates",
             "title": "\"Dream — PyForge Warden: Compliance Gates\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12130,7 +12481,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-mason-recipe-validator",
             "title": "\"Dream — PyForge Mason: Recipe Validator\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12174,7 +12525,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 5.2",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12182,7 +12533,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-doctor-dependency-health",
             "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12213,7 +12564,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-scribe-team-memory",
             "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12250,7 +12601,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 1
         },
-        "line": "complete",
+        "line": "paused 5.1",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -12258,7 +12609,7 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
             "status": "archived",
-            "type": "dream          # added 2026-08-08: this file predates the type: contract",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12308,15 +12659,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 195,
+    "open": 197,
     "done": 19,
-    "triaged": 139,
+    "triaged": 141,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 2,
       "low": 11,
-      "unspecified": 181
+      "unspecified": 183
     },
     "projects": [
       {
@@ -12730,9 +13081,9 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 41,
+        "open": 43,
         "done": 8,
-        "triaged": 21,
+        "triaged": 23,
         "entries": [
           {
             "id": "DW-1-1-1",
@@ -13073,6 +13424,20 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-LEDGER-2026-08-08-4",
             "title": "VOID. Its table was measured after the damage, not before it.",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-DOCTOR-2026-08-08-1",
+            "title": "`doctor check` is 7.04s against its documented 5.0s budget",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-BOARD-2026-08-08-1",
+            "title": "Herald's build line and Herald's ledger describe DIFFERENT sto…",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
@@ -13902,8 +14267,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 19:33 UTC",
-    "generatedEpoch": 1786217587
+    "generatedAt": "2026-08-08 20:43 UTC",
+    "generatedEpoch": 1786221807
   },
   "storySpecs": [
     {
@@ -13914,9 +14279,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 16,
+      "done": 17,
       "tracked": 16,
-      "gap": 0
+      "gap": 1
     },
     {
       "station": "pyforge-genesis",
@@ -13960,5 +14325,269 @@ window.DASHBOARD_DATA = {
       "tracked": 31,
       "gap": 0
     }
-  ]
+  ],
+  "readiness": {
+    "rows": [
+      {
+        "station": "marshal",
+        "project": "pyforge-marshal",
+        "epicsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-agent-tool-surface",
+            "status": "in-progress",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md"
+          },
+          {
+            "slug": "spec-dashboard-project-path-derivation",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md"
+          },
+          {
+            "slug": "spec-dream-to-code-model-self-verification",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification/SPEC.md"
+          },
+          {
+            "slug": "spec-fleet-chain-completeness",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md"
+          },
+          {
+            "slug": "spec-loop-home-fleet-refresh",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/SPEC.md"
+          },
+          {
+            "slug": "spec-pyforge-core",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md"
+          },
+          {
+            "slug": "spec-pyforge-testing-charter",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md"
+          },
+          {
+            "slug": "spec-sprint-status-auto-promote",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md"
+          }
+        ],
+        "done": 50,
+        "backlog": 35,
+        "blocked": 1,
+        "total": 86,
+        "next": "10-1-copier-engine-wrapper-the-single-seam",
+        "blockedKeys": [
+          "8-5-marker-deletion-as-a-sanctioned-opt-out"
+        ],
+        "backlogKeys": [
+          "10-1-copier-engine-wrapper-the-single-seam",
+          "10-2-state-schema-and-the-atomic-store",
+          "10-3-the-apply-runner-transactional-guarded",
+          "10-4-preconditions-refusals-and-skips",
+          "10-5-marshal-seed-check",
+          "10-6-marshal-seed-adopt",
+          "10-7-marshal-seed-init",
+          "11-1-neutral-contract-and-agent-adapter-fan-out"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "mason",
+        "project": "pyforge-mason",
+        "epicsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-conda-forge-expert-rebuild",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
+          }
+        ],
+        "done": 4,
+        "backlog": 34,
+        "blocked": 0,
+        "total": 38,
+        "next": "1-10-configuration-surface-logging-and-child-output-streaming",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "1-10-configuration-surface-logging-and-child-output-streaming",
+          "1-5-cfe-root-resolution-chain",
+          "1-6-interpreter-selection-and-cfe-import-floor-probe",
+          "1-7-degradation-when-cfe-is-unavailable",
+          "1-8-mason-doctor",
+          "1-9-fake-cfe-root-fixture-and-test-harness",
+          "2-1-the-cfe-port",
+          "2-10-mason-recipe-update"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "steward",
+        "project": "pyforge-steward",
+        "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-bmad-module-provisioning",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning/SPEC.md"
+          },
+          {
+            "slug": "spec-jira-github-projects-sync",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md"
+          },
+          {
+            "slug": "spec-unified-container",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container/SPEC.md"
+          }
+        ],
+        "done": 18,
+        "backlog": 10,
+        "blocked": 5,
+        "total": 33,
+        "next": "5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init",
+        "blockedKeys": [
+          "8-1-bidirectional-propagation",
+          "8-2-zero-loop-guarantee",
+          "8-3-idempotent-update-processing",
+          "8-4-fail-loud-fail-alone",
+          "8-5-explicit-status-vocabulary-translation"
+        ],
+        "backlogKeys": [
+          "5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init",
+          "5-2-consume-the-sprint-ledger-never-derive-story-status",
+          "6-1-provision-module-name",
+          "6-2-provision-list-modules",
+          "6-3-partial-install-is-a-named-failure",
+          "7-1-one-build-whole-guild",
+          "7-2-the-repo-at-a-fixed-short-path",
+          "7-3-credentials-never-enter-image-layers"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "atlas",
+        "project": "pyforge-atlas",
+        "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-kedro-org-tooling-adoption",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/SPEC.md"
+          },
+          {
+            "slug": "spec-upstream-discovery",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/SPEC.md"
+          }
+        ],
+        "done": 38,
+        "backlog": 8,
+        "blocked": 0,
+        "total": 46,
+        "next": "12-1-kedro-skills-audit-then-adopt",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "12-1-kedro-skills-audit-then-adopt",
+          "12-2-publish-the-real-dag-continuously",
+          "12-3-record-the-vscode-kedro-verdict",
+          "13-1-trending-ingest",
+          "13-2-tier-classification",
+          "13-3-trending-candidates-operator-surface",
+          "13-4-fixed-source-audit-track",
+          "13-5-downstream-handoff-to-mason"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 17,
+        "backlog": 1,
+        "blocked": 0,
+        "total": 18,
+        "next": "5-2-render-the-verdict-through-a-doctor-verb",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "5-2-render-the-verdict-through-a-doctor-verb"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "herald",
+        "project": "pyforge-herald",
+        "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-herald-moments-2-4-live-backend",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend/SPEC.md"
+          }
+        ],
+        "done": 47,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 47,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
+      },
+      {
+        "station": "scribe",
+        "project": "pyforge-scribe",
+        "epicsPath": "_bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 9,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 9,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
+      },
+      {
+        "station": "warden",
+        "project": "pyforge-warden",
+        "epicsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 31,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 31,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
+      }
+    ],
+    "totals": {
+      "done": 214,
+      "backlog": 88,
+      "blocked": 6,
+      "total": 308
+    }
+  }
 };
