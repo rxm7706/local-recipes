@@ -67,10 +67,10 @@ development_status:
   11-2-automation-reliability: done
   11-3-evidence-linking-cross-moment: done
   11-4-performance-testing: done
-  12-1-cli-runbooks-and-troubleshooting: backlog
-  12-2-web-surface-ux-guide: backlog
-  12-3-operator-runbook: backlog
-  12-4-automation-troubleshooting-guide: backlog
+  12-1-cli-runbooks-and-troubleshooting: done
+  12-2-web-surface-ux-guide: done
+  12-3-operator-runbook: done
+  12-4-automation-troubleshooting-guide: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -93,5 +93,5 @@ development_status:
   epic-10-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
-  epic-12: backlog
+  epic-12: done
   epic-12-retrospective: optional
