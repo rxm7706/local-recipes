@@ -18,7 +18,7 @@ runs on the Wave-0 harness (`scripts/bmad-loop-worktree local-recipes`).
 | 4 | 4.2 | Deep backfill: fleet-stewardship (absorbs the 3 legacy workflow specs' contracts) | auto |
 | 4 | 4.R | Rule-2 closeout: `bmad-retrospective` against the CFE skill | required |
 | 5 | 5.1 | Chain-verify + manifests: pyforge-atlas, design-code-bridge, pyforge-marshal (existing chains) | auto |
-| 5 | 5.2 | Checker → CI gate; coverage to 100%-or-allowlisted repo-wide | gated |
+| 5 | 5.2 | Coverage to 100%-or-allowlisted repo-wide. **The CI-gate half is NOT this program's call** — corrected 2026-08-08: the suite already runs on every PR (`.github/workflows/detectors.yml`) and is deliberately ADVISORY per an operator decision of 2026-07-31, which `docs/dreams/fidelity-enforcement.md` holds as an open question. Two artifacts had claimed the same decision. | gated |
 | 5 | 5.3 | Console drill-through: Dreamscape chip → deck / spec / project row (factory-console frontier) | auto |
 
 Gating: `gated` = human approval before merge (graduated-gates on the new

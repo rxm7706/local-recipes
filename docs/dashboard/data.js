@@ -2937,170 +2937,6 @@ window.DASHBOARD_DATA = {
       "owner": "warden",
       "practice": false
     },
-    "regen": {
-      "label": "Regen",
-      "accentVar": "--regen",
-      "branch": "main · in-session Marshal execution",
-      "contract": "spec-regenerable-factory · 4 CAPs (surface manifests, backfill waves, spec_surface_check, regeneration drill) · checker never false-greens · Rule 1/2 bound on Wave 4",
-      "seglabels": [
-        "W0",
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5"
-      ],
-      "epics": [
-        {
-          "badge": "W0",
-          "title": "Foundations — harness + program spec",
-          "stories": [
-            [
-              "0.1",
-              "done",
-              "Multi-loop isolation harness (worktree loop homes)"
-            ],
-            [
-              "0.2",
-              "done",
-              "Program spec + waves companion (bmad-spec Spec)"
-            ]
-          ]
-        },
-        {
-          "badge": "W1",
-          "title": "Surface-manifest convention + checker",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Retrofit surface: onto existing Specs"
-            ],
-            [
-              "1.2",
-              "done",
-              "spec_surface_check v1 — coverage + allowlist + drift"
-            ]
-          ]
-        },
-        {
-          "badge": "W2",
-          "title": "Pilot — factory-console under contract",
-          "stories": [
-            [
-              "2.1",
-              "done",
-              "Factory-console backfill Spec (docs/dashboard)"
-            ],
-            [
-              "2.2",
-              "done",
-              "Regeneration drill on generate.py (clean-room rebuild)"
-            ]
-          ]
-        },
-        {
-          "badge": "W3",
-          "title": "Mid backfills",
-          "stories": [
-            [
-              "3.1",
-              "done",
-              "Enterprise-airgap Spec (_http routing + reference)"
-            ],
-            [
-              "3.2",
-              "done",
-              "Modernist-identity Spec (DS + deck engine)"
-            ]
-          ]
-        },
-        {
-          "badge": "W4",
-          "title": "Deep backfills — CFE territory (Rule 1/2)",
-          "stories": [
-            [
-              "4.1",
-              "done",
-              "Packaging-factory Spec over the CFE surface"
-            ],
-            [
-              "4.2",
-              "done",
-              "Fleet-stewardship Spec (absorbs 3 legacy workflows)"
-            ],
-            [
-              "4.R",
-              "done",
-              "Rule-2 retro against the conda-forge-expert skill"
-            ]
-          ]
-        },
-        {
-          "badge": "W5",
-          "title": "Closure — tested, gate, drill-through",
-          "stories": [
-            [
-              "5.1",
-              "done",
-              "Chain-tested + manifests (atlas / bridge / marshal)"
-            ],
-            [
-              "5.2",
-              "done",
-              "Checker joins the detector test suite"
-            ],
-            [
-              "5.3",
-              "done",
-              "Dreamscape drill-through links"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "roadmap": {
-        "sub": "Backfill waves per spec-regenerable-factory/waves.md — every realized surface gains a regenerable spec chain; drift checks bind code to contract.",
-        "stops": [
-          [
-            "0",
-            "Harness + spec",
-            "done"
-          ],
-          [
-            "1",
-            "Convention + checker",
-            "wip"
-          ],
-          [
-            "2",
-            "Pilot + drill",
-            ""
-          ],
-          [
-            "3",
-            "Mid backfills",
-            ""
-          ],
-          [
-            "4",
-            "CFE deep + retro",
-            ""
-          ],
-          [
-            "5",
-            "Gate + drill-through",
-            ""
-          ]
-        ]
-      },
-      "lineState": {
-        "state": "complete",
-        "at": ""
-      },
-      "owner": "marshal",
-      "practice": true
-    },
     "presenton-pixi-image": {
       "label": "Presenton-pixi-image",
       "accentVar": "--accent",
@@ -3319,7 +3155,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-08 23:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 23:22 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3859,8 +3695,7 @@ window.DASHBOARD_DATA = {
       "owner": "marshal",
       "type": "practice",
       "chain": {
-        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory",
-        "program": "regen"
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
       }
     },
     {
@@ -4296,7 +4131,7 @@ window.DASHBOARD_DATA = {
       "title": "Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-08",
       "dream": "surface-drift-reconciliation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation"
     },
@@ -5323,7 +5158,7 @@ window.DASHBOARD_DATA = {
     "sound": 0,
     "live": 24,
     "reached": 8,
-    "gaps": 17,
+    "gaps": 16,
     "findings": 12,
     "rows": [
       {
@@ -9799,7 +9634,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-08-01T08:27",
+          "spec": "2026-08-08T18:22",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9996,9 +9831,9 @@ window.DASHBOARD_DATA = {
         "dream": "surface-drift-reconciliation",
         "owner": "marshal",
         "stages": {
-          "dream": "",
+          "dream": "2026-08-08",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-08",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -10014,9 +9849,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "",
+          "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08T18:06",
+          "spec": "2026-08-08T18:22",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10082,8 +9917,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -10093,7 +9927,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -12174,8 +12008,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 63,
-        "verdict": "FINDINGS (63):",
+        "findings": 62,
+        "verdict": "FINDINGS (62):",
         "runbook": ""
       },
       {
@@ -14515,8 +14349,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 23:10 UTC",
-    "generatedEpoch": 1786230637
+    "generatedAt": "2026-08-08 23:22 UTC",
+    "generatedEpoch": 1786231342
   },
   "storySpecs": [
     {
