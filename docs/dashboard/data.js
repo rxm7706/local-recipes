@@ -2918,7 +2918,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 11:25 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 11:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3275,7 +3275,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-doctor",
       "title": "Doctor — one bedside manner for the whole fleet",
-      "status": "specified",
+      "status": "realized",
       "owner": "doctor",
       "type": "dream",
       "chain": {
@@ -3297,7 +3297,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-herald",
       "title": "Herald — capture the dream, illustrate the telemetry, proclaim the release",
-      "status": "specified",
+      "status": "realized",
       "owner": "herald",
       "type": "dream",
       "chain": {
@@ -3366,7 +3366,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-scribe",
       "title": "Scribe — the inward voice",
-      "status": "specified",
+      "status": "realized",
       "owner": "scribe",
       "type": "dream",
       "chain": {
@@ -3389,7 +3389,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-steward",
       "title": "Steward — provision the line, hold the keys",
-      "status": "specified",
+      "status": "realized",
       "owner": "steward",
       "type": "dream",
       "chain": {
@@ -4725,7 +4725,7 @@ window.DASHBOARD_DATA = {
     "live": 31,
     "reached": 9,
     "gaps": 33,
-    "findings": 9,
+    "findings": 0,
     "rows": [
       {
         "label": "atlas",
@@ -4906,7 +4906,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "specified",
+        "dreamStatus": "realized",
         "ownerDream": "pyforge-doctor",
         "noDream": false,
         "unowned": false,
@@ -4936,26 +4936,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "behind-code",
-            "stage": "spec",
-            "at": "2026-08-02T12:57",
-            "other": "2026-08-07"
-          },
-          {
-            "kind": "behind-code",
-            "stage": "prd",
-            "at": "2026-08-02",
-            "other": "2026-08-07"
-          },
-          {
-            "kind": "behind-code",
-            "stage": "arch",
-            "at": "2026-08-02",
-            "other": "2026-08-07"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-07",
         "age": 1,
@@ -5037,7 +5018,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "specified",
+        "dreamStatus": "realized",
         "ownerDream": "pyforge-herald",
         "noDream": false,
         "unowned": false,
@@ -5067,26 +5048,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "behind-code",
-            "stage": "spec",
-            "at": "2026-08-02T14:45",
-            "other": "2026-08-07"
-          },
-          {
-            "kind": "behind-code",
-            "stage": "prd",
-            "at": "2026-08-02",
-            "other": "2026-08-07"
-          },
-          {
-            "kind": "behind-code",
-            "stage": "arch",
-            "at": "2026-08-02",
-            "other": "2026-08-07"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-08",
         "age": 0,
@@ -5385,7 +5347,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "specified",
+        "dreamStatus": "realized",
         "ownerDream": "pyforge-scribe",
         "noDream": false,
         "unowned": false,
@@ -5496,7 +5458,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "specified",
+        "dreamStatus": "realized",
         "ownerDream": "pyforge-steward",
         "noDream": false,
         "unowned": false,
@@ -5526,26 +5488,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "behind-code",
-            "stage": "spec",
-            "at": "2026-08-01T09:51",
-            "other": "2026-08-07"
-          },
-          {
-            "kind": "behind-code",
-            "stage": "prd",
-            "at": "2026-08-01",
-            "other": "2026-08-07"
-          },
-          {
-            "kind": "behind-code",
-            "stage": "arch",
-            "at": "2026-08-02",
-            "other": "2026-08-07"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-07",
         "age": 1,
@@ -11189,7 +11132,9 @@ window.DASHBOARD_DATA = {
             "emoji": "🎺",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "◯",
+              "res-market": "✅",
+              "res-tech": "◯",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11199,7 +11144,9 @@ window.DASHBOARD_DATA = {
             "emoji": "⚔️",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "✅",
+              "res-market": "✅",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11209,7 +11156,9 @@ window.DASHBOARD_DATA = {
             "emoji": "🗺️",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "✅",
+              "res-market": "✅",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11219,7 +11168,9 @@ window.DASHBOARD_DATA = {
             "emoji": "🛡️",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "✅",
+              "res-market": "✅",
+              "res-tech": "◯",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11229,7 +11180,9 @@ window.DASHBOARD_DATA = {
             "emoji": "🧱",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "✅",
+              "res-market": "◯",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11239,7 +11192,9 @@ window.DASHBOARD_DATA = {
             "emoji": "🏥",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "✅",
+              "res-market": "◯",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11249,7 +11204,9 @@ window.DASHBOARD_DATA = {
             "emoji": "📖",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "✅",
+              "res-market": "✅",
+              "res-tech": "◯",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11259,7 +11216,9 @@ window.DASHBOARD_DATA = {
             "emoji": "👑",
             "statuses": {
               "DREAMS": "🚀",
-              "res": "✅",
+              "res-domain": "✅",
+              "res-market": "◯",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11642,53 +11601,15 @@ window.DASHBOARD_DATA = {
         "owner": "steward",
         "blockedOn": "",
         "chain": {}
-      },
-      {
-        "slug": "pyforge-doctor",
-        "title": "Doctor — one bedside manner for the whole fleet",
-        "status": "specified",
-        "owner": "doctor",
-        "blockedOn": "",
-        "chain": {
-          "deck": "presentations/pyforge-doctor",
-          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor",
-          "project": "_bmad-output/projects/pyforge-doctor"
-        }
-      },
-      {
-        "slug": "pyforge-scribe",
-        "title": "Scribe — the inward voice",
-        "status": "specified",
-        "owner": "scribe",
-        "blockedOn": "",
-        "chain": {
-          "deck": "presentations/pyforge-scribe",
-          "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe",
-          "project": "_bmad-output/projects/pyforge-scribe"
-        }
-      },
-      {
-        "slug": "pyforge-steward",
-        "title": "Steward — provision the line, hold the keys",
-        "status": "specified",
-        "owner": "steward",
-        "blockedOn": "",
-        "chain": {
-          "deck": "presentations/pyforge-steward",
-          "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward",
-          "project": "_bmad-output/projects/pyforge-steward"
-        }
       }
     ],
     "blocked": 0,
     "byOwner": {
-      "steward": 3,
+      "steward": 2,
       "mason": 1,
       "marshal": 6,
       "herald": 1,
-      "atlas": 1,
-      "doctor": 1,
-      "scribe": 1
+      "atlas": 1
     },
     "practices": [
       {
@@ -11761,8 +11682,8 @@ window.DASHBOARD_DATA = {
         "counts": {
           "dreamt": 1,
           "pitched": 0,
-          "specified": 1,
-          "realized": 0,
+          "specified": 0,
+          "realized": 1,
           "archived": 2,
           "practice": 0
         },
@@ -11794,7 +11715,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "pyforge-herald",
             "title": "Herald — capture the dream, illustrate the telemetry, proclaim the release",
-            "status": "specified",
+            "status": "realized",
             "type": "dream",
             "blockedOn": ""
           }
@@ -12154,13 +12075,13 @@ window.DASHBOARD_DATA = {
         "counts": {
           "dreamt": 0,
           "pitched": 0,
-          "specified": 1,
-          "realized": 0,
+          "specified": 0,
+          "realized": 1,
           "archived": 1,
           "practice": 0
         },
         "line": "complete",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -12173,7 +12094,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "pyforge-doctor",
             "title": "Doctor — one bedside manner for the whole fleet",
-            "status": "specified",
+            "status": "realized",
             "type": "dream",
             "blockedOn": ""
           }
@@ -12185,13 +12106,13 @@ window.DASHBOARD_DATA = {
         "counts": {
           "dreamt": 0,
           "pitched": 0,
-          "specified": 1,
-          "realized": 0,
+          "specified": 0,
+          "realized": 1,
           "archived": 3,
           "practice": 0
         },
         "line": "complete",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -12218,7 +12139,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "pyforge-scribe",
             "title": "Scribe — the inward voice",
-            "status": "specified",
+            "status": "realized",
             "type": "dream",
             "blockedOn": ""
           }
@@ -12230,13 +12151,13 @@ window.DASHBOARD_DATA = {
         "counts": {
           "dreamt": 2,
           "pitched": 0,
-          "specified": 1,
-          "realized": 0,
+          "specified": 0,
+          "realized": 1,
           "archived": 1,
           "practice": 1
         },
         "line": "complete",
-        "load": 3,
+        "load": 2,
         "blocked": 0,
         "dreams": [
           {
@@ -12270,7 +12191,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "pyforge-steward",
             "title": "Steward — provision the line, hold the keys",
-            "status": "specified",
+            "status": "realized",
             "type": "dream",
             "blockedOn": ""
           }
@@ -13843,8 +13764,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 11:25 UTC",
-    "generatedEpoch": 1786188311
+    "generatedAt": "2026-08-08 11:35 UTC",
+    "generatedEpoch": 1786188907
   },
   "storySpecs": [
     {

@@ -2,7 +2,7 @@
 title: Scribe — the inward voice
 type: dream
 owner: scribe
-status: specified
+status: realized
 ---
 
 # Scribe — capture the decision, keep the graph, answer from memory

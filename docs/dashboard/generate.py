@@ -1934,6 +1934,18 @@ def scan_command_center(fleet: dict) -> dict:
 
             # Derive status for each artifact in this phase
             for stage in phase_stages:
+                if stage == "research":
+                    # `research` is a SET (domain/market/technical), not one file --
+                    # a single combined dot hid stations missing a whole discipline
+                    # (see `_subscore`). Emit one status per RESEARCH_TYPES entry so
+                    # it matches the analysis phase's res-domain/res-market/res-tech
+                    # artifact labels instead of falling through to '◯' for all three.
+                    have = (row.get("sub", {}).get("research") or {}).get("have", {})
+                    for rtype in RESEARCH_TYPES:
+                        label = f"res-{'tech' if rtype == 'technical' else rtype}"
+                        statuses[label] = "✅" if have.get(rtype) else "◯"
+                    continue
+
                 has_stage = bool(row.get("stages", {}).get(stage, ""))
 
                 # Determine status indicator based on artifact existence
