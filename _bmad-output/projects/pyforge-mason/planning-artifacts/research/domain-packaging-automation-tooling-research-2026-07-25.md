@@ -412,3 +412,56 @@ Local (non-web) evidence: direct filesystem inventory of
 `.claude/skills/conda-forge-expert/`, `.claude/scripts/conda-forge-expert/`,
 `.claude/tools/conda_forge_server.py`, `pixi.toml`, and
 `src/shared/packages/pyforge-{atlas,warden}/` in the `pyforge-mason` worktree at 2026-07-25.
+
+---
+
+## Refresh addendum — 2026-08-08
+
+Re-validated with live web search (the original pass ran on an exhausted search budget —
+OQ-1's deferred discovery sweep is now done; full detail and sources in the companion
+`market-mason-packaging-automation-2026-08-08.md`). Status of this report's claims:
+
+**Assumptions triggered / resolved:**
+- **A-7 TRIGGERED** — grayskull now emits v1 `recipe.yaml` (`--use-v1-format
+  --strict-conda-forge`), and it is conda-forge's documented recommended path for new PyPI
+  recipes; rattler-build also grew its own `generate-recipe` subcommand. As A-7 predicted,
+  one component-level argument weakens and none of D1–D4 fall. The landscape-map cell
+  "grayskull: Generate conda recipe ✅ (v0)" is now "✅ (v0 + v1)".
+- **A-6 confirmed drifting as expected** — ground truth 2026-08-08: 67 canonical scripts
+  (was 66), 60 public wrappers (was 57), 46 MCP tools (unchanged), skill v8.81.0 (was
+  v8.79.1). The shape arguments all still hold.
+
+**Open questions answered:**
+- **OQ-1 (discovery sweep)** — DONE. The sweep found two previously-unexamined dual-*build*
+  analogues — `whl2conda` (wheel→.conda direct, one-command dual build, dependency renaming)
+  and `hatch-conda-build` (Hatch plugin, conda target from pyproject.toml) — and confirmed
+  neither ships/uploads/submits anywhere. **No dual-ship entrant exists.** D1 holds.
+- **OQ-2 (pixi publish + PyPI)** — ANSWERED: NO. `pixi publish` shipped as a real command
+  (channels, `cloudsmith://`, S3 with auto-init/reindex, local dirs) and remains conda-only.
+  D1 re-confirmed with a dated source; residual risk tracked as the market report's OQ-M1
+  (prefix.dev velocity).
+- **OQ-3 (conda-lock vs pixi.lock)** — ANSWERED: conda-lock is maintained (release
+  2026-07-01) but its lead maintainer publicly endorses pixi as "the future of lockfiles in
+  the Conda ecosystem" (conda/conda-lock#615) and ships a pixi migration path; the May 2026
+  conda releases made conda itself consume both `conda-lock.yml` and `pixi.lock` natively.
+  Consequence for Mason: `environment lock` wraps **pixi first**, conda-lock second (for
+  non-pixi manifest populations). The "wrap, don't compete" negative finding stands,
+  stronger than before.
+- **OQ-4 (run outside this repo)** — answered in the PRD/architecture after this report:
+  the D-1/AD-5 resolution chain (flag → env → upward walk → structured degradation) plus the
+  AD-6 capability split; T3 (no `.claude/` at all) keeps `package`/`environment` working and
+  degrades `recipe` with exit 3 (epics S-1.5/S-1.7).
+- **OQ-5 (atlas dual-implementation risk)** — mitigated by design since: S-2.2's seam guard
+  is the critical-path story, and the 2026-08-02 `pyforge-mason-recipe-validator` sibling
+  Dream (retired same-day as a D-1 conflict) is live evidence the guard is needed.
+- **OQ-6 (credentials/OIDC)** — partially answered by market movement: PyPI trusted
+  publishing (OIDC) is now the ecosystem's golden path, prefix.dev supports OIDC for conda
+  channels, and rattler-build attaches Sigstore attestations. See the market report § 5 for
+  the two spec-level nudges to S-3.4/S-3.7.
+- **OQ-7 (multi-ecosystem autotick ownership)** — resolved by the PRD: out of v1
+  (non-goals), reaffirmed in the Dream's frontier section.
+
+**One new landscape fact worth carrying:** pixi-build is still preview (opt-in
+`workspace.preview`), but CPython, SciPy, Xarray, and Dask now build with it, and the
+backends release stable on conda-forge — the substrate bet this report endorsed has
+strengthened, not aged.

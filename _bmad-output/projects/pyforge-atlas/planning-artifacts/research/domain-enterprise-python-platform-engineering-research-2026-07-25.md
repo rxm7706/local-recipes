@@ -568,3 +568,30 @@ the three intake gists under `docs/intake/gists/`; `{project-root}/pixi.toml`; r
 (`project_pyforge_warden.md`).
 
 **Companion artifact:** `research/market-enterprise-innersource-python-platform-research-2026-07-25.md`
+
+---
+
+## Refreshed 2026-08-08 — status change of the subject, clock update, findings stand
+
+- **The subject's planning status changed on 2026-08-02:** the Unity Data Stack satellite this
+  report grounds was folded — by explicit user override of the dream-level-only convention — into
+  Atlas's own single brief/PRD/Architecture/Spec chain as `## Satellite:` sections (capabilities
+  renumbered `CAP-18`..`CAP-31`, invariants `AD-24`..`AD-56`); its standalone planning folders
+  moved intact to `archive/` under this project's `planning-artifacts/`, and
+  `docs/dreams/unity-data-stack.md` is `status: archived / absorbed`. **Still zero epics/stories
+  and zero code** (confirmed by the 2026-08-02 Dream-coverage audit's greps) — this report's
+  findings therefore remain *pre-build* inputs, none exercised or falsified in the interval.
+- **The regulatory clock advanced:** CRA exploited-vulnerability reporting (Part 1's #1 force,
+  dated 2026-09-11) is now **~5 weeks out**, not seven. Unchanged as a design forcing-function;
+  sharper as a scheduling fact for anyone activating the satellite.
+- **§ 6.2's "consume, don't rebuild" table needs one nuance** (from the post-ship debt audit,
+  `technical-atlas-post-ship-debt-and-cross-station-integration-research-2026-08-08.md`): the
+  "Dependency intelligence — pyforge-atlas — Realized (SHIPPED 2026-07-18)" row is true of the
+  code, but the migrated pipeline is not yet the production data path (legacy retirement gated on
+  the unrun DW-B4 parity chain), and its live-fetch seams are injection-deferred to the Dagster
+  bring-up. A Unity activation consuming Atlas datasets should sequence after — or become the
+  demand driver for — that bring-up, rather than assume an operating Kedro data platform today.
+- **§ 6.1 #7 stack-currency drift row refreshed:** kedro 1.5.0 / dagster 1.13.17 / pixi and
+  friends all still actively shipping per the 2026-08-08 telemetry sweep in
+  `technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md` § 2.
+- Open questions OQ-D1–D3 remain open; no interval evidence.

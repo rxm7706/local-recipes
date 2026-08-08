@@ -420,3 +420,25 @@ GitHub-hosted evidence (READMEs, release notes, issue threads) over secondary
 commentary (blog posts, conference writeups) that a WebSearch-driven pass would
 normally surface — flagged per § "What's not confirmed" items above (notably
 WasmEdge/jco P2/P3 support level) rather than filled in from training-data recall.
+
+---
+
+## Refreshed 2026-08-08 — subject archived-as-satellite; maturity verdict stands, no re-verification warranted yet
+
+- **Status change (2026-08-02):** the Wasm Analytics Stack chain this report's maturity verdict
+  gates was folded into Atlas's own brief/PRD/Architecture/Spec as `## Satellite:` sections
+  (standalone folders preserved under `archive/`); `docs/dreams/wasm-analytics-stack.md` is
+  archived/absorbed. **Zero implementation** (re-confirmed by the 2026-08-02 Dream-coverage
+  audit's greps for `wasi`/`componentize-py`/`wasmtime` in `src/shared/packages/pyforge-atlas/`
+  finding no satellite code). The three-lane split this report recommends (Restricted-SCC
+  processes for the DuckDB core; componentize-py components only for pure-Python trust-boundary
+  validation; Pyodide/DuckDB-WASM for the read surface) remains the standing recommendation,
+  unfalsified and unexercised.
+- **The blocking dependencies were not re-polled** (DuckDB-WASI absence, dbt Fusion DuckDB
+  adapter, componentize-py pydantic support): with the satellite unscheduled, a monthly re-poll
+  would be motion without decision value. **Trigger for the next re-check:** the satellite being
+  scheduled, or any upstream signal that DuckDB gains a WASI target (which would collapse this
+  report's central blocker).
+- **One adjacent fact moved:** the G1 precedent's host stack stays current per the 2026-08-08
+  telemetry sweep (`duckdb-wasm` actively pushed; DuckDB v1.5.5) — see
+  `technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md` § 2.

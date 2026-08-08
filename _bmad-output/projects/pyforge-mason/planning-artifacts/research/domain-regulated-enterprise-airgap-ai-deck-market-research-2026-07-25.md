@@ -23,6 +23,23 @@ mode: 'headless-express'
 
 ---
 
+> **Scope status (annotated 2026-08-08, station research refresh):** This report belongs to
+> the **Presenton satellite** (`docs/dreams/presenton-pixi-image.md` — **archived**, blocked
+> on its own unresolved Phase-0 decision gate), NOT to the `mason` CLI product that the rest
+> of this planning chain describes. It is not a stale pivot of Mason's scope: per the
+> 2026-08-02 consolidation (recorded in `docs/dreams/pyforge-mason.md` § "Related but out of
+> scope"), the Presenton effort's planning artifacts were folded into this station's
+> documents as "Satellite: Presenton" sections while the Dream itself stayed archived and
+> blocked. This report shares no architecture, code, or timeline with Epics 1–5 of the mason
+> CLI and informs **none of the 38 stories**. It was deliberately **not refreshed** in the
+> 2026-08-08 research pass: its single Phase-0-blocking open question (whether Microsoft's
+> disconnected Azure Local / M365 Local / Foundry Local stack includes a
+> Copilot-for-PowerPoint-equivalent layer) gates the satellite, and re-researching it before
+> the satellite unblocks would be wasted motion. Re-run this report's Microsoft-watch pass
+> if and when the Presenton satellite's Phase-0 opens.
+
+---
+
 ## Research Overview
 
 This report tests the pre-existing PRD's Risk R3 ("Microsoft ships on-prem Copilot SKU — JTBD collapses overnight," framed as a 12–24 month window before "Microsoft Arc-connected Copilot reaches IL5 GA") against current, dated evidence. **The finding materially changes the risk posture**: the specific trigger the PRD names (IL5 GA) already happened without collapsing the JTBD — but a *different*, more direct trigger (Microsoft's own on-prem/disconnected stack: Azure Local disconnected operations + Microsoft 365 Local + Foundry Local, GA'd worldwide **2026-02-24**) is already shipping, and this report could not confirm or rule out whether it includes Copilot-for-PowerPoint-equivalent deck generation. This is escalated to a Phase-0-blocking verification item, not a monitoring item. Full findings below.

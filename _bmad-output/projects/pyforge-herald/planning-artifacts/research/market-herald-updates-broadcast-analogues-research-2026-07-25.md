@@ -17,6 +17,11 @@ source_verification: true
 
 # Research Report: market
 
+> **Refreshed 2026-08-08** — findings confirmed still valid, with one inversion (the
+> telemetry-native-sourcing differentiator did **not** ship; v1 sources from operator-typed
+> flags) and a category shift now that Moments 2–4 shipped scaled-down. See
+> `market-herald-post-ship-landscape-research-2026-08-08.md` §2.
+
 **Date:** 2026-07-25
 **Author:** Rxm7706
 **Research Type:** market (light/express — analogue scan, not a full market study)

@@ -2918,7 +2918,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 11:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 12:13 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4721,11 +4721,11 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 3,
+    "sound": 1,
     "live": 31,
     "reached": 9,
     "gaps": 33,
-    "findings": 0,
+    "findings": 8,
     "rows": [
       {
         "label": "atlas",
@@ -4755,7 +4755,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
           "spec": "2026-08-02T14:50",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
@@ -4825,7 +4825,15 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [],
         "partial": [],
-        "staleBy": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-07-25"
+          }
+        ],
         "furthest": "retro",
         "updated": "2026-08-02",
         "age": 6,
@@ -4863,7 +4871,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-02T12:57",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
           "ux": "",
@@ -4881,14 +4889,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": false
           },
           "deck": {
@@ -4934,10 +4940,16 @@ window.DASHBOARD_DATA = {
           "retro"
         ],
         "gaps": [],
-        "partial": [
-          "research"
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-07-25"
+          }
         ],
-        "staleBy": [],
         "furthest": "retro",
         "updated": "2026-08-08",
         "age": 0,
@@ -4975,7 +4987,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-02T14:45",
-          "research": "2026-08-01",
+          "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-02",
           "ux": "",
@@ -4992,16 +5004,13 @@ window.DASHBOARD_DATA = {
         "sub": {
           "research": {
             "have": {
-              "domain": false,
+              "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 1,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "domain",
-              "technical"
-            ],
+            "missing": [],
             "inherited": false
           },
           "deck": {
@@ -5047,10 +5056,16 @@ window.DASHBOARD_DATA = {
           "retro"
         ],
         "gaps": [],
-        "partial": [
-          "research"
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-08-02"
+          }
         ],
-        "staleBy": [],
         "furthest": "retro",
         "updated": "2026-08-08",
         "age": 0,
@@ -5088,7 +5103,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "2026-08-01",
           "spec": "2026-08-02T14:36",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-02",
           "ux": "",
@@ -5157,7 +5172,15 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [],
         "partial": [],
-        "staleBy": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-08-02"
+          }
+        ],
         "furthest": "verify",
         "updated": "2026-08-07",
         "age": 1,
@@ -5195,7 +5218,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
           "spec": "2026-08-02T14:38",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
@@ -5213,14 +5236,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": false
           },
           "deck": {
@@ -5265,10 +5286,16 @@ window.DASHBOARD_DATA = {
           "verify"
         ],
         "gaps": [],
-        "partial": [
-          "research"
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-07-25"
+          }
         ],
-        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-02",
         "age": 6,
@@ -5306,7 +5333,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-02T12:59",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
@@ -5325,13 +5352,11 @@ window.DASHBOARD_DATA = {
             "have": {
               "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "technical"
-            ],
+            "missing": [],
             "inherited": false
           },
           "deck": {
@@ -5377,10 +5402,16 @@ window.DASHBOARD_DATA = {
           "retro"
         ],
         "gaps": [],
-        "partial": [
-          "research"
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-07-25"
+          }
         ],
-        "staleBy": [],
         "furthest": "retro",
         "updated": "2026-08-08",
         "age": 0,
@@ -5418,7 +5449,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-01T09:51",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
@@ -5436,14 +5467,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": false
           },
           "deck": {
@@ -5489,10 +5518,16 @@ window.DASHBOARD_DATA = {
           "retro"
         ],
         "gaps": [],
-        "partial": [
-          "research"
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-07-25"
+          }
         ],
-        "staleBy": [],
         "furthest": "retro",
         "updated": "2026-08-08",
         "age": 0,
@@ -5530,7 +5565,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "2026-07-24",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
@@ -5549,13 +5584,11 @@ window.DASHBOARD_DATA = {
             "have": {
               "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "technical"
-            ],
+            "missing": [],
             "inherited": false
           },
           "deck": {
@@ -5601,10 +5634,16 @@ window.DASHBOARD_DATA = {
           "retro"
         ],
         "gaps": [],
-        "partial": [
-          "research"
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "research",
+            "than": "brief",
+            "at": "2026-08-08",
+            "other": "2026-07-25"
+          }
         ],
-        "staleBy": [],
         "furthest": "retro",
         "updated": "2026-08-08",
         "age": 0,
@@ -5642,7 +5681,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-07",
           "deck": "",
           "spec": "",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -5749,7 +5788,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -5855,7 +5894,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -5961,7 +6000,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
           "spec": "",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -6060,7 +6099,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -6166,7 +6205,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
           "spec": "",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -6265,7 +6304,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -6283,14 +6322,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -6334,9 +6371,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -6587,7 +6622,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-08",
           "deck": "",
           "spec": "",
-          "research": "2026-08-01",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -6604,16 +6639,13 @@ window.DASHBOARD_DATA = {
         "sub": {
           "research": {
             "have": {
-              "domain": false,
+              "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 1,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "domain",
-              "technical"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -6658,9 +6690,7 @@ window.DASHBOARD_DATA = {
           "deck",
           "spec"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -6699,7 +6729,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-08-01",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -6716,16 +6746,13 @@ window.DASHBOARD_DATA = {
         "sub": {
           "research": {
             "have": {
-              "domain": false,
+              "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 1,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "domain",
-              "technical"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -6769,9 +6796,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -6810,7 +6835,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "",
-          "research": "2026-08-01",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -6827,16 +6852,13 @@ window.DASHBOARD_DATA = {
         "sub": {
           "research": {
             "have": {
-              "domain": false,
+              "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 1,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "domain",
-              "technical"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -6881,9 +6903,7 @@ window.DASHBOARD_DATA = {
           "deck",
           "spec"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -6922,7 +6942,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7028,7 +7048,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-29",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7134,7 +7154,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-29",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7240,7 +7260,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7346,7 +7366,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-03",
           "deck": "",
           "spec": "",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7453,7 +7473,7 @@ window.DASHBOARD_DATA = {
           "dream": "",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7559,7 +7579,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02T17:11",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7665,7 +7685,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7772,7 +7792,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-03",
           "deck": "",
           "spec": "",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7879,7 +7899,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -7985,7 +8005,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-01T09:45",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8091,7 +8111,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8197,7 +8217,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02T13:19",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8303,7 +8323,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8419,7 +8439,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02T19:30",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8525,7 +8545,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-03",
           "deck": "",
           "spec": "",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8632,7 +8652,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-03",
           "deck": "",
           "spec": "",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8739,7 +8759,7 @@ window.DASHBOARD_DATA = {
           "dream": "",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8845,7 +8865,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -8951,7 +8971,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9057,7 +9077,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9163,7 +9183,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02T11:24",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9269,7 +9289,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-08-01T08:27",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9380,7 +9400,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-03",
           "deck": "",
           "spec": "",
-          "research": "2026-07-31",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9487,7 +9507,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-07",
           "deck": "",
           "spec": "",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9505,14 +9525,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -9557,9 +9575,7 @@ window.DASHBOARD_DATA = {
           "deck",
           "spec"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-07",
@@ -9598,7 +9614,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9616,14 +9632,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -9667,9 +9681,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-02",
@@ -9708,7 +9720,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9726,14 +9738,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -9777,9 +9787,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-02",
@@ -9818,7 +9826,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9836,14 +9844,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -9887,9 +9893,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-02",
@@ -9928,7 +9932,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -9946,14 +9950,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -9997,9 +9999,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-02",
@@ -10038,7 +10038,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
           "spec": "",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10056,14 +10056,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10109,9 +10107,7 @@ window.DASHBOARD_DATA = {
           "arch",
           "context"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "epics",
         "updated": "2026-08-02",
@@ -10150,7 +10146,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10168,14 +10164,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10219,9 +10213,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-02",
@@ -10260,7 +10252,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10279,13 +10271,11 @@ window.DASHBOARD_DATA = {
             "have": {
               "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "technical"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10329,9 +10319,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -10370,7 +10358,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-25",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10389,13 +10377,11 @@ window.DASHBOARD_DATA = {
             "have": {
               "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "technical"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10439,9 +10425,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -10480,7 +10464,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10499,13 +10483,11 @@ window.DASHBOARD_DATA = {
             "have": {
               "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "technical"
-            ],
+            "missing": [],
             "inherited": false
           },
           "deck": {
@@ -10549,9 +10531,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -10590,7 +10570,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-07",
           "deck": "",
           "spec": "",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10608,14 +10588,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10660,9 +10638,7 @@ window.DASHBOARD_DATA = {
           "deck",
           "spec"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -10701,7 +10677,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-31",
           "deck": "",
           "spec": "2026-07-29",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10719,14 +10695,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10770,9 +10744,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -10811,7 +10783,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10829,14 +10801,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10880,9 +10850,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -10921,7 +10889,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -10939,14 +10907,12 @@ window.DASHBOARD_DATA = {
           "research": {
             "have": {
               "domain": true,
-              "market": false,
+              "market": true,
               "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "market"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -10991,9 +10957,7 @@ window.DASHBOARD_DATA = {
           "deck",
           "spec"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -11032,7 +10996,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02",
-          "research": "2026-07-25",
+          "research": "2026-08-08",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -11051,13 +11015,11 @@ window.DASHBOARD_DATA = {
             "have": {
               "domain": true,
               "market": true,
-              "technical": false
+              "technical": true
             },
-            "n": 2,
+            "n": 3,
             "of": 3,
-            "missing": [
-              "technical"
-            ],
+            "missing": [],
             "inherited": true
           },
           "deck": {
@@ -11101,9 +11063,7 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [
-          "research"
-        ],
+        "partial": [],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-08",
@@ -11137,9 +11097,9 @@ window.DASHBOARD_DATA = {
             "emoji": "🎺",
             "statuses": {
               "DREAMS": "🚀",
-              "res-domain": "◯",
+              "res-domain": "✅",
               "res-market": "✅",
-              "res-tech": "◯",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11175,7 +11135,7 @@ window.DASHBOARD_DATA = {
               "DREAMS": "🚀",
               "res-domain": "✅",
               "res-market": "✅",
-              "res-tech": "◯",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11186,7 +11146,7 @@ window.DASHBOARD_DATA = {
             "statuses": {
               "DREAMS": "🚀",
               "res-domain": "✅",
-              "res-market": "◯",
+              "res-market": "✅",
               "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
@@ -11198,7 +11158,7 @@ window.DASHBOARD_DATA = {
             "statuses": {
               "DREAMS": "🚀",
               "res-domain": "✅",
-              "res-market": "◯",
+              "res-market": "✅",
               "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
@@ -11211,7 +11171,7 @@ window.DASHBOARD_DATA = {
               "DREAMS": "🚀",
               "res-domain": "✅",
               "res-market": "✅",
-              "res-tech": "◯",
+              "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
@@ -11222,7 +11182,7 @@ window.DASHBOARD_DATA = {
             "statuses": {
               "DREAMS": "🚀",
               "res-domain": "✅",
-              "res-market": "◯",
+              "res-market": "✅",
               "res-tech": "✅",
               "prod-brief": "✅",
               "PITCH-DECKS": "✅"
@@ -13769,8 +13729,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 11:48 UTC",
-    "generatedEpoch": 1786189716
+    "generatedAt": "2026-08-08 12:13 UTC",
+    "generatedEpoch": 1786191206
   },
   "storySpecs": [
     {

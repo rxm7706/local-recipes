@@ -135,3 +135,23 @@ sandboxing for data workloads, not adopting an established pattern.
 - [Fermyon Spin](https://www.fermyon.com/spin)
 - [InfinyOn Fluvio — SmartModules overview](https://www.infinyon.com/docs/fluvio/smartmodules/overview/)
 - [Shopify Functions — Build](https://shopify.dev/docs/apps/build/functions)
+
+---
+
+## Refreshed 2026-08-08 — subject archived-as-satellite; comparables unchanged
+
+- **Status change (2026-08-02):** the Wasm Analytics Stack satellite this report supports was
+  folded into Atlas's own brief/PRD/Architecture/Spec chain (`## Satellite:` sections within
+  `CAP-18`..`CAP-31` / `AD-24`..`AD-56`; standalone folders preserved under `archive/`);
+  `docs/dreams/wasm-analytics-stack.md` is archived/absorbed. **No epics, no stories, no code** —
+  the three-comparable pattern (Spin / Fluvio SmartModules / Shopify Functions) and the
+  "genuine R&D bet, scope WASI components narrowly" implication remain pre-build inputs,
+  untested in the interval.
+- **The in-repo precedent this report leans on (pyforge-atlas Story G1, Pyodide/DuckDB-WASM) is
+  code-real but note the operating caveat** from
+  `technical-atlas-post-ship-debt-and-cross-station-integration-research-2026-08-08.md`: the G1
+  build exists and its `wasm-smoke` gate is green, but the surrounding intelligence surface it
+  would serve is not yet the production data path — a satellite v2 dashboard reusing G1 should
+  treat it as a proven *pattern*, not an operating *service*.
+- Comparable currency was not re-verified in this pass (no new adoption decision is pending);
+  re-run the currency sweep if and when the satellite is scheduled.

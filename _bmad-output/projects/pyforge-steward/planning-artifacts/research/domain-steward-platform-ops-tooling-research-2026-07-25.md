@@ -23,6 +23,14 @@ mode: 'headless-express'
 **Author:** Rxm7706
 **Research Type:** Domain research (headless/express — run unattended as part of the pyforge-steward planning chain; gaps resolved into `assumptions[]`/`open_questions[]` below rather than blocking on interactive elicitation)
 
+> **Refreshed 2026-08-08** — Steward has since shipped completely (18/18 stories, 4/4 epics,
+> PRs #157/#291/#297/#302/#305). The pre-ship body below is preserved unchanged as the
+> planning-chain input it was; the dated **Addendum** at the end of this file re-validates
+> the domain problem against what actually shipped, resolves this report's four
+> open_questions with what the build actually decided, and adds the cross-station
+> dependency analysis. The competitive landscape now lives in its own sibling report,
+> `market-steward-platform-ops-2026-08-08.md`.
+
 ---
 
 ## Research Overview
@@ -390,3 +398,138 @@ _This research document is the domain-research input to the pyforge-steward plan
 - **OQ2**: Should `steward keys` wrap SOPS+age directly (Git-native, no standing service, closest fit to this repo's existing "env-vars only, nothing committed" doctrine) or a lighter Infisical-class API? This research leans SOPS+age but the architecture skill should confirm against Steward's actual secret inventory shape (currently: a handful of API keys/tokens, not per-environment application secrets at team scale).
 - **OQ3**: Is `presenton-pixi-image` on OpenShift (named in the Dream as a "frontier," unbuilt) in scope for Steward's v1 `deploy` epic, or is v1 scoped to the already-real Pages dashboard formalization only, with OpenShift/air-gap bundle deploy deferred? This materially changes `deploy` epic sizing — recommend confirming at PRD stage.
 - **OQ4**: Should Steward's `provision` duty own bmad-loop *runner* provisioning itself, or only formalize what `scripts/bmad-loop-worktree` and the pixi `[environments]` table already do — i.e., is Steward additive tooling over Marshal's existing multi-project/worktree machinery, or does it take ownership of that machinery from Marshal? The Ecosystem Crew Dream assigns "Monorepo & Multi-Project Operation" to Marshal explicitly (2026-07-23 move) while assigning "runners... present before Doctor's pre-flight" to Steward — these read as adjacent but distinct; the PRD should draw the boundary explicitly to avoid duty overlap between Steward and Marshal.
+
+---
+
+# Addendum — 2026-08-08 post-ship domain re-validation
+
+**Refresh date:** 2026-08-08. **Basis:** the merged code
+(`src/shared/packages/pyforge-steward/src/pyforge/steward/`), the whole-build retrospective
+written today (`../retros/retro-steward-2026-08-08.md`), `epics.md` (FR-1..FR-18), and the
+three steward-owned satellite Dreams (`unified-container.md` dreamt,
+`bmad-module-provisioning.md` dreamt, `enterprise-airgap.md` realized).
+
+## A1. The domain problem, re-validated against shipped evidence
+
+The pre-ship claim was that the Deployment & Operations stage was "orphaned between
+stations" and that the `keys` duty had two dated incidents proving the risk real. Post-ship,
+the strongest re-validation is not that the incidents stopped — it is that **the central
+domain property was actually achieved and adversarially verified**:
+
+- **"Rotating a key never breaks what already trusted it" held from spec to code.** Story
+  1.4's two-field design (`scope` stable across generations, `name` per-generation) lets a
+  retired identity record and its replacement coexist inspectably — the retro confirms the
+  architectural intent and the eventual hardening match cleanly. The one way the promise
+  could still be violated in practice — a concurrent `rotate`/`revoke` race clobbering the
+  other writer's inventory update — was found by close-out review and closed with
+  `fcntl.flock` + atomic `os.replace`, *proven by two real racing threads*
+  (`test_concurrent_rotations_do_not_lose_an_update`), not asserted. This matches the
+  auto-memory finding already on record for this domain, now with executable evidence.
+- **The JFrog-leak shape is closed as a regression, not a fix**: FR-7 ships as a named
+  automated regression test, and `steward keys audit --drift` scans for the pre-fix
+  unconditional-injection AST shape on demand. The domain's "Doctor finds, Steward
+  remediates" assignment is now concretely one CLI verb.
+- **The NIST 800-63B Rev 4 alignment (§ 4) survived contact with implementation**: rotation
+  is on-demand only, and the *absence* of any calendar/cron path is pinned by
+  `tests/meta/test_invariants.py::test_no_rotation_scheduler_exists`. The report's
+  "risk-triggered over calendar-triggered" recommendation is machine-enforced, not just
+  followed.
+
+One pre-ship framing needs correction in hindsight: § 4 recommended `steward keys` "wrap
+SOPS+age." What shipped wraps **`age` directly** (`encrypt_file`/`decrypt_file`/
+`generate_identity` subprocess wraps) with a bespoke YAML inventory, skipping SOPS's
+structured-file layer entirely. That was the right call for this secret inventory's shape (a
+handful of whole-file secrets, not per-key values inside YAML documents) — recorded here so
+a future reader doesn't treat "SOPS" in the body above as the shipped design.
+
+## A2. The four open questions, as the build actually answered them
+
+- **OQ1 (budget scope)** → resolved as **(b) a minimal manual-check CLI**, and more
+  conservatively than either option contemplated: `budget check` *always* exits
+  `EXIT_BUDGET_NOT_CONFIGURED` ("no metered spend source configured") rather than
+  fabricating a pass/fail, and the no-cost-SDK property is structural (AST invariant test).
+  The charter duty was not silently dropped (the report's fear); it was shipped honest.
+- **OQ2 (SOPS+age vs Infisical-class)** → **`age` directly, no SOPS layer** (see A1).
+  No standing service, per NFR-1.
+- **OQ3 (OpenShift/presenton in deploy v1?)** → **No.** Epic 2 scoped deploy to the Pages
+  dashboard reconcile loop only (build → diff → commit+push only-on-real-difference →
+  status-from-git-log, FR-8..FR-11). `presenton-pixi-image`/air-gap bundle installs remain
+  frontier items — now most plausibly reframed as expressions of the
+  `unified-container.md` Dream rather than as a deploy-verb extension.
+- **OQ4 (Steward vs Marshal runner boundary)** → drawn exactly as the report hoped:
+  Steward is a **face over** `scripts/bmad-loop-worktree`, never an owner of it
+  (`run_bmad_loop_worktree` is a subprocess wrap that parses the script's own stdout; AD-1/
+  AD-5). Marshal keeps the machinery; Steward provisions through it. The remaining
+  unwritten half of this boundary is teardown/reaping — see A4.
+
+## A3. New domain territory opened since 2026-07-25 (all steward-owned)
+
+The build's completion did not shrink Steward's domain; it re-pointed it. Three satellite
+Dreams now define the post-v1 frontier, and all three are provisioning-domain problems:
+
+1. **`unified-container.md`** (dreamt 2026-08-02, steward-owned): all eight stations in one
+   Docker/Podman image. Squarely "the estate the factory stands on"; feasibility against the
+   shipped code is analyzed in the technical report's 2026-08-08 addendum. Notably, the
+   shipped code's *checkout-anchored* design (every duty module locates the repo root by
+   marker-file walk-up, and `keys.py` refuses to import outside a checkout) is the single
+   biggest containerization constraint — the image must carry the repo, not just the
+   packages.
+2. **`bmad-module-provisioning.md`** (dreamt 2026-08-07): `steward provision --module` for
+   npm-distributed BMAD modules (Skill Forge, BMB) whose TTY-only installers are today
+   driven by unrepeatable session scripts. The Dream's own ownership investigation ruled
+   Marshal out on Marshal's documented boundaries and names Epic 3's just-merged provision
+   duty as the direct structural precedent. This is the most Spec-ready of the three.
+3. **`enterprise-airgap.md`** (realized): the prior art that makes the container Dream
+   credible — env-var-only routing, offline-safe reads, no committed config. A container
+   image is, structurally, the "offline bundle format for the whole operating model" that
+   Dream's frontier already asks for.
+
+## A4. Cross-station integration: is Steward's provisioning a documented load-bearing dependency?
+
+**Finding: it is real but currently *latent*, and today that is the honest state — with one
+documentation gap worth closing.**
+
+The factual dependency chain: every other station's bmad-loop work executes inside a
+worktree + pixi environment. Those are provisioned by `scripts/bmad-loop-worktree` + `pixi
+install` — the exact pair `steward provision --runner bmad-loop --env <name>` wraps, keyed
+by the repo-wide convention that each `pyforge-*` pixi env name doubles as its BMAD project
+slug (Story 3.2 Design Notes). So Steward's verb *covers* the provisioning every station
+depends on.
+
+But it is not (yet) the *path*: bmad-loop runs and Marshal's orchestration invoke the script
+directly; nothing breaks for any station if `steward` is absent, because Steward
+deliberately wrapped rather than absorbed (OQ4's resolution). Three consequences:
+
+- **Do not declare a hard dependency other stations must document.** A per-station "depends
+  on pyforge-steward" line would overstate reality and violate the wrap-never-absorb
+  boundary that keeps Marshal the machinery owner.
+- **Do document the *convention* the wrap relies on**, because it is genuinely load-bearing
+  and currently lives only in Story 3.2's spec and a `provision.py` docstring: *"every
+  `pyforge-*` pixi environment is named identically to its BMAD project slug."* A station
+  that breaks this (new env name ≠ slug) silently breaks `--runner` for itself. This
+  belongs in the cross-station conventions surface (`_bmad-output/PROJECTS.md` is the
+  candidate the retro already names for the sibling error-rendering convention).
+- **The undocumented seam is teardown**: Steward provisions, bmad-loop/Marshal tear down,
+  and nobody owns stale-worktree reaping (the `feedback_worktree_remove_deregisters_on_failure`
+  memory entry shows the failure mode is real). Writing down "provision: Steward-face /
+  teardown: loop machinery / reap: unassigned" — even just to assign "reap" — is the one
+  cross-station ownership line this refresh found genuinely missing.
+
+If the unified-container Dream proceeds, this latency inverts: a containerized fleet has no
+pre-existing checkout for the script-direct path, so **container-mode provisioning would
+make Steward the front door for real** — at which point the dependency should be promoted
+from convention to documented contract in each station's architecture. That promotion
+trigger, not a date, is the right condition to key on.
+
+## A5. Refreshed strategic summary
+
+- The domain problem is re-validated at a higher confidence tier than pre-ship: the flagship
+  property (rotation without breaking trust) is executable-verified, and every non-goal this
+  report recommended is now enforced by an invariant test rather than by discipline.
+- The build sequence this report suggested (`keys → deploy → provision → budget`) was
+  followed as Epics 1→4 and each epic's close-out review found a real distinct bug (retro:
+  4/4 epics, zero "nothing found" passes) — the sequencing-by-groundedness heuristic held.
+- Steward's next domain frontier is unambiguous and already articulated in steward-owned
+  Dreams: module provisioning (nearest), a real spend meter for `budget check`, and the
+  unified container (largest — see the technical addendum for feasibility). No new
+  green-field domain research is needed to start any of the three.

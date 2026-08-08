@@ -1,5 +1,9 @@
 # Market research — agent orchestration, 2026-07-31 refresh
 
+> **Refreshed by** `market-marshal-orchestration-refresh-2026-08-08.md`
+> (post-Epics-1–6 shipped state + workflow-orchestrator/IDP analogue
+> widening); this document remains valid history.
+
 > **Supersedes** `market-agent-orchestration-research-2026-07-25.md` for
 > competitive framing; that document remains valid history. Inputs: the
 > 2026-07-31 live-verification research (rounds 1–3, same folder), the

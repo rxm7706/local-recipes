@@ -20,6 +20,11 @@ status: complete
 
 # The Socket Exists Now: Agent Portability and the Governance of Autonomous Coding Agents
 
+> **Refreshed by** `domain-marshal-orchestration-2026-08-08.md` (§ 5
+> re-confirms this doc's standing findings against the shipped Epic 1–6
+> mechanics) and `technical-pyforge-unification-2026-08-08.md` (§ 4,
+> portability real-vs-aspirational as of Epic 6 done 9/9).
+
 **Date:** 2026-07-25 · **Author:** Rxm7706 · **Research type:** Domain · **Mode:** headless/express
 
 ---

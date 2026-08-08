@@ -110,3 +110,51 @@ pyforge-warden (Warden) shipped its complete v1 on 2026-07-25 (PR #110, "complet
 - `gh repo view snyk/cli` (2026-07-25); Snyk's `.snyk` ignore-policy documentation could not be located this session (two 404'd URLs) — flagged as unverified
 - `gh repo view CycloneDX/specification` (2026-07-25) — confirms CycloneDX 1.7.1 shipped, consistent with Warden's FR27 SBOM axis
 - Internal: `docs/specs/pyforge-warden.md` (legacy Tier-1 spec, FR1-FR40), `_bmad-output/projects/pyforge-warden/planning-artifacts/architecture.md` (pinned-engine-contracts frontmatter, the claims being re-verified), `.../epics.md` — Warden's own shipped design, read for comparison, not as external evidence
+
+---
+
+# Refreshed 2026-08-08 — two weeks post-ship
+
+Fresh telemetry + live doc checks (2026-08-08), resolving both of the 2026-07-25 report's open questions and catching one genuinely consequential upstream move. Companion: `technical-warden-dependency-gate-refresh-2026-08-08.md` (new — the internal debt map this comparison should be read against).
+
+## 1. OSV-Scanner v2.5.0 (2026-08-07): the moat holds, but the engine under Warden just changed pipelines
+
+`gh api` (2026-08-08): 10,774 stars; **v2.5.0 released 2026-08-07** — the day before this refresh. The release migrated scanning, filtering, and matching **end-to-end onto OSV-Scalibr** (`--experimental-plugins` exposes the Scalibr plugin surface). Two findings, one per direction:
+
+- **The source-manifest moat is still unclosed.** The supported-lockfiles doc, re-fetched 2026-08-08 against v2.5.0: Python coverage is still `Pipfile.lock, poetry.lock, requirements.txt, pdm.lock, pylock.toml, uv.lock` — no conda `environment.yml`, no `recipe.yaml`/`meta.yaml`, no `pixi.toml`/`pixi.lock`. Third consecutive check (PRD 2026-07-11, report 2026-07-25, now) confirming Warden's E1 bridge remains the only path.
+- **But the perimeter is moving: OSV-Scalibr ships a `python/condameta` extractor** — *installed*-conda-environment extraction (`conda-meta/`), the Trivy/Grype-class capability, now inside Google's own extraction library that osv-scanner just adopted wholesale. Nothing for source manifests or pixi, so Warden's pre-build wedge is untouched — but "no conda anywhere near osv-scanner" is no longer accurate phrasing, and a future Scalibr conda-*manifest* extractor is now a one-plugin change away rather than an architectural one. Watch item, re-check quarterly.
+- **Operational consequence for Warden (the more urgent half):** Warden pins osv-scanner by version range (Story 6.6) precisely for this event. The next in-range bump is a *pipeline replacement*, not a point release — Warden's deferred fail-closed-hard behavior on unrecognized output-record shapes (deptry analogue in the ledger; same class applies to osv output) means a Scalibr-era shape drift would fault fleet-wide as `error`, loudly but disruptively. Deliberately re-run the conformance suite against 2.5.x before widening the pin.
+
+## 2. Snyk — the 2026-07-25 open question is now RESOLVED, and it narrows one claimed differentiator
+
+The prior report could not verify whether `.snyk` supports expiring ignores (404'd docs). Confirmed 2026-08-08 via Snyk's current docs (`docs.snyk.io` "The .snyk file" + `snyk ignore` command reference): **`.snyk` ignore entries DO support an `expires:` field**, and the `snyk ignore` CLI **defaults to a 30-day expiry when omitted**. So the blanket "no comparable has expiring waivers" framing is now wrong against Snyk and must not be used. The honest, still-real differentiation is narrower and about *failure direction*:
+
+- In the `.snyk` **file**, omitting `expires` = a **permanent** ignore, and per Snyk's own docs a malformed expiry date means "the ignore will be respected and persist indefinitely" — **fail-open on both counts**. Warden's FR24 is fail-closed on both: expiry is mandatory (default 14 days), and a malformed waiver never silently suppresses.
+- Snyk's docs suggest `9999-01-01` for permanent ignores — an escape hatch Warden deliberately doesn't offer.
+- `authorized_by` + automatic re-block remain Warden-side; Snyk's ignore audit trail lives in its SaaS layer, not the committed file.
+
+## 3. Dependabot — the second open question, resolved with nuance
+
+Per GitHub's current docs (2026-08-08): a manually dismissed Dependabot alert has **no time-based expiry** — it stays dismissed until a human reopens it or metadata changes void it. However, auto-triage rules support **"dismiss until patch"** — an *event-based* expiry (the alert reopens when a fix becomes available). So the corrected comparison: Dependabot has conditional/event-driven un-dismissal but nothing like Warden's unconditional time-boxed re-block; the prior report's "plausible but unverified" is now "confirmed, with the dismiss-until-patch caveat."
+
+## 4. Safety CLI — added to the comparable set (named in the operator's competitive frame, absent from the 07-25 report)
+
+`gh api repos/pyupio/safety` (2026-08-08): 1,995 stars, v3.8.1 (2026-05-29), pushed 2026-07-21 — slower cadence than every other comparable here. Safety is PyPI-requirements-focused, backed by the commercial Safety DB (free tier lags the paid feed) — the same single-ecosystem, vendor-DB shape pip-audit occupies with an open DB. No conda/pixi source-manifest support. Confirms rather than changes the landscape: the PyPI vuln-scan slot is crowded (pip-audit, Safety, osv-scanner, Snyk); the conda/pixi source-manifest slot still has exactly one occupant.
+
+## 5. Remaining telemetry deltas (2026-07-25 → 2026-08-08)
+
+- **deptry** (`osprey-oss/deptry`): 1,455 stars, still v0.25.1 (2026-03-18) — **no release in ~5 months** despite daily pushes. Warden's 0.25.1 pin faces no drift pressure; the stale `fpgmaas/` citation in `architecture.md` remains the only action.
+- Renovate 44.14.11 (major 43→44 since the last check — its usual velocity), Trivy v0.73.0, pip-audit unchanged at v2.10.1, Snyk CLI v1.1306.3, dependabot-core v0.390.0. Nothing in any of their release streams adds conda/pixi source-manifest parsing.
+
+## Refresh verdict on the differentiation table
+
+Of the six 2026-07-25 claims: five **hold unchanged** (conda/pixi bridge — freshly reconfirmed against osv-scanner v2.5.0; installed-vs-source; hygiene-for-conda; exit-code contract; dual-ecosystem single report). One is **narrowed**: the expiring-waiver differentiator survives against Renovate and (with the event-expiry caveat) Dependabot, but against Snyk it must be restated as *fail-closed mandatory expiry vs fail-open optional expiry*, not presence-vs-absence.
+
+## Refresh sources
+
+- `gh api repos/{google/osv-scanner,osprey-oss/deptry,renovatebot/renovate,pypa/pip-audit,snyk/cli,dependabot/dependabot-core,aquasecurity/trivy,pyupio/safety}` + `releases/latest` (2026-08-08)
+- [OSV-Scanner supported languages and lockfiles](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/) (re-fetched 2026-08-08, v2.5.0-era)
+- osv-scanner v2.5.0 release notes (`gh api repos/google/osv-scanner/releases/latest`, 2026-08-08) — the Scalibr end-to-end migration
+- [OSV-Scalibr supported inventory types](https://github.com/google/osv-scalibr/blob/main/docs/supported_inventory_types.md) (fetched 2026-08-08) — `python/condameta`, no environment.yml/pixi
+- [The .snyk file — Snyk User Docs](https://docs.snyk.io/manage-risk/policies/the-.snyk-file), [snyk ignore command](https://docs.snyk.io/developer-tools/snyk-cli/commands/ignore), [Ignore issues](https://docs.snyk.io/manage-risk/prioritize-issues-for-fixing/ignore-issues) (2026-08-08) — `expires:` field semantics, 30-day CLI default, fail-open malformed-date behavior
+- [Managing automatically dismissed alerts — GitHub Docs](https://docs.github.com/en/code-security/dependabot/dependabot-auto-triage-rules/managing-automatically-dismissed-alerts), [Viewing and updating Dependabot alerts](https://docs.github.com/code-security/dependabot/dependabot-alerts/viewing-and-updating-dependabot-alerts) (2026-08-08) — dismissal/reopen semantics, dismiss-until-patch

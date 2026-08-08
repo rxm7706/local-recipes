@@ -91,3 +91,33 @@ deps.dev is "a service developed and hosted by Google to help developers better 
 - `gh api repos/librariesio/libraries.io` — repo metadata: AGPL-3.0, not archived, last push 2026-07-06 (2026-07-25)
 - `gh api repos/google/deps.dev` — repo metadata: not archived, last push 2026-07-21 (2026-07-25)
 - Internal: `docs/dreams/pyforge-atlas.md`, `docs/dreams/pyforge-charter.md` § Atlas/Warden, `_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md`, `.../architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md`, `.../epics.md` — Atlas's own shipped design, read for comparison, not as external evidence
+
+---
+
+## Refreshed 2026-08-08 — findings confirmed, with one honesty correction from three weeks of operating reality
+
+Re-validated against the live tree on branch `research/pyforge-comprehensive-refresh-2026-08-08`
+(companion reports: `technical-atlas-post-ship-debt-and-cross-station-integration-research-2026-08-08.md`,
+`technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md`).
+
+- **The three comparables and the convergence table stand unchanged.** No new evidence contradicts
+  the "convergent validation, not novelty" synthesis; libraries.io's post-2022 funding ambiguity
+  remains unresolved (still the recorded open question).
+- **Honesty correction to the "freshness as a first-class signal — stronger than the comparables"
+  row:** that claim describes the *shipped design* (per-dataset TTL via `IncrementalParquetDataset`,
+  AD-5). Three weeks post-ship, the migrated pipeline is **not yet the production data path** —
+  legacy retirement is gated on the unrun credentialed parity chain (DW-B4-1/2), so the freshness
+  signals operators actually consume today (`staleness-report`, `behind-upstream`) still come from
+  the legacy `cf_atlas.db` TTL machinery. The comparison holds either way (the legacy layer's TTLs
+  are also queryable), but the *migrated* freshness contract is unexercised in production — and one
+  piece is contractually incomplete: the AD-13 staleness marker has **zero consumers** in
+  `pipelines/` (DW-B5-4), so the migrated path can currently render an air-gapped empty vuln store
+  as a clean pass. The debt companion ranks fixing this as an immediate, unattended item.
+- **The deps.dev stable-vs-alpha API-tier observation gained a concrete local referent:** Atlas now
+  operates **two parallel MCP surfaces** (legacy `conda_forge_server.py` carrying 100% of real
+  consumption — Doctor's four watch axes — and the migrated `pyforge.atlas.mcp` carrying 0%). The
+  companion report's recommendation (re-back the legacy tools' data layer rather than re-point
+  consumers) is the practical application of exactly the contract-stability discipline this
+  section's deps.dev finding pointed at.
+- The open question on the Scorecard-style maintenance axis (data in Atlas, verdict in Warden)
+  remains open and unclaimed; no new demand evidence appeared in the interval.
