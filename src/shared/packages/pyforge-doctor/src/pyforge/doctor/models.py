@@ -54,6 +54,11 @@ class Source(StrEnum):
     FEEDSTOCK_HEALTH = "feedstock-health"
     RELEASE_CADENCE = "release-cadence"
     ENV_HYGIENE = "env-hygiene"
+    # Charter §6 (2026-07-28): the Doctor holds the verdict on the Marshal's own
+    # conformance -- "the one station that would otherwise grade itself". Added
+    # 2026-08-08 after a sync destroyed 96 `done` markers across four stations and
+    # all three guards written in response lived in Marshal's own surface.
+    MARSHAL_DURABILITY = "marshal-durability"
     ADOPTION = "adoption"
 
 

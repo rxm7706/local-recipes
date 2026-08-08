@@ -144,6 +144,25 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"error": msg}) if args.json else f"UNDETERMINED: {msg}")
         return 2                                        # never green on can't-evaluate
 
+    # Comparing a revision to ITSELF proves nothing, and would report clean forever.
+    # This is the shape CI takes on a `push: branches: [main]` event, where the default
+    # `origin/main` IS the commit just pushed — the detector would have run on every
+    # direct-to-main commit and passed unconditionally. Fall back to the head's first
+    # parent, which is the honest question for a push: "what did this change?"
+    base_sha = (_git("rev-parse", args.base) or "").strip()
+    head_sha = (_git("rev-parse", args.head) or "").strip()
+    if base_sha and base_sha == head_sha:
+        parent = (_git("rev-parse", "--verify", "--quiet", f"{args.head}^") or "").strip()
+        if not parent:
+            msg = (f"{args.base!r} and {args.head!r} are the same commit and it has no "
+                   f"parent — nothing to compare")
+            print(json.dumps({"error": msg}) if args.json else f"UNDETERMINED: {msg}")
+            return 2
+        if not args.json:
+            print(f"note: {args.base} == {args.head}; comparing against {args.head}^ "
+                  f"instead — a revision compared to itself is always clean")
+        args.base = parent
+
     findings = check(args.base, args.head)
 
     if args.json:
