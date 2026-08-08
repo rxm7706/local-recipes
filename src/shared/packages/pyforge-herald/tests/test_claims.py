@@ -5,10 +5,10 @@ publish, revalidate, and the atomic-write/round-trip discipline mirroring
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from pyforge.herald import claims, errors
 
 
@@ -37,6 +37,14 @@ def test_create_rejects_empty_project_name(tmp_path):
         claims.create(tmp_path / "claims.json", project_name="")
 
 
+def test_create_rejects_a_whitespace_only_project_name(tmp_path):
+    """Regression: `not project_name` only caught falsy strings -- a
+    whitespace-only name ("   ") is truthy in Python and sailed through,
+    creating a claim visually unidentifiable in `list` output."""
+    with pytest.raises(errors.HeraldError):
+        claims.create(tmp_path / "claims.json", project_name="   ")
+
+
 def test_create_rejects_unknown_evidence_type(tmp_path):
     with pytest.raises(errors.HeraldError):
         claims.create(
@@ -60,6 +68,27 @@ def test_read_one_missing_claim_raises_claim_not_found(tmp_path):
     claims.create(path, project_name="warden")
     with pytest.raises(errors.ClaimNotFoundError):
         claims.read_one(path, "does-not-exist")
+
+
+def test_read_one_is_not_blocked_by_an_unrelated_malformed_entry(tmp_path):
+    """Regression: `read_one` went through `read_all`, which eagerly
+    decodes EVERY entry -- one malformed entry anywhere in the file
+    blocked looking up an unrelated, perfectly healthy claim by its exact
+    id. `read_one` now decodes entries lazily, only raising if the
+    MATCHED entry itself is the malformed one."""
+    path = tmp_path / "claims.json"
+    good = claims.create(path, project_name="warden")
+    raw = claims._load_document(path)
+    raw.append({"id": "bad-entry", "project_name": "broken"})  # missing fields
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    found = claims.read_one(path, good.id)
+
+    assert found.id == good.id
+    with pytest.raises(errors.HeraldError):
+        claims.read_one(path, "bad-entry")
+    with pytest.raises(errors.HeraldError):
+        claims.read_all(path)
 
 
 def test_read_all_on_missing_file_is_empty(tmp_path):
@@ -157,6 +186,30 @@ def test_publish_propagates_a_broken_evidence_link_and_writes_nothing(tmp_path):
         )
     # Unchanged on disk -- still draft.
     assert claims.read_one(path, claim.id).status == "draft"
+
+
+def test_publish_names_every_broken_evidence_link_not_just_the_first(tmp_path):
+    """Regression: raising on the first broken link meant an operator
+    fixing evidence one publish-attempt at a time hit the next broken
+    link on the next retry instead of seeing the full list once."""
+    path = tmp_path / "claims.json"
+    claim = claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(type="test_results", url="https://bad1", label="a"),
+            claims.Evidence(type="metrics", url="https://bad2", label="b"),
+            claims.Evidence(type="adoption", url="https://bad3", label="c"),
+        ],
+    )
+    with pytest.raises(errors.EvidenceLinkError) as exc_info:
+        claims.publish(
+            path, claim.id, thesis="Shipped it", validate=_fake_validator(set())
+        )
+    message = str(exc_info.value)
+    assert "https://bad1" in message
+    assert "https://bad2" in message
+    assert "https://bad3" in message
 
 
 def test_publish_twice_raises_claim_state_error(tmp_path):

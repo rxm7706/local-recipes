@@ -291,10 +291,18 @@ def read_all(claims_path: Path) -> list[Claim]:
 
 def read_one(claims_path: Path, claim_id: str) -> Claim:
     """``claim_id``'s stored claim. Raises ``errors.ClaimNotFoundError``
-    when no claim with that id exists."""
-    for claim in read_all(claims_path):
-        if claim.id == claim_id:
-            return claim
+    when no claim with that id exists.
+
+    Decodes each raw entry lazily rather than via ``read_all`` -- an
+    unrelated malformed entry elsewhere in the file must not block looking
+    up a claim whose own entry is perfectly healthy. An entry whose ``id``
+    field itself can't even be read cheaply is skipped rather than
+    aborting the whole lookup; only the matched entry's own malformation
+    (if it turns out to be the requested id) still raises, preserving
+    AD-6 for the one entry that's actually relevant."""
+    for entry in _load_document(claims_path):
+        if isinstance(entry, dict) and entry.get("id") == claim_id:
+            return _claim_from_dict(claims_path, entry)
     raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
 
 
@@ -338,7 +346,7 @@ def create(
     operator runs by hand supplies exactly the fields the original spec's
     webhook payload would have extracted). Appends it to ``claims_path``
     and returns it."""
-    if not project_name:
+    if not project_name.strip():
         raise errors.HeraldError("project_name must not be empty")
     for e in evidence:
         if e.type not in EVIDENCE_TYPES:
@@ -407,10 +415,23 @@ def publish(
             f"claim {claim_id!r} has no thesis; supply --thesis to publish"
         )
     timestamp = now()
+    broken: list[str] = []
+    for e in claim.evidence:
+        try:
+            validate(e.url)
+        except errors.EvidenceLinkError as exc:
+            broken.append(f"{e.url} ({exc})")
+    if broken:
+        # Regression: raising on the FIRST broken link meant an operator
+        # fixing evidence one publish-attempt at a time hit the next
+        # broken link on each retry instead of seeing the full list once.
+        raise errors.EvidenceLinkError(
+            f"claim {claim_id!r} has {len(broken)} broken evidence link(s): "
+            f"{'; '.join(broken)}. Fix or remove before publishing."
+        )
     validated_evidence = tuple(
         replace(e, validated=True, validated_at=timestamp.isoformat())
         for e in claim.evidence
-        if _validated_or_raise(e, validate)
     )
     edit_history = claim.edit_history
     if claim.thesis is not None and claim.thesis != final_thesis:
@@ -430,17 +451,6 @@ def publish(
     claims[index] = updated
     _write_all(claims_path, claims)
     return updated
-
-
-def _validated_or_raise(
-    e: Evidence, validate: Callable[[str], evidence_mod.LinkValidation]
-) -> bool:
-    """Runs ``validate(e.url)`` -- an ``EvidenceLinkError`` propagates
-    unchanged (publish-time rejection); always returns ``True`` when it
-    doesn't raise, so this reads naturally inside the generator filter
-    above (every surviving entry is, by construction, validated)."""
-    validate(e.url)
-    return True
 
 
 def revalidate(

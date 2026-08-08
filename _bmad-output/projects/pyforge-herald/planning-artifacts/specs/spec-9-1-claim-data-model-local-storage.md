@@ -154,3 +154,40 @@ drift out of sync with the clock the way a second stored field could.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **`create`'s empty-project-name guard only caught falsy strings, not
+  whitespace.** `not project_name` let `"   "` through (truthy in Python), creating a claim
+  visually unidentifiable in `list` output (blank padding where the project name should be),
+  distinguishable only by its UUID. Fixed: `create` now checks `not project_name.strip()`.
+  New regression test: `test_create_rejects_a_whitespace_only_project_name`.
+- `[medium]` `[patch]` **One malformed claim entry anywhere in `claims.json` blocked
+  `read_one`'s lookup of an unrelated, perfectly healthy claim by its exact id.** The flat
+  JSON-array design means `read_one` went through `read_all`, which eagerly decodes every
+  entry -- a single corrupt row anywhere poisoned every lookup, not just requests for that
+  row. Fixed: `read_one` now iterates the raw document directly, matching on the `id` field
+  cheaply before doing a full validated decode, and only raises if the MATCHED entry is
+  itself malformed. `read_all`/`list_claims`/every write path (which genuinely can't safely
+  rewrite a file it can't fully parse) are unchanged and still fail loud on any corruption,
+  per AD-6. New regression test:
+  `test_read_one_is_not_blocked_by_an_unrelated_malformed_entry`.
+- `addressed_findings`: 2 (both medium). No `intent_gap`, no `bad_spec`, no `defer`, no
+  `reject`.
+- **Noted, not fixed (dead-code gap, not a defect against a stated AC):** the Edge Case
+  Hunter found that `edit_history`/re-publish-with-a-new-thesis is structurally unreachable
+  from any real CLI sequence -- `publish` rejects any claim whose `status != "draft"`, and
+  no command sets an initial `thesis` on a still-draft claim, so `edit_history` can never
+  populate outside of a hand-constructed test fixture (`test_claims.py`'s own
+  `test_publish_with_a_new_thesis_preserves_the_old_one_in_edit_history` has to bypass every
+  public entry point to exercise it, with a comment admitting the scenario isn't supported).
+  This is a genuine scope gap distinct from the documented scaled-down tradeoffs -- an
+  `edit`/republish command would need to be added for this to ever fire in production use --
+  but building that command is new scope, not a patch to existing behavior; left as an open
+  follow-up rather than expanded here.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 614 passed, 2 skipped; `ruff format --check`/`ruff check` clean.
+
+**Follow-up review recommendation:** the `edit_history` dead-code gap noted above, if this
+Moment ever gains an edit/republish command.

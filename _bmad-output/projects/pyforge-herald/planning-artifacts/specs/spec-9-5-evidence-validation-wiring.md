@@ -142,3 +142,19 @@ who runs it directly.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[low]` `[patch]` **`publish`'s evidence-validation error named only the first broken
+  link, even when every link was broken.** An operator fixing evidence one publish-attempt
+  at a time hit the next broken link on each retry instead of seeing the full list once.
+  Fixed: `publish` now validates every evidence entry before raising, collecting every
+  failure into one `EvidenceLinkError` naming all of them. The now-unused single-link
+  `_validated_or_raise` helper was removed. New regression test:
+  `test_publish_names_every_broken_evidence_link_not_just_the_first`.
+- `addressed_findings`: 1 (low). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Re-verification (2026-08-08, after this patch):** `pixi run --frozen -e pyforge-herald
+pyforge-herald-test` -- 614 passed, 2 skipped.
+
+**Follow-up review recommendation:** none outstanding for this story.
