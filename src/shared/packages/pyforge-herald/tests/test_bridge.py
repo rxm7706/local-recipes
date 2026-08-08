@@ -26,6 +26,7 @@ from pyforge.herald import (
     evidence,
     registry,
     state,
+    watch,
 )
 from pyforge.herald import transport as transport_pkg
 from pyforge.herald.cli import dispatch
@@ -124,7 +125,16 @@ def test_run_propagates_any_herald_error_unchanged(error):
 
 # --- determinism boundary: bridge-core's own source -------------------------
 
-_BRIDGE_CORE_MODULES = (bridge, state, errors, registry, deck_pipeline, auth, evidence)
+_BRIDGE_CORE_MODULES = (
+    bridge,
+    state,
+    errors,
+    registry,
+    deck_pipeline,
+    auth,
+    evidence,
+    watch,
+)
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
 neither belongs in this sweep. ``registry.py`` (Story 1.5) and
@@ -138,7 +148,8 @@ or an inference SDK -- ``evidence.py``'s own ``httpx2`` import is an
 ordinary third-party HTTP client, not one of ``_FORBIDDEN_ADAPTER_MODULES``
 or ``_FORBIDDEN_INFERENCE_PACKAGES`` below, so sweeping it in costs nothing
 and pins the same invariant onto Epic 6's new modules that Epic 1's already
-hold."""
+hold. ``watch.py`` (Epic 4, CAP-4) joins for the identical reason: it is
+bridge-core's own poll loop, not the CLI layer or a transport adapter."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name
@@ -332,14 +343,19 @@ def _module_source(module) -> str:
     return Path(module.__file__).read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("module", (bridge, deck_pipeline), ids=lambda m: m.__name__)
+@pytest.mark.parametrize(
+    "module", (bridge, deck_pipeline, watch), ids=lambda m: m.__name__
+)
 def test_bridge_and_deck_pipeline_reach_transport_only_via_transport_base(module):
     """``deck_pipeline.py`` (Story 1.6, CAP-1 ``seed``) joins ``bridge.py``
     here rather than the stricter ``state``/``errors``/``registry`` test
     below: it has the same legitimate reason ``bridge.run`` does to name
     ``transport.base`` -- its ``seed`` signature takes a ``DesignTransport``
     and it needs ``MODERNIST_DESIGN_SYSTEM_ID``, both only reachable through
-    the protocol + value-types module, never a concrete adapter."""
+    the protocol + value-types module, never a concrete adapter. ``watch.py``
+    (Epic 4, CAP-4) joins for the same reason as ``bridge.py`` itself: its
+    ``watch``/``_poll_deck`` signatures need ``DesignTransport`` only as a
+    ``TYPE_CHECKING`` annotation."""
     assert _transport_import_violations(_module_source(module)) == []
 
 
@@ -402,6 +418,24 @@ def test_importing_deck_pipeline_does_not_load_the_transport_package():
     ``sys.modules`` guarantee ``bridge.py``'s own probe proves above."""
     probe = (
         "import sys; import pyforge.herald.deck_pipeline; "
+        "sys.exit(1 if any(m.startswith('pyforge.herald.transport') "
+        "for m in sys.modules) else 0)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", probe], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_importing_watch_does_not_load_the_transport_package():
+    """``watch``'s own ``DesignTransport`` need is exactly ``bridge.run``'s
+    (a type annotation only, mirrored via the identical ``TYPE_CHECKING``
+    trick) -- unlike ``deck_pipeline.seed``, it never needs a real value out
+    of ``transport.base`` at call time, so importing ``watch`` alone must
+    carry the same ``sys.modules`` guarantee ``bridge.py``'s own probe
+    proves above."""
+    probe = (
+        "import sys; import pyforge.herald.watch; "
         "sys.exit(1 if any(m.startswith('pyforge.herald.transport') "
         "for m in sys.modules) else 0)"
     )

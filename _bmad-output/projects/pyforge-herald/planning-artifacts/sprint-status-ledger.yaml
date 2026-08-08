@@ -36,9 +36,9 @@ development_status:
   2-4-standalone-bundle-pull: done
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
-  4-1-poll-loop-with-quiescence-debounce: backlog
-  4-2-idle-backoff: backlog
-  4-3-halt-on-auth-error: backlog
+  4-1-poll-loop-with-quiescence-debounce: done
+  4-2-idle-backoff: done
+  4-3-halt-on-auth-error: done
   5-1-push-regenerated-exports-with-etag-guard: backlog
   5-2-conflict-refusal-on-export-push: backlog
   6-1-implement-herald-cli-dispatcher: done
@@ -77,7 +77,7 @@ development_status:
   epic-2-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
-  epic-4: backlog
+  epic-4: done
   epic-4-retrospective: optional
   epic-5: backlog
   epic-5-retrospective: optional
