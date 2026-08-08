@@ -10,7 +10,7 @@ while validating this detector against pyforge-atlas — see its comment in chec
   INV-2  the CHAIN follows the owner — a Dream's planning artifacts live in the owning
          Smith's project (Charter §5 as amended 2026-07-28, "owning is becoming — at the
          planning tier"). It does NOT rename the package: `surface:` is independent.
-         owner: <station> -> pyforge-<station>;  owner: guild -> pyforge-genesis
+         owner: <station> -> pyforge-<station>;  owner: guild -> docs/governance/
   INV-3  every project's planning-artifacts uses the 6.10 sharded build tree
          (prds/<run>/, architecture/<run>/, epics.md) — flat prd.md/architecture.md
          is the deprecated bmad-create-* shape and is non-conformant
@@ -52,15 +52,19 @@ def frontmatter(path: pathlib.Path) -> dict:
 # state it holds nothing and is RETIRED. Applying INV-2 today moves all 8 of its Specs out.
 PLACEHOLDER = "local-recipes"
 
-# The two constitutive Dreams (Charter §5): they PRECEDE the stations, so they are owned by
-# `guild` rather than a Smith. `guild` IS terminal for these two and only these two; a third
-# is an unassigned Dream hiding behind a collective noun.
-# Genesis's *installer* (`genesis init`/`adopt`) is NOT constitutive — it is buildable work
-# owned by the Marshal, and its Spec belongs under pyforge-marshal.
+# The constitutive Dream (Charter §5): it PRECEDES the stations, so it is owned by `guild`
+# rather than a Smith. `guild` IS terminal for this one and only this one; a second is an
+# unassigned Dream hiding behind a collective noun.
+# The *installer* (standing up a repo) is NOT constitutive — it is buildable work owned by
+# the Marshal, and its Spec belongs under pyforge-marshal.
 # 2026-08-02: pyforge-genesis (the BMAD project) dissolved — it carried no product, only
-# vestigial Smith-shaped scaffolding around the two Specs below. Their chains now live at
+# vestigial Smith-shaped scaffolding around two Specs. Their chains moved to
 # docs/governance/spec-<slug>/, not a `_bmad-output/projects/<x>/` tree.
-CONSTITUTIVE = {"pyforge-charter", "pyforge-genesis"}
+# 2026-08-08: those two became one. With the project gone and the installer moved, the
+# Lexicon/membership half was a second name for the Charter's own record, so it was
+# absorbed (Charter § Satellite: The Seed + spec-pyforge-charter CAP-5..CAP-8) and the
+# retired artifacts archived. Mirrors GUILD_DREAMS in scripts/bmad_drift_check.py.
+CONSTITUTIVE = {"pyforge-charter"}
 GOVERNANCE_PROJECT = "docs/governance"  # sentinel `project` value for CONSTITUTIVE specs
 
 
