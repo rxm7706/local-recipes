@@ -38,7 +38,10 @@ def test_fake_caller_conforms_to_the_caller_seam(fake_caller):
     assert isinstance(fake_caller(), ToolCaller)
 
 
-def test_port_exposes_exactly_the_eight_bridge_tools():
+def test_port_exposes_exactly_the_nine_bridge_tools():
+    """Widened from 8 to 9 by Story 3.1/3.2's spine amendment (F10, ``base.py``'s
+    own module docstring): ``list_files`` is CAP-3's only way to enumerate a
+    Design project's files, needed for the stale-hand-mirror heuristic."""
     expected = {
         "get_design_prompt",
         "create_project",
@@ -48,6 +51,7 @@ def test_port_exposes_exactly_the_eight_bridge_tools():
         "write_files",
         "read_file",
         "render_preview",
+        "list_files",
     }
     assert set(DesignTransport.__protocol_attrs__) == expected
 

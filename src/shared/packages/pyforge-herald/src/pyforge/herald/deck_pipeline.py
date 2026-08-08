@@ -916,3 +916,145 @@ def pull_standalone_bundle(
         etag=file_read.etag,
         committed=committed,
     )
+
+
+# --- CAP-3: status (Story 3.1) -----------------------------------------------
+#
+# Read-only: `status` never calls a write-side transport method
+# (`write_files`/`copy_files`/`create_project`/`create_support_js`/
+# `finalize_plan`) and never calls `state.write`.
+
+
+@dataclass(frozen=True)
+class DeckStatus:
+    """One deck's status report (CAP-3): whether it is linked to a Design
+    project, a fresh etag-based sync classification when it is, and the
+    last-pull timestamp `state.py` has on record.
+
+    `sync` is `None` for an unlinked deck (there is nothing to compare) and
+    one of `"unchanged"` / `"changed"` / `"conflict"` for a linked one:
+    `"unchanged"` when every tracked artifact's fresh etag still matches
+    (or the deck has no tracked artifacts yet -- seeded but never pulled);
+    `"changed"` when at least one tracked artifact's etag no longer matches
+    and every comparison could be made; `"conflict"` when at least one
+    comparison itself failed (the transport raised reaching the far end,
+    or the tracked file is gone server-side) -- conflict takes precedence
+    over changed, since an operator cannot safely decide "pull" is even the
+    right action without first resolving the failed comparison."""
+
+    slug: str
+    linked: bool
+    project_id: str | None
+    sync: str | None
+    last_pull: str | None
+
+
+def _remote_path_for_artifact(slug: str, artifact_key: str) -> str:
+    """The Design-side path a tracked ``state.py`` artifact key names --
+    the same per-artifact naming convention ``pull_prototype`` /
+    ``pull_marp_source`` / ``pull_standalone_bundle`` already each derive
+    for their own single artifact, generalized here since ``status`` must
+    resolve whichever keys a deck happens to have recorded."""
+    persona = _persona_from_slug(slug)
+    if artifact_key == PROTOTYPE_ARTIFACT_KEY:
+        return f"PyForge {persona}.dc.html"
+    if artifact_key == STANDALONE_BUNDLE_ARTIFACT_KEY:
+        return f"{persona} Infographic standalone.html"
+    if artifact_key.startswith("marp:"):
+        return f"{_short_name(slug)}-{artifact_key.removeprefix('marp:')}.md"
+    raise errors.HeraldError(
+        f"cannot check status for {slug!r}: unrecognized tracked artifact "
+        f"key {artifact_key!r} in {state.DEFAULT_STATE_PATH}"
+    )
+
+
+def _status_for_slug(
+    transport: DesignTransport, *, slug: str, state_path: Path
+) -> DeckStatus:
+    """One deck's ``DeckStatus`` -- read-only throughout: ``state.read`` and
+    ``transport.read_file`` only, never a write to either surface."""
+    existing = state.read(state_path, slug)
+    if existing is None:
+        return DeckStatus(
+            slug=slug,
+            linked=False,
+            project_id=None,
+            sync=None,
+            last_pull=None,
+        )
+
+    saw_conflict = False
+    saw_change = False
+    for artifact_key, etag in sorted(existing.etags.items()):
+        remote_path = _remote_path_for_artifact(slug, artifact_key)
+        try:
+            file_read = transport.read_file(
+                project_id=existing.project_id,
+                path=remote_path,
+                if_none_match=etag,
+            )
+        except errors.TransportError:
+            # The far end could not be reached, or reported this exact
+            # tracked file gone -- either way, "changed" would overclaim an
+            # answer this comparison could not actually get.
+            saw_conflict = True
+            continue
+        if not file_read.unchanged:
+            saw_change = True
+    if saw_conflict:
+        sync = "conflict"
+    elif saw_change:
+        sync = "changed"
+    else:
+        sync = "unchanged"
+
+    return DeckStatus(
+        slug=slug,
+        linked=True,
+        project_id=existing.project_id,
+        sync=sync,
+        last_pull=existing.last_pull,
+    )
+
+
+def _known_slugs(repo_root: Path, state_path: Path) -> list[str]:
+    """Every deck ``status`` (no slug argument) reports on: the union of
+    every slug already recorded in ``state.py`` (seeded) and every
+    ``presentations/<slug>/`` directory carrying a ``README.md`` (a deck
+    that exists locally but may never have been seeded) -- so an unseeded
+    deck is reported as unlinked rather than silently omitted."""
+    slugs = set(state.known_slugs(state_path))
+    presentations_dir = repo_root / "presentations"
+    if presentations_dir.is_dir():
+        for entry in presentations_dir.iterdir():
+            if entry.is_dir() and (entry / "README.md").is_file():
+                slugs.add(entry.name)
+    return sorted(slugs)
+
+
+def status(
+    transport: DesignTransport,
+    *,
+    slug: str | None = None,
+    repo_root: Path,
+    state_path: Path | None = None,
+) -> list[DeckStatus]:
+    """CAP-3, Story 3.1: report every known deck's bridge state (or just
+    ``slug``'s, when given), each with a fresh etag comparison against
+    Design.
+
+    Read-only end to end (FR-13, NFR-08): reads `state.py` and calls only
+    `transport.read_file`, never any write-side transport method, and
+    never `state.write`. When ``slug`` is given but
+    unlinked (or entirely unknown -- no state entry, no local deck
+    directory), returns a single unlinked `DeckStatus` rather than raising:
+    unlike `pull_*`, status reporting on an unseeded deck is itself a
+    normal, informative answer, not an error."""
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    slugs = [slug] if slug is not None else _known_slugs(repo_root, resolved_state_path)
+    return [
+        _status_for_slug(transport, slug=one, state_path=resolved_state_path)
+        for one in slugs
+    ]

@@ -3,8 +3,8 @@ Story 1.6; Epic 6 -- Stories 6.1/6.2/6.3/6.5 -- extends it with the
 ``progress``/``success``/``notice`` Moment subcommands, shared global flags,
 the operator-role write gate, and inline help).
 
-``deck``'s own subparsers gained ``pull`` in Epic 2 (``status``/``watch``
-still land in Epics 3-4). ``progress``/``success``/``notice`` are
+``deck``'s own subparsers gained ``pull`` in Epic 2, ``status`` in Epic 3
+(``watch`` still lands in Epic 4). ``progress``/``success``/``notice`` are
 placeholder handlers only -- their real Moment logic is
 Epics 8/9/10's scope (Story 6.1's own AC says so explicitly: "handler
 returns 'not yet implemented' or placeholder").
@@ -211,7 +211,23 @@ def _build_parser() -> _HeraldArgumentParser:
         default="prototype",
         help="which Design-side artifact to pull (default: prototype)",
     )
-    # status/watch land in Epics 3-4, under this same deck_subparsers group.
+    status = deck_subparsers.add_parser(
+        "status",
+        help="show one or all decks' bridge state, JSON (CAP-3)",
+    )
+    status.add_argument(
+        "slug",
+        nargs="?",
+        default=None,
+        help="deck slug, e.g. pyforge-warden (default: every known deck)",
+    )
+    status.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    # watch lands in Epic 4, under this same deck_subparsers group.
 
     global_flags = _global_flags_parent()
 
@@ -308,6 +324,8 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_seed(args)
     if args.command == "deck" and args.deck_command == "pull":
         return _run_deck_pull(args)
+    if args.command == "deck" and args.deck_command == "status":
+        return _run_deck_status(args)
     if args.command == "progress":
         return _run_progress(args)
     if args.command == "success":
@@ -391,6 +409,43 @@ def _run_deck_pull(args: argparse.Namespace) -> int:
             print(
                 f"pulled {args.slug} ({result.artifact}) -> {result.local_path}{suffix}"
             )
+
+    return dispatch(operation)
+
+
+def _run_deck_status(args: argparse.Namespace) -> int:
+    """Compose ``bridge.run`` + ``deck_pipeline.status`` over the
+    V1-default ``McpTransport`` and hand the whole operation to
+    ``dispatch`` (AD-6), mirroring ``_run_deck_seed``/``_run_deck_pull``'s
+    composition shape exactly: ``McpTransport()`` is constructed inside
+    ``operation``, never before ``dispatch`` is called.
+
+    Always prints one JSON array to stdout (FR-11's "machine-readable" AC)
+    -- unlike ``seed``/``pull``, there is no separate human-prose success
+    line: the report itself is the whole output, for one deck or every
+    known one alike."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        transport = McpTransport()
+        results = bridge.run(
+            transport,
+            lambda t: deck_pipeline.status(t, slug=args.slug, repo_root=repo_root),
+        )
+        print(
+            json.dumps(
+                [
+                    {
+                        "slug": result.slug,
+                        "linked": result.linked,
+                        "project_id": result.project_id,
+                        "sync": result.sync,
+                        "last_pull": result.last_pull,
+                    }
+                    for result in results
+                ]
+            )
+        )
 
     return dispatch(operation)
 

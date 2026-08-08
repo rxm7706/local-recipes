@@ -1,13 +1,25 @@
 """The ``DesignTransport`` port and the invariants every adapter upholds
-(Story 1.2, AD-3).
+(Story 1.2, AD-3; widened to 9 tools by Story 3.1/3.2 -- see below).
 
 ``DesignTransport`` is the whole surface Herald is allowed to use against
-the ``claude-design`` server: exactly the 8 tools the proven bridge loop
-needs (``bridge-protocol.md``), no more. It is a ``@runtime_checkable
-typing.Protocol`` -- never an ABC -- mirroring
-``pyforge.warden.interfaces``: adapters conform structurally and are
-substituted by injection, so a test can pass a hand-written fake with no
-inheritance and no network.
+the ``claude-design`` server: the 8 tools the proven bridge loop needs
+(``bridge-protocol.md``) plus ``list_files``, added for CAP-3 (``herald
+deck status``). It is a ``@runtime_checkable typing.Protocol`` -- never an
+ABC -- mirroring ``pyforge.warden.interfaces``: adapters conform
+structurally and are substituted by injection, so a test can pass a
+hand-written fake with no inheritance and no network.
+
+**Spine amendment (Story 1.2's own review, finding F10).** AD-3 originally
+fixed the port at exactly 8 tools, and widening it was explicitly out of
+Story 1.2's scope. F10 logged this as "a real forward gap that must be
+closed at the spine ... before Epic 3", naming exactly the reason: FR-12
+(stale hand-mirror detection) needs to enumerate a Design project's files,
+and nothing in the 8-tool surface can do that -- ``read_file`` requires
+already knowing a path, and a hand-mirrored repo copy predates Herald
+entirely, so no local record (``state.py``'s etags, the README registry)
+ever names its files. Story 3.1/3.2 is that "before Epic 3" amendment:
+``list_files`` is the 9th port method, added here (the spine) rather than
+as an adapter-local addition, per F10's own recommendation.
 
 Port method names are Herald's, not the server's. They coincide with the
 MCP tool names everywhere except one: the port's ``get_design_prompt`` maps
@@ -158,6 +170,22 @@ class FileRead:
 
 
 @dataclass(frozen=True)
+class ListedFile:
+    """One file entry from ``list_files``: its path, current etag (usable
+    as a later ``read_file``/write ``if_match``), and byte size when the
+    server reports one.
+
+    ``size`` is ``None`` rather than ``0`` when the server's answer omits
+    it -- an actual empty file and "the server did not say" must stay
+    distinguishable, the same reasoning ``FileRead``'s window fields
+    already follow for a declared-vs-undeclared shape."""
+
+    path: str
+    etag: str
+    size: int | None = None
+
+
+@dataclass(frozen=True)
 class PreviewRef:
     """A preview answer with **no ``serve_url`` field at all** (NFR-04).
 
@@ -258,6 +286,14 @@ class DesignTransport(Protocol):
         ...
 
     def render_preview(self, *, project_id: str, path: str) -> PreviewRef: ...
+
+    def list_files(self, *, project_id: str) -> Sequence[ListedFile]:
+        """Enumerate every file currently in ``project_id`` (tool
+        ``list_files``, Story 3.1/3.2's spine amendment -- see the module
+        docstring). CAP-3's stale-mirror heuristic (``deck_pipeline.py``)
+        reads the returned shape; no other capability in this port needs
+        it yet."""
+        ...
 
 
 def sanitize_payload(payload: Any) -> Any:
