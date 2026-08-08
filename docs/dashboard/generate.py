@@ -942,11 +942,8 @@ IMPL_CAMPAIGN = [
     {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
      "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
      "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md"},
-    {"slug": "pyforge-marshal",      "pkey": None, "stories": 40, "state": "held",
-     "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)"},
-    {"slug": "genesis-installer",    "pkey": None, "stories": 36, "state": "held",
-     "note": "epics 7-12 (same ledger as pyforge-marshal, split by epic) — last, model stability + consumes marshal-owned scripts",
-     "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md"},
+    {"slug": "pyforge-marshal",      "pkey": None, "stories": 86, "state": "held",
+     "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md"},
     {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
      "note": "PRD+arch only by design; stories decompose when scheduled",
      "epics_path": None},
@@ -956,17 +953,20 @@ IMPL_CAMPAIGN = [
 ]
 
 # Live ledger source for the non-`pkey` rows above: (ledger path, epic_min, epic_max),
-# either bound `None` meaning unbounded. marshal's own ledger also carries the
-# genesis-installer satellite's Epics 7+ (absorbed 2026-08-02, EXEMPLAR-STANDARD.md) --
-# both rows read the SAME file, split by epic number, matching the split already
-# verified by hand: Epics 1-6 = 40 backlog + 10 done = marshal proper; Epics 7+ = 36
-# backlog = genesis-installer. presenton-pixi-image's stories are a separate epics
-# file (`epics-presenton-pixi-image.md`) not cleanly split out of mason's shared
-# ledger, and it's independently confirmed still Phase-0-blocked (0 done) -- left on
-# its static fallback rather than guessing a partition.
+# either bound `None` meaning unbounded.
+#
+# 2026-08-08: the `genesis-installer` row is GONE, not relabelled. It existed because
+# marshal's ledger was fed by two epics documents -- `epics.md` (Epics 1-6) and
+# `epics-genesis-installer.md` (Epics 7-12) -- so the board split one station into two
+# rows by epic number, and PR #233 could only label that split rather than remove it.
+# The two documents are now one canonical `epics.md` covering Epics 1-12 (86 stories,
+# verified against this same ledger), so marshal reads UNBOUNDED and renders as the one
+# station it always was. presenton-pixi-image's stories are a separate `historical`
+# epics file not cleanly split out of mason's shared ledger, and it is independently
+# confirmed still Phase-0-blocked (0 done) -- left on its static fallback rather than
+# guessing a partition.
 IMPL_CAMPAIGN_LEDGER: dict[str, tuple[str, int | None, int | None]] = {
-    "pyforge-marshal": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", None, 6),
-    "genesis-installer": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", 7, None),
+    "pyforge-marshal": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", None, None),
     "pyforge-mason": ("_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml", None, None),
     "pyforge-steward": ("_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml", None, None),
 }

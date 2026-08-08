@@ -49,12 +49,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "16/16",
+            "6/16",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "10",
             "remaining",
             ""
           ]
@@ -78,8 +78,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "2.2"
       },
       "epics": [
         {
@@ -124,12 +124,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "2.2",
-              "done",
+              "pending",
               "cve and abandonment watch axes (FR-4)"
             ],
             [
               "2.3",
-              "done",
+              "pending",
               "`doctor monitor --fleet` CLI wiring, default axis set, `--json` (FR-9)"
             ]
           ]
@@ -140,22 +140,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "3.1",
-              "done",
+              "pending",
               "Partition findings by actionability (FR-6, AD-4)"
             ],
             [
               "3.2",
-              "done",
+              "pending",
               "Rank the actionable partition (FR-7, AD-4)"
             ],
             [
               "3.3",
-              "done",
+              "pending",
               "Root-cause naming (FR-8)"
             ],
             [
               "3.4",
-              "done",
+              "pending",
               "`doctor diagnose --target … --prescribe` CLI wiring, `--json` (FR-9)"
             ]
           ]
@@ -166,22 +166,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "4.1",
-              "done",
+              "pending",
               "Health scoring (FR-10)"
             ],
             [
               "4.2",
-              "done",
+              "pending",
               "Persistent fleet-health surface (FR-11)"
             ],
             [
               "4.3",
-              "done",
+              "pending",
               "Adoption-tracking watch axis (FR-12)"
             ],
             [
               "4.4",
-              "done",
+              "pending",
               "Safe upgrade-path recommendation (FR-13)"
             ]
           ]
@@ -206,7 +206,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 50 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 86 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -309,12 +309,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "50/50",
+            "50/86",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "36",
             "remaining",
             ""
           ]
@@ -357,8 +357,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "7.1"
       },
       "epics": [
         {
@@ -644,6 +644,222 @@ window.DASHBOARD_DATA = {
               "6.9",
               "done",
               "Tool-surface rendering and preflight probe *(added 2026-08-01 — AD-43 / the Q-11 resolution; post-MVP)*"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "Foundation & the Write Guard",
+          "stories": [
+            [
+              "7.1",
+              "pending",
+              "Package skeleton as a pixi workspace member"
+            ],
+            [
+              "7.2",
+              "pending",
+              "Error taxonomy and exit codes"
+            ],
+            [
+              "7.3",
+              "pending",
+              "The `fs` write primitive and the never-write guard"
+            ],
+            [
+              "7.4",
+              "pending",
+              "Manifest schema, loader, and model-version ranges"
+            ],
+            [
+              "7.5",
+              "pending",
+              "The V1 extraction manifest (the model, as data)"
+            ],
+            [
+              "7.6",
+              "pending",
+              "Spike-0 — Copier API fit (CRITICAL GATE)"
+            ]
+          ]
+        },
+        {
+          "badge": "E8",
+          "title": "The Managed-Region Engine",
+          "stories": [
+            [
+              "8.1",
+              "pending",
+              "Marker grammar and the per-format registry"
+            ],
+            [
+              "8.2",
+              "pending",
+              "Region parser — span discovery, nesting rejection, fence awareness"
+            ],
+            [
+              "8.3",
+              "pending",
+              "Span substitution — the update primitive"
+            ],
+            [
+              "8.4",
+              "pending",
+              "Anchor resolution and region insertion"
+            ],
+            [
+              "8.5",
+              "pending",
+              "Marker deletion as a sanctioned opt-out"
+            ]
+          ]
+        },
+        {
+          "badge": "E9",
+          "title": "Detect & Plan",
+          "stories": [
+            [
+              "9.1",
+              "pending",
+              "Findings model — severity, types, remedies"
+            ],
+            [
+              "9.2",
+              "pending",
+              "Repo inventory walker and artifact classification"
+            ],
+            [
+              "9.3",
+              "pending",
+              "Content hashing for managed files and regions"
+            ],
+            [
+              "9.4",
+              "pending",
+              "Legacy convention detection"
+            ],
+            [
+              "9.5",
+              "pending",
+              "Manifest coverage check"
+            ],
+            [
+              "9.6",
+              "pending",
+              "Plan and Action types, repo fingerprint, and the plan builder"
+            ]
+          ]
+        },
+        {
+          "badge": "E10",
+          "title": "Materialize & the Core Verbs",
+          "stories": [
+            [
+              "10.1",
+              "pending",
+              "Copier engine wrapper — the single seam"
+            ],
+            [
+              "10.2",
+              "pending",
+              "State schema and the atomic store"
+            ],
+            [
+              "10.3",
+              "pending",
+              "The apply runner — transactional, guarded"
+            ],
+            [
+              "10.4",
+              "pending",
+              "Preconditions, refusals, and skips"
+            ],
+            [
+              "10.5",
+              "pending",
+              "`marshal seed check`"
+            ],
+            [
+              "10.6",
+              "pending",
+              "`marshal seed adopt`"
+            ],
+            [
+              "10.7",
+              "pending",
+              "`marshal seed init`"
+            ]
+          ]
+        },
+        {
+          "badge": "E11",
+          "title": "Derive, Migrate & Update",
+          "stories": [
+            [
+              "11.1",
+              "pending",
+              "Neutral contract and agent-adapter fan-out"
+            ],
+            [
+              "11.2",
+              "pending",
+              "`PROJECTS.md` index and artifact-symlink derivation"
+            ],
+            [
+              "11.3",
+              "pending",
+              "Migration registry and runner"
+            ],
+            [
+              "11.4",
+              "pending",
+              "`marshal seed update` — two-phase"
+            ],
+            [
+              "11.5",
+              "pending",
+              "Referenced-dependency verification and Doctor delegation"
+            ],
+            [
+              "11.6",
+              "pending",
+              "`marshal seed explain` and `marshal seed version`"
+            ]
+          ]
+        },
+        {
+          "badge": "E12",
+          "title": "Packaging, Oracle & Hardening",
+          "stories": [
+            [
+              "12.1",
+              "pending",
+              "Full pixi wiring, distribution, and repo-gate compliance"
+            ],
+            [
+              "12.2",
+              "pending",
+              "The `local-recipes` empty-plan oracle (CRITICAL)"
+            ],
+            [
+              "12.3",
+              "pending",
+              "Offline operation and the egress counter"
+            ],
+            [
+              "12.4",
+              "pending",
+              "Pattern meta-tests and the never-write proof"
+            ],
+            [
+              "12.5",
+              "pending",
+              "CLI contract, idempotence harness, and performance gates"
+            ],
+            [
+              "12.6",
+              "pending",
+              "README, adoption guide, and the finding→remedy reference"
             ]
           ]
         }
@@ -993,12 +1209,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "9/9",
+            "3/9",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "6",
             "remaining",
             ""
           ]
@@ -1021,8 +1237,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "1.4"
       },
       "epics": [
         {
@@ -1046,12 +1262,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "done",
+              "pending",
               "Pointer-stub write-back + idempotent re-invocation"
             ],
             [
               "1.5",
-              "done",
+              "pending",
               "Seed promotion — the end-to-end proof"
             ]
           ]
@@ -1062,22 +1278,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "done",
+              "pending",
               "`GraphStore` port + flat-file v1 adapter"
             ],
             [
               "2.2",
-              "done",
+              "pending",
               "Nightly compile from named tool surfaces"
             ],
             [
               "2.3",
-              "done",
+              "pending",
               "Fact supersession in the compiled graph"
             ],
             [
               "2.4",
-              "done",
+              "pending",
               "`scribe recall` — grounded, cited answers"
             ]
           ]
@@ -1127,12 +1343,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "18/18",
+            "3/18",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "15",
             "remaining",
             ""
           ]
@@ -1154,8 +1370,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "1.4"
       },
       "epics": [
         {
@@ -1179,22 +1395,22 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "done",
+              "pending",
               "Rotating a key never breaks what already trusted it"
             ],
             [
               "1.5",
-              "done",
+              "pending",
               "The operator can see every credential Steward knows about, never a secret value"
             ],
             [
               "1.6",
-              "done",
+              "pending",
               "The operator can ask \"is anything host-unscoped right now?\" and get a real answer"
             ],
             [
               "1.7",
-              "done",
+              "pending",
               "Retiring a credential leaves a record, not a silent gap"
             ]
           ]
@@ -1205,22 +1421,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "done",
+              "pending",
               "The dashboard builds through Steward, not a bare pixi task the operator has to remember"
             ],
             [
               "2.2",
-              "done",
+              "pending",
               "Nothing happens unless something actually changed"
             ],
             [
               "2.3",
-              "done",
+              "pending",
               "The operator can see what would change before it changes"
             ],
             [
               "2.4",
-              "done",
+              "pending",
               "The operator can ask \"when did the dashboard last actually deploy?\""
             ]
           ]
@@ -1231,22 +1447,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "3.1",
-              "done",
+              "pending",
               "Any named pixi environment materializes with one command"
             ],
             [
               "3.2",
-              "done",
+              "pending",
               "A bmad-loop runner and its environment materialize together"
             ],
             [
               "3.3",
-              "done",
+              "pending",
               "The operator can see every environment that exists, before picking one"
             ],
             [
               "3.4",
-              "done",
+              "pending",
               "The environment.yaml sync gate is one command away, not a remembered incantation"
             ]
           ]
@@ -1257,17 +1473,17 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "4.1",
-              "done",
+              "pending",
               "A ceiling can be declared, machine-readably"
             ],
             [
               "4.2",
-              "done",
+              "pending",
               "The declared ceiling is one command away"
             ],
             [
               "4.3",
-              "done",
+              "pending",
               "Asking \"am I under budget?\" never lies"
             ]
           ]
@@ -1710,12 +1926,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "12/19",
+            "3/19",
             "stories complete",
             "var(--done)"
           ],
           [
-            "7",
+            "16",
             "remaining",
             ""
           ]
@@ -1780,7 +1996,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.3",
-              "done",
+              "pending",
               "Extract markdown sources from Design prototypes"
             ],
             [
@@ -1796,22 +2012,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "done",
+              "pending",
               "Implement deckcraft pipeline (Markdown → PPTX with tokens)"
             ],
             [
               "2.2",
-              "done",
+              "pending",
               "Implement SVG infographic extraction from Design"
             ],
             [
               "2.3",
-              "done",
+              "pending",
               "Build interactive HTML decks via Vite (gitignored, regenerable)"
             ],
             [
               "2.4",
-              "done",
+              "pending",
               "Validate all 9 decks via dashboard-check"
             ],
             [
@@ -1827,12 +2043,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "3.1",
-              "done",
+              "pending",
               "Implement mechanical narration extraction from Design speaker notes"
             ],
             [
               "3.2",
-              "done",
+              "pending",
               "Implement narration linter (voice bible + blacklist enforcement)"
             ],
             [
@@ -1858,12 +2074,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "5.1",
-              "done",
+              "pending",
               "Run comprehensive artifact validation (render, format, consistency checks)"
             ],
             [
               "5.2",
-              "done",
+              "pending",
               "Verify 62% footprint reduction (tracked vs. unoptimized)"
             ],
             [
@@ -2040,247 +2256,6 @@ window.DASHBOARD_DATA = {
       },
       "owner": "marshal",
       "practice": true
-    },
-    "genesis": {
-      "label": "Genesis",
-      "accentVar": "--accent",
-      "branch": "not started",
-      "contract": "spec-pyforge-genesis · the seed: install the operating model anywhere (greenfield + brownfield)",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5",
-        "E6"
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "ready",
-        "at": "1.1"
-      },
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Foundation & the Write Guard",
-          "stories": [
-            [
-              "1.1",
-              "pending",
-              "Package skeleton as a pixi workspace member"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Error taxonomy and exit codes"
-            ],
-            [
-              "1.3",
-              "pending",
-              "The `fs` write primitive and the never-write guard"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Manifest schema, loader, and model-version ranges"
-            ],
-            [
-              "1.5",
-              "pending",
-              "The V1 extraction manifest (the model, as data)"
-            ],
-            [
-              "1.6",
-              "pending",
-              "Spike-0 — Copier API fit (CRITICAL GATE)"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "The Managed-Region Engine",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "Marker grammar and the per-format registry"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Region parser — span discovery, nesting rejection, fence awareness"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Span substitution — the update primitive"
-            ],
-            [
-              "2.4",
-              "pending",
-              "Anchor resolution and region insertion"
-            ],
-            [
-              "2.5",
-              "pending",
-              "Marker deletion as a sanctioned opt-out"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Detect & Plan",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Findings model — severity, types, remedies"
-            ],
-            [
-              "3.2",
-              "pending",
-              "Repo inventory walker and artifact classification"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Content hashing for managed files and regions"
-            ],
-            [
-              "3.4",
-              "pending",
-              "Legacy convention detection"
-            ],
-            [
-              "3.5",
-              "pending",
-              "Manifest coverage check"
-            ],
-            [
-              "3.6",
-              "pending",
-              "Plan and Action types, repo fingerprint, and the plan builder"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Materialize & the Core Verbs",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Copier engine wrapper — the single seam"
-            ],
-            [
-              "4.2",
-              "pending",
-              "State schema and the atomic store"
-            ],
-            [
-              "4.3",
-              "pending",
-              "The apply runner — transactional, guarded"
-            ],
-            [
-              "4.4",
-              "pending",
-              "Preconditions, refusals, and skips"
-            ],
-            [
-              "4.5",
-              "pending",
-              "`genesis check`"
-            ],
-            [
-              "4.6",
-              "pending",
-              "`genesis adopt`"
-            ],
-            [
-              "4.7",
-              "pending",
-              "`genesis init`"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Derive, Migrate & Update",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "Neutral contract and agent-adapter fan-out"
-            ],
-            [
-              "5.2",
-              "pending",
-              "`PROJECTS.md` index and artifact-symlink derivation"
-            ],
-            [
-              "5.3",
-              "pending",
-              "Migration registry and runner"
-            ],
-            [
-              "5.4",
-              "pending",
-              "`genesis update` — two-phase"
-            ],
-            [
-              "5.5",
-              "pending",
-              "Referenced-dependency verification and Doctor delegation"
-            ],
-            [
-              "5.6",
-              "pending",
-              "`genesis explain` and `genesis version`"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "Packaging, Oracle & Hardening",
-          "stories": [
-            [
-              "6.1",
-              "pending",
-              "Full pixi wiring, distribution, and repo-gate compliance"
-            ],
-            [
-              "6.2",
-              "pending",
-              "The `local-recipes` empty-plan oracle (CRITICAL)"
-            ],
-            [
-              "6.3",
-              "pending",
-              "Offline operation and the egress counter"
-            ],
-            [
-              "6.4",
-              "pending",
-              "Pattern meta-tests and the never-write proof"
-            ],
-            [
-              "6.5",
-              "pending",
-              "CLI contract, idempotence harness, and performance gates"
-            ],
-            [
-              "6.6",
-              "pending",
-              "README, adoption guide, and the finding→remedy reference"
-            ]
-          ]
-        }
-      ],
-      "owner": "guild",
-      "practice": false
     },
     "presenton-pixi-image": {
       "label": "Presenton-pixi-image",
@@ -2918,7 +2893,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-08 13:38 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 18:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3163,10 +3138,10 @@ window.DASHBOARD_DATA = {
       "slug": "jira-github-projects-sync",
       "title": "A ticket moves once, both boards know",
       "status": "dreamt",
-      "owner": "marshal",
+      "owner": "steward",
       "type": "dream",
       "chain": {
-        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-jira-github-projects-sync"
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync"
       }
     },
     {
@@ -3280,6 +3255,16 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "pyforge-core",
+      "title": "One primitive, one home — the shared floor under eight stations",
+      "status": "specified",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core"
+      }
+    },
+    {
       "slug": "pyforge-doctor-dependency-health",
       "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
       "status": "archived",
@@ -3300,16 +3285,6 @@ window.DASHBOARD_DATA = {
         "deck": "presentations/pyforge-doctor",
         "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor",
         "project": "_bmad-output/projects/pyforge-doctor"
-      }
-    },
-    {
-      "slug": "pyforge-genesis",
-      "title": "Genesis — the seed of the operating model",
-      "status": "specified",
-      "owner": "guild",
-      "type": "dream",
-      "chain": {
-        "deck": "presentations/pyforge-genesis"
       }
     },
     {
@@ -3780,16 +3755,6 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer-name-retirement"
     },
     {
-      "slug": "jira-github-projects-sync",
-      "project": "pyforge-marshal",
-      "title": "jira-github-projects-sync",
-      "caps": 5,
-      "companions": 0,
-      "updated": "2026-08-08",
-      "dream": "jira-github-projects-sync",
-      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-jira-github-projects-sync"
-    },
-    {
       "slug": "loop-home-fleet-refresh",
       "project": "pyforge-marshal",
       "title": "loop-home fleet refresh",
@@ -3828,6 +3793,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-02",
       "dream": "pr-lifecycle",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pr-lifecycle"
+    },
+    {
+      "slug": "pyforge-core",
+      "project": "pyforge-marshal",
+      "title": "pyforge-core",
+      "caps": 7,
+      "companions": 0,
+      "updated": "2026-08-08",
+      "dream": "pyforge-core",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core"
     },
     {
       "slug": "pyforge-marshal",
@@ -4010,6 +3985,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap"
     },
     {
+      "slug": "jira-github-projects-sync",
+      "project": "pyforge-steward",
+      "title": "jira-github-projects-sync",
+      "caps": 5,
+      "companions": 0,
+      "updated": "2026-08-08",
+      "dream": "jira-github-projects-sync",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync"
+    },
+    {
       "slug": "pyforge-steward",
       "project": "pyforge-steward",
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
@@ -4063,21 +4048,11 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-charter",
       "project": "docs/governance",
       "title": "The Charter — keeping the constitution true",
-      "caps": 4,
+      "caps": 8,
       "companions": 0,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "pyforge-charter",
       "path": "docs/governance/spec-pyforge-charter"
-    },
-    {
-      "slug": "pyforge-genesis",
-      "project": "docs/governance",
-      "title": "Genesis — the operating model, recorded",
-      "caps": 4,
-      "companions": 0,
-      "updated": "2026-08-02",
-      "dream": "pyforge-genesis",
-      "path": "docs/governance/spec-pyforge-genesis"
     }
   ],
   "pitch": [
@@ -4724,34 +4699,34 @@ window.DASHBOARD_DATA = {
           "stories": 17,
           "state": "running",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
-          "done": 12,
+          "done": 3,
           "total": 19
         },
         {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "done",
+          "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 16,
+          "done": 6,
           "total": 16
         },
         {
           "slug": "pyforge-scribe",
           "pkey": "scribe",
           "stories": 9,
-          "state": "done",
+          "state": "running",
           "note": "line 3 — team memory + graph",
-          "done": 9,
+          "done": 3,
           "total": 9
         },
         {
           "slug": "pyforge-steward",
           "pkey": null,
           "stories": 18,
-          "state": "done",
+          "state": "running",
           "note": "next free slot",
-          "done": 18,
+          "done": 3,
           "total": 18
         },
         {
@@ -4776,21 +4751,11 @@ window.DASHBOARD_DATA = {
         {
           "slug": "pyforge-marshal",
           "pkey": null,
-          "stories": 40,
-          "state": "done",
-          "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
+          "stories": 86,
+          "state": "running",
+          "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 50,
-          "total": 50
-        },
-        {
-          "slug": "genesis-installer",
-          "pkey": null,
-          "stories": 36,
-          "state": "held",
-          "note": "epics 7-12 (same ledger as pyforge-marshal, split by epic) — last, model stability + consumes marshal-owned scripts",
-          "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md",
-          "done": 0,
-          "total": 36
+          "total": 86
         },
         {
           "slug": "wasm-analytics-stack",
@@ -4853,11 +4818,11 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 1,
+    "sound": 0,
     "live": 31,
-    "reached": 9,
-    "gaps": 22,
-    "findings": 12,
+    "reached": 8,
+    "gaps": 23,
+    "findings": 11,
     "rows": [
       {
         "label": "atlas",
@@ -5017,7 +4982,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-02",
-          "sprint": "2026-08-07",
+          "sprint": "2026-08-08",
           "tea": "2026-08-07",
           "gates": "2026-08-01",
           "code": "2026-08-07",
@@ -5094,7 +5059,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "16/16",
+        "progress": "6/16",
         "complete": 14,
         "of": 14
       },
@@ -5132,7 +5097,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-02",
-          "epics": "2026-08-07",
+          "epics": "2026-08-08",
           "sprint": "2026-08-08",
           "tea": "2026-08-08",
           "gates": "2026-08-01",
@@ -5217,7 +5182,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "12/19",
+        "progress": "3/19",
         "complete": 14,
         "of": 14
       },
@@ -5251,12 +5216,12 @@ window.DASHBOARD_DATA = {
           "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-08-02",
-          "prd": "2026-08-02",
+          "prd": "2026-08-08",
           "ux": "",
-          "arch": "2026-08-02",
+          "arch": "2026-08-08",
           "context": "2026-06-20",
-          "epics": "2026-08-02",
-          "sprint": "2026-08-07",
+          "epics": "2026-08-08",
+          "sprint": "2026-08-08",
           "tea": "2026-08-07",
           "gates": "2026-08-02",
           "code": "2026-08-03",
@@ -5325,13 +5290,6 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-08-02"
-          },
-          {
-            "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-08-08",
-            "other": "2026-08-02"
           }
         ],
         "furthest": "verify",
@@ -5339,7 +5297,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "50/50",
+        "progress": "50/86",
         "complete": 13,
         "of": 13
       },
@@ -5500,7 +5458,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-02",
-          "sprint": "2026-08-07",
+          "sprint": "2026-08-08",
           "tea": "2026-08-07",
           "gates": "2026-08-01",
           "code": "2026-07-25",
@@ -5577,7 +5535,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "9/9",
+        "progress": "3/9",
         "complete": 14,
         "of": 14
       },
@@ -5616,7 +5574,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-02",
-          "sprint": "2026-08-07",
+          "sprint": "2026-08-08",
           "tea": "2026-08-07",
           "gates": "2026-08-01",
           "code": "2026-08-07",
@@ -5693,7 +5651,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "18/18",
+        "progress": "3/18",
         "complete": 14,
         "of": 14
       },
@@ -6566,9 +6524,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-02",
+          "spec": "2026-08-08",
           "research": "",
           "brief": "",
           "prd": "",
@@ -6629,7 +6587,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "brief",
+          "context",
           "dream",
+          "research",
           "ux"
         ],
         "required": [
@@ -6642,115 +6603,12 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "spec",
-        "updated": "2026-08-02",
-        "age": 6,
+        "updated": "2026-08-08",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 1,
-        "of": 2
-      },
-      {
-        "label": "genesis",
-        "slug": "pyforge-genesis",
-        "project": "docs/governance",
-        "dream": "pyforge-genesis",
-        "owner": "guild",
-        "stages": {
-          "dream": "2026-07-23",
-          "deck": "2026-07-23",
-          "spec": "2026-08-02",
-          "research": "",
-          "brief": "",
-          "prd": "",
-          "ux": "",
-          "arch": "",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "updatedAt": {
-          "dream": "2026-08-02",
-          "deck": "2026-07-25",
-          "spec": "2026-08-02",
-          "research": "",
-          "brief": "",
-          "prd": "",
-          "ux": "",
-          "arch": "",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "sub": {
-          "research": {
-            "have": {
-              "domain": false,
-              "market": false,
-              "technical": false
-            },
-            "n": 0,
-            "of": 3,
-            "missing": [
-              "domain",
-              "market",
-              "technical"
-            ],
-            "inherited": false
-          },
-          "deck": {
-            "have": {
-              "prototype": true,
-              "exec": true,
-              "infographic": true,
-              "marp": true,
-              "standalone": true,
-              "pptx": true
-            },
-            "n": 6,
-            "of": 6,
-            "missing": []
-          }
-        },
-        "archived": false,
-        "dreamStatus": "specified",
-        "ownerDream": "pyforge-genesis",
-        "noDream": false,
-        "unowned": false,
-        "backfilled": false,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [
-          "brief",
-          "context",
-          "dream",
-          "research",
-          "ux"
-        ],
-        "required": [
-          "deck",
-          "spec"
-        ],
-        "gaps": [],
-        "partial": [],
-        "staleBy": [],
-        "furthest": "spec",
-        "updated": "2026-08-02",
-        "age": 6,
-        "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 2,
         "of": 2
       },
       {
@@ -8466,7 +8324,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "",
           "context": "",
-          "epics": "2026-07-29",
+          "epics": "",
           "sprint": "",
           "tea": "",
           "gates": "",
@@ -8484,7 +8342,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "",
           "context": "",
-          "epics": "2026-07-31",
+          "epics": "",
           "sprint": "",
           "tea": "",
           "gates": "",
@@ -8540,31 +8398,22 @@ window.DASHBOARD_DATA = {
           "dream",
           "deck",
           "spec",
-          "research",
-          "brief",
-          "prd",
-          "arch",
-          "context",
-          "epics"
+          "research"
         ],
         "gaps": [
           "deck",
-          "spec",
-          "brief",
-          "prd",
-          "arch",
-          "context"
+          "spec"
         ],
         "partial": [],
         "staleBy": [],
-        "furthest": "epics",
+        "furthest": "research",
         "updated": "2026-08-08",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 9
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "genesis-installer-name-retirement",
@@ -8648,112 +8497,6 @@ window.DASHBOARD_DATA = {
         "unowned": false,
         "backfilled": false,
         "openQuestions": 3,
-        "overtaken": false,
-        "na": [
-          "dream",
-          "ux"
-        ],
-        "required": [
-          "deck",
-          "spec",
-          "research"
-        ],
-        "gaps": [
-          "deck"
-        ],
-        "partial": [],
-        "staleBy": [],
-        "furthest": "research",
-        "updated": "2026-08-08",
-        "age": 0,
-        "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 2,
-        "of": 3
-      },
-      {
-        "label": "jira-github-projects-sync",
-        "slug": "jira-github-projects-sync",
-        "project": "pyforge-marshal",
-        "dream": "jira-github-projects-sync",
-        "owner": "marshal",
-        "stages": {
-          "dream": "2026-08-03",
-          "deck": "",
-          "spec": "2026-08-08",
-          "research": "2026-07-16",
-          "brief": "",
-          "prd": "",
-          "ux": "",
-          "arch": "",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "updatedAt": {
-          "dream": "2026-08-03",
-          "deck": "",
-          "spec": "2026-08-08",
-          "research": "2026-08-08",
-          "brief": "",
-          "prd": "",
-          "ux": "",
-          "arch": "",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "sub": {
-          "research": {
-            "have": {
-              "domain": true,
-              "market": true,
-              "technical": true
-            },
-            "n": 3,
-            "of": 3,
-            "missing": [],
-            "inherited": true
-          },
-          "deck": {
-            "have": {
-              "prototype": false,
-              "exec": false,
-              "infographic": false,
-              "marp": false,
-              "standalone": false,
-              "pptx": false
-            },
-            "n": 0,
-            "of": 6,
-            "missing": [
-              "exec",
-              "infographic",
-              "marp",
-              "pptx",
-              "prototype",
-              "standalone"
-            ]
-          }
-        },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "jira-github-projects-sync",
-        "noDream": false,
-        "unowned": false,
-        "backfilled": false,
-        "openQuestions": 5,
         "overtaken": false,
         "na": [
           "dream",
@@ -9178,6 +8921,112 @@ window.DASHBOARD_DATA = {
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-08",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
+        "label": "core",
+        "slug": "pyforge-core",
+        "project": "pyforge-marshal",
+        "dream": "pyforge-core",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-08",
+          "deck": "",
+          "spec": "2026-08-08",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-08",
+          "deck": "",
+          "spec": "2026-08-08",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-core",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
           "dream",
@@ -10195,7 +10044,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "",
           "context": "",
-          "epics": "2026-08-02",
+          "epics": "2026-08-08",
           "sprint": "",
           "tea": "",
           "gates": "",
@@ -10881,6 +10730,112 @@ window.DASHBOARD_DATA = {
         "unowned": false,
         "backfilled": false,
         "openQuestions": 1,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-08",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
+        "label": "jira-github-projects-sync",
+        "slug": "jira-github-projects-sync",
+        "project": "pyforge-steward",
+        "dream": "jira-github-projects-sync",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-03",
+          "deck": "",
+          "spec": "2026-08-08",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-08",
+          "deck": "",
+          "spec": "2026-08-08",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "jira-github-projects-sync",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
           "dream",
@@ -11690,10 +11645,10 @@ window.DASHBOARD_DATA = {
         "slug": "jira-github-projects-sync",
         "title": "A ticket moves once, both boards know",
         "status": "dreamt",
-        "owner": "marshal",
+        "owner": "steward",
         "blockedOn": "",
         "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-jira-github-projects-sync"
+          "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync"
         }
       },
       {
@@ -11735,11 +11690,21 @@ window.DASHBOARD_DATA = {
         "chain": {
           "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container"
         }
+      },
+      {
+        "slug": "pyforge-core",
+        "title": "One primitive, one home — the shared floor under eight stations",
+        "status": "specified",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core"
+        }
       }
     ],
     "blocked": 0,
     "byOwner": {
-      "steward": 2,
+      "steward": 3,
       "mason": 1,
       "marshal": 6,
       "herald": 1,
@@ -11859,14 +11824,14 @@ window.DASHBOARD_DATA = {
         "station": "marshal",
         "total": 23,
         "counts": {
-          "dreamt": 6,
+          "dreamt": 5,
           "pitched": 0,
-          "specified": 0,
+          "specified": 1,
           "realized": 3,
           "archived": 10,
           "practice": 4
         },
-        "line": "complete",
+        "line": "paused 7.1",
         "load": 6,
         "blocked": 0,
         "dreams": [
@@ -11969,13 +11934,6 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "jira-github-projects-sync",
-            "title": "A ticket moves once, both boards know",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
             "slug": "loop-home-fleet-refresh",
             "title": "Refreshing every loop-home from main is a hand-run ritual",
             "status": "dreamt",
@@ -12029,6 +11987,13 @@ window.DASHBOARD_DATA = {
             "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
             "status": "realized",
             "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-core",
+            "title": "One primitive, one home — the shared floor under eight stations",
+            "status": "specified",
+            "type": "dream",
             "blockedOn": ""
           }
         ]
@@ -12214,7 +12179,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 2.2",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12245,7 +12210,7 @@ window.DASHBOARD_DATA = {
           "archived": 3,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 1.4",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12281,17 +12246,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "steward",
-        "total": 5,
+        "total": 6,
         "counts": {
-          "dreamt": 2,
+          "dreamt": 3,
           "pitched": 0,
           "specified": 0,
           "realized": 1,
           "archived": 1,
           "practice": 1
         },
-        "line": "complete",
-        "load": 2,
+        "line": "paused 1.4",
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
@@ -12304,6 +12269,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "bmad-module-provisioning",
             "title": "BMAD Method modules are provisioned, not hand-installed",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "jira-github-projects-sync",
+            "title": "A ticket moves once, both boards know",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -12337,24 +12309,19 @@ window.DASHBOARD_DATA = {
         "slug": "pyforge-charter",
         "title": "The PyForge Charter",
         "status": "pitched"
-      },
-      {
-        "slug": "pyforge-genesis",
-        "title": "Genesis — the seed of the operating model",
-        "status": "specified"
       }
     ]
   },
   "openwork": {
-    "open": 189,
+    "open": 195,
     "done": 19,
-    "triaged": 133,
+    "triaged": 139,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 2,
       "low": 11,
-      "unspecified": 175
+      "unspecified": 181
     },
     "projects": [
       {
@@ -12766,6 +12733,358 @@ window.DASHBOARD_DATA = {
         ]
       },
       {
+        "project": "pyforge-marshal",
+        "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+        "open": 41,
+        "done": 8,
+        "triaged": 21,
+        "entries": [
+          {
+            "id": "DW-1-1-1",
+            "title": "The `pyforge-mason`, `pyforge-steward`, and `pyforge-warden` `*-build-conda` pixi tasks (root `p…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-1-2",
+            "title": "`pyforge-doctor` and `pyforge-warden`'s package `.gitignore` files put comments inline after the…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-1-3",
+            "title": "Every pyforge sibling package (doctor, warden, steward, mason, and now marshal) declares `licens…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-1-4",
+            "title": "The `pyforge-mason-build-dist` and `pyforge-steward-build-dist` pixi tasks (root `pixi.toml`) ru…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-FU-1-1",
+            "title": "Follow-up review still recommended for 1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enfor",
+            "status": "open",
+            "severity": "low",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-2-1",
+            "title": "`architecture.md`'s AD-23 rule text still says the story key is \"purely numeric on both parts\", contradicting AD-38",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-3-1",
+            "title": "`core/policy.py`'s `content_hash` (and therefore `materialize()`'s content-addressed filename) i…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "`schemas/policy.json`'s `policyField` `$defs` entry does not constrain the TYPE of `value`/`raw_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-3-3",
+            "title": "`cli/config.py::materialize()` can leave an orphaned `.policy-*.tmp` file in the target director…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-FU-1-3",
+            "title": "Follow-up review still recommended for 1-3-layered-policy-composition-with-provenance-and-validation after the damping c",
+            "status": "open",
+            "severity": "low",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-7",
+            "title": "No project-policy source supplies `gate_mode=\"none\"` / `max_followup_reviews=2`, so the first real `write_policy_toml` c",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-1",
+            "title": "`adapters/harness_bmadloop.py`'s vendored `_POLICY_TEMPLATE` is a hand-copied snapshot of `bmad_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-2",
+            "title": "`write_policy_toml`'s unconditional whole-file overwrite will silently discard harness-native st…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-3",
+            "title": "This story's untrack (`git rm --cached .bmad-loop/policy.toml`) only closes the F-1 cross-projec…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-4",
+            "title": "Between this story's merge (which untracks `.bmad-loop/policy.toml`) and the later story that wi…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-5",
+            "title": "The `max_followup_reviews = 2` value in the (now untracked) live policy.toml was explicitly bran…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-6",
+            "title": "The tracked `.bmad-loop/policy.toml` this story deletes carried curated operational commentary w…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-7-1",
+            "title": "The supported harness range had three unsynchronized declarations",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-8-1",
+            "title": "Preflight lacks init and teardown's Git-ref-shape slug guard",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-8-2",
+            "title": "Teardown hardcodes the integration branch as `main`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-3",
+            "title": "Teardown has a branch-deletion TOCTOU window",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-4",
+            "title": "Teardown cannot see valuable gitignored content",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-5",
+            "title": "Teardown can destroy nested registered worktrees",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-6",
+            "title": "Teardown has no active-run liveness guard",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-9-1",
+            "title": "Marshal's README still describes a Story 1.1 skeleton",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-9-2",
+            "title": "The future run journal must record Marshal and harness versions",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-AUD-2026-07-31-1",
+            "title": "Stories 1.7-1.9 shipped without canonical memlog reconciliation",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-AUD-2026-07-31-2",
+            "title": "Four Marshal-owned Dreams still have no Tier-2 Spec",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-AUD-2026-07-31-3",
+            "title": "Deferred-work detector ignores anonymous Tier-3 entries",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-1",
+            "title": "`cli/init.py`'s project-existence check (`MRS-INIT-002`) reads `_bmad-output/pro…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-2",
+            "title": "The `MRS-INIT-003` marker/symlink desync guard has two blind spots: (1) `_slug_f…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-3",
+            "title": "`adapters/fs_local.py`'s two atomic-write helpers disagree on stale-temp-file ha…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-4",
+            "title": "`marshal init <slug>` has no protection against two concurrent invocations for t…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-5",
+            "title": "`cli/init.py::_loop_home_root()`'s real default fallback (`Path.home() / \".bmad-…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-6",
+            "title": "`tests/unit/test_vcs_git.py` and `tests/integration/test_init_worktree.py` each …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-7",
+            "title": "`cli/init.py`'s printed `launch_line` (`cd <home> && export BMAD_ACTIVE_PROJECT=…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-8",
+            "title": "`marshal init` has no guard against the total loop-home path length, despite thi…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-9",
+            "title": "`cli/main.py::main` catches only `SystemExit` and `KeyboardInterrupt` — it has n…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-10",
+            "title": "`tests/integration/test_init_worktree.py` — the only end-to-end proof of both wo…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-5-11",
+            "title": "`cli/init.py`'s `tier3_backlink` step gives a real, non-empty DIRECTORY at the l…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-5-13",
+            "title": "`tier3_backlink`'s convergence check compares the raw (unresolved) symlink target…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-5-14",
+            "title": "A failed `ensure_dir`/`repoint_symlink_atomic` after `remove_empty_dir` leaves the…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-5-12",
+            "title": "A home provisioned by `marshal init` alone still lacks the TOP-LEVEL `_bmad-outp…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-2-1",
+            "title": "`marshal teardown` reports every landed story as an unreachable promotion for …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-SYNC-2026-08-08-1",
+            "title": "`sprint-ledger-sync` silently DOWNGRADES the tracked ledger when …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-1",
+            "title": "Herald's tracked ledger under-reports a COMPLETE station by 43 …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-2",
+            "title": "Doctor has more tracked story specs than ledger stories",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-3",
+            "title": "RETRACTED. Atlas's feed and twin agree exactly; there is no …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-4",
+            "title": "Story specs with no ledger key, fleet-wide (the corrected measure…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          }
+        ]
+      },
+      {
         "project": "pyforge-warden",
         "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
         "open": 41,
@@ -13072,316 +13391,6 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": true
-          }
-        ]
-      },
-      {
-        "project": "pyforge-marshal",
-        "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 35,
-        "done": 8,
-        "triaged": 15,
-        "entries": [
-          {
-            "id": "DW-1-1-1",
-            "title": "The `pyforge-mason`, `pyforge-steward`, and `pyforge-warden` `*-build-conda` pixi tasks (root `p…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-1-2",
-            "title": "`pyforge-doctor` and `pyforge-warden`'s package `.gitignore` files put comments inline after the…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-1-3",
-            "title": "Every pyforge sibling package (doctor, warden, steward, mason, and now marshal) declares `licens…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-1-4",
-            "title": "The `pyforge-mason-build-dist` and `pyforge-steward-build-dist` pixi tasks (root `pixi.toml`) ru…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-FU-1-1",
-            "title": "Follow-up review still recommended for 1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enfor",
-            "status": "open",
-            "severity": "low",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-2-1",
-            "title": "`architecture.md`'s AD-23 rule text still says the story key is \"purely numeric on both parts\", contradicting AD-38",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-3-1",
-            "title": "`core/policy.py`'s `content_hash` (and therefore `materialize()`'s content-addressed filename) i…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-3-2",
-            "title": "`schemas/policy.json`'s `policyField` `$defs` entry does not constrain the TYPE of `value`/`raw_…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-3-3",
-            "title": "`cli/config.py::materialize()` can leave an orphaned `.policy-*.tmp` file in the target director…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-FU-1-3",
-            "title": "Follow-up review still recommended for 1-3-layered-policy-composition-with-provenance-and-validation after the damping c",
-            "status": "open",
-            "severity": "low",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-7",
-            "title": "No project-policy source supplies `gate_mode=\"none\"` / `max_followup_reviews=2`, so the first real `write_policy_toml` c",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-1",
-            "title": "`adapters/harness_bmadloop.py`'s vendored `_POLICY_TEMPLATE` is a hand-copied snapshot of `bmad_…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-2",
-            "title": "`write_policy_toml`'s unconditional whole-file overwrite will silently discard harness-native st…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-3",
-            "title": "This story's untrack (`git rm --cached .bmad-loop/policy.toml`) only closes the F-1 cross-projec…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-4",
-            "title": "Between this story's merge (which untracks `.bmad-loop/policy.toml`) and the later story that wi…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-5",
-            "title": "The `max_followup_reviews = 2` value in the (now untracked) live policy.toml was explicitly bran…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-6",
-            "title": "The tracked `.bmad-loop/policy.toml` this story deletes carried curated operational commentary w…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-7-1",
-            "title": "The supported harness range had three unsynchronized declarations",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-8-1",
-            "title": "Preflight lacks init and teardown's Git-ref-shape slug guard",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-8-2",
-            "title": "Teardown hardcodes the integration branch as `main`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-3",
-            "title": "Teardown has a branch-deletion TOCTOU window",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-4",
-            "title": "Teardown cannot see valuable gitignored content",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-5",
-            "title": "Teardown can destroy nested registered worktrees",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-6",
-            "title": "Teardown has no active-run liveness guard",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-9-1",
-            "title": "Marshal's README still describes a Story 1.1 skeleton",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-9-2",
-            "title": "The future run journal must record Marshal and harness versions",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-AUD-2026-07-31-1",
-            "title": "Stories 1.7-1.9 shipped without canonical memlog reconciliation",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-AUD-2026-07-31-2",
-            "title": "Four Marshal-owned Dreams still have no Tier-2 Spec",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-AUD-2026-07-31-3",
-            "title": "Deferred-work detector ignores anonymous Tier-3 entries",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-1",
-            "title": "`cli/init.py`'s project-existence check (`MRS-INIT-002`) reads `_bmad-output/pro…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-2",
-            "title": "The `MRS-INIT-003` marker/symlink desync guard has two blind spots: (1) `_slug_f…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-3",
-            "title": "`adapters/fs_local.py`'s two atomic-write helpers disagree on stale-temp-file ha…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-4",
-            "title": "`marshal init <slug>` has no protection against two concurrent invocations for t…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-5",
-            "title": "`cli/init.py::_loop_home_root()`'s real default fallback (`Path.home() / \".bmad-…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-6",
-            "title": "`tests/unit/test_vcs_git.py` and `tests/integration/test_init_worktree.py` each …",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-7",
-            "title": "`cli/init.py`'s printed `launch_line` (`cd <home> && export BMAD_ACTIVE_PROJECT=…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-8",
-            "title": "`marshal init` has no guard against the total loop-home path length, despite thi…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-9",
-            "title": "`cli/main.py::main` catches only `SystemExit` and `KeyboardInterrupt` — it has n…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-10",
-            "title": "`tests/integration/test_init_worktree.py` — the only end-to-end proof of both wo…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-5-11",
-            "title": "`cli/init.py`'s `tier3_backlink` step gives a real, non-empty DIRECTORY at the l…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-5-13",
-            "title": "`tier3_backlink`'s convergence check compares the raw (unresolved) symlink target…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-5-14",
-            "title": "A failed `ensure_dir`/`repoint_symlink_atomic` after `remove_empty_dir` leaves the…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-5-12",
-            "title": "A home provisioned by `marshal init` alone still lacks the TOP-LEVEL `_bmad-outp…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
           }
         ]
       },
@@ -13898,8 +13907,8 @@ window.DASHBOARD_DATA = {
       "subject": "herald: Story 12.4 — Automation troubleshooting guide (honestly scoped)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 13:38 UTC",
-    "generatedEpoch": 1786196301
+    "generatedAt": "2026-08-08 18:05 UTC",
+    "generatedEpoch": 1786212314
   },
   "storySpecs": [
     {
@@ -13910,13 +13919,19 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 16,
+      "done": 6,
       "tracked": 16,
       "gap": 0
     },
     {
+      "station": "pyforge-genesis",
+      "done": 0,
+      "tracked": 0,
+      "gap": 0
+    },
+    {
       "station": "pyforge-herald",
-      "done": 47,
+      "done": 4,
       "tracked": 47,
       "gap": 0
     },
@@ -13934,13 +13949,13 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-scribe",
-      "done": 9,
+      "done": 3,
       "tracked": 9,
       "gap": 0
     },
     {
       "station": "pyforge-steward",
-      "done": 18,
+      "done": 3,
       "tracked": 18,
       "gap": 0
     },
