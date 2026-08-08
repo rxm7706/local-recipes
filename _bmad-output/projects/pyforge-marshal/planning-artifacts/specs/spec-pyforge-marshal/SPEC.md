@@ -1,6 +1,8 @@
 ---
 id: SPEC-pyforge-marshal
 owner-dream: docs/dreams/pyforge-marshal.md
+covers-dreams:
+  - docs/dreams/genesis-installer.md   # folded in 2026-08-02 as CAP-10..CAP-18 (see below); satisfies INV-1 for this Dream
 surface:
   - src/shared/packages/pyforge-marshal/**    # the CLI this Spec builds (not yet created)
 companions:
