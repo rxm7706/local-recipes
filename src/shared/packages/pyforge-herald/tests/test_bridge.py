@@ -24,6 +24,7 @@ from pyforge.herald import (
     deck_pipeline,
     errors,
     evidence,
+    progress,
     registry,
     state,
     watch,
@@ -134,6 +135,7 @@ _BRIDGE_CORE_MODULES = (
     auth,
     evidence,
     watch,
+    progress,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -149,7 +151,10 @@ ordinary third-party HTTP client, not one of ``_FORBIDDEN_ADAPTER_MODULES``
 or ``_FORBIDDEN_INFERENCE_PACKAGES`` below, so sweeping it in costs nothing
 and pins the same invariant onto Epic 6's new modules that Epic 1's already
 hold. ``watch.py`` (Epic 4, CAP-4) joins for the identical reason: it is
-bridge-core's own poll loop, not the CLI layer or a transport adapter."""
+bridge-core's own poll loop, not the CLI layer or a transport adapter.
+``progress.py`` (Story 8.1, the scaled-down Epic 8 local-storage module)
+joins for the same reason again: it is a plain local-JSON persistence
+module with no transport or argv-parsing concerns of its own."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name
