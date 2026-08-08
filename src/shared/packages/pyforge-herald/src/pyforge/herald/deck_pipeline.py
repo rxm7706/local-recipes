@@ -45,6 +45,7 @@ the story spec's Design Notes:**
 
 from __future__ import annotations
 
+import hashlib
 import os
 import subprocess
 import tempfile
@@ -1143,3 +1144,217 @@ def _status_or_conflict(
             last_pull=None,
             stale_mirror=False,
         )
+# --- CAP-5: export push-back, Epic 5 -----------------------------------------
+#
+# `bridge-protocol.md` § *Export push-back*: after `deck-export` regenerates the
+# derived set, push it into the Design project so Design holds the complete set
+# too -- `finalize_plan` declaring the export filenames -> `write_files` each
+# with its last-known etag (`"0"` for a first push). Unchanged files (compared
+# by local content hash against the last-pushed record) are skipped; a
+# per-file conflict is refused structurally, without aborting the rest of the
+# batch. Design-side names mirror the repo filenames verbatim.
+#
+# **Scope judgment call (recorded here and in the Story 5.1 spec's Design
+# Notes):** `DesignTransport.write_files`'s `data` field is documented as
+# inline *text* content ("Write inline file contents") -- exactly the shape
+# `seed`/`pull_prototype` already exercise for the `.dc.html` prototype, and
+# the only shape any adapter or the wire-format docs in this package have
+# ever proven. Of the three derived exports `docs/specs/presentation-deck.md`
+# § *Standard export set* names (the standalone HTML poster, and two PPTX
+# files), only the HTML is text -- the PPTX pair is binary, and no story in
+# this package has observed or proven a binary write_files wire shape (the
+# same "unpinned wire shape" caveat `seed`'s own module doc already records
+# for a conflicted write, DW-1-2-5). Rather than invent an unverified
+# encoding convention, `_discover_export_files` below covers only the
+# standalone HTML export for now; pushing the two PPTX companions back is a
+# deferred follow-up once a binary `write_files` shape is proven live (see
+# the Story 5.1 spec's Verification section).
+
+
+@dataclass(frozen=True)
+class ExportPushResult:
+    """What ``push_exports`` returns: which export filenames were actually
+    written, and which were skipped because their local content hash
+    already matched the last-pushed record. Never populated on a run that
+    hit a conflict -- that path raises ``errors.ExportConflictError``
+    instead (see ``push_exports``'s own docstring)."""
+
+    slug: str
+    pushed: tuple[str, ...]
+    skipped: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class _ExportCandidate:
+    """One discovered derived-export file: its Design-side filename (the
+    repo basename, mirrored verbatim per ``bridge-protocol.md``), the text
+    content to write, and that content's hash -- computed once, reused both
+    for the skip comparison and for the post-push state record."""
+
+    filename: str
+    local_path: Path
+    data: str
+    local_hash: str
+
+
+_EXPORT_ARTIFACT_PREFIX = "export:"
+"""``state.DeckState.etags`` keys for push-tracked exports are namespaced
+under this prefix (``f"{_EXPORT_ARTIFACT_PREFIX}{filename}"``) so a dated
+export filename (e.g. two different ``-2026-08-07``/``-2026-08-08`` runs of
+the same kind) never collides with the pull-side artifact keys
+(``PROTOTYPE_ARTIFACT_KEY``, ``f"marp:{kind}"``, ``STANDALONE_BUNDLE_ARTIFACT_KEY``)
+sharing the same ``etags`` map. Unlike the pull-side keys, the *value*
+recorded under an export key is a locally computed content hash, not a
+Design-returned etag -- see ``push_exports``'s own docstring for why."""
+
+
+def _discover_export_files(deck_dir: Path, slug: str) -> list[_ExportCandidate]:
+    """The derived export file(s) currently on disk for ``slug``, newest
+    first by dated filename. Only the standalone HTML poster is covered
+    today -- see this section's own module-level scope note for why the
+    PPTX companions are deferred.
+
+    Returns an empty list when ``deck-export`` has never produced the file
+    yet (nothing to push, not an error)."""
+    marp_dir = deck_dir / "src" / "marp"
+    if not marp_dir.is_dir():
+        return []
+    matches = sorted(marp_dir.glob(f"{slug}-infographic-standalone-*.html"))
+    if not matches:
+        return []
+    # Sorting by name sorts by date (ISO 8601 dates compare lexicographically
+    # in filename order) -- the same "newest by name" rule deck_export.py's
+    # own `find_source` uses for its Marp sources.
+    local_path = matches[-1]
+    try:
+        text = local_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise errors.HeraldError(
+            f"cannot push exports for {slug!r}: could not read {local_path} ({exc})"
+        ) from exc
+    local_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return [
+        _ExportCandidate(
+            filename=local_path.name,
+            local_path=local_path,
+            data=text,
+            local_hash=local_hash,
+        )
+    ]
+
+
+def push_exports(
+    transport: DesignTransport,
+    *,
+    slug: str,
+    repo_root: Path,
+    export_dir: Path | None = None,
+    state_path: Path | None = None,
+) -> ExportPushResult:
+    """CAP-5, Story 5.1/5.2: push the derived export set back into Design
+    after a pull + ``deck-export`` regeneration (``bridge-protocol.md`` §
+    Export push-back). Requires a prior ``seed`` (``_require_seeded_state``,
+    reused from CAP-2).
+
+    For each discovered export file (``_discover_export_files``): compares
+    its freshly computed content hash against the ``f"export:{filename}"``
+    record in ``state.py`` (absent == never pushed, treated as ``"0"``'s
+    sentinel meaning at the write-precondition level) and skips it -- no
+    ``write_files`` call at all -- when they match (FR-19, NFR-08). Every
+    file that changed is declared in one ``finalize_plan`` call (all changed
+    filenames together, mirroring ``seed``'s own batch-declare shape), then
+    written one ``write_files`` call at a time using that file's current
+    server-side etag from ``plan.base_etags`` (``"0"`` for a path that does
+    not exist there yet -- FR-18).
+
+    **Conflict handling (Story 5.2, FR-20/NFR-02).** A per-file
+    ``write_files`` call that raises ``errors.TransportError`` (the shape a
+    real conditional-write rejection takes -- see ``transport.base``'s
+    ``require_conditional``/``_call_json`` failure path) is treated as a
+    structural conflict for *that file only*: it is recorded, and the loop
+    continues to the next candidate rather than aborting the whole batch.
+    ``state.py`` is updated once, after every file has been attempted, and
+    only with the files that actually succeeded -- a conflicted file's own
+    ``export:`` record is left exactly as it was, so a retry sees it as
+    still-changed rather than falsely "already pushed". If any file
+    conflicted, ``push_exports`` raises ``errors.ExportConflictError``
+    naming every conflicted file (after the state write for the successful
+    ones has already landed); otherwise it returns ``ExportPushResult``."""
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    existing = _require_seeded_state(resolved_state_path, slug)
+    deck_dir = repo_root / "presentations" / slug
+    resolved_export_dir = deck_dir if export_dir is None else export_dir
+
+    candidates = _discover_export_files(resolved_export_dir, slug)
+
+    to_push: list[_ExportCandidate] = []
+    skipped: list[str] = []
+    for candidate in candidates:
+        artifact_key = f"{_EXPORT_ARTIFACT_PREFIX}{candidate.filename}"
+        if existing.etags.get(artifact_key) == candidate.local_hash:
+            skipped.append(candidate.filename)
+            continue
+        to_push.append(candidate)
+
+    if not to_push:
+        return ExportPushResult(slug=slug, pushed=(), skipped=tuple(skipped))
+
+    plan = transport.finalize_plan(
+        project_id=existing.project_id,
+        writes=[candidate.filename for candidate in to_push],
+    )
+
+    pushed: list[str] = []
+    conflicts: list[str] = []
+    new_etags = dict(existing.etags)
+    for candidate in to_push:
+        if_match = plan.base_etags.get(candidate.filename, _FRESH_ETAG)
+        try:
+            transport.write_files(
+                project_id=existing.project_id,
+                files=[
+                    {
+                        "path": candidate.filename,
+                        "data": candidate.data,
+                        "if_match": if_match,
+                    }
+                ],
+                plan_token=plan.plan_token,
+            )
+        except errors.TransportError as exc:
+            conflicts.append(f"{candidate.filename} ({exc})")
+            continue
+        new_etags[f"{_EXPORT_ARTIFACT_PREFIX}{candidate.filename}"] = (
+            candidate.local_hash
+        )
+        pushed.append(candidate.filename)
+
+    # Persist whichever files actually succeeded -- even when some
+    # conflicted -- so a retry never re-pushes a file that already landed.
+    # A conflicted file's record is simply absent from `new_etags`'s delta
+    # (still whatever it was before this run), so the next attempt sees it
+    # as changed and tries again.
+    if pushed:
+        state.write(
+            resolved_state_path,
+            slug,
+            state.DeckState(
+                project_id=existing.project_id,
+                etags=new_etags,
+                last_pull=existing.last_pull,
+            ),
+        )
+
+    if conflicts:
+        success_note = (
+            f" ({len(pushed)} other export(s) pushed successfully)" if pushed else ""
+        )
+        raise errors.ExportConflictError(
+            f"cannot push {len(conflicts)} export(s) for {slug!r}: "
+            f"{'; '.join(conflicts)} -- refused rather than risk clobbering "
+            f"a Design-side edit{success_note}"
+        )
+
+    return ExportPushResult(slug=slug, pushed=tuple(pushed), skipped=tuple(skipped))
