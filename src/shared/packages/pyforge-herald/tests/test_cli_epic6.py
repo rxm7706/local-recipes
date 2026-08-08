@@ -225,17 +225,61 @@ def test_success_publish_confirmation_declined_takes_no_action(
 
 
 def test_notice_author_without_operator_role_is_refused_exit_1(capsys, monkeypatch):
+    """The Epic 10 write gate: auth is still checked (and refused) before
+    any field prompting or writing -- a viewer-role caller never even
+    reaches ``notices.author_notice``."""
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "viewer:tok")
-    assert cli.main(["notice", "author", "weekly-update"]) == 1
+    assert (
+        cli.main(
+            [
+                "notice",
+                "author",
+                "--type",
+                "deprecation",
+                "--component",
+                "weekly-update",
+                "--what",
+                "w",
+                "--why",
+                "w",
+                "--migration",
+                "m",
+            ]
+        )
+        == 1
+    )
     assert "unauthorized" in capsys.readouterr().err
 
 
-def test_notice_author_with_operator_role_proceeds_to_the_stub(capsys, monkeypatch):
+def test_notice_author_with_operator_role_authors_a_draft(
+    capsys, monkeypatch, tmp_path
+):
     monkeypatch.setenv(auth.TOKEN_ENV_VAR, "operator:tok")
     monkeypatch.setattr(auth, "confirm", lambda *_a, **_k: True)
-    assert cli.main(["notice", "author", "weekly-update"]) == 0
+    monkeypatch.chdir(tmp_path)
+    assert (
+        cli.main(
+            [
+                "notice",
+                "author",
+                "--type",
+                "deprecation",
+                "--component",
+                "weekly-update",
+                "--what",
+                "w",
+                "--why",
+                "w",
+                "--migration",
+                "m",
+                "--deadline",
+                "2026-09-01",
+            ]
+        )
+        == 0
+    )
     out = capsys.readouterr().out
-    assert "authorized" in out
+    assert "authored" in out
     assert "weekly-update" in out
 
 
