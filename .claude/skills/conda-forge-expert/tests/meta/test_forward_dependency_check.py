@@ -145,3 +145,39 @@ def test_cross_station_ref_is_not_judged_as_forward():
     same = [(m.group("epic"), m.group("num"))
             for m in fdc.DEP_RE.finditer("steward:S-9.1") if not m.group("station")]
     assert same == [], "cross-station ref leaked into the same-station set"
+
+
+# --- a forward dep only blocks while it is UNSATISFIED ---------------------
+
+def test_a_finished_forward_dep_no_longer_blocks():
+    """Ordering alone used to be the whole test, so a story could never leave
+    `blocked` once its later-epic dep actually landed — the ledger had to keep
+    asserting "blocked" about ready work, or this detector went red. Found live
+    2026-08-08 when doctor's S-6.1 completed and unblocked S-5.2."""
+    assert fdc._dep_satisfied({"6-1": "done"}, "6", "1") is True
+    assert fdc._dep_satisfied({"6-1": "backlog"}, "6", "1") is False
+
+
+def test_a_dep_absent_from_the_ledger_is_not_satisfied():
+    """Conservative by construction: unknown is not done, so an unreadable or
+    incomplete ledger can never launder a real forward dependency."""
+    assert fdc._dep_satisfied({}, "6", "1") is False
+    assert fdc._dep_satisfied({"6-2": "done"}, "6", "1") is False
+
+
+@pytest.mark.parametrize("ledger, expected", [
+    ({"6-1": "done", "6-2": "done"}, True),
+    ({"6-1": "done", "6-2": "backlog"}, False),
+    ({}, False),  # no stories for that epic at all — never vacuously satisfied
+])
+def test_whole_epic_ref_is_satisfied_only_when_every_story_is_done(ledger, expected):
+    """`S-6.*` is the grammar's whole-epic form; one unfinished story keeps it
+    blocking, and an epic with no ledger stories is NOT a satisfied dependency
+    (that shape would make an unreadable ledger look green)."""
+    assert fdc._dep_satisfied(ledger, "6", "*") is expected
+
+
+def test_epic_rollup_keys_do_not_count_as_stories():
+    """The ledger carries `epic-6: in-progress` rollups alongside real stories;
+    counting one as a story would make `S-6.*` unsatisfiable forever."""
+    assert fdc._dep_satisfied({"6-1": "done", "epic-6": "in-progress"}, "6", "*") is True

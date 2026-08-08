@@ -519,7 +519,20 @@ and the work must meet it.
 **And** `test_doctor_check_completes_within_the_five_second_budget` passes on `main`
 **And** the budget itself is unchanged — no re-thresholding
 
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-08-08).** The profile cleared two of this entry's three suspects: warden's
+engines gather is **0.18s**, and the atlas fallbacks are not on `check`'s path at all (they
+belong to `monitor`). env-hygiene was **97%** — 7.73s of parse across 3,721 files, of which
+**6.43s / 3,216 files was the gitignored 590MB `build_artifacts/`** (third-party conda
+sources and test envs). That directory sorts before `docs`/`recipes`/`scripts`/`src`, so the
+walk spent its entire entry cap inside it and reached **zero** first-party files — all 609
+under `src/` and `scripts/` were unscanned, including the scanner's own module. Pruning
+build-output/tool-cache dir names cut the gather to ~3.2s **and raised** first-party coverage
+0 → 602 files, surfacing a third real finding that had been invisible. The 5.0s budget is
+untouched. Residual: the walk is still `incomplete` (`SDKs/` is 39,379 of 52,968 entries and
+holds no Python) — split out as `DW-DOCTOR-2026-08-08-2`, since it needs a design decision,
+not a bigger constant. Epic 6's remaining stories are unblocked.
 
 ### Story 6.2: A source registry Doctor owns
 

@@ -519,12 +519,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "17/28",
+            "18/28",
             "stories complete",
             "var(--done)"
           ],
           [
-            "11",
+            "10",
             "remaining",
             ""
           ]
@@ -549,7 +549,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "6.1"
+        "at": "5.2"
       },
       "epics": [
         {
@@ -678,7 +678,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "6.1",
-              "pending",
+              "done",
               "Profile `doctor check` and bring it inside its budget"
             ],
             [
@@ -3293,7 +3293,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-08 22:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 22:50 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5164,7 +5164,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 17,
+          "done": 18,
           "total": 28
         },
         {
@@ -5522,7 +5522,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "17/28",
+        "progress": "18/28",
         "complete": 14,
         "of": 14
       },
@@ -12581,7 +12581,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 6.1",
+        "line": "paused 5.2",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -12716,7 +12716,7 @@ window.DASHBOARD_DATA = {
   },
   "openwork": {
     "open": 199,
-    "done": 19,
+    "done": 20,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
@@ -13138,7 +13138,7 @@ window.DASHBOARD_DATA = {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
         "open": 45,
-        "done": 8,
+        "done": 9,
         "triaged": 25,
         "entries": [
           {
@@ -13487,6 +13487,13 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-DOCTOR-2026-08-08-1",
             "title": "`doctor check` is 7.04s against its documented 5.0s budget",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-DOCTOR-2026-08-08-2",
+            "title": "Doctor's discovery walk borrowed warden's entry cap, where hitting it means the opposite thing",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
@@ -14337,8 +14344,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 22:18 UTC",
-    "generatedEpoch": 1786227526
+    "generatedAt": "2026-08-08 22:50 UTC",
+    "generatedEpoch": 1786229448
   },
   "storySpecs": [
     {
@@ -14349,9 +14356,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 17,
+      "done": 18,
       "tracked": 16,
-      "gap": 1
+      "gap": 2
     },
     {
       "station": "pyforge-genesis",
@@ -14504,16 +14511,14 @@ window.DASHBOARD_DATA = {
         "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
         "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
         "openSpecs": [],
-        "done": 17,
+        "done": 18,
         "backlog": 10,
-        "blocked": 1,
+        "blocked": 0,
         "total": 28,
-        "next": "6-1-profile-doctor-check-and-bring-it-inside-its-budget",
-        "blockedKeys": [
-          "5-2-render-the-verdict-through-a-doctor-verb"
-        ],
+        "next": "5-2-render-the-verdict-through-a-doctor-verb",
+        "blockedKeys": [],
         "backlogKeys": [
-          "6-1-profile-doctor-check-and-bring-it-inside-its-budget",
+          "5-2-render-the-verdict-through-a-doctor-verb",
           "6-10-independence-is-structural-for-every-source",
           "6-2-a-source-registry-doctor-owns",
           "6-3-the-repo-runtime-split-survives-the-move",
@@ -14663,9 +14668,9 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 214,
+      "done": 215,
       "backlog": 97,
-      "blocked": 7,
+      "blocked": 6,
       "total": 318
     }
   }

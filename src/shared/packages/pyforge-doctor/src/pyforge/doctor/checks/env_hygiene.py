@@ -116,8 +116,48 @@ SCAN_INCOMPLETE_CHECK_NAME = "env-hygiene"
 # scannable source (extends pyforge.warden.hygiene.has_adjacent_python_
 # source's .git-pruning idiom to the other VCS-adjacent/vendored dirs a
 # Python project commonly carries).
+#
+# The BUILD-OUTPUT and TOOL-CACHE names were added by Story 6.1 after the
+# profile attributed 6.43s of `doctor check`'s 7.7s scan -- 3,216 of 3,721
+# files -- to this monorepo's gitignored 590MB ``build_artifacts/``, whose
+# contents are extracted THIRD-PARTY conda sources and test environments
+# (idna, typing-extensions, anyio, websockets, fastmcp). That was not
+# merely wasted time: ``build_artifacts`` sorts before ``docs``/
+# ``recipes``/``scripts``/``src``, so the walk exhausted its entire
+# _DISCOVERY_ENTRY_CAP inside it (74,340 entries walked against the 50,000
+# cap, first hit under ``.../test_env/include/openssl``) and never reached
+# ONE first-party file -- 5,867 *.py beyond the cap went unscanned,
+# including all 609 under ``src/`` and ``scripts/`` and this scanner's own
+# source. Pruning here therefore INCREASES real coverage; it does not buy
+# the speed budget by scanning less (Charter §6 forbids that trade).
+#
+# ``build``/``dist`` are pruned by Python packaging convention and carry a
+# known, accepted cost: a package whose own module directory is literally
+# named ``build`` or ``dist`` becomes invisible to this scanner. That risk
+# is the same one the pre-existing ``venv``/``node_modules`` entries
+# already take, and is far smaller than the truncation it removes.
 _PRUNED_DIR_NAMES = frozenset(
-    {".git", "__pycache__", ".venv", "venv", "node_modules", ".pixi"}
+    {
+        # VCS / interpreter / vendored dependency trees
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "node_modules",
+        ".pixi",
+        "site-packages",
+        # Build output
+        "build_artifacts",  # conda-build / rattler-build
+        "build",
+        "dist",
+        ".eggs",
+        # Tool caches and env matrices -- no source of any kind
+        ".tox",
+        ".nox",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+    }
 )
 
 # NFR bound mirroring pyforge.warden.hygiene._ADJACENT_PYTHON_SOURCE_ENTRY_CAP:

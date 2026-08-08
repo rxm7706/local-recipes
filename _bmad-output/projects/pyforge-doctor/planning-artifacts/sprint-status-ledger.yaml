@@ -31,8 +31,8 @@ development_status:
   4-3-adoption-tracking-watch-axis: done
   4-4-safe-upgrade-path-recommendation: done
   5-1-marshal-durability-source-independent-by-construction: done
-  5-2-render-the-verdict-through-a-doctor-verb: blocked
-  6-1-profile-doctor-check-and-bring-it-inside-its-budget: backlog
+  5-2-render-the-verdict-through-a-doctor-verb: backlog
+  6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
   6-10-independence-is-structural-for-every-source: backlog
   6-2-a-source-registry-doctor-owns: backlog
   6-3-the-repo-runtime-split-survives-the-move: backlog
@@ -52,5 +52,5 @@ development_status:
   epic-4-retrospective: optional
   epic-5: in-progress
   epic-5-retrospective: optional
-  epic-6: backlog
+  epic-6: in-progress
   epic-6-retrospective: optional

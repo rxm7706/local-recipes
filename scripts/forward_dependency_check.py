@@ -213,6 +213,25 @@ def ledger_statuses(ledger_path: Path) -> dict[str, str]:
     }
 
 
+def _dep_satisfied(ledger: dict[str, str], epic: str, num: str) -> bool:
+    """Whether the dependency ``S-<epic>.<num>`` is already finished.
+
+    ``num`` may be ``*`` (the grammar's whole-epic reference), which is
+    satisfied only when EVERY story cataloged for that epic is done — and
+    never by an epic with no stories in the ledger at all, which would
+    otherwise make an unreadable ledger look like a satisfied dependency.
+    A story absent from the ledger is not done.
+
+    The epic-prefix comparison also excludes the ledger's own ``epic-<n>``
+    rollup rows, whose prefix is the literal ``epic`` and so never equals a
+    numeric epic id.
+    """
+    if num == "*":
+        stories = [st for key, st in ledger.items() if key.split("-", 1)[0] == epic]
+        return bool(stories) and all(st == "done" for st in stories)
+    return ledger.get(f"{epic}-{num}") == "done"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--verbose", action="store_true", help="show every measured station")
@@ -275,7 +294,20 @@ def main() -> int:
             # general dependency graph) — it must not be judged by this test.
             same_station = [(m.group("epic"), m.group("num"))
                             for m in DEP_RE.finditer(deps) if not m.group("station")]
-            forward = sorted({de for de, dn in same_station if int(de) > epic})
+            # A forward reference only blocks while it is UNSATISFIED. Ordering
+            # alone used to be the whole test, which meant a story could never
+            # leave `blocked` once its later-epic dep actually landed: the
+            # ledger had to keep asserting "blocked" about work that was ready,
+            # or this detector went red. Found live 2026-08-08 when doctor's
+            # S-6.1 completed and unblocked S-5.2 (the first time in the fleet
+            # a forward dep was satisfied rather than merely declared).
+            # Conservative by construction — a dep missing from the ledger, or
+            # a whole-epic `S-<n>.*` ref with any story left unfinished, is NOT
+            # done and still blocks.
+            forward = sorted({
+                de for de, dn in same_station
+                if int(de) > epic and not _dep_satisfied(ledger, de, dn)
+            })
             if not forward:
                 continue
             key = f"{epic}-{num}"
