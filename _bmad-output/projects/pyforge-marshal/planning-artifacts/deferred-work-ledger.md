@@ -516,3 +516,37 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   status: open
 
   verified: 2026-08-08 — reproduced and recovered in the same session; the tracked ledger was restored via `git checkout` before the bad state was committed.
+
+## DW-LEDGER-2026-08-08-1 — Herald's tracked ledger under-reports a COMPLETE station by 43 …
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
+  summary: `pyforge-herald`'s `sprint-status-ledger.yaml` holds **17 story keys, 4 done**, while the station has **47 tracked story specs** and is recorded complete across 12 epics. The board therefore renders a finished station as 4/17.
+  evidence: Measured 2026-08-08. Ledger: 17 story keys / 4 `done`. Tracked story specs under `planning-artifacts/specs/spec-[0-9]*.md`: **47**. The Tier-3 feed agrees with the ledger (17 / 4), so this is **not** sync drift — the ledger was never wrong relative to its source. Root cause: Herald's `epics.md` is titled "Herald Moments 2–4 - Epics & Stories" and covers only that epic set; the other ~30 stories (the deck-bridge work) were never fed into the sprint feed at all. Nothing detects a story spec with no corresponding ledger key.
+  remedy: FR-137 (standalone staleness check — "is the ledger behind git?") would surface this class directly. A story-spec-without-ledger-key reconciliation belongs in the same check.
+
+  status: open
+
+  verified: 2026-08-08 — found while building the fleet-wide artifact inventory; counts re-measured directly from the filesystem, not from a summary.
+
+## DW-LEDGER-2026-08-08-2 — Doctor has more tracked story specs than ledger stories
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
+  summary: `pyforge-doctor` carries **16 tracked story specs** against **12 ledger story keys** — at least 4 landed stories have a durable spec but no ledger entry, so the board under-reports Doctor too.
+  evidence: Measured 2026-08-08 alongside DW-LEDGER-2026-08-08-1. Same shape, smaller magnitude; same absent detector.
+  remedy: same as above — the reconciliation should be one check covering every station, not a per-station fix.
+
+  status: open
+
+  verified: 2026-08-08.
+
+## DW-LEDGER-2026-08-08-3 — Atlas's Tier-3 feed is BEHIND its tracked ledger: `sprint-ledger-…
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
+  summary: `pyforge-atlas`'s tracked ledger holds **38 stories, all done**; its gitignored Tier-3 `sprint-status.yaml` holds **14 stories, 3 done**. Because `sprint-ledger-sync` copies Tier-3 over the tracked ledger wholesale with no merge and no downgrade guard (DW-SYNC-2026-08-08-1), running it against Atlas today would **destroy 35 `done` keys in one command** and report success.
+  evidence: Measured 2026-08-08. This is the same defect as DW-SYNC-2026-08-08-1, which was hit live on Marshal in this session (6 keys lost, recovered before commit) — but Atlas's exposure is ~6x larger and nothing warns about it. Atlas is also the project whose implementation artifacts were already truncated once by the 2026-07-19 copy failure, so its Tier-3 state is known-unreliable in exactly the direction that makes this dangerous.
+  impact: A one-command, silent, 35-key regression of a SHIPPED station's public record. It is a foot-gun that fires on a routine maintenance command.
+  remedy: **FR-139** (terminal states are monotonic; a transition moving any key backwards from `done` is refused and named) defuses this class entirely. Until FR-139 ships, `sprint-ledger-sync` should carry an explicit warning that it is destructive-by-overwrite, and should not be run against `pyforge-atlas`.
+
+  status: open
+
+  verified: 2026-08-08 — counts measured directly from both files.
