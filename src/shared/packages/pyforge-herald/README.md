@@ -23,3 +23,9 @@ The `pyforge-herald` environment is lean by design (`no-default-feature`): it
 carries only the built package plus its conda run-dependencies (`python`),
 the build tooling that produces it (`hatchling`, `python-build`), and a test
 runner (`pytest`).
+
+## Operator documentation
+
+For running `herald` day to day (authoring notices, publishing claims,
+recording progress) and the web dashboard, see [`docs/`](docs/README.md).
+For the web app itself, see [`web/README.md`](web/README.md).
