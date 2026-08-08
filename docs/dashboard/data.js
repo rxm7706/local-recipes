@@ -549,7 +549,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "5.2"
+        "at": "6.1"
       },
       "epics": [
         {
@@ -3293,7 +3293,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-08 22:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 22:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4300,7 +4300,7 @@ window.DASHBOARD_DATA = {
       "title": "the packaging factory (conda-forge-expert machinery)",
       "caps": 4,
       "companions": 2,
-      "updated": "2026-07-29",
+      "updated": "2026-08-08",
       "dream": "packaging-factory",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
     },
@@ -12021,8 +12021,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 62,
-        "verdict": "FINDINGS (62):",
+        "findings": 61,
+        "verdict": "FINDINGS (61):",
         "runbook": ""
       },
       {
@@ -12581,7 +12581,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 5.2",
+        "line": "paused 6.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -14337,8 +14337,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 22:14 UTC",
-    "generatedEpoch": 1786227251
+    "generatedAt": "2026-08-08 22:18 UTC",
+    "generatedEpoch": 1786227526
   },
   "storySpecs": [
     {
@@ -14505,20 +14505,22 @@ window.DASHBOARD_DATA = {
         "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
         "openSpecs": [],
         "done": 17,
-        "backlog": 11,
-        "blocked": 0,
+        "backlog": 10,
+        "blocked": 1,
         "total": 28,
-        "next": "5-2-render-the-verdict-through-a-doctor-verb",
-        "blockedKeys": [],
+        "next": "6-1-profile-doctor-check-and-bring-it-inside-its-budget",
+        "blockedKeys": [
+          "5-2-render-the-verdict-through-a-doctor-verb"
+        ],
         "backlogKeys": [
-          "5-2-render-the-verdict-through-a-doctor-verb",
           "6-1-profile-doctor-check-and-bring-it-inside-its-budget",
           "6-10-independence-is-structural-for-every-source",
           "6-2-a-source-registry-doctor-owns",
           "6-3-the-repo-runtime-split-survives-the-move",
           "6-4-the-ledger-verdicts-come-home",
           "6-5-the-board-verdicts-come-home",
-          "6-6-the-chain-verdicts-come-home"
+          "6-6-the-chain-verdicts-come-home",
+          "6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided"
         ],
         "state": "ready"
       },
@@ -14662,8 +14664,8 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 214,
-      "backlog": 98,
-      "blocked": 6,
+      "backlog": 97,
+      "blocked": 7,
       "total": 318
     }
   }

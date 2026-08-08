@@ -434,7 +434,7 @@ As the operator,
 I want `doctor` to actually show me the Marshal-durability verdict,
 So that the check is something I see, not something that merely exists.
 
-**Type:** feature • **Effort:** XS • **Deps:** S-5.1 • **FR/AD:** FR-14; AD-11
+**Type:** feature • **Effort:** XS • **Deps:** S-5.1, S-6.1 (the profile this is sequenced behind) • **FR/AD:** FR-14; AD-11
 **Surface:** `__main__.py`
 
 **Why this is its own story, not part of 5.1.** `sources/marshal.py` shipped with **no
