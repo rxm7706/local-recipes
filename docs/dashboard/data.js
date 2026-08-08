@@ -2840,7 +2840,7 @@ window.DASHBOARD_DATA = {
           "title": "Wave 0 — Legacy translation via Skill Forge",
           "stories": [
             [
-              "0.1",
+              "1.1",
               "done",
               "Generate legacy contextual skill (cf-atlas-legacy@8.78.0)"
             ]
@@ -2851,17 +2851,17 @@ window.DASHBOARD_DATA = {
           "title": "Wave A — nebi scaffold & catalog",
           "stories": [
             [
-              "A1",
+              "2.1",
               "done",
               "Scaffold the Kedro + pixi project via nebi"
             ],
             [
-              "A2",
+              "2.2",
               "done",
               "Define the Data Catalog for all sources + outputs"
             ],
             [
-              "A3",
+              "2.3",
               "done",
               "IncrementalParquetDataset for TTL gating"
             ]
@@ -2872,52 +2872,52 @@ window.DASHBOARD_DATA = {
           "title": "Wave B — Pipeline node porting & MCP integration",
           "stories": [
             [
-              "B1",
+              "3.1",
               "done",
               "Port the conda-side backbone phases into Kedro nodes"
             ],
             [
-              "B2",
+              "3.2",
               "done",
               "Port the PyPI & vulnerability pipelines"
             ],
             [
-              "B3",
+              "3.3",
               "done",
               "Re-expose the data surface as Kedro-API-native MCP tools"
             ],
             [
-              "B4",
+              "3.4",
               "done",
               "Verify dataset parity against the legacy orchestrator"
             ],
             [
-              "B5",
+              "3.5",
               "done",
               "Port the external-refresh assets"
             ],
             [
-              "B6",
+              "3.6",
               "done",
               "Port the Seed-Gaps pipeline"
             ],
             [
-              "B7",
+              "3.7",
               "done",
               "Extend the Universal SBOM intake (resolver, formats, buckets)"
             ],
             [
-              "B8",
+              "3.8",
               "done",
               "Basilisk conda-native vulnerability ingestion"
             ],
             [
-              "B9",
+              "3.9",
               "done",
               "Release-to-availability velocity columns"
             ],
             [
-              "B10",
+              "3.10",
               "done",
               "Migration-readiness datasets + classification node"
             ]
@@ -2928,12 +2928,12 @@ window.DASHBOARD_DATA = {
           "title": "Wave C — Orchestration & visualization",
           "stories": [
             [
-              "C1",
+              "4.1",
               "done",
               "Integrate kedro-dagster for scheduling + execution"
             ],
             [
-              "C2",
+              "4.2",
               "done",
               "Integrate kedro-viz + expose a pixi task"
             ]
@@ -2944,17 +2944,17 @@ window.DASHBOARD_DATA = {
           "title": "Wave D — Semantic layer & dashboards",
           "stories": [
             [
-              "D1",
+              "5.1",
               "done",
               "Define the Boring Semantic Layer (BSL) models"
             ],
             [
-              "D2",
+              "5.2",
               "done",
               "Build the Vizro dashboard + port the 28 CLIs to pages"
             ],
             [
-              "D3",
+              "5.3",
               "done",
               "Integrate Vizro-AI + expose the NL interface as an MCP tool"
             ]
@@ -2965,12 +2965,12 @@ window.DASHBOARD_DATA = {
           "title": "Wave E — A2A integration, lineage & observability",
           "stories": [
             [
-              "E1",
+              "6.1",
               "done",
               "Implement the A2A communication interfaces"
             ],
             [
-              "E2",
+              "6.2",
               "done",
               "Integrate OpenLineage + OpenTelemetry"
             ]
@@ -2981,22 +2981,22 @@ window.DASHBOARD_DATA = {
           "title": "Wave F — The DuckDB singularity",
           "stories": [
             [
-              "F1",
+              "7.1",
               "done",
               "DuckDB consolidation + prove the cold-start claim"
             ],
             [
-              "F2",
+              "7.2",
               "done",
               "Data-validation hook + inline Pandera contracts"
             ],
             [
-              "F3",
+              "7.3",
               "done",
               "Vector Similarity Search (RAG) via DuckDB vss"
             ],
             [
-              "F4",
+              "7.4",
               "done",
               "Dependency-hygiene node + unified CI policy gate  ·  imports Warden's ComplianceReport"
             ]
@@ -3007,17 +3007,17 @@ window.DASHBOARD_DATA = {
           "title": "Wave G — WebAssembly portability & sensors",
           "stories": [
             [
-              "G1",
+              "8.1",
               "done",
               "Compile the intelligence layer to Pyodide / DuckDB-WASM"
             ],
             [
-              "G2",
+              "8.2",
               "done",
               "Emit Parquet artifacts to a static web host (HTTP-Range gate)"
             ],
             [
-              "G3",
+              "8.3",
               "done",
               "Dagster Sensors for near-real-time ingestion"
             ]
@@ -3028,22 +3028,22 @@ window.DASHBOARD_DATA = {
           "title": "Wave H — The AI software factory & Karpathy wiki",
           "stories": [
             [
-              "H1",
+              "9.1",
               "done",
               "Scaffold the Karpathy Wiki structure + 5 factory personas"
             ],
             [
-              "H2",
+              "9.2",
               "done",
               "Agno compilation, linting & Q&A crews"
             ],
             [
-              "H3",
+              "9.3",
               "done",
               "Integrate La Suite / Wagtail Docs REST API sync"
             ],
             [
-              "H4",
+              "9.4",
               "done",
               "Orchestrate crews via Dagster"
             ]
