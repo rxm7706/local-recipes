@@ -34,9 +34,15 @@ def test_help_flag_exits_0_and_lists_subcommands(capsys):
         assert command in out
 
 
-def test_progress_with_no_flags_routes_and_exits_0(capsys):
+def test_progress_with_no_flags_routes_and_exits_0(capsys, tmp_path, monkeypatch):
+    """Story 8.3: bare ``herald progress`` (no station, no ``--list``)
+    defaults to list mode. With no records recorded yet, that is an empty,
+    still-exit-0 listing -- not an error. ``chdir`` to an empty ``tmp_path``
+    so this never reads a real ``.herald/progress.json`` from wherever
+    pytest happens to be invoked."""
+    monkeypatch.chdir(tmp_path)
     assert cli.main(["progress"]) == 0
-    assert "not yet implemented" in capsys.readouterr().out
+    assert "No progress records found." in capsys.readouterr().out
 
 
 def test_keyboard_interrupt_during_a_subcommand_exits_130(monkeypatch):
@@ -78,7 +84,11 @@ def test_unknown_command_exits_2_and_names_it(capsys):
 
 
 def test_json_flag_prints_valid_json_no_ansi(capsys):
-    assert cli.main(["progress", "--json"]) == 0
+    """Exercised on ``success`` (still a placeholder) rather than
+    ``progress``: Story 8.3 gave ``progress`` real behavior, so its own
+    ``--json`` shape is covered by ``test_cli_progress.py`` instead -- this
+    test's job is the shared ``--json`` plumbing itself."""
+    assert cli.main(["success", "--json"]) == 0
     out = capsys.readouterr().out.strip()
     payload = json.loads(out)  # raises if not valid JSON
     assert "\x1b" not in out
@@ -86,13 +96,13 @@ def test_json_flag_prints_valid_json_no_ansi(capsys):
 
 
 def test_json_short_flag_alias(capsys):
-    assert cli.main(["progress", "-j"]) == 0
+    assert cli.main(["success", "-j"]) == 0
     json.loads(capsys.readouterr().out.strip())
 
 
 def test_date_range_valid_filters_and_exits_0(capsys):
     assert (
-        cli.main(["progress", "--json", "--date-range", "2026-08-01..2026-08-31"]) == 0
+        cli.main(["success", "--json", "--date-range", "2026-08-01..2026-08-31"]) == 0
     )
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["date_range"] == ["2026-08-01", "2026-08-31"]
@@ -135,13 +145,13 @@ def test_json_flag_renders_error_as_json_on_stderr(capsys):
 
 
 def test_station_flag_filters(capsys):
-    assert cli.main(["progress", "--json", "--station", "warden"]) == 0
+    assert cli.main(["success", "--json", "--station", "warden"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["station"] == "warden"
 
 
 def test_station_short_flag_alias(capsys):
-    assert cli.main(["progress", "--json", "-s", "warden"]) == 0
+    assert cli.main(["success", "--json", "-s", "warden"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["station"] == "warden"
 
@@ -208,10 +218,11 @@ def test_notice_author_with_operator_role_proceeds_to_the_stub(capsys, monkeypat
     assert "weekly-update" in out
 
 
-def test_progress_read_only_never_checks_auth(capsys, monkeypatch):
+def test_progress_read_only_never_checks_auth(capsys, monkeypatch, tmp_path):
     """AD-16: reads are public. A read command must succeed with no auth
     context at all -- proof the gate is not silently applied everywhere."""
     monkeypatch.delenv(auth.TOKEN_ENV_VAR, raising=False)
+    monkeypatch.chdir(tmp_path)
     assert cli.main(["progress"]) == 0
     assert "unauthorized" not in capsys.readouterr().err
 

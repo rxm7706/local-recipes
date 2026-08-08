@@ -225,6 +225,98 @@
   margin: 0;
 }
 
+/* Progress cards (Story 8.4) -------------------------------------------- */
+
+.progress-cards {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.progress-card {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-divider);
+}
+
+.progress-card__summary {
+  width: 100%;
+  min-height: var(--touch-target);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--color-text);
+}
+
+.progress-card__station {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 16px;
+  text-transform: capitalize;
+}
+
+.progress-card__date {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.progress-card__stat {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.progress-card__detail {
+  padding: 0 16px 16px;
+  border-top: 1.5px solid var(--color-divider);
+}
+
+.progress-card__detail h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin: 14px 0 6px;
+}
+
+.progress-card__capabilities {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.progress-card__cost {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.progress-card__cost dt {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.progress-card__cost dd {
+  margin: 0;
+}
+
+/* Mobile: cards stack single-column, matching every other panel's stack. */
+@media (max-width: 767px) {
+  .progress-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Empty / error states ------------------------------------------------- */
 
 .empty-state,

@@ -26,6 +26,17 @@ npm run build
 npm run preview   # serves dist/, defaults to http://localhost:4173
 ```
 
+`dev`/`build` both run `sync-progress` first (via `predev`/`prebuild`), which
+copies the operator's local `.herald/progress.json` (written by `herald
+progress <station> --update`, run from the repo root) into
+`public/progress.json` -- the static snapshot `ProgressPanel` fetches at
+runtime. Run it by hand after recording new progress without a full
+dev/build cycle:
+
+```bash
+npm run sync-progress
+```
+
 ## Test it
 
 ```bash
@@ -41,9 +52,16 @@ npm run test      # vitest run (component tests: tab switching, sidebar
   (Story 7.2).
 - `src/components/EmptyState.jsx`, `ErrorState.jsx` — helpful empty/error
   copy (Story 7.2).
-- `src/panels/ProgressPanel.jsx`, `SuccessPanel.jsx`, `OperationsPanel.jsx`
-  — per-tab placeholders. Real data-fetching is Epic 8/9/10's scope; today
-  they just echo the active sidebar filters and show an empty state.
+- `src/panels/ProgressPanel.jsx` — real card-based rendering (Story 8.4):
+  the latest record per station as an expandable card (summary: station,
+  date, shipped-capability count, total compute hours; expanded: the full
+  capability list, cost breakdown, unblock narrative), filtered by the
+  sidebar's station/date-range filters. Reads `public/progress.json` (see
+  `scripts/sync-progress.mjs` above) -- there is no live REST API in this
+  scaled-down pass.
+- `src/panels/SuccessPanel.jsx`, `OperationsPanel.jsx` — per-tab
+  placeholders. Real data-fetching is Epic 9/10's scope; today they just
+  echo the active sidebar filters and show an empty state.
 - `src/hooks/useHashTab.js` — persists the active content tab in the URL
   hash (`#progress`/`#success`/`#operations`) so a reload lands on the same
   tab.

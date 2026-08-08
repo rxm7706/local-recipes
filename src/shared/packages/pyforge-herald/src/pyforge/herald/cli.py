@@ -5,9 +5,13 @@ the operator-role write gate, and inline help).
 
 ``deck``'s own subparsers gained ``pull`` in Epic 2, ``status`` in Epic 3,
 ``watch`` in Epic 4, and ``push`` in Epic 5 (Story 5.1 -- CAP-5 export
-push-back). ``progress``/``success``/``notice`` are placeholder handlers
-only -- their real Moment logic is Epics 8/9/10's scope (Story 6.1's own AC
-says so explicitly: "handler returns 'not yet implemented' or placeholder").
+push-back). ``success``/``notice`` remain placeholder handlers -- their real
+Moment logic is Epics 9/10's scope. ``progress`` (Epic 8, Stories 8.1-8.3)
+is real as of this module: local-JSON-backed (``progress.py``, scaled down
+from the epics doc's live-database/webhook design per the 2026-08-08 scope
+decision -- see ``docs/dreams/herald-moments-2-4-live-backend.md``), with
+``--update`` as the sole record-creation path (an operator runs it by hand
+after a ship; there is no webhook).
 
 **Dispatcher (Story 6.1, AD-11).** One ``herald`` entry point; every
 subcommand routes through ``_route``. Exit-code shape, reconciled with
@@ -45,10 +49,12 @@ import json
 import re
 import sys
 from collections.abc import Callable
-from datetime import date
+from dataclasses import asdict
+from datetime import UTC, date, datetime
 from pathlib import Path
 
-from . import __version__, auth, bridge, deck_pipeline, errors, watch as watch_module
+from . import __version__, auth, bridge, deck_pipeline, errors, progress
+from . import watch as watch_module
 from .transport import McpTransport
 
 TOOL_NAME = "herald"
@@ -267,17 +273,70 @@ def _build_parser() -> _HeraldArgumentParser:
 
     global_flags = _global_flags_parent()
 
-    subparsers.add_parser(
+    progress_parser = subparsers.add_parser(
         "progress",
         parents=[global_flags],
-        help="show progress records (Moment 2; not yet implemented)",
-        description="Show progress records. Read-only -- no operator role required.",
+        help="show or record progress (Moment 2)",
+        description=(
+            "Show progress records, or record one after a ship. Listing "
+            "(no <station>, or --list) is read-only; --update writes and "
+            "requires the operator role (AD-16)."
+        ),
         epilog=(
-            "examples:\n  herald progress\n  herald progress --json\n"
-            "  herald progress --station warden "
+            "examples:\n"
+            "  herald progress\n"
+            "  herald progress warden\n"
+            "  herald progress warden --update --shipped 'Harness Policy' "
+            "--compute-hours 3.5 --token-spend 42000 --wall-clock-hours 6\n"
+            "  herald progress --list --station warden "
             "--date-range 2026-08-01..2026-08-31\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    progress_parser.add_argument(
+        "station_arg",
+        nargs="?",
+        default=None,
+        metavar="station",
+        help="station to show (or, with --update, record progress for)",
+    )
+    progress_parser.add_argument(
+        "--update",
+        action="store_true",
+        help="record today's progress for <station> (requires operator role)",
+    )
+    progress_parser.add_argument(
+        "--list",
+        action="store_true",
+        help="list progress records (default when no <station> is given)",
+    )
+    progress_parser.add_argument(
+        "--shipped",
+        action="append",
+        dest="shipped",
+        metavar="<capability>",
+        default=None,
+        help="a shipped capability (repeatable; --update only)",
+    )
+    progress_parser.add_argument(
+        "--compute-hours",
+        type=float,
+        default=None,
+        help="compute hours (--update only)",
+    )
+    progress_parser.add_argument(
+        "--token-spend", type=int, default=None, help="token spend (--update only)"
+    )
+    progress_parser.add_argument(
+        "--wall-clock-hours",
+        type=float,
+        default=None,
+        help="wall-clock hours (--update only)",
+    )
+    progress_parser.add_argument(
+        "--unblock-narrative",
+        default=None,
+        help="unblock narrative (--update only; prompted interactively if omitted)",
     )
 
     success = subparsers.add_parser(
@@ -589,31 +648,152 @@ def _parse_date_range(raw: str) -> tuple[date, date]:
     return start, end
 
 
+def _progress_path() -> Path:
+    """The local progress store, resolved against the cwd -- mirrors
+    ``progress.py``'s own explicit-``Path``-argument convention (this is the
+    one place that resolves it against a real repo root; ``progress.py``
+    itself never assumes a cwd)."""
+    return Path.cwd() / progress.DEFAULT_PROGRESS_PATH
+
+
+def _validate_station(station: str) -> None:
+    """Raises ``errors.HeraldError`` naming the unrecognized station and
+    every known one, per Story 8.3's AC ("Station 'unknown' not found.
+    Available: warden, atlas, marshal, ...")."""
+    if station not in progress.STATIONS:
+        raise errors.HeraldError(
+            f"Station {station!r} not found. Available: "
+            f"{', '.join(progress.STATIONS)}. Use --list to see recorded "
+            f"stations."
+        )
+
+
+def _prompt_unblock_narrative(
+    station: str, on_date: str, *, reader: Callable[[str], str] = input
+) -> str:
+    """Story 8.2's scaled-down "operator prompted for the unblock
+    narrative" AC: a plain text prompt (rather than the original webhook
+    flow's draft-then-fill-in-later shape), reusing ``auth.confirm``'s
+    injectable-``reader`` seam so a test never blocks on real stdin. A
+    blank answer or ``EOFError`` records an empty narrative rather than
+    aborting the whole update -- an operator without a narrative yet should
+    still be able to record the rest of the ship."""
+    try:
+        answer = reader(
+            f"Unblock narrative for {station} on {on_date} (blank for none): "
+        )
+    except EOFError:
+        return ""
+    return answer.strip()
+
+
+def _format_progress_record(record: progress.Progress) -> str:
+    capabilities = ", ".join(record.shipped_capabilities) or "(none)"
+    return (
+        f"station: {record.station}\n"
+        f"date: {record.date}\n"
+        f"shipped_capabilities: {capabilities}\n"
+        f"compute_hours: {record.compute_hours}\n"
+        f"token_spend: {record.token_spend}\n"
+        f"wall_clock_hours: {record.wall_clock_hours}\n"
+        f"unblock_narrative: {record.unblock_narrative or '(none)'}"
+    )
+
+
+def _run_progress_update(args: argparse.Namespace, station: str) -> None:
+    """``herald progress <station> --update`` -- Story 8.2/8.3's write path
+    (AD-16 names ``herald progress --update`` explicitly as a future
+    operator-gated write in ``auth.py``'s own docstring). Records today's
+    progress from explicit flags -- the scoped-down interpretation of the
+    original AC's "extracted from bmad-loop journal / CI webhook payload"
+    (see ``docs/dreams/herald-moments-2-4-live-backend.md``)."""
+    auth.require_operator_role(
+        auth.resolve_auth_context(), action="herald progress --update"
+    )
+    _validate_station(station)
+    on_date = datetime.now(UTC).date().isoformat()
+    narrative = (
+        args.unblock_narrative
+        if args.unblock_narrative is not None
+        else _prompt_unblock_narrative(station, on_date)
+    )
+    record = progress.upsert(
+        _progress_path(),
+        station=station,
+        date=on_date,
+        shipped_capabilities=list(args.shipped) if args.shipped else [],
+        compute_hours=args.compute_hours if args.compute_hours is not None else 0.0,
+        token_spend=args.token_spend if args.token_spend is not None else 0,
+        wall_clock_hours=(
+            args.wall_clock_hours if args.wall_clock_hours is not None else 0.0
+        ),
+        unblock_narrative=narrative,
+    )
+    if args.json:
+        print(json.dumps(asdict(record)))
+    else:
+        print(f"Progress updated for {station}")
+
+
+def _run_progress_show(args: argparse.Namespace, station: str) -> None:
+    """``herald progress <station>`` -- the latest record for one station."""
+    _validate_station(station)
+    record = progress.latest_for_station(_progress_path(), station)
+    if record is None:
+        if args.json:
+            print(json.dumps({"station": station, "record": None}))
+        else:
+            print(f"No progress recorded for {station}.")
+        return
+    if args.json:
+        print(json.dumps(asdict(record)))
+    else:
+        print(_format_progress_record(record))
+
+
+def _run_progress_list(args: argparse.Namespace) -> None:
+    """``herald progress`` (bare) or ``herald progress --list`` -- every
+    record matching the shared ``--station``/``--date-range`` filters,
+    newest first. NDJSON with ``--json`` (Story 8.3's AC), a one-line
+    summary per record otherwise."""
+    if args.station is not None:
+        _validate_station(args.station)
+    date_range = (
+        _parse_date_range(args.date_range) if args.date_range is not None else None
+    )
+    records = progress.list_records(
+        _progress_path(), station=args.station, date_range=date_range
+    )
+    if args.json:
+        for record in records:
+            print(json.dumps(asdict(record)))
+        return
+    if not records:
+        print("No progress records found.")
+        return
+    for record in records:
+        print(
+            f"{record.date}  {record.station}  "
+            f"{len(record.shipped_capabilities)} capabilities  "
+            f"compute={record.compute_hours}h  token_spend={record.token_spend}  "
+            f"wall_clock={record.wall_clock_hours}h"
+        )
+
+
 def _run_progress(args: argparse.Namespace) -> int:
-    """``herald progress`` (Moment 2 placeholder, Story 6.1's AC: "handler
-    returns 'not yet implemented'"). Read-only -- AD-16 requires no
-    operator-role check for this path, and none is made."""
+    """``herald progress`` (Moment 2, Stories 8.1-8.3). Three shapes:
+    ``<station>`` (latest record), ``<station> --update`` (write, operator
+    role required), and no station / ``--list`` (filtered listing,
+    read-only). Listing never checks auth (AD-16); only ``--update`` does."""
 
     def operation() -> None:
-        date_range = (
-            _parse_date_range(args.date_range) if args.date_range is not None else None
-        )
-        if args.json:
-            print(
-                json.dumps(
-                    {
-                        "status": "not yet implemented",
-                        "station": args.station,
-                        "date_range": (
-                            [d.isoformat() for d in date_range]
-                            if date_range is not None
-                            else None
-                        ),
-                    }
-                )
-            )
+        if args.station_arg is not None:
+            if args.update:
+                _run_progress_update(args, args.station_arg)
+            else:
+                _run_progress_show(args, args.station_arg)
         else:
-            print("progress: not yet implemented")
+            _run_progress_list(args)
 
     return dispatch(operation, json_output=args.json)
 
