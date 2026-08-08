@@ -1141,7 +1141,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 86 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 90 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1244,12 +1244,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "50/86",
+            "50/90",
             "stories complete",
             "var(--done)"
           ],
           [
-            "36",
+            "40",
             "remaining",
             ""
           ]
@@ -1795,6 +1795,32 @@ window.DASHBOARD_DATA = {
               "12.6",
               "pending",
               "README, adoption guide, and the finding→remedy reference"
+            ]
+          ]
+        },
+        {
+          "badge": "E13",
+          "title": "Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted",
+          "stories": [
+            [
+              "13.1",
+              "pending",
+              "A baseline can be stamped for one spec"
+            ],
+            [
+              "13.2",
+              "pending",
+              "A moved contract reconciles only the paths it names"
+            ],
+            [
+              "13.3",
+              "pending",
+              "The no-baseline, ungoverned and stale-allowlist findings are cleared"
+            ],
+            [
+              "13.4",
+              "pending",
+              "The 34 drift findings are reconciled or recorded"
             ]
           ]
         }
@@ -3293,7 +3319,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-08 22:50 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-08 23:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3859,6 +3885,16 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "surface-drift-reconciliation",
+      "title": "A drift gate nobody can clear, and a drift signal anyone can launder",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation"
+      }
+    },
+    {
       "slug": "team-memory",
       "title": "Team memory — what the team knows, the agents know",
       "status": "archived",
@@ -4253,6 +4289,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-08",
       "dream": "sprint-status-auto-promote",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
+    },
+    {
+      "slug": "surface-drift-reconciliation",
+      "project": "pyforge-marshal",
+      "title": "Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "surface-drift-reconciliation",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation"
     },
     {
       "slug": "conda-forge-expert-rebuild",
@@ -5211,7 +5257,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 50,
-          "total": 86
+          "total": 90
         },
         {
           "slug": "wasm-analytics-stack",
@@ -5275,9 +5321,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 23,
+    "live": 24,
     "reached": 8,
-    "gaps": 15,
+    "gaps": 17,
     "findings": 12,
     "rows": [
       {
@@ -5760,7 +5806,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "50/86",
+        "progress": "50/90",
         "complete": 13,
         "of": 13
       },
@@ -9944,6 +9990,113 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "surface-drift-reconciliation",
+        "slug": "surface-drift-reconciliation",
+        "project": "pyforge-marshal",
+        "dream": "surface-drift-reconciliation",
+        "owner": "marshal",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "2026-08-08T18:06",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "surface-drift-reconciliation",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 2,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-08",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
+        "of": 3
+      },
+      {
         "label": "conda-forge-expert-rebuild",
         "slug": "conda-forge-expert-rebuild",
         "project": "pyforge-mason",
@@ -12011,9 +12164,9 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "drift",
-        "findings": 11,
-        "verdict": "DRIFT: 11 integrity + 0 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: all tracked BMAD artifacts are in sync with the live factory MINOR.",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
       },
       {
@@ -12021,8 +12174,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 61,
-        "verdict": "FINDINGS (61):",
+        "findings": 63,
+        "verdict": "FINDINGS (63):",
         "runbook": ""
       },
       {
@@ -12095,6 +12248,16 @@ window.DASHBOARD_DATA = {
         }
       },
       {
+        "slug": "surface-drift-reconciliation",
+        "title": "A drift gate nobody can clear, and a drift signal anyone can launder",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation"
+        }
+      },
+      {
         "slug": "unified-container",
         "title": "One container, eight stations",
         "status": "dreamt",
@@ -12110,7 +12273,8 @@ window.DASHBOARD_DATA = {
       "steward": 3,
       "mason": 1,
       "herald": 1,
-      "atlas": 1
+      "atlas": 1,
+      "marshal": 1
     },
     "practices": [
       {
@@ -12224,9 +12388,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 23,
+        "total": 24,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 0,
           "realized": 1,
@@ -12234,7 +12398,7 @@ window.DASHBOARD_DATA = {
           "practice": 4
         },
         "line": "paused 7.1",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -12367,6 +12531,13 @@ window.DASHBOARD_DATA = {
             "slug": "sprint-status-auto-promote",
             "title": "The dashboard goes stale because promotion is a remembered step",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "surface-drift-reconciliation",
+            "title": "A drift gate nobody can clear, and a drift signal anyone can launder",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -14344,8 +14515,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 22:50 UTC",
-    "generatedEpoch": 1786229448
+    "generatedAt": "2026-08-08 23:10 UTC",
+    "generatedEpoch": 1786230637
   },
   "storySpecs": [
     {
@@ -14451,12 +14622,17 @@ window.DASHBOARD_DATA = {
             "slug": "spec-sprint-status-auto-promote",
             "status": "draft",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md"
+          },
+          {
+            "slug": "spec-surface-drift-reconciliation",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
         "done": 50,
-        "backlog": 35,
+        "backlog": 39,
         "blocked": 1,
-        "total": 86,
+        "total": 90,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
@@ -14669,9 +14845,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 215,
-      "backlog": 97,
+      "backlog": 101,
       "blocked": 6,
-      "total": 318
+      "total": 322
     }
   }
 };

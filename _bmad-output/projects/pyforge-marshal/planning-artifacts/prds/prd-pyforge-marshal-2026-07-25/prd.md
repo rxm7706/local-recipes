@@ -1846,6 +1846,49 @@ conforming, not "fixed."
 **Consequences:** one sole-ownership meta-test per extracted primitive; each fails the build
 when a second implementation appears anywhere under `src/shared/packages/`.
 
+### 16.9 Surface drift reconciliation — `spec-surface-drift-reconciliation`
+
+**Description.** The ninth Spec absorbed under the amended rule (its Dream is
+`owner: marshal`), and the only one where **the broken thing is an instrument this
+station already owns**. `scripts/spec_surface_check.py` proves every tracked file is
+governed by a spec surface and that no governed file drifted from its contract — and it
+has carried **61 findings on `main`** for weeks. The repo is not 61 kinds of broken; the
+detector makes its reconciliation claim at the wrong granularity, twice, so its verdict is
+unactionable in one direction and untrustworthy in the other. Realizes CAP-1..CAP-4 of
+that Spec.
+
+#### FR-164: A baseline can be stamped for one spec
+**Consequences:** `--write-baseline` gains `--spec NAME` (repeatable), merging only the
+named specs into the committed baseline and leaving every other entry byte-identical; an
+unknown name exits 2 with the known set listed. Today the stamp is all-or-nothing, so the
+sanctioned fix for one `[no-baseline]` finding necessarily accepts ~34 other specs'
+pending drift — which is why the honest move has been to leave the red standing. Unscoped
+stamping survives, and says in its own help text what it accepts.
+
+#### FR-165: A moved contract reconciles only the paths it names
+**Consequences:** the drift pass stops short-circuiting per SPEC
+(`if b["memlog"] != cur["memlog"]: continue`) and checks each drifted file against the
+memlog's text; named paths clear, unnamed paths surface as a **non-gating**
+`[drift-presumed]`. Matching is literal substring on the repo-relative path — the form
+these entries already cite files in — because inferring intent from prose would rebuild
+the blanket it replaces. A memlog naming no paths stays legal: it degrades to
+`[drift-presumed]`, never to a hard failure, or the gate reds for every historical entry.
+
+#### FR-166: The standing 61 findings are dispositioned, not carried
+**Consequences:** 24 `[no-baseline]` scoped-stamped; 34 `[drift]` (23 of them one steward
+Epic-2/3 delivery) each either genuinely reconciled through its spec **or** scoped-stamped
+with the reasoning recorded in that spec's own memlog; 2 `[ungoverned]` Charter files given
+a surface or an allowlist entry; 1 `[stale-allowlist]` pattern (`pixi.toml`) removed.
+Anything that cannot be honestly cleared is filed as deferred work with its reason —
+never suppressed, and never bulk-stamped.
+
+#### FR-167: Neither fix can regress into the blanket it replaces
+**Consequences:** both are mutation-tested **both ways** — removing `--spec` scoping re-reds
+the isolation test, and restoring the per-spec short-circuit re-reds a laundering test that
+replays the live incident (an unrelated memlog append dropping findings 63 → 61 and clearing
+two detectors nobody reconciled). Charter §6 applies directly: the fix is granularity, never
+a relaxed threshold.
+
 ---
 
 ## 17. The Marshal↔Steward seam
