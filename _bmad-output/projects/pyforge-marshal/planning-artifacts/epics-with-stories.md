@@ -6,6 +6,9 @@ updated: 2026-08-02
 totalStories: 50
 totalEpics: 6
 note: "Stories extracted from epics.md; acceptance criteria in Given/When/Then format"
+# A generated summary of this station's canonical epics.md. Never hand-edited,
+# never the merge target, never the story-key source (AD-72).
+epics_role: derived
 ---
 
 # pyforge-marshal — Complete Epics & Stories

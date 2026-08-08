@@ -21,6 +21,9 @@ project_name: presenton-pixi-image
 epicCount: 7
 storyCount: 30
 status: complete
+# Retained record of a shipped or archived Dream's epics. Feeds NO ledger key and is
+# never merged into the canonical document — doing so would inject phantom stories (AD-72).
+epics_role: historical
 ---
 
 # presenton-pixi-image — Epic Breakdown

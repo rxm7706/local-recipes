@@ -617,7 +617,11 @@ STATIONS = ("herald", "marshal", "atlas", "warden",
             "mason", "doctor", "scribe", "steward")
 # The one Dream that may name no station because it CONSTITUTES them: the
 # Charter. `guild` is NOT a ninth station.
-GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
+# 2026-08-08: closed at one. `pyforge-genesis` was absorbed into the Charter
+# (Dream § Satellite: The Seed; Spec CAP-5..CAP-8) once its project had dissolved
+# and its installer half had moved to the Marshal — two names for one record.
+# Mirrored in docs/dashboard/generate.py:GUILD_DREAMS; both change together.
+GUILD_DREAMS = ("pyforge-charter",)
 
 
 # The Dream lifecycle — each state names the ACT THAT COMPLETED. Mirrored in

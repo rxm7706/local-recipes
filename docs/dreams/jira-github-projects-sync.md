@@ -1,7 +1,7 @@
 ---
 title: A ticket moves once, both boards know
 type: dream
-owner: marshal
+owner: steward
 status: dreamt
 ---
 
@@ -92,18 +92,23 @@ planning chain) to distill when this Dream moves past `dreamt`.
   simpler `custom_jira_key`/`github_item_id` custom-field linking, or the
   two coexist — is an explicit open question for the architecture phase,
   not resolved by either draft existing.
-- Not yet clear whether this targets an *external* GitHub/Jira project pair
-  or this repo's own tracking — the intake document is written generically
-  ("PROJ" as a placeholder project key) and doesn't say. Also an open
-  question for whoever runs `bmad-spec` on this Dream.
-- **Owner assigned provisionally to `marshal`** — reasoning: this is
-  fundamentally an orchestration/sync-pipeline capability (matches
-  marshal's harness-owner and cross-system-visibility mandate), and if this
-  sync ever targets *this* repo's own GitHub Projects / sprint tracking
-  rather than an external project, marshal is the natural consumer.
-  `steward` (credential lifecycle, "holds the keys") is the strongest
-  alternative, given the NFRs lead with token/secret handling. Worth a
-  deliberate call, not treated as settled by this Dream.
+- **Targets an *external* GitHub/Jira project pair** *(settled 2026-08-08; was
+  open)*. The intake document is written generically ("PROJ" as a placeholder
+  project key) and does not say, which left this open through the Spec draft. It is
+  now decided: an external board pair, independent of this repo's own
+  `sprint-status-ledger.yaml`, dashboard or story flow — and this engine never reads
+  or writes any of them. This is the decision that settles the owner, below.
+- **Owner: `steward`** *(settled 2026-08-08; was provisionally `marshal`)*. The
+  provisional call reasoned that a sync pipeline "matches marshal's harness-owner
+  and cross-system-visibility mandate," with the caveat that this only holds *if
+  the sync targets this repo's own tracking*. That caveat turned out to be the
+  whole question: under the Marshal/Steward seam — Marshal owns the build line,
+  Steward owns the estate the line stands on — an engine syncing this repo's own
+  ledger is build-line machinery, and an engine syncing two **external** boards is
+  an integration service on the estate. With the scope question answered as
+  *external pair*, the ownership follows mechanically rather than by argument. The
+  credential-led NFRs landing on Steward's existing `keys` surface is corroboration,
+  not the reason.
 
 ## Constraints
 
@@ -148,3 +153,14 @@ planning chain) to distill when this Dream moves past `dreamt`.
   "-prd-and-architecture.md", matching what the document actually is per
   its own header. Still not specified, not scoped to a target project, not
   acted on.
+- **2026-08-08 (scoped and re-owned)** — During the fleet-wide re-triage that
+  accompanied the Marshal planning rewrite, this Dream's two standing questions
+  turned out to be one. The Spec framed target-scope (Q1) and owner-station (Q5) as
+  independent; under the Marshal/Steward seam ratified the same day — Marshal owns
+  the build line, Steward owns the estate it stands on — Q1 *determines* Q5, because
+  syncing this repo's own ledger would be build-line machinery while syncing two
+  external boards is an estate service. Operator answered Q1: **external pair**.
+  Owner therefore moved `marshal` → **`steward`**, and the chain relocated from
+  `pyforge-marshal` to `pyforge-steward` per INV-2 (the chain follows the owner).
+  Five open questions became three. Still greenfield — nothing built, no epic in the
+  Marshal rewrite, and no live board named yet.

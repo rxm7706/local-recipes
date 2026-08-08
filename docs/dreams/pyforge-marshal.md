@@ -69,6 +69,67 @@ vision lives in the FRs named below, not as separate documents to track:
   entry-file drift detection. A standing practice, not a one-time build — its
   narrative now lives here rather than in a separate practice document.
 
+## Eight more, consolidated here (2026-08-08)
+
+The 2026-08-02 pass folded six. Eight more follow, on the same terms: the
+standalone dream files are archived in place, the **Spec of each stays live and
+remains the contract**, and the vision lives in the FRs named below rather than
+in separate documents to track. What changed is that these eight finally have
+FRs at all — until today Marshal's PRD decomposed only two of its twenty-four
+Specs, because a rule scoped FRs to work touching `pyforge-marshal`'s own
+package. Not one open Spec did, so the rule excluded all of them by
+construction. It is now an **ownership** test: a capability decomposes into
+Marshal's chain iff its Dream is `owner: marshal`.
+
+- **The shared floor** ([[pyforge-core]], minted the same day) → **FR-157..163**.
+  Five primitives written between three and twenty times across eight stations —
+  atomic write ×20 (6/8 stations), verdict lattice ×5, report envelope ×3
+  schemas, station roster ×3+1, no shared exception root. One leaf package, pure
+  stdlib, importing no station. Sequenced **before Epic 7's stories 7.2/7.3**,
+  which would otherwise have minted copy #21 and copy #6 inside the very rewrite
+  meant to consolidate.
+- **Loop-home fleet refresh** → **FR-133..135**. Nine worktrees found 227
+  commits stale on 2026-08-08 and refreshed by hand, twice, in one session.
+  Staleness detection, fast-forward with a clean-worktree refusal, and the
+  policy re-render as a *checked step of the same command* rather than a
+  separately remembered second one.
+- **Landing-to-ledger promotion** → **FR-136..139**. Three live staleness
+  incidents in one session. FR-139 also carries the fix for a defect found
+  while writing it: a stale feed silently overwrote the tracked ledger and
+  dropped six `done` keys while reporting success — terminal states are now
+  monotonic, and a write that un-finishes a story is refused and named.
+- **Dashboard path derivation** → **FR-140..143**. `generate.py` string-glued
+  slugs onto project paths in several places, each with its own patch; a `TODO`
+  in the code named the gap. One resolver, one override table, derived
+  discovery, and an unresolvable slug fails loud instead of rendering a 404.
+- **Detector self-verification** ([[dream-to-code-model-self-verification]]) →
+  **FR-144..147**. Both detectors gate the tree; nothing gated the detectors.
+  Three real incidents — and a fourth the same day this consolidated: a
+  measurement taken with an ad-hoc regex instead of the real parser produced a
+  false fleet-wide finding that had to be retracted within hours. The incident
+  log is the capability.
+- **Chain completeness** → **FR-148..152**. Regenerating Dream→Spec→…→Epics
+  coherently, plus orphan detection. Now also carries the reconciliation
+  measured on 2026-08-08: six of eight stations hold tracked story specs with
+  no ledger key (herald 34, doctor 4, atlas 3, scribe 1, steward 1).
+- **The governed tool surface** → **FR-153..156**. Shipped without one; the
+  2026-07-28 audit found 2-of-6 station coverage with Marshal itself at zero,
+  inside a Dream marked `realized`. Coverage is measured now, not asserted.
+- **Retiring the installer's separate name** ([[genesis-installer-name-retirement]])
+  → executed 2026-08-08, this session. One FR space (`FR-1..FR-163`, no gaps),
+  one `epics.md` (Epics 1-12, 86 stories), one dashboard row, and the two
+  contradictions the consolidation had preserved rather than resolved —
+  argparse-versus-typer and the `init`/`check` verb collisions — actually
+  decided (AD-51, AD-54, AD-70).
+
+**Three Marshal-owned `type: practice` documents are deliberately NOT absorbed**
+— [[agentic-sdlc-autonomy]], [[agent-tool-surface]] and [[regenerable-factory]].
+A practice sits outside the lifecycle by the Dream tier's own contract
+(`docs/dreams/README.md`): *tended, never finished*, excluded from Backlog and
+from Realized. Archiving one would assert a completion that cannot exist. Their
+*capabilities* decompose into the chain where they have any; the documents
+stand.
+
 ## Kept separate on purpose
 
 **Genesis installer** (`genesis init` / `genesis adopt` — standing up a repo

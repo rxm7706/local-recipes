@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-02  # genesis-installer PRD (FR1-FR62, own numbering) consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
+updated: 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
+# 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
 dist: pyforge-marshal
 module: pyforge.marshal
@@ -801,7 +802,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - **NFR-9 — Harness contract tests.** The observable surface Marshal depends on is covered by tests that run in CI and fail loudly on upstream drift rather than misparsing silently.
 - **NFR-10 — Lean dependencies.** Marshal's own runtime dependencies are minimal and conda-forge-available; the harness is a package dependency, not a vendored tree.
 - **NFR-11 — Secret hygiene.** No credential, token, or key is written to a journal, gate record, probe record, PR body, or commit. Probe and diagnostic output is redacted by construction.
-- **NFR-12 — Machine-readable everything.** Every human-facing output has a machine-readable counterpart with a stable, versioned schema.
+- **NFR-12 — Machine-readable everything.** Every human-facing output has a machine-readable counterpart with a stable, versioned schema; plans and reports are machine-readable under `--json` and human-readable by default. *(Absorbed the seed installer's `NFR-O1` on 2026-08-08 — it said the same thing without the schema-stability half, so it retired rather than coexisting as a near-duplicate.)*
 - **NFR-13 — Platform targets.** linux-64 and osx-arm64 for v1; Windows via WSL only, and stated as such rather than silently failing.
 - **NFR-14 — Performance envelope.** Marshal's own overhead is negligible against run duration: `init` and `status` complete in seconds; the supervisor's steady-state cost is a low-frequency poll, and its poll interval is never longer than the active prompt-cache TTL. `[ASSUMPTION: init/status under 10s on a warm checkout; supervisor poll ≤ 60s.]` *Grounding: a polling interval longer than the cache TTL converts every cheap cache-read into a full cache-write — the documented mechanism behind the largest circulated cost overrun.*
 
@@ -927,25 +928,35 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 
 ---
 
-## Satellite: Genesis Installer PRD
+## 15. The seed installer — `marshal seed`
 
-**Consolidated 2026-08-02 — see
-`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-genesis-installer-2026-07-25/prd.md`
-for the original standalone document.** The section below is the genesis-installer PRD,
-folded into this single Marshal-station PRD verbatim, per explicit user override of the
-"kept separate on purpose" decision recorded in `docs/dreams/pyforge-marshal.md` /
-`docs/dreams/genesis-installer.md`. Nothing in Marshal's own PRD above this line was changed.
+**Integrated 2026-08-08.** This section was a satellite — *"Satellite: Genesis Installer
+PRD"*, a second sub-product with its own parallel numbering — from its 2026-08-02
+consolidation until now. It is no longer. The content is Marshal's own, its requirements
+continue Marshal's own sequence, and the name `genesis` is retired. The original standalone
+document remains at
+`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/prd-genesis-installer-2026-07-25/prd.md`;
+`.memlog.md` and `archive/` are untouched.
 
-**Numbering — read this before citing an FR below.** This satellite section's requirement
-IDs (`FR1`, `FR2`, … `FR62`, `NFR-R1`, `NFR-A1`, `NFR-P1`, `NFR-C1`, `NFR-S1`, `NFR-M1`,
-`NFR-O1`, `SC-01`…`SC-10`, `OQ-1`…`OQ-9`) are **genesis-installer's own, pre-existing
-numbering scheme** — no dash after "FR" — and are **NOT** part of, and are **never
-renumbered into**, Marshal's own `FR-1`..`FR-65` / `NFR-1`..`NFR-14` sequence above (which
-uses a dash). The two ranges are distinct namespaces belonging to two different
-sub-products inside one station; a bare "FR62" always means this satellite section, a bare
-"FR-62" (with dash) does not exist in either range (Marshal's own range stops at FR-65,
-genesis-installer's at FR62 with no dash) and should be read as a typo for one or the other
-if ever encountered.
+**What changed in the integration** (nothing below this block was rewritten for content):
+
+| Namespace | Was | Now | Why |
+|---|---|---|---|
+| Functional requirements | `FR1`..`FR62` (no dash, own island) | **`FR-66`..`FR-127`** | Continues Marshal's own `FR-1`..`FR-65`. Sequential, gap-free, duplicate-free — verified against `citation-map.md`, all 62 mapped, all 83 references rewritten. |
+| Open questions | `OQ-1`..`OQ-9` | **`Q-17`..`Q-25`** | Continues Marshal's own `Q-1`..`Q-16`. Same kind of artifact; `Q-17` was confirmed non-existent before the range was claimed. |
+| Observability NFR | `NFR-O1` | **retired** | Redundant with Marshal's own **NFR-12**, which is strictly stronger (it additionally requires a stable, versioned schema). NFR-12 absorbs its `--json`-and-human-default specificity rather than the pair coexisting. |
+| Success criteria | `SC-01`..`SC-10` | **`SC-01`..`SC-10`, adopted as-is** | Marshal had **no** `SC-` namespace; its `SM-1`..`SM-7`/`SM-C1`..`SM-C3` are *metrics* — measured, trended, never binary. `SC-*` are per-release *acceptance criteria*. Mapping one onto the other would conflate two different concepts to save a prefix. Both stand; the distinction is stated here. |
+| Kill criteria | `K-01`..`K-03` | **`K-01`..`K-03`, adopted as-is** | Marshal had no kill-criteria concept at all. Folding them anywhere would lose them; a falsifier with no home is a falsifier that never fires. |
+
+**One caution, carried from `citation-map.md`:** `FR-66`..`FR-69` were briefly assigned to
+`spec-pyforge-testing-charter` on 2026-08-02 and reverted the same session. They are now
+permanently the seed installer's. The testing charter's requirements are decomposed in
+§ 16 below under their own numbers.
+
+**Verb surface.** Every command in this section reads `marshal seed <verb>` — the collision
+resolution recorded in AD-51/AD-54 and Q-17's predecessor. `marshal init` (loop home, by
+slug) and `marshal check` (detector registry, this repo) are different, shipped commands and
+are untouched.
 
 **Original frontmatter** (`prds/prd-genesis-installer-2026-07-25/prd.md`):
 
@@ -1146,7 +1157,7 @@ CFE G58). No new recipe is authored, so the CFE Rule-1 invocation and Rule-2 ret
 ### The Extraction Manifest
 
 **This section resolves the Dream's central question.** It is the normative contract that
-FR1–FR6 encode and SC-10 tests.
+FR-66–FR-71 encode and SC-10 tests.
 
 #### The classification rule
 
@@ -1176,7 +1187,7 @@ Derived from a live inventory of the model surface in `local-recipes` (2026-07-2
 | `tmux` | `>=3.7b` | loop spawns agent sessions in it; Linux/macOS only |
 | Installed BMAD skills (`_bmad/bmm/**`, `_bmad/core/**`) | installer-owned | regenerated by `bmad-method install`; Genesis must never write here |
 
-Genesis **verifies presence and floor** for these (FR30) and never installs them.
+Genesis **verifies presence and floor** for these (FR-95) and never installs them.
 
 ##### COPIED · MANAGED
 
@@ -1237,7 +1248,7 @@ they drift; generating them from one contract is how they cannot.
 | `docs/specs/*.md` | legacy tier — preserve and mark, never edit |
 | `_bmad/bmm/**`, `_bmad/core/**` | installer-owned; regenerated by BMAD |
 
-Enforced by code and proven by test (FR35, SC-08), not by convention. This is the
+Enforced by code and proven by test (FR-100, SC-08), not by convention. This is the
 structural expression of the field's hardest-won lesson — spec-kit's guidance to *"keep
 tooling updates separate from feature artifact evolution."*
 
@@ -1274,7 +1285,7 @@ never forks them.
 #### Genesis ↔ Doctor
 
 `genesis check` asks *"does this repo conform to the model?"*; `doctor check` asks *"is this
-machine able to run the factory?"* Genesis's REFERENCED-dependency verification (FR30)
+machine able to run the factory?"* Genesis's REFERENCED-dependency verification (FR-95)
 overlaps Doctor's pre-flight charter, so: **Genesis performs a minimal presence-and-floor
 probe with no dependency on Doctor** (it must work in a repo that has not adopted Doctor),
 and **delegates to `doctor check` when it is available**, reporting Doctor's findings
@@ -1327,160 +1338,160 @@ versioned artifact.
 
 #### Model manifest & classification
 
-- **FR1** — The model is declared as **data** (a manifest file inside the package), not as
+- **FR-66** — The model is declared as **data** (a manifest file inside the package), not as
   code branches. Each entry carries: path or path-pattern, class, applicable model-version
   range, and (for HYBRID) its region names and anchors.
-- **FR2** — Five classes are supported: `referenced`, `copied-managed`, `copied-seeded`,
+- **FR-67** — Five classes are supported: `referenced`, `copied-managed`, `copied-seeded`,
   `generated-derived`, `hybrid-managed-region`.
-- **FR3** — The manifest supports an explicit `unclassified-deferred` state so that
+- **FR-68** — The manifest supports an explicit `unclassified-deferred` state so that
   deferral is enumerated rather than silent.
-- **FR4** — A coverage check verifies that every artifact Genesis knows about carries
+- **FR-69** — A coverage check verifies that every artifact Genesis knows about carries
   exactly one class; an unclassified artifact is a HARD failure. (Mirrors
   `bmad_drift_check.py`'s `uncovered` finding.)
-- **FR5** — The manifest is versioned by **model semver**, independent of the
+- **FR-70** — The manifest is versioned by **model semver**, independent of the
   `pyforge-genesis` package version. Both are recorded in installed state.
-- **FR6** — The manifest declares the **never-write path set** (§ *The Extraction
+- **FR-71** — The manifest declares the **never-write path set** (§ *The Extraction
   Manifest*), which the apply and update paths enforce.
 
 #### `genesis init` (greenfield)
 
-- **FR7** — `genesis init <path>` creates a Dream-first repository tree at `<path>`,
+- **FR-72** — `genesis init <path>` creates a Dream-first repository tree at `<path>`,
   materializing every manifest artifact applicable to a new repo.
-- **FR8** — `init` accepts `--slug` (the first BMAD project slug, defaulting to the
+- **FR-73** — `init` accepts `--slug` (the first BMAD project slug, defaulting to the
   directory name) and `--agents` (comma-separated adapter selection).
-- **FR9** — `init` seeds exactly one Dream stub at `docs/dreams/<slug>.md` conforming to
+- **FR-74** — `init` seeds exactly one Dream stub at `docs/dreams/<slug>.md` conforming to
   the Tier-0 frontmatter contract (`title`, `type: dream`, `owner`, `status: seeded`).
-- **FR10** — `init` creates the BMAD multi-project subtree:
+- **FR-75** — `init` creates the BMAD multi-project subtree:
   `_bmad-output/projects/<slug>/{planning-artifacts,implementation-artifacts}`,
   `.bmad-config.toml`, `planning-artifacts/specs/README.md`, and `PROJECTS.md` with the
   first row.
-- **FR11** — `init` writes the `.gitignore` model region covering the tier rules: the
+- **FR-76** — `init` writes the `.gitignore` model region covering the tier rules: the
   gitignored `implementation-artifacts/`, the two `_bmad-output` compatibility symlinks,
   `_bmad/custom/.active-project`, `.bmad-loop/runs/` and `cache/`, and
   `_bmad-output/projects/*/.bmad-config.user.toml`.
-- **FR12** — `init` writes the state file recording `mode: init`, model version, CLI
+- **FR-77** — `init` writes the state file recording `mode: init`, model version, CLI
   version, selected agents, and the per-artifact hashes.
-- **FR13** — `init` refuses to run into a non-empty directory unless `--force`; the
+- **FR-78** — `init` refuses to run into a non-empty directory unless `--force`; the
   documented path for an existing repo is `adopt`.
 
 #### `genesis adopt` (brownfield)
 
-- **FR14** — `genesis adopt` runs **detect → plan → confirm → apply** and is **dry-run by
+- **FR-79** — `genesis adopt` runs **detect → plan → confirm → apply** and is **dry-run by
   default**; `--apply` (or `--yes` for unattended use) executes.
-- **FR15** — Detect classifies each manifest artifact in the target repo as `absent`,
+- **FR-80** — Detect classifies each manifest artifact in the target repo as `absent`,
   `present-conformant`, `present-divergent`, or `present-legacy`.
-- **FR16** — `present-legacy` artifacts are **recorded and preserved, never modified or
+- **FR-81** — `present-legacy` artifacts are **recorded and preserved, never modified or
   deleted**, and are listed in the state file's `legacy[]`.
-- **FR17** — The plan is a **machine-readable artifact** written to disk (not only printed),
+- **FR-82** — The plan is a **machine-readable artifact** written to disk (not only printed),
   listing per artifact: path, class, detected state, proposed action, and rationale.
-- **FR18** — Apply materializes only what the plan names. Artifacts already present are
+- **FR-83** — Apply materializes only what the plan names. Artifacts already present are
   preserved unless their class is `copied-managed` or `generated-derived`.
-- **FR19** — `adopt` is **idempotent**: a second run on an unchanged repo produces an empty
+- **FR-84** — `adopt` is **idempotent**: a second run on an unchanged repo produces an empty
   plan and writes nothing.
-- **FR20** — `adopt --apply` refuses on a dirty git worktree, and refuses outside a git
+- **FR-85** — `adopt --apply` refuses on a dirty git worktree, and refuses outside a git
   repository.
-- **FR21** — `adopt` refuses (with a specific, actionable message) when a managed region or
+- **FR-86** — `adopt` refuses (with a specific, actionable message) when a managed region or
   managed file has been hand-modified, unless `--force`.
-- **FR22** — `adopt` accepts `--skip <glob>` (recorded in state) and honors previously
+- **FR-87** — `adopt` accepts `--skip <glob>` (recorded in state) and honors previously
   recorded skips on subsequent runs.
 
 #### `genesis check` (conformance)
 
-- **FR23** — `genesis check` is **read-only** and never writes to the repo (state file
+- **FR-88** — `genesis check` is **read-only** and never writes to the repo (state file
   included).
-- **FR24** — `check` exits non-zero on any HARD finding; `--strict` additionally fails on
+- **FR-89** — `check` exits non-zero on any HARD finding; `--strict` additionally fails on
   DRIFT findings.
-- **FR25** — Findings are typed and stable, at minimum: `artifact-missing`,
+- **FR-90** — Findings are typed and stable, at minimum: `artifact-missing`,
   `managed-file-modified`, `managed-region-modified`, `managed-region-missing`,
   `derived-stale`, `model-behind`, `state-invalid`, `never-write-violation`,
   `referenced-dep-missing`.
-- **FR26** — `check --json` emits a machine-readable report suitable for CI annotation.
-- **FR27** — `check` reports the repo's model version against the model version available
+- **FR-91** — `check --json` emits a machine-readable report suitable for CI annotation.
+- **FR-92** — `check` reports the repo's model version against the model version available
   in the installed package (`model-behind` / current / ahead).
-- **FR28** — `check` runs offline and completes in under 5 seconds on a repo the size of
+- **FR-93** — `check` runs offline and completes in under 5 seconds on a repo the size of
   `local-recipes`.
 
 #### `genesis update` + migrations
 
-- **FR29** — `genesis update` is **two-phase**: the default invocation writes a plan and
+- **FR-94** — `genesis update` is **two-phase**: the default invocation writes a plan and
   changes nothing; `--run` applies the plan.
-- **FR30** — Update verifies REFERENCED dependencies against their declared floors and
+- **FR-95** — Update verifies REFERENCED dependencies against their declared floors and
   reports (does not install) anything missing or below floor; delegates to `doctor check`
   when available.
-- **FR31** — Migrations are ordered by model semver, applied **exactly once**, and recorded
+- **FR-96** — Migrations are ordered by model semver, applied **exactly once**, and recorded
   in state's `migrations_applied[]`.
-- **FR32** — Migrations may only touch `copied-managed`, `generated-derived`, and
+- **FR-97** — Migrations may only touch `copied-managed`, `generated-derived`, and
   `hybrid-managed-region` artifacts. Touching `copied-seeded` requires an explicit
   interactive/`--yes` opt-in and is reported as an offer, never imposed.
-- **FR33** — Update regenerates `copied-managed` files wholesale and recomputes
+- **FR-98** — Update regenerates `copied-managed` files wholesale and recomputes
   `generated-derived` files, after hash-guard checks pass.
-- **FR34** — Update replaces only the marked span of `hybrid-managed-region` files.
-- **FR35** — Update **cannot** write to any path in the never-write set (FR6); an attempt is
+- **FR-99** — Update replaces only the marked span of `hybrid-managed-region` files.
+- **FR-100** — Update **cannot** write to any path in the never-write set (FR-71); an attempt is
   a hard error and a test asserts it.
-- **FR36** — `genesis update --force` maps to Copier `run_recopy` semantics (discard local
+- **FR-101** — `genesis update --force` maps to Copier `run_recopy` semantics (discard local
   evolution of managed artifacts) and requires explicit confirmation.
 
 #### State file
 
-- **FR37** — Genesis writes one tool-owned state file recording: `model_version`,
+- **FR-102** — Genesis writes one tool-owned state file recording: `model_version`,
   `genesis_version`, `adopted_at`, `last_update`, `mode`, `agents[]`, `managed[]` (path +
   class + content hash), `skips[]`, `legacy[]`, `migrations_applied[]`.
-- **FR38** — The state file carries a prominent do-not-hand-edit header.
-- **FR39** — State is validated against a JSON schema on every read; an invalid state file
+- **FR-103** — The state file carries a prominent do-not-hand-edit header.
+- **FR-104** — State is validated against a JSON schema on every read; an invalid state file
   is a `state-invalid` finding, not a crash.
-- **FR40** — Genesis never hand-edits Copier's answers file; if Copier's answers file is
+- **FR-105** — Genesis never hand-edits Copier's answers file; if Copier's answers file is
   used it is treated as a second tool-owned file.
-- **FR41** — Content hashes cover managed files and managed regions, enabling FR21 / FR25.
-- **FR42** — The state file is git-tracked (it is repo metadata, not scratch).
+- **FR-106** — Content hashes cover managed files and managed regions, enabling FR-86 / FR-90.
+- **FR-107** — The state file is git-tracked (it is repo metadata, not scratch).
 
 #### Managed regions
 
-- **FR43** — A managed region is delimited by begin/end markers carrying the region name and
+- **FR-108** — A managed region is delimited by begin/end markers carrying the region name and
   the model version that wrote it.
-- **FR44** — Update replaces the span between markers by **pure text substitution** — never
+- **FR-109** — Update replaces the span between markers by **pure text substitution** — never
   a three-way merge — so a half-merged file is not representable.
-- **FR45** — Marker syntax is **per file format** (HTML comments for markdown, `#` comments
+- **FR-110** — Marker syntax is **per file format** (HTML comments for markdown, `#` comments
   for `.gitignore` / TOML / YAML), resolved through a format registry.
-- **FR46** — If markers are absent in a file that should carry a region, Genesis inserts the
+- **FR-111** — If markers are absent in a file that should carry a region, Genesis inserts the
   region at a declared **anchor** (e.g. after the first `# Heading`), or appends when no
   anchor matches.
-- **FR47** — Deleting the markers is a **sanctioned permanent opt-out**: Genesis records it
+- **FR-112** — Deleting the markers is a **sanctioned permanent opt-out**: Genesis records it
   in state and does not reinsert on later runs. (Mirrors Copier's locally-deleted-path rule.)
-- **FR48** — Nested or overlapping regions are rejected with a specific error.
+- **FR-113** — Nested or overlapping regions are rejected with a specific error.
 
 #### Agent adapter fan-out
 
-- **FR49** — The neutral contract (tiers, portability, Dream-first workflow) has exactly one
+- **FR-114** — The neutral contract (tiers, portability, Dream-first workflow) has exactly one
   source in the manifest; all adapter files derive from it.
-- **FR50** — V1 supports four adapters: Claude Code (`CLAUDE.md`), Cursor
+- **FR-115** — V1 supports four adapters: Claude Code (`CLAUDE.md`), Cursor
   (`.cursor/rules/specs.mdc`), GitHub Copilot (`.github/copilot-instructions.md`), Gemini
   (`GEMINI.md`).
-- **FR51** — Adapter selection is per-repo, recorded in state, and changeable later
+- **FR-116** — Adapter selection is per-repo, recorded in state, and changeable later
   (`genesis adopt --agents …` adds adapters idempotently).
-- **FR52** — For an adapter file that already exists with repo-specific content
+- **FR-117** — For an adapter file that already exists with repo-specific content
   (`CLAUDE.md` is the common case), the model content is delivered as a **managed region**
   rather than by overwriting the file.
 
 #### Templates, distribution & CLI
 
-- **FR53** — Model templates ship **inside** the `pyforge-genesis` package; no runtime fetch
+- **FR-118** — Model templates ship **inside** the `pyforge-genesis` package; no runtime fetch
   is required for any verb.
-- **FR54** — `--template <path|url>` overrides the in-package templates, for development and
+- **FR-119** — `--template <path|url>` overrides the in-package templates, for development and
   for teams that fork the model.
-- **FR55** — Genesis wraps Copier via its **public API only** (`run_copy`, `run_update`,
+- **FR-120** — Genesis wraps Copier via its **public API only** (`run_copy`, `run_update`,
   `run_recopy`); no reliance on `Worker` internals or private modules.
-- **FR56** — Copier's code-executing template features remain gated behind an explicit
+- **FR-121** — Copier's code-executing template features remain gated behind an explicit
   `--unsafe` flag.
-- **FR57** — Genesis is distributed as a pixi workspace member producing a conda package,
+- **FR-122** — Genesis is distributed as a pixi workspace member producing a conda package,
   plus wheel/sdist, with console entry point `genesis`.
-- **FR58** — All verbs support `--json` for machine consumption and `--quiet` for
+- **FR-123** — All verbs support `--json` for machine consumption and `--quiet` for
   unattended runs.
-- **FR59** — All mutating verbs support `--dry-run` explicitly (and default to it where
-  FR14 requires).
-- **FR60** — `genesis version` reports both the CLI version and the bundled model version.
-- **FR61** — Non-zero exit codes are distinct and documented per failure mode (conformance
+- **FR-124** — All mutating verbs support `--dry-run` explicitly (and default to it where
+  FR-79 requires).
+- **FR-125** — `genesis version` reports both the CLI version and the bundled model version.
+- **FR-126** — Non-zero exit codes are distinct and documented per failure mode (conformance
   failure, precondition failure, internal error).
-- **FR62** — A `genesis explain <artifact>` verb prints an artifact's class, rationale, and
+- **FR-127** — A `genesis explain <artifact>` verb prints an artifact's class, rationale, and
   update behavior — the model documenting itself to the agents that read it (D1).
 
 ---
@@ -1494,8 +1505,8 @@ versioned artifact.
 - **NFR-R2** — Git is the undo mechanism; every mutating verb requires a clean worktree so
   `git checkout .` fully reverts.
 - **NFR-R3** — Managed-region substitution never produces conflict markers (a consequence
-  of FR44).
-- **NFR-R4** — The never-write guard (FR35) is enforced at the lowest write primitive, not
+  of FR-109).
+- **NFR-R4** — The never-write guard (FR-100) is enforced at the lowest write primitive, not
   at call sites, so no future code path can bypass it.
 
 #### Air-gapped operation
@@ -1523,7 +1534,7 @@ versioned artifact.
 
 #### Security
 
-- **NFR-S1** — No execution of untrusted template content by default (FR56).
+- **NFR-S1** — No execution of untrusted template content by default (FR-121).
 - **NFR-S2** — Genesis never writes credentials and never reads them from the target repo.
 - **NFR-S3** — Templates are validated against the manifest before apply; a template
   writing outside its declared paths is a hard error.
@@ -1536,8 +1547,9 @@ versioned artifact.
   model drift in the source repo is caught the day it appears.
 - **NFR-M3** — Every finding type is documented with a remedy, in the shape of
   `bmad_drift_check.py`'s finding→remedy mapping.
-- **NFR-O1** — Plans and reports are machine-readable (`--json`) and human-readable by
-  default.
+- ~~**NFR-O1**~~ — *Retired 2026-08-08 as redundant with **NFR-12**, which states the same
+  requirement and additionally demands a stable, versioned schema. Its `--json`-and-
+  human-default wording was folded into NFR-12 verbatim; nothing was dropped.*
 
 ---
 
@@ -1554,7 +1566,7 @@ versioned artifact.
    the code** — an early spike should confirm before Epic scoping hardens.
 4. **[ASSUMPTION]** Copier's `run_copy` / `run_update` / `run_recopy` signatures are stable
    across 9.x.
-5. **[ASSUMPTION]** Copier's answers-file path is template-configurable (affects FR40).
+5. **[ASSUMPTION]** Copier's answers-file path is template-configurable (affects FR-105).
 6. **[ASSUMPTION]** HTML-comment markers are unambiguous in the specific markdown files in
    the manifest.
 7. **[ASSUMPTION]** First two adopters are `local-recipes` (oracle) and one greenfield
@@ -1564,22 +1576,312 @@ versioned artifact.
 
 ### Open Questions (carried to architecture)
 
-1. **OQ-1** — CLI framework: typer + rich (both already pinned; better for the
+1. **Q-17** — CLI framework: typer + rich (both already pinned; better for the
    plan/diff/confirm UX) vs argparse (warden's lean-engine precedent). Note Copier already
    pulls in prompt-toolkit / questionary / pygments regardless.
-2. **OQ-2** — One state file, or Genesis state alongside Copier's `.copier-answers.yml`?
+2. **Q-18** — One state file, or Genesis state alongside Copier's `.copier-answers.yml`?
    Depends on assumption 5.
-3. **OQ-3** — Exact marker syntax and the format registry's initial coverage (FR45).
-4. **OQ-4** — Does `genesis check` copy, extract, or re-implement `bmad_drift_check.py`?
+3. **Q-19** — Exact marker syntax and the format registry's initial coverage (FR-110).
+4. **Q-20** — Does `genesis check` copy, extract, or re-implement `bmad_drift_check.py`?
    Depends on assumption 3. Extraction into the package is attractive but couples
    `local-recipes` to a Genesis release.
-5. **OQ-5** — Where does the manifest live physically — one YAML/TOML file, or one file per
-   class? Affects FR1 and NFR-M1.
-6. **OQ-6** — Anchor semantics for FR46 when a repo's `CLAUDE.md` has an unusual structure.
+5. **Q-21** — Where does the manifest live physically — one YAML/TOML file, or one file per
+   class? Affects FR-66 and NFR-M1.
+6. **Q-22** — Anchor semantics for FR-111 when a repo's `CLAUDE.md` has an unusual structure.
    Fallback-to-append is specified; is that always safe?
-7. **OQ-7** — Does the plan artifact get committed by convention (like Nx's
+7. **Q-23** — Does the plan artifact get committed by convention (like Nx's
    `migrations.json`), and if so, where — and is it gitignored or tracked?
-8. **OQ-8** — How does a repo *leave* the model (`genesis eject`)? Not in V1 scope, but the
+8. **Q-24** — How does a repo *leave* the model (`genesis eject`)? Not in V1 scope, but the
    state file's design should not preclude it.
-9. **OQ-9** — Model deprecation path: the manifest marks `docs/specs/` legacy today. Does
+9. **Q-25** — Model deprecation path: the manifest marks `docs/specs/` legacy today. Does
    the model define a migration from Tier-1 legacy to Tier-2, or only preserve?
+
+---
+
+## 16. The station's own backlog — capabilities absorbed 2026-08-08
+
+**Why this section exists, and why it did not before.** Until today this PRD decomposed
+**two** of Marshal's twenty-four Specs: its own (`FR-1`..`FR-65`) and the seed installer's
+(§ 15). The other ten open Specs had no FR, no epic and no story — not by oversight, but by
+a rule recorded in this document's `.memlog.md` on 2026-08-02:
+
+> capabilities that are repo-level tooling not touching `src/shared/packages/pyforge-marshal/`
+> get NO marshal FR — "governed by [their own] spec itself"
+
+That rule caused a real revert: an `FR-66..FR-69` decomposition of the testing charter was
+added and withdrawn the same session under it.
+
+**The rule is amended, and this is the amendment.** It was checked against every open
+Marshal Spec on 2026-08-08: **not one of the ten declares a `surface:` path inside
+`src/shared/packages/pyforge-marshal/`.** The rule therefore excluded all of them,
+permanently, by construction — while several are unambiguously marshal-CLI work in their own
+words (`loop-home-fleet-refresh` says it "extends `marshal homes`/`init`/`preflight`";
+`sprint-status-auto-promote`'s job is `marshal deploy promote`, which shipped in Epic 4).
+The `surface:` fields were written before those verbs existed.
+
+> **Amended rule (2026-08-08).** A capability decomposes into this PRD **iff its Dream is
+> `owner: marshal`** — not iff it touches a particular directory. `surface:` declares *what
+> ships*; it never decides *whether the station is accountable*. The station is the unit of
+> accountability (Charter §5), so the station's PRD covers what the station owns.
+
+Two Specs are deliberately **not** decomposed here, and are recorded rather than dropped:
+
+- **`jira-github-projects-sync`** — re-owned to **Steward** on 2026-08-08 and moved out of
+  this project entirely. Under the build-line/estate seam it is an estate integration
+  service, not build-line machinery. See `pyforge-steward`'s chain.
+- **`agentic-sdlc-autonomy`** — a *standing position*, explicitly "not a deliverable" by its
+  own text. It has nothing to decompose; requiring an FR would manufacture one.
+
+### 16.1 Test architecture governance — `spec-pyforge-testing-charter`
+
+**Description.** Every station already has real pytest coverage; what is missing is
+narrower and more mechanical than "write tests." Realizes the charter's CAP-1..CAP-5.
+
+#### FR-128: Correct fleet-wide TEA signal
+The dashboard's `tea` completeness signal reads the canonical test location.
+**Consequences:** `_stage_globs` resolves `src/shared/packages/pyforge-<slug>/tests/`, not the
+planning-scaffold `_bmad-output/projects/<slug>/tests/`; atlas and warden report populated,
+not pending.
+
+#### FR-129: One automation path, run for real per station
+`bmad_tea_playwright.py` produces every station's `test-architecture.md`.
+**Consequences:** all 8 stations have one; output containing a `TBD` token is a failed run,
+not a delivered document; the filename convention is reconciled across stations.
+
+#### FR-130: Shared test-support package
+A `pyforge-testing-kit` exists, seeded from Marshal's four real mocks rather than rewritten.
+**Consequences:** CLI-runner, page-object, DB-factory and auth/HTTP/time primitives ship; at
+least one station other than the seed source imports from it. *(Open: Q-26 — whether this is
+its own leaf or a module of `pyforge-core`, see § 16.8.)*
+
+#### FR-131: Coverage gate enforced, not just measured
+A PR that drops a touched package below its station's threshold fails CI, naming the module.
+**Consequences:** per-station unit >80% / integration >70% gates run in CI; the failure names
+the uncovered module rather than printing a percentage.
+
+#### FR-132: Test architecture stays current as stories land
+Re-running the generator keeps each document true as code lands.
+**Consequences:** regeneration is idempotent on an unchanged tree; a station whose tests moved
+produces a changed document rather than a stale one.
+
+### 16.2 Loop-home fleet refresh — `spec-loop-home-fleet-refresh`
+
+**Description.** Keeping 8 loop homes current with `main` is a hand-run two-step ritual —
+lived on 2026-08-08 when all of them were found 227 commits stale.
+
+#### FR-133: Fleet-wide staleness detection
+One command reports every loop home's distance from `main`.
+**Consequences:** each home reports its behind-count and current ref; a home that cannot be
+read is reported, never skipped silently.
+
+#### FR-134: Fast-forward and push with a clean-worktree check
+Refresh is fast-forward-only and refuses on a dirty tree.
+**Consequences:** a dirty home is refused by name, not merged; no non-fast-forward merge is
+ever attempted; the push targets `loop/<slug>` only.
+
+#### FR-135: Policy re-render as a checked step of the same refresh
+The `marshal config --write-harness-policy` step is part of refresh, not a separately
+remembered second command.
+**Consequences:** a refresh that fast-forwards but fails to re-render reports the home as
+incompletely refreshed; each step reports `done | skipped | failed` (AD-21).
+
+### 16.3 Landing-to-ledger promotion — `spec-sprint-status-auto-promote`
+
+**Description.** A story landing does not, by itself, update the tracked ledger or the board;
+three live incidents in one session. **This is the Marshal half of the Marshal↔Steward
+contract** (§ 17).
+
+#### FR-136: Promotion runs on landing, not on memory
+Landing triggers ledger promotion mechanically.
+**Consequences:** a landed story's tracked-ledger entry is current without a separately
+remembered command; the trigger is deterministic, not heuristic.
+
+#### FR-137: Staleness is detectable on its own
+A check answers "is the tracked ledger behind git?" independently of any run.
+**Consequences:** ledger-versus-git discrepancies are reported per key with the direction of
+the drift.
+
+#### FR-138: The check is real, never approximated
+The comparison reads git and the ledger, never infers from the feed.
+**Consequences:** no story status is derived from `sprint-status.yaml` (a statement of intent);
+the oracle is merge history.
+
+#### FR-139: Promotion never races the orchestrator, and never downgrades
+Single-writer discipline, and terminal states are monotonic.
+**Consequences:** concurrent promotion attempts serialize on a lock; **a transition moving any
+key backwards from `done` is refused and named, not written** — closing DW-SYNC-2026-08-08-1,
+in which a stale Tier-3 feed silently overwrote the tracked ledger and dropped six `done`
+keys while reporting success.
+
+### 16.4 Dashboard path derivation — `spec-dashboard-project-path-derivation`
+
+**Description.** `generate.py` string-glues slugs onto project paths in several independent
+places, each with its own patch for the slug≠directory cases. A `TODO` at `generate.py:~45`
+names this exact gap.
+
+#### FR-140: One resolver, one override table
+Slug→path resolution happens in one function with one exception table.
+**Consequences:** no second call site builds a project path by string concatenation.
+
+#### FR-141: `PROJECT_SOURCES` is derived, not declared
+The dashboard discovers projects rather than hard-coding them.
+**Consequences:** a new station appears without a hand edit; a dissolved-and-absorbed project
+resolves to its owner's tree rather than 404-ing.
+
+#### FR-142: Resolution ships in `data.js`; the JS never re-derives
+Path resolution is computed once, at generation time.
+**Consequences:** `index.html` contains no slug→path special case (today it carries one for
+the retired `pyforge-genesis`).
+
+#### FR-143: An unresolvable slug fails loud
+**Consequences:** generation exits non-zero naming the slug, rather than emitting a row whose
+links 404.
+
+### 16.5 Detector self-verification — `spec-dream-to-code-model-self-verification`
+
+**Description.** Both detectors gate the tree; nothing gates the detectors. Three real
+incidents, one as recent as 2026-08-08.
+
+#### FR-144: Fixture-based meta-tests for `dream_chain_check.py`
+**Consequences:** known-good and known-bad trees assert *exact* findings, not "the live repo
+passes"; the `covers-dreams:`/`## Satellite:` coverage path is regression-pinned; unparseable
+frontmatter surfaces as a finding rather than being swallowed by `except: return {}`.
+
+#### FR-145: Fixture-based meta-tests for `bmad_drift_check.py`
+**Consequences:** pin-missing, archive-misplaced, stray-file and spec-status-stale each have a
+fixture; the existing live-repo integrity test stays — it gates the tree, these gate the
+detector.
+
+#### FR-146: A detector-incident log
+**Consequences:** a tracked companion records date, detector, wrong claim, true value, root
+cause, fixing commit and pinning fixture; a new entry is mandatory in the same change that
+fixes a detector.
+
+#### FR-147: The `--dreams` hygiene mode
+**Consequences:** the mode promised by the 2026-07-23 restructure exists and reports Dream-tier
+hygiene findings.
+
+### 16.6 Chain completeness — `spec-fleet-chain-completeness`
+
+**Description.** Keeping Dream→Spec→Research→Brief→PRD→Architecture→Epics→Code coherent is
+manual and fragile; this very session is the proof.
+
+#### FR-148: Orchestrated chain regeneration
+**Consequences:** regenerating a project's chain is one invocation, in dependency order.
+
+#### FR-149: Code-status preservation
+**Consequences:** every story key with `status=done` before a regeneration has the identical
+key after it; only backlog epics may be restructured.
+
+#### FR-150: Chain-completeness audit mode
+**Consequences:** a read-only mode reports, per project, which chain layers exist and which
+are missing.
+
+#### FR-151: Orphan detection with review-gated cleanup
+**Consequences:** specs referencing deleted Dreams and epics referencing orphaned specs are
+reported; nothing is deleted without review.
+
+#### FR-152: Configurable per-project invocation
+**Consequences:** the chain runs for one named project without touching another's tree.
+
+### 16.7 The governed tool surface — `spec-agent-tool-surface`
+
+**Description.** Every factory capability should be reachable through one governed, typed
+surface. The surface shipped without one.
+
+#### FR-153: One governed surface
+**Consequences:** capabilities are exposed as named tools with typed arguments and structured
+answers, not bespoke integrations.
+
+#### FR-154: The surface survives a clone
+**Consequences:** registration is per-home and rendered (the `marshal init` `.mcp.json`
+pattern), never a machine-absolute hand edit of `~/.claude.json` — AD-43 already forbids the
+latter.
+
+#### FR-155: CLI ⇄ tool parity is gated, not reviewed
+**Consequences:** a capability present in one surface and absent from the other fails a check.
+
+#### FR-156: Coverage is measured, not assumed
+**Consequences:** per-station tool-surface coverage is reported as a number; the 2026-07-28
+finding that recorded 2-of-6 coverage with Marshal itself at zero, inside a Dream marked
+`realized`, is the reason this is measured rather than asserted.
+
+### 16.8 The shared floor — `spec-pyforge-core`
+
+**Description.** Five primitives written between three and twenty times across eight
+stations. Minted 2026-08-08; see `docs/dreams/pyforge-core.md` for the measured census.
+**Sequencing: FR-157 and FR-158 must land before Epic 7's stories S-7.2 and S-7.3**, which
+would otherwise mint copy #21 of atomic write and copy #6 of the verdict lattice.
+
+#### FR-157: The leaf exists and is provably a leaf
+**Consequences:** pure stdlib; a meta-test fails the build if any module imports from
+`pyforge.<station>`; every station stays independently conda-installable.
+
+#### FR-158: Atomic write has one implementation
+**Consequences:** all 20 measured copies across the 6 stations that have them are removed **in
+the same story that extracts the primitive**; per-call-site durability semantics are verified,
+not assumed uniform.
+
+#### FR-159: The verdict lattice is declared once
+**Consequences:** doctor's `{0, 2, 130}` is an enforced narrowing of warden's `{0, 1, 2, 130}`
+rather than a docstring claim; all five declarations retire; observable exit codes are
+unchanged.
+
+#### FR-160: One report envelope
+**Consequences:** warden's 22 KB schema becomes an extension of one base; doctor's and
+marshal's resolve to it; captured real reports from each station validate unchanged.
+
+#### FR-161: One exception root
+**Consequences:** herald's and mason's independent roots re-parent; no existing `except`
+clause changes behaviour — asserted by test, since re-parenting can silently widen a catch.
+
+#### FR-162: The subprocess seam is reconciled
+**Consequences:** one guard, chosen deliberately between doctor's `cli_bridge.run_cli_json` and
+marshal's `ProcessPort`; **Marshal's own 7 importing modules — the widest ungated surface in
+the fleet — route through it**; steward's deliberate raw-`CalledProcessError` propagation is
+folded in or recorded as a tested opt-out; warden's existing single seam is confirmed
+conforming, not "fixed."
+
+#### FR-163: A second implementation cannot appear unnoticed
+**Consequences:** one sole-ownership meta-test per extracted primitive; each fails the build
+when a second implementation appears anywhere under `src/shared/packages/`.
+
+---
+
+## 17. The Marshal↔Steward seam
+
+**Ratified 2026-08-08.** Before today neither station's PRD mentioned the other — zero
+cross-references in either direction — while both shipped a `deploy` verb, both provisioned
+loop homes, and a pipeline ran through both with the hand-off owned by nobody.
+
+**The seam: Marshal owns the build line; Steward owns the estate it stands on.** The test is
+*is this the factory's own machinery, or the ground it stands on?*
+
+| | Marshal — the build line | Steward — the estate |
+|---|---|---|
+| Owns | loop homes, gates, runs, landing, the planning chain, adapters, the detector front door, the egress counter | pixi envs, credentials, budgets, service deploys, images, air-gap bundles, BMAD module installs |
+| Setup verbs | `marshal seed` makes a **repo** able to run the model | `steward provision` makes a **machine** able to run it |
+
+**Consequences recorded here, actioned in Steward's chain:**
+
+- **`steward provision --runner bmad-loop` retires in favour of `marshal init`.** Steward's own
+  **AD-5** already calls this "Marshal-owned machinery," and it wraps the *legacy*
+  `scripts/bmad-loop-worktree` while `marshal init` (Epic 1, 10 shipped stories) is a strict
+  superset — worktree plus marker↔symlink agreement, the AD-11 never-write proof, and an
+  idempotent step report.
+- **The ledger hand-off is a two-sided contract.** Marshal produces
+  `sprint-status-ledger.yaml` and is accountable for it being current (**FR-136..FR-139**);
+  Steward publishes whatever it says (`steward deploy dashboard`) and never derives status
+  itself. Neither station writes into the other's half.
+- **Setup routing follows one rule** — *judgment stays with the owning station, install
+  mechanics go to Steward, the front door is Marshal's.* Kedro adoption is Atlas's judgment
+  and Steward's install; BMAD module installs are Steward's while BMAD config/multi-project
+  wiring is Marshal's; MCP server availability is Steward's while per-home `.mcp.json` render
+  and the tool-surface contract are Marshal's (**FR-153..FR-156**).
+- **Local stays the default; a server is an estate service.** The static console is the
+  contract; any live UI is a cache over the same generators — the `artifact-console` failure
+  mode (state existing only in the running thing) is on record as the reason.
+
+Where an outcome is one station's and the mechanism another's, Charter §5's *Outcome and
+mechanism* rule governs: the outcome-owner writes the story, the mechanism-owner owns the verb
+it calls.

@@ -7,7 +7,8 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-65 / NFR-1..NFR-14.
 status: final
 created: 2026-07-25
-updated: 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
+updated: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
+# 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
 binds:
   - FR-1..FR-65
@@ -658,27 +659,31 @@ The supervisor's **inputs** are observation-only — it never asks the session h
 
 ---
 
-## Satellite: Genesis Installer Architecture
+## Part II — The seed installer (`marshal seed`)
 
-**Consolidated 2026-08-02 — see
-`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-genesis-installer-2026-07-25/architecture.md`
-for the original standalone document.** The section below is the genesis-installer
-architecture, folded into this single Marshal-station architecture verbatim, per explicit
-user override of the "kept separate on purpose" decision recorded in
-`docs/dreams/pyforge-marshal.md` / `docs/dreams/genesis-installer.md`. Nothing in Marshal's
-own architecture above this line was changed.
+**Integrated 2026-08-08.** This was a satellite — *"Satellite: Genesis Installer
+Architecture"* — from its 2026-08-02 consolidation until now. It is no longer a separate
+sub-product: its decisions are Marshal's own, its requirements cite Marshal's own FR
+sequence, and the name `genesis` is retired. The original standalone document remains at
+`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-genesis-installer-2026-07-25/architecture.md`.
 
-**Renumbering — read this before citing an AD below.** genesis-installer's architecture
-defined its own **`AD-01`..`AD-15`**. Those labels are renumbered **`AD-51`..`AD-65`**
-throughout this section (continuing this document's own sequence past its highest existing
-label, `AD-50`) — every in-text reference below (including the Coverage Matrix and Risks
-table) has been updated to match, so the section is internally consistent with its new
-numbers. genesis-installer's other local namespaces — `A-01`..`A-05` (architectural style),
-`L-01`..`L-10` (locked decisions carried from its brief/PRD), and `P-01`..`P-12` (pattern
-decisions) — do not collide with any prefix this document uses and are left exactly as
-authored. `OQ-1`..`OQ-9` (the PRD open questions each `AD-5x` resolves, per the satellite
-PRD section above) are similarly untouched — they are a distinct namespace from this
-document's own `Q-1`..`Q-16`.
+**Namespaces, after integration.** `AD-01`..`AD-15` were already renumbered `AD-51`..`AD-65`
+in the 2026-08-02 pass, continuing this document's own sequence past `AD-50` — unchanged
+today. Completed 2026-08-08: the requirement citations below, which were still the
+satellite's bare-digit `FR1`..`FR62`, now read **`FR-66`..`FR-127`** (61 references
+rewritten), and the open questions each `AD-5x` resolves, formerly `OQ-1`..`OQ-9`, now read
+**`Q-17`..`Q-25`** (22 references) — continuing this document's own `Q-1`..`Q-16` rather than
+sitting beside it as a second sequence. The remaining local namespaces — `A-01`..`A-05`
+(architectural style), `L-01`..`L-10` (locked decisions), `P-01`..`P-12` (patterns) — collide
+with no prefix this document uses and are left exactly as authored.
+
+**Two decisions this section previously deferred are now made** — see AD-51 and AD-54 below.
+Both were flagged in `spec-pyforge-marshal` as `⚠ CONTRADICTION … not resolved here` and are
+resolved as of 2026-08-08.
+
+**Verb surface.** Every command here is `marshal seed <verb>`. `marshal init` (loop home, by
+slug) and `marshal check` (detector registry, this repo) are different, shipped commands and
+are not touched.
 
 | genesis-installer original | renumbered here |
 |---|---|
@@ -708,7 +713,7 @@ updated: "2026-07-25"
 project_slug: "pyforge-genesis"
 altitude: "product / initiative"
 inputs:
-  - "planning-artifacts/prd.md (FR1–FR62, NFR-R/A/P/C/S/M/O, OQ-1..OQ-9)"
+  - "planning-artifacts/prd.md (FR-66–FR-127, NFR-R/A/P/C/S/M/O, Q-17..Q-25)"
   - "planning-artifacts/product-brief-pyforge-genesis.md"
   - "planning-artifacts/research/domain-research-scaffolder-landscape.md"
   - "planning-artifacts/research/technical-research-installer-implementation.md"
@@ -736,13 +741,13 @@ classifies and reports drift. Distribution: `pyforge-genesis` / `pyforge.genesis
 
 | # | Decision | Source |
 |---|---|---|
-| L-01 | Wrap **Copier `>=9.17,<10`** as a conda run-dependency; public `run_copy`/`run_update`/`run_recopy` only | brief § Technical Approach; FR55, NFR-C2 |
-| L-02 | Model templates ship **in-package**; `--template` overrides | FR53, FR54, NFR-A1 |
-| L-03 | Five artifact classes: `referenced`, `copied-managed`, `copied-seeded`, `generated-derived`, `hybrid-managed-region` | PRD § Extraction Manifest; FR2 |
-| L-04 | **Two version numbers** — CLI semver and model semver — both in state | FR5, FR37, FR60 |
-| L-05 | Managed regions are replaced by **pure span substitution**, never three-way merge | FR44, NFR-R3 |
-| L-06 | `adopt` and `update` are **dry-run by default**, two-phase (plan → apply) | FR14, FR29 |
-| L-07 | **Never-write path set** enforced at the lowest write primitive | FR6, FR35, NFR-R4 |
+| L-01 | Wrap **Copier `>=9.17,<10`** as a conda run-dependency; public `run_copy`/`run_update`/`run_recopy` only | brief § Technical Approach; FR-120, NFR-C2 |
+| L-02 | Model templates ship **in-package**; `--template` overrides | FR-118, FR-119, NFR-A1 |
+| L-03 | Five artifact classes: `referenced`, `copied-managed`, `copied-seeded`, `generated-derived`, `hybrid-managed-region` | PRD § Extraction Manifest; FR-67 |
+| L-04 | **Two version numbers** — CLI semver and model semver — both in state | FR-70, FR-102, FR-125 |
+| L-05 | Managed regions are replaced by **pure span substitution**, never three-way merge | FR-109, NFR-R3 |
+| L-06 | `adopt` and `update` are **dry-run by default**, two-phase (plan → apply) | FR-79, FR-94 |
+| L-07 | **Never-write path set** enforced at the lowest write primitive | FR-71, FR-100, NFR-R4 |
 | L-08 | pixi workspace member cloning `pyforge-warden`'s shape; lean env, `no-default-feature = true` | brief § Technical Approach; NFR-C4 |
 | L-09 | Python `>=3.12` | NFR-C1 |
 | L-10 | Genesis **installs** the multi-project machinery; **Marshal operates it**. Marshal owns the source of `bmad-switch` / `bmad-loop-worktree`; Genesis owns delivery and never forks them | PRD § Boundaries |
@@ -792,7 +797,7 @@ flowchart LR
 | `update` | manifest + repo + state + migrations | classification + version delta | migration + rewrite list | on `--run` |
 
 `check` is `adopt`'s detect+plan stages with writes structurally unreachable — not a
-separate implementation. That is why FR23 (check never writes) is cheap to guarantee.
+separate implementation. That is why FR-88 (check never writes) is cheap to guarantee.
 
 #### A-02 — Manifest as data, engine as mechanism
 
@@ -829,7 +834,7 @@ never-write guard lives there, not at call sites, so no future code path can byp
 
 Exactly one module (`engine/copier.py`) imports `copier`. Everything above it speaks a
 Genesis-internal `MaterializeRequest` type. Consequences: Copier can be swapped or
-version-bumped behind one seam; the public-API-only rule (FR55) is enforceable by a
+version-bumped behind one seam; the public-API-only rule (FR-120) is enforceable by a
 single import-site test; and Copier's absence in a degraded environment fails in one
 place with one message.
 
@@ -837,7 +842,7 @@ place with one message.
 
 `genesis_version` moves with releases; `model_version` moves with the operating model.
 Migrations are keyed to `model_version` only. A repo can be current on the model and
-behind on the CLI, or vice versa, and both states are legible (FR27, FR60).
+behind on the CLI, or vice versa, and both states are legible (FR-92, FR-125).
 
 ---
 
@@ -874,7 +879,7 @@ src/shared/packages/pyforge-genesis/
 ├── src/pyforge/genesis/
 │   ├── __init__.py
 │   ├── cli.py                      # typer app; the only presentation layer
-│   ├── errors.py                   # exit-code taxonomy (FR61)
+│   ├── errors.py                   # exit-code taxonomy (FR-126)
 │   ├── fs.py                       # THE write primitive + never-write guard
 │   ├── model/
 │   │   ├── manifest.py             # load + validate the manifest
@@ -884,25 +889,25 @@ src/shared/packages/pyforge-genesis/
 │   │   ├── schema.json             # JSON Schema for .genesis/state.yml
 │   │   └── store.py                # read/validate/write (atomic)
 │   ├── regions/
-│   │   ├── markers.py              # per-format marker registry (FR45)
-│   │   ├── parse.py                # find spans; reject nesting (FR48)
-│   │   └── apply.py                # span substitution (FR44)
+│   │   ├── markers.py              # per-format marker registry (FR-110)
+│   │   ├── parse.py                # find spans; reject nesting (FR-113)
+│   │   └── apply.py                # span substitution (FR-109)
 │   ├── detect/
-│   │   ├── inventory.py            # walk repo, classify artifacts (FR15)
-│   │   ├── hashes.py               # managed content hashing (FR41)
-│   │   └── findings.py             # Finding + severity + remedy (FR25, P-10)
+│   │   ├── inventory.py            # walk repo, classify artifacts (FR-80)
+│   │   ├── hashes.py               # managed content hashing (FR-106)
+│   │   └── findings.py             # Finding + severity + remedy (FR-90, P-10)
 │   ├── plan/
-│   │   ├── types.py                # Plan, Action (serializable) (FR17, P-04)
+│   │   ├── types.py                # Plan, Action (serializable) (FR-82, P-04)
 │   │   └── build.py                # detect result -> Plan
 │   ├── apply/
 │   │   └── run.py                  # Plan -> guarded writes
 │   ├── engine/
 │   │   └── copier.py               # THE ONLY copier import (P-02)
 │   ├── derive/
-│   │   ├── adapters.py             # agent-adapter fan-out (FR49–FR52)
+│   │   ├── adapters.py             # agent-adapter fan-out (FR-114–FR-117)
 │   │   └── projects_index.py       # PROJECTS.md rows (FR: generated-derived)
 │   ├── migrate/
-│   │   ├── registry.py             # ordered, applied-once (FR31)
+│   │   ├── registry.py             # ordered, applied-once (FR-96)
 │   │   └── m_*.py                  # one module per model-version step
 │   ├── verbs/
 │   │   ├── init.py  adopt.py  check.py  update.py  explain.py  version.py
@@ -930,28 +935,42 @@ src/shared/packages/pyforge-genesis/
 
 Each resolves a PRD open question or fixes a non-obvious invariant.
 
-#### AD-51 — CLI: **typer + rich** (resolves OQ-1)
+#### AD-51 — CLI: **argparse, one tree, one binary** (resolves Q-17) — *amended 2026-08-08*
 
 **Binds:** every CLI surface. **Prevents:** two verbs rendering plans differently; hand-rolled
-table/diff formatting.
-**Rule:** `cli.py` uses typer for parsing and rich for rendering; **no other module imports
-rich or typer**, so `--json` output and library use stay presentation-free. Both are already
-pinned in the workspace, and Copier already brings prompt-toolkit/questionary/pygments, so the
-marginal dependency cost is near zero. Warden's argparse minimalism is not adopted: Genesis's
-value is a *reviewable plan*, and plan rendering is the product's main human surface.
+table/diff formatting; **two parsing frameworks inside one binary.**
+**Rule:** the seed verbs render through the **same argparse tree** every shipped Marshal
+command already uses. No module outside `cli/` performs presentation, so `--json` output and
+library use stay presentation-free — the constraint this AD always carried, and the part that
+actually mattered.
 
-#### AD-52 — State: **one Genesis-owned file at `.genesis/state.yml`** (resolves OQ-2)
+**Superseded rule (2026-08-02 → 2026-08-08):** *"`cli.py` uses typer for parsing and rich for
+rendering; no other module imports rich or typer… Warden's argparse minimalism is not adopted:
+Genesis's value is a reviewable plan, and plan rendering is the product's main human surface."*
+
+**Why it changed.** The installer's verbs fold into the `marshal` binary (2026-07-31 operator
+decision), so one framework must win, and `spec-pyforge-marshal` flagged the collision as an
+unresolved contradiction. Decided on measurement, 2026-08-08: the shipped tree has **14
+argparse subparsers** (`config init homes preflight teardown gate factory deploy land retire
+status check adapters upstream`) across ~34.2k LOC and 50 done stories, and **zero occurrences
+of `typer` anywhere under `src/`**. The superseded rule proposed migrating a shipped 50-story
+CLI to suit 36 unbuilt ones. Its own stated rationale — plan rendering as the main human
+surface — is a *rendering* requirement, not a framework one, and is already met: human output
+is a pure projection of the machine-readable envelope (NFR-12), which is a stronger guarantee
+than `rich` would give. `rich` is not adopted; the plan renderer is an envelope projection.
+
+#### AD-52 — State: **one Genesis-owned file at `.genesis/state.yml`** (resolves Q-18)
 
 **Binds:** all state access. **Prevents:** state/answers divergence; hand-edited state.
-**Rule:** Genesis owns `.genesis/state.yml` (git-tracked, FR42, schema-validated, FR39).
+**Rule:** Genesis owns `.genesis/state.yml` (git-tracked, FR-107, schema-validated, FR-104).
 Copier's answers file is configured by the in-package template to live at
 `.genesis/.copier-answers.yml` and is **treated as opaque and tool-owned** — Genesis reads it
-never and writes it only via Copier (FR40). Answers are re-supplied programmatically from
+never and writes it only via Copier (FR-105). Answers are re-supplied programmatically from
 Genesis state on every Copier call (`data=`), so Genesis state is the single source of truth
 and the answers file is a Copier implementation detail. If the answers-file relocation proves
 unsupported (assumption 5), it stays at the repo root and the rule is otherwise unchanged.
 
-#### AD-53 — Marker syntax and the format registry (resolves OQ-3)
+#### AD-53 — Marker syntax and the format registry (resolves Q-19)
 
 **Binds:** every hybrid artifact. **Prevents:** per-file ad-hoc markers; unparseable regions.
 **Rule:** One canonical marker grammar, rendered per comment syntax:
@@ -964,10 +983,18 @@ unsupported (assumption 5), it stays at the repo root and the rule is otherwise 
 Registry v1 covers three comment styles — `html` (`<!-- … -->`) for `.md`; `hash` (`# …`)
 for `.gitignore`, `.toml`, `.yml`, `.yaml`, shell; `slashstar` (`/* … */`) reserved,
 unused in V1. Format is chosen by file extension, declared per artifact in the manifest,
-never sniffed. Nested or overlapping regions are a hard error (FR48). `sha` covers the
+never sniffed. Nested or overlapping regions are a hard error (FR-113). `sha` covers the
 region **body only**, so the marker line itself is not self-referential.
 
-#### AD-54 — `genesis check` **re-implements** the generic subset; does not extract or vendor `bmad_drift_check.py` (resolves OQ-4)
+#### AD-54 — `marshal seed check` **re-implements** the generic subset; does not extract or vendor `bmad_drift_check.py` (resolves Q-20) — *verb settled 2026-08-08*
+
+> **Verb collision closed.** This AD and Marshal's shipped `marshal check` (FR-65/AD-50) were
+> flagged as contradictory because both were about to be spelled `check` in one binary. They
+> are not the same verb and never needed reconciling: `marshal check` asks *"does **this** repo
+> pass its own detector registry?"* and routes to `scripts/detectors.py`; this one asks *"does
+> an **installed, external** repo still conform to the model it adopted?"* and re-implements a
+> generic subset. The installer's lives under the `seed` group, so both keep their meaning and
+> neither is renamed. The rule below is unchanged in substance.
 
 **Binds:** the detect/findings layer. **Prevents:** coupling `local-recipes` to a Genesis
 release; importing 662 lines of repo-specific probes.
@@ -983,17 +1010,17 @@ detectors coexist: `bmad-drift-check` stays the factory's own detector; `genesis
 the model's. **Convergence is a V1.x question, not a V1 dependency** — this removes
 assumption 3 from the critical path.
 
-#### AD-55 — Manifest is **one YAML file** with per-entry class (resolves OQ-5)
+#### AD-55 — Manifest is **one YAML file** with per-entry class (resolves Q-21)
 
 **Binds:** the model declaration. **Prevents:** class-file drift; partial coverage.
 **Rule:** `templates/manifest.yaml`, one document, entries keyed by stable **artifact id**
 (P-11). Each entry: `id`, `class`, `path` (jinja-templated on slug), `format` (for hybrid),
 `regions[]` with `anchor`, `since` / `until` model-version bounds, `applies_to` (`init` /
-`adopt` / both), and `rationale` (surfaced by `genesis explain`, FR62). One file keeps
-coverage (FR4) a single-pass check and makes the manifest reviewable as a diff — which
+`adopt` / both), and `rationale` (surfaced by `genesis explain`, FR-127). One file keeps
+coverage (FR-69) a single-pass check and makes the manifest reviewable as a diff — which
 matters, because **the manifest is the product's actual contract**.
 
-#### AD-56 — Anchor semantics: declared anchor, append fallback, never mid-file guessing (resolves OQ-6)
+#### AD-56 — Anchor semantics: declared anchor, append fallback, never mid-file guessing (resolves Q-22)
 
 **Binds:** region insertion into pre-existing files. **Prevents:** corrupting an unfamiliar
 `CLAUDE.md`.
@@ -1004,7 +1031,7 @@ line. Genesis never infers structure, never inserts inside a fenced code block (
 ``` fences are skipped when matching), and always reports the chosen anchor in the plan so
 the human reviewing the plan can veto placement.
 
-#### AD-57 — The plan artifact: `.genesis/plan.json`, **gitignored by default** (resolves OQ-7)
+#### AD-57 — The plan artifact: `.genesis/plan.json`, **gitignored by default** (resolves Q-23)
 
 **Binds:** the plan lifecycle. **Prevents:** stale plans applied against a changed repo;
 plan-file churn in git.
@@ -1015,7 +1042,7 @@ the artifacts it names); `apply` **refuses** a plan whose fingerprint no longer 
 specific plan file. Nx commits `migrations.json`; Genesis does not, because the plan is
 derived and cheap to regenerate while a committed stale plan is a hazard.
 
-#### AD-58 — `genesis eject` is **not built in V1, but state must not preclude it** (resolves OQ-8)
+#### AD-58 — `genesis eject` is **not built in V1, but state must not preclude it** (resolves Q-24)
 
 **Binds:** the state schema. **Prevents:** a lock-in design that cannot be undone later.
 **Rule:** State records, for every managed artifact, enough to remove Genesis's claim
@@ -1023,7 +1050,7 @@ cleanly: `id`, `path`, `class`, `body_sha`, and `inserted_region_span` where app
 That is sufficient for a future `eject` to strip markers and forget the artifacts without
 touching content. No eject verb ships in V1.
 
-#### AD-59 — Legacy conventions: **preserve + record + optional advisory**, never migrate (resolves OQ-9)
+#### AD-59 — Legacy conventions: **preserve + record + optional advisory**, never migrate (resolves Q-25)
 
 **Binds:** brownfield detect. **Prevents:** deleting a live legacy tier.
 **Rule:** A manifest entry may declare `legacy_of: <artifact-id>`. When detect finds it,
@@ -1042,7 +1069,7 @@ different repos — one mechanism, two proofs.
 
 #### AD-61 — The never-write guard is a **path-set matcher inside `fs`**, evaluated per write
 
-**Binds:** `fs`. **Prevents:** any path bypassing FR6.
+**Binds:** `fs`. **Prevents:** any path bypassing FR-71.
 **Rule:** `fs` holds an immutable `NeverWrite` set (loaded from the manifest at
 orchestrator construction, then frozen). Every write resolves its path to an absolute,
 symlink-resolved form and matches it against the set **before** opening anything. A match
@@ -1060,14 +1087,14 @@ with `from_version` / `to_version`. The runner selects the ordered chain from
 result to the same `apply` path as every other verb (P-12). Applied migrations are appended
 to `state.migrations_applied[]` and never re-run. A migration touching a `copied-seeded`
 artifact emits an **offer** action which apply skips unless `--include-seeded` is passed
-(FR32).
+(FR-97).
 
 #### AD-63 — Adapter fan-out renders from **one contract document**, per-agent
 
 **Binds:** `derive/adapters.py`. **Prevents:** four drifting copies of the tier table.
 **Rule:** The neutral contract (tiers table, portability contract, Dream-first workflow) is
 one jinja-rendered source in `templates/`. Each adapter is `(target_path, format, wrapper
-template)`. `CLAUDE.md` and `AGENTS.md` receive it as a **managed region** (FR52); Cursor,
+template)`. `CLAUDE.md` and `AGENTS.md` receive it as a **managed region** (FR-117); Cursor,
 Gemini, and Copilot files are **whole-file generated-derived** because inspection confirms
 they are already nothing but per-tool framing around that same table. Adding a fifth agent is
 a manifest entry plus a wrapper template — no engine change (NFR-M1).
@@ -1102,23 +1129,23 @@ across `init`, `adopt --dry-run`, `adopt --apply`, and `check`.
 
 | FR | Covered by |
 |---|---|
-| FR1–FR6 | AD-55 (one manifest), A-02, AD-61 (never-write set), P-11 |
-| FR7–FR13 | `verbs/init.py` on the A-01 pipeline; AD-55 `applies_to`; AD-64 |
-| FR14–FR22 | A-01 (dry-run default, plan artifact), AD-57, AD-59, AD-60, P-03, P-07 |
-| FR23–FR28 | A-01 (`check` = detect+plan, writes unreachable), AD-54, P-10 |
-| FR29–FR36 | AD-62, AD-61, A-05, P-12; FR36 → `engine/copier.py` `run_recopy` |
-| FR37–FR42 | AD-52, AD-58, `state/schema.json`, P-08 |
-| FR43–FR48 | AD-53, AD-56, P-06, `regions/` |
-| FR49–FR52 | AD-63 |
-| FR53–FR57 | L-02, A-04, P-02, AD-64 |
-| FR58–FR62 | AD-51 (`--json`/`--quiet` presentation-free), `errors.py` exit taxonomy, AD-55 `rationale` → `explain` |
+| FR-66–FR-71 | AD-55 (one manifest), A-02, AD-61 (never-write set), P-11 |
+| FR-72–FR-78 | `verbs/init.py` on the A-01 pipeline; AD-55 `applies_to`; AD-64 |
+| FR-79–FR-87 | A-01 (dry-run default, plan artifact), AD-57, AD-59, AD-60, P-03, P-07 |
+| FR-88–FR-93 | A-01 (`check` = detect+plan, writes unreachable), AD-54, P-10 |
+| FR-94–FR-101 | AD-62, AD-61, A-05, P-12; FR-101 → `engine/copier.py` `run_recopy` |
+| FR-102–FR-107 | AD-52, AD-58, `state/schema.json`, P-08 |
+| FR-108–FR-113 | AD-53, AD-56, P-06, `regions/` |
+| FR-114–FR-117 | AD-63 |
+| FR-118–FR-122 | L-02, A-04, P-02, AD-64 |
+| FR-123–FR-127 | AD-51 (`--json`/`--quiet` presentation-free), `errors.py` exit taxonomy, AD-55 `rationale` → `explain` |
 
 #### NFRs covered
 
 | NFR | Covered by |
 |---|---|
 | NFR-R1 (no partial state) | P-08 (state written last, atomically); AD-57 fingerprint refusal |
-| NFR-R2 (git is undo) | clean-worktree precondition in `verbs/`; FR20 |
+| NFR-R2 (git is undo) | clean-worktree precondition in `verbs/`; FR-85 |
 | NFR-R3 (no conflict markers) | P-06, AD-53 — span substitution cannot produce them |
 | NFR-R4 (guard at primitive) | AD-61, P-01 + AST meta-test |
 | NFR-A1/A2 (air-gap) | AD-65, P-09, L-02 |
@@ -1204,14 +1231,14 @@ bespoke materializer, so this gates rather than accompanies the build.
 | AR-5 | Stale plan applied to a changed repo | AD-57 `repo_fingerprint` refusal |
 | AR-6 | State/repo desync | P-08 state written last, atomically — the `bmad-switch` marker lesson encoded |
 | AR-7 | Genesis and Marshal both claim `bmad-switch` | L-10: Marshal owns source, Genesis owns delivery; Genesis never forks. Needs Marshal's PRD to agree (PRD assumption 8) |
-| AR-8 | In-package templates couple model releases to package releases | accepted; `--template` (FR54) is the escape valve and the V2 seam |
+| AR-8 | In-package templates couple model releases to package releases | accepted; `--template` (FR-119) is the escape valve and the V2 seam |
 
 ---
 
 ### 9. Architecture Phase Completion
 
-**Resolved:** OQ-1 → AD-51 · OQ-2 → AD-52 · OQ-3 → AD-53 · OQ-4 → AD-54 · OQ-5 → AD-55 ·
-OQ-6 → AD-56 · OQ-7 → AD-57 · OQ-8 → AD-58 · OQ-9 → AD-59. All nine PRD open questions are
+**Resolved:** Q-17 → AD-51 · Q-18 → AD-52 · Q-19 → AD-53 · Q-20 → AD-54 · Q-21 → AD-55 ·
+Q-22 → AD-56 · Q-23 → AD-57 · Q-24 → AD-58 · Q-25 → AD-59. All nine PRD open questions are
 closed.
 
 **Notably, AD-54 removes PRD assumption 3** (`bmad_drift_check.py` reuse) from the critical
@@ -1224,3 +1251,114 @@ mitigated by build order (regions are component 3 of 14) and by being the most h
 tested unit in the package.
 
 **Ready for `bmad-create-epics-and-stories`.**
+
+---
+
+## Part III — The shared floor and the station seam (added 2026-08-08)
+
+Decisions for the capabilities absorbed into the PRD as § 16 and § 17. These continue this
+document's own `AD-` sequence past `AD-65`.
+
+#### AD-66 — `pyforge-core` is a **leaf**, enforced structurally (binds FR-157)
+
+**Binds:** every station package. **Prevents:** the shared floor becoming the cross-station
+coupling the architecture has refused for eight stations.
+**Rule:** `pyforge-core` is pure stdlib and imports **no** `pyforge.<station>` module. This is
+not a convention — a meta-test enumerates its imports and fails the build on any station
+import, the same sole-ownership pattern marshal and warden already use. Stations depend on it;
+it depends on nothing in the fleet. If a primitive needs a station's type, the extraction was
+wrong and the primitive stays where it is.
+**Why a leaf is not the coupling:** the two existing cross-station edges (doctor→warden,
+atlas→warden) are supplied at the pixi *feature* level precisely so standalone conda installs
+stay optional. `pyforge-core` is different in kind — mandatory and universal — which is
+exactly why it must carry no station knowledge. A leaf every station shares adds no edges
+*between* stations.
+
+#### AD-67 — Extraction retires the copy in the same story (binds FR-158..FR-162)
+
+**Binds:** every extraction story. **Prevents:** a second live path; a "shipped" claim over
+unchanged runtime behaviour.
+**Rule:** a story that extracts a primitive **removes every copy it replaces in that same
+story**. No deprecation window, no parallel implementation, no follow-up ticket.
+**Grounding, from this repo's own record:** the Atlas Kedro migration merged ~29k LOC and was
+marked `shipped` while the 8,902-LOC legacy module remained the live runtime, because the
+rebuild had no migration step. An extraction that leaves copies standing has changed nothing
+and claimed something.
+**Order** follows the measured census, heaviest and most mechanical first: atomic write (20
+copies) → verdict lattice (5) → report envelope (3) → roster (pending Q-26) → exception root
+→ subprocess guard. Subprocess is **last on purpose**: it is the only entry that is a design
+reconciliation rather than a de-duplication.
+
+#### AD-68 — Observable behaviour is frozen across every extraction (binds FR-159..FR-161)
+
+**Binds:** the extraction stories. **Prevents:** a refactor silently changing a contract other
+things already depend on.
+**Rule:** exit codes, report payloads and exception-catch semantics are contracts. Each
+extraction proves preservation **by test**, not by review: the same inputs yield the same
+process exit codes; a captured real report from each station validates unchanged against the
+composed schema; and re-parenting an exception changes no existing `except` clause's behaviour
+— asserted explicitly, because re-parenting can silently *widen* a catch and a widened catch
+is invisible in review.
+
+#### AD-69 — The subprocess seam is one guard, and Marshal is its first subject (binds FR-162)
+
+**Binds:** every subprocess invocation in the fleet. **Prevents:** ungated process execution;
+and, specifically, this station grading itself lightly.
+**Rule:** one guard in `pyforge-core`, chosen deliberately between doctor's
+`cli_bridge.run_cli_json` (AD-5, sole-site meta-test) and marshal's `ProcessPort` /
+`process_posix`, with the rationale recorded rather than decided by copy count. **Marshal's own
+7 importing modules route through it** — measured 2026-08-08, that is the widest ungated
+subprocess surface in the fleet. Steward's deliberate raw-`CalledProcessError` propagation is
+folded in or recorded as a tested opt-out, never silently overridden. Warden's existing seam
+(`engines.py`, one importing module, already annotated *"the sole seam"*) is confirmed
+conforming, not "fixed."
+**Correction on the record:** the 2026-08-08 unification research named warden as the outlier
+with *"~20 modules importing subprocess with no sole-site guard"* and called fixing it *"the
+one item worth doing even if nothing else is."* That counted **mentions, not imports**. Warden
+has one. Marshal has seven. The station that owns this decision is the one at fault, which is
+why it is written here rather than quietly corrected.
+
+#### AD-70 — The seed installer renders through the shipped argparse tree (binds FR-66..FR-127)
+
+**Binds:** the `marshal seed` verb group. **Prevents:** two parsers in one binary; a second
+rendering path.
+**Rule:** `marshal seed <verb>` is a noun-group subparser on the same tree as the 14 shipped
+subcommands (AD-51), matching the shape `config` / `gate` / `factory` / `deploy` / `adapters` /
+`upstream` already use. Plan rendering is an envelope projection (NFR-12), not a second
+presentation stack. `marshal init` and `marshal check` keep their shipped meanings; the
+installer's same-named verbs live under `seed` and are therefore not collisions (AD-54).
+
+#### AD-71 — The Marshal↔Steward seam: build line versus estate (binds FR-136..FR-139)
+
+**Binds:** every capability touching provisioning, deployment or credentials. **Prevents:** two
+stations owning one pipeline with the hand-off owned by neither.
+**Rule:** Marshal owns the factory's own machinery; Steward owns the platform beneath it. The
+test is *is this the build line, or the ground it stands on?* Concretely:
+- **Loop homes are the build line.** `steward provision --runner bmad-loop` retires in favour
+  of `marshal init` — Steward's own **AD-5** already calls this "Marshal-owned machinery," and
+  it wraps the *legacy* `scripts/bmad-loop-worktree` while `marshal init` (10 shipped stories)
+  is a strict superset.
+- **The ledger is a contract, not a shared mutable.** Marshal produces
+  `sprint-status-ledger.yaml` and is accountable for its currency; Steward publishes what it
+  says and never derives status. Neither writes into the other's half.
+- **Terminal states are monotonic.** Any write moving a story key out of `done` is refused and
+  named. Shipped 2026-08-08 in `scripts/promote_sprint_status.py` after a stale feed silently
+  destroyed six `done` keys and reported success.
+- **Setup routes by kind:** judgment stays with the owning station, install mechanics go to
+  Steward, the front door is Marshal's.
+
+#### AD-72 — `epics.md` is the single canonical story source per station (binds FR-148..FR-152)
+
+**Binds:** the chain-completeness checks. **Prevents:** two live epics documents feeding one
+ledger; a merge that injects phantom stories.
+**Rule:** each station has exactly one epics document whose stories map 1:1 to its ledger
+story keys. Role is **declared, not inferred**, via `epics_role: canonical | derived |
+historical` — `status:` cannot carry this, since it already means generation-workflow state
+and is provably blind to the distinction (marshal's live installer epics and mason's
+historical presenton epics are both `status: complete`). Consequence: the merge rule is
+mechanical — *merge iff a station has more than one `canonical`* — and a `historical` document
+is never merged. Measured 2026-08-08: Marshal was the only station with two `canonical`
+documents; `epics-regenerable-factory.md` (shipped Dream, 0 stories in the current format) and
+mason's `epics-presenton-pixi-image.md` (archived Dream, 30 stories, 0 ledger keys) are
+`historical` and merging them would have injected 15 phantom epics and 30 phantom stories
+respectively.

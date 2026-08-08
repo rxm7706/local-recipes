@@ -491,3 +491,87 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.5's follow-up adversarial review. Confirmed by inspection of `_bmad/bmm/config.yaml:8` (top-level path hard-coded), `scripts/bmad-switch::_ARTIFACT_LINKS`/`desync_warning` (requires BOTH top-level links to agree with the marker), and the epics: no later story creates the link — Story 1.6 only VERIFIES Tier-3 realpaths, Story 1.7 seeds adapter configs. The spec deliberately scoped the top-level compatibility link out of Story 1.5 (its Never section + Design Notes: it belongs to `bmad-switch::repoint_links`, shared with `planning-artifacts`), and today's operational mitigation is running `bmad-switch` inside the home (auto-memory `feedback_bmad_loop_worktree_needs_switch_and_backlink.md`). Needs a product decision: either a later Marshal story ports `repoint_links`' implementation-artifacts half (e.g. into 1.6/1.7's surface), or the FR-3 claim "every consumer sees the same path" is formally narrowed to nested-path consumers.
 
   status: open
+
+## DW-4-2-1 — `marshal teardown` reports every landed story as an unreachable promotion for …
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-4-2-teardown-reachability-and-spec-recovery-assistance.md`
+  summary: `marshal teardown <slug>` for a project whose planning tree no longer exists refuses with `MRS-TEARDOWN-003` naming **every** story that has ever landed on `main` as an unreachable promotion — none of which is at risk. `cli/deploy.py::_scan_promotions` derives the durable-story set from `main`'s merge subjects (repo-wide, not project-scoped, since the composed policy falls back to the default `merge_subject_template` when the project has no policy file) but resolves each story's spec at `_bmad-output/projects/<slug>/planning-artifacts/specs/`. When that directory is absent, every durable key lands in `plan.missing_spec_keys` and is reported as unreachable.
+  evidence: Reproduced live 2026-08-08 while retiring the dissolved `pyforge-genesis` loop home. `unreachable_promotions_for_slug(root, "pyforge-genesis")` returns **26** keys — `1.3, 1.4, 2.1, 2.3, 2.7, 3.8, 4.1-4.10, 5.2-5.6, 6.1-6.5` — while the identical call for `"pyforge-marshal"` returns **0**. Same git history, same merge subjects, same spec files: all 50 of Marshal's story specs are tracked under `pyforge-marshal/planning-artifacts/specs/` and every one resolves. The 26 are Marshal's own landed stories being looked up under a slug whose tree was archived. Confirmed by inspection of `cli/deploy.py:602-603` (`specs_dir` is built by string-joining `project_slug`) and `:699-705` (`missing_spec_keys` folded into the unreachable set).
+  impact: A safety refusal that cries wolf on 26 provably-safe stories is worse than no refusal — the documented override (`--force --abandon <26 keys>`) trains the operator to abandon a list they cannot practically verify, which is exactly the trust erosion AD-27's "every widening is recorded" discipline exists to prevent. It also makes tearing down any retired project impossible without that override.
+  candidate fix: scope the durable-story scan to the project (or treat "project planning tree absent" as a distinct, non-blocking state — a project with no specs directory has no promotions to lose, which is a different fact from "26 promotions are missing their specs"). Worth deciding alongside the `--abandon` UX: it currently accepts a space-separated list but silently rejects the comma-separated form the refusal message's own rendering suggests.
+
+  status: open
+
+  verified: 2026-08-08 — found and reproduced during the genesis retirement; the teardown was completed with `--force --abandon` only after proving the 0-vs-26 asymmetry above. Supersedes the read recorded in auto-memory `project_genesis_teardown_deferred_2026-08-08.md`, which concluded the 26 keys were "stale artifacts of an already-completed retirement (pre-split planning-phase epics)" — they are not; they are Marshal's current, shipped stories.
+
+## DW-SYNC-2026-08-08-1 — `sprint-ledger-sync` silently DOWNGRADES the tracked ledger when …
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-4-5-feed-refresh-with-truth-partitioned-by-domain.md`
+  summary: `scripts/promote_sprint_status.py` (`sprint-ledger-sync`) copies the gitignored Tier-3 `implementation-artifacts/sprint-status.yaml` over the tracked `planning-artifacts/sprint-status-ledger.yaml` wholesale. It does not merge, and it has no downgrade guard — so when the Tier-3 feed is *behind* the tracked twin, running the sync **destroys** the more-accurate tracked state and reports success.
+  evidence: Hit live 2026-08-08. The tracked ledger correctly recorded Epic 6 as `done` with all 9 stories done; the Tier-3 feed still read `epic-6: in-progress` with `6-5`..`6-9` as `backlog`. One `sprint-ledger-sync` run rewrote the tracked ledger to the stale values, dropping **6 `done` keys** (`6-5-conformance-smoke-in-an-ephemeral-home`, `6-6-the-conformance-matrix`, `6-7-entry-file-family-drift-check-detect-only`, `6-8-upstream-contribution-register`, `6-9-tool-surface-rendering-and-preflight-probe`, `epic-6`) and printing only `wrote marshal (110)`. Caught by a before/after diff of the `done` key set that happened to be in place for an unrelated reason (CAP-8 story-identity verification); nothing in the tool itself flagged it.
+  impact: This inverts the tracked twin's entire purpose. The ledger's own header explains it exists because Tier-3 "does not survive a clone or a bmad-loop worktree teardown" and because "the dashboard's deploy-time render reads THIS file" — so a silent downgrade regresses the public board to a stale state, and the tracked file is exactly the artifact that was supposed to be immune. It is also the same class as the incident the header cites (Epic 10's merge subjects becoming unreachable after a squash merge): durable state losing to ephemeral state.
+  candidate fix: make the sync monotonic for terminal states, or refuse-and-report on any transition that moves a key backwards (`done` → anything) unless explicitly forced, naming every affected key. A per-key transition check is cheap; a wholesale overwrite of a durability artifact by a non-durable one should not be the default. Relates to auto-memory `feedback_feed_reports_intent_run_reports_fact` — the feed is *already* known to be a statement of intent rather than fact, which is precisely why it must not be allowed to overwrite the record of fact.
+  workaround applied: the Tier-3 feed was corrected to match reality (Epic 6 done) before re-running, and the `done` key set was diffed before and after to prove all 59 survived. That verification was manual and is not part of the tool.
+
+  status: open
+
+  verified: 2026-08-08 — reproduced and recovered in the same session; the tracked ledger was restored via `git checkout` before the bad state was committed.
+
+## DW-LEDGER-2026-08-08-1 — Herald's tracked ledger under-reports a COMPLETE station by 43 …
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
+  summary: `pyforge-herald`'s `sprint-status-ledger.yaml` holds **17 story keys, 4 done**, while the station has **47 tracked story specs** and is recorded complete across 12 epics. The board therefore renders a finished station as 4/17.
+  evidence: Measured 2026-08-08, re-verified with `generate.py::parse_sprint_status` after the DW-LEDGER-2026-08-08-3 retraction. Ledger: 27 keys total, **17 story keys / 4 `done`**. Tracked story specs under `planning-artifacts/specs/spec-[0-9]*.md`: **47**, of which **34 have no ledger key at all**. The Tier-3 feed agrees with the ledger exactly (27 keys / 4 done), so this is **not** sync drift — the ledger was never wrong relative to its source. Root cause: Herald's `epics.md` is titled "Herald Moments 2–4 - Epics & Stories" and covers only that epic set; the other ~30 stories (the deck-bridge work) were never fed into the sprint feed at all. Nothing detects a story spec with no corresponding ledger key.
+  remedy: FR-137 (standalone staleness check — "is the ledger behind git?") would surface this class directly. A story-spec-without-ledger-key reconciliation belongs in the same check.
+
+  status: open
+
+  verified: 2026-08-08 — found while building the fleet-wide artifact inventory; counts re-measured directly from the filesystem, not from a summary.
+
+## DW-LEDGER-2026-08-08-2 — Doctor has more tracked story specs than ledger stories
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
+  summary: `pyforge-doctor` carries **16 tracked story specs** against **12 ledger story keys** — at least 4 landed stories have a durable spec but no ledger entry, so the board under-reports Doctor too.
+  evidence: Measured 2026-08-08 alongside DW-LEDGER-2026-08-08-1. Same shape, smaller magnitude; same absent detector.
+  remedy: same as above — the reconciliation should be one check covering every station, not a per-station fix.
+
+  status: open
+
+  verified: 2026-08-08.
+
+## DW-LEDGER-2026-08-08-3 — RETRACTED. Atlas's feed and twin agree exactly; there is no …
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md`
+  summary: **This entry was wrong and is retracted the same day it was filed.** It claimed `pyforge-atlas`'s Tier-3 feed held 14 stories / 3 done against a tracked twin of 38/38, and that one `sprint-ledger-sync` run would destroy 35 `done` keys. Re-measured with the real parser (`generate.py::parse_sprint_status`, the same function the sync itself uses): **feed 57 keys / 57 done, twin 57 keys / 57 done, byte-identical.** A live `sprint-ledger-sync` run reports atlas `unchanged`. There is no landmine and there never was.
+  root cause: the original measurement used an ad-hoc grep, `^  [0-9]+-[0-9]+`, which silently under-counted atlas's key shapes — atlas uses `a1-scaffold-…`, `b2-…` and `0-1-…` alongside `10-1-…`, and the pattern matched only some of them. The artifact was fine; **the detector I reached for was wrong**, which is precisely the failure mode `spec-dream-to-code-model-self-verification` exists to prevent, reproduced by hand while cataloguing it.
+  what survives: nothing of the Atlas claim. The sibling entries DW-LEDGER-2026-08-08-1 (herald) and -2 (doctor) were re-verified with the correct parser and **both stand** — see the corrected fleet-wide table in -1.
+  note on the fix: `scripts/promote_sprint_status.py`'s new monotonic guard was written while this entry was believed true. It stays, and is still correct — it defends against DW-SYNC-2026-08-08-1, which was a **real, reproduced** loss of 6 `done` keys on marshal earlier the same session. Only the urgency framing came from this retracted entry.
+
+  status: retracted
+
+  verified: 2026-08-08 — retracted within hours of filing, on re-measurement with the parser rather than a regex.
+
+## DW-LEDGER-2026-08-08-4 — Story specs with no ledger key, fleet-wide (the corrected measure…
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md`
+  summary: Six of eight stations carry tracked story specs that have **no corresponding key in their sprint ledger**, so the board under-reports them. Measured 2026-08-08 with `generate.py::parse_sprint_status` (not a regex — see DW-LEDGER-2026-08-08-3 for why that distinction is on the record).
+  evidence:
+
+  | station | ledger keys | story keys | done | story specs | **specs with no key** |
+  |---|---|---|---|---|---|
+  | herald  |  27 | 17 |  4 | 47 | **34** |
+  | marshal | 110 | 86 | 50 | 50 |   0 |
+  | atlas   |  57 | 38 | 38 |  8 | **3** |
+  | warden  |  43 | 31 | 31 | 31 |   0 |
+  | mason   |  48 | 38 |  4 |  4 |   0 |
+  | doctor  |  18 | 12 |  6 | 16 | **4** |
+  | scribe  |  13 |  9 |  3 |  9 | **1** |
+  | steward |  26 | 18 |  3 | 18 | **1** |
+
+  Marshal, warden and mason are exactly consistent. Herald is the outlier by an order of magnitude: its `epics.md` is titled "Herald Moments 2-4" and covers only that epic set, so ~34 deck-bridge story specs were never fed into the sprint feed at all.
+  impact: the Guildhall renders a station's progress from the ledger, so every one of these under-reports. Herald renders 4-of-17 for a station whose 47 story specs say otherwise.
+  remedy: a reconciliation check — every tracked story spec must resolve to a ledger key, and every ledger key to an epics entry. This is `spec-fleet-chain-completeness`'s CAP-3/CAP-4 territory (chain-completeness audit + orphan detection) and belongs there rather than as eight per-station fixes. FR-137's standalone staleness check is the adjacent half.
+
+  status: open
+
+  verified: 2026-08-08 — re-measured with the parser after the DW-LEDGER-2026-08-08-3 retraction; these numbers supersede every earlier count in this session.

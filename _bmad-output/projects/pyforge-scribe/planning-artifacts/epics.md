@@ -13,6 +13,9 @@ inputDocuments:
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
 updated: '2026-08-02'
 currency_review: "Reviewed 2026-08-02 — the architecture spine's own currency_review confirms its FR-1..FR-15 binds are unchanged. Epic/story breakdown re-checked against that unchanged architecture and confirmed current; no changes made."
+# The single canonical story source for this station: every `### Story` heading
+# here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
+epics_role: canonical
 ---
 
 # pyforge-scribe - Epic Breakdown

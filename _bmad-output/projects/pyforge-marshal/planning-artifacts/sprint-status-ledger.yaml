@@ -28,15 +28,15 @@ development_status:
   10-2-state-schema-and-the-atomic-store: backlog
   10-3-the-apply-runner-transactional-guarded: backlog
   10-4-preconditions-refusals-and-skips: backlog
-  10-5-genesis-check: backlog
-  10-6-genesis-adopt: backlog
-  10-7-genesis-init: backlog
+  10-5-marshal-seed-check: backlog
+  10-6-marshal-seed-adopt: backlog
+  10-7-marshal-seed-init: backlog
   11-1-neutral-contract-and-agent-adapter-fan-out: backlog
   11-2-projects-md-index-and-artifact-symlink-derivation: backlog
   11-3-migration-registry-and-runner: backlog
-  11-4-genesis-update-two-phase: backlog
+  11-4-marshal-seed-update-two-phase: backlog
   11-5-referenced-dependency-verification-and-doctor-delegation: backlog
-  11-6-genesis-explain-and-genesis-version: backlog
+  11-6-marshal-seed-explain-and-version: backlog
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: backlog
   12-2-the-local-recipes-empty-plan-oracle: backlog
   12-3-offline-operation-and-the-egress-counter: backlog

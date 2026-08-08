@@ -629,24 +629,23 @@ DREAM_TYPES = ("dream", "practice")
 #
 # IMPORTED from scripts/bmad_drift_check.py, not re-declared — same GUILD_DREAMS
 # duplication-hazard fix. One definition, one place to update.
-# The Dreams that may name no station, because they PRECEDE them: the Charter, which
-# constitutes the stations, and pyforge-genesis, the operating-model seed. `guild` is NOT
-# a ninth station and never renders as one — it marks a Dream sitting above the roster,
-# not beside it.
+# The one Dream that may name no station, because it PRECEDES them: the Charter, which
+# constitutes the stations. `guild` is NOT a ninth station and never renders as one — it
+# marks a Dream sitting above the roster, not beside it.
 #
 # IMPORTED from scripts/bmad_drift_check.py, not re-declared — a hand-mirrored copy was
 # missed on 2026-07-28 and the board warned on a Dream the Charter explicitly permits.
 # One definition, one place to update.
 #
-# History, because this list flipped twice and the middle position was half-right. An
-# earlier comment here read: "Genesis was briefly here and was wrong: its origin doc is
-# Marshal's own setup plan, and 'the bootstrapper that installs the operating model
-# anywhere' is Marshal's craft." That reasoning holds for the INSTALLER and only the
-# installer. Genesis was doing two jobs in one Dream — constitutive records (the Charter,
-# the Lexicon, the Guild's membership) AND a buildable bootstrapper. Removing it from
-# `guild` wholesale fixed the second and broke the first. Resolved 2026-07-28 by splitting
-# them: the installer became the marshal-owned `genesis-installer` Dream; Genesis kept the
-# constitutive half and returned here. Charter §5 + its Realization log carry the ruling.
+# History, because this list flipped three times. It briefly held Genesis, then dropped it
+# on the reasoning that "the bootstrapper that installs the operating model anywhere" is
+# Marshal's craft — true of the INSTALLER and only the installer. Genesis was doing two
+# jobs in one Dream: constitutive records (Charter, Lexicon, membership) AND a buildable
+# bootstrapper; removing it wholesale fixed the second and broke the first. Split
+# 2026-07-28 — installer to marshal, constitutive half back here. Closed 2026-08-08: with
+# the project dissolved and the installer gone, the constitutive half was two names for
+# one record, so it was absorbed into the Charter and `guild` closed at one. Charter §5 +
+# its Realization log carry all three rulings.
 from bmad_drift_check import (
     GUILD_DREAMS,
     STATIONS,
@@ -657,7 +656,10 @@ from bmad_drift_check import (
 DREAM_DECK_ALIASES = {
     "packaging-factory": "pyforge-mason",
     "agentic-sdlc-autonomy": "agentic-sdlc",
-    "pyforge-charter": "pyforge-genesis",   # the master vision deck
+    # The master vision deck. The directory keeps its original name after the
+    # 2026-08-08 absorption: it is a published artifact with a Claude Design twin,
+    # and renaming it would desync the bridge for a cosmetic gain.
+    "pyforge-charter": "pyforge-genesis",
 }
 # Dreams whose build runs as a console program (chip shows live done/total).
 DREAM_PROGRAM = {
@@ -752,9 +754,10 @@ def _git_date(path: Path) -> str:
 def scan_specs() -> list[dict]:
     """Spec KERNELS only (Row 4) — .../specs/spec-<slug>/SPEC.md. For per-story specs (Row 7) see scan_story_specs().
 
-    Includes docs/governance/spec-*/ -- the two constitutive (`owner: guild`) kernels,
-    which live outside `_bmad-output/projects/` entirely since 2026-08-02 (`pyforge-genesis`
-    dissolved; see GOVERNANCE_DIR).
+    Includes docs/governance/spec-*/ -- the constitutive (`owner: guild`) kernel, which
+    lives outside `_bmad-output/projects/` entirely since 2026-08-02 (`pyforge-genesis`
+    dissolved; see GOVERNANCE_DIR). One kernel since 2026-08-08, when the Lexicon half
+    was absorbed into spec-pyforge-charter and `guild` closed at one Dream.
     """
     rows: list[dict] = []
     spec_dirs = (sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
@@ -870,6 +873,10 @@ CAMPAIGN_STAGES = ("research", "brief", "prd", "architecture", "epics")
 # wasn't absorbed into a Smith, its standard PRD/brief/architecture/epics chain was
 # retired outright (constitutive, ships no product) -- `have: all False` for it is
 # honest, not a bug; only its link gets a special-cased redirect (JS side).
+# It stays in CAMPAIGN_ROSTER above because that roster is the HISTORICAL record of
+# the 2026-07-25 campaign, in which it really was wave 2d; rewriting history to hide
+# a since-retired name would be the drift this board exists to catch. As of
+# 2026-08-08 the name is retired everywhere else -- absorbed into pyforge-charter.
 CAMPAIGN_PROJECT_OVERRIDE = {
     "presenton-pixi-image": "pyforge-mason",
     "wasm-analytics-stack": "pyforge-atlas",
@@ -935,11 +942,8 @@ IMPL_CAMPAIGN = [
     {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
      "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
      "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md"},
-    {"slug": "pyforge-marshal",      "pkey": None, "stories": 40, "state": "held",
-     "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)"},
-    {"slug": "genesis-installer",    "pkey": None, "stories": 36, "state": "held",
-     "note": "epics 7-12 (same ledger as pyforge-marshal, split by epic) — last, model stability + consumes marshal-owned scripts",
-     "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md"},
+    {"slug": "pyforge-marshal",      "pkey": None, "stories": 86, "state": "held",
+     "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md"},
     {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
      "note": "PRD+arch only by design; stories decompose when scheduled",
      "epics_path": None},
@@ -949,17 +953,20 @@ IMPL_CAMPAIGN = [
 ]
 
 # Live ledger source for the non-`pkey` rows above: (ledger path, epic_min, epic_max),
-# either bound `None` meaning unbounded. marshal's own ledger also carries the
-# genesis-installer satellite's Epics 7+ (absorbed 2026-08-02, EXEMPLAR-STANDARD.md) --
-# both rows read the SAME file, split by epic number, matching the split already
-# verified by hand: Epics 1-6 = 40 backlog + 10 done = marshal proper; Epics 7+ = 36
-# backlog = genesis-installer. presenton-pixi-image's stories are a separate epics
-# file (`epics-presenton-pixi-image.md`) not cleanly split out of mason's shared
-# ledger, and it's independently confirmed still Phase-0-blocked (0 done) -- left on
-# its static fallback rather than guessing a partition.
+# either bound `None` meaning unbounded.
+#
+# 2026-08-08: the `genesis-installer` row is GONE, not relabelled. It existed because
+# marshal's ledger was fed by two epics documents -- `epics.md` (Epics 1-6) and
+# `epics-genesis-installer.md` (Epics 7-12) -- so the board split one station into two
+# rows by epic number, and PR #233 could only label that split rather than remove it.
+# The two documents are now one canonical `epics.md` covering Epics 1-12 (86 stories,
+# verified against this same ledger), so marshal reads UNBOUNDED and renders as the one
+# station it always was. presenton-pixi-image's stories are a separate `historical`
+# epics file not cleanly split out of mason's shared ledger, and it is independently
+# confirmed still Phase-0-blocked (0 done) -- left on its static fallback rather than
+# guessing a partition.
 IMPL_CAMPAIGN_LEDGER: dict[str, tuple[str, int | None, int | None]] = {
-    "pyforge-marshal": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", None, 6),
-    "genesis-installer": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", 7, None),
+    "pyforge-marshal": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", None, None),
     "pyforge-mason": ("_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml", None, None),
     "pyforge-steward": ("_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml", None, None),
 }
@@ -1196,7 +1203,8 @@ FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "ux", "arch
                 "context", "epics", "sprint", "tea", "gates", "code", "verify", "retro")
 # Where a guild-owned (constitutive, `owner: guild`) chain's Spec kernel lives — NOT a
 # `_bmad-output/projects/<x>/` tree, because it ships no product and owns no Smith-shaped
-# scaffolding (2026-08-02: pyforge-genesis dissolved, Charter/Lexicon specs moved here).
+# scaffolding (2026-08-02: pyforge-genesis dissolved, Charter/Lexicon specs moved here;
+# 2026-08-08: the two merged into spec-pyforge-charter and `guild` closed at one).
 # `_fleet_chains()`/`_stage_globs()` special-case this sentinel value of `project`.
 GOVERNANCE_DIR = "docs/governance"
 # Stages whose dot stands for a SET: {stage: the artifacts that must all be present}.
@@ -1209,7 +1217,7 @@ FLEET_SUBSCORE = {"research": RESEARCH_TYPES, "deck": DECK_FAMILY}
 # wasm-analytics-stack both reported a complete 9/9 chain while owning neither epics nor
 # code. `ux` is n/a everywhere except chains that declare a UI surface.
 FLEET_NA = {
-    "pyforge-genesis": {"research", "brief", "context"},  # constitutive (Charter §5), precedes stations
+    "pyforge-charter": {"research", "brief", "context"},  # constitutive (Charter §5), precedes stations
     "unity-data-stack": {"epics"},
     "wasm-analytics-stack": {"epics"},
     "regenerable-factory": {"prd", "arch", "brief", "context"},  # shipped practice-type, no brief/UX by design
@@ -2360,7 +2368,7 @@ PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
                  "herald": "pyforge-herald", "doctor": "pyforge-doctor",
                  "scribe": "pyforge-scribe", "regen": "regenerable-factory",
                  "marshal": "pyforge-marshal", "mason": "pyforge-mason",
-                 "steward": "pyforge-steward", "genesis": "pyforge-genesis",
+                 "steward": "pyforge-steward",
                  # auto-discovered lines whose Dream slug is NOT pyforge-prefixed
                  "presenton-pixi-image": "presenton-pixi-image"}
 
