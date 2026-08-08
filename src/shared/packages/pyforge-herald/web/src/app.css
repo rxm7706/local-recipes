@@ -396,3 +396,147 @@
   line-height: 1.4;
   max-width: 280px;
 }
+
+/* Success claim cards (Story 9.4) --------------------------------------- */
+
+.claim-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.claim-card {
+  border: 1.5px solid var(--color-divider);
+  background: var(--color-surface);
+}
+
+.claim-card__summary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  min-height: var(--touch-target);
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+.claim-card__project {
+  font-weight: 800;
+  flex: 0 0 auto;
+  min-width: 140px;
+}
+
+.claim-card__thesis {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.claim-card__date {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.claim-card__badges {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.claim-card__detail {
+  padding: 0 16px 16px;
+  border-top: 1.5px solid var(--color-divider);
+}
+
+.claim-card__detail-thesis {
+  font-weight: 600;
+}
+
+.claim-card__detail-evidence {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.claim-card__edit-history {
+  margin: 4px 0 12px;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.claim-card__detail-dates {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  font-size: 13px;
+  margin: 12px 0 0;
+}
+
+.claim-card__detail-dates dt {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.claim-card__detail-dates dd {
+  margin: 0;
+}
+
+/* Evidence badges: green check (valid), red x (broken), yellow warning
+   (stale, i.e. not re-validated within the window -- AD-15's 7 days). */
+.evidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  min-height: 28px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1.5px solid transparent;
+  cursor: default;
+}
+
+.evidence-badge--valid {
+  color: var(--color-success);
+  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+}
+
+.evidence-badge--broken {
+  color: var(--color-accent-700);
+  border-color: var(--color-accent-700);
+  background: color-mix(in srgb, var(--color-accent-700) 12%, transparent);
+}
+
+.evidence-badge--stale {
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+}
+
+/* Mobile: stack each claim card's summary fields vertically instead of a
+   cramped single row (Story 9.4 AC: "cards stack vertically ... readable
+   on mobile"). */
+@media (max-width: 767px) {
+  .claim-card__summary {
+    flex-wrap: wrap;
+  }
+
+  .claim-card__project,
+  .claim-card__thesis {
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
+  }
+}

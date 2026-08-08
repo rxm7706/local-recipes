@@ -306,3 +306,47 @@ def test_to_dict_includes_computed_is_stale(tmp_path):
     payload = claims.to_dict(claim)
     assert payload["evidence"][0]["is_stale"] is True
     assert payload["id"] == claim.id
+
+
+# --- Story 9.4: web-snapshot payload --------------------------------------
+
+
+def test_snapshot_only_includes_matching_status(tmp_path):
+    path = tmp_path / "claims.json"
+    claims.create(path, project_name="draft-one")
+    published = claims.create(path, project_name="published-one")
+    claims.publish(
+        path, published.id, thesis="Shipped", validate=_fake_validator(set())
+    )
+    result = claims.snapshot(path, status="published")
+    assert [entry["id"] for entry in result] == [published.id]
+
+
+def test_snapshot_is_newest_first_by_published_at(tmp_path):
+    import datetime as dt
+
+    path = tmp_path / "claims.json"
+    older = claims.create(path, project_name="older")
+    newer = claims.create(path, project_name="newer")
+    claims.publish(
+        path,
+        older.id,
+        thesis="Older",
+        validate=_fake_validator(set()),
+        now=lambda: dt.datetime(2026, 1, 1, tzinfo=dt.UTC),
+    )
+    claims.publish(
+        path,
+        newer.id,
+        thesis="Newer",
+        validate=_fake_validator(set()),
+        now=lambda: dt.datetime(2026, 8, 1, tzinfo=dt.UTC),
+    )
+    result = claims.snapshot(path, status="published")
+    assert [entry["id"] for entry in result] == [newer.id, older.id]
+
+
+def test_snapshot_empty_when_no_claims_match(tmp_path):
+    path = tmp_path / "claims.json"
+    claims.create(path, project_name="draft-only")
+    assert claims.snapshot(path, status="published") == []

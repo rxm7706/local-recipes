@@ -562,3 +562,22 @@ def to_dict(
             {"thesis": v.thesis, "edited_at": v.edited_at} for v in claim.edit_history
         ],
     }
+
+
+def snapshot(
+    claims_path: Path,
+    *,
+    status: str = "published",
+    now: Callable[[], datetime] = _default_now,
+) -> list[dict[str, Any]]:
+    """The web dashboard's static-JSON-snapshot payload (Story 9.4): every
+    claim matching ``status``, newest first by ``published_at`` (falling
+    back to ``shipped_date`` for a claim with no ``published_at`` -- never
+    the case for ``status="published"``, but keeps this reusable for a
+    future ``status="draft"`` snapshot too). Each entry is
+    ``to_dict``'s shape -- the same one the CLI's ``--json`` output uses,
+    so the web tab and the CLI can never silently disagree on what a claim
+    looks like."""
+    matching = list_claims(claims_path, status=status)
+    matching.sort(key=lambda c: c.published_at or c.shipped_date or "", reverse=True)
+    return [to_dict(c, now=now) for c in matching]

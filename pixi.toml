@@ -1594,3 +1594,8 @@ cwd = "src/shared/packages/pyforge-herald"
 [feature.pyforge-herald.tasks.pyforge-herald-build]
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-herald-build-conda", "pyforge-herald-build-dist"]
+
+[feature.pyforge-herald.tasks.pyforge-herald-web-snapshot]
+description = "Export .herald/claims.json -> web/public/success.json for the web dashboard (Story 9.4)"
+cmd = "python scripts/export_web_snapshot.py"
+cwd = "src/shared/packages/pyforge-herald"
