@@ -25,6 +25,7 @@ def _fake_status(**overrides):
         "project_id": "p-1",
         "sync": "unchanged",
         "last_pull": "2026-08-01T00:00:00+00:00",
+        "stale_mirror": False,
     }
     defaults.update(overrides)
     return deck_pipeline.DeckStatus(**defaults)
@@ -75,6 +76,7 @@ def test_deck_status_no_slug_forwards_none_and_prints_a_json_array(
         "project_id": "p-1",
         "sync": "unchanged",
         "last_pull": "2026-08-01T00:00:00+00:00",
+        "stale_mirror": False,
     }
     assert out[1]["linked"] is False
 
@@ -109,6 +111,18 @@ def test_deck_status_defaults_repo_root_to_cwd(monkeypatch, tmp_path: Path):
     cli.main(["deck", "status"])
 
     assert seen["repo_root"] == tmp_path
+
+
+def test_deck_status_reports_a_stale_mirror_flag(monkeypatch, capsys):
+    def _fake(transport, *, slug, repo_root):
+        return [_fake_status(slug="pyforge-doctor", stale_mirror=True)]
+
+    monkeypatch.setattr(deck_pipeline, "status", _fake)
+
+    cli.main(["deck", "status", "pyforge-doctor"])
+
+    out = json.loads(capsys.readouterr().out)
+    assert out[0]["stale_mirror"] is True
 
 
 def test_deck_status_herald_error_reaches_dispatch_and_maps_to_its_exit_code(

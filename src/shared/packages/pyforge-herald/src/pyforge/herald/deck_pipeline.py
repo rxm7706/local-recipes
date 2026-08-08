@@ -48,7 +48,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,7 +57,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from . import errors, registry, state
 
 if TYPE_CHECKING:
-    from .transport.base import DesignTransport, FileRead, ProjectRef
+    from .transport.base import DesignTransport, FileRead, ListedFile, ProjectRef
 
 PILOT_SUPPORT_SOURCE_PROJECT_ID = "ad84d4f6-c292-42c8-98bf-ede78a567773"
 """The already-seeded ``pyforge-marshal`` Design project (``bridge-protocol.md``
@@ -918,18 +918,42 @@ def pull_standalone_bundle(
     )
 
 
-# --- CAP-3: status (Story 3.1) -----------------------------------------------
+# --- CAP-3: status (Story 3.1/3.2) -------------------------------------------
 #
-# Read-only: `status` never calls a write-side transport method
-# (`write_files`/`copy_files`/`create_project`/`create_support_js`/
-# `finalize_plan`) and never calls `state.write`.
+# `bridge-protocol.md`'s pilot table (§ Pilot evidence) names the cautionary
+# fixture this pair of stories exists for: the "Local recipes repository
+# connection" Design project, a stale hand-mirrored copy of
+# `presentations/pyforge-atlas/` -- exactly the shape `stale_mirror` must
+# flag. Both stories are read-only: `status` never calls a write-side
+# transport method (`write_files`/`copy_files`/`create_project`/
+# `create_support_js`/`finalize_plan`) and never calls `state.write`.
+
+_STALE_MIRROR_FILE_COUNT_THRESHOLD = 15
+"""A legitimate bridge project holds at most a handful of files: the
+runtime pair (`support.js`, `deck-stage.js`), one prototype, up to three
+Marp sources, one standalone bundle -- eight at the outside, today. Well
+below this threshold, so crossing it is already unusual for a real bridge
+project without yet being conclusive on its own (see the nesting check
+below)."""
+
+_STALE_MIRROR_NESTED_PATH_THRESHOLD = 5
+"""None of `bridge-protocol.md`'s conventions ever puts a '/' in a
+Design-side filename -- every legitimate artifact (`support.js`,
+`deck-stage.js`, `PyForge <Persona>.dc.html`, `<short>-{kind}.md`, `<Persona>
+Infographic standalone.html`) is a flat, project-root name. A hand-mirrored
+repo copy looks the opposite: it reproduces the repo's own directory
+structure (`src/...`, `.claude/...`), so several of its files carry a
+nested path. Five is comfortably above what a stray or transitional file
+could produce by accident, comfortably below what a real repo mirror
+(dozens of nested paths) would show."""
 
 
 @dataclass(frozen=True)
 class DeckStatus:
     """One deck's status report (CAP-3): whether it is linked to a Design
-    project, a fresh etag-based sync classification when it is, and the
-    last-pull timestamp `state.py` has on record.
+    project, a fresh etag-based sync classification when it is, the
+    last-pull timestamp `state.py` has on record, and the stale-hand-mirror
+    flag (FR-12, Story 3.2).
 
     `sync` is `None` for an unlinked deck (there is nothing to compare) and
     one of `"unchanged"` / `"changed"` / `"conflict"` for a linked one:
@@ -947,6 +971,7 @@ class DeckStatus:
     project_id: str | None
     sync: str | None
     last_pull: str | None
+    stale_mirror: bool
 
 
 def _remote_path_for_artifact(slug: str, artifact_key: str) -> str:
@@ -968,11 +993,26 @@ def _remote_path_for_artifact(slug: str, artifact_key: str) -> str:
     )
 
 
+def _is_stale_mirror(files: Sequence[ListedFile]) -> bool:
+    """FR-12's heuristic (Story 3.2): flags a Design project shaped like a
+    hand-mirrored repo copy rather than a normal bridge project. Both
+    conditions below must hold -- file count alone would false-positive on
+    a legitimate deck a future story gives many more tracked artifacts;
+    nested-path count alone would false-positive on one stray file. See
+    the two threshold constants' own docstrings for the reasoning behind
+    each number."""
+    if len(files) < _STALE_MIRROR_FILE_COUNT_THRESHOLD:
+        return False
+    nested = sum(1 for listed in files if "/" in listed.path)
+    return nested >= _STALE_MIRROR_NESTED_PATH_THRESHOLD
+
+
 def _status_for_slug(
     transport: DesignTransport, *, slug: str, state_path: Path
 ) -> DeckStatus:
     """One deck's ``DeckStatus`` -- read-only throughout: ``state.read`` and
-    ``transport.read_file`` only, never a write to either surface."""
+    ``transport.read_file``/``transport.list_files`` only, never a write to
+    either surface."""
     existing = state.read(state_path, slug)
     if existing is None:
         return DeckStatus(
@@ -981,6 +1021,7 @@ def _status_for_slug(
             project_id=None,
             sync=None,
             last_pull=None,
+            stale_mirror=False,
         )
 
     saw_conflict = False
@@ -1008,12 +1049,17 @@ def _status_for_slug(
     else:
         sync = "unchanged"
 
+    stale_mirror = _is_stale_mirror(
+        transport.list_files(project_id=existing.project_id)
+    )
+
     return DeckStatus(
         slug=slug,
         linked=True,
         project_id=existing.project_id,
         sync=sync,
         last_pull=existing.last_pull,
+        stale_mirror=stale_mirror,
     )
 
 
@@ -1039,13 +1085,13 @@ def status(
     repo_root: Path,
     state_path: Path | None = None,
 ) -> list[DeckStatus]:
-    """CAP-3, Story 3.1: report every known deck's bridge state (or just
+    """CAP-3, Story 3.1/3.2: report every known deck's bridge state (or just
     ``slug``'s, when given), each with a fresh etag comparison against
-    Design.
+    Design and the stale-hand-mirror flag (FR-12).
 
     Read-only end to end (FR-13, NFR-08): reads `state.py` and calls only
-    `transport.read_file`, never any write-side transport method, and
-    never `state.write`. When ``slug`` is given but
+    `transport.read_file`/`transport.list_files`, never any write-side
+    transport method, and never `state.write`. When ``slug`` is given but
     unlinked (or entirely unknown -- no state entry, no local deck
     directory), returns a single unlinked `DeckStatus` rather than raising:
     unlike `pull_*`, status reporting on an unseeded deck is itself a

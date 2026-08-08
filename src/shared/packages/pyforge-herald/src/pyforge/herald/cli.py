@@ -441,6 +441,7 @@ def _run_deck_status(args: argparse.Namespace) -> int:
                         "project_id": result.project_id,
                         "sync": result.sync,
                         "last_pull": result.last_pull,
+                        "stale_mirror": result.stale_mirror,
                     }
                     for result in results
                 ]

@@ -1,6 +1,6 @@
-"""``deck_pipeline.status`` -- CAP-3 (Story 3.1): the per-deck etag-based
-sync classification, the "some seeded, some not" discovery sweep, and the
-read-only guarantee.
+"""``deck_pipeline.status`` -- CAP-3 (Stories 3.1 and 3.2): the per-deck
+etag-based sync classification, the "some seeded, some not" discovery
+sweep, the read-only guarantee, and the stale-hand-mirror heuristic.
 
 Every transport call is against a hand-written ``FakeStatusTransport``
 implementing only ``read_file``/``list_files`` -- every other
@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.herald import state
-from pyforge.herald.deck_pipeline import DeckStatus, status
+from pyforge.herald.deck_pipeline import DeckStatus, _is_stale_mirror, status
 from pyforge.herald.errors import HeraldError, TransportCallError
 from pyforge.herald.transport.base import FileRead, ListedFile
 
@@ -126,6 +126,7 @@ def test_status_no_slug_reports_every_known_deck_linked_and_unlinked(tmp_path: P
         project_id=None,
         sync=None,
         last_pull=None,
+        stale_mirror=False,
     )
     assert by_slug["pyforge-warden"] == DeckStatus(
         slug="pyforge-warden",
@@ -133,6 +134,7 @@ def test_status_no_slug_reports_every_known_deck_linked_and_unlinked(tmp_path: P
         project_id="p-1",
         sync="unchanged",
         last_pull="2026-08-01T00:00:00+00:00",
+        stale_mirror=False,
     )
 
 
@@ -165,6 +167,7 @@ def test_status_an_unknown_slug_returns_a_single_unlinked_result_no_error(
             project_id=None,
             sync=None,
             last_pull=None,
+            stale_mirror=False,
         )
     ]
     assert transport.calls == []
@@ -191,7 +194,7 @@ def test_status_classifies_unchanged_when_never_pulled_yet(tmp_path: Path):
     transport = FakeStatusTransport()
     [result] = status(transport, slug="pyforge-warden", repo_root=tmp_path)
     assert result.sync == "unchanged"
-    assert transport.calls == []
+    assert [name for name, _ in transport.calls] == ["list_files"]
 
 
 def test_status_conflict_takes_precedence_over_changed(tmp_path: Path):
@@ -295,7 +298,7 @@ def test_status_never_writes_a_file_on_either_surface(tmp_path: Path):
 
     after = state_path.read_bytes()
     assert before == after
-    assert set(transport.names()) <= {"read_file"}
+    assert set(transport.names()) <= {"read_file", "list_files"}
 
 
 def test_status_on_an_entirely_unseeded_repo_creates_no_state_file(tmp_path: Path):
@@ -303,3 +306,94 @@ def test_status_on_an_entirely_unseeded_repo_creates_no_state_file(tmp_path: Pat
     transport = FakeStatusTransport()
     status(transport, repo_root=tmp_path)
     assert not (tmp_path / ".herald").exists()
+
+
+# --- Story 3.2: stale-hand-mirror detection (FR-12) ---------------------------
+
+
+def _normal_bridge_project_files() -> list[ListedFile]:
+    """A correctly-shaped bridge project: the runtime pair, one prototype,
+    three Marp sources, one standalone bundle -- all flat, project-root
+    filenames, none nested."""
+    return [
+        ListedFile(path="support.js", etag="E1"),
+        ListedFile(path="deck-stage.js", etag="E2"),
+        ListedFile(path="PyForge Warden.dc.html", etag="E3"),
+        ListedFile(path="warden-deck.md", etag="E4"),
+        ListedFile(path="warden-executive-summary.md", etag="E5"),
+        ListedFile(path="warden-infographic.md", etag="E6"),
+        ListedFile(path="Warden Infographic standalone.html", etag="E7"),
+    ]
+
+
+def _hand_mirrored_repo_files() -> list[ListedFile]:
+    """The cautionary "Local recipes repository connection" fixture
+    (``bridge-protocol.md`` § Pilot evidence): dozens of files reproducing
+    a repo app-tree's own directory structure."""
+    nested = [
+        "src/pyforge/atlas/__init__.py",
+        "src/pyforge/atlas/cli.py",
+        "src/pyforge/atlas/db.py",
+        "src/pyforge/atlas/phases/phase_b.py",
+        "src/pyforge/atlas/phases/phase_c.py",
+        ".claude/skills/conda-forge-expert/SKILL.md",
+        "docs/dreams/design-code-bridge.md",
+        "docs/specs/presentation-deck.md",
+    ]
+    flat = ["pixi.toml", "README.md", "CLAUDE.md", "conda-forge.yml", "AGENTS.md"]
+    files = [ListedFile(path=p, etag=f"E{i}") for i, p in enumerate(nested + flat)]
+    # Pad out well past the file-count threshold with more nested paths --
+    # a real hand-mirrored copy of an app tree runs to hundreds of files.
+    files += [
+        ListedFile(path=f"src/pyforge/atlas/extra_{i}.py", etag=f"X{i}")
+        for i in range(10)
+    ]
+    return files
+
+
+def test_is_stale_mirror_flags_the_hand_mirrored_repo_fixture():
+    assert _is_stale_mirror(_hand_mirrored_repo_files()) is True
+
+
+def test_is_stale_mirror_does_not_flag_a_normal_bridge_project():
+    assert _is_stale_mirror(_normal_bridge_project_files()) is False
+
+
+def test_is_stale_mirror_requires_both_file_count_and_nesting():
+    """File count alone (many flat files) must not flag -- a future story
+    giving a deck many more tracked Marp sources is still a normal bridge
+    project, not a hand mirror."""
+    many_flat = [
+        ListedFile(path=f"warden-note-{i}.md", etag=f"E{i}") for i in range(20)
+    ]
+    assert _is_stale_mirror(many_flat) is False
+
+    few_nested = [
+        ListedFile(path="support.js", etag="E1"),
+        ListedFile(path="src/one.py", etag="E2"),
+        ListedFile(path="src/two.py", etag="E3"),
+    ]
+    assert _is_stale_mirror(few_nested) is False
+
+
+def test_status_stale_mirror_true_for_the_hand_mirrored_fixture(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-doctor", etags={})
+    transport = FakeStatusTransport(list_files_answer=_hand_mirrored_repo_files())
+    [result] = status(transport, slug="pyforge-doctor", repo_root=tmp_path)
+    assert result.stale_mirror is True
+
+
+def test_status_stale_mirror_false_for_a_normal_bridge_project(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden", etags={})
+    transport = FakeStatusTransport(list_files_answer=_normal_bridge_project_files())
+    [result] = status(transport, slug="pyforge-warden", repo_root=tmp_path)
+    assert result.stale_mirror is False
+
+
+def test_status_never_flags_stale_mirror_for_an_unlinked_deck(tmp_path: Path):
+    _make_deck_dir(tmp_path, "pyforge-doctor")
+    transport = FakeStatusTransport()
+    [result] = status(transport, slug="pyforge-doctor", repo_root=tmp_path)
+    assert result.linked is False
+    assert result.stale_mirror is False
+    assert transport.calls == []
