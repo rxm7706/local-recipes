@@ -1375,12 +1375,21 @@ def _run_notice_get(args: argparse.Namespace) -> int:
     following a rename redirect (Story 10.3). Also shows Story 11.3's
     cross-Moment backlink: every claim citing this notice as evidence
     (``claims.referenced_by_claims``, computed fresh from ``claims.json`` --
-    not stored on the notice itself, see ``claims.py``'s module docstring)."""
+    not stored on the notice itself, see ``claims.py``'s module docstring).
+
+    Passes ``notices.aliases_for``'s full alias set (the resolved name plus
+    every old name that now redirects to it), not just the resolved name --
+    a claim's evidence stores whatever name was cited at creation time,
+    which may be a since-renamed old name; searching only the current
+    resolved name would silently drop that claim from the backlink the
+    moment a rename happens (regression, see spec-11-3's Review Triage
+    Log)."""
 
     def operation() -> None:
         notice = notices.get_notice(Path.cwd(), args.component)
+        aliases = notices.aliases_for(Path.cwd(), notice.component)
         referenced_by = claims.referenced_by_claims(
-            Path.cwd() / claims.DEFAULT_CLAIMS_PATH, notice.component
+            Path.cwd() / claims.DEFAULT_CLAIMS_PATH, notice.component, aliases=aliases
         )
         if args.json:
             print(json.dumps(_notice_to_json(notice, referenced_by=referenced_by)))

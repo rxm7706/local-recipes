@@ -163,3 +163,10 @@ AC ("backlinks visible in both directions," not "only published backlinks").
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[high]` `[patch]` **`herald notice get`'s cross-Moment backlink goes stale after a notice rename.** Both Blind Hunter and Edge Case Hunter independently found and reproduced the same bug: `_run_notice_get` resolves the queried component to its current (post-rename) name via `notices.get_notice()`, then looks up `referenced_by_claims(claims_path, notice.component)` using only that resolved name -- but a claim's `Evidence.url` for a `type="notice"` entry stores the literal component name an operator cited at creation time and is never re-resolved after a later rename, so a claim citing the pre-rename name silently and permanently drops out of the backlink. Reproduced live by both reviewers: author notice A, claim cites A, rename A->B, `notice get A` and `notice get B` both showed `referenced_by_claims: []`. Fixed: added `notices.aliases_for(repo_root, component, *, index_path=None) -> list[str]` (resolved name plus every old redirect-map key that resolves to it); `claims.referenced_by_claims` now accepts `aliases: Sequence[str] = ()` and matches against `{component, *aliases}`; `cli.py`'s `_run_notice_get` computes `aliases = notices.aliases_for(Path.cwd(), notice.component)` and passes it through. New regression test `test_get_backlink_survives_rename` in `test_cli_notice_epic10.py` (asserts the backlink survives under both the old and new component name, following the documented author-old/author-new/redirect rename workflow). Full suite: 741 passed, 2 skipped (was 740 passed, 2 skipped before the new test was added).
+- `addressed_findings`: 1 (high). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Follow-up review recommendation:** none outstanding for this story.

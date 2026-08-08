@@ -626,16 +626,28 @@ def snapshot(
     return [to_dict(c, now=now) for c in matching]
 
 
-def referenced_by_claims(claims_path: Path, component: str) -> list[Claim]:
+def referenced_by_claims(
+    claims_path: Path, component: str, *, aliases: Sequence[str] = ()
+) -> list[Claim]:
     """Story 11.3's backlink: every stored claim carrying a ``type="notice"``
-    evidence entry whose ``url`` names ``component`` -- the computed,
-    un-persisted view a Notice's ``get`` output uses to show "which claims
-    cite this" (see module docstring). Returns claims of any status (a
-    draft claim can already cite a notice before it is published); sorted
-    by ``created_at`` for a deterministic order across runs."""
+    evidence entry whose ``url`` names ``component`` (or one of ``aliases``)
+    -- the computed, un-persisted view a Notice's ``get`` output uses to
+    show "which claims cite this" (see module docstring). Returns claims
+    of any status (a draft claim can already cite a notice before it is
+    published); sorted by ``created_at`` for a deterministic order across
+    runs.
+
+    ``aliases`` exists because a claim's ``Evidence.url`` for a
+    ``type="notice"`` entry stores the LITERAL component name an operator
+    cited at creation time, never re-resolved after a later rename
+    (``notices.archive_rename``) -- without also matching every old name
+    that now redirects to ``component`` (via ``notices.aliases_for``), a
+    claim citing the pre-rename name would silently and permanently drop
+    out of this backlink the moment the notice it cites gets renamed."""
+    names = {component, *aliases}
     matching = [
         c
         for c in read_all(claims_path)
-        if any(e.type == "notice" and e.url == component for e in c.evidence)
+        if any(e.type == "notice" and e.url in names for e in c.evidence)
     ]
     return sorted(matching, key=lambda c: c.created_at)

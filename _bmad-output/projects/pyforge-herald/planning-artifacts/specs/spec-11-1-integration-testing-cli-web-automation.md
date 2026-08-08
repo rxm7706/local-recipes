@@ -128,3 +128,10 @@ scoped choice.
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-08-08 -- Adversarial review pass (Blind Hunter + Edge Case Hunter, no shared context)
+
+- `[medium]` `[patch]` **`test_all_three_moments_end_to_end` shells out to a real `node` subprocess (`sync-progress.mjs`), but `nodejs` is not declared in `pixi.toml`'s `[feature.pyforge-herald.dependencies]`** -- only the top-level default feature has it, and `pyforge-herald`'s environment sets `no-default-feature = true`, so a clean CI runner or fresh `pixi run --frozen -e pyforge-herald` activation would hit `FileNotFoundError` inside the test; it only passed locally due to ambient shell `PATH` state. Confirmed via `env -i ... pixi run --frozen -e pyforge-herald python -c "import shutil; print(shutil.which('node'))"` -> `None`. Fixed conservatively with a `pytest.mark.skipif(shutil.which("node") is None, ...)` guard rather than adding `nodejs` to the pixi feature (which would require an `environment.yaml` regen and a `maintenance`-label PR for a test-only concern) -- documented as a known gap, not a silent pass.
+- `addressed_findings`: 1 (medium). No `intent_gap`, no `bad_spec`, no `defer`, no `reject`.
+
+**Follow-up review recommendation:** none outstanding for this story; if `nodejs` is later added to the `pyforge-herald` pixi feature for another reason, the `skipif` guard becomes a no-op and can be removed.

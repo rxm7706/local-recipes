@@ -18,12 +18,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
-
 from pyforge.herald import auth, cli, evidence
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -91,6 +91,12 @@ def _cleanup_web_public():
         _SYNC_PROGRESS_DEST.unlink()
 
 
+@pytest.mark.skipif(
+    shutil.which("node") is None,
+    reason="node is not declared in the pyforge-herald pixi feature's "
+    "dependencies -- this test's sync-progress.mjs subprocess only runs "
+    "when node happens to be on PATH from ambient shell state",
+)
 def test_all_three_moments_end_to_end(tmp_path, capsys):
     repo_root = tmp_path
 
