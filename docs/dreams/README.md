@@ -169,6 +169,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`conda-forge-expert-rebuild.md`](conda-forge-expert-rebuild.md) | dreamt | Reopens Mason's D-1 (wrap, never fork) for CFE itself only — Skill-Forge-authored rebuild, sliced along CFE's own 3 tiers, hard cutover per slice so it doesn't repeat atlas's ~29,000-unused-lines outcome. |
 | [`bmad-module-provisioning.md`](bmad-module-provisioning.md) | dreamt | Skill Forge/`bmad-builder` were hand-installed once (a 2026-07-17 ad-hoc commit driving an npm Installer class), not reproducibly — Steward's own `provision` duty (Epic 3) should wrap this the way it already wraps pixi/bmad-loop-worktree. |
 | [`kedro-org-tooling-adoption.md`](kedro-org-tooling-adoption.md) | dreamt | `kedro-mcp` already resolved (wired, deliberately scoped); `kedro-skills`/`publish-kedro-viz`/`vscode-kedro` genuinely unused — owned by Atlas (the domain knowledge), mechanism leans on Steward's provisioning/deploy ducts. |
+| [`herald-moments-2-4-live-backend.md`](herald-moments-2-4-live-backend.md) | dreamt | The full-spec version of Epics 8-10 (real database + webhook server + cron scheduler) that CI would call automatically — deferred in favor of a scaled-down local-storage/CLI-triggered first pass, since no persistent-service architecture exists anywhere in Herald today. |
 
 **Applications**
 
