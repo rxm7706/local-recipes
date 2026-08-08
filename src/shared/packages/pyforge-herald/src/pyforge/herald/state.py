@@ -184,6 +184,22 @@ def read(state_path: Path, slug: str) -> DeckState | None:
     return DeckState(project_id=project_id, etags=dict(etags), last_pull=last_pull)
 
 
+def known_slugs(state_path: Path) -> list[str]:
+    """Every slug currently recorded in ``state_path``, sorted.
+
+    Read-only -- added for Story 3.1 (``herald deck status`` with no slug
+    argument), which needs to discover every seeded deck without knowing
+    their names up front. Mirrors ``read``'s "missing file = nothing yet"
+    convention: a state file that does not exist returns ``[]``, never an
+    error. Raises the same ``errors.HeraldError`` as ``read``/``write``
+    when the file is present but structurally corrupt (malformed JSON, a
+    non-object top level, a duplicated key) -- this function reads only
+    the document's own key set and does not validate any one entry's
+    fields (that stays ``read``'s job, for the one slug a caller actually
+    wants to load)."""
+    return sorted(_load_document(state_path))
+
+
 def write(state_path: Path, slug: str, state: DeckState) -> None:
     """Store ``state`` under ``slug``, preserving every other slug already
     in the file. Creates ``state_path``'s parent directory if needed, and

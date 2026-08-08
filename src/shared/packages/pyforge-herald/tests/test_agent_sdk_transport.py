@@ -19,7 +19,7 @@ from pyforge.herald.errors import (
     TransportUnreachableError,
     UnconditionalWriteError,
 )
-from pyforge.herald.transport import AgentSdkTransport, DesignTransport
+from pyforge.herald.transport import AgentSdkTransport, DesignTransport, ListedFile
 from pyforge.herald.transport.agent_sdk_transport import (
     ALLOWED_TOOL_PREFIX,
     GET_DESIGN_PROMPT_TOOL,
@@ -280,6 +280,38 @@ def test_render_preview_has_no_serve_url_field(fake_launcher):
     assert preview.open_url == "https://claude.ai/design/p/p-1"
     assert not hasattr(preview, "serve_url")
     assert _SERVE_URL not in repr(preview)
+
+
+# --- list_files (Story 3.1/3.2) ---------------------------------------------
+
+
+def test_list_files_returns_listed_files(fake_launcher):
+    transport, launcher = _transport(
+        fake_launcher,
+        {
+            "list_files": _ok(
+                '{"files": [{"path": "support.js", "etag": "E1", "size": 5}, '
+                '{"path": "Deck.dc.html", "etag": "E2"}]}'
+            )
+        },
+    )
+    files = transport.list_files(project_id="p")
+    assert files == [
+        ListedFile(path="support.js", etag="E1", size=5),
+        ListedFile(path="Deck.dc.html", etag="E2", size=None),
+    ]
+    assert launcher.tool_calls() == ["list_files"]
+
+
+def test_list_files_treats_a_missing_files_key_as_empty(fake_launcher):
+    transport, _ = _transport(fake_launcher, {"list_files": _ok("{}")})
+    assert transport.list_files(project_id="p") == []
+
+
+def test_list_files_refuses_a_non_list_files_value(fake_launcher):
+    transport, _ = _transport(fake_launcher, {"list_files": _ok('{"files": "nope"}')})
+    with pytest.raises(TransportCallError, match="expected a list"):
+        transport.list_files(project_id="p")
 
 
 # --- the relay protocol itself ----------------------------------------------

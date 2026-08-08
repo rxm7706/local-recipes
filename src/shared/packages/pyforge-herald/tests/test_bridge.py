@@ -37,6 +37,7 @@ from pyforge.herald.errors import (
 from pyforge.herald.transport import (
     DesignTransport,
     FileRead,
+    ListedFile,
     PlanHandle,
     PreviewRef,
     ProjectRef,
@@ -81,6 +82,9 @@ class FakeTransport:
 
     def render_preview(self, *, project_id, path) -> PreviewRef:
         return PreviewRef(open_url="https://claude.ai/design/p/p-1")
+
+    def list_files(self, *, project_id):
+        return [ListedFile(path="x", etag="E1")]
 
 
 def test_fake_transport_conforms_to_the_design_transport_protocol():

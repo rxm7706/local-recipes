@@ -28,6 +28,7 @@ from pyforge.herald.transport import (
     DESIGN_MCP_URL,
     MODERNIST_DESIGN_SYSTEM_ID,
     DesignCredential,
+    ListedFile,
     McpTransport,
     ToolResult,
     resolve_design_credential,
@@ -422,6 +423,46 @@ def test_render_preview_ignores_a_non_string_expiry(fake_caller):
     preview = transport.render_preview(project_id="p-1", path="Deck.dc.html")
     assert preview.expires_at is None
     assert preview.open_url == "https://claude.ai/design/p/p-1"
+
+
+# --- list_files (Story 3.1/3.2) ---------------------------------------------
+
+
+def test_list_files_returns_listed_files(fake_caller):
+    payload = json.dumps(
+        {
+            "files": [
+                {"path": "support.js", "etag": "E1", "size": 120},
+                {"path": "PyForge Warden.dc.html", "etag": "E2"},
+            ]
+        }
+    )
+    transport, caller = _transport(fake_caller, {"list_files": payload})
+    files = transport.list_files(project_id="p-1")
+    assert files == [
+        ListedFile(path="support.js", etag="E1", size=120),
+        ListedFile(path="PyForge Warden.dc.html", etag="E2", size=None),
+    ]
+    assert caller.arguments_for("list_files") == {"project_id": "p-1"}
+
+
+def test_list_files_treats_a_missing_files_key_as_empty(fake_caller):
+    transport, _ = _transport(fake_caller, {"list_files": json.dumps({})})
+    assert transport.list_files(project_id="p-1") == []
+
+
+def test_list_files_refuses_a_non_list_files_value(fake_caller):
+    payload = json.dumps({"files": "not-a-list"})
+    transport, _ = _transport(fake_caller, {"list_files": payload})
+    with pytest.raises(TransportCallError, match="expected a list"):
+        transport.list_files(project_id="p-1")
+
+
+def test_list_files_refuses_a_non_object_entry(fake_caller):
+    payload = json.dumps({"files": ["not-an-object"]})
+    transport, _ = _transport(fake_caller, {"list_files": payload})
+    with pytest.raises(TransportCallError, match="non-object file entry"):
+        transport.list_files(project_id="p-1")
 
 
 def test_a_generic_payload_is_scrubbed_before_it_crosses_the_boundary(fake_caller):

@@ -48,7 +48,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,7 +57,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from . import errors, registry, state
 
 if TYPE_CHECKING:
-    from .transport.base import DesignTransport, FileRead, ProjectRef
+    from .transport.base import DesignTransport, FileRead, ListedFile, ProjectRef
 
 PILOT_SUPPORT_SOURCE_PROJECT_ID = "ad84d4f6-c292-42c8-98bf-ede78a567773"
 """The already-seeded ``pyforge-marshal`` Design project (``bridge-protocol.md``
@@ -916,3 +916,230 @@ def pull_standalone_bundle(
         etag=file_read.etag,
         committed=committed,
     )
+
+
+# --- CAP-3: status (Story 3.1/3.2) -------------------------------------------
+#
+# `bridge-protocol.md`'s pilot table (§ Pilot evidence) names the cautionary
+# fixture this pair of stories exists for: the "Local recipes repository
+# connection" Design project, a stale hand-mirrored copy of
+# `presentations/pyforge-atlas/` -- exactly the shape `stale_mirror` must
+# flag. Both stories are read-only: `status` never calls a write-side
+# transport method (`write_files`/`copy_files`/`create_project`/
+# `create_support_js`/`finalize_plan`) and never calls `state.write`.
+
+_STALE_MIRROR_FILE_COUNT_THRESHOLD = 15
+"""A legitimate bridge project holds at most a handful of files: the
+runtime pair (`support.js`, `deck-stage.js`), one prototype, up to three
+Marp sources, one standalone bundle -- eight at the outside, today. Well
+below this threshold, so crossing it is already unusual for a real bridge
+project without yet being conclusive on its own (see the nesting check
+below)."""
+
+_STALE_MIRROR_NESTED_PATH_THRESHOLD = 5
+"""None of `bridge-protocol.md`'s conventions ever puts a '/' in a
+Design-side filename -- every legitimate artifact (`support.js`,
+`deck-stage.js`, `PyForge <Persona>.dc.html`, `<short>-{kind}.md`, `<Persona>
+Infographic standalone.html`) is a flat, project-root name. A hand-mirrored
+repo copy looks the opposite: it reproduces the repo's own directory
+structure (`src/...`, `.claude/...`), so several of its files carry a
+nested path. Five is comfortably above what a stray or transitional file
+could produce by accident, comfortably below what a real repo mirror
+(dozens of nested paths) would show."""
+
+
+@dataclass(frozen=True)
+class DeckStatus:
+    """One deck's status report (CAP-3): whether it is linked to a Design
+    project, a fresh etag-based sync classification when it is, the
+    last-pull timestamp `state.py` has on record, and the stale-hand-mirror
+    flag (FR-12, Story 3.2).
+
+    `sync` is `None` for an unlinked deck (there is nothing to compare) and
+    one of `"unchanged"` / `"changed"` / `"conflict"` for a linked one:
+    `"unchanged"` when every tracked artifact's fresh etag still matches
+    (or the deck has no tracked artifacts yet -- seeded but never pulled);
+    `"changed"` when at least one tracked artifact's etag no longer matches
+    and every comparison could be made; `"conflict"` when at least one
+    comparison itself failed (the transport raised reaching the far end,
+    or the tracked file is gone server-side) -- conflict takes precedence
+    over changed, since an operator cannot safely decide "pull" is even the
+    right action without first resolving the failed comparison."""
+
+    slug: str
+    linked: bool
+    project_id: str | None
+    sync: str | None
+    last_pull: str | None
+    stale_mirror: bool
+
+
+def _remote_path_for_artifact(slug: str, artifact_key: str) -> str:
+    """The Design-side path a tracked ``state.py`` artifact key names --
+    the same per-artifact naming convention ``pull_prototype`` /
+    ``pull_marp_source`` / ``pull_standalone_bundle`` already each derive
+    for their own single artifact, generalized here since ``status`` must
+    resolve whichever keys a deck happens to have recorded."""
+    persona = _persona_from_slug(slug)
+    if artifact_key == PROTOTYPE_ARTIFACT_KEY:
+        return f"PyForge {persona}.dc.html"
+    if artifact_key == STANDALONE_BUNDLE_ARTIFACT_KEY:
+        return f"{persona} Infographic standalone.html"
+    if artifact_key.startswith("marp:"):
+        return f"{_short_name(slug)}-{artifact_key.removeprefix('marp:')}.md"
+    raise errors.HeraldError(
+        f"cannot check status for {slug!r}: unrecognized tracked artifact "
+        f"key {artifact_key!r} in {state.DEFAULT_STATE_PATH}"
+    )
+
+
+def _is_stale_mirror(files: Sequence[ListedFile]) -> bool:
+    """FR-12's heuristic (Story 3.2): flags a Design project shaped like a
+    hand-mirrored repo copy rather than a normal bridge project. Both
+    conditions below must hold -- file count alone would false-positive on
+    a legitimate deck a future story gives many more tracked artifacts;
+    nested-path count alone would false-positive on one stray file. See
+    the two threshold constants' own docstrings for the reasoning behind
+    each number."""
+    if len(files) < _STALE_MIRROR_FILE_COUNT_THRESHOLD:
+        return False
+    nested = sum(1 for listed in files if "/" in listed.path)
+    return nested >= _STALE_MIRROR_NESTED_PATH_THRESHOLD
+
+
+def _status_for_slug(
+    transport: DesignTransport, *, slug: str, state_path: Path
+) -> DeckStatus:
+    """One deck's ``DeckStatus`` -- read-only throughout: ``state.read`` and
+    ``transport.read_file``/``transport.list_files`` only, never a write to
+    either surface."""
+    existing = state.read(state_path, slug)
+    if existing is None:
+        return DeckStatus(
+            slug=slug,
+            linked=False,
+            project_id=None,
+            sync=None,
+            last_pull=None,
+            stale_mirror=False,
+        )
+
+    saw_conflict = False
+    saw_change = False
+    for artifact_key, etag in sorted(existing.etags.items()):
+        remote_path = _remote_path_for_artifact(slug, artifact_key)
+        try:
+            file_read = transport.read_file(
+                project_id=existing.project_id,
+                path=remote_path,
+                if_none_match=etag,
+            )
+        except errors.TransportError:
+            # The far end could not be reached, or reported this exact
+            # tracked file gone -- either way, "changed" would overclaim an
+            # answer this comparison could not actually get.
+            saw_conflict = True
+            continue
+        if not file_read.unchanged:
+            saw_change = True
+    if saw_conflict:
+        sync = "conflict"
+    elif saw_change:
+        sync = "changed"
+    else:
+        sync = "unchanged"
+
+    try:
+        listed_files = transport.list_files(project_id=existing.project_id)
+    except errors.TransportError:
+        # Same "the far end could not be reached" treatment as the
+        # read_file loop above -- a stale-mirror check that cannot reach
+        # Design tells us nothing new; it was already conflicted, or is
+        # marked so now, rather than crashing this deck's (and every other
+        # known deck's -- see status()'s list comprehension) status report.
+        saw_conflict = True
+        listed_files = []
+    stale_mirror = _is_stale_mirror(listed_files)
+    if saw_conflict:
+        sync = "conflict"
+
+    return DeckStatus(
+        slug=slug,
+        linked=True,
+        project_id=existing.project_id,
+        sync=sync,
+        last_pull=existing.last_pull,
+        stale_mirror=stale_mirror,
+    )
+
+
+def _known_slugs(repo_root: Path, state_path: Path) -> list[str]:
+    """Every deck ``status`` (no slug argument) reports on: the union of
+    every slug already recorded in ``state.py`` (seeded) and every
+    ``presentations/<slug>/`` directory carrying a ``README.md`` (a deck
+    that exists locally but may never have been seeded) -- so an unseeded
+    deck is reported as unlinked rather than silently omitted."""
+    slugs = set(state.known_slugs(state_path))
+    presentations_dir = repo_root / "presentations"
+    if presentations_dir.is_dir():
+        for entry in presentations_dir.iterdir():
+            if entry.is_dir() and (entry / "README.md").is_file():
+                slugs.add(entry.name)
+    return sorted(slugs)
+
+
+def status(
+    transport: DesignTransport,
+    *,
+    slug: str | None = None,
+    repo_root: Path,
+    state_path: Path | None = None,
+) -> list[DeckStatus]:
+    """CAP-3, Story 3.1/3.2: report every known deck's bridge state (or just
+    ``slug``'s, when given), each with a fresh etag comparison against
+    Design and the stale-hand-mirror flag (FR-12).
+
+    Read-only end to end (FR-13, NFR-08): reads `state.py` and calls only
+    `transport.read_file`/`transport.list_files`, never any write-side
+    transport method, and never `state.write`. When ``slug`` is given but
+    unlinked (or entirely unknown -- no state entry, no local deck
+    directory), returns a single unlinked `DeckStatus` rather than raising:
+    unlike `pull_*`, status reporting on an unseeded deck is itself a
+    normal, informative answer, not an error."""
+    resolved_state_path = (
+        repo_root / state.DEFAULT_STATE_PATH if state_path is None else state_path
+    )
+    if slug is not None:
+        # A single explicit slug: a structural failure (e.g. a bogus
+        # tracked-artifact key -- AD-6) still raises plainly, matching
+        # every other single-deck operation in this module. There is no
+        # "rest of the batch" to protect here.
+        return [_status_for_slug(transport, slug=slug, state_path=resolved_state_path)]
+    slugs = _known_slugs(repo_root, resolved_state_path)
+    return [_status_or_conflict(transport, one, resolved_state_path) for one in slugs]
+
+
+def _status_or_conflict(
+    transport: DesignTransport, slug: str, state_path: Path
+) -> DeckStatus:
+    """``_status_for_slug``, with one deck's structural failure (``state.py``
+    is malformed for this slug, or names an artifact key this version does
+    not recognize -- both raise ``errors.HeraldError``, AD-6) downgraded to
+    a ``"conflict"`` status instead of propagating. Only used for the
+    multi-deck (``slug=None``) path in ``status()``: without this, ONE bad
+    deck would abort the ENTIRE report, discarding every other deck's
+    perfectly valid status -- exactly the "at a glance across the fleet"
+    use case this epic exists for. A single-slug request still raises
+    plainly (see ``status()``'s own branch), matching every other
+    single-deck operation in this module."""
+    try:
+        return _status_for_slug(transport, slug=slug, state_path=state_path)
+    except errors.HeraldError:
+        return DeckStatus(
+            slug=slug,
+            linked=True,
+            project_id=None,
+            sync="conflict",
+            last_pull=None,
+            stale_mirror=False,
+        )

@@ -34,8 +34,8 @@ development_status:
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
   2-4-standalone-bundle-pull: done
-  3-1-herald-deck-status-slug: backlog
-  3-2-stale-hand-mirror-detection: backlog
+  3-1-herald-deck-status-slug: done
+  3-2-stale-hand-mirror-detection: done
   4-1-poll-loop-with-quiescence-debounce: backlog
   4-2-idle-backoff: backlog
   4-3-halt-on-auth-error: backlog
@@ -75,7 +75,7 @@ development_status:
   epic-1-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
-  epic-3: backlog
+  epic-3: done
   epic-3-retrospective: optional
   epic-4: backlog
   epic-4-retrospective: optional
