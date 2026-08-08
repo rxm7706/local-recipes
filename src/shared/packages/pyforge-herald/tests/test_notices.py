@@ -210,6 +210,18 @@ def test_close_already_closed_raises(tmp_path: Path):
         notices.close_notice(tmp_path, "auth-api-v1")
 
 
+def test_list_notices_on_a_completely_empty_repo_is_empty(tmp_path: Path):
+    """Story 11.2: no ``.herald/notices-index.json`` at all yet -- not even
+    an empty one -- must resolve to an empty list, not raise."""
+    assert notices.list_notices(tmp_path) == []
+    assert notices.list_notices(tmp_path, status="all") == []
+
+
+def test_get_notice_on_a_completely_empty_repo_raises_herald_error(tmp_path: Path):
+    with pytest.raises(HeraldError, match="no notice found"):
+        notices.get_notice(tmp_path, "does-not-exist")
+
+
 def test_list_excludes_drafts_by_default(tmp_path: Path):
     _author(tmp_path, component="draft-one")
     _author(tmp_path, component="published-one", publish=True)

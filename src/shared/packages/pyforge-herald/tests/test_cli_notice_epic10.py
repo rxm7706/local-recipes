@@ -231,6 +231,103 @@ def test_archive_rename_then_get_follows_redirect(monkeypatch, tmp_path, capsys)
     assert payload["component"] == "auth-api-v2"
 
 
+# --- Story 11.3: cross-Moment evidence-linking backlink ------------------
+
+
+def test_get_shows_referenced_by_claims_backlink(monkeypatch, tmp_path, capsys):
+    from pyforge.herald import claims
+
+    _author(monkeypatch, tmp_path, extra=["--publish"])
+    claim = claims.create(
+        tmp_path / claims.DEFAULT_CLAIMS_PATH,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
+            )
+        ],
+    )
+    capsys.readouterr()
+
+    assert cli.main(["notice", "--json", "get", "auth-api-v1"]) == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["referenced_by_claims"] == [
+        {"id": claim.id, "project_name": "warden", "status": "draft"}
+    ]
+
+    assert cli.main(["notice", "get", "auth-api-v1"]) == 0
+    text = capsys.readouterr().out
+    assert "referenced by claims:" in text
+    assert claim.id in text
+
+
+def test_get_referenced_by_claims_empty_when_no_claim_cites_it(
+    monkeypatch, tmp_path, capsys
+):
+    _author(monkeypatch, tmp_path, extra=["--publish"])
+    capsys.readouterr()
+    assert cli.main(["notice", "--json", "get", "auth-api-v1"]) == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["referenced_by_claims"] == []
+
+
+def test_get_backlink_survives_rename(monkeypatch, tmp_path, capsys):
+    """A claim citing the pre-rename component name must still show up in
+    ``referenced_by_claims`` after the notice is renamed -- both under the
+    new (resolved) name and the old (redirected) name. Reproduces the bug
+    both the Blind Hunter and Edge Case Hunter independently found: a
+    claim's ``Evidence.url`` for a ``type="notice"`` entry stores the
+    literal component name cited at creation time and is never re-resolved
+    after a later rename."""
+    from pyforge.herald import claims
+
+    _author(monkeypatch, tmp_path, extra=["--publish"])
+    claim = claims.create(
+        tmp_path / claims.DEFAULT_CLAIMS_PATH,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(
+                type="notice", url="auth-api-v1", label="notice: auth-api-v1"
+            )
+        ],
+    )
+    capsys.readouterr()
+
+    assert (
+        cli.main(
+            [
+                "notice",
+                "author",
+                "--type",
+                "deprecation",
+                "--component",
+                "auth-api-v2",
+                "--what",
+                "w",
+                "--why",
+                "w",
+                "--migration",
+                "m",
+                "--deadline",
+                "2026-09-01",
+                "--publish",
+            ]
+        )
+        == 0
+    )
+    assert (
+        cli.main(["notice", "archive", "--rename", "auth-api-v1", "auth-api-v2"]) == 0
+    )
+    capsys.readouterr()
+
+    for name in ("auth-api-v1", "auth-api-v2"):
+        assert cli.main(["notice", "--json", "get", name]) == 0
+        payload = json.loads(capsys.readouterr().out.strip())
+        assert payload["referenced_by_claims"] == [
+            {"id": claim.id, "project_name": "warden", "status": "draft"}
+        ], f"backlink missing when querying by {name!r}"
+
+
 # --- interactive prompting for missing author fields --------------------
 
 

@@ -569,6 +569,29 @@ def get_notice(
     return _entry_to_notice(entry)
 
 
+def aliases_for(
+    repo_root: Path, component: str, *, index_path: Path | None = None
+) -> list[str]:
+    """``component``'s resolved (current) name plus every old name whose
+    redirect chain resolves to it (Story 10.3 renames) -- Story 11.3's
+    cross-Moment backlink needs this: a claim's ``Evidence.url`` for a
+    ``type="notice"`` entry stores the LITERAL name an operator cited at
+    creation time, never re-resolved after a later rename, so searching
+    claims by only the current resolved name silently misses any claim
+    that cited an old name before the rename happened. Returns the
+    resolved name first, then aliases in no particular order."""
+    index_path = (
+        index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
+    )
+    document = _load_index_document(index_path)
+    redirects = document["redirects"]
+    resolved = _resolve_component(redirects, component)
+    aliases = [
+        old for old in redirects if _resolve_component(redirects, old) == resolved
+    ]
+    return [resolved, *aliases]
+
+
 def list_notices(
     repo_root: Path,
     *,

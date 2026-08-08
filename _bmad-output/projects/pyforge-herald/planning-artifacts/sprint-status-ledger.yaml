@@ -63,10 +63,10 @@ development_status:
   10-4-notice-cli: done
   10-5-operations-web-tab: done
   10-6-notice-lifecycle: done
-  11-1-integration-testing-cli-web-and-automation: backlog
-  11-2-automation-reliability: backlog
-  11-3-evidence-linking-cross-moment: backlog
-  11-4-performance-testing: backlog
+  11-1-integration-testing-cli-web-and-automation: done
+  11-2-automation-reliability: done
+  11-3-evidence-linking-cross-moment: done
+  11-4-performance-testing: done
   12-1-cli-runbooks-and-troubleshooting: backlog
   12-2-web-surface-ux-guide: backlog
   12-3-operator-runbook: backlog
@@ -91,7 +91,7 @@ development_status:
   epic-9-retrospective: optional
   epic-10: done
   epic-10-retrospective: optional
-  epic-11: backlog
+  epic-11: done
   epic-11-retrospective: optional
   epic-12: backlog
   epic-12-retrospective: optional

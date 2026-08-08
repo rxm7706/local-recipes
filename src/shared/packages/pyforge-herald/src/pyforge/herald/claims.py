@@ -33,6 +33,22 @@ inventing a version-number sequence no caller yet needs.
 staleness (AD-15's 7-day window, ``evidence.STALE_AFTER``) is a function
 of "how old is ``validated_at``," recomputed at read time by ``to_dict``
 rather than a second field that could drift out of sync with the clock.
+
+**Cross-Moment evidence linking (Story 11.3, scaled down).** A claim's
+evidence can cite an Operations Notice (Epic 10) by giving it
+``type="notice"``. There is no separate "notice reference" field --
+``Evidence.url`` is reused to hold the notice's ``component`` name instead
+of an HTTP URL for this one type (documented here rather than adding a
+second, mutually-exclusive field for what is still "the one thing this
+evidence entry points at"). A ``type="notice"`` entry is never sent through
+``evidence.validate_link``/``validate_for_publish`` (it is not a URL, and
+there is nothing to ``HEAD``) -- ``publish``'s validation loop below treats
+it as trivially valid instead. The *reverse* direction (a Notice seeing
+which claims cite it) is a computed, un-persisted view --
+``referenced_by_claims`` below -- rather than a new field on ``Notice``:
+recomputing "who cites this component" from the claims file at read time
+means the two files can never drift out of sync with each other the way a
+second stored copy of the same fact could.
 """
 
 from __future__ import annotations
@@ -54,7 +70,7 @@ DEFAULT_CLAIMS_PATH = Path(".herald/claims.json")
 """Default location, relative to a repo root the caller resolves (mirrors
 ``state.DEFAULT_STATE_PATH``)."""
 
-EVIDENCE_TYPES = ("test_results", "metrics", "adoption", "other")
+EVIDENCE_TYPES = ("test_results", "metrics", "adoption", "other", "notice")
 CLAIM_STATUSES = ("draft", "published", "closed")
 
 _EVIDENCE_FIELDS = frozenset(("type", "url", "label", "validated", "validated_at"))
@@ -417,6 +433,12 @@ def publish(
     timestamp = now()
     broken: list[str] = []
     for e in claim.evidence:
+        if e.type == "notice":
+            # A "notice" evidence entry's `url` holds a Notice component
+            # name, not an HTTP URL (see module docstring) -- nothing to
+            # HEAD, so it is trivially valid rather than run through the
+            # HTTP-based `validate`.
+            continue
         try:
             validate(e.url)
         except errors.EvidenceLinkError as exc:
@@ -453,6 +475,21 @@ def publish(
     return updated
 
 
+def _revalidated_entry(
+    e: Evidence,
+    *,
+    validate: Callable[[str], evidence_mod.LinkValidation],
+    timestamp_iso: str,
+) -> Evidence:
+    """One evidence entry, re-checked -- except a ``"notice"``-type entry
+    (see module docstring): its ``url`` is a Notice component name, not an
+    HTTP URL, so it is left ``validated=True`` (trivially valid, mirroring
+    ``publish``'s own treatment) rather than run through ``validate``."""
+    if e.type == "notice":
+        return replace(e, validated=True, validated_at=timestamp_iso)
+    return replace(e, validated=validate(e.url).is_valid, validated_at=timestamp_iso)
+
+
 def revalidate(
     claims_path: Path,
     claim_id: str,
@@ -478,9 +515,7 @@ def revalidate(
     claim = claims[index]
     timestamp = now()
     revalidated_evidence = tuple(
-        replace(
-            e, validated=validate(e.url).is_valid, validated_at=timestamp.isoformat()
-        )
+        _revalidated_entry(e, validate=validate, timestamp_iso=timestamp.isoformat())
         for e in claim.evidence
     )
     updated = replace(
@@ -511,10 +546,8 @@ def revalidate_all(
     updated_claims = []
     for claim in claims:
         revalidated_evidence = tuple(
-            replace(
-                e,
-                validated=validate(e.url).is_valid,
-                validated_at=timestamp.isoformat(),
+            _revalidated_entry(
+                e, validate=validate, timestamp_iso=timestamp.isoformat()
             )
             for e in claim.evidence
         )
@@ -591,3 +624,30 @@ def snapshot(
     matching = list_claims(claims_path, status=status)
     matching.sort(key=lambda c: c.published_at or c.shipped_date or "", reverse=True)
     return [to_dict(c, now=now) for c in matching]
+
+
+def referenced_by_claims(
+    claims_path: Path, component: str, *, aliases: Sequence[str] = ()
+) -> list[Claim]:
+    """Story 11.3's backlink: every stored claim carrying a ``type="notice"``
+    evidence entry whose ``url`` names ``component`` (or one of ``aliases``)
+    -- the computed, un-persisted view a Notice's ``get`` output uses to
+    show "which claims cite this" (see module docstring). Returns claims
+    of any status (a draft claim can already cite a notice before it is
+    published); sorted by ``created_at`` for a deterministic order across
+    runs.
+
+    ``aliases`` exists because a claim's ``Evidence.url`` for a
+    ``type="notice"`` entry stores the LITERAL component name an operator
+    cited at creation time, never re-resolved after a later rename
+    (``notices.archive_rename``) -- without also matching every old name
+    that now redirects to ``component`` (via ``notices.aliases_for``), a
+    claim citing the pre-rename name would silently and permanently drop
+    out of this backlink the moment the notice it cites gets renamed."""
+    names = {component, *aliases}
+    matching = [
+        c
+        for c in read_all(claims_path)
+        if any(e.type == "notice" and e.url in names for e in c.evidence)
+    ]
+    return sorted(matching, key=lambda c: c.created_at)
