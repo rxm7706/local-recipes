@@ -33,19 +33,26 @@ import json
 import os
 import re
 import subprocess
-import time
 import sys
-import tomllib
+import time
 from pathlib import Path
+
+import tomllib
 
 # dashboard project-key -> its sprint-status.yaml (repo-root-relative)
 # TODO: Replace hardcoded PROJECT_SOURCES with dynamic discovery from _bmad-output/projects/*/
 # This hardcoding causes stale entries when projects are consolidated (e.g., deckcraft → herald).
-# Discovery should scan _bmad-output/projects/ and auto-derive the active project set.
+# Discovery should scan _bmad-output/projects/ and auto-derive the active project set. Tracked
+# by the (draft, not yet folded in) spec-dashboard-project-path-derivation Dream Spec.
+#
+# No "regen" entry: `_bmad-output/projects/local-recipes/` was retired 2026-07-28 and never
+# existed at this path afterward (confirmed 2026-08-08 -- every run silently warned
+# "sprint-status not found... statuses left as-is"). regen's DONE detection is independent of
+# this dict anyway -- it comes from git-log `rf(<id>):` commit parsing (see `_RF_STORY` /
+# `done.setdefault("regen", ...)` below), which this entry never fed.
 PROJECT_SOURCES = {
     "warden": "_bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml",
     "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
-    "regen": "_bmad-output/projects/local-recipes/implementation-artifacts/sprint-status.yaml",
     "herald": "_bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml",
     "doctor": "_bmad-output/projects/pyforge-doctor/implementation-artifacts/sprint-status.yaml",
     "scribe": "_bmad-output/projects/pyforge-scribe/implementation-artifacts/sprint-status.yaml",
@@ -102,7 +109,7 @@ _WARDEN_LEGACY_STORY = re.compile(r"^story (\d+\.\d+):")
 #   mason + steward: Story 1.1 — two stations reach code (MULTI-project, `+`-joined)
 # The multi form is why mason and steward read 0 on the published board: their only
 # completion signal names two projects at once and matched no single-project regex.
-_QUALIFIED_STORY = re.compile(r"^([a-z0-9 +\-]+?):\s*story\s+(\d+\.\d+)\b", re.I)
+_QUALIFIED_STORY = re.compile(r"^([a-z0-9 +\-]+?):\s*story\s+(\d+\.\d+)\b", re.IGNORECASE)
 # Atlas: most stories land as `story(A1)` / `story(B10)` / `story(0.1)`; the Wave
 # G/H tail uses bare `GN:` / `HN:` subjects instead.
 _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
@@ -113,6 +120,8 @@ _RF_STORY = re.compile(r"\brf\((\d+\.\w+)\):")
 HERE = Path(__file__).resolve().parent
 DATA_JS = HERE / "data.js"
 REPO_ROOT = HERE.parent.parent  # repo root = two levels up from docs/dashboard/
+
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 _ENTRY = re.compile(r"^\s{2}(?P<key>[^:#\s][^:]*?):\s*(?P<val>[a-z][a-z-]*)\s*(#.*)?$")
 _SNAP_TS = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC")
@@ -524,8 +533,7 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
             sid = qm.group(2)
             for tok in qm.group(1).split("+"):
                 key = tok.strip().lower()
-                if key.startswith("pyforge-"):
-                    key = key[len("pyforge-"):]
+                key = key.removeprefix("pyforge-")
                 if key in done:          # validated against the live project set
                     done[key].add(sid)
         for a in _RF_STORY.finditer(line):
@@ -618,15 +626,17 @@ DREAM_TYPES = ("dream", "practice")
 # §§1-8). `owner:` on a Dream names the station accountable for carrying it all
 # the way Dream -> code; the station is the POST, not the product, so owning a
 # Dream does not mean it becomes that Smith's package.
-STATIONS = ("herald", "marshal", "atlas", "warden",
-            "mason", "doctor", "scribe", "steward")
+#
+# IMPORTED from scripts/bmad_drift_check.py, not re-declared — same GUILD_DREAMS
+# duplication-hazard fix. One definition, one place to update.
 # The Dreams that may name no station, because they PRECEDE them: the Charter, which
 # constitutes the stations, and pyforge-genesis, the operating-model seed. `guild` is NOT
 # a ninth station and never renders as one — it marks a Dream sitting above the roster,
 # not beside it.
 #
-# MIRRORS scripts/bmad_drift_check.py:GUILD_DREAMS — keep the two in step. The mirror was
+# IMPORTED from scripts/bmad_drift_check.py, not re-declared — a hand-mirrored copy was
 # missed on 2026-07-28 and the board warned on a Dream the Charter explicitly permits.
+# One definition, one place to update.
 #
 # History, because this list flipped twice and the middle position was half-right. An
 # earlier comment here read: "Genesis was briefly here and was wrong: its origin doc is
@@ -637,8 +647,10 @@ STATIONS = ("herald", "marshal", "atlas", "warden",
 # `guild` wholesale fixed the second and broke the first. Resolved 2026-07-28 by splitting
 # them: the installer became the marshal-owned `genesis-installer` Dream; Genesis kept the
 # constitutive half and returned here. Charter §5 + its Realization log carry the ruling.
-GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
-
+from bmad_drift_check import (
+    GUILD_DREAMS,
+    STATIONS,
+)
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
 # the packaging-factory dream, etc.).
@@ -756,17 +768,17 @@ def scan_specs() -> list[dict]:
         slug = spec_dir.name.removeprefix("spec-")
         project = (GOVERNANCE_DIR if spec_dir.parent == REPO_ROOT / GOVERNANCE_DIR
                    else spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0])
-        m = re.search(r"^#\s+(.+)$", text, re.M)
+        m = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
         title = (m.group(1).strip() if m else slug)
         title = re.sub(r"^SPEC\s*[—–-]\s*", "", title)
         caps = len(set(re.findall(r"\bCAP-\d+\b", text)))
         comp = 0
         if text.startswith("---"):
             fm = text.split("---", 2)[1]
-            cm = re.search(r"^companions:\s*\n((?:[ \t]*-[ \t].*\n)*)", fm, re.M)
+            cm = re.search(r"^companions:\s*\n((?:[ \t]*-[ \t].*\n)*)", fm, re.MULTILINE)
             if cm:
-                comp = len(re.findall(r"^[ \t]*-[ \t]", cm.group(1), re.M))
-            inline = re.search(r"^companions:\s*\[([^\]]*)\]", fm, re.M)
+                comp = len(re.findall(r"^[ \t]*-[ \t]", cm.group(1), re.MULTILINE))
+            inline = re.search(r"^companions:\s*\[([^\]]*)\]", fm, re.MULTILINE)
             if inline and inline.group(1).strip():
                 comp = len(inline.group(1).split(","))
         dream = slug if (DREAMS_DIR / f"{slug}.md").exists() else ""
@@ -1011,7 +1023,7 @@ def scan_impl_campaign(projects: dict) -> dict:
 
 LINE_HOMES = {"herald": "pyforge-herald", "doctor": "pyforge-doctor",
               "scribe": "pyforge-scribe", "warden": "pyforge-warden", "atlas": "pyforge-atlas"}
-_STORY_KEY = re.compile(r"^\s*(\d+-\d+-[a-z0-9-]+):\s*backlog", re.M)
+_STORY_KEY = re.compile(r"^\s*(\d+-\d+-[a-z0-9-]+):\s*backlog", re.MULTILINE)
 
 
 def apply_line_state(projects: dict) -> None:
@@ -1422,7 +1434,7 @@ def _pkg_version(slug: str) -> str:
     f = REPO_ROOT / "src" / "shared" / "packages" / slug / "pyproject.toml"
     if not f.is_file():
         return ""
-    m = re.search(r'^version\s*=\s*"([^"]+)"', f.read_text(encoding="utf-8"), re.M)
+    m = re.search(r'^version\s*=\s*"([^"]+)"', f.read_text(encoding="utf-8"), re.MULTILINE)
     return m.group(1) if m else ""
 
 
@@ -1852,16 +1864,20 @@ def scan_command_center(fleet: dict) -> dict:
     }
 
     # Station info: emoji + full name mapping (in display order)
-    station_order = ["herald", "marshal", "atlas", "warden", "mason", "doctor", "scribe", "steward"]
+    # Order + membership come from the imported STATIONS (single source of truth, shared
+    # with scripts/bmad_drift_check.py) rather than a separately hand-typed list — a 9th
+    # station added to STATIONS used to be silently omitted from the Command Center table.
+    # Display metadata (emoji) has no home in STATIONS itself, so it stays a local lookup,
+    # but with a graceful fallback: an unmapped station still renders (title-cased slug,
+    # generic emoji) instead of vanishing.
+    station_order = list(STATIONS)
+    _STATION_EMOJI = {
+        "herald": "🎺", "marshal": "⚔️", "atlas": "🗺️", "warden": "🛡️",
+        "mason": "🧱", "doctor": "🏥", "scribe": "📖", "steward": "👑",
+    }
     station_info = {
-        "herald": ("🎺", "Herald"),
-        "marshal": ("⚔️", "Marshal"),
-        "atlas": ("🗺️", "Atlas"),
-        "warden": ("🛡️", "Warden"),
-        "mason": ("🧱", "Mason"),
-        "doctor": ("🏥", "Doctor"),
-        "scribe": ("📖", "Scribe"),
-        "steward": ("👑", "Steward"),
+        slug: (_STATION_EMOJI.get(slug, "🔹"), slug.title())
+        for slug in STATIONS
     }
 
     # Artifact display names
@@ -1980,16 +1996,16 @@ def scan_command_center(fleet: dict) -> dict:
 
 # ---- open work (the tracked deferred-work ledgers) ---------------------------
 
-_DW_HEAD = re.compile(r"^#{2,4}\s+(DW-[A-Za-z0-9][A-Za-z0-9-]*)\s*[—:-]?\s*(.*)$", re.M)
-_DW_STATUS = re.compile(r"^\s*status:\s*(\S.*?)\s*$", re.M)
-_DW_SEVERITY = re.compile(r"^\s*severity:\s*(\w+)", re.M)
+_DW_HEAD = re.compile(r"^#{2,4}\s+(DW-[A-Za-z0-9][A-Za-z0-9-]*)\s*[—:-]?\s*(.*)$", re.MULTILINE)
+_DW_STATUS = re.compile(r"^\s*status:\s*(\S.*?)\s*$", re.MULTILINE)
+_DW_SEVERITY = re.compile(r"^\s*severity:\s*(\w+)", re.MULTILINE)
 # atlas encodes severity in the heading — `## DW-B1-1 — title (HIGH, context)`.
-_DW_SEV_HEAD = re.compile(r"\((CRITICAL|HIGH|MEDIUM|LOW)\b", re.I)
+_DW_SEV_HEAD = re.compile(r"\((CRITICAL|HIGH|MEDIUM|LOW)\b", re.IGNORECASE)
 # `verified:` is the sweep-protocol result line — an entry checked against the actual code
 # with file:line or a measured count as evidence. `resolution:` is the older annotation for
 # the same thing. Either means a human (or this protocol) has LOOKED; a bare `open` with
 # neither means the ledger's word is all we have.
-_DW_RESOLUTION = re.compile(r"^\s*(?:resolution|verified):\s*\S", re.M)
+_DW_RESOLUTION = re.compile(r"^\s*(?:resolution|verified):\s*\S", re.MULTILINE)
 _SEVERITIES = ("critical", "high", "medium", "low", "unspecified")
 
 
@@ -2521,7 +2537,7 @@ def build_status(data: dict, source: str) -> dict:
             slug = tgt.group(1) if tgt else None
         if not key:
             # hand-landed: `<station>: ... Story <e>.<s> ...` in the SUBJECT
-            m2 = re.search(r"story\s+(\d+)\.(\d+)", subject, re.I)
+            m2 = re.search(r"story\s+(\d+)\.(\d+)", subject, re.IGNORECASE)
             if m2:
                 for cand in PROJECT_SOURCES:
                     if cand in subject.lower():
