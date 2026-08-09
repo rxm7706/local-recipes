@@ -1,0 +1,14 @@
+{
+  "code": "def match_source_urls(\n    pypi_conda_mapping_base: pd.DataFrame,\n    pypi_json_raw: pd.DataFrame,\n) -> pd.DataFrame:\n    # legacy: Phase C.5  (phase_c5_source_url_match CFA:1802)\n    \"\"\"Extend the Phase C mapping with source-URL-derived matches, honouring the\n    **no-clobber** discipline: a ``recipe_source_url`` candidate is added ONLY for a\n    ``pypi_name`` not already carried by a protected tier (``parselmouth`` /\n    ``recipe_source_url`` / ``g10_spelling``). This is the node that WRITES the final\n    ``pypi_conda_mapping``.\n\n    ``pypi_json_raw`` supplies the PyPI-side source URLs; rows carrying a resolved\n    ``conda_name`` (a source-URL match) become ``match_source='recipe_source_url'``\n    candidates. Output: ``pypi_name``, ``conda_name``, ``match_source``.\n    \"\"\"\n    cols = [\"pypi_name\", \"conda_name\", \"match_source\"]\n    base = pypi_conda_mapping_base\n    if base is None or base.empty:\n        base = pd.DataFrame(columns=cols)\n    base = base[[c for c in cols if c in base.columns]].copy()\n\n    # already-mapped pypi_names under a protected tier — never clobber these.\n    protected = set(\n        base.loc[base[\"match_source\"].isin(_PROTECTED_MATCH_SOURCES), \"pypi_name\"]\n    ) if \"match_source\" in base.columns else set(base.get(\"pypi_name\", pd.Series(dtype=object)))\n\n    cand = pypi_json_raw\n    new_rows = []\n    if cand is not None and not cand.empty and {\"pypi_name\", \"conda_name\"} <= set(cand.columns):\n        for pypi_name, conda_name in zip(cand[\"pypi_name\"], cand[\"conda_name\"]):\n            if pypi_name in protected:\n                continue  # no-clobber\n            # skip missing OR non-string conda_name (a list/array cell is malformed —\n            # scalar-safe: no pd.isna-on-array ValueError, no unhashable-key crash).\n            if _is_missing(conda_name) or not isinstance(conda_name, str):\n                continue\n            new_rows.append((pypi_name, conda_name, \"recipe_source_url\"))\n    extra = pd.DataFrame(new_rows, columns=cols)\n    out = pd.concat([base, extra], ignore_index=True)\n    out = out.drop_duplicates(subset=[\"pypi_name\", \"conda_name\"])\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='match_source_urls'",
+  "inputs": [
+    "pypi_conda_mapping_base",
+    "pypi_json_raw"
+  ],
+  "outputs": [
+    "pypi_conda_mapping"
+  ],
+  "preview": null
+}

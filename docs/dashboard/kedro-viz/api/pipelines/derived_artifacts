@@ -1,0 +1,208 @@
+{
+  "nodes": [
+    {
+      "id": "18664949",
+      "name": "core_packages_enumerated",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vulnerability",
+        "vcs_health",
+        "seed_gaps",
+        "core",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "f1f1425b",
+      "name": "parameters",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "derived_artifacts"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "984bc0c0",
+      "name": "pypi_conda_mapping",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vcs_health",
+        "seed_gaps",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "f952fa75",
+      "name": "build_universe_sbom",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "derived_artifacts"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "ttls": {
+          "core_downloads": 604800,
+          "core_downloads_platform_breakdown": 604800,
+          "core_downloads_pyver_breakdown": 604800,
+          "core_downloads_channel_breakdown": 604800,
+          "core_version_download_history": 604800,
+          "core_cf_graph_raw": 86400,
+          "pypi_universe": 604800,
+          "pypi_current_versions": 604800,
+          "pypi_downloads_monthly": 2592000,
+          "pypi_cross_channel_flags": 604800,
+          "pypi_intelligence_enriched": 604800,
+          "pypi_conda_map_store": 604800,
+          "pypi_endoflife_raw": 604800,
+          "vulnerability_cisa_kev_raw": 86400,
+          "vulnerability_package_rollup": 604800,
+          "vulnerability_package_version_vulns": 2592000,
+          "vulnerability_epss_raw": 86400,
+          "vulnerability_cwe_catalog_raw": 7776000,
+          "vulnerability_osv_offline_store": 604800,
+          "vcs_upstream_versions": 604800,
+          "vcs_registry_versions": 604800,
+          "vcs_live_health": 86400
+        },
+        "freshness": {
+          "stale_after_days": 14
+        },
+        "refresh_cadences": {
+          "vulnerability_vdb_store": 604800,
+          "vulnerability_osv_offline_store": 604800,
+          "pypi_conda_map_store": 604800
+        }
+      },
+      "full_name": "build_universe_sbom"
+    },
+    {
+      "id": "ff48367d",
+      "name": "derived_universe_sbom",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "json.json_dataset.JSONDataset"
+    }
+  ],
+  "edges": [
+    {
+      "source": "f1f1425b",
+      "target": "f952fa75"
+    },
+    {
+      "source": "18664949",
+      "target": "f952fa75"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "f952fa75"
+    },
+    {
+      "source": "f952fa75",
+      "target": "ff48367d"
+    }
+  ],
+  "layers": [],
+  "tags": [],
+  "pipelines": [
+    {
+      "id": "__default__",
+      "name": "__default__"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
+      "id": "core",
+      "name": "core"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "universal_sbom",
+      "name": "universal_sbom"
+    },
+    {
+      "id": "vcs_health",
+      "name": "vcs_health"
+    }
+  ],
+  "modular_pipelines": {
+    "__root__": {
+      "id": "__root__",
+      "name": "__root__",
+      "inputs": [],
+      "outputs": [],
+      "children": [
+        {
+          "id": "984bc0c0",
+          "type": "data"
+        },
+        {
+          "id": "f952fa75",
+          "type": "task"
+        },
+        {
+          "id": "18664949",
+          "type": "data"
+        },
+        {
+          "id": "f1f1425b",
+          "type": "data"
+        },
+        {
+          "id": "ff48367d",
+          "type": "data"
+        },
+        {
+          "id": "f1f1425b",
+          "type": "parameters"
+        }
+      ]
+    }
+  },
+  "selected_pipeline": "derived_artifacts"
+}

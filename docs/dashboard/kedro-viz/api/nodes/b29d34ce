@@ -1,0 +1,13 @@
+{
+  "code": "def snapshot_pypi_serials(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase O  (phase_o_serial_snapshots CFA:7051)\n    \"\"\"Classify per-project activity from serial-snapshot deltas (NO HTTP in the node\n    — the snapshot history is dataset-owned, 90-day rolling). Input: ``pypi_name``,\n    ``last_serial``, ``prev_serial`` (the prior snapshot's serial, may be NULL for a\n    first observation). Output: ``pypi_name``, ``last_serial``, ``serial_delta``,\n    ``activity_band`` (``high`` / ``medium`` / ``low`` / ``dormant``).\"\"\"\n    cols = [\"pypi_name\", \"last_serial\", \"serial_delta\", \"activity_band\"]\n    idx = pypi_simple_index_raw\n    if idx is None or idx.empty or \"pypi_name\" not in getattr(idx, \"columns\", []):\n        return pd.DataFrame(columns=cols)\n    out = idx.copy()\n    if \"last_serial\" not in out.columns:\n        out[\"last_serial\"] = pd.NA\n    if \"prev_serial\" not in out.columns:\n        out[\"prev_serial\"] = pd.NA\n\n    def _delta(last, prev):\n        # numeric-coerce so a non-numeric serial degrades to NA (dormant) instead of\n        # crashing int() (review-hardening).\n        last_n = pd.to_numeric(last, errors=\"coerce\")\n        prev_n = pd.to_numeric(prev, errors=\"coerce\")\n        if pd.isna(last_n) or pd.isna(prev_n):\n            return pd.NA\n        return int(last_n) - int(prev_n)\n\n    def _band(delta):\n        if delta is pd.NA or pd.isna(delta):\n            return \"dormant\"\n        d = int(delta)\n        if d >= 100:\n            return \"high\"\n        if d >= 10:\n            return \"medium\"\n        if d >= 1:\n            return \"low\"\n        return \"dormant\"\n\n    out[\"serial_delta\"] = [_delta(l, p) for l, p in zip(out[\"last_serial\"], out[\"prev_serial\"])]\n    out[\"activity_band\"] = [_band(d) for d in out[\"serial_delta\"]]\n    out = out.drop_duplicates(subset=[\"pypi_name\"])\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='snapshot_pypi_serials'",
+  "inputs": [
+    "pypi_simple_index_raw"
+  ],
+  "outputs": [
+    "pypi_universe_serial_snapshots"
+  ],
+  "preview": null
+}

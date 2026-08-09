@@ -1,0 +1,8 @@
+{
+  "type": "datasets.incremental_parquet.IncrementalParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/vcs_registry_versions/vcs_registry_versions.parquet",
+  "run_command": "kedro run --to-outputs=vcs_registry_versions",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

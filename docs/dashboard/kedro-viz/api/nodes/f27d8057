@@ -1,0 +1,8 @@
+{
+  "type": "datasets.incremental_parquet.IncrementalParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/pypi_intelligence_enriched/pypi_intelligence_enriched.parquet",
+  "run_command": "kedro run --to-outputs=pypi_intelligence_enriched",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

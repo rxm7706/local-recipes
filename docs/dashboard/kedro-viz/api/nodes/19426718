@@ -1,0 +1,8 @@
+{
+  "type": "datasets.incremental_parquet.IncrementalParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/vulnerability_package_version_vulns/vulnerability_package_version_vulns.parquet",
+  "run_command": "kedro run --to-outputs=vulnerability_package_version_vulns",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

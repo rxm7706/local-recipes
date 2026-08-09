@@ -1,0 +1,8 @@
+{
+  "type": "pandas.parquet_dataset.ParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/vcs_migration_readiness/vcs_migration_readiness.parquet",
+  "run_command": "kedro run --to-outputs=vcs_migration_readiness",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

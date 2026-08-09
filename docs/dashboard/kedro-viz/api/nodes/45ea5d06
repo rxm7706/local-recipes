@@ -1,0 +1,14 @@
+{
+  "code": "def map_pypi_conda(\n    pypi_parselmouth_mapping_raw: pd.DataFrame,\n    core_packages_enumerated: pd.DataFrame,\n) -> pd.DataFrame:\n    # legacy: Phase C  (phase_c_parselmouth_join CFA:1744)\n    \"\"\"Join the parselmouth ``pypi_name -> conda_name`` mapping against the conda\n    packages the core pipeline enumerated (cross-pipeline by catalog name, AD-3).\n\n    The ``g10_spelling`` provenance tier MUST survive as a valid ``match_source`` (a\n    later, weaker match may not clobber it — no-clobber rule, spec:209-216). Input\n    ``pypi_parselmouth_mapping_raw``: ``pypi_name``, ``conda_name``, optional\n    ``match_source`` (default ``parselmouth``). ``core_packages_enumerated`` restricts\n    the mapping to REAL conda packages (``conda_name``). Output (intermediate, fed to\n    Phase C.5): ``pypi_name``, ``conda_name``, ``match_source``.\n    \"\"\"\n    cols = [\"pypi_name\", \"conda_name\", \"match_source\"]\n    m = pypi_parselmouth_mapping_raw\n    if m is None or m.empty or not {\"pypi_name\", \"conda_name\"} <= set(m.columns):\n        return pd.DataFrame(columns=cols)\n    out = m.copy()\n    if \"match_source\" not in out.columns:\n        out[\"match_source\"] = \"parselmouth\"\n    else:\n        # a missing per-row match_source defaults to parselmouth; a provided tier\n        # (incl. g10_spelling) is preserved verbatim.\n        out[\"match_source\"] = out[\"match_source\"].fillna(\"parselmouth\")\n    # restrict to conda_names the core pipeline actually enumerated (real feedstocks)\n    enum = core_packages_enumerated\n    if enum is not None and not enum.empty and \"conda_name\" in enum.columns:\n        valid = set(enum[\"conda_name\"].dropna())\n        out = out[out[\"conda_name\"].isin(valid)]\n    out = out.drop_duplicates(subset=[\"pypi_name\", \"conda_name\"])\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='map_pypi_conda'",
+  "inputs": [
+    "pypi_parselmouth_mapping_raw",
+    "core_packages_enumerated"
+  ],
+  "outputs": [
+    "pypi_conda_mapping_base"
+  ],
+  "preview": null
+}

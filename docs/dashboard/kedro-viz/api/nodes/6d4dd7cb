@@ -1,0 +1,13 @@
+{
+  "code": "def flag_cross_channel(pypi_cross_channel_repodata_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase Q  (phase_q_cross_channel CFA:7847)\n    \"\"\"Pivot bulk cross-channel repodata into per-channel ``in_<channel>`` BOOLs.\n\n    **Gap G-2(B2) decision**: the multi-channel fan-out is DATASET-owned (one\n    runtime-parameterized entry + a dataset-owned loop over the channels), so the node\n    receives ONE already-combined frame carrying a ``channel`` column and stays pure —\n    no factory/partitioned dataset needed. Input: ``conda_name``, ``channel`` (one of\n    bioconda/pytorch/nvidia/robostack). Output: ``conda_name`` + ``in_bioconda`` /\n    ``in_pytorch`` / ``in_nvidia`` / ``in_robostack`` BOOLs (one row per conda_name).\"\"\"\n    out_cols = [\"conda_name\"] + [f\"in_{c}\" for c in _CROSS_CHANNELS]\n    df = pypi_cross_channel_repodata_raw\n    if df is None or df.empty or not {\"conda_name\", \"channel\"} <= set(df.columns):\n        return pd.DataFrame(columns=out_cols)\n    rows = {}\n    for conda_name, channel in zip(df[\"conda_name\"], df[\"channel\"]):\n        # skip missing OR non-string conda_name (a list/array cell is malformed — no\n        # pd.isna-on-array ValueError, no unhashable-dict-key crash).\n        if _is_missing(conda_name) or not isinstance(conda_name, str):\n            continue\n        flags = rows.setdefault(conda_name, {f\"in_{c}\": False for c in _CROSS_CHANNELS})\n        if channel in _CROSS_CHANNELS:\n            flags[f\"in_{channel}\"] = True\n    records = [{\"conda_name\": name, **flags} for name, flags in rows.items()]\n    out = pd.DataFrame(records, columns=out_cols)\n    return out.reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='flag_cross_channel'",
+  "inputs": [
+    "pypi_cross_channel_repodata_raw"
+  ],
+  "outputs": [
+    "pypi_cross_channel_flags"
+  ],
+  "preview": null
+}

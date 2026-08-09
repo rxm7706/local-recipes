@@ -1,0 +1,13 @@
+{
+  "code": "def score_pypi_readiness(pypi_intelligence_enriched: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase S  (phase_s_computed_scores CFA:8546)\n    \"\"\"Score the enriched frame via the shared ``apply_readiness_scores`` single-write-\n    path (CFA:8484). Emits ``conda_forge_readiness`` (0-100) + ``recommended_template``;\n    ``notes`` operator overrides survive re-runs. Output ``pypi_intelligence_scored``.\"\"\"\n    return apply_readiness_scores(pypi_intelligence_enriched)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='score_pypi_readiness'",
+  "inputs": [
+    "pypi_intelligence_enriched"
+  ],
+  "outputs": [
+    "pypi_intelligence_scored"
+  ],
+  "preview": null
+}

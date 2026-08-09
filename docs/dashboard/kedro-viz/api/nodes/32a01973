@@ -1,0 +1,13 @@
+{
+  "code": "def compute_version_download_history(core_anaconda_downloads_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase I  (promoted from Phase F side-effect: api CFA:2931 / s3 CFA:3402; table CFA:312-316)\n    \"\"\"Per-version download history as an EXPLICIT declared output (AC-3) — no longer\n    an unregistered side-effect of Phase F's anaconda-api path. Consumed downstream by\n    Phase G', ``version-downloads``, ``release-cadence`` (which resolve it by catalog\n    name, AD-3). Input: ``conda_name``, ``version``, ``downloads``. Output:\n    ``conda_name``, ``version``, ``downloads`` aggregated per (package, version).\"\"\"\n    ana = core_anaconda_downloads_raw\n    if ana is None or ana.empty:\n        return pd.DataFrame(columns=[\"conda_name\", \"version\", \"downloads\"])\n    hist = ana.groupby([\"conda_name\", \"version\"], as_index=False)[\"downloads\"].sum()\n    return hist.reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='compute_version_download_history'",
+  "inputs": [
+    "core_anaconda_downloads_raw"
+  ],
+  "outputs": [
+    "core_version_download_history"
+  ],
+  "preview": null
+}

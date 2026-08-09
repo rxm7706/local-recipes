@@ -1,0 +1,13 @@
+{
+  "code": "def enumerate_pypi_universe(pypi_simple_index_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase D  (phase_d_pypi_enumeration CFA:1947)\n    \"\"\"Normalize the PyPI simple index into the ``pypi_universe`` frame (7 d TTL upsert\n    at the dataset level). The universe upsert is **skippable** (consumer profile /\n    ``PHASE_D_UNIVERSE_DISABLED=1``, AD-6 job config) — when disabled the dataset\n    yields nothing and this node degrades cleanly to an empty columned frame (AD-13).\n    Input: ``pypi_name`` (+ optional ``last_serial``). Output: ``pypi_name``,\n    ``last_serial``.\"\"\"\n    cols = [\"pypi_name\", \"last_serial\"]\n    idx = pypi_simple_index_raw\n    if idx is None or idx.empty or \"pypi_name\" not in getattr(idx, \"columns\", []):\n        return pd.DataFrame(columns=cols)\n    out = idx.copy()\n    if \"last_serial\" not in out.columns:\n        out[\"last_serial\"] = pd.NA\n    out = out.drop_duplicates(subset=[\"pypi_name\"])\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='enumerate_pypi_universe'",
+  "inputs": [
+    "pypi_simple_index_raw"
+  ],
+  "outputs": [
+    "pypi_universe"
+  ],
+  "preview": null
+}

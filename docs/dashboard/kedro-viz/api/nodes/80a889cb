@@ -1,0 +1,16 @@
+{
+  "code": "def report_lts_registry_gap(\n    seed_lts_registry: Any,\n    pypi_endoflife_raw: Any,\n    core_packages_enumerated: Any,\n    pypi_conda_mapping: Any,\n) -> pd.DataFrame:\n    \"\"\"§ 3.4 ``report_lts_registry_gap`` — propose ``lts-registry.yaml`` entries\n    by diffing the endoflife.date product slug list against actionable atlas\n    packages (legacy ``lts_registry_gap.py``). READ-ONLY report; git review\n    decides. ``pypi_endoflife_raw`` is the product-slug list; ``seed_lts_registry``\n    the (alias-inclusive) exclusion set. Empty feed / candidates → empty report.\"\"\"\n    slugs = [str(s) for s in pypi_endoflife_raw] if isinstance(pypi_endoflife_raw, (list, tuple)) else []\n    if not slugs:\n        return pd.DataFrame(columns=_LTS_COLS)\n    registry = _lts_registry_index(seed_lts_registry)\n    candidates = _lts_candidates(core_packages_enumerated, pypi_conda_mapping)\n    proposals = _classify_lts(candidates, slugs, registry)\n    return pd.DataFrame(proposals, columns=_LTS_COLS).reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/seed_gaps/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='report_lts_registry_gap'",
+  "inputs": [
+    "seed_lts_registry",
+    "pypi_endoflife_raw",
+    "core_packages_enumerated",
+    "pypi_conda_mapping"
+  ],
+  "outputs": [
+    "seed_gaps_lts_registry_report"
+  ],
+  "preview": null
+}

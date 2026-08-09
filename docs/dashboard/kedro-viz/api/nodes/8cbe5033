@@ -1,0 +1,15 @@
+{
+  "code": "def report_spdx_schema_gap(\n    seed_spdx_schema: Any,\n    seed_spdx_upstream_list_raw: Any,\n    core_packages_enumerated: Any,\n) -> pd.DataFrame:\n    \"\"\"§ 3.4 ``report_spdx_schema_gap`` — propose ``spdx.schema.json`` enum\n    additions by diffing the vendored enum against the upstream SPDX list, ranked\n    by atlas license usage (legacy ``spdx_schema_gap.py``). READ-ONLY report; git\n    review decides. Emits ONE report with a ``tier`` column:\n\n    - ``add-to-schema`` — a real upstream SPDX ID the vendored enum misses, used\n      by atlas packages (package-count-ranked). Empty until ``conda_license``\n      lands (DW-B6-1).\n    - ``non-standard`` — an atlas license the enum misses that is NOT upstream\n      either (report-only normalization candidate). Empty until DW-B6-1.\n    - ``upstream-drift`` — every upstream ID absent from the vendored enum\n      (atlas-independent — so the report is non-empty even without\n      ``conda_license``); legacy ``--drift = sorted(upstream - vendored)``.\n    \"\"\"\n    # graceful on a malformed/enum-less schema (AD-13/AD-15: a derived report\n    # node degrades, never crashes the per-rebuild run) — .get, not [].\n    vendored = set(seed_spdx_schema.get(\"enum\") or []) if isinstance(seed_spdx_schema, dict) else set()\n    upstream = set(_spdx_upstream_ids(seed_spdx_upstream_list_raw))\n    if not upstream:\n        return pd.DataFrame(columns=_SPDX_COLS)\n    atlas_counts = _spdx_atlas_counts(core_packages_enumerated)\n    result = _classify_spdx(atlas_counts, vendored, upstream)\n    records: list[dict[str, Any]] = []\n    for r in result[\"add_to_schema\"]:\n        records.append({\"license\": r[\"license\"], \"spdx_id\": r[\"spdx_id\"],\n                        \"packages\": r[\"packages\"], \"tier\": \"add-to-schema\"})\n    for r in result[\"non_standard\"]:\n        records.append({\"license\": r[\"license\"], \"spdx_id\": None,\n                        \"packages\": r[\"packages\"], \"tier\": \"non-standard\"})\n    for spdx_id in sorted(upstream - vendored):\n        records.append({\"license\": spdx_id, \"spdx_id\": spdx_id,\n                        \"packages\": None, \"tier\": \"upstream-drift\"})\n    return pd.DataFrame(records, columns=_SPDX_COLS).reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/seed_gaps/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='report_spdx_schema_gap'",
+  "inputs": [
+    "seed_spdx_schema",
+    "seed_spdx_upstream_list_raw",
+    "core_packages_enumerated"
+  ],
+  "outputs": [
+    "seed_gaps_spdx_report"
+  ],
+  "preview": null
+}

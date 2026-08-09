@@ -1,0 +1,8 @@
+{
+  "type": "json.json_dataset.JSONDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/sbom_match_report_entry/match_report.json",
+  "run_command": "kedro run --to-outputs=sbom_match_report_entry",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

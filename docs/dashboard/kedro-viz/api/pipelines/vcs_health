@@ -1,0 +1,773 @@
+{
+  "nodes": [
+    {
+      "id": "f7f89bdf",
+      "name": "core_cf_graph_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "a4fbfe20",
+      "name": "core_downloads",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "d51007a2",
+      "name": "detect_archived_feedstocks",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "detect_archived_feedstocks"
+    },
+    {
+      "id": "d142eb2a",
+      "name": "vcs_github_api_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.request_datasets.GitHubRequestDataset"
+    },
+    {
+      "id": "5546cd66",
+      "name": "vcs_archived_feedstocks",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "1b6f0119",
+      "name": "core_repodata_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "cac52830",
+      "name": "enrich_maintainers",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "enrich_maintainers"
+    },
+    {
+      "id": "bfabcd4d",
+      "name": "vcs_maintainers",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "5a055bdf",
+      "name": "vcs_package_maintainers",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "18664949",
+      "name": "core_packages_enumerated",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vulnerability",
+        "vcs_health",
+        "seed_gaps",
+        "core",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "b4350c4d",
+      "name": "fetch_live_health",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "fetch_live_health"
+    },
+    {
+      "id": "3f64d2c4",
+      "name": "vcs_live_health",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "595030c3",
+      "name": "track_registry_versions",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "track_registry_versions"
+    },
+    {
+      "id": "3db02b39",
+      "name": "vcs_registry_npm_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "9ba4ba72",
+      "name": "vcs_registry_cran_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "13c0b666",
+      "name": "vcs_registry_cpan_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "99907eca",
+      "name": "vcs_registry_luarocks_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "9d7067f9",
+      "name": "vcs_registry_crates_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "90c4349a",
+      "name": "vcs_registry_rubygems_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "d6ec10aa",
+      "name": "vcs_registry_maven_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "a1c8bcfc",
+      "name": "vcs_registry_nuget_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "6356b2aa",
+      "name": "vcs_registry_versions",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "3f87425c",
+      "name": "track_upstream_versions",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "track_upstream_versions"
+    },
+    {
+      "id": "b8735305",
+      "name": "vcs_gitlab_api_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "9674688d",
+      "name": "vcs_codeberg_api_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "d43cb0fa",
+      "name": "vcs_upstream_versions",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "fc6d66ba",
+      "name": "classify_migration_readiness",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_migration_readiness"
+    },
+    {
+      "id": "2fa0a83e",
+      "name": "vcs_migration_detail_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.migration_status.MigrationDetailDataset"
+    },
+    {
+      "id": "32d9d08a",
+      "name": "vcs_migration_readiness",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "2018ad37",
+      "name": "pypi_current_versions",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "984bc0c0",
+      "name": "pypi_conda_mapping",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vcs_health",
+        "seed_gaps",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "50d783ee",
+      "name": "derive_release_velocity",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "derive_release_velocity"
+    },
+    {
+      "id": "7bae354b",
+      "name": "vcs_release_velocity",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    }
+  ],
+  "edges": [
+    {
+      "source": "90c4349a",
+      "target": "595030c3"
+    },
+    {
+      "source": "cac52830",
+      "target": "5a055bdf"
+    },
+    {
+      "source": "2018ad37",
+      "target": "50d783ee"
+    },
+    {
+      "source": "fc6d66ba",
+      "target": "32d9d08a"
+    },
+    {
+      "source": "f7f89bdf",
+      "target": "cac52830"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "50d783ee"
+    },
+    {
+      "source": "9ba4ba72",
+      "target": "595030c3"
+    },
+    {
+      "source": "d142eb2a",
+      "target": "b4350c4d"
+    },
+    {
+      "source": "b4350c4d",
+      "target": "3f64d2c4"
+    },
+    {
+      "source": "a4fbfe20",
+      "target": "fc6d66ba"
+    },
+    {
+      "source": "d142eb2a",
+      "target": "d51007a2"
+    },
+    {
+      "source": "595030c3",
+      "target": "6356b2aa"
+    },
+    {
+      "source": "d142eb2a",
+      "target": "3f87425c"
+    },
+    {
+      "source": "cac52830",
+      "target": "bfabcd4d"
+    },
+    {
+      "source": "d6ec10aa",
+      "target": "595030c3"
+    },
+    {
+      "source": "1b6f0119",
+      "target": "50d783ee"
+    },
+    {
+      "source": "b8735305",
+      "target": "3f87425c"
+    },
+    {
+      "source": "99907eca",
+      "target": "595030c3"
+    },
+    {
+      "source": "d51007a2",
+      "target": "5546cd66"
+    },
+    {
+      "source": "2fa0a83e",
+      "target": "fc6d66ba"
+    },
+    {
+      "source": "18664949",
+      "target": "fc6d66ba"
+    },
+    {
+      "source": "3f87425c",
+      "target": "d43cb0fa"
+    },
+    {
+      "source": "3db02b39",
+      "target": "595030c3"
+    },
+    {
+      "source": "9d7067f9",
+      "target": "595030c3"
+    },
+    {
+      "source": "a1c8bcfc",
+      "target": "595030c3"
+    },
+    {
+      "source": "13c0b666",
+      "target": "595030c3"
+    },
+    {
+      "source": "9674688d",
+      "target": "3f87425c"
+    },
+    {
+      "source": "50d783ee",
+      "target": "7bae354b"
+    }
+  ],
+  "layers": [],
+  "tags": [],
+  "pipelines": [
+    {
+      "id": "__default__",
+      "name": "__default__"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
+      "id": "core",
+      "name": "core"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "universal_sbom",
+      "name": "universal_sbom"
+    },
+    {
+      "id": "vcs_health",
+      "name": "vcs_health"
+    }
+  ],
+  "modular_pipelines": {
+    "__root__": {
+      "id": "__root__",
+      "name": "__root__",
+      "inputs": [],
+      "outputs": [],
+      "children": [
+        {
+          "id": "5a055bdf",
+          "type": "data"
+        },
+        {
+          "id": "d43cb0fa",
+          "type": "data"
+        },
+        {
+          "id": "595030c3",
+          "type": "task"
+        },
+        {
+          "id": "90c4349a",
+          "type": "data"
+        },
+        {
+          "id": "7bae354b",
+          "type": "data"
+        },
+        {
+          "id": "9674688d",
+          "type": "data"
+        },
+        {
+          "id": "2018ad37",
+          "type": "data"
+        },
+        {
+          "id": "9ba4ba72",
+          "type": "data"
+        },
+        {
+          "id": "984bc0c0",
+          "type": "data"
+        },
+        {
+          "id": "2fa0a83e",
+          "type": "data"
+        },
+        {
+          "id": "d51007a2",
+          "type": "task"
+        },
+        {
+          "id": "18664949",
+          "type": "data"
+        },
+        {
+          "id": "fc6d66ba",
+          "type": "task"
+        },
+        {
+          "id": "32d9d08a",
+          "type": "data"
+        },
+        {
+          "id": "50d783ee",
+          "type": "task"
+        },
+        {
+          "id": "f7f89bdf",
+          "type": "data"
+        },
+        {
+          "id": "d6ec10aa",
+          "type": "data"
+        },
+        {
+          "id": "3f87425c",
+          "type": "task"
+        },
+        {
+          "id": "bfabcd4d",
+          "type": "data"
+        },
+        {
+          "id": "99907eca",
+          "type": "data"
+        },
+        {
+          "id": "1b6f0119",
+          "type": "data"
+        },
+        {
+          "id": "6356b2aa",
+          "type": "data"
+        },
+        {
+          "id": "d142eb2a",
+          "type": "data"
+        },
+        {
+          "id": "b4350c4d",
+          "type": "task"
+        },
+        {
+          "id": "5546cd66",
+          "type": "data"
+        },
+        {
+          "id": "3db02b39",
+          "type": "data"
+        },
+        {
+          "id": "3f64d2c4",
+          "type": "data"
+        },
+        {
+          "id": "a4fbfe20",
+          "type": "data"
+        },
+        {
+          "id": "9d7067f9",
+          "type": "data"
+        },
+        {
+          "id": "a1c8bcfc",
+          "type": "data"
+        },
+        {
+          "id": "b8735305",
+          "type": "data"
+        },
+        {
+          "id": "cac52830",
+          "type": "task"
+        },
+        {
+          "id": "13c0b666",
+          "type": "data"
+        }
+      ]
+    }
+  },
+  "selected_pipeline": "vcs_health"
+}
