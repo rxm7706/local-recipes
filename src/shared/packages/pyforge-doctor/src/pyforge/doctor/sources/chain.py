@@ -149,9 +149,22 @@ def _expected_spec_dir(owner: str, slug: str) -> str:
 
 def _collect_dreams(target: Path) -> dict[str, dict]:
     """``{slug: {owner, status, title}}`` for every tracked Dream -- verbatim
-    from the original's own ``collect()``. Never raises: each Dream's own
-    frontmatter read already degrades via ``_frontmatter``, so no per-Dream
-    isolation is needed on top."""
+    from the original's own ``collect()``, except every value is COERCED to
+    ``str`` at this collection boundary.
+
+    ``_frontmatter`` degrades a block that fails to PARSE, and its own
+    ``isinstance(data, dict)`` guard degrades a block of the wrong TOP-LEVEL
+    shape -- but neither catches a key that parses cleanly to the wrong VALUE
+    shape. ``title:`` with no value is YAML ``null`` and ``title: 2026`` is an
+    ``int``; both reach ``_normalize_title``'s ``.lower()`` in
+    ``_check_dream_chain``'s satellite loop, which runs over ALREADY-COLLECTED
+    in-memory data and therefore sits outside every per-unit try/except in
+    this module. The ``AttributeError`` escapes to the outer
+    ``degrade_on_exception`` and replaces every already-computed Dream/Spec
+    FAIL with one vacuous WARN -- the identical failure class review found for
+    Specs (``_collect_specs``) and the one this story's Design Notes said to
+    structure out rather than rediscover. Coercing here fixes it for every
+    downstream consumer at once, instead of guarding each use site."""
     dreams: dict[str, dict] = {}
     dreams_dir = target / "docs" / "dreams"
     if not dreams_dir.is_dir():
@@ -161,9 +174,9 @@ def _collect_dreams(target: Path) -> dict[str, dict]:
             continue
         fm = _frontmatter(p)
         dreams[p.stem] = {
-            "owner": fm.get("owner", ""),
-            "status": fm.get("status", ""),
-            "title": fm.get("title", ""),
+            "owner": str(fm.get("owner") or ""),
+            "status": str(fm.get("status") or ""),
+            "title": str(fm.get("title") or ""),
         }
     return dreams
 
@@ -420,6 +433,29 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
     specs = _collect_specs(target, findings)
     raw = _check_dream_chain(target, dreams, specs, findings)
     if not raw:
+        # Nothing found AND neither input tree exists: `target` is not a
+        # monorepo root (the original was anchored to its own REPO_ROOT; a
+        # library gather takes whatever it is handed, and `doctor check`
+        # defaults to "."). Claiming the confident OK below here would report
+        # "every Dream has a Spec" for a target holding no Dreams at all --
+        # a clean bill of health for a question never asked. Mirrors
+        # `sources/ledger.py`'s own honest "cannot be evaluated" WARN.
+        if not (target / "docs" / "dreams").is_dir() and not (
+            target / "_bmad-output" / "projects"
+        ).is_dir():
+            return (
+                Finding(
+                    source=Source.DREAM_CHAIN,
+                    check="dream-chain-unevaluable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"neither docs/dreams/ nor _bmad-output/projects/ "
+                        f"exists under {target} — the Dream-to-Code chain "
+                        f"cannot be evaluated here"
+                    ),
+                    evidence={"target": str(target)},
+                ),
+            )
         return (
             Finding(
                 source=Source.DREAM_CHAIN,
@@ -493,17 +529,23 @@ def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
     why a comment/blank line inside a block sequence must not end the
     section, a real historical bug this port keeps fixed).
 
-    Never raises: widened from the original's unguarded ``read_text`` to a
-    broad ``except Exception`` -- an unreadable or non-UTF-8 SPEC.md
-    degrades to no globs/exclusions/default drift mode rather than raising
-    (Boundaries)."""
+    RAISES on an unreadable/non-UTF-8 SPEC.md rather than degrading to an
+    empty surface. An empty surface is indistinguishable from "this spec
+    governs nothing", so degrading here silently UN-GOVERNS every file the
+    spec really owns: each one is then reported FAIL ``ungoverned`` ("no spec
+    surface and no allowlist entry") and each baselined one FAIL ``drift ...
+    removed`` -- confidently wrong findings rather than an honest
+    "unevaluable". That is the exact silent-governance-loss defect the
+    original script's own module docstring records having fixed ("the checker
+    reported the files as *removed* rather than erroring"). ``_check_spec_
+    surface`` isolates this per-spec into a ``spec-surface-unevaluable`` WARN
+    and suppresses the now-unsound COVERAGE findings, so the house
+    "degrades, never crashes" rule (Boundaries) is still met -- one layer
+    up, where the module can say WHICH spec went dark."""
     globs: list[str] = []
     excludes: list[str] = []
     drift = "memlog"
-    try:
-        text = spec_md.read_text(encoding="utf-8")
-    except Exception:  # noqa: BLE001 -- see the docstring above.
-        return globs, excludes, drift
+    text = spec_md.read_text(encoding="utf-8")
     in_fm = False
     section: str | None = None
     for line in text.splitlines():
@@ -530,17 +572,28 @@ def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
     return globs, excludes, drift
 
 
-def _load_allowlist(path: Path) -> list[tuple[str, str]]:
-    """``[(pattern, reason)]`` from ``scripts/spec_surface_allowlist.txt`` --
-    verbatim from the original, except a missing/unreadable allowlist
-    degrades to an empty list rather than raising ``FileNotFoundError``
-    (Boundaries: the original assumes the file always exists in-repo; this
-    library call must not)."""
+def _load_allowlist(path: Path) -> list[tuple[str, str]] | None:
+    """``[(pattern, reason)]`` from ``scripts/spec_surface_allowlist.txt``, or
+    ``None`` when the file exists but could not be READ -- verbatim parsing
+    from the original, with the two failure modes the original never had to
+    tell apart deliberately split:
+
+    * **absent** -> ``[]``. The original assumes the file always exists
+      in-repo; a library call against an arbitrary target must not, and "no
+      allowlist" genuinely means "nothing explicitly exempted".
+    * **present but unreadable** (permissions, non-UTF-8) -> ``None``. An
+      empty list here would be a LIE with teeth: every allowlisted file is
+      then reported FAIL ``ungoverned`` -- whose message literally asserts
+      "no allowlist entry" -- and every real entry silently becomes a
+      ``stale-allowlist`` FAIL. ``_check_spec_surface`` turns this into a
+      ``spec-surface-unevaluable`` WARN and suppresses the unsound coverage
+      findings, the same treatment an unreadable SPEC.md surface gets."""
     try:
         text = path.read_text(encoding="utf-8")
-    except Exception:  # noqa: BLE001 -- a missing/unreadable allowlist is
-        # "nothing explicitly exempted", not a reason to crash the gather.
+    except FileNotFoundError:
         return []
+    except (OSError, UnicodeDecodeError):
+        return None
     entries: list[tuple[str, str]] = []
     for raw in text.splitlines():
         line = raw.strip()
@@ -691,6 +744,15 @@ def _drift_findings(
 
     for name, cur in current.items():
         b = base.get(name) if isinstance(base, dict) else None
+        # A baseline entry that is valid JSON but not an OBJECT (a stray
+        # string/list/number from a hand-edit) must be treated as "no usable
+        # baseline for this spec", not handed to `.get()` -- the same
+        # wrong-shape-but-valid class the `isinstance(base, dict)` guard above
+        # and the `b.get("files")` guard below already cover. Unguarded, the
+        # AttributeError escapes to `degrade_on_exception` and discards every
+        # OTHER spec's already-computed coverage/drift finding.
+        if not isinstance(b, dict):
+            b = None
         if b is None:
             findings.append({
                 "kind": "no-baseline", "path": name,
@@ -734,6 +796,12 @@ def _check_spec_surface(
     unevaluable WARN -- the caller's single successful fetch is the only one
     this gather is allowed to trust)."""
     specs: dict[str, dict] = {}
+    # Coverage ("is every tracked file governed?") is a GLOBAL computation
+    # over every surface plus the allowlist -- unlike drift, which is
+    # per-spec. So a single unknown surface makes only the coverage half
+    # unsound, and these WARNs suppress exactly that half below while every
+    # readable spec's own drift finding still lands.
+    unsound: list[dict] = []
     for spec_md in sorted(target.glob(SPEC_GLOB)):
         # Key by <project>/<spec-dir>, never the bare dir name -- the same
         # slug can legitimately exist in two projects, and a bare-name key
@@ -741,7 +809,19 @@ def _check_spec_surface(
         # original).
         project = spec_md.relative_to(target).parts[2]
         name = f"{project}/{spec_md.parent.name}"
-        globs, excludes, drift = _parse_surface(spec_md)
+        try:
+            globs, excludes, drift = _parse_surface(spec_md)
+        except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
+            # SPEC.md must degrade to a named WARN, never to a silently
+            # empty surface (see `_parse_surface`'s own docstring).
+            unsound.append({
+                "kind": "spec-surface-unevaluable", "path": name,
+                "detail": (f"{name}: SPEC.md could not be read here — "
+                           f"{exc.__class__.__name__}: {exc}; its surface is "
+                           f"unknown, so coverage is not evaluable"),
+                "warn": True,
+            })
+            continue
         specs[name] = {
             "globs": globs, "drift": drift, "exclude": set(excludes),
             "res": [_glob_to_re(g) for g in globs],
@@ -749,20 +829,30 @@ def _check_spec_surface(
         }
 
     allow = _load_allowlist(target / ALLOWLIST_REL)
+    if allow is None:
+        unsound.append({
+            "kind": "spec-surface-unevaluable", "path": str(ALLOWLIST_REL),
+            "detail": (f"{ALLOWLIST_REL} exists but could not be read here — "
+                       f"the exemptions are unknown, so coverage is not "
+                       f"evaluable"),
+            "warn": True,
+        })
+        allow = []
     governed, ungoverned, allow_hits = _governed_and_ungoverned(files, specs, allow)
 
-    findings: list[dict] = []
-    for f in ungoverned:
-        findings.append({
-            "kind": "ungoverned", "path": f,
-            "detail": f"{f}: no spec surface and no allowlist entry",
-        })
-    for pat, n in allow_hits.items():
-        if n == 0:
+    findings: list[dict] = list(unsound)
+    if not unsound:
+        for f in ungoverned:
             findings.append({
-                "kind": "stale-allowlist", "path": pat,
-                "detail": f"{pat!r} matches nothing — remove or fix",
+                "kind": "ungoverned", "path": f,
+                "detail": f"{f}: no spec surface and no allowlist entry",
             })
+        for pat, n in allow_hits.items():
+            if n == 0:
+                findings.append({
+                    "kind": "stale-allowlist", "path": pat,
+                    "detail": f"{pat!r} matches nothing — remove or fix",
+                })
 
     # S-13.5 -- a governed surface with no contract behind it (see the
     # original's own module docstring for the full "structurally impossible
@@ -1048,11 +1138,29 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
     raw = _deferred_work_findings(target)
     if not raw:
         projects_dir = target / "_bmad-output" / "projects"
-        scanned = (
-            [p.name for p in projects_dir.iterdir()
-             if p.is_dir() and (p / TIER3_REL).is_file()]
-            if projects_dir.is_dir() else []
-        )
+        # No projects tree at all: `target` is not a monorepo root (same
+        # reasoning as `_gather_dream_chain`'s own guard above -- the
+        # original was anchored to its own REPO_ROOT). "Every Tier-3
+        # deferral has a tracked twin" is a true-but-vacuous claim about
+        # zero deferrals, and reads as a clean bill of health.
+        if not projects_dir.is_dir():
+            return (
+                Finding(
+                    source=Source.DEFERRED_WORK,
+                    check="deferred-work-unevaluable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"_bmad-output/projects/ does not exist under "
+                        f"{target} — deferred-work durability cannot be "
+                        f"evaluated here"
+                    ),
+                    evidence={"target": str(target)},
+                ),
+            )
+        scanned = [
+            p.name for p in projects_dir.iterdir()
+            if p.is_dir() and (p / TIER3_REL).is_file()
+        ]
         return (
             Finding(
                 source=Source.DEFERRED_WORK,

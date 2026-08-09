@@ -152,7 +152,11 @@ def test_anonymous_ledger_entry_reports_fail(tmp_path: Path) -> None:
 # --- Clean project: no Tier-3 ledger at all --------------------------------------
 
 
-def test_no_tier3_ledger_reports_ok(tmp_path: Path) -> None:
+def test_project_with_no_tier3_ledger_reports_ok(tmp_path: Path) -> None:
+    """A real projects tree whose projects simply carry no Tier-3 ledger is an
+    evaluable, genuinely clean state -- the confident OK is honest here."""
+    _project_dir(tmp_path, "proj").mkdir(parents=True, exist_ok=True)
+
     findings = chain.gather_deferred_work(tmp_path)
 
     assert len(findings) == 1
@@ -161,6 +165,25 @@ def test_no_tier3_ledger_reports_ok(tmp_path: Path) -> None:
     assert finding.check == "deferred-work"
     assert finding.status is DoctorStatus.OK
     assert finding.evidence == {"projects_scanned": 0}
+
+
+def test_target_with_no_projects_tree_reports_unevaluable_warn(
+    tmp_path: Path,
+) -> None:
+    """A target with no ``_bmad-output/projects/`` at all is not a monorepo
+    root -- the shape `doctor check`'s own ``path="."`` default takes when it
+    is run from a SUBDIRECTORY. "Every Tier-3 deferral has a tracked twin" is
+    then a true-but-vacuous claim about zero deferrals that reads as a clean
+    bill of health, so this must WARN instead (mirrors
+    ``gather_dream_chain``'s own guard and ``sources/ledger.py``'s WARN)."""
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.DEFERRED_WORK
+    assert finding.check == "deferred-work-unevaluable"
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence == {"target": str(tmp_path)}
 
 
 def test_fully_promoted_project_reports_ok(tmp_path: Path) -> None:

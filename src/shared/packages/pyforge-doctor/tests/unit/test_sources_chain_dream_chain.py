@@ -323,12 +323,36 @@ def test_clean_chain_reports_ok(tmp_path: Path) -> None:
     assert finding.evidence == {"dreams": 1, "specs": 1}
 
 
-def test_empty_repo_reports_ok(tmp_path: Path) -> None:
+def test_project_tree_with_no_dreams_dir_still_reports_ok(tmp_path: Path) -> None:
+    """A monorepo root that HAS a projects tree but no Dreams yet is a real,
+    evaluable state -- the confident OK is honest here (contrast with
+    ``test_target_with_neither_input_tree_reports_unevaluable_warn``)."""
+    _write_sharded_project(tmp_path, "pyforge-doctor")
+
     findings = chain.gather_dream_chain(tmp_path)
 
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.OK
     assert findings[0].evidence == {"dreams": 0, "specs": 0}
+
+
+def test_target_with_neither_input_tree_reports_unevaluable_warn(
+    tmp_path: Path,
+) -> None:
+    """A target holding neither ``docs/dreams/`` nor ``_bmad-output/projects/``
+    is not a monorepo root -- the shape `doctor check`'s own ``path="."``
+    default takes when it is run from a SUBDIRECTORY. Claiming "every Dream
+    has a Spec" there is a clean bill of health for a question never asked,
+    so this must WARN rather than report the vacuous OK (mirrors
+    ``sources/ledger.py``'s own honest "cannot be evaluated" WARN)."""
+    findings = chain.gather_dream_chain(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.DREAM_CHAIN
+    assert finding.check == "dream-chain-unevaluable"
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence == {"target": str(tmp_path)}
 
 
 # --- Never raises ---------------------------------------------------------------
@@ -410,6 +434,45 @@ def test_one_unevaluable_project_does_not_hide_another_projects_real_fail(
     warn = by_check["dream-chain-unevaluable"]
     assert warn.status is DoctorStatus.WARN
     assert warn.evidence["subject"] == "pyforge-zbroken"
+
+
+def test_non_string_dream_title_does_not_hide_another_dreams_real_fail(
+    tmp_path: Path,
+) -> None:
+    """``title:`` with no value parses to YAML ``null`` and ``title: 2026`` to
+    an ``int``; both reach ``_normalize_title``'s ``.lower()`` in
+    ``_check_dream_chain``'s satellite loop -- which runs over ALREADY-
+    COLLECTED in-memory data and so sits outside every per-unit try/except in
+    the module. Reproduced live during review: the ``AttributeError`` escaped
+    to ``degrade_on_exception`` and replaced an unrelated Dream's real
+    ``dream-without-spec`` FAIL with one vacuous WARN. The loop only runs at
+    all when some Spec carries a ``## Satellite:`` heading, so the fixture
+    below needs one. Regression: the real FAILs now survive."""
+    _write_dream(tmp_path, "orphan", "doctor")  # real dream-without-spec FAIL
+    (tmp_path / "docs" / "dreams" / "nulltitle.md").write_text(
+        "---\nowner: doctor\nstatus: draft\ntitle:\n---\n\nbody\n", encoding="utf-8"
+    )
+    (tmp_path / "docs" / "dreams" / "inttitle.md").write_text(
+        "---\nowner: doctor\nstatus: draft\ntitle: 2026\n---\n\nbody\n",
+        encoding="utf-8",
+    )
+    _write_dream(tmp_path, "host", "doctor")
+    _write_spec(
+        tmp_path, "pyforge-doctor", "spec-host",
+        owner_dream="host", satellite="Some Other Dream",
+    )
+    _write_sharded_project(tmp_path, "pyforge-doctor")
+
+    findings = chain.gather_dream_chain(tmp_path)
+
+    subjects = {f.evidence["subject"] for f in findings if f.check == "dream-without-spec"}
+    assert "orphan" in subjects, (
+        f"a non-string Dream title collapsed every real finding: "
+        f"{[(f.check, f.status) for f in findings]}"
+    )
+    # The two malformed-title Dreams are themselves spec-less, so they FAIL
+    # on their own merits -- what matters is that they FAIL rather than crash.
+    assert {"nulltitle", "inttitle"} <= subjects
 
 
 def test_one_malformed_spec_does_not_hide_another_specs_real_fail(

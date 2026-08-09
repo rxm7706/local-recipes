@@ -463,6 +463,242 @@ def test_empty_repo_reports_ok(tmp_path: Path) -> None:
     assert "no-baseline" in kinds
 
 
+# --- Unreadable inputs must not silently un-govern ------------------------------
+
+
+def test_unreadable_spec_md_warns_instead_of_reporting_its_files_ungoverned(
+    tmp_path: Path,
+) -> None:
+    """An unreadable SPEC.md degrading to an EMPTY surface is
+    indistinguishable from "this spec governs nothing", so every file it
+    really owns is reported FAIL ``ungoverned`` ("no spec surface and no
+    allowlist entry") -- confidently wrong rather than honestly unevaluable,
+    and the exact silent-governance-loss defect the original script's own
+    docstring records having fixed. Coverage is a GLOBAL computation over
+    every surface, so one unknown surface suppresses the coverage half while
+    the WARN names which spec went dark."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py"])
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [])
+    _add_commit(repo)
+    # Non-UTF-8 bytes: read_text(encoding="utf-8") raises UnicodeDecodeError,
+    # the same class a permissions failure would take through OSError.
+    (sd / "SPEC.md").write_bytes(b"---\nsurface:\n  - governed.py\n# caf\xe9\n---\n")
+
+    findings = chain.gather_spec_surface(repo)
+
+    warns = [f for f in findings if f.check == "spec-surface-unevaluable"]
+    assert any(f.evidence["path"] == "pyforge-x/spec-foo" for f in warns), (
+        f"an unreadable SPEC.md did not surface as unevaluable: {findings}"
+    )
+    assert all(f.status is DoctorStatus.WARN for f in warns)
+    assert "ungoverned" not in {f.check for f in findings}, (
+        f"coverage was reported despite an unknown surface: {findings}"
+    )
+
+
+def test_unreadable_allowlist_warns_instead_of_reporting_ungoverned(
+    tmp_path: Path,
+) -> None:
+    """An allowlist that EXISTS but cannot be read must not degrade to "[]" --
+    that would report every exempted file FAIL ``ungoverned``, a message that
+    literally asserts "no allowlist entry", and turn every real entry into a
+    ``stale-allowlist`` FAIL. An ABSENT allowlist is different and stays "[]"
+    (genuinely nothing exempted) -- pinned by
+    ``test_empty_repo_reports_ok`` above, which has no allowlist file."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "vendored.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("vendored.py", "third-party, not ours")])
+    _add_commit(repo)
+    (repo / "scripts" / "spec_surface_allowlist.txt").write_bytes(b"caf\xe9\n")
+
+    findings = chain.gather_spec_surface(repo)
+
+    warns = [f for f in findings if f.check == "spec-surface-unevaluable"]
+    assert any("spec_surface_allowlist.txt" in f.evidence["path"] for f in warns), (
+        f"an unreadable allowlist did not surface as unevaluable: {findings}"
+    )
+    assert "ungoverned" not in {f.check for f in findings}
+    assert "stale-allowlist" not in {f.check for f in findings}
+
+
+def test_non_object_baseline_entry_does_not_hide_other_specs_findings(
+    tmp_path: Path,
+) -> None:
+    """A baseline entry that is valid JSON but not an OBJECT (a stray string
+    from a hand-edit) reaches ``b.get("memlog")``; unguarded, the
+    ``AttributeError`` escapes to ``degrade_on_exception`` and discards every
+    OTHER spec's already-computed finding behind one vacuous WARN."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py"])
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_spec(repo, "pyforge-y", "spec-bar", surface=["other.py"])
+    (repo / "other.py").write_text("y = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything, to keep this test on drift")])
+    _write_baseline(repo, {"pyforge-x/spec-foo": "not-an-object"})
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    checks = {f.check for f in findings}
+    assert "drift-blind" in checks, (
+        f"a malformed baseline entry collapsed every real finding: {findings}"
+    )
+    # The malformed entry is treated as "no usable baseline for this spec".
+    no_baseline = {f.evidence["path"] for f in findings if f.check == "no-baseline"}
+    assert "pyforge-x/spec-foo" in no_baseline
+
+
+# --- surface-drift modes ---------------------------------------------------------
+
+
+def test_sentinel_drift_mode_moves_the_contract_hash_with_the_sentinel_file(
+    tmp_path: Path,
+) -> None:
+    """``surface-drift: sentinel:<path>`` measures the contract against a
+    named file instead of (only) the memlog. Changing the governed file after
+    the sentinel moved is reconciled; changing it without the sentinel moving
+    is ``drift``."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(
+        repo, "pyforge-x", "spec-foo",
+        surface=["governed.py"], drift="sentinel:contract.json",
+    )
+    (repo / "contract.json").write_text('{"v": 1}\n', encoding="utf-8")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything, to keep this test on drift")])
+    _add_commit(repo)
+
+    before = chain._check_spec_surface(repo, chain._tracked_files(repo))
+    state, _ = chain._spec_current_state(
+        repo, *_specs_and_governed(repo)
+    )
+    _write_baseline(repo, state)
+    _add_commit(repo)
+
+    # Governed file changes, sentinel does not -> drift.
+    (repo / "governed.py").write_text("x = 2\n", encoding="utf-8")
+    _add_commit(repo)
+    drifted = chain.gather_spec_surface(repo)
+    assert "drift" in {f.check for f in drifted}, (
+        f"sentinel mode did not gate an unreconciled change: {drifted}"
+    )
+
+    # Sentinel moves too -> the contract hash moves, so the change is not
+    # `drift` any more (it becomes the non-gating `drift-presumed` unless the
+    # sentinel names the path, which a JSON sentinel does not).
+    (repo / "contract.json").write_text('{"v": 2}\n', encoding="utf-8")
+    _add_commit(repo)
+    reconciled = chain.gather_spec_surface(repo)
+    assert "drift" not in {f.check for f in reconciled}, (
+        f"the sentinel moved but drift still gated: {reconciled}"
+    )
+    assert before is not None  # the pre-baseline call ran without raising
+
+
+def test_exempt_drift_mode_silences_drift_blind(tmp_path: Path) -> None:
+    """``surface-drift: exempt`` opts a spec out of drift entirely, so a
+    governed surface with no ``.memlog.md`` is NOT ``drift-blind``."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py"], drift="exempt")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything, to keep this test on drift")])
+    _add_commit(repo)  # no .memlog.md anywhere
+
+    findings = chain.gather_spec_surface(repo)
+
+    blind = {f.evidence["path"] for f in findings if f.check == "drift-blind"}
+    assert "pyforge-x/spec-foo" not in blind, (
+        f"an exempt spec was reported drift-blind: {findings}"
+    )
+
+
+def test_spec_governing_no_files_is_not_drift_blind(tmp_path: Path) -> None:
+    """``drift-blind`` is about a governed surface with no contract behind it.
+    A spec whose surface matches ZERO tracked files has nothing to reconcile,
+    so a missing memlog is not yet a finding."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["nothing/matches/this.py"])
+    _write_allowlist(repo, [("**", "everything, to keep this test on drift")])
+    _add_commit(repo)  # no .memlog.md, and the surface governs nothing
+
+    findings = chain.gather_spec_surface(repo)
+
+    # Asserted as an EXACT check set, not just "drift-blind is absent":
+    # dropping the `governed.get(name)` condition makes the branch fire and
+    # then raise `KeyError` on `governed[name]`, which `degrade_on_exception`
+    # turns into a lone `spec-surface` WARN -- also a run with no drift-blind
+    # in it, which the weaker assertion would have called a pass.
+    assert {f.check for f in findings} == {"no-baseline"}, (
+        f"a spec governing zero files did not produce the clean shape: {findings}"
+    )
+
+
+def test_surface_drift_exclude_keeps_a_governed_file_out_of_the_drift_hash(
+    tmp_path: Path,
+) -> None:
+    """``surface-drift-exclude:`` names governed-but-regenerate-at-will files.
+    They stay governed (never ``ungoverned``) but changing one must not
+    produce ``drift``. The exclusion is an EXACT-path match, verbatim from the
+    original's own ``f not in s["exclude"]``."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _write_spec(
+        repo, "pyforge-x", "spec-foo",
+        surface=["governed.py", "generated.lock"], exclude=["generated.lock"],
+    )
+    (sd / ".memlog.md").write_text("# memlog\n", encoding="utf-8")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    (repo / "generated.lock").write_text("v1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything, to keep this test on drift")])
+    _add_commit(repo)
+
+    state, _ = chain._spec_current_state(repo, *_specs_and_governed(repo))
+    assert "generated.lock" not in state["pyforge-x/spec-foo"]["files"], (
+        "the excluded path was hashed into the drift state"
+    )
+    _write_baseline(repo, state)
+    _add_commit(repo)
+
+    (repo / "generated.lock").write_text("v2\n", encoding="utf-8")
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    assert "drift" not in {f.check for f in findings}, (
+        f"an excluded path gated on drift: {findings}"
+    )
+    assert "generated.lock" not in {
+        f.evidence["path"] for f in findings if f.check == "ungoverned"
+    }
+
+
+def _specs_and_governed(repo: Path) -> tuple[dict, dict]:
+    """(specs, governed) for ``_spec_current_state``, rebuilt the same way
+    ``_check_spec_surface`` does -- lets a test write a REAL baseline from the
+    module's own hashing rather than hand-rolling sha1s that would drift."""
+    specs: dict[str, dict] = {}
+    for spec_md in sorted(repo.glob(chain.SPEC_GLOB)):
+        project = spec_md.relative_to(repo).parts[2]
+        name = f"{project}/{spec_md.parent.name}"
+        globs, excludes, drift = chain._parse_surface(spec_md)
+        specs[name] = {
+            "globs": globs, "drift": drift, "exclude": set(excludes),
+            "res": [chain._glob_to_re(g) for g in globs],
+            "memlog": spec_md.parent / ".memlog.md",
+        }
+    files = chain._tracked_files(repo) or []
+    governed, _, _ = chain._governed_and_ungoverned(files, specs, [])
+    return specs, governed
+
+
 # --- Per-spec isolation ---------------------------------------------------------
 
 

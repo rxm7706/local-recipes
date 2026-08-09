@@ -27,3 +27,4 @@ hatchling = "*"
 [package.run-dependencies]
 python = ">=3.14"
 jsonschema = "*"
+pyyaml = ">=6.0"           # Story 6.6: sources/chain.py imports `yaml` at module scope -- without this the built .conda installs without PyYAML and the import raises ModuleNotFoundError (matches pyproject.toml's own `PyYAML>=6.0` and the root pixi.toml pin)
