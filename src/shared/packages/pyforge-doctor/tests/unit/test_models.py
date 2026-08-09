@@ -422,3 +422,28 @@ def test_check_report_with_prescriptions_key_fails_schema():
     }
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(document, _schema())
+
+
+def test_schema_source_enum_matches_the_source_taxonomy_exactly():
+    """The schema's `source` enum and `models.Source` must not drift apart.
+
+    Story 5.1 added ``Source.MARSHAL_DURABILITY`` to the Python enum but not to
+    the schema, and nothing caught it: 5.1 shipped the source with **no caller**,
+    so its findings were never rendered and never validated. The gap surfaced only
+    when Story 5.2 wired the gather into ``doctor check`` -- ``--json`` raised
+    ``jsonschema.ValidationError`` and the CLI exited 2, on a source that had been
+    "done" for a day.
+
+    Asserted as SET EQUALITY in both directions on purpose. A one-way check
+    (schema ⊆ enum) would still have passed while marshal-durability was missing,
+    which is exactly the direction that broke.
+    """
+    schema_sources = set(
+        _schema()["$defs"]["finding"]["properties"]["source"]["enum"]
+    )
+    taxonomy = {member.value for member in Source}
+    assert schema_sources == taxonomy, (
+        "schema `source` enum and models.Source disagree — "
+        f"only in schema: {sorted(schema_sources - taxonomy)}; "
+        f"only in taxonomy: {sorted(taxonomy - schema_sources)}"
+    )

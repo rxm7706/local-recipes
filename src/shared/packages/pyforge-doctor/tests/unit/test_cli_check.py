@@ -99,6 +99,70 @@ def test_default_combined_run_reports_both_categories_and_projects_exit(
     assert "finding(s)" in captured.out
 
 
+# --- durability category (Story 5.2, FR-14/AD-11) ----------------------------
+
+
+def test_durability_findings_reach_both_renders(monkeypatch, tmp_path: Path, capsys):
+    """Story 5.1 shipped ``sources/marshal.py`` with NO caller. This is the
+    caller, so the source's findings must appear in the human render AND in
+    ``--json`` -- FR-9's parity guarantee, which no test could assert while
+    nothing rendered the source at all."""
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather",
+        lambda target: (
+            Finding(source=Source.MARSHAL_DURABILITY, check="ledger-regression",
+                    status=DoctorStatus.OK, message="8 tracked ledger(s) hold",
+                    evidence={"ledgers": 8}),
+        ),
+    )
+
+    assert main(["check", str(tmp_path), "--durability"]) == 0
+    assert "marshal-durability" in capsys.readouterr().out
+
+    assert main(["check", str(tmp_path), "--durability", "--json"]) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert [f["source"] for f in doc["findings"]] == ["marshal-durability"]
+
+
+def test_durability_fail_drives_the_exit_code_lattice(
+    monkeypatch, tmp_path: Path, capsys
+):
+    """A FAIL here is not cosmetic: it must gate exactly like any other
+    source's FAIL (epics AC2)."""
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather",
+        lambda target: (
+            Finding(source=Source.MARSHAL_DURABILITY, check="ledger-regression",
+                    status=DoctorStatus.FAIL, message="2 ledger(s) un-finished 55",
+                    evidence={"total": 55}),
+        ),
+    )
+
+    assert main(["check", str(tmp_path), "--durability"]) == 2
+    assert "fail" in capsys.readouterr().out
+
+
+def test_default_run_includes_durability_but_a_narrowing_flag_excludes_it(
+    monkeypatch, tmp_path: Path, capsys
+):
+    """No flags -> all three categories. An explicit ``--env`` narrows to env
+    alone, so durability must NOT run -- the same "explicit flags narrow"
+    semantics ``--engines``/``--env`` already had, extended to a third
+    category rather than special-cased."""
+    _stub_healthy_warden(monkeypatch)
+    calls: list[Path] = []
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather",
+        lambda target: calls.append(target) or (),
+    )
+
+    main(["check", str(tmp_path)])
+    assert len(calls) == 1, "default run must include the durability category"
+
+    main(["check", str(tmp_path), "--env"])
+    assert len(calls) == 1, "--env must narrow to env alone, not also run durability"
+
+
 # --- --json parity (epics AC2) -----------------------------------------------
 
 

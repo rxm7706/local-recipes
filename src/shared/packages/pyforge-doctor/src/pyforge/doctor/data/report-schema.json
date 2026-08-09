@@ -61,7 +61,8 @@
             "feedstock-health",
             "release-cadence",
             "env-hygiene",
-            "adoption"
+            "adoption",
+            "marshal-durability"
           ]
         },
         "check": { "type": "string" },

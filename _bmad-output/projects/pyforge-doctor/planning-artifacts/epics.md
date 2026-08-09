@@ -457,7 +457,28 @@ gather filter to that verb before profiling would knowingly worsen a live NFR br
 **And** `doctor check` is inside its documented budget after the addition — measured,
 not assumed
 
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-08-09).** Wired as a third `doctor check` category (`--durability`),
+whole-category only — per-check addressability is a `checks.registry` concern and this
+story's surface is `__main__.py`; a NAME argument would hand-roll a second filter path
+beside `gather_one`, the exact drift that function's "filter, not a second code path"
+rule prevents. Default run is all three categories; an explicit `--engines`/`--env`
+narrows, so durability is excluded — the existing semantics extended, not special-cased.
+
+**The split paid for itself immediately.** `--json` crashed with
+`jsonschema.ValidationError` and exit 2 on the first run: 5.1 added
+`Source.MARSHAL_DURABILITY` to the Python enum but **not** to `data/report-schema.json`,
+and nothing caught it because 5.1 shipped the source with no caller — its findings had
+never been rendered, so they had never been validated. Exactly the "merged, marked done,
+never became the runtime" shape this split was written to expose. Schema extended, plus
+`test_schema_source_enum_matches_the_source_taxonomy_exactly` asserting **set equality in
+both directions** (a one-way `schema ⊆ enum` check would have passed while the member was
+missing — the direction that broke); mutation-tested by removing the member.
+
+Measured, not assumed: `doctor check` **2.95 / 2.99 / 3.03s** against the 5.0s budget,
+with the durability gather itself **~0.04s** — the headroom S-6.1 created, spent as
+intended. FAIL drives exit 0 → 2. Suite 418 → 422.
 
 
 ---
