@@ -17,6 +17,7 @@ and its validation only -- no formatting beyond `__str__`, no I/O.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 
 # Two lowercase, hyphen-delimited segments joined by a single colon, e.g.
 # "cfe:unresolved" or "ship:credential-missing". Neither segment may be
@@ -54,3 +55,34 @@ class MasonError(Exception):
 
     def __str__(self) -> str:
         return f"{self.identifier}: {self.message}"
+
+
+class CfeImportFloorError(MasonError):
+    """The selected CFE interpreter is missing part of CFE's import floor
+    (FR-3, NFR-14).
+
+    Raised by `cfe.py::ensure_import_floor` when `probe_import_floor`
+    reports any gap -- construction raises `ValueError` for an empty
+    `missing`, since an import-floor error naming nothing missing is
+    exactly the incoherent state this class exists to rule out. `missing`
+    holds pip/conda *distribution* names (e.g. `pyyaml`), not import names
+    (`yaml`), in `cfe.CFE_IMPORT_FLOOR`'s declared order, so the message
+    names exactly what a user would `pip install`/`conda install`; it is
+    stored as a `tuple`, not whatever `Sequence` was passed, matching the
+    immutable-shape convention every other dataclass in this story follows.
+    """
+
+    def __init__(self, missing: Sequence[str], interpreter: str) -> None:
+        missing = tuple(missing)
+        if not missing:
+            raise ValueError(
+                "CfeImportFloorError requires a non-empty `missing`: an "
+                "import-floor error naming nothing missing is incoherent"
+            )
+        self.missing = missing
+        self.interpreter = interpreter
+        message = (
+            f"interpreter {interpreter!r} is missing CFE's import floor: "
+            f"{', '.join(missing)}"
+        )
+        super().__init__("cfe:import-floor-missing", message)
