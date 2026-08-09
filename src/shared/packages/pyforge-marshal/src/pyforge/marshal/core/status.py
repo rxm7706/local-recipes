@@ -810,6 +810,39 @@ class FleetHomeFacts:
     unpushed_work: dict[str, object] | None = None
 
 
+def is_run_live(facts: FleetHomeFacts) -> bool:
+    """Pure liveness predicate (Story 4.11, "marshal land refuses while a
+    run is in flight"): ``True`` when a bmad-loop supervisor/engine run for
+    this project is still using its own station branch -- the ONE
+    fact ``cli/land.py`` needs before honoring a policy-true ``landing_
+    branch_retirement`` and deleting that branch out from under a live run
+    (the motivating incident: a live 9-story run, avoided only because a
+    human read the source first).
+
+    Reads ``facts`` DIRECTLY, never ``derive_home_state``'s own 5-value
+    state string: that string's own ``"idle"`` state deliberately collapses
+    two different underlying situations -- "no run ever" and "a live
+    supervisor between stories, nothing in flight right now" -- into one
+    string (``build_fleet_row`` only needs to display ONE state per row
+    either way), and the second case is exactly the live-between-stories
+    case this predicate must still catch. ``derive_home_state`` is
+    therefore never called here.
+
+    ``True`` when ``facts.has_run`` and either ``facts.journal_unreadable``
+    (liveness genuinely cannot be proven either way -- conservatively
+    treated as live, mirroring ``core/retire.py``'s own "a fact that cannot
+    be proven is refused, never defaulted to delete" precedent for its own
+    analogous "can't prove it" case) or (``not facts.finished and facts.
+    supervisor_alive is True``). Every other combination -- ``has_run`` is
+    ``False``; or the run is readable and either ``finished`` or its
+    supervisor is confirmed dead -- is ``False``: safe to retire."""
+    if not facts.has_run:
+        return False
+    if facts.journal_unreadable:
+        return True
+    return not facts.finished and facts.supervisor_alive is True
+
+
 def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:
     """One ``data.homes`` row plus an optional ``Finding`` (Story 5.1) --
     mirrors this module's own ``_evaluate_home``/``_evaluate_main_checkout``

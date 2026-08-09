@@ -103,6 +103,12 @@ CONDA_ONLY_RUN_DEPS: dict[str, frozenset[str]] = {
     # Their version ranges are guarded by the package's own
     # tests/meta/test_engine_version_range_sync.py.
     "pyforge-warden": frozenset({"deptry", "osv-scanner"}),
+    # steward's `age` (Story 1.3) is the real encrypt/decrypt ENGINE, invoked
+    # via subprocess by keys.py's encrypt_file/decrypt_file (AD-1/AD-3 --
+    # never vendored), consumed from the conda-forge feedstock. Same shape as
+    # warden's deptry/osv-scanner above: not an importable Python
+    # distribution, so it cannot be a pip requirement.
+    "pyforge-steward": frozenset({"age"}),
 }
 
 # The shared namespace package. `pyforge.*` imports are in-repo siblings, never a
@@ -141,6 +147,18 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "pydantic. `pydantic-core` is its own distribution on PyPI and "
             "conda-forge, so relying on pydantic's pin is the same transitive "
             "reliance AUD-WARDEN-010 named."
+        ),
+    },
+    "pyforge-steward": {
+        "_http": (
+            "OPEN. keys.py locates .claude/skills/conda-forge-expert/scripts/"
+            "_http.py by walking up from itself and injects its parent onto "
+            "sys.path (AD-1/AD-2 delegate-target pattern), then imports it as "
+            "the plain top-level module `_http`. This is a repo-local sibling "
+            "script, not a distributable package, so it has no PyPI/conda-forge "
+            "name to declare in [project.dependencies] the normal way. Closing "
+            "it needs either promoting _http.py into a proper shared package or "
+            "making the import lazy, not a manifest line."
         ),
     },
 }
