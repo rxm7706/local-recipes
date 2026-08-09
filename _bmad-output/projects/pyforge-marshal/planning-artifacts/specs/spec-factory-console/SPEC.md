@@ -7,6 +7,7 @@ surface:
   - docs/dashboard/**
 surface-drift-exclude:
   - docs/dashboard/data.js   # generated on every dashboard-gen run (regenerate-at-will)
+  - docs/dashboard/kedro-viz/**   # generated wholesale by `kedro viz build` + viz-publish-stage (atlas 12-2, FR-62); CI republishes it on every push touching atlas pipelines, and the asset filenames are content-hashed, so per-file governance would red this detector on every legitimate rebuild. Same regenerate-at-will class as data.js. The GENERATOR is governed (pixi tasks viz-build/viz-publish-stage + tools/normalize_viz_build.py under spec-pyforge-atlas); the OUTPUT is not.
 companions:
   - console-contract.md
 sources:
