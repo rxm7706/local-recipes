@@ -172,3 +172,17 @@ sibling ledgers and the detector both use.
   summary: `scan_file_for_secrets` slurps each file whole (`read_bytes()` + full-text decode, up to ~2-4x memory expansion) with no size cap or streaming, so a single multi-GB file anywhere in the scanned tree (build artifact, packfile, database dump) exhausts memory and can OOM-kill the audit mid-scan — and a SIGKILL bypasses even the primitive's fail-loud posture, since no Python exception reaches the caller. Harmless at this story's fixture scale; needs a size gate or chunked/streaming read before Story 1.6 points the scan at real repo trees. Distinct from the existing `.git`/`.pixi`-walk entry, which is about scan scope/speed/false positives, not memory exhaustion.
   evidence: Flagged independently by both review agents in Story 1.3's second follow-up review pass 2026-07-30; code-certain from `src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py` — `path.read_bytes()` materializes the full file and `scan_directory_for_secrets` feeds it every regular file in the walk with no size check.
   status: open
+
+### DW-7-1-1
+
+- source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-7-1-one-build-whole-guild.md`
+  summary: A follow-up review was still RECOMMENDED for Story 7.1 when the damping cap (`limits.max_followup_reviews = 2`) was spent. The story finalized anyway — `status: done`, verify green, work committed by bmad-loop run `20260809-114839-7af9` — so the lingering recommendation has no owner unless it is recorded here. The story consumed both dev attempts and all three review cycles, and the third review pass was still finding substantive issues (build-context fidelity, wrong comments, arg symmetry), which is the reason the reviewer wanted another look rather than a generic caution.
+  evidence: bmad-loop damping output, promoted from Tier-3 `implementation-artifacts/deferred-work.md` where it was written as the generic id `DW-1`. Renamed to this ledger's `DW-<epic>-<story>-<n>` convention on promotion — `deferred_work_check` warns that the generic id collides with the next damped story, since bmad-loop emits `DW-1` every time.
+  status: open
+
+### DW-7-1-2
+
+- source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-7-1-one-build-whole-guild.md`
+  summary: NINE sites carry a pixi version and they are NOT all equal — feature pins + `environment.yaml` + the new Containerfile builder image sit at `0.76.1`; `pixi.toml`'s own `requires-pixi` floor, the `"$schema"` URL, and the dashboard.yml / kedro-viz-publish.yml pins sit at `0.75.0`; and `.github/actions/sync-pypi-mappings/action.yml` sits at `0.73.0`. The four EXACT pins are the sharp ones: any below the floor installs a pixi that REFUSES to parse this manifest. `sync-pypi-mappings` IS below it today, so a `workflow_dispatch` of "Sync PyPI-Conda Mappings" installs a pixi that cannot read `pixi.toml`. Pre-existing drift, not introduced by 7.1; no detector enforces cross-site pixi-version equality, which is why it accumulated silently.
+  evidence: Enumerated by Story 7.1's review pass while rewriting `requires-pixi`'s comment (see the comment itself in `pixi.toml`, which now lists all nine sites). Recorded rather than fixed: correcting a version pin inside a container story would be unrelated scope, and the real remedy is a detector, not nine hand edits.
+  status: open
