@@ -138,6 +138,12 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # Story 6.6 (FR-15) added DREAM_CHAIN, SPEC_SURFACE and DEFERRED_WORK, porting
     # scripts/dream_chain_check.py, scripts/spec_surface_check.py and
     # scripts/deferred_work_check.py's own judgements on the Dream-to-Code chain.
+    # Story 6.7 (FR-15) added FORWARD_DEPENDENCY, porting
+    # scripts/forward_dependency_check.py's judgement on the one defect the
+    # harness's own picker is blind to. Unlike its siblings that port was not a
+    # pure relocation: the script imported bmad_loop.sprintstatus, which
+    # sources/deps.py restates instead (AD-13), so the verdict no longer
+    # requires the machinery it judges.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -156,6 +162,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "dream-chain",
         "spec-surface",
         "deferred-work",
+        "forward-dependency",
     }
 
 

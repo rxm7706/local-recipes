@@ -263,6 +263,20 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # "repo" per that script's own DETECTOR declaration even though it reads
     # each project's gitignored Tier-3 implementation-artifacts/deferred-work.md
     # -- preserve, don't redesign (mirrors Story 6.4's STORY_STATUS row above).
+    SourceRegistration(
+        source=Source.FORWARD_DEPENDENCY,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.7 -- ported from scripts/forward_dependency_check.py; scope
+    # stays "repo" per that script's own DETECTOR declaration. Unlike every
+    # sibling row, this port CHANGED the module's dependencies rather than
+    # merely relocating it: the script imported
+    # bmad_loop.sprintstatus.ACTIONABLE_STATUSES, which sources/deps.py
+    # restates instead (AD-13). That is what makes this row's
+    # subject_station="marshal" honest -- the source now judges Marshal's
+    # artifacts while depending on nothing Marshal ships, which is the
+    # property S-6.10's meta-test will assert for every source.
 )
 
 

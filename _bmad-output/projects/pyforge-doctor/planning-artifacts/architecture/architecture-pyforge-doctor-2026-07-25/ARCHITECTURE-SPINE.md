@@ -320,3 +320,60 @@ because git's payload here is YAML, not JSON.
 and `test_cli_bridge_sole_subprocess.py` caught it — the meta-test worked, and the
 fix was to widen the sanctioned site rather than route around it.*
 
+### AD-13 — `sources/deps.py` restates `ACTIONABLE_STATUSES`; a conformance test owns the invariant (binds FR-15, Story 6.7)
+
+**Prevents:** one detector's dependency becoming the whole CLI's dependency; a verdict
+about the harness that cannot be produced without the harness.
+**Rule:** `sources/deps.py` defines `ACTIONABLE_STATUSES = frozenset({"backlog",
+"ready-for-dev"})` locally and imports nothing from `bmad_loop`.
+`.claude/skills/conda-forge-expert/tests/meta/test_actionable_statuses_conformance.py`
+imports the INSTALLED `bmad_loop.sprintstatus` and asserts **set equality** against the
+literal parsed out of `deps.py` by `ast` — never by importing `pyforge.doctor`, which is
+not installed in the `local-recipes` environment where that suite runs.
+
+**Why the restatement is safe.** The invariant the original import bought — *derived,
+never restated, so the check stays tied to real engine behaviour* — is preserved, but it
+moves from **runtime import** to **test-time equality**. The distinction that matters:
+the invariant needs to be *checked*, not *imported*. Checking can happen in one fat
+environment; importing forces that environment everywhere Doctor runs.
+
+**Three properties the test must keep, or the invariant dies quietly:**
+1. It imports `bmad_loop` **unconditionally**. It must FAIL, never skip. This is a
+   deliberate deviation from the sibling `test_forward_dependency_check.py`, which uses
+   `pytest.importorskip` — under that pattern the assertion evaporates in exactly the
+   environment where nobody notices. `unpushed_work_check.py`'s own docstring names this
+   failure class: *"a gate reporting success because it is standing somewhere the failure
+   cannot occur."*
+2. It asserts **set equality**, not membership. A subset check passes when upstream ADDS
+   a status — which is precisely the drift worth catching.
+3. It reads the literal by `ast`, so it fails when the constant is edited to a
+   non-literal (a computed value would defeat the comparison).
+
+**Rejected alternative — add `bmad-loop` to `[feature.pyforge-doctor.dependencies]`.**
+It preserves the invariant most directly, and on a strict reading of S-6.10 it is not
+even barred: `bmad_loop` is an upstream harness Marshal *wraps*, not the `pyforge.marshal`
+package. Rejected on three counts. (a) It contradicts AD-11's own rationale, which is
+about *machinery*, not package names: a verdict assembled from the judged station's
+machinery fails exactly when that machinery is what broke — the only case worth checking.
+(b) It expands a 3.3 MB / 33-module git-pinned harness into a 7-dependency environment
+whose contract is a five-second pre-flight (NFR-4) with an explicit counter-metric that
+suite runtime must not creep (SM-C1), and converts a single check's dependency into a
+whole-CLI dependency: a `bmad-loop` resolution failure would take out `check`, `monitor`
+and `diagnose` alike. (c) It would require a second `sources/warden.py`-style allowlist
+entry at S-6.10 whose stated reason — *relays an instrument's self-report about its own
+environment* — does not transfer, because `deps.py` judges an artifact.
+
+**What this BUYS, measured rather than assumed.** CI's `detectors.yml` runs on plain
+`setup-python` with `pip install pyyaml playwright` — no pixi, no `bmad_loop` — so
+`forward_dependency_check.py` reports UNKNOWN (`exit 2`) in CI *today*, and would continue
+to under the rejected alternative, since CI does not use Doctor's environment either.
+Dropping the import makes this the first time the check actually **runs in CI**.
+
+**Known limitation, recorded rather than papered over.** The conformance test itself
+cannot run in CI: no workflow runs the meta-suite, and CI has no `bmad_loop` to compare
+against. It runs under `pixi run -e local-recipes test`, which the landing protocol
+already invokes. This is the same *missing observation plane* the `scope="runtime"`
+detectors live with (`dashboard_drift`, `loop_stall`, `unpushed_work`) — a named
+condition in this repo, not a new one. Divergence is therefore caught at landing time,
+not at push time.
+

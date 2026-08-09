@@ -547,12 +547,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "24/28",
+            "25/28",
             "stories complete",
             "var(--done)"
           ],
           [
-            "4",
+            "3",
             "remaining",
             ""
           ]
@@ -583,7 +583,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "6.7"
+        "at": "6.8"
       },
       "epics": [
         {
@@ -742,7 +742,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.7",
-              "pending",
+              "done",
               "`forward_dependency` comes home, and the harness coupling is decided"
             ],
             [
@@ -3312,7 +3312,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 15:21 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 16:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5181,7 +5181,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 24,
+          "done": 25,
           "total": 28
         },
         {
@@ -5539,7 +5539,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "24/28",
+        "progress": "25/28",
         "complete": 14,
         "of": 14
       },
@@ -12168,18 +12168,18 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 4,
+        "verdict": "FINDINGS (4):",
         "runbook": ""
       },
       {
         "name": "llms-full",
         "task": "llms-full-check",
         "guards": "library catalog freshness",
-        "state": "drift",
-        "findings": 14,
-        "verdict": "DRIFT: 14 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "",
         "runbook": ""
       }
     ],
@@ -12736,7 +12736,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 6.7",
+        "line": "paused 6.8",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -14555,15 +14555,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "atlas",
-      "story": "12.2",
-      "epoch": 1786288016,
-      "sha": "c2ca76d34",
-      "subject": "Merge bmad-loop/20260809-034342-8683/12-2-publish-the-real-dag-continuously into loop/pyforge-atlas (bmad-loop)"
+      "station": "marshal",
+      "story": "4.11",
+      "epoch": 1786288692,
+      "sha": "e29553cb1",
+      "subject": "Merge bmad-loop/20260809-041110-ced0/4-11-marshal-land-refuses-while-a-run-is-in-flight into loop/pyforge-marshal (bmad-"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 15:21 UTC",
-    "generatedEpoch": 1786288884
+    "generatedAt": "2026-08-09 16:14 UTC",
+    "generatedEpoch": 1786292055
   },
   "storySpecs": [
     {
@@ -14574,15 +14574,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 24,
+      "done": 25,
       "tracked": 16,
-      "gap": 8
-    },
-    {
-      "station": "pyforge-genesis",
-      "done": 0,
-      "tracked": 0,
-      "gap": 0
+      "gap": 9
     },
     {
       "station": "pyforge-herald",
@@ -14812,15 +14806,14 @@ window.DASHBOARD_DATA = {
         "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
         "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
         "openSpecs": [],
-        "done": 24,
-        "backlog": 4,
+        "done": 25,
+        "backlog": 3,
         "blocked": 0,
         "total": 28,
         "next": "6-10-independence-is-structural-for-every-source",
         "blockedKeys": [],
         "backlogKeys": [
           "6-10-independence-is-structural-for-every-source",
-          "6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided",
           "6-8-bmad-drift-comes-home-without-breaking-the-board",
           "6-9-the-scripts-shims-retire"
         ],
@@ -14882,8 +14875,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 246,
-      "backlog": 83,
+      "done": 247,
+      "backlog": 82,
       "blocked": 6,
       "total": 335
     }
@@ -14904,13 +14897,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 28,
-        "done": 24,
+        "done": 25,
         "blocked": 0,
         "epics": 6,
         "epicsDone": 5,
         "complete": false,
         "running": false,
-        "projected": 24
+        "projected": 25
       },
       {
         "key": "herald",
@@ -14981,7 +14974,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 335,
-      "done": 246,
+      "done": 247,
       "blocked": 6,
       "epics": 64,
       "epicsDone": 47
@@ -14989,7 +14982,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 246
+      "projected": 247
     }
   }
 };
