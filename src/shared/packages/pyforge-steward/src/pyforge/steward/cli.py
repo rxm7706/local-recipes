@@ -153,14 +153,20 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:
-    """Add the `--env`/`--runner`/`--list`/`--json`/`--verify` flags (Epic 3,
-    all four stories).
+    """Add the `--module`/`--env`/`--runner`/`--list`/`--json`/`--verify`
+    flags (Epic 3's four stories, plus Epic 6 Story 6.1's `--module`).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag directly on the `provision` duty parser, matching each
-    story's own `steward provision --env <name>` / `--runner bmad-loop
-    --env <name>` / `--list [--json]` / `--verify` shape verbatim.
+    story's own `steward provision --module <name> [--json]` / `--env
+    <name>` / `--runner bmad-loop --env <name>` / `--list [--json]` /
+    `--verify` shape verbatim.
     """
+    # Keep "supported: ..." in sync with provision.py's `_SUPPORTED_MODULES`
+    # (that module is deliberately not imported here -- see its own comment).
+    provision_parser.add_argument(
+        "--module", metavar="NAME", help="BMAD module to provision (supported: bmb)"
+    )
     provision_parser.add_argument(
         "--env", metavar="NAME", help="pixi environment name (pixi.toml's [environments] table)"
     )
@@ -173,7 +179,9 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         "--list", action="store_true", help="list every environment in pixi.toml's [environments] table"
     )
     provision_parser.add_argument(
-        "--json", action="store_true", help="with --list, emit JSON instead of a text table"
+        "--json",
+        action="store_true",
+        help="with --list or --module, emit JSON instead of text",
     )
     provision_parser.add_argument(
         "--verify", action="store_true", help="check environment.yaml against pixi.toml (the PR CI sync gate)"

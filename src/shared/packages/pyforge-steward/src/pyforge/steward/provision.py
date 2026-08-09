@@ -34,6 +34,24 @@ comparison `.github/workflows/scripts/linter.py` already runs on every PR
 (read `environment.yaml`, run `pixi project export conda-environment -e
 build`, compare both `.rstrip()`'d) rather than reimplementing the
 comparison a second way (AD-1). Wired as `steward provision --verify`.
+
+Story 6.1 slice (Epic 6, `--module`): `_SUPPORTED_MODULES` (currently just
+`{"bmb"}`), `provision_module` (assembles `module.yaml`'s own declared
+variable defaults into an answers JSON, then drives BMB's own
+`bmad-bmb-setup` skill scripts -- `merge-config.py` then `merge-help-csv.py`
+-- as `uv run` subprocesses; Steward never reimplements their merge/
+anti-zombie logic, AD-1) and `_materialize_module_output_dirs` (a read-only
+reuse of `merge-config.py`'s own `apply_result_templates` substitution, to
+`mkdir -p` any `{project-root}`-prefixed output directory the module
+declares -- SKILL.md names this a caller responsibility, not something
+either script performs). Deliberately never passes `--legacy-dir` to either
+script and never invokes `cleanup-legacy.py` at all: this repo's actual
+`_bmad/core/config.yaml` is a *different*, already-governance-owned
+module's legacy config, and `cleanup-legacy.py --module-code bmb` would
+`shutil.rmtree` it as an unconditional side effect of its own hardcoded
+`[module_code, "core"]` removal list (see the story spec's Design Notes for
+the full evidence trail). Wired as `steward provision --module <name>
+[--json]`, the new first precedence check ahead of `--verify`.
 """
 
 from __future__ import annotations
@@ -44,8 +62,11 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
+
+import yaml
 
 from .interfaces import DutyResult
 
@@ -229,11 +250,209 @@ def _run_verify(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
     )
 
 
+# ── Module provisioning (FR-?, Story 6.1) ───────────────────────────────────
+
+# name -> the module's own installed setup-skill dir, relative to repo root.
+# `bmb` is the only registered backend as of Story 6.1 -- Skill Forge's own
+# `install` has no non-interactive CLI flag (v1.0.0 `STABILITY.md`), so
+# wrapping it needs a new, committed headless driver, deferred not dropped.
+# Keep the `--module` help text in `cli.py`'s `_add_provision_subparsers` in
+# sync with this set (mirrors this file's own `DUTIES`/`_HELP` precedent in
+# `cli.py`, not derived to avoid an eager cross-module import at parser-build
+# time -- `resolve_duty` is the one place that imports duty modules lazily).
+_SUPPORTED_MODULES: dict[str, Path] = {
+    "bmb": Path(".pixi/envs/local-recipes/share/bmad-builder/skills/bmad-bmb-setup"),
+}
+
+_MODULE_YAML_RELATIVE_PATH = Path("assets/module.yaml")
+_MODULE_HELP_CSV_RELATIVE_PATH = Path("assets/module-help.csv")
+_BMAD_RELATIVE_PATH = Path("_bmad")
+
+
+def _module_variable_defaults(module_yaml: dict[str, object]) -> dict[str, object]:
+    """Collect `{key: default}` for every top-level `module.yaml` entry that
+    is itself a dict declaring a `default` -- the module's own declared
+    variable set (`code`, `name`, `module_greeting`, etc. are scalars and are
+    skipped). Assembled verbatim into the answers JSON; never prompts (this
+    path is non-interactive by construction, AD-1)."""
+    return {
+        key: value["default"]
+        for key, value in module_yaml.items()
+        if isinstance(value, dict) and "default" in value
+    }
+
+
+def _materialize_module_output_dirs(
+    module_yaml: dict[str, object], *, cwd: str | Path
+) -> tuple[str, ...]:
+    """`mkdir -p` every `module.yaml` variable whose value -- after the same
+    `{value}`-template substitution `merge-config.py`'s own
+    `apply_result_templates` performs -- is a `{project-root}`-prefixed
+    path. SKILL.md's own "Create Output Directories" step names this a
+    caller responsibility; neither merge script creates any directory
+    itself. Returns the repo-relative paths created, for reporting.
+    """
+    root = Path(cwd)
+    created: list[str] = []
+    for var in module_yaml.values():
+        if not (isinstance(var, dict) and "default" in var):
+            continue
+        default = var["default"]
+        if "result" in var and "{project-root}" not in str(default):
+            resolved = str(var["result"]).replace("{value}", str(default))
+        else:
+            resolved = str(default)
+        if not resolved.startswith("{project-root}"):
+            continue
+        relative = resolved.removeprefix("{project-root}").lstrip("/")
+        try:
+            (root / relative).mkdir(parents=True, exist_ok=True)
+        except FileExistsError as exc:
+            raise RuntimeError(
+                f"module output path {relative!r} already exists and is not a directory"
+            ) from exc
+        created.append(relative)
+    return tuple(created)
+
+
+def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
+    """Provision the module registered as `name` by driving its own
+    non-interactive setup-skill scripts as subprocesses (AD-1) -- Steward
+    assembles their documented CLI arguments from `module.yaml`'s own
+    declared variable defaults, never reimplements the scripts' own merge/
+    anti-zombie logic.
+
+    Deliberately excludes `--legacy-dir` on both scripts and never invokes
+    `cleanup-legacy.py` at all: this repo's actual `_bmad/core/` holds a
+    *different*, already-governance-owned module's legacy config, and there
+    is no genuine `_bmad/<name>/` legacy directory for `bmb` to migrate from
+    in the first place (story spec Design Notes).
+
+    Returns `{"merge_config": <parsed stdout>, "merge_help_csv": <parsed
+    stdout>, "output_dirs_created": [...]}` -- each script's own JSON
+    result, keyed by step.
+
+    Raises `FileNotFoundError` if the module's setup-skill directory isn't
+    installed under `.pixi/envs/local-recipes/...` (the `bmad-builder` pixi
+    dependency), and `subprocess.CalledProcessError` if either script exits
+    non-zero -- both propagated, not swallowed, caught only at
+    `ProvisionDuty`'s existing boundary.
+    """
+    if name not in _SUPPORTED_MODULES:
+        raise FileNotFoundError(f"module {name!r} is not registered in _SUPPORTED_MODULES")
+
+    root = Path(cwd)
+    skill_dir = root / _SUPPORTED_MODULES[name]
+    if not skill_dir.is_dir():
+        raise FileNotFoundError(
+            f"module {name!r}'s setup-skill directory is missing at {skill_dir} "
+            "-- the bmad-builder pixi dependency is not installed. Fix with "
+            "`pixi install -e local-recipes`."
+        )
+
+    module_yaml_path = skill_dir / _MODULE_YAML_RELATIVE_PATH
+    with module_yaml_path.open("r", encoding="utf-8") as f:
+        module_yaml = yaml.safe_load(f)
+    if not isinstance(module_yaml, dict):
+        raise RuntimeError(f"{module_yaml_path} did not parse to a mapping -- malformed module.yaml")
+    if module_yaml.get("code") != name:
+        raise RuntimeError(
+            f"module.yaml at {module_yaml_path} declares code={module_yaml.get('code')!r}, "
+            f"which does not match the registered name {name!r} in _SUPPORTED_MODULES"
+        )
+
+    answers = {"module": _module_variable_defaults(module_yaml)}
+    bmad_dir = root / _BMAD_RELATIVE_PATH
+
+    with tempfile.TemporaryDirectory(prefix="steward-provision-module-") as tmpdir:
+        answers_path = Path(tmpdir) / "answers.json"
+        # `default=str`: a module.yaml default that YAML auto-converts to a
+        # native type (an unquoted date/timestamp scalar) must not crash the
+        # answers-file write; stringify anything json.dumps can't handle.
+        answers_path.write_text(json.dumps(answers, default=str), encoding="utf-8")
+
+        merge_config = subprocess.run(
+            [
+                "uv",
+                "run",
+                str(skill_dir / "scripts" / "merge-config.py"),
+                "--config-path",
+                str(bmad_dir / "config.yaml"),
+                "--user-config-path",
+                str(bmad_dir / "config.user.yaml"),
+                "--module-yaml",
+                str(module_yaml_path),
+                "--answers",
+                str(answers_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        merge_help_csv = subprocess.run(
+            [
+                "uv",
+                "run",
+                str(skill_dir / "scripts" / "merge-help-csv.py"),
+                "--target",
+                str(bmad_dir / "module-help.csv"),
+                "--source",
+                str(skill_dir / _MODULE_HELP_CSV_RELATIVE_PATH),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    output_dirs_created = _materialize_module_output_dirs(module_yaml, cwd=root)
+
+    try:
+        merge_config_result = json.loads(merge_config.stdout)
+        merge_help_csv_result = json.loads(merge_help_csv.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"module {name!r}'s setup-skill scripts exited 0 but did not emit valid JSON: {exc}"
+        ) from exc
+
+    return {
+        "merge_config": merge_config_result,
+        "merge_help_csv": merge_help_csv_result,
+        "output_dirs_created": list(output_dirs_created),
+    }
+
+
+def _run_module(ns: argparse.Namespace) -> DutyResult:
+    """`provision --module <name>` (Story 6.1). An unrecognized name never
+    reaches `provision_module`/a subprocess call -- it is reported directly,
+    honoring `--json` via `ProvisionDuty._render_error` exactly like every
+    other failure path this duty has (I/O Matrix: `--module <bad> --json`
+    still yields a parseable `{"error": ...}` shape)."""
+    name = ns.module
+    if name not in _SUPPORTED_MODULES:
+        supported = ", ".join(sorted(_SUPPORTED_MODULES))
+        message = f"{name!r} is not a supported module. Supported modules: {supported}"
+        return DutyResult(ok=False, summary=ProvisionDuty._render_error(ns, message))
+    root = repo_root()
+    steps = provision_module(name, cwd=root)
+    if getattr(ns, "json", False):
+        return DutyResult(ok=True, summary=json.dumps(steps, indent=2))
+    dirs_note = (
+        f"; created {', '.join(steps['output_dirs_created'])}" if steps["output_dirs_created"] else ""
+    )
+    return DutyResult(
+        ok=True,
+        summary=(
+            f"provision --module: {name!r} provisioned (merge-config.py, merge-help-csv.py)"
+            f"{dirs_note}"
+        ),
+    )
+
+
 # ── ProvisionDuty (Duty-protocol adapter) ───────────────────────────────────
 
 _PROVISION_HELP = (
-    "available flags: --env <name> | --runner bmad-loop --env <name> | "
-    "--list [--json] | --verify"
+    "available flags: --module <name> [--json] | --env <name> | "
+    "--runner bmad-loop --env <name> | --list [--json] | --verify"
 )
 
 
@@ -297,22 +516,24 @@ def _run_runner(ns: argparse.Namespace) -> DutyResult:
 
 
 class ProvisionDuty:
-    """The real `provision` duty — dispatches the `--env`/`--runner`/`--list`/
-    `--verify` flags (Epic 3 grows this class one flag per story; Story 3.4
-    adds `--verify`, the last of the four).
+    """The real `provision` duty — dispatches the `--module`/`--env`/
+    `--runner`/`--list`/`--verify` flags (Epic 3 grew this class one flag
+    per story through `--verify`; Epic 6 Story 6.1 adds `--module`).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag on the bare `provision` duty parser, matching each
     story's own `steward provision --env <name>` shape. Precedence when
-    more than one flag is passed: `--verify` > `--list` > `--runner` >
-    `--env` (a documented judgment call, not a silent one — mirrors
-    `DeployDuty`'s own `--build`-wins-over-`--dry-run` precedent; no AC
-    defines combining them). Bare `steward provision` (no flags) degrades
-    to `DutyResult(ok=True, ...)` naming the available flags (AD-7),
-    matching `KeysDuty`'s/`DeployDuty`'s identical precedent. A subprocess
-    failure (pixi, bmad-loop-worktree) is caught here as `subprocess.
-    CalledProcessError` and reported as a duty-level failure, never
-    conflated with an internal crash (AD-8 — that boundary is
+    more than one flag is passed: `--module` > `--verify` > `--list` >
+    `--runner` > `--env` (a documented judgment call, not a silent one —
+    mirrors `DeployDuty`'s own `--build`-wins-over-`--dry-run` precedent;
+    no AC defines combining them; `--module` lands at the top, matching
+    each new story's flag landing at the top of this if-chain). Bare
+    `steward provision` (no flags) degrades to `DutyResult(ok=True, ...)`
+    naming the available flags (AD-7), matching `KeysDuty`'s/`DeployDuty`'s
+    identical precedent. A subprocess failure (pixi, bmad-loop-worktree,
+    `uv run merge-config.py`/`merge-help-csv.py`) is caught here as
+    `subprocess.CalledProcessError` and reported as a duty-level failure,
+    never conflated with an internal crash (AD-8 — that boundary is
     `cli.main()`'s alone).
     """
 
@@ -320,6 +541,8 @@ class ProvisionDuty:
 
     def run(self, ns: argparse.Namespace) -> DutyResult:
         try:
+            if getattr(ns, "module", None) is not None:
+                return _run_module(ns)
             if getattr(ns, "verify", False):
                 return _run_verify(ns)
             if getattr(ns, "list", False):
@@ -334,7 +557,7 @@ class ProvisionDuty:
             cmd_name = " ".join(str(part) for part in exc.cmd) if exc.cmd else "subprocess"
             message = f"`{cmd_name}` exited {exc.returncode}: {stderr}"
             return DutyResult(ok=False, summary=self._render_error(ns, message))
-        except (RuntimeError, FileNotFoundError, tomllib.TOMLDecodeError) as exc:
+        except (RuntimeError, FileNotFoundError, tomllib.TOMLDecodeError, yaml.YAMLError) as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
 
     @staticmethod
