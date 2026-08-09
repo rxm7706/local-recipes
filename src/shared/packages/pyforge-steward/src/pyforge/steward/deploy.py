@@ -21,6 +21,15 @@ third branch alongside `--build`/bare-reconcile.
 Story 2.4 slice: `last_deploy_commit` — reads the last commit that touched
 `docs/dashboard/` straight from `git log` (no separate state file, per
 FR-11). Wired as `steward deploy status`.
+
+Story 5.2 slice: `_tracked_ledger_refusal` — a precondition guard on the
+`dashboard` verb only (AD-71: Marshal produces and owns the sprint ledger's
+currency; Steward must refuse rather than silently publish when its own
+tracked ledger is missing or unreadable). The guard checks only the file's
+presence and shape (a `development_status:` block exists) — never an
+individual story-status value — so this module still performs zero status
+derivation of its own (AD-1: that computation stays inside the wrapped
+`dashboard-gen` subprocess / `docs/dashboard/generate.py`).
 """
 
 from __future__ import annotations
@@ -248,6 +257,51 @@ def last_deploy_commit(*, cwd: str | Path) -> DeployRecord | None:
     return DeployRecord(sha=sha, timestamp=timestamp)
 
 
+# ── Tracked-ledger precondition (AD-71, Story 5.2) ──────────────────────────
+
+_STEWARD_LEDGER_RELATIVE_PATH = Path(
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml"
+)
+
+
+def _tracked_ledger_refusal(*, cwd: str | Path) -> str | None:
+    """Return a refusal message if Steward's own tracked sprint ledger is
+    missing, unreadable, or not shaped like a ledger — or `None` if it's fine
+    to proceed.
+
+    Physical path, never the `_bmad-output/planning-artifacts` symlink (that
+    symlink is per-worktree global state and may point at a different
+    project — see this repo's CLAUDE.md "PARALLEL AGENTS" section). Checks
+    only presence and shape (a top-level `development_status:` line exists)
+    — never an individual story key or status value, so this stays a
+    precondition check, not the story-status derivation AD-1 forbids
+    `deploy.py` from doing (that computation stays inside the wrapped
+    `dashboard-gen` subprocess / `docs/dashboard/generate.py`).
+
+    Review finding: the shape check used to be a bare substring test
+    (`"development_status:" in text`), which a comment merely MENTIONING the
+    key (or any longer identifier ending in it) would satisfy — the real
+    consumer, `generate.py::parse_sprint_status`, only recognizes a line
+    whose STRIPPED text equals `"development_status:"` exactly. A ledger
+    that passed the old check could still parse to zero statuses downstream,
+    exactly the silent-invisibility this guard exists to prevent. Now
+    matches that same line-exact rule.
+    """
+    ledger = Path(cwd) / _STEWARD_LEDGER_RELATIVE_PATH
+    if not ledger.is_file():
+        return f"tracked ledger not found at {ledger}"
+    try:
+        text = ledger.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        # Review finding: `UnicodeDecodeError` (invalid-encoding ledger
+        # content) is a `ValueError`, not an `OSError` -- excluding it left
+        # a corrupt-encoding ledger crashing uncaught instead of refusing.
+        return f"tracked ledger unreadable at {ledger}: {exc}"
+    if not any(line.strip() == "development_status:" for line in text.splitlines()):
+        return f"tracked ledger at {ledger} has no development_status: block"
+    return None
+
+
 # ── DeployDuty (Duty-protocol adapter) ──────────────────────────────────────
 
 _DEPLOY_VERBS: tuple[str, ...] = ("dashboard", "status")
@@ -268,8 +322,16 @@ def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
     called, so `git log`/`git status` are left unchanged. A real diff with
     neither flag → commit + push (Story 2.2's FR-9 reconciled-push
     behavior).
+
+    Story 5.2: refuses before any of the above if Steward's own tracked
+    sprint ledger is missing, unreadable, or unshaped (AD-71) — named,
+    not a silent fallback; `build_dashboard()` is never reached.
     """
     root = repo_root()
+    refusal = _tracked_ledger_refusal(cwd=root)
+    if refusal is not None:
+        return DutyResult(ok=False, summary=f"deploy dashboard: refused — {refusal}")
+
     build_dashboard(cwd=root)
 
     if getattr(ns, "build", False):

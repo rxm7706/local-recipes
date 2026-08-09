@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 from pyforge.steward.cli import EXIT_OK, main
 from pyforge.steward.deploy import (
+    _STEWARD_LEDGER_RELATIVE_PATH as _LEDGER_RELATIVE_PATH,
     build_dashboard,
     commit_and_push_dashboard,
     dashboard_diff,
@@ -39,6 +40,14 @@ def _make_repo_with_origin(tmp_path: Path) -> Path:
     dashboard_dir.mkdir(parents=True)
     (dashboard_dir / "data.js").write_text("window.DASHBOARD_DATA = {v: 1};\n")
     (work / "README.md").write_text("scratch repo\n")
+    # Story 5.2: the `dashboard` verb now refuses without Steward's own
+    # tracked sprint ledger present -- write the minimal valid fixture so
+    # this shared setup doesn't false-refuse every test in this file (a
+    # harmless no-op for the tests below that call the git primitives
+    # directly rather than through the CLI, which never checks the ledger).
+    ledger = work / _LEDGER_RELATIVE_PATH
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text("development_status:\n")
     _git("add", "-A", cwd=work)
     _git("commit", "-m", "init", cwd=work)
     _git("remote", "add", "origin", str(origin), cwd=work)
