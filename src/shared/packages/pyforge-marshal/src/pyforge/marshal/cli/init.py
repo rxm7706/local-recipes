@@ -212,6 +212,7 @@ import json
 import os
 import secrets
 import shlex
+import subprocess
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1284,8 +1285,14 @@ def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[F
     data: dict = {}
     try:
         repo_root = vcs.repo_common_root(home)
-        base = vcs.resolve_ref(repo_root, "origin/main")
-        head = vcs.resolve_ref(home, "HEAD")
+        # `resolve_ref` prefixes refs/heads/ -- it resolves BRANCH NAMES only, not
+        # `HEAD` or `origin/main`. An earlier cut passed both and every probe raised
+        # VcsCommandError, which this function swallows, so the check silently did
+        # NOTHING while its unit tests passed: the fake returned whatever it was
+        # told and never modelled the real semantics. `worktree_head_sha` is the
+        # port method that actually answers "what is this home at".
+        base = vcs.resolve_ref(repo_root, "main")
+        head = vcs.worktree_head_sha(home)
     except (VcsCommandError, OSError, subprocess.SubprocessError):
         return findings, data
     data["home_head"] = head[:10]

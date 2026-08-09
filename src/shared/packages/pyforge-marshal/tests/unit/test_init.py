@@ -15,6 +15,8 @@ import json
 from pathlib import Path
 
 import jsonschema
+import subprocess
+
 import pytest
 
 from pyforge.marshal.adapters.fs_local import FsError
@@ -100,7 +102,11 @@ class FakeVcs:
         return self.tracked_matches.get(pathspec.lstrip("/"), ())
 
     def resolve_ref(self, repo_root: Path, ref: str) -> str:
+        # Mirrors GitVcs: BRANCH NAMES only (it prefixes refs/heads/).
         return self.refs.get(ref, "same-sha-current")
+
+    def worktree_head_sha(self, worktree_path: Path) -> str:
+        return self.refs.get("HEAD", "same-sha-current")
 
     def merge_base(self, repo_root: Path, a: str, b: str) -> str:
         return self.merge_base_result if self.merge_base_result is not None else a
@@ -1759,7 +1765,7 @@ def test_preflight_refuses_a_loop_home_that_is_behind_main(repo_root, tmp_path, 
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
-    vcs.refs = {"origin/main": "mainsha1234", "HEAD": "oldsha56789"}
+    vcs.refs = {"main": "mainsha1234", "HEAD": "oldsha56789"}
     vcs.merge_base_result = "oldsha56789"        # HEAD is an ancestor => behind
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
@@ -1779,7 +1785,7 @@ def test_preflight_passes_a_home_that_matches_main(repo_root, tmp_path, capsys):
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
-    vcs.refs = {"origin/main": "samesha", "HEAD": "samesha"}
+    vcs.refs = {"main": "samesha", "HEAD": "samesha"}
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
     code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs,
@@ -1796,13 +1802,46 @@ def test_preflight_does_not_refuse_a_home_that_is_merely_ahead(repo_root, tmp_pa
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
-    vcs.refs = {"origin/main": "mainsha", "HEAD": "aheadsha"}
+    vcs.refs = {"main": "mainsha", "HEAD": "aheadsha"}
     vcs.merge_base_result = "mainsha"            # main is the ancestor => ahead
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
     run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs,
                   harness=_converged_harness())
     assert "MRS-PREFLIGHT-014" not in capsys.readouterr().out
+
+
+def test_home_currency_uses_port_methods_that_actually_resolve(tmp_path):
+    """Regression, and the reason it exists is worth stating.
+
+    S-1.12's first cut called `resolve_ref(repo_root, "origin/main")` and
+    `resolve_ref(home, "HEAD")`. `resolve_ref` prefixes `refs/heads/`, so it
+    resolves BRANCH NAMES only: both calls raised `VcsCommandError`, which
+    `_home_currency_findings` swallows by design — so the check silently did
+    NOTHING against real git while all three of its unit tests passed, because
+    `FakeVcs` returned whatever it was told and never modelled the semantics.
+
+    This runs the REAL `GitVcs` against a REAL repository. A fake cannot catch a
+    wrong-method bug; only the real port can.
+    """
+    from pyforge.marshal.adapters.vcs_git import GitVcs
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run = lambda *a: subprocess.run(["git", "-C", str(repo), *a],
+                                    capture_output=True, text=True, check=True)
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
+    run("config", "user.email", "t@example.com")
+    run("config", "user.name", "t")
+    (repo / "a.txt").write_text("1\n", encoding="utf-8")
+    run("add", "-A")
+    run("commit", "-qm", "base")
+
+    vcs = GitVcs()
+    # Both must resolve without raising — that is exactly what the first cut got
+    # wrong, and what the fakes could not see.
+    assert vcs.resolve_ref(repo, "main")
+    assert vcs.worktree_head_sha(repo) == vcs.resolve_ref(repo, "main")
 
 
 def test_preflight_fully_converged_json_matches_schema(repo_root, tmp_path):
