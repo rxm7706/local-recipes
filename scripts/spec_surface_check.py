@@ -11,12 +11,20 @@ enforces two properties over `git ls-files`:
   drift    — a governed file's content changed (vs the committed baseline
              scripts/.spec-surface-baseline.json) while its spec's .memlog.md
              did NOT move: code drifted out from under its contract. Reconcile
-             by updating the spec (bmad-spec re-derive) then --write-baseline.
+             by updating the spec (bmad-spec re-derive) then
+             --write-baseline --spec <name>.
+
+             A memlog reconciles the paths it NAMES (S-13.2). When the contract
+             moved but never mentions a changed file, that file reports
+             [drift-presumed] — informational, never gating: unproven rather
+             than wrong. Before this, ANY memlog entry presumed every governed
+             file in the surface reconciled, so unrelated activity silently
+             laundered pending drift.
 
 Exit non-zero on any finding (never false-green). Glob dialect: `**` spans
 path separators, `*`/`?` do not; a pattern with no glob chars matches exactly.
 
-Usage:  python scripts/spec_surface_check.py [--write-baseline] [--json]
+Usage:  python scripts/spec_surface_check.py [--write-baseline [--spec NAME]] [--json]
 Pixi:   pixi run -e local-recipes spec-surface-check
 """
 from __future__ import annotations
@@ -120,10 +128,27 @@ def sha1(path: Path) -> str:
     return hashlib.sha1(path.read_bytes()).hexdigest()
 
 
+def memlog_text(memlog: Path) -> str:
+    """The memlog's raw text, for per-file reconciliation claims (S-13.2).
+
+    A governed path counts as reconciled when the memlog NAMES it — a literal
+    substring match on the repo-relative path, which is the form these entries
+    already cite files in. Deliberately literal: inferring reconciliation intent
+    from prose would rebuild the "presumed reconciled" blanket this replaces.
+    """
+    if not memlog.is_file():
+        return ""
+    return memlog.read_text(encoding="utf-8", errors="replace")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--write-baseline", action="store_true",
                     help="stamp the drift baseline after a spec reconciliation")
+    ap.add_argument("--spec", action="append", metavar="NAME", default=None,
+                    help=("limit --write-baseline to this spec (repeatable). "
+                          "WITHOUT it the stamp covers EVERY spec, which accepts "
+                          "every other spec's pending drift as correct."))
     ap.add_argument("--json", action="store_true", help="machine output")
     args = ap.parse_args()
 
@@ -166,6 +191,8 @@ def main() -> int:
             ungoverned.append(f)
 
     findings: list[str] = []
+    # S-13.2: informational, NEVER gating — see the report block below.
+    presumed: list[str] = []
     for f in ungoverned:
         findings.append(f"[ungoverned] {f}: no spec surface and no allowlist entry")
     for pat, n in allow_hits.items():
@@ -193,26 +220,67 @@ def main() -> int:
         for name, s in specs.items()
     }
     if args.write_baseline:
-        BASELINE.write_text(json.dumps(current, indent=1, sort_keys=True) + "\n",
+        # S-13.1 — SCOPED stamping. Stamping every spec in one write made the
+        # sanctioned fix for a single `[no-baseline]` unusable: it necessarily
+        # accepted every OTHER spec's pending drift as correct, so the honest
+        # move was to leave the finding standing. That is why this detector
+        # carried a large red for weeks — a gate nobody can safely clear stops
+        # being a gate. With --spec, one spec reconciles in isolation.
+        if args.spec:
+            unknown = sorted(set(args.spec) - set(current))
+            if unknown:
+                print(f"unknown spec(s): {', '.join(unknown)}\n"
+                      f"known: {', '.join(sorted(current))}", file=sys.stderr)
+                return 2
+            # MERGE, never rewrite: building from `current` alone would silently
+            # drop every spec this invocation did not name.
+            merged = (json.loads(BASELINE.read_text(encoding="utf-8"))
+                      if BASELINE.exists() else {})
+            for name in args.spec:
+                merged[name] = current[name]
+            scope = f"{len(set(args.spec))} spec(s): {', '.join(sorted(set(args.spec)))}"
+        else:
+            merged = current
+            scope = f"{len(specs)} spec(s) — ALL (accepts every spec's pending drift)"
+        BASELINE.write_text(json.dumps(merged, indent=1, sort_keys=True) + "\n",
                             encoding="utf-8")
-        print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} "
-              f"({len(specs)} specs)")
+        print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} — {scope}")
     elif BASELINE.exists():
         base = json.loads(BASELINE.read_text(encoding="utf-8"))
         for name, cur in current.items():
             b = base.get(name)
             if b is None:
-                findings.append(f"[no-baseline] {name}: run --write-baseline")
+                findings.append(f"[no-baseline] {name}: run "
+                                f"--write-baseline --spec {name}")
                 continue
-            if b["memlog"] != cur["memlog"]:
-                continue  # spec moved — code changes are presumed reconciled
+            # S-13.2 — the reconciliation claim is PER-FILE, not per-spec.
+            # Short-circuiting the whole spec here meant appending ANY memlog
+            # entry marked every governed file in that surface reconciled,
+            # including files the author never touched: the drift half was
+            # defeatable by unrelated activity, silently, and indistinguishably
+            # from a real fix in the count the dashboard renders. Live: one
+            # unrelated note took findings 63 -> 61, clearing two detectors
+            # nobody had reconciled. A memlog reconciles the paths it NAMES.
+            spec_moved = b["memlog"] != cur["memlog"]
+            named = memlog_text(specs[name]["memlog"]) if spec_moved else ""
             for f in sorted(set(b["files"]) | set(cur["files"])):
                 old, new = b["files"].get(f), cur["files"].get(f)
-                if old != new:
-                    what = "changed" if old and new else ("added" if new else "removed")
+                if old == new:
+                    continue
+                what = "changed" if old and new else ("added" if new else "removed")
+                if not spec_moved:
                     findings.append(f"[drift] {name}: {f} {what} but the spec's "
                                     f"memlog did not move — reconcile the spec, "
-                                    f"then --write-baseline")
+                                    f"then --write-baseline --spec {name}")
+                elif f not in named:
+                    # INFORMATIONAL, never gating (see `presumed` below): most
+                    # existing memlog entries predate any naming convention, so a
+                    # hard failure here would red the gate for every historical
+                    # entry — the same unclearable red in a new shape.
+                    presumed.append(f"[drift-presumed] {name}: {f} {what}; the "
+                                    f"memlog moved but does not name this path — "
+                                    f"confirm it was reconciled, then "
+                                    f"--write-baseline --spec {name}")
     else:
         findings.append("[no-baseline] baseline missing: run --write-baseline")
 
@@ -221,6 +289,7 @@ def main() -> int:
             "specs": {n: s["globs"] for n, s in specs.items()},
             "governed": {n: len(v) for n, v in governed.items()},
             "allowlisted": allow_hits, "findings": findings,
+            "drift_presumed": presumed,
         }, indent=1))
         return 1 if findings else 0
 
@@ -234,6 +303,32 @@ def main() -> int:
     print("  allowlist (explicit, reason-tagged):")
     for pat, reason in allow:
         print(f"    {allow_hits[pat]:>5}  {pat}  # {reason}")
+    if presumed:
+        # Printed BEFORE findings and excluded from the exit code: this set is
+        # "the memlog moved but never named this path", which is unproven rather
+        # than wrong. Making it visible is the whole point — the alternative is
+        # the silent per-spec clearing this replaces.
+        #
+        # SUMMARIZED per spec, not listed per file. The first run surfaced 995
+        # entries (834 of them one station's whole surface), which would bury the
+        # gating findings underneath them — a signal nobody reads is barely
+        # better than the silence it replaced. `--json` carries the full set for
+        # anything that wants to work through it.
+        by_spec: dict[str, list[str]] = {}
+        for line in presumed:
+            spec_name, _, rest = line.partition(": ")
+            by_spec.setdefault(spec_name.removeprefix("[drift-presumed] "),
+                               []).append(rest.split(";")[0])
+        print(f"\nDRIFT-PRESUMED ({len(presumed)} across {len(by_spec)} spec(s)) "
+              f"— informational, not gating; full set in --json:")
+        for spec_name, items in sorted(by_spec.items(),
+                                       key=lambda kv: (-len(kv[1]), kv[0])):
+            print(f"  ~ {spec_name}: {len(items)} governed file(s) changed while "
+                  f"the memlog moved without naming them")
+            for item in items[:2]:
+                print(f"      e.g. {item}")
+            if len(items) > 2:
+                print(f"      … {len(items) - 2} more")
     if findings:
         print(f"\nFINDINGS ({len(findings)}):")
         for f in findings:
