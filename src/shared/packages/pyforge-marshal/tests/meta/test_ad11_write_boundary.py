@@ -72,6 +72,14 @@ class _RecordingVcs:
     scenario); ``run_teardown``'s own test overrides them so a worktree
     genuinely exists to remove."""
 
+    # S-1.12: preflight now probes home currency; a recording double must
+    # answer both or the boundary test fails for the wrong reason.
+    def resolve_ref(self, repo_root, ref):
+        return "same-sha"
+
+    def merge_base(self, repo_root, a, b):
+        return a
+
     def __init__(
         self,
         repo_root: Path,

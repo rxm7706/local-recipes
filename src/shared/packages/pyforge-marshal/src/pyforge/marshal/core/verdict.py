@@ -819,6 +819,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # MRS-PREFLIGHT-006/008/009: a real, attempted resolvability check
     # found (or could not confirm) a real problem.
     "MRS-PREFLIGHT-013": Verdict.WARN,
+    "MRS-PREFLIGHT-014": Verdict.ERROR,
     "MRS-PREFLIGHT-012": Verdict.ERROR,
 }
 

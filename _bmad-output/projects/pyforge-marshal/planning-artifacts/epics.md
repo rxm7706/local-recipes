@@ -334,6 +334,32 @@ So that the wrap decision pays off at the point of use.
 
 ---
 
+### Story 1.12: A stale loop home cannot be spun *(added 2026-08-09 — FR-180)*
+
+As the operator,
+I want preflight to refuse a loop home that is behind `main`,
+So that a stale baseline cannot silently switch the surface guard off.
+
+**Type:** feature • **Effort:** S • **Deps:** S-1.11 • **FR/AD:** FR-180
+
+**Why preflight and not the landing.** FR-173 makes a landing leave the home current — but every
+landing on 2026-08-09 was done by hand (`gh pr merge`), so that code never ran and eight homes
+drifted 33–74 commits behind with nothing reporting it.
+
+**Acceptance Criteria:**
+
+**Given** a provisioned loop home whose HEAD is an ancestor of `origin/main`
+**When** `marshal preflight <slug>` runs
+**Then** it reports **`MRS-PREFLIGHT-014` at ERROR** and exits non-zero, naming both shas and
+printing a remedy that is runnable exactly as shown
+**And** a home whose HEAD equals `origin/main` is silent — otherwise every preflight reds and
+the gate stops being read
+**And** a home merely **AHEAD** (unlanded story merges — the ordinary mid-run state) is **not**
+refused
+**And** any probe failure yields no finding: a diagnostic must never become a refusal
+**And** FR-173's landing resync is amended to **push** the station branch, since provisioning
+reads origin and seven homes sat 33–74 commits behind there after their work had landed
+
 ### Story 1.11: A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — FR-178)*
 
 As the operator,
