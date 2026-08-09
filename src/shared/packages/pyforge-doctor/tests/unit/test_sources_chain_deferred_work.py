@@ -259,3 +259,144 @@ def test_non_utf8_tracked_ledger_never_raises(tmp_path: Path) -> None:
 
     assert findings  # returned rather than raised
     assert all(f.source is Source.DEFERRED_WORK for f in findings)
+
+
+# --- Ported branches that survived mutation (review pass 4) -----------------------
+#
+# Each test below pins a ported branch the suite did NOT previously kill under
+# mutation, which the story's own Acceptance Criteria require. All were
+# mutation-confirmed when written.
+
+
+def test_a_later_entrys_status_does_not_satisfy_an_earlier_one(
+    tmp_path: Path,
+) -> None:
+    """``_entries`` slices the ledger text per entry (heading to next
+    heading). Without the slice boundary, ``_STATUS_RE`` searches the whole
+    remaining document, so ONE ``status:`` anywhere below silently marks
+    every earlier entry as statused. No fixture had two entries where only
+    the later one carried a status."""
+    _write_tier3(tmp_path, "proj", "## DW-1\nx\n")
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-1\nno status here\n\n## DW-2\nstatus: open\n",
+    )
+
+    unstatused = {f.evidence["id"] for f in chain.gather_deferred_work(tmp_path)
+                  if f.check == "ledger-entry-unstatused"}
+
+    assert unstatused == {"DW-1"}, (
+        f"a later entry's status: leaked backwards into an earlier one: {unstatused}"
+    )
+
+
+def test_a_plain_heading_ends_the_current_entry_for_anonymity(
+    tmp_path: Path,
+) -> None:
+    """``_anonymous``'s non-``DW-`` heading branch resets the entry state, so
+    a ``- source_spec:`` under an ordinary ``## Notes`` heading is an
+    anonymous entry rather than a field of the DW entry above it.
+
+    The DW entry deliberately carries NO ``source_spec`` of its own: with one,
+    ``field_taken`` is already ``True`` by the time ``## Notes`` arrives and
+    the entry below is reported anonymous whether the heading reset ran or
+    not -- the mutation survives such a fixture."""
+    _write_tier3(tmp_path, "proj", "## DW-1\nx\n")
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-1\nstatus: open\n\n## Notes\n- source_spec: `b`\n",
+    )
+
+    anon = [f for f in chain.gather_deferred_work(tmp_path)
+            if f.check == "ledger-entry-unidentified"]
+
+    assert len(anon) == 1, f"expected exactly the entry under ## Notes: {anon}"
+    assert anon[0].evidence["id"] == "line 5", anon[0].evidence
+
+
+def test_only_the_first_source_spec_in_an_entry_is_its_own_field(
+    tmp_path: Path,
+) -> None:
+    """``_anonymous``'s positional ``field_taken`` rule -- the original
+    records this one as "proved by mutation". The FIRST ``- source_spec:``
+    under a ``## DW-`` heading is that entry's own field; a SECOND one is a
+    separate, anonymous entry that lost its heading."""
+    _write_tier3(tmp_path, "proj", "## DW-1\nx\n")
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-1\nstatus: open\n- source_spec: `a`\n- source_spec: `b`\n",
+    )
+
+    anon = [f.evidence["id"] for f in chain.gather_deferred_work(tmp_path)
+            if f.check == "ledger-entry-unidentified"]
+
+    assert anon == ["line 4"], (
+        f"the positional first-field rule did not hold: {anon}"
+    )
+
+
+def test_a_trailing_hyphen_family_prefix_is_not_a_distinct_id(
+    tmp_path: Path,
+) -> None:
+    """``_ids``' ``rstrip("-")``. Prose in a Tier-3 ledger routinely names a
+    FAMILY as ``DW-B4-``; without the strip that reads as an id of its own
+    and is reported unpromoted forever, because no tracked entry can ever
+    match it."""
+    _write_tier3(tmp_path, "proj", "## DW-B4\nsee the DW-B4- family\n")
+    _write_tracked(tmp_path, "proj", "## DW-B4\nstatus: open\n")
+
+    checks = [f.check for f in chain.gather_deferred_work(tmp_path)]
+
+    assert "tier3-only-deferral" not in checks, (
+        f"a family prefix was reported as an unpromoted id: {checks}"
+    )
+
+
+# --- Unreadable inputs are WARNs, never a clean bill of health --------------------
+
+
+def test_unreadable_tier3_directory_is_a_warn_not_a_confident_ok(
+    tmp_path: Path,
+) -> None:
+    """``Path.is_file()`` answers ``False`` for an unreadable ANCESTOR, so an
+    unreadable ``implementation-artifacts/`` read as "this project defers
+    nothing" -- reproduced live during review, two real FAILs became a
+    confident ``deferred-work ok``. Empty must never be inferred from
+    unreadable."""
+    _write_tier3(tmp_path, "proj", "## DW-1\nx\n" + "y" * 3000)
+
+    t3_dir = _project_dir(tmp_path, "proj") / "implementation-artifacts"
+    t3_dir.chmod(0o000)
+    try:
+        findings = chain.gather_deferred_work(tmp_path)
+    finally:
+        t3_dir.chmod(0o755)
+
+    assert [f.check for f in findings] == ["deferred-work-unevaluable"], findings
+    assert findings[0].status is DoctorStatus.WARN
+    assert "could not be evaluated here" in findings[0].message
+
+
+def test_unreadable_tracked_ledger_directory_does_not_claim_the_ledger_is_absent(
+    tmp_path: Path,
+) -> None:
+    """The mirror image: an unreadable ``planning-artifacts/`` used to read as
+    "the tracked ledger does not exist", asserting the WHOLE record was
+    gitignored -- and re-flagging every already-promoted id as Tier-3-only --
+    about a project whose ledger is right there."""
+    _write_tier3(tmp_path, "proj", "## DW-1\nx\n" + "y" * 3000)
+    _write_tracked(tmp_path, "proj", "## DW-1\nstatus: open\n")
+    assert [f.check for f in chain.gather_deferred_work(tmp_path)] == ["deferred-work"]
+
+    pa_dir = _project_dir(tmp_path, "proj") / "planning-artifacts"
+    pa_dir.chmod(0o000)
+    try:
+        findings = chain.gather_deferred_work(tmp_path)
+    finally:
+        pa_dir.chmod(0o755)
+
+    checks = [f.check for f in findings]
+    assert checks == ["deferred-work-unevaluable"], (
+        f"an unreadable planning-artifacts/ produced confidently wrong FAILs: {checks}"
+    )
+    assert findings[0].status is DoctorStatus.WARN

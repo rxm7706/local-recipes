@@ -575,7 +575,7 @@ def test_sentinel_drift_mode_moves_the_contract_hash_with_the_sentinel_file(
     _add_commit(repo)
 
     before = chain._check_spec_surface(repo, chain._tracked_files(repo))
-    state, _ = chain._spec_current_state(
+    state, _, _ = chain._spec_current_state(
         repo, *_specs_and_governed(repo)
     )
     _write_baseline(repo, state)
@@ -660,7 +660,7 @@ def test_surface_drift_exclude_keeps_a_governed_file_out_of_the_drift_hash(
     _write_allowlist(repo, [("**", "everything, to keep this test on drift")])
     _add_commit(repo)
 
-    state, _ = chain._spec_current_state(repo, *_specs_and_governed(repo))
+    state, _, _ = chain._spec_current_state(repo, *_specs_and_governed(repo))
     assert "generated.lock" not in state["pyforge-x/spec-foo"]["files"], (
         "the excluded path was hashed into the drift state"
     )
@@ -681,19 +681,14 @@ def test_surface_drift_exclude_keeps_a_governed_file_out_of_the_drift_hash(
 
 
 def _specs_and_governed(repo: Path) -> tuple[dict, dict]:
-    """(specs, governed) for ``_spec_current_state``, rebuilt the same way
-    ``_check_spec_surface`` does -- lets a test write a REAL baseline from the
-    module's own hashing rather than hand-rolling sha1s that would drift."""
-    specs: dict[str, dict] = {}
-    for spec_md in sorted(repo.glob(chain.SPEC_GLOB)):
-        project = spec_md.relative_to(repo).parts[2]
-        name = f"{project}/{spec_md.parent.name}"
-        globs, excludes, drift = chain._parse_surface(spec_md)
-        specs[name] = {
-            "globs": globs, "drift": drift, "exclude": set(excludes),
-            "res": [chain._glob_to_re(g) for g in globs],
-            "memlog": spec_md.parent / ".memlog.md",
-        }
+    """(specs, governed) for ``_spec_current_state``, collected through the
+    module's OWN ``_collect_surfaces`` -- lets a test write a REAL baseline
+    from the module's own hashing rather than hand-rolling sha1s that would
+    drift. It calls production's collector rather than re-deriving one from a
+    glob: a parallel implementation here would silently disagree with
+    ``_check_spec_surface`` the moment the real discovery rules change."""
+    specs, unsound = chain._collect_surfaces(repo)
+    assert not unsound, f"fixture surfaces did not parse: {unsound}"
     files = chain._tracked_files(repo) or []
     governed, _, _ = chain._governed_and_ungoverned(files, specs, [])
     return specs, governed
@@ -916,3 +911,312 @@ def test_baseline_entry_with_wrong_shaped_memlog_falls_back_to_no_baseline(
         f"a wrong-shaped baseline entry was treated as usable: {findings}"
     )
     assert "drift-presumed" not in by_check
+
+
+# --- Ported branches that survived mutation (review pass 4) -----------------------
+#
+# Each test below pins a ported branch the suite did NOT previously kill under
+# mutation, which the story's own Acceptance Criteria require. All were
+# mutation-confirmed when written.
+
+
+def test_a_comment_or_blank_line_inside_a_surface_block_does_not_end_it(
+    tmp_path: Path,
+) -> None:
+    """The single most load-bearing line in ``_parse_surface``.
+
+    The original's own module docstring records this as a real historical
+    bug: a comment or blank line between two ``  - `` items used to terminate
+    the ``surface:`` section, silently un-governing everything below it and
+    reporting those files as *removed*. No fixture in this suite wrote a
+    comment or a blank line inside a block sequence, so deleting the guard
+    left every test green."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _spec_dir(repo, "pyforge-x", "spec-foo")
+    sd.mkdir(parents=True)
+    (sd / "SPEC.md").write_text(
+        "---\n"
+        "surface:\n"
+        "  - first.py\n"
+        "\n"
+        "  # a note about the second entry\n"
+        "  - second.py\n"
+        "---\n\nbody\n",
+        encoding="utf-8",
+    )
+    (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
+    (repo / "first.py").write_text("a\n", encoding="utf-8")
+    (repo / "second.py").write_text("b\n", encoding="utf-8")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+
+    globs, _, _ = chain._parse_surface(sd / "SPEC.md")
+    assert globs == ["first.py", "second.py"], globs
+
+    ungoverned = {f.evidence["path"] for f in chain.gather_spec_surface(repo)
+                  if f.check == "ungoverned"}
+    assert "second.py" not in ungoverned, (
+        f"an entry after a comment/blank line was silently un-governed: {ungoverned}"
+    )
+
+
+def test_single_star_does_not_span_a_path_separator_but_double_star_does(
+    tmp_path: Path,
+) -> None:
+    """``_glob_to_re``'s documented dialect: ``**`` spans ``/``, ``*`` and
+    ``?`` do not. Every fixture pattern in this suite was a literal or a
+    ``**``, so widening ``*`` to ``.*`` (silently over-governing every
+    surface) killed no test."""
+    single = chain._glob_to_re("src/*.py")
+    assert single.match("src/a.py")
+    assert not single.match("src/sub/a.py"), "'*' spanned a path separator"
+
+    question = chain._glob_to_re("src/?.py")
+    assert question.match("src/a.py")
+    assert not question.match("src/ab.py"), "'?' matched more than one character"
+    # `[^/]` vs `.` is only observable on a separator, so the input has to put
+    # one exactly where the single wildcard sits.
+    assert not question.match("src//.py"), "'?' matched a path separator"
+
+    assert chain._glob_to_re("src/**").match("src/deep/nested/a.py")
+
+
+def test_a_non_spec_prefixed_directory_is_not_treated_as_a_surface(
+    tmp_path: Path,
+) -> None:
+    """``_collect_surfaces``' ``spec-`` prefix filter -- the discovery rule
+    inherited from the original's own ``spec-*/SPEC.md`` glob. Dropping it
+    widens the surface set to any directory that happens to hold a
+    ``SPEC.md``."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    notaspec = (repo / "_bmad-output" / "projects" / "pyforge-x"
+                / "planning-artifacts" / "specs" / "README")
+    notaspec.mkdir(parents=True)
+    (notaspec / "SPEC.md").write_text(
+        "---\nsurface:\n  - governed.py\n---\n", encoding="utf-8")
+    (repo / "governed.py").write_text("a\n", encoding="utf-8")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+
+    specs, unsound = chain._collect_surfaces(repo)
+    assert specs == {} and unsound == [], (specs, unsound)
+    assert "governed.py" in {f.evidence["path"] for f in chain.gather_spec_surface(repo)
+                             if f.check == "ungoverned"}
+
+
+def test_one_file_governed_by_two_specs_is_recorded_under_both(
+    tmp_path: Path,
+) -> None:
+    """``_governed_and_ungoverned`` appends the file to EVERY matching
+    spec, not just the first. Collapsing that to first-owner-only silently
+    drops the second spec's drift coverage for the shared file."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    for spec in ("spec-a", "spec-b"):
+        sd = _write_spec(repo, "pyforge-x", spec, surface=["shared.py"])
+        (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
+    (repo / "shared.py").write_text("a\n", encoding="utf-8")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+
+    specs, governed = _specs_and_governed(repo)
+    assert governed.get("pyforge-x/spec-a") == ["shared.py"]
+    assert governed.get("pyforge-x/spec-b") == ["shared.py"], (
+        f"a file matched by two surfaces was recorded under only one: {governed}"
+    )
+
+
+def test_drift_labels_distinguish_added_from_removed(tmp_path: Path) -> None:
+    """The ``added``/``removed``/``changed`` labels in the drift message.
+    Nothing asserted them, so swapping ``added`` and ``removed`` -- which
+    inverts what a reader is told to do -- passed."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _write_spec(repo, "pyforge-x", "spec-foo", surface=["g/**"])
+    (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
+    (repo / "g").mkdir()
+    (repo / "g" / "gone.py").write_text("a\n", encoding="utf-8")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+
+    state, _, _ = chain._spec_current_state(repo, *_specs_and_governed(repo))
+    _write_baseline(repo, state)
+    _add_commit(repo)
+
+    (repo / "g" / "gone.py").unlink()
+    (repo / "g" / "fresh.py").write_text("b\n", encoding="utf-8")
+    _add_commit(repo)
+
+    messages = {f.evidence["path"]: f.message for f in chain.gather_spec_surface(repo)
+                if f.check == "drift"}
+    assert "removed" in messages["g/gone.py"], messages["g/gone.py"]
+    assert "added" in messages["g/fresh.py"], messages["g/fresh.py"]
+
+
+def test_a_missing_sentinel_still_yields_a_stable_contract_hash(
+    tmp_path: Path,
+) -> None:
+    """``_contract_hash``'s ``+missing`` branch. A ``sentinel:`` naming a path
+    that does not exist must still produce a STABLE hash, or every run
+    disagrees with the baseline and each real ``drift`` FAIL silently becomes
+    a non-gating ``drift-presumed`` WARN."""
+    spec = {"memlog": tmp_path / "absent.memlog.md", "drift": "sentinel:nope.json"}
+    first = chain._contract_hash(tmp_path, spec)
+    assert first == "+missing", first
+    assert chain._contract_hash(tmp_path, spec) == first
+
+
+# --- Unreadable inputs: honest, and no wider than they have to be -----------------
+
+
+def test_one_unhashable_governed_file_does_not_discard_the_specs_other_drift(
+    tmp_path: Path,
+) -> None:
+    """Per-FILE isolation, not per-spec.
+
+    Reproduced live during review: with three governed files all genuinely
+    drifted, ``chmod 000`` on ONE of them collapsed all three gating ``drift``
+    FAILs into a single non-gating WARN, so the run reported exit 0. The
+    previous pass's fix for "present-but-unreadable is not removed" was
+    correct about the one file and took the other two down with it."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _write_spec(repo, "pyforge-x", "spec-foo", surface=["g/**"])
+    (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
+    (repo / "g").mkdir()
+    for name in ("a.py", "b.py", "c.py"):
+        (repo / "g" / name).write_text("v1\n", encoding="utf-8")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+
+    state, _, _ = chain._spec_current_state(repo, *_specs_and_governed(repo))
+    _write_baseline(repo, state)
+    _add_commit(repo)
+
+    for name in ("a.py", "b.py", "c.py"):
+        (repo / "g" / name).write_text("v2\n", encoding="utf-8")
+    _add_commit(repo)
+
+    (repo / "g" / "b.py").chmod(0o000)
+    try:
+        findings = chain.gather_spec_surface(repo)
+    finally:
+        (repo / "g" / "b.py").chmod(0o644)
+
+    drifted = {f.evidence["path"] for f in findings if f.check == "drift"}
+    assert drifted == {"g/a.py", "g/c.py"}, (
+        f"one unreadable file discarded its siblings' real drift FAILs: {findings}"
+    )
+    warn = next(f for f in findings if f.check == "spec-surface-unevaluable")
+    assert warn.status is DoctorStatus.WARN
+    assert warn.evidence["path"] == "g/b.py"
+    assert not any("removed" in f.message for f in findings), (
+        "the unhashable file was reported removed rather than skipped"
+    )
+
+
+def test_a_tracked_symlink_to_a_directory_is_skipped_not_fatal(
+    tmp_path: Path,
+) -> None:
+    """A governed path that exists but is NOT a regular file.
+
+    The original filtered these out with ``(REPO_ROOT / f).is_file()``; the
+    port's ``exists()`` follows the symlink, so it hashed to ``None``, probed
+    ``True``, and permanently took the whole spec dark -- every drift FAIL it
+    owned replaced by one WARN, on every run, forever. This repo tracks
+    exactly such a path today (``.claude/skills/cf-atlas-legacy/active``)."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _write_spec(repo, "pyforge-x", "spec-foo", surface=["g/**"])
+    (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
+    (repo / "g").mkdir()
+    (repo / "g" / "real.py").write_text("v1\n", encoding="utf-8")
+    (repo / "g" / "sub").mkdir()
+    (repo / "g" / "sub" / "x.py").write_text("x\n", encoding="utf-8")
+    (repo / "g" / "active").symlink_to("sub")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+    assert "g/active" in (chain._tracked_files(repo) or []), "fixture did not track the symlink"
+
+    state, _, _ = chain._spec_current_state(repo, *_specs_and_governed(repo))
+    assert "g/active" not in state["pyforge-x/spec-foo"]["files"]
+    _write_baseline(repo, state)
+    _add_commit(repo)
+
+    (repo / "g" / "real.py").write_text("v2\n", encoding="utf-8")
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+    assert {f.evidence["path"] for f in findings if f.check == "drift"} == {"g/real.py"}, (
+        f"a tracked symlink-to-a-directory made the spec unevaluable: {findings}"
+    )
+    # Per-file isolation now contains the blast radius, so the sibling's drift
+    # FAIL survives either way -- what still has to be asserted is that the
+    # symlink produces NO finding at all. `exists()` reports it "present but
+    # could not be read", which is simply untrue: it is present and readable,
+    # just not a regular file, and the original skipped exactly these.
+    assert not any(f.check == "spec-surface-unevaluable" for f in findings), (
+        f"a tracked symlink-to-a-directory was reported unreadable: {findings}"
+    )
+
+
+def test_unreadable_spec_directory_names_what_went_dark(tmp_path: Path) -> None:
+    """``Path.is_dir()``/``is_file()`` answer ``False`` for an unreadable
+    ANCESTOR, so an unreadable ``spec-<slug>/`` used to drop the spec with no
+    WARN at all -- every file it governs then reported FAIL ``ungoverned``
+    ("no spec surface"), the exact silent-governance-loss defect
+    ``_parse_surface``'s docstring exists to prevent, one level up."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py"])
+    (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
+    (repo / "governed.py").write_text("a\n", encoding="utf-8")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+
+    sd.chmod(0o000)
+    try:
+        findings = chain.gather_spec_surface(repo)
+    finally:
+        sd.chmod(0o755)
+
+    assert not any(f.check == "ungoverned" for f in findings), (
+        f"a dark spec's own files were reported ungoverned: {findings}"
+    )
+    warn = next(f for f in findings if f.check == "spec-surface-unevaluable")
+    assert warn.status is DoctorStatus.WARN
+    assert "pyforge-x" in warn.message
+
+
+def test_unreadable_planning_artifacts_names_the_project_that_went_dark(
+    tmp_path: Path,
+) -> None:
+    """One level above the spec directory: an unreadable
+    ``planning-artifacts/`` made ``specs_dir.is_dir()`` answer ``False``, so
+    the project was skipped entirely and every file its specs govern was
+    reported FAIL ``ungoverned`` with nothing naming the cause. Distinct from
+    the spec-directory case above, which trips a different probe."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    sd = _write_spec(repo, "pyforge-x", "spec-foo", surface=["governed.py"])
+    (sd / ".memlog.md").write_text("m\n", encoding="utf-8")
+    (repo / "governed.py").write_text("a\n", encoding="utf-8")
+    _write_allowlist(repo, [("_bmad-output/**", "planning"), ("scripts/**", "tooling")])
+    _add_commit(repo)
+
+    pa = repo / "_bmad-output" / "projects" / "pyforge-x" / "planning-artifacts"
+    pa.chmod(0o000)
+    try:
+        findings = chain.gather_spec_surface(repo)
+    finally:
+        pa.chmod(0o755)
+
+    assert not any(f.check == "ungoverned" for f in findings), (
+        f"a dark project's files were reported ungoverned: {findings}"
+    )
+    named = [f for f in findings
+             if f.check == "spec-surface-unevaluable" and "pyforge-x" in f.message]
+    assert named, f"nothing named the project that went dark: {findings}"
+    assert named[0].status is DoctorStatus.WARN

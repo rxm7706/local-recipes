@@ -590,3 +590,204 @@ def test_empty_dreams_dir_with_no_project_tree_is_unevaluable(
     assert [f.check for f in findings] == ["dream-chain-unevaluable"]
     assert findings[0].status is DoctorStatus.WARN
     assert findings[0].source is Source.DREAM_CHAIN
+
+
+# --- Ported branches that survived mutation (review pass 4) -----------------------
+#
+# Each test below pins a ported branch that the suite did NOT previously kill
+# under mutation, which the story's own Acceptance Criteria require ("a
+# mutation of that invariant's branch makes the corresponding test fail").
+# Every one was mutation-confirmed when written.
+
+
+def test_guild_spec_is_collected_from_docs_governance(tmp_path: Path) -> None:
+    """The REAL governance-Spec location -- ``docs/governance/spec-<slug>/``,
+    not a project under ``_bmad-output/projects/``.
+
+    ``_collect_specs``'s governance loop had no coverage at all: the two
+    existing guild tests call ``_write_spec(target, "docs/governance", ...)``,
+    which lands at ``_bmad-output/projects/docs/governance/...`` -- a path the
+    gather never walks -- and then assert the ABSENCE of a finding, which a
+    never-collected Spec satisfies trivially. Deleting the whole governance
+    loop left them green."""
+    _write_dream(tmp_path, "pyforge-charter", "guild")
+    sd = tmp_path / "docs" / "governance" / "spec-pyforge-charter"
+    sd.mkdir(parents=True)
+    (sd / "SPEC.md").write_text(
+        "---\nowner-dream: docs/dreams/pyforge-charter.md\n---\n", encoding="utf-8")
+
+    findings = chain.gather_dream_chain(tmp_path)
+
+    assert [f.check for f in findings] == ["dream-chain"], (
+        f"the guild Spec in docs/governance/ was not collected: {findings}"
+    )
+
+
+def test_guild_dream_remedy_names_the_flat_governance_path(tmp_path: Path) -> None:
+    """``_expected_spec_dir``'s guild branch: ``docs/governance/`` holds
+    ``spec-<slug>/`` DIRECTLY, with no ``planning-artifacts/specs/`` nesting.
+    Deleting that branch sent guild Dreams the Smith-shaped nested remedy and
+    no test noticed."""
+    _write_dream(tmp_path, "pyforge-charter", "guild")
+
+    findings = chain.gather_dream_chain(tmp_path)
+
+    remedy = next(f for f in findings if f.check == "dream-without-spec").evidence["remedy"]
+    assert remedy == "author a Spec under docs/governance/spec-pyforge-charter/", remedy
+
+
+def test_unlinked_spec_matching_a_dream_slug_is_not_also_dream_without_spec(
+    tmp_path: Path,
+) -> None:
+    """INV-1's slug fallback. The original records why it exists: without it
+    a Spec that merely forgot ``owner-dream:`` is counted TWICE -- once as
+    ``spec-without-dream-link`` (correct) and again as its Dream being
+    spec-less (wrong; the Spec is right there)."""
+    _write_dream(tmp_path, "foo", "doctor")
+    _write_spec(tmp_path, "pyforge-doctor", "spec-foo")   # no owner-dream
+
+    checks = [f.check for f in chain.gather_dream_chain(tmp_path)]
+
+    assert "spec-without-dream-link" in checks
+    assert "dream-without-spec" not in checks, (
+        f"an unlinked Spec whose slug matches its Dream was double-counted: {checks}"
+    )
+
+
+def test_satellite_heading_matches_across_punctuation_drift(tmp_path: Path) -> None:
+    """``_normalize_title`` lowercases and strips punctuation so a
+    consolidating Spec's ``## Satellite:`` heading still matches a Dream's
+    own ``title:`` through ordinary wording drift -- the whole point of
+    normalizing rather than comparing raw strings. Every existing satellite
+    test used titles that matched exactly, so dropping either transform
+    changed nothing.
+
+    Note the tolerance is punctuation-and-case only, NOT whitespace: stripping
+    a SPACE-DELIMITED hyphen leaves a double space, so ``A - B`` does not
+    match ``A B``. This test pins the behaviour that exists, not a wider
+    one."""
+    _write_dream(tmp_path, "sat", "doctor", title="The Seed (Part 1)")
+    _write_dream(tmp_path, "host", "doctor")
+    _write_spec(tmp_path, "pyforge-doctor", "spec-host",
+                owner_dream="host", satellite="the SEED part 1")
+
+    subjects = {f.evidence["subject"] for f in chain.gather_dream_chain(tmp_path)
+                if f.check == "dream-without-spec"}
+
+    assert "sat" not in subjects, (
+        f"punctuation drift broke satellite matching: {subjects}"
+    )
+
+
+def test_markdown_without_a_frontmatter_fence_parses_to_no_metadata(
+    tmp_path: Path,
+) -> None:
+    """``_frontmatter``'s ``startswith("---")`` guard.
+
+    The mutation only shows up when the document contains a ``---`` fence
+    somewhere OTHER than the very top: ``text.split("---")[1]`` then yields a
+    block that parses cleanly, so a metadata-looking passage in the BODY is
+    adopted as the Dream's real frontmatter. (A document with no ``---`` at
+    all raises ``IndexError`` into the same ``except`` and degrades either
+    way, which is why a naive fixture cannot kill this branch.)"""
+    path = tmp_path / "docs" / "dreams" / "nofence.md"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        "Prose that precedes the fence.\n"
+        "---\n"
+        "owner: marshal\n"
+        "status: shipped\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    finding = next(f for f in chain.gather_dream_chain(tmp_path)
+                   if f.check == "dream-without-spec")
+
+    assert finding.evidence["owner"] == "(none)", (
+        f"body text was parsed as frontmatter: {finding.evidence}"
+    )
+
+
+# --- Unreadable input trees must not discard unrelated findings -------------------
+
+
+def test_unreadable_dreams_dir_does_not_discard_unrelated_inv3_findings(
+    tmp_path: Path,
+) -> None:
+    """``docs/dreams/`` is not an input to INV-3 at all, so an unreadable one
+    must not take INV-3's findings down with it.
+
+    ``_listdir``'s ``PermissionError`` used to escape ``_collect_dreams``
+    entirely, past ``_check_dream_chain``, to the outer
+    ``degrade_on_exception`` -- reproduced live during review: three real
+    ``prd-not-sharded``/``architecture-not-sharded``/``epics-missing`` FAILs
+    plus a ``dream-without-spec`` FAIL collapsed into one vacuous WARN. That
+    is the story's own AC inverted."""
+    _write_dream(tmp_path, "orphan", "doctor")
+    _write_sharded_project(tmp_path, "pyforge-mason",
+                           prd=False, architecture=False, epics=False)
+
+    dreams_dir = tmp_path / "docs" / "dreams"
+    dreams_dir.chmod(0o000)
+    try:
+        findings = chain.gather_dream_chain(tmp_path)
+    finally:
+        dreams_dir.chmod(0o755)
+
+    checks = [f.check for f in findings]
+    assert "prd-not-sharded" in checks and "epics-missing" in checks, (
+        f"an unreadable docs/dreams/ discarded unrelated INV-3 FAILs: {checks}"
+    )
+    warn = next(f for f in findings if f.check == "dream-chain-unevaluable")
+    assert warn.status is DoctorStatus.WARN
+    assert "docs/dreams/" in warn.message
+
+
+def test_unreadable_docs_parent_is_a_warn_not_a_silent_zero(tmp_path: Path) -> None:
+    """``Path.is_dir()`` answers ``False`` for an unreadable ANCESTOR, so
+    ``chmod 000 docs/`` used to zero every Dream silently and a real
+    ``dream-without-spec`` FAIL simply vanished -- no WARN, no trace. The
+    ``_listdir`` honesty rule only covered LISTING; ``_is_dir`` extends it to
+    the existence probe that decides whether to list."""
+    _write_dream(tmp_path, "orphan", "doctor")
+    _write_sharded_project(tmp_path, "pyforge-mason")
+
+    docs = tmp_path / "docs"
+    docs.chmod(0o000)
+    try:
+        findings = chain.gather_dream_chain(tmp_path)
+    finally:
+        docs.chmod(0o755)
+
+    # Named specifically: `docs/governance/` is unreadable for the same
+    # reason and reports its own WARN, so a bare "some WARN exists" assertion
+    # passes even when the Dreams probe silently answers "absent".
+    messages = [f.message for f in findings if f.check == "dream-chain-unevaluable"]
+    assert any("docs/dreams/" in m for m in messages), (
+        f"an unreadable docs/ zeroed the Dreams with no WARN naming them: {messages}"
+    )
+    assert all(f.status is DoctorStatus.WARN for f in findings)
+
+
+def test_unreadable_spec_dir_names_the_project_not_the_literal_specs_dir(
+    tmp_path: Path,
+) -> None:
+    """Two projects with unreadable ``specs/`` directories must be tellable
+    apart by a machine consumer: every project's is literally named
+    ``specs``, so keying ``evidence["subject"]`` on the directory name made
+    both WARNs identical."""
+    _write_dream(tmp_path, "foo", "doctor")
+    for project in ("pyforge-doctor", "pyforge-mason"):
+        sd = _write_spec(tmp_path, project, "spec-foo", owner_dream="foo").parent
+        sd.parent.chmod(0o000)
+    try:
+        findings = chain.gather_dream_chain(tmp_path)
+    finally:
+        for project in ("pyforge-doctor", "pyforge-mason"):
+            (tmp_path / "_bmad-output" / "projects" / project
+             / "planning-artifacts" / "specs").chmod(0o755)
+
+    subjects = {f.evidence["subject"] for f in findings
+                if f.check == "dream-chain-unevaluable"}
+    assert subjects == {"pyforge-doctor", "pyforge-mason"}, subjects

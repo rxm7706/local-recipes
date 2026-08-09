@@ -47,7 +47,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import stat
 from pathlib import Path
 
 import yaml
@@ -161,7 +163,48 @@ def _listdir(d: Path) -> list[Path]:
     return sorted(d.iterdir())
 
 
-def _collect_dreams(target: Path) -> dict[str, dict]:
+def _probe(p: Path) -> os.stat_result | None:
+    """``p.stat()``, or ``None`` when ``p`` genuinely does not exist --
+    RAISING when the answer cannot be determined.
+
+    ``Path.is_dir()``/``Path.is_file()`` swallow EVERY ``OSError`` and answer
+    ``False``, so an unreadable input is indistinguishable from an absent one
+    -- and absent reads as clean. That is the same false-clean class
+    ``_listdir`` above closes for LISTING a directory, left open for the
+    EXISTENCE PROBES that decide whether to list it at all. Reproduced live
+    during review, three ways: ``chmod 000 docs/`` (the PARENT of
+    ``docs/dreams/``) silently zeroed every Dream and a real
+    ``dream-without-spec`` FAIL vanished with no WARN; ``chmod 000`` on a
+    project's ``implementation-artifacts/`` turned two real deferred-work
+    FAILs into a confident ``deferred-work ok``; and an unreadable
+    ``planning-artifacts/specs/spec-<slug>/`` silently un-governed that
+    spec's whole surface -- the exact silent-governance-loss defect
+    ``_parse_surface``'s own docstring exists to prevent, one directory
+    level up.
+
+    ``stat`` needs no read permission on the target itself, only on its
+    parent, so a ``chmod 000`` FILE still probes as a regular file (matching
+    ``is_file()``); only an unreadable ANCESTOR raises, which is precisely
+    the case that must not be answered ``False``."""
+    try:
+        return p.stat()
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+
+
+def _is_dir(p: Path) -> bool:
+    """``p.is_dir()`` that raises rather than lying -- see ``_probe``."""
+    st = _probe(p)
+    return st is not None and stat.S_ISDIR(st.st_mode)
+
+
+def _is_file(p: Path) -> bool:
+    """``p.is_file()`` that raises rather than lying -- see ``_probe``."""
+    st = _probe(p)
+    return st is not None and stat.S_ISREG(st.st_mode)
+
+
+def _collect_dreams(target: Path, findings: list[dict]) -> dict[str, dict]:
     """``{slug: {owner, status, title}}`` for every tracked Dream -- verbatim
     from the original's own ``collect()``, except every value is COERCED to
     ``str`` at this collection boundary.
@@ -178,12 +221,36 @@ def _collect_dreams(target: Path) -> dict[str, dict]:
     FAIL with one vacuous WARN -- the identical failure class review found for
     Specs (``_collect_specs``) and the one this story's Design Notes said to
     structure out rather than rediscover. Coercing here fixes it for every
-    downstream consumer at once, instead of guarding each use site."""
+    downstream consumer at once, instead of guarding each use site.
+
+    Note the coercion is a deliberate, documented DIVERGENCE from the
+    original rather than a byte-verbatim port: PyYAML resolves an unquoted
+    ``owner: no`` to ``False``, which the original preserved and this
+    collection boundary renders ``""``. The values it changes are exactly the
+    ones the original could not have used safely anyway.
+
+    Unreadable ``docs/dreams/`` (or an unreadable ancestor of it) degrades to
+    a WARN appended to the CALLER's ``findings`` list and an EMPTY dream set,
+    never to a raise: ``_listdir``'s ``PermissionError`` used to escape this
+    function entirely, past ``_check_dream_chain``, to the outer
+    ``degrade_on_exception`` -- replacing every INV-3 finding (which does not
+    read ``docs/dreams/`` at all) with one vacuous WARN. Reproduced live
+    during review: four real FAILs collapsed to one."""
     dreams: dict[str, dict] = {}
     dreams_dir = target / "docs" / "dreams"
-    if not dreams_dir.is_dir():
+    try:
+        if not _is_dir(dreams_dir):
+            return dreams
+        entries = _listdir(dreams_dir)
+    except OSError as exc:
+        findings.append(_unreadable_input(
+            "INV-1", "docs/dreams",
+            f"docs/dreams/ could not be read here — "
+            f"{exc.__class__.__name__}: {exc}; no Dream is evaluable",
+            "make docs/dreams/ readable, then re-check",
+        ))
         return dreams
-    for p in _listdir(dreams_dir):
+    for p in entries:
         if p.suffix != ".md" or p.name == "README.md":
             continue
         fm = _frontmatter(p)
@@ -231,44 +298,85 @@ def _collect_specs(target: Path, findings: list[dict]) -> list[dict]:
     Dream/Spec finding with one vacuous WARN (reproduced live during review).
     One bad Spec's malformed frontmatter now degrades to a WARN appended to
     the CALLER's ``findings`` list for THAT spec only, mirroring
-    ``_sharded_findings``'s own per-project isolation."""
+    ``_sharded_findings``'s own per-project isolation.
+
+    Every filesystem probe below goes through ``_is_dir``/``_is_file`` rather
+    than ``Path``'s own, which answer ``False`` for an unreadable ancestor:
+    an unreadable ``spec-<slug>/`` directory silently dropped the Spec and
+    INV-1 then reported its Dream ``dream-without-spec`` -- a confidently
+    wrong FAIL about a Spec that is right there, with no WARN. The two
+    ``_listdir`` roots (the projects tree, ``docs/governance/``) are isolated
+    for the same reason ``_collect_dreams`` is: an unreadable one must not
+    discard every OTHER unit's already-computed finding."""
     specs: list[dict] = []
     projects_dir = target / "_bmad-output" / "projects"
-    if projects_dir.is_dir():
-        for pdir in _listdir(projects_dir):
-            specs_dir = pdir / "planning-artifacts" / "specs"
-            if not specs_dir.is_dir():
+    try:
+        project_dirs = _listdir(projects_dir) if _is_dir(projects_dir) else []
+    except OSError as exc:
+        findings.append(_unreadable_input(
+            "INV-0", "_bmad-output/projects",
+            f"_bmad-output/projects/ could not be read here — "
+            f"{exc.__class__.__name__}: {exc}; no Spec is evaluable",
+            "make _bmad-output/projects/ readable, then re-check",
+        ))
+        project_dirs = []
+    for pdir in project_dirs:
+        specs_dir = pdir / "planning-artifacts" / "specs"
+        try:
+            if not _is_dir(specs_dir):
                 continue
-            try:
-                spec_dirs = _listdir(specs_dir)
-            except OSError as exc:
-                # One project's unreadable specs/ directory must not silently
-                # read as "this project has no Specs" (which INV-1 would then
-                # report as every one of its Dreams being spec-less).
-                findings.append(_unreadable_specs_dir(pdir.name, specs_dir, exc))
-                continue
-            for sd in spec_dirs:
-                sp = sd / "SPEC.md"
-                if sp.is_file():
-                    _append_spec_entry(sp, pdir.name, target, specs, findings)
+            spec_dirs = _listdir(specs_dir)
+            readable = [sd for sd in spec_dirs if _is_file(sd / "SPEC.md")]
+        except OSError as exc:
+            # One project's unreadable specs/ directory must not silently
+            # read as "this project has no Specs" (which INV-1 would then
+            # report as every one of its Dreams being spec-less).
+            findings.append(_unreadable_specs_dir(pdir.name, exc))
+            continue
+        for sd in readable:
+            _append_spec_entry(sd / "SPEC.md", pdir.name, target, specs, findings)
     governance_dir = target / "docs" / "governance"
-    if governance_dir.is_dir():
-        for sd in _listdir(governance_dir):
-            sp = sd / "SPEC.md"
-            if sd.name.startswith("spec-") and sp.is_file():
-                _append_spec_entry(sp, GOVERNANCE_PROJECT, target, specs, findings)
+    try:
+        gov_dirs = _listdir(governance_dir) if _is_dir(governance_dir) else []
+        gov_specs = [sd / "SPEC.md" for sd in gov_dirs
+                     if sd.name.startswith("spec-") and _is_file(sd / "SPEC.md")]
+    except OSError as exc:
+        findings.append(_unreadable_input(
+            "INV-0", GOVERNANCE_PROJECT,
+            f"docs/governance/ could not be read here — "
+            f"{exc.__class__.__name__}: {exc}; no guild Spec is evaluable",
+            "make docs/governance/ readable, then re-check",
+        ))
+        gov_specs = []
+    for sp in gov_specs:
+        _append_spec_entry(sp, GOVERNANCE_PROJECT, target, specs, findings)
     return specs
 
 
-def _unreadable_specs_dir(project: str, specs_dir: Path, exc: Exception) -> dict:
+def _unreadable_input(inv: str, subject: str, detail: str, remedy: str) -> dict:
+    """The WARN item for one whole input TREE that could not be read -- the
+    root-level counterpart to ``_unreadable_specs_dir``/``_append_spec_entry``'s
+    own per-unit WARNs. Isolated rather than left to raise so an unreadable
+    ``docs/dreams/`` cannot discard the INV-3 findings that never touch it."""
+    return {
+        "inv": inv, "kind": "dream-chain-unevaluable", "subject": subject,
+        "owner": "", "status": "", "remedy": remedy,
+        "detail": detail, "warn": True,
+    }
+
+
+def _unreadable_specs_dir(project: str, exc: Exception) -> dict:
     """The WARN item for one project whose ``planning-artifacts/specs/``
-    could not be listed -- same shape as ``_append_spec_entry``'s own
-    per-spec WARN, one level up."""
+    could not be read -- same shape as ``_append_spec_entry``'s own per-spec
+    WARN, one level up. ``subject`` is the PROJECT, not the directory's own
+    name: every project's specs dir is literally called ``specs``, so keying
+    on that made two projects' WARNs indistinguishable to a machine
+    consumer."""
     return {
         "inv": "INV-0", "kind": "dream-chain-unevaluable",
-        "subject": specs_dir.name, "owner": "", "status": f"in {project}",
+        "subject": project, "owner": "", "status": f"in {project}",
         "remedy": "make the project's planning-artifacts/specs/ readable, then re-check",
-        "detail": (f"{project}: planning-artifacts/specs/ could not be listed "
+        "detail": (f"{project}: planning-artifacts/specs/ could not be read "
                    f"here — {exc.__class__.__name__}: {exc}"),
         "warn": True,
     }
@@ -310,7 +418,7 @@ def _check_project_sharded(pdir: Path, findings: list[dict]) -> None:
     discard). Logic is verbatim from the original's own ``check()``."""
     project = pdir.parent.name
     names = {p.name for p in pdir.iterdir()}
-    if not (pdir / "prds").is_dir():
+    if not _is_dir(pdir / "prds"):
         flat = "prd.md" in {n.lower() for n in names}
         status = "flat prd.md" if flat else "absent"
         remedy = "regenerate via bmad-prd into prds/prd-<slug>-<date>/"
@@ -319,7 +427,7 @@ def _check_project_sharded(pdir: Path, findings: list[dict]) -> None:
             "owner": "", "status": status, "remedy": remedy,
             "detail": f"{project}: PRD is {status}, not sharded — {remedy}",
         })
-    if not (pdir / "architecture").is_dir():
+    if not _is_dir(pdir / "architecture"):
         flat = any(n.startswith("architecture") for n in names)
         status = "flat architecture.md" if flat else "absent"
         remedy = ("regenerate via bmad-architecture into "
@@ -345,15 +453,32 @@ def _sharded_findings(target: Path, findings: list[dict]) -> None:
     ALREADY-COMPUTED project's real findings (mirrors
     ``sources/board.py``'s own ``_check_chain_completeness`` isolation,
     structured in from the first draft per this story's Design Notes rather
-    than rediscovered across review passes)."""
+    than rediscovered across review passes).
+
+    The projects-tree listing itself is isolated too: an unreadable
+    ``_bmad-output/projects/`` must degrade to one named WARN, not raise past
+    every already-appended INV-0/1/2 finding to the outer
+    ``degrade_on_exception``. The per-project ``planning-artifacts`` probe
+    moved INSIDE the try for the same reason ``_is_dir`` exists -- as
+    ``Path.is_dir()`` it answered ``False`` for an unreadable one, silently
+    skipping a project rather than naming it."""
     projects_dir = target / "_bmad-output" / "projects"
-    if not projects_dir.is_dir():
+    try:
+        project_dirs = _listdir(projects_dir) if _is_dir(projects_dir) else []
+    except OSError as exc:
+        findings.append(_unreadable_input(
+            "INV-3", "_bmad-output/projects",
+            f"_bmad-output/projects/ could not be read here — "
+            f"{exc.__class__.__name__}: {exc}; the sharded planning tree is "
+            f"not evaluable",
+            "make _bmad-output/projects/ readable, then re-check",
+        ))
         return
-    for proj in _listdir(projects_dir):
+    for proj in project_dirs:
         pdir = proj / "planning-artifacts"
-        if not pdir.is_dir():
-            continue
         try:
+            if not _is_dir(pdir):
+                continue
             _check_project_sharded(pdir, findings)
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # directory must not discard findings already appended for a
@@ -474,8 +599,8 @@ def gather_dream_chain(target: Path) -> tuple[Finding, ...]:
 
 
 def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
-    dreams = _collect_dreams(target)
     findings: list[dict] = []
+    dreams = _collect_dreams(target, findings)
     specs = _collect_specs(target, findings)
     raw = _check_dream_chain(target, dreams, specs, findings)
     if not raw:
@@ -493,9 +618,9 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
         # both-must-be-missing test and still produced the confident OK --
         # asserting "every project uses the sharded planning tree" about zero
         # projects.
-        if not dreams and not specs and not (
+        if not dreams and not specs and not _is_dir(
             target / "_bmad-output" / "projects"
-        ).is_dir():
+        ):
             return (
                 Finding(
                     source=Source.DREAM_CHAIN,
@@ -547,7 +672,6 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
 # ``--write-baseline`` mutation path is deliberately NOT ported (Boundaries):
 # this gather is read-only judgement only.
 
-SPEC_GLOB = "_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md"
 ALLOWLIST_REL = Path("scripts") / "spec_surface_allowlist.txt"
 BASELINE_REL = Path("scripts") / ".spec-surface-baseline.json"
 
@@ -758,53 +882,104 @@ def _governed_and_ungoverned(
 
 def _spec_current_state(
     target: Path, specs: dict[str, dict], governed: dict[str, list[str]]
-) -> tuple[dict[str, dict], list[dict]]:
-    """Every spec's current ``{memlog, files}`` hash state, plus a WARN item
-    for any spec that could not be evaluated. One spec's unreadable memlog or
-    governed file must not discard another, ALREADY-COMPUTED spec's hash
-    state -- the same per-unit isolation discipline
-    ``sources/board.py``/``_sharded_findings`` above already apply, though the
-    unit here is a spec rather than a project."""
+) -> tuple[dict[str, dict], list[dict], dict[str, set[str]]]:
+    """Every spec's current ``{memlog, files}`` hash state, a WARN item for
+    anything that could not be evaluated, and the per-spec set of governed
+    paths to EXCLUDE from the baseline diff because they could not be hashed.
+
+    Two nested units, isolated separately -- the distinction matters:
+
+    * **Per SPEC** (the outer try) for the contract hash. An unreadable
+      ``.memlog.md`` or sentinel makes the whole spec's drift unmeasurable,
+      because every one of its files is compared against that one hash.
+    * **Per FILE** (the inner try) for the governed files themselves. One
+      unreadable file makes exactly ONE file's comparison unsound. Wrapping
+      the whole file loop in the per-spec try instead -- the shape review
+      found here -- meant one ``chmod 000`` file discarded every OTHER
+      governed file's already-computed drift FAIL and replaced the lot with a
+      single non-gating WARN, so the run reported exit 0. Reproduced live
+      during review: three gating ``drift`` FAILs collapsed into one WARN.
+      This is the same "the fix for a false-clean over-suppressed real
+      findings" class the previous pass closed for coverage, one level down.
+
+    The unhashable path is returned in ``skipped`` rather than merely omitted
+    from ``files``: omitting it alone would make the baseline diff report it
+    ``drift ... removed``, the confidently-wrong finding this branch exists
+    to avoid.
+    """
     current: dict[str, dict] = {}
     warns: list[dict] = []
+    skipped: dict[str, set[str]] = {}
     for name, s in specs.items():
         try:
             files: dict[str, str] = {}
+            skip: set[str] = set()
             if s["drift"] != "exempt":
                 for f in sorted(governed.get(name, [])):
                     if f in s["exclude"]:
                         continue
-                    sha = _sha1(target / f)
-                    if sha is not None:
-                        files[f] = sha
-                    elif (target / f).exists():
-                        # Dropping a PRESENT-but-unreadable governed file from
-                        # the state is indistinguishable from the file being
-                        # deleted -- the baseline diff then reports it FAIL
-                        # `drift ... removed`, a confidently wrong finding
-                        # about a file that is still right there. Only a file
-                        # that is genuinely GONE may drop out silently (that
-                        # `removed` is the true answer).
-                        _unhashable(target / f)
+                    try:
+                        sha = _sha1(target / f)
+                        if sha is not None:
+                            files[f] = sha
+                        elif _is_file(target / f):
+                            # Dropping a PRESENT-but-unreadable governed file
+                            # from the state is indistinguishable from the
+                            # file being deleted -- the baseline diff then
+                            # reports it FAIL `drift ... removed`, a
+                            # confidently wrong finding about a file that is
+                            # still right there. Only a file that is
+                            # genuinely GONE may drop out silently (that
+                            # `removed` is the true answer).
+                            #
+                            # `_is_file`, not `exists()`: `exists()` follows a
+                            # symlink, so a tracked symlink-to-a-DIRECTORY (or
+                            # a gitlink) inside a governed surface hashed to
+                            # None, probed True, and permanently took the
+                            # whole spec dark. The original skipped exactly
+                            # these paths -- `(REPO_ROOT / f).is_file()` --
+                            # and this repo tracks one today
+                            # (`.claude/skills/cf-atlas-legacy/active`).
+                            _unhashable(target / f)
+                    except OSError as exc:
+                        skip.add(f)
+                        warns.append({
+                            "kind": "spec-surface-unevaluable", "path": f,
+                            "detail": (f"{name}: {f} could not be hashed here "
+                                       f"— {exc.__class__.__name__}: {exc}; "
+                                       f"its drift alone is not evaluable"),
+                            "warn": True,
+                        })
             current[name] = {"memlog": _contract_hash(target, s), "files": files}
+            if skip:
+                skipped[name] = skip
         except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
-            # input must not discard another spec's already-computed state.
+            # contract (memlog/sentinel) must not discard another spec's
+            # already-computed state.
             warns.append({
                 "kind": "spec-surface-unevaluable", "path": name,
                 "detail": (f"{name}: could not be evaluated here — "
                            f"{exc.__class__.__name__}: {exc}"),
                 "warn": True,
             })
-    return current, warns
+    return current, warns, skipped
 
 
 def _drift_findings(
-    target: Path, specs: dict[str, dict], current: dict[str, dict]
+    target: Path, specs: dict[str, dict], current: dict[str, dict],
+    skipped: dict[str, set[str]] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """(gating findings, presumed-but-non-gating findings) from comparing
     ``current`` against the committed baseline -- verbatim logic from the
     original's own ``main()`` body (S-13.1/S-13.2/S-13.5 rationale lives in
-    that script's own module docstring)."""
+    that script's own module docstring).
+
+    ``skipped`` names the governed paths ``_spec_current_state`` could not
+    hash, per spec. They are dropped from BOTH sides of the comparison: they
+    are absent from ``cur["files"]`` but still present in the baseline, so
+    without this they would each be reported ``drift ... removed`` -- a
+    confidently wrong claim about a file that is still on disk, already
+    carrying its own honest WARN."""
     findings: list[dict] = []
     presumed: list[dict] = []
     baseline_path = target / BASELINE_REL
@@ -850,7 +1025,8 @@ def _drift_findings(
         spec_moved = b.get("memlog") != cur["memlog"]
         named = _memlog_text(specs[name]["memlog"]) if spec_moved else ""
         b_files = b.get("files", {}) if isinstance(b.get("files"), dict) else {}
-        for f in sorted(set(b_files) | set(cur["files"])):
+        skip = (skipped or {}).get(name, frozenset())
+        for f in sorted((set(b_files) | set(cur["files"])) - set(skip)):
             old, new = b_files.get(f), cur["files"].get(f)
             if old == new:
                 continue
@@ -877,29 +1053,50 @@ def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
     dark). Split out of ``_check_spec_surface`` so the caller can tell an
     unknown SURFACE from an unknown EXEMPTION list.
 
-    Listed through ``_listdir`` rather than ``target.glob(SPEC_GLOB)``: glob
-    swallows ``OSError`` mid-traversal, so an unlistable
+    Listed through ``_listdir`` rather than the original's own
+    ``_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md`` glob:
+    glob swallows ``OSError`` mid-traversal, so an unlistable
     ``planning-artifacts/specs/`` would read as "this project governs
     nothing" and un-govern every file it owns -- the same silent-
     governance-loss defect ``_parse_surface``'s own docstring refuses to
-    reintroduce, one directory level up."""
+    reintroduce, one directory level up.
+
+    Probed through ``_is_dir``/``_is_file`` for the same reason, one level up
+    AGAIN: ``Path``'s own answer ``False`` for an unreadable ANCESTOR, so an
+    unreadable ``spec-<slug>/`` or ``planning-artifacts/`` silently dropped
+    the spec and every file it governs was then reported FAIL ``ungoverned``
+    (or, when those files happen to be allowlisted, vanished into a confident
+    OK) with no WARN naming what went dark. Reproduced live during review at
+    both levels."""
     specs: dict[str, dict] = {}
     unsound: list[dict] = []
     projects_dir = target / "_bmad-output" / "projects"
-    if not projects_dir.is_dir():
+    try:
+        project_dirs = _listdir(projects_dir) if _is_dir(projects_dir) else []
+    except OSError as exc:
+        unsound.append({
+            "kind": "spec-surface-unevaluable", "path": "_bmad-output/projects",
+            "detail": (f"_bmad-output/projects/ could not be read here — "
+                       f"{exc.__class__.__name__}: {exc}; every surface is "
+                       f"unknown, so coverage is not evaluable"),
+            "warn": True,
+        })
         return specs, unsound
-    for proj in _listdir(projects_dir):
+    for proj in project_dirs:
         specs_dir = proj / "planning-artifacts" / "specs"
-        if not specs_dir.is_dir():
-            continue
         try:
-            spec_dirs = _listdir(specs_dir)
+            if not _is_dir(specs_dir):
+                continue
+            spec_dirs = [
+                sd for sd in _listdir(specs_dir)
+                if sd.name.startswith("spec-") and _is_file(sd / "SPEC.md")
+            ]
         except OSError as exc:
             unsound.append({
                 "kind": "spec-surface-unevaluable",
                 "path": f"{proj.name}/planning-artifacts/specs",
                 "detail": (f"{proj.name}: planning-artifacts/specs/ could not "
-                           f"be listed here — {exc.__class__.__name__}: {exc}; "
+                           f"be read here — {exc.__class__.__name__}: {exc}; "
                            f"its surfaces are unknown, so coverage is not "
                            f"evaluable"),
                 "warn": True,
@@ -907,8 +1104,6 @@ def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
             continue
         for sd in spec_dirs:
             spec_md = sd / "SPEC.md"
-            if not sd.name.startswith("spec-") or not spec_md.is_file():
-                continue
             # Key by <project>/<spec-dir>, never the bare dir name -- the same
             # slug can legitimately exist in two projects, and a bare-name key
             # would silently drop one surface (verbatim rationale from the
@@ -953,8 +1148,11 @@ def _check_spec_surface(
     allowlist_unknown = allow is None
     if allow is None:
         unsound.append({
-            "kind": "spec-surface-unevaluable", "path": str(ALLOWLIST_REL),
-            "detail": (f"{ALLOWLIST_REL} exists but could not be read here — "
+            # `.as_posix()`, not `str()`: every other `path` in this source is
+            # a forward-slash `git ls-files` path, and `str(Path(...))` would
+            # render this one with backslashes on Windows.
+            "kind": "spec-surface-unevaluable", "path": ALLOWLIST_REL.as_posix(),
+            "detail": (f"{ALLOWLIST_REL.as_posix()} exists but could not be read here — "
                        f"the exemptions are unknown, so coverage is not "
                        f"evaluable"),
             "warn": True,
@@ -1019,9 +1217,9 @@ def _check_spec_surface(
                 ),
             })
 
-    current, current_warns = _spec_current_state(target, specs, governed)
+    current, current_warns, skipped = _spec_current_state(target, specs, governed)
     findings.extend(current_warns)
-    drift_findings, presumed = _drift_findings(target, specs, current)
+    drift_findings, presumed = _drift_findings(target, specs, current, skipped)
     findings.extend(drift_findings)
 
     return findings, presumed
@@ -1132,7 +1330,7 @@ _STATUS_RE = re.compile(r"^\s*status:", re.M)
 def _ids(path: Path) -> set[str]:
     """Every ``DW-*`` id mentioned in ``path`` -- verbatim from the
     original. ``errors="replace"`` already tolerates non-UTF-8 bytes."""
-    if not path.is_file():
+    if not _is_file(path):
         return set()
     text = path.read_text(encoding="utf-8", errors="replace")
     return {m.group(0).rstrip("-") for m in _DW_RE.finditer(text)}
@@ -1141,7 +1339,7 @@ def _ids(path: Path) -> set[str]:
 def _entries(path: Path) -> list[tuple[str, bool]]:
     """``(id, has_status)`` for every ID'd entry in a tracked ledger --
     verbatim from the original."""
-    if not path.is_file():
+    if not _is_file(path):
         return []
     text = path.read_text(encoding="utf-8", errors="replace")
     marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
@@ -1156,7 +1354,7 @@ def _anonymous(path: Path) -> list[int]:
     """Line numbers of entries with no ``## DW-<id>`` heading of their own --
     verbatim from the original (see its own docstring for the positional
     ``- source_spec:`` disambiguation rule)."""
-    if not path.is_file():
+    if not _is_file(path):
         return []
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     out: list[int] = []
@@ -1180,17 +1378,26 @@ def _check_project_deferred_work(target: Path, proj: Path, findings: list[dict])
     ``findings`` list -- verbatim logic from the original's own ``scan()``
     body, split out so its caller can isolate one project's failure from the
     rest (mirrors ``_check_project_sharded`` above and
-    ``sources/board.py``'s own per-project split)."""
+    ``sources/board.py``'s own per-project split).
+
+    Both ledger probes go through ``_is_file``, which raises rather than
+    answering ``False`` for an unreadable ancestor -- ``Path.is_file()`` made
+    an unreadable ``implementation-artifacts/`` read as "this project defers
+    nothing" (two real FAILs became a confident ``deferred-work ok``,
+    reproduced live during review) and an unreadable ``planning-artifacts/``
+    read as "the tracked ledger does not exist", asserting the WHOLE record
+    was gitignored about a project whose ledger is right there. The caller's
+    per-project try/except turns both into a named WARN."""
     t3_path = proj / TIER3_REL
     tracked_path = proj / TRACKED_REL
-    if not t3_path.is_file():
+    if not _is_file(t3_path):
         return
 
     # FILE-level check: an ID-only comparison silently passes a project with
     # NO tracked ledger at all whose Tier-3 entries happen not to use `DW-`
     # ids (verbatim rationale from the original).
     size = t3_path.stat().st_size
-    if not tracked_path.is_file() and size >= _SUBSTANTIVE_BYTES:
+    if not _is_file(tracked_path) and size >= _SUBSTANTIVE_BYTES:
         findings.append({
             "kind": "no-tracked-ledger", "project": proj.name, "id": "",
             "tier3": str(t3_path.relative_to(target)),
@@ -1236,7 +1443,7 @@ def _deferred_work_findings(target: Path) -> list[dict]:
     structured in from the first draft (Design Notes)."""
     findings: list[dict] = []
     projects_dir = target / "_bmad-output" / "projects"
-    if not projects_dir.is_dir():
+    if not _is_dir(projects_dir):
         return findings
     for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
         try:
@@ -1301,7 +1508,7 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
         # original was anchored to its own REPO_ROOT). "Every Tier-3
         # deferral has a tracked twin" is a true-but-vacuous claim about
         # zero deferrals, and reads as a clean bill of health.
-        if not projects_dir.is_dir():
+        if not _is_dir(projects_dir):
             return (
                 Finding(
                     source=Source.DEFERRED_WORK,
