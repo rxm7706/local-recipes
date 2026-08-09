@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry), 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3) and 2026-08-09 (`kedro-skills` documented — pyforge-atlas-only, exact-pinned `==0.1.1`, Story 12-1). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry), 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3) and 2026-08-09 (`kedro-skills` documented — pyforge-atlas-only, exact-pinned `==0.1.1`, Story 12-1; then a second 2026-08-09 pass re-syncing 12 version floors to `pixi.toml` — incl. `fastmcp` 2.14.3->3.4.5 and `pixi` 0.75.0->0.76.1 — and documenting the two deps the catalog had never carried: `pyyaml` (pyforge-doctor) and `httpx2` (pyforge-herald)). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -88,7 +88,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 Available in every environment (the `python` feature + workspace `[dependencies]`).
 
 - **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
-- **pixi** (>=0.75.0) — the package/environment manager itself, available *inside*
+- **pixi** (>=0.76.1) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for the **eight** `pyforge` workspace members under
   `src/shared/packages/` — `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`,
@@ -110,7 +110,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
   used by the vuln-db tasks.
 - **bmad-method** (>=6.10.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=0.15.1) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=0.15.2) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -246,7 +246,7 @@ All in `local-recipes`.
 Core arrays/frames:
 - **numpy** (>=2.5.1) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
 - **pandas** (>=3.0.5) — DataFrames for tabular data (2.x resolved).
-- **polars** (>=1.43.1) — Rust-backed columnar DataFrames; lazy queries, streaming;
+- **polars** (>=1.43.2) — Rust-backed columnar DataFrames; lazy queries, streaming;
   much faster than pandas for large data.
 - **pyarrow-all** (>=24.0.0) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
   Datasets, Flight RPC, ORC, ADBC-adjacent IO. The interchange layer between pandas,
@@ -286,6 +286,11 @@ Small utilities:
 - **structlog** (>=26.1.0) — structured (key-value/JSON) logging.
 - **ruamel.yaml** (>=0.18.17) — round-trip YAML that preserves comments and key order
   — the correct choice for editing `recipe.yaml`/`conda-forge.yml` in place.
+- **pyyaml** (>=6.0) — plain YAML load/dump; import name is `yaml`, not `pyyaml`.
+  Reach for it only when you are READING YAML (pyforge-doctor's `sources/chain.py`
+  frontmatter parser, Story 6.6). To EDIT a YAML file in place use `ruamel.yaml`
+  above — PyYAML discards comments and reorders keys on round-trip. Also a
+  `pyforge-doctor` package run-dependency, not just an env library.
 - **frozendict** — immutable mapping type.
 - **defusedxml** (>=0.7.1) — XML parsing hardened against XXE/entity bombs; use it for
   untrusted XML.
@@ -443,7 +448,7 @@ Hugging Face stack:
   `HF_HUB_ENABLE_HF_TRANSFER=1`.
 
 Local inference runtimes:
-- **llama.cpp** (>=10158) — `llama-cli` / `llama-server` binaries; GGUF model
+- **llama.cpp** (>=10223) — `llama-cli` / `llama-server` binaries; GGUF model
   inference on CPU/GPU; `llama-server` exposes an OpenAI-compatible API.
 - **ollama** (>=0.24.0) — the Ollama server binary (Go): `ollama serve`,
   `ollama run <model>`; local model registry + OpenAI-compatible endpoint.
@@ -455,9 +460,9 @@ Local inference runtimes:
   preferred local runner on Apple Silicon. Same platform limits as mlx.
 
 Knowledge & indexing for agents:
-- **cocoindex** (>=1.0.18) — incremental indexing/transformation engine for
+- **cocoindex** (>=1.0.19) — incremental indexing/transformation engine for
   long-horizon agents (recompute only what changed).
-- **graphifyy** (>=0.9.31) — turn a folder of code/docs/papers/images into a
+- **graphifyy** (>=0.9.33) — turn a folder of code/docs/papers/images into a
   queryable knowledge graph for coding assistants.
 
 ---
@@ -479,14 +484,14 @@ Provider SDKs:
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.22.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.23.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
 
 Model Context Protocol (MCP):
 - **mcp** (>=2.0.0) — official MCP Python SDK (clients + servers, stdio/SSE).
-- **fastmcp** (>=2.14.3) — decorator-style framework for building MCP servers fast
+- **fastmcp** (>=3.4.5) — decorator-style framework for building MCP servers fast
   (this repo's `conda_forge_server` is built on it).
 - **langchain-mcp-adapters** (>=0.3.1) — expose MCP tools/resources as LangChain
   tools and vice versa.
@@ -497,7 +502,7 @@ Agent2Agent (A2A) & ACP:
 - **a2a-sdk** (>=1.1.2) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
 - **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.64.0) — bridge the Claude Agent SDK to the Agent Client
+- **claude-agent-acp** (>=0.64.2) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -556,7 +561,7 @@ Cloud / storage / identity:
 - **google-cloud-bigquery** (>=3.42.3) — `from google.cloud import bigquery`;
   BigQuery client. Used by cf_atlas Phase P (opt-in `PHASE_P_ENABLED=1`); auth via
   ADC creds cached by the `gcloud` env.
-- **google-cloud-sdk** (>=578.0.0) — the `gcloud` CLI. **`gcloud` env only,
+- **google-cloud-sdk** (>=579.0.0) — the `gcloud` CLI. **`gcloud` env only,
   linux/macOS only.** Used once for `gcloud auth application-default login`; after
   that the BigQuery lib picks up cached ADC automatically.
 - **azure-identity** (>=1.25.3) — Azure AD/Entra credential objects for all Azure
@@ -569,6 +574,11 @@ Cloud / storage / identity:
 HTTP & APIs:
 - **requests** (>=2.34.2) — the classic sync HTTP client.
 - **httpx** (>=0.28.1) — modern HTTP client, sync + async, HTTP/2.
+- **httpx2** (>=2.5.0) — the httpx 2.x line under a separate package name. Declared in
+  `[feature.pyforge-herald.dependencies]` ONLY — a different environment from the
+  `httpx` (>=0.28.1) above, which belongs to `local-recipes`. Herald's Story 6.4
+  evidence-link HTTP client (also a package run-dependency); the floor mirrors `mcp`'s
+  own transitive pin. Check which env you are in before assuming which one resolves.
 - **gql** (>=4.0.0) — GraphQL client (v4+ drops the websockets dep).
 
 ---
@@ -607,10 +617,10 @@ Browser automation:
 Terminal & CLI building:
 - **rich** (>=14.3.4) — rich terminal output: tables, progress bars, markdown,
   syntax highlighting, tracebacks.
-- **typer** (>=0.27.0) — build CLIs from type-hinted functions (click-based).
+- **typer** (>=0.27.1) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=11.19.0) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=11.20.0) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
 - **yarn** (>=4.18.0) — Yarn Berry.
 
