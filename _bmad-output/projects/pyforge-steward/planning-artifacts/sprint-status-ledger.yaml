@@ -35,7 +35,7 @@ development_status:
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done
-  6-2-provision-list-modules: backlog
+  6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: backlog
   7-1-one-build-whole-guild: backlog
   7-2-the-repo-at-a-fixed-short-path: backlog

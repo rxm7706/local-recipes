@@ -19,8 +19,10 @@ directory; only step 3 (the walk) checks for it.
 `environ` is always an explicit `Mapping[str, str]` parameter, never a
 direct `os.environ` read (AD-5's purity rule): this is what keeps the
 function pure and every test hermetic with no monkeypatch/env-isolation
-needed. `cli.py` (when Story 1.7/1.8 wires it) will call
-`resolve_cfe_root(getattr(ns, "cfe_root", None), os.environ, Path.cwd())`.
+needed. `doctor.py` (Story 1.8) is the actual call site: `cli.py` passes
+`getattr(ns, "cfe_root", None)`, `os.environ`, and `Path.cwd()` into
+`doctor.build_report`, which calls `resolve_cfe_root` with them as part of
+composing the full `mason doctor` report.
 
 `resolve.py` performs filesystem *reads* only -- no writes, network, or
 process spawns -- and never raises: an upward walk that reaches the
