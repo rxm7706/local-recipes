@@ -68,7 +68,19 @@ def _write_bmb_skill(root: Path) -> Path:
 
 
 def _fake_module_scripts_run(cmd, **kwargs):  # noqa: ARG001
+    """Stand in for the real `uv run merge-config.py`/`merge-help-csv.py`
+    subprocesses. Returns each script's own documented JSON success
+    envelope AND performs the same minimal, realistic file write the real
+    script performs -- a `bmb:` section landing in `_bmad/config.yaml`, a
+    header + one data row landing in `module-help.csv` -- so
+    `module_install_states` (Story 6.2's oracle, reused by Story 6.3's
+    post-success verification gate) sees a real, consistent filesystem
+    state in every happy-path test that uses this fixture, rather than an
+    empty one the new gate would (correctly) reject."""
     if any("merge-config.py" in str(part) for part in cmd):
+        config_path = Path(cmd[cmd.index("--config-path") + 1])
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text("bmb:\n  bmad_builder_output_folder: skills\n", encoding="utf-8")
         stdout = json.dumps(
             {
                 "status": "success",
@@ -79,11 +91,43 @@ def _fake_module_scripts_run(cmd, **kwargs):  # noqa: ARG001
             }
         )
     else:
+        target_path = Path(cmd[cmd.index("--target") + 1])
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(_MODULE_HELP_CSV, encoding="utf-8")
         stdout = json.dumps(
             {
                 "status": "success",
                 "module_codes": ["bmb"],
                 "rows_added": 9,
+                "legacy_csvs_deleted": [],
+            }
+        )
+    return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
+
+
+def _fake_module_scripts_run_without_writing_config(cmd, **kwargs):  # noqa: ARG001
+    """Simulates a backend inconsistency (story spec Design Notes: not
+    reachable via the real `bmb` backend today, but a defensive contract
+    for FR-21's literal wording): both scripts exit 0 and emit a
+    `"status": "success"` envelope, but neither ever writes `<name>` into
+    `_bmad/config.yaml` -- exercising `_run_module`'s post-success
+    verification gate."""
+    if any("merge-config.py" in str(part) for part in cmd):
+        stdout = json.dumps(
+            {
+                "status": "success",
+                "module_code": "bmb",
+                "module_keys": [],
+                "legacy_configs_found": [],
+                "legacy_configs_deleted": [],
+            }
+        )
+    else:
+        stdout = json.dumps(
+            {
+                "status": "success",
+                "module_codes": ["bmb"],
+                "rows_added": 0,
                 "legacy_csvs_deleted": [],
             }
         )
@@ -418,6 +462,7 @@ def test_provision_module_script_failure_surfaces_stderr_verbatim_and_honors_jso
     assert result.ok is False
     payload = json.loads(result.summary)
     assert "Could not load module.yaml" in payload["error"]
+    assert "nothing was written to _bmad/config.yaml" in payload["error"]
 
 
 def test_provision_module_script_failure_via_cli_exits_failed(tmp_path, monkeypatch):
@@ -463,3 +508,249 @@ def test_provision_module_takes_precedence_over_verify_and_list():
 
     assert result.ok is False
     assert "nope" in result.summary  # --module's own handling ran, not --verify's/--list's
+
+
+# ── Story 6.3: partial-install failure naming + post-success verification ──
+
+
+def test_provision_module_mid_chain_failure_names_already_wrote_config_section(tmp_path, monkeypatch):
+    """I/O Matrix row 1: `merge-config.py` exits 0 (writes `bmb:` into
+    `_bmad/config.yaml`), `merge-help-csv.py` exits 1 -- the `DutyResult`
+    must carry both the failing script's stderr AND a note that
+    `_bmad/config.yaml` already gained a `bmb` section."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+
+    def _fake_run(cmd, **kwargs):  # noqa: ARG001
+        if any("merge-help-csv.py" in str(part) for part in cmd):
+            raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="No data rows found in source")
+        return _fake_module_scripts_run(cmd)
+
+    monkeypatch.setattr(subprocess, "run", _fake_run)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "No data rows found in source" in result.summary
+    assert "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in result.summary
+    assert "INCOMPLETE" in result.summary
+
+
+def test_provision_module_mid_chain_failure_with_json_names_already_wrote_config_section(tmp_path, monkeypatch):
+    """Same scenario as above, with `--json`: the note must be parseable
+    inside the existing `{"error": ...}` shape, matching every other
+    error path's JSON contract."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+
+    def _fake_run(cmd, **kwargs):  # noqa: ARG001
+        if any("merge-help-csv.py" in str(part) for part in cmd):
+            raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="No data rows found in source")
+        return _fake_module_scripts_run(cmd)
+
+    monkeypatch.setattr(subprocess, "run", _fake_run)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb", json=True))
+
+    assert result.ok is False
+    payload = json.loads(result.summary)
+    assert "No data rows found in source" in payload["error"]
+    assert "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in payload["error"]
+
+
+def test_provision_module_first_script_failure_names_nothing_written(tmp_path, monkeypatch):
+    """I/O Matrix row 2: `merge-config.py` itself exits 1 before writing
+    anything -- the summary must state nothing was written to
+    `_bmad/config.yaml`, not the "already wrote" note."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+
+    def _fake_run(cmd, **kwargs):  # noqa: ARG001
+        raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="Error: Could not load module.yaml")
+
+    monkeypatch.setattr(subprocess, "run", _fake_run)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "Could not load module.yaml" in result.summary
+    assert "nothing was written to _bmad/config.yaml" in result.summary
+    assert "already wrote" not in result.summary
+
+
+def test_provision_module_output_dir_runtime_error_after_both_scripts_land_names_already_wrote_config(
+    tmp_path, monkeypatch
+):
+    """I/O Matrix row 3: both scripts exit 0 (landing `_bmad/config.yaml`
+    and `module-help.csv`), then `_materialize_module_output_dirs` raises
+    `RuntimeError` because its target path is occupied by a file -- the
+    summary must carry the `RuntimeError` text AND the same "already
+    wrote" note, since the config/CSV writes happened before the output-dir
+    step runs."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+    (tmp_path / "skills").write_text("not a directory", encoding="utf-8")
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "already exists and is not a directory" in result.summary
+    assert "already wrote a 'bmb' section to _bmad/config.yaml during this run before the failure above" in result.summary
+    assert "INCOMPLETE" in result.summary
+
+
+def test_provision_module_post_success_verification_gate_rejects_when_name_not_actually_installed(
+    tmp_path, monkeypatch
+):
+    """I/O Matrix row 4: both scripts exit 0 and report `"status":
+    "success"`, but a simulated backend inconsistency means `bmb` never
+    lands in `_bmad/config.yaml` -- `_run_module`'s post-success
+    verification gate must refuse to report `ok=True` on the strength of
+    the exit code alone."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run_without_writing_config)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "exited 0" in result.summary
+    assert "not counted as provisioned" in result.summary
+
+
+def test_provision_module_post_success_verification_gate_via_cli_exits_failed(tmp_path, monkeypatch):
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run_without_writing_config)
+
+    rc = main(["provision", "--module", "bmb"])
+
+    assert rc == EXIT_FAILED
+
+
+def test_provision_module_post_success_verification_gate_with_json(tmp_path, monkeypatch):
+    """I/O Matrix row 5: `--json` honored on the post-success verification
+    gate's failure path too, matching every other error path's shape."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run_without_writing_config)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb", json=True))
+
+    assert result.ok is False
+    payload = json.loads(result.summary)
+    assert "not counted as provisioned" in payload["error"]
+
+
+def test_provision_module_full_success_verification_gate_passes_with_realistic_fixture(tmp_path, monkeypatch):
+    """I/O Matrix row 5 (full success, unchanged happy path): with the
+    updated `_fake_module_scripts_run` actually landing `bmb` in
+    `_bmad/config.yaml`, the post-success verification gate must not
+    regress the true happy path -- `ok=True` exactly as Story 6.1
+    established."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is True
+    assert (tmp_path / "_bmad" / "config.yaml").is_file()
+
+
+def test_provision_module_failure_against_an_already_installed_module_does_not_claim_incomplete(
+    tmp_path, monkeypatch
+):
+    """Review-pass regression: `bmb` was already fully provisioned by an
+    earlier, successful run (`_bmad/config.yaml` already has a `bmb:`
+    section BEFORE this run starts). This run's own `merge-config.py` call
+    fails for a reason that never touches the filesystem (e.g. a transient
+    `uv` invocation error). Since `module_install_states` only sees the
+    file's PRESENT state, comparing it alone (with no before-snapshot)
+    would wrongly conclude this run "already wrote a section ... INCOMPLETE"
+    -- the state present is leftover from the PRIOR run, not new. The
+    landed-state note must be omitted entirely: nothing about this run's
+    own outcome is newly incomplete."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    config_path = tmp_path / "_bmad" / "config.yaml"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text("bmb:\n  name: BMad Builder\n", encoding="utf-8")
+
+    def _fake_run(cmd, **kwargs):  # noqa: ARG001
+        raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="transient uv error")
+
+    monkeypatch.setattr(subprocess, "run", _fake_run)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "transient uv error" in result.summary
+    assert "INCOMPLETE" not in result.summary
+    assert "already wrote" not in result.summary
+    # the pre-existing install itself is untouched by this failed run
+    assert config_path.read_text(encoding="utf-8") == "bmb:\n  name: BMad Builder\n"
+
+
+def test_provision_module_malformed_config_during_failure_recovery_read_preserves_original_stderr(
+    tmp_path, monkeypatch
+):
+    """Review-pass regression: if `_bmad/config.yaml` is malformed YAML at
+    the moment `_run_module`'s except handler tries to check landed state,
+    `module_install_states` itself raises `yaml.YAMLError` -- that read
+    failure must degrade to "unknown" (no landed-state note), never
+    replace the original, more diagnostic subprocess stderr with an
+    unrelated YAML-parse error, and never crash past a clean
+    `DutyResult(ok=False, ...)`."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    config_path = tmp_path / "_bmad" / "config.yaml"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(": not: valid: yaml: [", encoding="utf-8")
+
+    def _fake_run(cmd, **kwargs):  # noqa: ARG001
+        raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="Error: Could not load module.yaml")
+
+    monkeypatch.setattr(subprocess, "run", _fake_run)
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "Could not load module.yaml" in result.summary
+    assert "already wrote" not in result.summary
+    assert "nothing was written" not in result.summary
+
+
+def test_provision_module_post_success_gate_survives_an_unreadable_config_yaml(tmp_path, monkeypatch):
+    """Review-pass regression: if the post-success verification read
+    itself raises (e.g. `OSError`/malformed YAML), `_run_module` must
+    still return a clean `DutyResult(ok=False, ...)` -- never let a second
+    exception from the verification step itself propagate past this
+    story's own boundary as an internal crash."""
+    _write_bmb_skill(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
+    monkeypatch.setattr(subprocess, "run", _fake_module_scripts_run)
+
+    def _raise_os_error(**kwargs):  # noqa: ARG001
+        raise OSError("permission denied")
+
+    monkeypatch.setattr(
+        "pyforge.steward.provision.module_install_states",
+        lambda *, cwd: _raise_os_error(),
+    )
+
+    duty = ProvisionDuty()
+    result = duty.run(_full_namespace(module="bmb"))
+
+    assert result.ok is False
+    assert "not counted as provisioned" in result.summary
