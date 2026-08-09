@@ -18,9 +18,17 @@
 # reports it -- the same failure class `.gitignore` hit on 2026-08-09, where
 # a blanket `*.log` emptied `tests/fixtures/error_logs/` and turned the
 # failure-analyzer's two unmatched-log cases into false greens. `.gitignore`
-# fixed that with a narrow negation rather than by weakening `*.log`; the two
-# negations below are the same fix, kept in step with it. Audit any new broad
-# rule with: git ls-files | <match against this file>.
+# fixed that with a narrow negation rather than by weakening `*.log`; all four
+# negations below are that same fix, one per broad rule that would otherwise
+# take a tracked file (`.pixi/config.toml`, `.bmad-loop/bmad_loop_hook.py`,
+# the two `conf/local/.gitkeep`s, `error_logs/unmatched.log`). Audit any new
+# broad rule with: git ls-files | <match against this file>.
+#
+# UNTRACKED FILES ARE THE OTHER HALF, and only for one class: anything
+# secret-shaped. The tracked-file audit above cannot see them by
+# construction, so the secrets block below is maintained by cross-checking
+# .gitignore's own secret-shaped entries -- see `conf/local/` there, which is
+# exactly the case a tracked-file-only audit misses.
 
 .git/
 
@@ -53,9 +61,13 @@ _bmad-output/projects/*/_root-fallback-fork-*
 # story was developed in one), so `docker build .` from a loop home would
 # otherwise ship every run's transcripts, patches and logs: 11GB in the
 # steward home at the time of writing, and agent transcripts are exactly the
-# kind of thing that carries a pasted credential. Mirrors .gitignore's four
-# `.bmad-loop/*` entries with one root-anchored rule.
+# kind of thing that carries a pasted credential. This is BROADER than
+# .gitignore's four `.bmad-loop/*` entries (`runs/`, `cache/`, `policy.toml`,
+# `skill-projection.json`), which are narrow precisely so that
+# `bmad_loop_hook.py` stays TRACKED -- so the blanket rule needs the negation
+# below, or it swallows a tracked file and trips this file's own hazard.
 .bmad-loop/
+!.bmad-loop/bmad_loop_hook.py
 
 # Build-host BMAD identity -- which project the marker/symlink point at is a
 # property of the machine that built the image, not of the image. Baking it
@@ -87,6 +99,20 @@ presentations/
 # mounts as a volume -- baking today's snapshot in would both leak whatever
 # is locally cached and freeze stale state; `.claude/skills/data/` is its
 # skill-scoped sibling.
+#
+# `conf/local/` is Kedro's canonical local-credentials path, and it is the one
+# rule here that guards a file which ACTUALLY EXISTS in a normal checkout:
+# `src/shared/packages/pyforge-atlas/tests/orchestration/conftest.py`
+# auto-generates `conf/local/credentials.yml` (keys `bigquery_adc`,
+# `github_token`) on any checkout that has run atlas's orchestration gates,
+# and its own header says "Replace with real values for live runs". Atlas's
+# `.gitignore` declares the path secret TWICE (`conf/local/**` and
+# `conf/**/*credentials*`); without a counterpart here the stub -- or a
+# maintainer's real token, once they follow that instruction -- lands in a
+# shareable image layer with nothing reporting it. `**/` because there are
+# three `conf/` trees (root, pyforge-atlas, pyforge-atlas-kedro-viz) and two
+# of them have a `local/`. The `.gitkeep` negations are mandatory: both are
+# git-tracked.
 .env
 .env.github
 .secrets
@@ -97,6 +123,9 @@ SDKs/
 .claude/settings.local.json
 .claude/data/
 .claude/skills/data/
+**/conf/local/*
+!**/conf/local/.gitkeep
+**/conf/**/*credentials*
 
 # Python build/test artifacts -- all occur at any depth (each package under
 # src/shared/packages/ grows its own), hence `**/`. Every tool listed here
@@ -117,6 +146,17 @@ SDKs/
 **/dist/
 **/dist-conda/
 **/build_artifacts/
+
+# Atlas run-admission locks -- `data.locks/*.lock` + `*.holder.json`, written
+# by `admission.py` on every `kedro run` and gitignored (atlas's .gitignore
+# line 32; its own test says "Gitignored, but not hermetic"). Same reasoning
+# as `.claude/data/` above: baking today's snapshot in freezes whatever the
+# build host happened to be running -- an image built while atlas's tests
+# were running ships ~90 of them, each recording a build-host pid and run id.
+# Harmless by luck rather than design (exclusion is a live `flock`, which no
+# image can carry, and a dead holder is reclaimed), but the image should not
+# be a function of what was running on the machine that built it.
+**/data.locks/
 
 # conda/rattler-build leavings -- this is a packaging factory, so a checkout
 # that has run a local recipe build carries these (none are git-tracked).

@@ -3461,11 +3461,11 @@
  },
  "pyforge-steward/spec-unified-container": {
   "files": {
-   ".dockerignore": "6757dbce719d7eb2985ec6826b26fac4331b5691",
-   "Containerfile": "7d832a00ed6285aacd7a27ea6ee92aafadd265c2",
-   "pixi.toml": "e8fe1c802c64a5be107162304b9bdced44279a82"
+   ".dockerignore": "fa7ef26fb451869a17858d658e5238e837912aa5",
+   "Containerfile": "dcfcbb2f7c1e8e03224b790a94c42b15eeb672b2",
+   "pixi.toml": "7781a404b02bcf913444d18ebfcf91066c0a5e40"
   },
-  "memlog": "25868f3e557ea28fd24441dc464f3b5c5c4a0c00"
+  "memlog": "35ef20997343595c244b0a73ea5ce35ce2e5cc9f"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {
