@@ -444,6 +444,13 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # unreliable.
 # Story 3.8's supervisor/__main__.py adds MRS-SUPV-008 (a durability push
 # failed), WARN, alongside this area's own 001-007.
+# Story 3.9 adds MRS-SUPV-009 (a per-story branch was retired while its work
+# was NOT reachable from the station branch), WARN. Deliberately a SEPARATE
+# code from 008 rather than a reuse: 3.9's whole finding is that the old code
+# fired on the SUCCESS path -- a branch deleted because its story merged --
+# so folding the genuinely-lost case back into 008 would rebuild the very
+# ambiguity that cost an operator an hour on 2026-08-09. WARN, not ERROR,
+# because AD-46 forbids durability becoming a new refusal gate.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008 at
 # SCOPE_VIOLATION (this table's first use of that rung) and MRS-GATE-009
 # at UNEVALUABLE, alongside MRS-GATE-002/003/005.
@@ -702,6 +709,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-011": Verdict.ERROR,
     "MRS-SPIN-012": Verdict.WARN,
     "MRS-SUPV-008": Verdict.WARN,
+    "MRS-SUPV-009": Verdict.WARN,
     "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-009": Verdict.UNEVALUABLE,

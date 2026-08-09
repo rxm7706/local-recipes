@@ -356,19 +356,32 @@ class FakeNotify:
 
 
 class FakeVcs:
-    """Fakes ``ports.VcsPort`` (Story 3.8) -- only the two methods
-    ``run_supervisor``'s own durability wiring reaches: ``repo_common_root``
-    (a no-op passthrough) and ``push`` (recorded, succeeds by default). A
-    test injects ``fail_push`` to exercise the ``VcsCommandError`` path, or
-    ``fail_repo_common_root`` for the (structurally identical, since both
-    live inside the SAME try/except in ``_push_branch``) repo-resolution
-    failure."""
+    """Fakes ``ports.VcsPort`` (Story 3.8) -- the methods ``run_supervisor``'s
+    own durability wiring reaches: ``repo_common_root`` (a no-op passthrough),
+    ``push`` (recorded, succeeds by default), and -- since S-3.9 --
+    ``branch_exists``/``merge_base``, which the retired-branch classifier calls
+    BEFORE deciding to push at all. A test injects ``fail_push`` to exercise the
+    ``VcsCommandError`` path, or ``fail_repo_common_root`` for the (structurally
+    identical, since both live inside the SAME try/except in ``_push_branch``)
+    repo-resolution failure.
+
+    ``branch_exists`` defaults to ``True`` so every pre-S-3.9 test keeps
+    exercising the ordinary push path unchanged; ``missing_branches`` is the
+    opt-in for the retired case. Note the fake previously omitted
+    ``branch_exists`` entirely even though ``VcsPort`` declares it -- a
+    non-conforming fake, which surfaced as an ``AttributeError`` the moment a
+    caller used the real port surface. Fixed here rather than defended against
+    in production code: swallowing ``AttributeError`` there would mask exactly
+    this class of bug."""
 
     def __init__(self) -> None:
         self.repo_common_root_calls: list[Path] = []
         self.push_calls: list[tuple[Path, str]] = []
         self.fail_push: Exception | None = None
         self.fail_repo_common_root: Exception | None = None
+        self.missing_branches: set[str] = set()
+        #: commit sha -> the ref it is reachable from (S-3.9 ancestry proof)
+        self.merged_commits: dict[str, str] = {}
 
     def repo_common_root(self, start: Path) -> Path:
         self.repo_common_root_calls.append(start)
@@ -380,6 +393,13 @@ class FakeVcs:
         self.push_calls.append((repo_root, branch))
         if self.fail_push:
             raise self.fail_push
+
+    def branch_exists(self, repo_root: Path, branch: str) -> bool:
+        return branch not in self.missing_branches
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        # Returning `a` means "a is reachable from b" to the S-3.9 classifier.
+        return a if self.merged_commits.get(a) == b else "0" * 40
 
 
 def _no_sleep(seconds: float) -> None:
@@ -4097,6 +4117,112 @@ def test_a_dev_commit_landing_pushes_both_the_station_and_per_story_branch():
     assert rc == 0
     assert (_HOME, "loop/acme") in vcs.push_calls
     assert (_HOME, "loop/3.8") in vcs.push_calls
+
+
+def test_a_merged_and_retired_story_branch_is_not_a_push_failure():
+    """S-3.9/FR-170. bmad-loop deletes a story's branch when the story merges
+    into the station branch, and this supervisor POLLS -- so it routinely acts
+    on the boundary after the branch is gone. That is the success path. Before
+    this, it ran the push anyway and reported `push-failed`/`MRS-SUPV-008`:
+    measured 2026-08-09, 6 of 22 pushes in one live run, every one on work
+    already safe. A durability alarm firing on success produced the wrong
+    diagnosis "durability is broken"."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "committing", commit_sha=None, branch="loop/3.8"),)),
+        _snapshot(
+            tasks=(_task_phase("3.8", "committing", commit_sha="abc123", branch="loop/3.8"),)
+        ),
+    ]
+    vcs = FakeVcs()
+    vcs.missing_branches = {"loop/3.8"}          # merged, therefore deleted
+    vcs.merged_commits = {"abc123": "loop/acme"}  # ...and provably landed
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock,
+        observer=FakeObserver(pane="idle"), harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert (_HOME, "loop/acme") in vcs.push_calls          # station branch still pushed
+    assert (_HOME, "loop/3.8") not in vcs.push_calls       # retired: never attempted
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    pushes = [e for e in entries if e["kind"] == "stage-push"]
+    retired = [p for p in pushes if p["payload"].get("branch") == "loop/3.8"]
+    assert retired, "the retired branch must still journal exactly one observation"
+    assert all(p["payload"]["outcome"] == "retired-merged" for p in retired)
+    assert all("finding" not in p["payload"] for p in retired), (
+        "a proven-merged retirement must earn silence, not MRS-SUPV-008")
+
+
+def test_a_retired_branch_whose_work_never_landed_is_reported_loudly():
+    """The other half, and the reason absence alone does not earn silence: a
+    branch that vanished carrying work which never reached the station branch
+    is REAL loss. It must not inherit the quiet of the case it superficially
+    resembles."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "committing", commit_sha=None, branch="loop/3.8"),)),
+        _snapshot(
+            tasks=(_task_phase("3.8", "committing", commit_sha="abc123", branch="loop/3.8"),)
+        ),
+    ]
+    vcs = FakeVcs()
+    vcs.missing_branches = {"loop/3.8"}
+    vcs.merged_commits = {}                       # NOT reachable from the station branch
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock,
+        observer=FakeObserver(pane="idle"), harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0                                 # never a new refusal gate (AD-46)
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    pushes = [e for e in entries if e["kind"] == "stage-push"]
+    retired = [p for p in pushes if p["payload"].get("branch") == "loop/3.8"]
+    assert retired
+    assert all(p["payload"]["outcome"] == "retired-unmerged" for p in retired)
+    assert all(p["payload"]["finding"]["code"] == "MRS-SUPV-009" for p in retired)
+
+
+def test_an_unknown_commit_sha_is_treated_as_unproven_not_benign():
+    """The watcher's standing bias: one redundant finding beats one missed
+    loss. A retirement with no `commit_sha` to check cannot be PROVEN benign,
+    so it is not silently treated as such."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(tasks=(_task_phase("3.8", "reviewing", commit_sha=None, branch="loop/3.8"),)),
+        _snapshot(tasks=(_task_phase("3.8", "done", commit_sha=None, branch="loop/3.8"),)),
+    ]
+    vcs = FakeVcs()
+    vcs.missing_branches = {"loop/3.8"}
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock,
+        observer=FakeObserver(pane="idle"), harness=harness, vcs=vcs, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    pushes = [e for e in entries if e["kind"] == "stage-push"]
+    retired = [p for p in pushes if p["payload"].get("branch") == "loop/3.8"]
+    assert retired and all(
+        p["payload"]["outcome"] == "retired-unmerged" for p in retired)
 
 
 def test_a_non_isolated_story_pushes_only_the_station_branch():
