@@ -1510,7 +1510,7 @@ cmd = "kedro skills list"
 cwd = "src/shared/packages/pyforge-atlas"
 
 [feature.pyforge-atlas.tasks.kedro-skills-install]
-description = "Story 12-1: install the `catalog-config` skill (Claude Code surface only) into the atlas project — reproducible, discoverable provisioning; see kedro-skills-audit-report.md for the audited guidance and the Atlas overrides appended after install."
+description = "Story 12-1: install the `catalog-config` skill into the atlas project. --ide claude restricts the IDE-specific renderer to Claude Code (.claude/skills/); the canonical .agents/skills/ copy, .installed.json state, and the AGENTS.md block are written unconditionally regardless of --ide. Refuses on drift (both managed SKILL.md copies carry an appended Atlas-overrides correction) unless --force. See kedro-skills-audit-report.md for the audited guidance."
 cmd = "kedro skills install catalog-config --ide claude"
 cwd = "src/shared/packages/pyforge-atlas"
 
