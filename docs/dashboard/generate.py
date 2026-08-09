@@ -731,6 +731,13 @@ def apply_git(projects: dict) -> None:
 # ---- dreams (both modes) -----------------------------------------------------
 
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
+
+# The Guild's own vocabulary, read from its single home rather than restated.
+# See docs/governance/guild-roster.json for why it lives beside the governance
+# kernel and not inside either consumer (Doctor Story 6-8).
+_GUILD_ROSTER = json.loads(
+    (REPO_ROOT / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8")
+)
 # The lifecycle, each state named for the ACT THAT COMPLETED — never for the
 # artifact that proves it, and never for activity. Status declares what EXISTS
 # (stable, honestly hand-declarable); the board DERIVES what is happening from
@@ -738,10 +745,15 @@ DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
 # stale the moment a line pauses or finishes — exactly how pyforge-warden came to
 # read `in-spec` while shipped 31/31, and deckcraft `dreamt` while holding a deck
 # AND a Spec (both found + fixed 2026-07-25).
-DREAM_STATUSES = ("dreamt", "pitched", "specified", "realized", "archived")
+# RE-DECLARED here until 2026-08-09, identical to bmad_drift_check.py's copy by
+# luck rather than by construction — the same duplication hazard that made
+# GUILD_DREAMS/STATIONS imports below, one drift too late. Now read from the
+# single home, docs/governance/guild-roster.json (Doctor Story 6-8), which also
+# carries the reasoning these comments used to hold.
+DREAM_STATUSES = tuple(_GUILD_ROSTER["dream_statuses"])
 # Perpetual concerns — tended, never finished. They sit OUTSIDE the lifecycle:
 # excluded from backlog (nobody can close them) and from realized (never done).
-DREAM_TYPES = ("dream", "practice")
+DREAM_TYPES = tuple(_GUILD_ROSTER["dream_types"])
 
 # The eight Smiths — the canonical station roster (docs/dreams/pyforge-charter.md
 # §§1-8). `owner:` on a Dream names the station accountable for carrying it all
@@ -767,10 +779,14 @@ DREAM_TYPES = ("dream", "practice")
 # the project dissolved and the installer gone, the constitutive half was two names for
 # one record, so it was absorbed into the Charter and `guild` closed at one. Charter §5 +
 # its Realization log carry all three rulings.
-from bmad_drift_check import (
-    GUILD_DREAMS,
-    STATIONS,
-)
+# 2026-08-09 (Doctor Story 6-8): these were IMPORTED from
+# scripts/bmad_drift_check.py, which was the right fix for the 2026-07-28 drift
+# but made the board depend on a DETECTOR for constitutive data — and Story 6-9
+# retires that file into Doctor's package, where this environment cannot import
+# it. Both now read the same JSON both tools read; the import direction problem
+# disappears with the import.
+GUILD_DREAMS = tuple(_GUILD_ROSTER["guild_dreams"])
+STATIONS = tuple(_GUILD_ROSTER["stations"])
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
 # the packaging-factory dream, etc.).
