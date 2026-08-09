@@ -2105,17 +2105,17 @@
  },
  "pyforge-marshal/spec-dashboard-project-path-derivation": {
   "files": {
-   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23",
+   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
    "docs/dashboard/index.html": "ab517db53ee93c50ed28a5e3fc6d126eea449962"
   },
-  "memlog": "43522ee5d76603bc881581ff96c841a2c5b8f8d7"
+  "memlog": "df954e1591ecca3fc7bb310703298ab28b8e3054"
  },
  "pyforge-marshal/spec-dream-to-code-model-self-verification": {
   "files": {
-   "scripts/bmad_drift_check.py": "2276e2790393c300c210cafcfb83b611be7210db",
+   "scripts/bmad_drift_check.py": "bc173a7b0ac925dc93831f00ec2a81d9a067cef9",
    "scripts/dream_chain_check.py": "8a4c64bcad2cf4bd49a179f5bd2cf5acacd84579"
   },
-  "memlog": "f08c157d9b37c30c4d09c2c9975bc44bb4a57287"
+  "memlog": "e1723eb60dd8173b6d1b8d251aff3d31be419904"
  },
  "pyforge-marshal/spec-durable-runs": {
   "files": {},
@@ -2126,7 +2126,7 @@
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
    "docs/dashboard/check_layout.py": "4163852dd4ce3b1d0691790675b65e58e6c95017",
    "docs/dashboard/check_render.js": "a24955d88fc73dc6ba2e790d843a99619aebae59",
-   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23",
+   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
    "docs/dashboard/index.html": "ab517db53ee93c50ed28a5e3fc6d126eea449962",
    "docs/dashboard/kedro-viz/.vite/manifest.json": "a792c3db598433602b258c3a62adb718e0999a38",
    "docs/dashboard/kedro-viz/404.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
@@ -2324,7 +2324,7 @@
    "docs/dashboard/kedro-viz/index.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081"
   },
-  "memlog": "7e33317adb2ac9b716d7bb9225271fd9412fbcc2"
+  "memlog": "dd46dd7310d4d727f27df21f7692e4a4ee128231"
  },
  "pyforge-marshal/spec-fidelity-enforcement": {
   "files": {},
@@ -2514,9 +2514,9 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "bd094688e43a629ffee75daffd59af19f71d6fd5",
-   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23"
+   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0"
   },
-  "memlog": "4d07d9b23d250a99d9e41c7a0cc3c991659d72c9"
+  "memlog": "89ef90dcfc644afe186b316d0b26b0f6a2242773"
  },
  "pyforge-marshal/spec-regenerable-factory": {
   "files": {
@@ -2529,10 +2529,10 @@
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
-   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23",
+   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
    "scripts/promote_sprint_status.py": "f3f59ad191e3b7ac951ba6e3da2b867f2b112e65"
   },
-  "memlog": "6af2f8f7da455bcc8247564deebca762f951b21b"
+  "memlog": "4e7e2c354a078a7fcc65e6ebb11f62993679e04a"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {

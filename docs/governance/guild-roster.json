@@ -1,0 +1,84 @@
+{
+  "$comment": [
+    "CONSTITUTIVE DATA — the single home for the Guild's own vocabulary.",
+    "",
+    "WHY THIS FILE EXISTS. Four constants were shared between",
+    "scripts/bmad_drift_check.py and docs/dashboard/generate.py. Two were",
+    "IMPORTED (stations, guild_dreams) after a hand-mirrored copy of",
+    "guild_dreams drifted on 2026-07-28 and the board warned on a Dream the",
+    "Charter explicitly permits. The other two (dream_statuses, dream_types)",
+    "were still RE-DECLARED in both files -- identical by luck, not by",
+    "construction, and labelled 'Mirrored in ...' as though that were the",
+    "design rather than the defect. Doctor Story 6-8 consolidates all four.",
+    "",
+    "WHY HERE, AND NOT IN EITHER CONSUMER. `stations` is the eight Smiths of",
+    "docs/dreams/pyforge-charter.md §§1-8 and `guild_dreams` is the Charter",
+    "itself: this is constitutive data, not detector or board data, so it",
+    "belongs beside the governance kernel rather than inside a tool that",
+    "happens to read it. Practically, it also has to be reachable from BOTH",
+    "the local-recipes environment (which runs generate.py and cannot import",
+    "pyforge.doctor) and from Doctor's own package -- every Doctor source is",
+    "repo-rooted via its `target: Path`, so a repo-relative JSON file is",
+    "readable from both with no import, no sys.path insert, and no packaging",
+    "concern. A new scripts/*.py module would have been ungoverned and would",
+    "have needed retiring again by Story 6-9.",
+    "",
+    "STDLIB JSON ON PURPOSE: no YAML dependency, so the leanest environment",
+    "can read it.",
+    "",
+    "CHANGING THIS FILE IS A GOVERNANCE ACT. `stations` is the Guild's",
+    "membership and `guild_dreams` is the list of Dreams allowed to name no",
+    "station. Adding to either is a Charter §5 decision, not a config tweak."
+  ],
+
+  "stations": [
+    "herald",
+    "marshal",
+    "atlas",
+    "warden",
+    "mason",
+    "doctor",
+    "scribe",
+    "steward"
+  ],
+
+  "guild_dreams": [
+    "pyforge-charter"
+  ],
+  "$comment_guild_dreams": [
+    "The one Dream that may name no station because it CONSTITUTES them: the",
+    "Charter. `guild` is NOT a ninth station.",
+    "",
+    "2026-08-08: closed at one. `pyforge-genesis` was absorbed into the",
+    "Charter (Dream § Satellite: The Seed; Spec CAP-5..CAP-8) once its",
+    "project had dissolved and its installer half had moved to the Marshal --",
+    "two names for one record."
+  ],
+
+  "dream_statuses": [
+    "dreamt",
+    "pitched",
+    "specified",
+    "realized",
+    "archived"
+  ],
+  "$comment_dream_statuses": [
+    "The Dream lifecycle -- each state names the ACT THAT COMPLETED. There is",
+    "deliberately no `building` state: status declares what EXISTS (stable,",
+    "honestly hand-declarable) and the board DERIVES what is happening from",
+    "live build lines. A `building` status was considered and rejected -- it",
+    "would go stale the moment a line pauses or finishes, which is exactly how",
+    "pyforge-warden came to read `in-spec` while shipped 31/31, and deckcraft",
+    "`dreamt` while holding a deck AND a Spec (both found + fixed 2026-07-25)."
+  ],
+
+  "dream_types": [
+    "dream",
+    "practice"
+  ],
+  "$comment_dream_types": [
+    "`practice` marks a perpetual concern -- tended, never finished. They sit",
+    "OUTSIDE the lifecycle: excluded from backlog (nobody can close them) and",
+    "from realized (never done)."
+  ]
+}

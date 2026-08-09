@@ -641,24 +641,29 @@ def check_spec_indexed() -> list[Finding]:
             for p in sorted(DOCS_SPECS.glob("*.md")) if p.name not in claude]
 
 
-# The eight Smiths (docs/dreams/pyforge-charter.md §§1-8) — the canonical
-# station roster, mirrored in docs/dashboard/generate.py:STATIONS.
-STATIONS = ("herald", "marshal", "atlas", "warden",
-            "mason", "doctor", "scribe", "steward")
-# The one Dream that may name no station because it CONSTITUTES them: the
-# Charter. `guild` is NOT a ninth station.
-# 2026-08-08: closed at one. `pyforge-genesis` was absorbed into the Charter
-# (Dream § Satellite: The Seed; Spec CAP-5..CAP-8) once its project had dissolved
-# and its installer half had moved to the Marshal — two names for one record.
-# Mirrored in docs/dashboard/generate.py:GUILD_DREAMS; both change together.
-GUILD_DREAMS = ("pyforge-charter",)
-
-
-# The Dream lifecycle — each state names the ACT THAT COMPLETED. Mirrored in
-# docs/dashboard/generate.py:DREAM_STATUSES. There is deliberately no `building`
-# state: status declares what EXISTS, the board derives what is HAPPENING.
-DREAM_STATUSES = ("dreamt", "pitched", "specified", "realized", "archived")
-DREAM_TYPES = ("dream", "practice")
+# The Guild's own vocabulary — the eight Smiths, the Dreams that may name no
+# station, and the Dream lifecycle. READ from docs/governance/guild-roster.json,
+# never restated here (Doctor Story 6-8).
+#
+# Until 2026-08-09 two of these four were hand-mirrored in
+# docs/dashboard/generate.py: identical by luck, not by construction, and
+# labelled "Mirrored in ..." as though that were the design rather than the
+# defect. The other two were already imported from this module, after a mirrored
+# copy of GUILD_DREAMS drifted on 2026-07-28 and the board warned on a Dream the
+# Charter explicitly permits. All four now have one home, and it is neither this
+# file nor the board's: `stations` is Charter §§1-8 membership and `guild_dreams`
+# is the Charter itself, so the data is CONSTITUTIVE and lives beside the
+# governance kernel rather than inside a tool that happens to read it.
+#
+# Read as a plain dict rather than re-exported through a shim, so there is
+# exactly one definition and one reader per consumer.
+_ROSTER = json.loads(
+    (REPO_ROOT / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8")
+)
+STATIONS = tuple(_ROSTER["stations"])
+GUILD_DREAMS = tuple(_ROSTER["guild_dreams"])
+DREAM_STATUSES = tuple(_ROSTER["dream_statuses"])
+DREAM_TYPES = tuple(_ROSTER["dream_types"])
 
 
 def check_dream_vocab() -> list[Finding]:

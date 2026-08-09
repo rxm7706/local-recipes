@@ -2419,10 +2419,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786309312,
-        "median": 64,
+        "median": 59,
         "lo": 37,
         "hi": 360,
-        "phaseAsOf": "2026-08-09 21:04 UTC"
+        "phaseAsOf": "2026-08-09 22:06 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3337,7 +3337,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 21:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 22:06 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -12200,9 +12200,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 5,
+        "verdict": "FINDINGS (5):",
         "runbook": ""
       },
       {
@@ -14608,15 +14608,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "atlas",
-      "story": "12.3",
-      "epoch": 1786295096,
-      "sha": "1cc3c9c35",
-      "subject": "Merge bmad-loop/20260809-114724-79f6/12-3-record-the-vscode-kedro-verdict into loop/pyforge-atlas (bmad-loop)"
+      "station": "steward",
+      "story": "7.2",
+      "epoch": 1786309308,
+      "sha": "08d763989",
+      "subject": "Merge bmad-loop/20260809-114839-7af9/7-2-the-repo-at-a-fixed-short-path into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 21:04 UTC",
-    "generatedEpoch": 1786309450
+    "generatedAt": "2026-08-09 22:06 UTC",
+    "generatedEpoch": 1786313198
   },
   "storySpecs": [
     {
