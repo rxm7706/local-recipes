@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from pyforge.steward.cli import EXIT_OK, main
+from pyforge.steward.deploy import _STEWARD_LEDGER_RELATIVE_PATH as _LEDGER_RELATIVE_PATH
 
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -30,6 +31,12 @@ def _make_repo_with_origin(tmp_path: Path) -> Path:
     dashboard_dir = work / "docs" / "dashboard"
     dashboard_dir.mkdir(parents=True)
     (dashboard_dir / "data.js").write_text("window.DASHBOARD_DATA = {v: 1};\n")
+    # Story 5.2: the `dashboard` verb now refuses without Steward's own
+    # tracked sprint ledger present -- write the minimal valid fixture so
+    # this shared setup doesn't false-refuse every test in this file.
+    ledger = work / _LEDGER_RELATIVE_PATH
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text("development_status:\n")
     _git("add", "-A", cwd=work)
     _git("commit", "-m", "init", cwd=work)
     _git("remote", "add", "origin", str(origin), cwd=work)

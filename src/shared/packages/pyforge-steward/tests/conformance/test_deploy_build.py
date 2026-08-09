@@ -14,7 +14,21 @@ import subprocess
 import sys
 
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
-from pyforge.steward.deploy import DeployDuty, build_dashboard
+from pyforge.steward.deploy import (
+    DeployDuty,
+    _STEWARD_LEDGER_RELATIVE_PATH as _LEDGER_RELATIVE_PATH,
+    build_dashboard,
+)
+
+
+def _write_ledger_fixture(repo_root):
+    """Minimal valid ledger — Story 5.2's precondition guard on `deploy
+    dashboard` only checks presence + a `development_status:` block, so this
+    is the smallest fixture that satisfies it without false-refusing these
+    CLI round-trip tests."""
+    ledger = repo_root / _LEDGER_RELATIVE_PATH
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text("development_status:\n")
 
 
 def test_build_dashboard_runs_the_given_command_and_succeeds(tmp_path):
@@ -35,6 +49,7 @@ def test_build_dashboard_propagates_a_nonzero_exit(tmp_path):
 
 
 def test_deploy_dashboard_build_via_cli_round_trips(tmp_path, monkeypatch):
+    _write_ledger_fixture(tmp_path)
     monkeypatch.setattr(
         "pyforge.steward.deploy.repo_root", lambda: tmp_path
     )
@@ -49,6 +64,7 @@ def test_deploy_dashboard_build_via_cli_round_trips(tmp_path, monkeypatch):
 
 
 def test_deploy_dashboard_build_surfaces_a_task_failure_as_exit_failed(tmp_path, monkeypatch):
+    _write_ledger_fixture(tmp_path)
     monkeypatch.setattr("pyforge.steward.deploy.repo_root", lambda: tmp_path)
     monkeypatch.setattr(
         "pyforge.steward.deploy._DEFAULT_BUILD_CMD",
