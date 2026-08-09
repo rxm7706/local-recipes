@@ -193,10 +193,21 @@ def _factory_page(
             "epics.md frontmatter, and each `docs/specs/*.md` status."
         ),
     )
+    # AG Grid infers each column's cellDataType from row 0 alone — and row 0's "status" is
+    # the ISO build_stamp, so auto-inference misreads that column as a date and blanks every
+    # later status string ("done"/"in-progress"/...). `defaultColDef` merges (vizro's
+    # `dash_ag_grid` deep-merges Mapping kwargs) rather than replacing `columnDefs` outright,
+    # so the library's own sortable/filter defaults still apply per column.
     return vm.Page(
         id=page.id,
         title=page.title,
-        components=[stamp_card, vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key))],
+        components=[
+            stamp_card,
+            vm.AgGrid(
+                id=f"{page.id}--grid",
+                figure=dash_ag_grid(key, defaultColDef={"cellDataType": "text"}),
+            ),
+        ],
     )
 
 
