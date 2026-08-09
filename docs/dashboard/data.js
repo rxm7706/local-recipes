@@ -1244,12 +1244,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "50/90",
+            "52/90",
             "stories complete",
             "var(--done)"
           ],
           [
-            "40",
+            "38",
             "remaining",
             ""
           ]
@@ -1804,12 +1804,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "13.1",
-              "pending",
+              "done",
               "A baseline can be stamped for one spec"
             ],
             [
               "13.2",
-              "pending",
+              "done",
               "A moved contract reconciles only the paths it names"
             ],
             [
@@ -3155,7 +3155,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 00:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 00:31 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5091,7 +5091,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 50,
+          "done": 52,
           "total": 90
         },
         {
@@ -5641,7 +5641,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "50/90",
+        "progress": "52/90",
         "complete": 13,
         "of": 13
       },
@@ -9634,7 +9634,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-08-08T18:22",
+          "spec": "2026-08-08T19:29",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9851,7 +9851,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08T18:23",
+          "spec": "2026-08-08T19:29",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10381,7 +10381,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-07-29",
+          "spec": "2026-08-08T19:30",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -14349,8 +14349,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 00:16 UTC",
-    "generatedEpoch": 1786234613
+    "generatedAt": "2026-08-09 00:31 UTC",
+    "generatedEpoch": 1786235463
   },
   "storySpecs": [
     {
@@ -14379,9 +14379,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 50,
+      "done": 52,
       "tracked": 51,
-      "gap": 0
+      "gap": 1
     },
     {
       "station": "pyforge-mason",
@@ -14463,8 +14463,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 50,
-        "backlog": 39,
+        "done": 52,
+        "backlog": 37,
         "blocked": 1,
         "total": 90,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -14678,8 +14678,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 216,
-      "backlog": 100,
+      "done": 218,
+      "backlog": 98,
       "blocked": 6,
       "total": 322
     }
