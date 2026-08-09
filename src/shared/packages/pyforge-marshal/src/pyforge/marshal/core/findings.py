@@ -810,6 +810,14 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 3.8's supervisor/__main__.py adds an EIGHTH MRS-SUPV-* code,
 # MRS-SUPV-008 (a durability push -- stage-boundary or interval-watcher --
 # failed).
+# Story 3.9 adds a NINTH, MRS-SUPV-009 (a per-story branch was retired while
+# its work was NOT reachable from the station branch). A separate code, not a
+# reuse of 008, and the distinction IS the story: 008 was firing on the
+# SUCCESS path -- bmad-loop deletes a story's branch when the story merges,
+# and this supervisor polls, so the branch is routinely gone by the time the
+# boundary is acted on. Measured 2026-08-09: 6 of 22 pushes in one live run.
+# 009 is reserved for the genuinely alarming shape (branch gone, work not
+# landed), so that a durability finding means something again.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008/009 -- the
 # table's first SCOPE_VIOLATION classifications (007/008) plus a new
 # UNEVALUABLE code for a --scope-check that could not be evaluated at all
@@ -1145,6 +1153,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-011",
         "MRS-SPIN-012",
         "MRS-SUPV-008",
+        "MRS-SUPV-009",
         "MRS-GATE-007",
         "MRS-GATE-008",
         "MRS-GATE-009",

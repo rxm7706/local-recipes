@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-169, no gaps.
+updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-171, no gaps (FR-170/FR-171 reopen § 7.2 durability: the guarantee holds, its SIGNAL did not).
 # 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
 # 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
@@ -362,6 +362,21 @@ The supervisor pushes a run's work at its own stage boundaries, and durability i
 - An interval-push watcher remains as the floor for whatever the stage hooks miss, and starts automatically as part of a fleet launch rather than requiring a separate manual invocation.
 - Push is read-only against working trees and remotes — never a force-push, never a rewrite — so it cannot disturb a live session.
 - *Motivating evidence: measured 2026-07-31 — 6 station loop branches on no remote, ~5,150 lines on `recover/*`, one story's 734-line transport branch (spec included) unpushed six days, 156 dangling commits one `git gc` from unrecoverable, and 1,748 lines sitting 40 minutes as a local-only commit. Nine detectors ran green throughout because none asked the durability question — the window reopens roughly every 60–90 minutes, once per station's dev phase.*
+
+#### FR-170: A retired story branch is not a push failure *(added 2026-08-09 — `docs/dreams/durable-runs.md`)*
+The supervisor distinguishes a branch that **cannot** be pushed from one that no longer **needs** to be, and proves the difference rather than assuming it.
+**Consequences:**
+- bmad-loop deletes a story's branch when the story merges into the station branch; the supervisor polls, so it routinely acts on a `dev-commit-landed`/`story-merged` boundary *after* the branch is gone. That is the ordinary success path, not a fault.
+- When the per-story branch is absent, the supervisor checks whether the story's `commit_sha` (already carried on `TaskPhaseSnapshot`) is reachable from the station branch. Reachable → journal a benign `retired-merged` outcome and **no finding**. Not reachable → a **distinct, louder** finding: a branch vanished with work that never landed is real loss, and must not inherit the silence the benign case earns.
+- `GitVcs.push` is unchanged: raising on "no such branch" is correct — falling back would push to a target the caller never named. The fix belongs to the caller, which should not ask for a push it does not need.
+- *Motivating evidence: measured 2026-08-09 on the doctor Epic 6 run — 6 of 22 `stage-push` records reported `push-failed`/`MRS-SUPV-008` on branches whose work was already safe on `origin/loop/pyforge-doctor`. The false alarm cost an operator an hour and produced the wrong diagnosis "durability is broken."*
+
+#### FR-171: Unpushed work is measured by tip, never by name *(added 2026-08-09 — `docs/dreams/durable-runs.md`)*
+`unpushed-work-check` reports a branch whose remote copy is **behind**, not merely one with no remote copy at all.
+**Consequences:**
+- `find_unpushed`'s `if br in remote: continue` is replaced by a tip comparison: a local branch whose remote sha differs and which carries commits the remote lacks is unpushed work, however long its name has existed on origin.
+- Station branches (`loop/*`) are in scope: they are precisely the long-lived branches whose name always exists remotely and whose tip silently falls behind between runs — the case the name check structurally cannot see.
+- *Motivating evidence: measured 2026-08-09 — `loop/pyforge-doctor` on origin at `3f43f486c9` while the local branch stood 8 PRs ahead at `cbd965110b`, reported clean. The Dream's own founding observation ("nine detectors ran green because none asked the durability question") reproduced inside the detector written to ask it.*
 
 ---
 
