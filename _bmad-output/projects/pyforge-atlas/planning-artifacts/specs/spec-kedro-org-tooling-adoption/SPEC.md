@@ -45,7 +45,9 @@ and the research re-verified that decision as vindicated (repo dormant ~9 months
    version, v0.1.1 at spec time) against the real `pyforge-atlas` Kedro project and
    produce a written audit of every piece of generated guidance against Atlas's
    AD-invariants (AD-1 no-inline-IO AST scan, injected-fetcher seams, the
-   `kedro-catalog-check=38` invariant, credential-scoping allowlist). Content that
+   `kedro-catalog-check` invariant (38 at Spec-authoring time; 47 live-verified by
+   Story 12-1's audit, 2026-08-09 — see `kedro-skills-audit-report.md`), credential-
+   scoping allowlist). Content that
    passes is committed to `.claude/skills/` reproducibly; content that contradicts an
    invariant is excluded with the contradiction recorded (and, per the open question,
    possibly filed upstream). Adoption may legitimately conclude "not yet" at v0.1.x.

@@ -1,0 +1,8 @@
+{
+  "type": "datasets.basilisk.BasiliskBatchDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/raw/vulnerability_basilisk_raw",
+  "run_command": null,
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

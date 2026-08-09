@@ -1476,6 +1476,12 @@ playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # kedro-mcp) so it cannot be a conda run-dep of the package. Supplied to the ENV here
 # so kedro-test can collect tests/semantic. Mirrors [feature.local-recipes.pypi-dependencies].
 boring-semantic-layer = ">=0.3.16"
+# Story 12-1 (kedro-skills-audit-then-adopt): dev/tooling-only CLI, never a
+# pyproject.toml runtime dep. Exact-pinned to the evaluated version (no floor) —
+# this is the artifact the audit report evaluated; a newer release audits a
+# different artifact than the one this story names. See
+# _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md.
+kedro-skills = "==0.1.1"
 
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
@@ -1505,6 +1511,27 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
 description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
 cmd = "kedro viz run --no-browser"
 cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.kedro-skills-audit]
+description = "Story 12-1: list the kedro-skills registry against the real atlas project — re-verifies the skill set didn't silently grow beyond `catalog-config` before trusting any generated guidance."
+cmd = "kedro skills list"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.kedro-skills-install]
+description = "Story 12-1: install the `catalog-config` skill into the atlas project. --ide claude restricts the IDE-specific renderer to Claude Code (.claude/skills/); the canonical .agents/skills/ copy, .installed.json state, and the AGENTS.md block are written unconditionally regardless of --ide. Refuses on drift (both managed SKILL.md copies carry an appended Atlas-overrides correction) unless --force. See kedro-skills-audit-report.md for the audited guidance."
+cmd = "kedro skills install catalog-config --ide claude"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.viz-build]
+description = "Epic 12/FR-62: static `kedro viz build` of the REAL atlas DAG (never the stub-mirror prototype) -> build/api + build/index.html. Wipes any prior build/ first -- kedro-viz's own LocalDeployer only mkdir's the build dir, it never clears stale content, so a node/dataset removed from a real DAG change would otherwise leave its old file behind forever across repeated local invocations (CI's own fresh-checkout-per-run makes this moot there, but a clean slate here removes the gap everywhere). PYTHONHASHSEED=0 is NOT decorative: kedro-viz's static export enumerates nodes/pipelines/edges from internal Python `set`s, whose iteration order CPython randomizes per-process by default (a per-run string-hash seed) -- pinning the seed makes that enumeration order reproducible across runs, which `viz-publish-stage`'s normalize-then-diff pipeline depends on to tell a real DAG change from build noise."
+cmd = "rm -rf build && kedro viz build"
+cwd = "src/shared/packages/pyforge-atlas"
+env = { PYTHONHASHSEED = "0" }
+
+[feature.pyforge-atlas.tasks.viz-publish-stage]
+description = "Epic 12/FR-62: normalize the just-built `build/` output (strips the checkout-anchored absolute path baked into ~53 file-backed dataset nodes under build/api/nodes/*, and fixes the literal build-timestamp in build/api/deploy-viz-metadata -- see tools/normalize_viz_build.py) THEN stages it to docs/dashboard/kedro-viz/, replacing whatever was there. Depends on viz-build so a failed build never stages stale/partial output."
+depends-on = ["viz-build"]
+cmd = "python src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py && rm -rf docs/dashboard/kedro-viz && cp -r src/shared/packages/pyforge-atlas/build docs/dashboard/kedro-viz"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"

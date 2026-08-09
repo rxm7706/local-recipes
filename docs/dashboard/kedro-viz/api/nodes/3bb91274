@@ -1,0 +1,8 @@
+{
+  "type": "datasets.incremental_parquet.IncrementalParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/pypi_cross_channel_flags/pypi_cross_channel_flags.parquet",
+  "run_command": "kedro run --to-outputs=pypi_cross_channel_flags",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

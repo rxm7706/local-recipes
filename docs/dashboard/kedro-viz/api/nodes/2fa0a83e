@@ -1,0 +1,8 @@
+{
+  "type": "datasets.migration_status.MigrationDetailDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/raw/vcs_migration_detail_raw",
+  "run_command": null,
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

@@ -1,0 +1,13 @@
+{
+  "code": "def fetch_live_health(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase N  (phase_n_github_live CFA:6525)\n    \"\"\"Normalize live GitHub health signals (stars / last-commit / open-issues) into\n    ``vcs_live_health``. Rate-limit-stderr detection + the 1-day live-signal TTL are\n    DATASET-owned (AD-2/AD-5); the node only projects/normalizes the already-fetched\n    signals. Input: ``feedstock_name`` + live signals. Output: one row per feedstock\n    with the projected signals.\"\"\"\n    src = vcs_github_api_raw\n    base_cols = [\"feedstock_name\", \"stars\", \"last_commit\", \"open_issues\"]\n    if src is None or src.empty or \"feedstock_name\" not in getattr(src, \"columns\", []):\n        return pd.DataFrame(columns=base_cols)\n    # Stable output schema: always the full base_cols, missing signals filled NA\n    # (a variable schema depending on which inputs happen to be present is unstable\n    # for downstream consumers + the parity harness).\n    out = src.drop_duplicates(\"feedstock_name\").reset_index(drop=True)\n    for c in base_cols:\n        if c not in out.columns:\n            out[c] = pd.NA\n    return out[base_cols]\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='fetch_live_health'",
+  "inputs": [
+    "vcs_github_api_raw"
+  ],
+  "outputs": [
+    "vcs_live_health"
+  ],
+  "preview": null
+}

@@ -12,17 +12,7 @@ window.DASHBOARD_DATA = {
         "WF–WH",
         "WI · post-audit"
       ],
-      "inflight": {
-        "key": "12.2",
-        "title": "Publish the real DAG continuously (FR-62)",
-        "phase": "dev",
-        "attempt": "2",
-        "startEpoch": 1786270848,
-        "median": 29,
-        "lo": 4,
-        "hi": 227,
-        "phaseAsOf": "2026-08-09 12:14 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 46 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -45,12 +35,12 @@ window.DASHBOARD_DATA = {
           ],
           [
             "12.2",
-            94
+            116
           ]
         ],
         "foot": [
           [
-            "~95 min",
+            "~116 min",
             "median / story",
             "var(--done)"
           ],
@@ -3322,7 +3312,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 12:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 15:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3958,7 +3948,7 @@ window.DASHBOARD_DATA = {
       "title": "kedro-org-tooling-adoption — Spec",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-08-08",
+      "updated": "2026-08-09",
       "dream": "kedro-org-tooling-adoption",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
     },
@@ -3978,7 +3968,7 @@ window.DASHBOARD_DATA = {
       "title": "consolidated: 2026-08-02 — this Spec also carries spec-unity-data-stack and",
       "caps": 31,
       "companions": 5,
-      "updated": "2026-08-08",
+      "updated": "2026-08-09",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
@@ -5334,7 +5324,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T15:20",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -5343,7 +5333,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-04",
           "epics": "2026-08-02",
           "sprint": "2026-08-09",
-          "tea": "2026-07-30",
+          "tea": "2026-08-09",
           "gates": "2026-08-02",
           "code": "2026-07-29",
           "verify": "2026-07-29",
@@ -5417,7 +5407,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-08",
+            "at": "2026-08-09T15:20",
             "other": "2026-08-01"
           }
         ],
@@ -6313,7 +6303,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8532,7 +8522,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-09",
           "deck": "",
-          "spec": "2026-08-08T19:38",
+          "spec": "2026-08-09T15:20",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12178,9 +12168,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 6,
-        "verdict": "FINDINGS (6):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -14563,24 +14553,17 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [
-      {
-        "station": "Atlas",
-        "story": "12.2",
-        "phase": "dev",
-        "startEpoch": 1786270848
-      }
-    ],
+    "running": [],
     "lastShipped": {
-      "station": "steward",
-      "story": "6.3",
-      "epoch": 1786276032,
-      "sha": "2f7436026",
-      "subject": "Merge bmad-loop/20260809-034341-2f9c/6-3-partial-install-is-a-named-failure into loop/pyforge-steward (bmad-loop)"
+      "station": "atlas",
+      "story": "12.1",
+      "epoch": 1786287124,
+      "sha": "6ffdf8822",
+      "subject": "Merge bmad-loop/20260809-034342-8683/12-1-kedro-skills-audit-then-adopt into loop/pyforge-atlas (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 12:14 UTC",
-    "generatedEpoch": 1786277673
+    "generatedAt": "2026-08-09 15:11 UTC",
+    "generatedEpoch": 1786288273
   },
   "storySpecs": [
     {

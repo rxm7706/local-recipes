@@ -1,0 +1,13 @@
+{
+  "code": "def detect_archived_feedstocks(vcs_github_api_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase E.5  (phase_e5_archived_feedstocks CFA:2504)\n    \"\"\"Detect archived feedstocks from the GitHub API response. Input:\n    ``feedstock_name``, ``archived`` (bool). Output: the ``feedstock_name`` rows whose\n    repo is archived (``archived=True``).\"\"\"\n    src = vcs_github_api_raw\n    if src is None or src.empty or not {\"feedstock_name\", \"archived\"} <= set(src.columns):\n        return pd.DataFrame(columns=[\"feedstock_name\", \"archived\"])\n    archived = src[_as_bool_series(src[\"archived\"])]\n    return archived[[\"feedstock_name\", \"archived\"]].drop_duplicates().reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='detect_archived_feedstocks'",
+  "inputs": [
+    "vcs_github_api_raw"
+  ],
+  "outputs": [
+    "vcs_archived_feedstocks"
+  ],
+  "preview": null
+}

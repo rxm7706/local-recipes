@@ -1,0 +1,8 @@
+{
+  "type": "datasets.incremental_parquet.IncrementalParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/core_downloads_pyver_breakdown/core_downloads_pyver_breakdown.parquet",
+  "run_command": "kedro run --to-outputs=core_downloads_pyver_breakdown",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

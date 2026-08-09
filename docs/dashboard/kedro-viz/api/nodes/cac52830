@@ -1,0 +1,14 @@
+{
+  "code": "def enrich_maintainers(\n    core_cf_graph_raw: pd.DataFrame,\n) -> tuple[pd.DataFrame, pd.DataFrame]:\n    # legacy: Phase E  (phase_e_enrichment CFA:2188; delta spec:287-292)\n    \"\"\"Enrich maintainer data from the cf-graph ``node_attrs``.\n\n    Reads ``core_cf_graph_raw`` — a cross-pipeline reference resolved by CATALOG NAME\n    (AD-3): the cf-graph tarball is a shared raw SOURCE declared once by the ``core``\n    domain and consumed here by ``vcs_health`` Phase E (no producer conflict — it is a\n    fetched source, not a node output).\n\n    AC-5 — the maintainer-universe delta is DOCUMENTED here (full reconciliation\n    deferred to B4): atlas ``package_maintainers`` = **769** (537 sole + 232 co, build\n    2026-06-19) vs cf-graph ``node_attrs`` discovery = **813** (558 + 255,\n    conda-forge-tracker.md), Δ≈**44** (spec:287-292). The ~44-feedstock disagreement is\n    a data-quality investigation beyond one story; the AC explicitly allows\n    \"reconciles — or explicitly documents\". See the parity notes\n    (``tests/parity/PARITY_NOTES.md``).\n\n    Input: ``feedstock_name``, ``conda_name``, ``maintainers`` (list per row). Output:\n    ``(vcs_maintainers, vcs_package_maintainers)`` — the unique maintainer universe and\n    the per-package (conda_name, maintainer) long form.\n    \"\"\"\n    g = core_cf_graph_raw\n    maint_cols = [\"maintainer\"]\n    pkg_cols = [\"conda_name\", \"maintainer\"]\n    if g is None or g.empty or not {\"conda_name\", \"maintainers\"} <= set(g.columns):\n        return pd.DataFrame(columns=maint_cols), pd.DataFrame(columns=pkg_cols)\n\n    rows: list[tuple[str, str]] = []\n    for conda_name, maints in zip(g[\"conda_name\"], g[\"maintainers\"]):\n        # a missing cell is a scalar NaN (truthy) — `maints or []` would yield NaN and\n        # crash `for m in nan`; iterate only real sequences.\n        seq = maints if isinstance(maints, (list, tuple)) else []\n        for m in seq:\n            rows.append((conda_name, m))\n    package_maintainers = pd.DataFrame(rows, columns=pkg_cols).drop_duplicates()\n    maintainers = (\n        package_maintainers[[\"maintainer\"]].drop_duplicates().sort_values(\"maintainer\")\n    )\n    return (\n        maintainers.reset_index(drop=True),\n        package_maintainers.reset_index(drop=True),\n    )\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='enrich_maintainers'",
+  "inputs": [
+    "core_cf_graph_raw"
+  ],
+  "outputs": [
+    "vcs_maintainers",
+    "vcs_package_maintainers"
+  ],
+  "preview": null
+}

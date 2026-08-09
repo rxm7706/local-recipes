@@ -1,0 +1,13 @@
+{
+  "code": "def ingest_epss(vulnerability_epss_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: epss_fetcher  (upsert_epss_rows epss_fetcher.py:124)\n    \"\"\"Normalize the FIRST.org EPSS feed. **EPSS percentile normalized 0-100 AT STORE\n    TIME** (``_normalize_percentile`` = raw × 100; epss_fetcher.py:60-62 applied :141);\n    ``epss_score`` stored raw 0.0-1.0 (:140). Input: ``cve_id``, ``epss_score`` (raw),\n    ``epss_percentile`` (raw 0-1). Output ``vulnerability_epss_scores``: ``cve_id``,\n    ``epss_score`` (raw), ``epss_percentile`` (0-100).\"\"\"\n    cols = [\"cve_id\", \"epss_score\", \"epss_percentile\"]\n    df = vulnerability_epss_raw\n    if df is None or df.empty or \"cve_id\" not in getattr(df, \"columns\", []):\n        return pd.DataFrame(columns=cols)\n    out = df.copy()\n    if \"epss_score\" not in out.columns:\n        out[\"epss_score\"] = pd.NA\n    if \"epss_percentile\" not in out.columns:\n        out[\"epss_percentile\"] = pd.NA\n    out[\"epss_percentile\"] = [_normalize_percentile(p) for p in out[\"epss_percentile\"]]\n    out = out.drop_duplicates(subset=[\"cve_id\"], keep=\"last\")\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='ingest_epss'",
+  "inputs": [
+    "vulnerability_epss_raw"
+  ],
+  "outputs": [
+    "vulnerability_epss_scores"
+  ],
+  "preview": null
+}

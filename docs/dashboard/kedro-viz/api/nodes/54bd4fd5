@@ -1,0 +1,16 @@
+{
+  "code": "def per_version_vulns(\n    vulnerability_vdb_store: pd.DataFrame,\n    core_version_download_history: pd.DataFrame,\n    vulnerability_cisa_kev: pd.DataFrame,\n    vulnerability_epss_scores: pd.DataFrame,\n) -> pd.DataFrame:\n    # legacy: Phase G'  (phase_g_prime_per_version_vulns CFA:6808)\n    \"\"\"Per-(package, version) vuln records — the output that backs\n    ``v_current_version_vulns``, the **ONLY** query-time-correct vuln source (AC-2). 30 d\n    row-absence TTL. Reads the parsed vdb frame + ``core_version_download_history``\n    (cross-pipeline, B1/Phase I, by catalog name AD-3) to scope to versions with\n    download history. Shares the overlay loop (``aggregate_v8_6_0_overlays``, G'\n    consumption CFA:6933-6937) + the KEV overlay (``apply_kev_overlay``, CFA:6886).\n\n    NOTE (judgment call recorded in the Dev Agent Record): the Port Map lists G' reads\n    as vdb + ``core_version_download_history`` only, but the KEV overlay (CFA:6886) +\n    v8.6.0 EPSS aggregation are load-bearing AC-3 contracts G' genuinely applies, so\n    ``vulnerability_cisa_kev`` + ``vulnerability_epss_scores`` are wired as intra-pipeline\n    inputs (mirroring Phase G) rather than defaulted out.\n\n    Input vdb: ``package_name``, ``version``, ``cve_id``, ``cvss_score``.\n    ``core_version_download_history``: ``conda_name``, ``version``. Output\n    ``vulnerability_package_version_vulns``: ``package_name``, ``version``, ``cve_id``,\n    ``cvss_score``, ``is_kev``, ``epss_score``.\"\"\"\n    cols = [\"package_name\", \"version\", \"cve_id\", \"cvss_score\", \"is_kev\", \"epss_score\"]\n    vdb = vulnerability_vdb_store\n    if vdb is None or vdb.empty or not {\"package_name\", \"version\", \"cve_id\"} <= set(vdb.columns):\n        return pd.DataFrame(columns=cols)\n    work = vdb.copy()\n    if \"cvss_score\" not in work.columns:\n        work[\"cvss_score\"] = pd.NA\n\n    # scope to versions with download history when the cross-pipeline frame is present\n    # (Phase I / B1) — an empty/absent history degrades to no scoping (AD-13).\n    hist = core_version_download_history\n    if hist is not None and not hist.empty and {\"conda_name\", \"version\"} <= set(hist.columns):\n        known = set(zip(hist[\"conda_name\"], hist[\"version\"]))\n        work = work[[(p, v) in known for p, v in zip(work[\"package_name\"], work[\"version\"])]]\n\n    if work.empty:\n        return pd.DataFrame(columns=cols)\n    # KEV overlay (CFA:6886) + shared v8.6.0 EPSS aggregation (None-not-0.0).\n    is_kev = apply_kev_overlay(work, vulnerability_cisa_kev)\n    cwe_empty = pd.DataFrame(columns=[\"cwe_id\", \"category\"])\n    work = aggregate_v8_6_0_overlays(work, vulnerability_epss_scores, cwe_empty)\n    out = work[[\"package_name\", \"version\", \"cve_id\", \"cvss_score\"]].copy()\n    out[\"is_kev\"] = is_kev.values\n    out[\"epss_score\"] = work[\"epss_score\"].values\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='per_version_vulns'",
+  "inputs": [
+    "vulnerability_vdb_store",
+    "core_version_download_history",
+    "vulnerability_cisa_kev",
+    "vulnerability_epss_scores"
+  ],
+  "outputs": [
+    "vulnerability_package_version_vulns"
+  ],
+  "preview": null
+}
