@@ -27,3 +27,4 @@ hatchling = "*"
 [package.run-dependencies]
 python = ">=3.14"
 jsonschema = "*"
+mcp = ">=1.28.1"                         # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py); matches pyproject.toml's own floor (root pixi.toml's [feature.pyforge-doctor.dependencies] pins the dev env tighter at >=2.0.0, mirrors pyforge-herald's identical split)
