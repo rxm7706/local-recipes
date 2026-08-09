@@ -21,7 +21,7 @@ development_status:
   10-4-preserve-null-identity-under-pandas-3-0: done
   10-5-stamp-advisory-data-with-its-build-provenance: done
   10-6-make-run-admission-real-or-stop-claiming-it: done
-  12-1-kedro-skills-audit-then-adopt: backlog
+  12-1-kedro-skills-audit-then-adopt: done
   12-2-publish-the-real-dag-continuously: backlog
   12-3-record-the-vscode-kedro-verdict: backlog
   13-1-trending-ingest: backlog
