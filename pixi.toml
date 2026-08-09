@@ -1468,6 +1468,11 @@ playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # kedro-mcp) so it cannot be a conda run-dep of the package. Supplied to the ENV here
 # so kedro-test can collect tests/semantic. Mirrors [feature.local-recipes.pypi-dependencies].
 boring-semantic-layer = ">=0.3.16"
+# Story 12.1 (kedro-skills audit-then-adopt): exact-pinned to the evaluated version
+# (no floor) so the audited artifact never silently widens. Dev/tooling-only -- never
+# a pyforge-atlas package run-dep (mirrors the playwright/playwright-python TEST-ONLY
+# precedent above).
+kedro-skills = "==0.1.1"
 
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
@@ -1496,6 +1501,11 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
 [feature.pyforge-atlas.tasks.viz]
 description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
 cmd = "kedro viz run --no-browser"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.kedro-skills-audit]
+description = "Story 12.1: list the kedro-skills registry against the real atlas Kedro project (re-verifies ground truth, not a cached read). Runs from the atlas project root (kedro CLI needs the project cwd)."
+cmd = "kedro skills list"
 cwd = "src/shared/packages/pyforge-atlas"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
