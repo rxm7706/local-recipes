@@ -21,7 +21,7 @@ window.DASHBOARD_DATA = {
         "median": 29,
         "lo": 4,
         "hi": 227,
-        "phaseAsOf": "2026-08-09 11:49 UTC"
+        "phaseAsOf": "2026-08-09 11:53 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3313,7 +3313,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 11:49 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 11:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4119,7 +4119,7 @@ window.DASHBOARD_DATA = {
       "title": "The dashboard derives project paths — slug ≠ directory stops being a bug factory",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-08",
+      "updated": "2026-08-09",
       "dream": "dashboard-project-path-derivation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
     },
@@ -4149,7 +4149,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-08",
+      "updated": "2026-08-09",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
     },
@@ -4259,7 +4259,7 @@ window.DASHBOARD_DATA = {
       "title": "PyForge Testing Charter — fleet-wide test architecture",
       "caps": 5,
       "companions": 2,
-      "updated": "2026-08-02",
+      "updated": "2026-08-09",
       "dream": "pyforge-testing-charter",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
     },
@@ -4279,7 +4279,7 @@ window.DASHBOARD_DATA = {
       "title": "sprint-status auto-promote",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-08",
+      "updated": "2026-08-09",
       "dream": "sprint-status-auto-promote",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
     },
@@ -8503,7 +8503,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-09",
           "deck": "",
           "spec": "2026-08-08T19:38",
           "research": "2026-08-08",
@@ -14552,8 +14552,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260808-210255-c88b/6-6-the-chain-verdicts-come-home into loop/pyforge-doctor (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 11:49 UTC",
-    "generatedEpoch": 1786276181
+    "generatedAt": "2026-08-09 11:53 UTC",
+    "generatedEpoch": 1786276427
   },
   "storySpecs": [
     {
