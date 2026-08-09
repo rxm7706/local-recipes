@@ -119,5 +119,37 @@ COPY --from=builder /shell-hook.sh /shell-hook.sh
 RUN printf '#!/bin/bash\nset -e\nsource /shell-hook.sh\nexec -- "$@"\n' > /entrypoint.sh \
     && chmod +x /entrypoint.sh
 
+# Story 7.3 ("Credentials never enter image layers") build-time gate:
+# `scripts/container-gates secrets-scan` delegates to the existing `steward
+# keys audit --secrets <path>` primitive (AD-2 -- no second scanner) over
+# every root the image ships (`/pyforge`, `/shell-hook.sh`, `/entrypoint.sh`)
+# and fails this `RUN` on any finding, which natively aborts `docker
+# build`/`podman build` itself -- not a later `docker run`. A plain `RUN`
+# step, not a separate CI script, so it always runs on THIS stage's actual
+# content and can never drift out of sync with what the image produces.
+# `bash -c "..."`, not a bare `RUN source ...`: `source` is a bash builtin,
+# and BuildKit's default `RUN` shell is `/bin/sh` (dash on this base image),
+# which doesn't have it -- `/bin/sh: source: not found`, confirmed live.
+# Sourcing /shell-hook.sh first puts `steward` (and python3) on PATH the same
+# way /entrypoint.sh does at runtime -- the builder stage's `pixi install
+# --frozen -e pyforge-container` materialized both under
+# /pyforge/.pixi/envs/pyforge-container/, which the COPY above brought along.
+#
+# `/pyforge` is a DIRECTORY root, so `container-gates` skips its `.pixi/`
+# child entirely rather than recursing into it: `.pixi/` is this very
+# materialized env, and it ships the `age`/`age-keygen` binaries the `keys`
+# duty needs to function at all -- `age-keygen` itself has a literal
+# `AGE-SECRET-KEY-1...` string compiled in (an upstream test vector,
+# confirmed live: `pixi run -e pyforge-steward steward keys audit --secrets
+# .pixi/envs/pyforge-steward/bin` finds exactly that one hit, and `strings
+# .../age-keygen | grep AGE-SECRET-KEY-1` shows the literal baked into the
+# binary -- not written by this repo or this image). That finding is
+# unavoidable and permanent for any image shipping `age`/`age-keygen`, so
+# excluding `.pixi/` is the only way this gate is ever green on a clean
+# build. `/shell-hook.sh` and `/entrypoint.sh` are FILE roots, scanned
+# directly (no `.pixi/`-exclusion logic applies to a file).
+RUN bash -c "source /shell-hook.sh \
+    && python3 /pyforge/scripts/container-gates secrets-scan /pyforge /shell-hook.sh /entrypoint.sh"
+
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["marshal"]
