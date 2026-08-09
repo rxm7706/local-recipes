@@ -64,7 +64,10 @@
             "adoption",
             "marshal-durability",
             "ledger-regression",
-            "story-status"
+            "story-status",
+            "chain-completeness",
+            "dashboard-drift",
+            "check-layout"
           ]
         },
         "check": { "type": "string" },
