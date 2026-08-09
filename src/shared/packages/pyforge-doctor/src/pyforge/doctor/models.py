@@ -71,6 +71,19 @@ class Source(StrEnum):
     # sources/marshal.py's gather_story_status for the independence rationale.
     LEDGER_REGRESSION = "ledger-regression"
     STORY_STATUS = "story-status"
+    # Story 6.5 (FR-15): the closed taxonomy EXTENDED once more -- Doctor's
+    # verdict on the fleet-status board's own truthfulness: every open Spec a
+    # station owns is decomposed and its epics/ledger/board agree (ported from
+    # scripts/chain_completeness_check.py), the committed data.js and tracked
+    # ledger twins have not drifted from their feeds (ported from
+    # scripts/dashboard_drift_check.py), and the console bar's status chips
+    # actually render without overlapping or clipping (ported from
+    # docs/dashboard/check_layout.py). All three judge a Marshal-produced
+    # artifact (the Guildhall console + its data feeds); see sources/board.py
+    # for the independence rationale.
+    CHAIN_COMPLETENESS = "chain-completeness"
+    DASHBOARD_DRIFT = "dashboard-drift"
+    CHECK_LAYOUT = "check-layout"
 
 
 class Partition(StrEnum):
