@@ -2129,9 +2129,9 @@ cannot go stale
 carried **61 findings on `main`** for weeks, and the repo is not 61 kinds of broken — the
 detector makes its reconciliation claim at the wrong granularity, twice, so its verdict is
 unactionable in one direction and untrustworthy in the other. Decomposes
-`spec-surface-drift-reconciliation` (FR-164..FR-168).
+`spec-surface-drift-reconciliation` (FR-164..FR-169).
 
-**Reopened 2026-08-09 for S-13.5.** S-13.1..S-13.4 took the gate to 0 findings; two days of
+**Reopened twice on 2026-08-09** — S-13.5, then S-13.6. S-13.1..S-13.4 took the gate to 0 findings; two days of
 *using* it exposed a third instance of the same granularity error — a Spec that declares a
 surface with no `.memlog.md` has an empty contract hash, so its contract can never move and
 nothing reports it. Same instrument, same disease, same Spec: it belongs in this epic.
@@ -2275,6 +2275,37 @@ to informational `[drift-presumed]`
 effect of the seven memlogs
 **And** a mutation test proves the guard both ways: deleting a governed fixture's memlog reds
 the new test, and removing the check re-greens it
+
+### Story 13.6: The presumed set is worked down by measurement
+
+As the operator,
+I want the 994 `[drift-presumed]` entries dispositioned rather than carried,
+So that the informational channel stays small enough to read and a new entry means something.
+
+**Type:** change • **Effort:** M • **Deps:** S-13.2, S-13.5 • **FR/AD:** FR-169
+
+**Added 2026-08-09.** S-13.2 made this set visible for the first time; leaving it standing
+would repeat the mistake the Dream was seeded to correct — a number that hardens into terrain.
+
+**Acceptance Criteria:**
+
+**Given** the 994 entries across four station Specs
+**When** each is traced to the commit that last moved it
+**Then** the set is partitioned `added` (baseline lag) vs `changed` (the per-file question),
+and the counts are **measured, never estimated** — 932 / 62 / 0, with **994/994** traced
+**And** every cluster is judged against its own Spec's capabilities, and that judgment is
+recorded in that Spec's memlog **before** any stamp — a stamp is honest only after the
+judgment, and the two orders are indistinguishable in the resulting number
+**And** anything moved by a story that is **not** `done`, or landing outside a contracted
+capability, is **reported rather than stamped** (measured: zero such files)
+**And** herald's 751 `presentations/**` entries (15 deck clusters) are judged against **HER-9**,
+which contracts that corpus — not waved through on the strength of being the biggest cluster
+**And** no entry is cleared by naming 994 literal paths in a memlog: that satisfies the
+matcher and records nothing
+**And** the four Specs are scoped-stamped **individually**, each verified to change only its
+own baseline key
+**And** `spec-surface-check` reports **0 findings and 0 `[drift-presumed]`**, with a
+before/after diff proving no gating `[drift]` was absorbed
 
 ---
 

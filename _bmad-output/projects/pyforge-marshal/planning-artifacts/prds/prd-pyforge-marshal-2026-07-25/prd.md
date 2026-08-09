@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-09  # § 16.9 reopened: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5 of spec-surface-drift-reconciliation, found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-168, no gaps.
+updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-169, no gaps.
 # 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
 # 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
@@ -1908,6 +1908,23 @@ impossible* and clears by creating one file. The 7 live instances (**396 governe
 its baseline in the same change, since a new memlog otherwise downgrades that spec's next
 drift from gating to informational — trading a false green for a quiet one. The detector
 never writes the memlog it checks for.
+
+#### FR-169: The presumed set is worked down by measurement, not carried
+**Added 2026-08-09, realizing CAP-6.** FR-165 made a previously-invisible set visible: **994
+`[drift-presumed]` entries** across four station Specs. Carrying them unexamined would repeat
+the mistake this whole Dream was seeded to correct — a standing number that hardens into
+terrain. **Consequences:** every entry is traced to the commit that last moved it and
+partitioned before anything is stamped. The measurement, not an estimate: **932 `added` /
+62 `changed` / 0 `removed`** — 94% is baseline lag, not drift; **994/994** trace to a commit;
+**178** to an explicit `done` story id and **zero to a story that is not `done`**. Herald is
+834 of the total and 751 of those (15 clusters) are `presentations/**`, a *declared* part of its surface
+contracted by **HER-9** — S-13.4's steward finding at fleet scale, the code having caught up
+to a contract that was already correct. Each cluster is judged against its Spec's own
+capabilities and the judgment recorded in that Spec's memlog **before** the scoped stamp;
+anything moved by an unfinished story or landing outside a contracted capability is reported
+instead. A stamp is honest only after the judgment — measuring first and stamping second is
+reconciliation; the reverse is the laundering this Spec exists to end, and the two are
+indistinguishable in the resulting number, which is why the measurement is recorded.
 
 ---
 
