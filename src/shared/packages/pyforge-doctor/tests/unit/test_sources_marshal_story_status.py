@@ -16,22 +16,33 @@ driving real ``git`` here to build fixtures is fine.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 from pathlib import Path
+
+import pytest
 
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import marshal
 
 # See test_sources_ledger.py's own note: a contributor's git config (commit
 # signing, a global core.hooksPath) or an inherited GIT_DIR must not decide
-# whether this suite passes -- cli_bridge.run_git forwards os.environ verbatim,
-# so the module under test would inherit them too.
-_GIT_ENV = {
-    k: v
-    for k, v in os.environ.items()
-    if k not in {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY"}
-}
+# whether this suite passes. The scrub must mutate os.environ rather than build
+# a private env dict, because `cli_bridge.run_git` -- the path the module under
+# test takes -- reads os.environ itself at call time.
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
 
 
 def _git(target: Path, *args: str) -> str:
@@ -41,7 +52,6 @@ def _git(target: Path, *args: str) -> str:
         capture_output=True,
         text=True,
         check=True,
-        env=_GIT_ENV,
     )
     return result.stdout
 
@@ -505,3 +515,81 @@ def test_earlier_run_with_a_commit_sha_is_not_overwritten_by_a_later_deferral(
     assert marshal._harness_tasks(loop_root, "warden")["1-1-foo"]["commit_sha"] == (
         "abc123"
     )
+
+
+# --- The green verdict must not vouch for what it never checked ------------
+
+
+def test_ok_message_does_not_claim_evidence_for_unchecked_stories(
+    tmp_path: Path,
+) -> None:
+    """A `done` key with no run record takes the SILENT branch -- it is counted
+    into `audited` but never checked against any evidence route. The message
+    used to assert "every `done` story is backed by a merge commit or a recorded
+    commit sha" over that population; measured live against this repo, 19 of 27
+    audited keys were in exactly that state."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo", "2-2-bar"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "warden", "run1",
+        {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
+    )  # 2-2-bar deliberately has no run record
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    message = findings[0].message
+    assert findings[0].status is DoctorStatus.OK
+    assert "2 audited" in message
+    assert "1 with no run record (unchecked)" in message
+    # The overstated claim must be gone, not merely qualified.
+    assert "every `done` story is backed" not in message
+
+
+def test_unreadable_run_records_are_counted_not_silently_dropped(
+    tmp_path: Path,
+) -> None:
+    """A malformed run record is skipped, which makes the story indistinguishable
+    from "no run record at all" -- the detector's silent branch. Corrupt harness
+    state is exactly what a broken loop run leaves behind, so a false-green could
+    pass as clean with nothing in the report to show a record was dropped."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(loop_root, "warden", "run1", {"1-1-foo": "not-a-dict"})
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert "1 run record(s) unreadable" in findings[0].message
+
+
+def test_a_fully_evidenced_audit_reports_no_caveats(tmp_path: Path) -> None:
+    """The counters are additive, not always-on: with every story backed by a
+    recorded commit there is nothing to qualify."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "warden", "run1",
+        {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert findings[0].message == (
+        "no `done` story contradicts its landing evidence (1 audited)"
+    )
+    # Evidence shape is pinned by the spec's I/O matrix -- unchanged.
+    assert findings[0].evidence == {"audited": 1}

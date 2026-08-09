@@ -84,12 +84,17 @@ def _git(target: Path, *args: str, timeout: float | None = None) -> str | None:
 
     Never raises: a missing binary, a non-repo target and a failed command are all
     "cannot evaluate", which this module reports as a WARN Finding rather than
-    crashing on — the house rule for every Doctor source.
+    crashing on — the house rule for every Doctor source. ``UnicodeDecodeError``
+    is caught alongside ``CliBridgeError`` because ``run_git`` decodes with
+    ``text=True`` and catches only ``TimeoutExpired``/``OSError``, so non-UTF-8
+    git output would otherwise raise straight out of the gather (see
+    ``sources/ledger.py``'s own ``_git`` for the verified repro; the shared fix
+    in ``cli_bridge`` stays recorded in ``deferred-work.md``).
     """
     kwargs = {} if timeout is None else {"timeout": timeout}
     try:
         return run_git(target, list(args), **kwargs)
-    except CliBridgeError:
+    except (CliBridgeError, UnicodeDecodeError):
         return None
 
 
@@ -248,8 +253,18 @@ def gather(target: Path) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
-def _harness_tasks(loop_root: Path, slug: str) -> dict[str, dict]:
+def _harness_tasks(
+    loop_root: Path, slug: str, *, skipped: list[str] | None = None
+) -> dict[str, dict]:
     """Most-advanced run record per story key, across every run of a station.
+
+    ``skipped``, when given, accumulates the keys whose run record was
+    malformed and therefore dropped. A dropped record is indistinguishable
+    downstream from "this story has no run record at all" -- which is the
+    detector's SILENT branch -- so without this the corrupt-harness case (the
+    exact state a broken loop run leaves behind) turns a potential false-green
+    into a clean pass with nothing to show for it. The parameter is optional so
+    the plain two-arg call keeps working unchanged.
 
     'Most advanced' = prefer a record carrying a ``commit_sha``, since a
     later run can re-drive a story an earlier run deferred. Port of
@@ -287,6 +302,8 @@ def _harness_tasks(loop_root: Path, slug: str) -> dict[str, dict]:
             continue
         for key, task in tasks.items():
             if not isinstance(task, dict):
+                if skipped is not None:
+                    skipped.append(key)
                 continue  # malformed entry -- skip it, keep its neighbours
             prev = out.get(key)
             if prev is None or (task.get("commit_sha") and not prev.get("commit_sha")):
@@ -360,9 +377,11 @@ def gather_story_status(
 
     false_greens: list[dict] = []
     audited = 0
+    no_record = 0
+    malformed: list[str] = []
     for feed in feeds:
         slug = feed.parent.parent.name.removeprefix("pyforge-")
-        tasks = _harness_tasks(loop_root, slug)
+        tasks = _harness_tasks(loop_root, slug, skipped=malformed)
         try:
             text = feed.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
@@ -373,6 +392,7 @@ def gather_story_status(
             task = tasks.get(key)
             # No run record at all -> pre-loop or hand-implemented. Stay silent.
             if task is None:
+                no_record += 1
                 continue
             if task.get("commit_sha"):
                 continue  # harness recorded a commit
@@ -426,15 +446,33 @@ def gather_story_status(
             for fg in false_greens
         )
 
+    # The source script printed a flat "OK: every `done` story is backed by a
+    # merge commit or a recorded commit sha." and offered `--verbose` to show
+    # the `(no run record -- hand-landed or pre-loop)` rows behind it. The port
+    # inherited the claim and dropped the surface that qualified it, so the
+    # message asserted landing evidence for stories it deliberately never
+    # checked: measured live against this repo, 19 of 27 audited keys had NO run
+    # record at all and were passed on the silent branch. What this gather
+    # actually establishes is the weaker (and true) "nothing CONTRADICTS its
+    # landing evidence", so that is what it now says, with the breakdown that
+    # was previously only reachable via --verbose folded into the message.
+    #
+    # The breakdown lives in the message rather than in `evidence` on purpose:
+    # the spec's I/O matrix pins this Finding's evidence to exactly
+    # `{"audited": 0}` for the no-feeds row, so widening the shape here would
+    # be a spec deviation. Enriching it stays recorded in `deferred-work.md`
+    # for the story that owns the contract.
+    detail = f"{audited} audited"
+    if no_record:
+        detail += f", {no_record} with no run record (unchecked)"
+    if malformed:
+        detail += f", {len(malformed)} run record(s) unreadable"
     return (
         Finding(
             source=Source.STORY_STATUS,
             check="story-status",
             status=DoctorStatus.OK,
-            message=(
-                f"every `done` story is backed by a merge commit or a recorded "
-                f"commit sha ({audited} audited)"
-            ),
+            message=f"no `done` story contradicts its landing evidence ({detail})",
             evidence={"audited": audited},
         ),
     )

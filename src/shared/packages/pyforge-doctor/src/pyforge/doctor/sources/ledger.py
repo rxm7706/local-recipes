@@ -23,6 +23,12 @@ whole revision range, including regressions that already landed on a branch. Nei
 supersedes the other; a regression could in principle be caught by only one
 depending on when it is measured.
 
+The pair does NOT currently agree on the "I cannot see any ledger at all" case:
+the sibling reports WARN (``check="ledger-inventory"``), this module reports OK.
+That divergence is recorded in ``deferred-work.md`` rather than resolved here —
+named in this paragraph because this paragraph exists precisely so a maintainer
+comparing the two guards is not surprised by them.
+
 **The independence rule, which is the entire point of this module:**
 
     This module reads the DURABLE ARTIFACTS — tracked ledgers at two revisions,
@@ -79,10 +85,20 @@ def _git(target: Path, *args: str) -> str | None:
     Never raises: an unresolvable ref, a non-repo target, and a failed command
     are all "cannot evaluate", which this module reports as a WARN Finding
     rather than crashing on.
+
+    ``UnicodeDecodeError`` is caught alongside ``CliBridgeError`` because
+    ``run_git`` decodes with ``text=True`` and catches only ``TimeoutExpired``/
+    ``OSError`` -- so a committed ledger blob holding a non-UTF-8 byte raises
+    straight through ``git show`` and out of ``gather()``, breaking the spec's
+    "degrade to a WARN/OK Finding on any unreadable/missing input, never raise"
+    boundary (verified: a `\\xe9` byte in a tracked ledger raised out of
+    ``gather``). The one-catch fix for EVERY ``run_git`` caller belongs in
+    ``cli_bridge`` itself and stays recorded in ``deferred-work.md``; this
+    local guard keeps THIS module's own documented contract true meanwhile.
     """
     try:
         return run_git(target, list(args))
-    except CliBridgeError:
+    except (CliBridgeError, UnicodeDecodeError):
         return None
 
 
@@ -124,13 +140,21 @@ def _ledger_paths(target: Path, rev: str) -> list[str]:
     )
 
 
-def _check(target: Path, base: str, head: str) -> list[dict]:
+def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
     """Port of the script's own ``check(base, head)`` — see
     ``scripts/ledger_regression_check.py`` for the full rename-continuity
     rationale (a renamed-but-still-``done`` key, id prefix changed but kebab
-    tail surviving, is continuity, not regression)."""
+    tail surviving, is continuity, not regression).
+
+    Returns the findings AND how many ledger paths were actually compared:
+    "clean" and "found nothing to look at" are the same empty finding list, and
+    the caller reports both as OK today (recorded in ``deferred-work.md``, where
+    the OK-vs-WARN verdict for an empty measurement is owned). Carrying the
+    count means that decision is at least visible in the report meanwhile,
+    instead of a green with nothing behind it."""
     findings: list[dict] = []
-    for path in sorted(set(_ledger_paths(target, base)) | set(_ledger_paths(target, head))):
+    paths = sorted(set(_ledger_paths(target, base)) | set(_ledger_paths(target, head)))
+    for path in paths:
         before_text = _git(target, "show", f"{base}:{path}")
         after_text = _git(target, "show", f"{head}:{path}")
         project = path.split("/")[2]
@@ -174,11 +198,14 @@ def _check(target: Path, base: str, head: str) -> list[dict]:
                     "project": project,
                     "path": path,
                     "count": len(lost),
-                    "keys": [f"{k} ({o} -> {n})" for k, o, n in lost],
+                    "keys": [k for k, _o, _n in lost],
+                    "transitions": [
+                        {"key": k, "from": o, "to": n} for k, o, n in lost
+                    ],
                     "detail": f"{len(lost)} story key(s) moved out of `done`",
                 }
             )
-    return findings
+    return findings, len(paths)
 
 
 def gather(
@@ -242,7 +269,11 @@ def gather(
                         f"{base!r} and {head!r} are the same commit and it has "
                         f"no parent — nothing to compare"
                     ),
-                    evidence={"base": base, "head": head},
+                    # `target` is carried on BOTH cannot-evaluate WARNs, not
+                    # just the unresolvable-base one: same source, same check,
+                    # same status, so a consumer reading evidence["target"]
+                    # must not KeyError depending on which of the two fired.
+                    evidence={"base": base, "head": head, "target": str(target)},
                 ),
             )
         effective_base = parent
@@ -258,7 +289,8 @@ def gather(
         range_evidence["base_requested"] = base
         range_evidence["base_substituted"] = True
 
-    raw_findings = _check(target, effective_base, head)
+    raw_findings, ledgers_compared = _check(target, effective_base, head)
+    range_evidence["ledgers_compared"] = ledgers_compared
 
     if not raw_findings:
         return (
@@ -293,7 +325,20 @@ def gather(
                     # still bounded (never unbounded), just not required to
                     # match a print-width choice that doesn't apply to this
                     # shape.
+                    #
+                    # For the same reason `keys` is BARE story keys under both
+                    # `check` kinds. It previously held pre-formatted
+                    # "<key> (<old> -> <new>)" strings for done-key-regressed
+                    # and bare keys for ledger-deleted -- one field name, two
+                    # shapes, forcing the JSON consumer this comment invokes to
+                    # re-parse a display string to recover the transition. The
+                    # transition now travels beside it, already structured.
                     "keys": item["keys"][:20],
+                    **(
+                        {"transitions": item["transitions"][:20]}
+                        if "transitions" in item
+                        else {}
+                    ),
                     **range_evidence,
                     "remedy": f"git checkout {effective_base} -- {item['path']}",
                 },

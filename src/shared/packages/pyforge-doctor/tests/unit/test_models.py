@@ -119,9 +119,12 @@ def test_finding_evidence_is_defensively_copied():
     assert finding.evidence == {"k": "v"}
 
 
-def test_source_has_exactly_eleven_members():
+def test_source_taxonomy_is_exactly_this_closed_set():
     # The taxonomy is CLOSED but extensible by review, never an open/stringly-typed
     # escape hatch -- it stays a fixed, enumerable set and this test is the gate.
+    # The member COUNT is deliberately not in the test's name: the set-equality
+    # assertion below is the contract, and a number in the name only goes stale
+    # the next time a story appends a member (as "nine" then "eleven" both did).
     # Story 4.3 (FR-12, AD-9) added ADOPTION; 2026-08-08 added MARSHAL_DURABILITY,
     # Doctor's verdict on the Marshal's own row (Charter §6 -- "the one station that
     # would otherwise grade itself"), after a sync destroyed 96 `done` markers across

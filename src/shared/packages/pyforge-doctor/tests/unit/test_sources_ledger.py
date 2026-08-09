@@ -13,24 +13,41 @@ exactly like a remote-tracking ref would.
 
 from __future__ import annotations
 
-import os
 import subprocess
 from pathlib import Path
+
+import pytest
 
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import ledger
 
 # A contributor's own git config must not decide whether this suite passes.
-# `git init` inherits GIT_DIR/GIT_WORK_TREE from the environment (and
-# cli_bridge.run_git forwards os.environ verbatim, so the module under test
-# would inherit them too), commit signing turns every fixture commit into a
-# gpg prompt or failure, and a global core.hooksPath can reject the commit
-# outright. Scrub all three at the fixture boundary.
-_GIT_ENV = {
-    k: v
-    for k, v in os.environ.items()
-    if k not in {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY"}
-}
+# `git init` inherits GIT_DIR/GIT_WORK_TREE from the environment, commit signing
+# turns every fixture commit into a gpg prompt or failure, and a global
+# core.hooksPath can reject the commit outright.
+#
+# The scrub is an AUTOUSE FIXTURE mutating os.environ, not a private env dict
+# handed to the helper below, because the helper is not the only git caller
+# here: `cli_bridge.run_git` -- which the module under test goes through -- does
+# `env = dict(os.environ)` at call time, so a dict scrubbed at the fixture
+# boundary never reaches it. Verified: with GIT_DIR exported, the previous
+# fixture-local form left 13 of these tests failing, including
+# `test_non_repository_target_warns_instead_of_accusing`, which returned FAIL
+# instead of WARN -- exactly the regression that test exists to catch.
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -40,7 +57,6 @@ def _git(repo: Path, *args: str) -> str:
         capture_output=True,
         text=True,
         check=True,
-        env=_GIT_ENV,
     )
     return result.stdout
 
@@ -356,3 +372,115 @@ def test_no_substitution_flag_when_base_is_used_as_requested(tmp_path: Path) -> 
     assert len(findings) == 1
     assert "base_substituted" not in findings[0].evidence
     assert findings[0].evidence["base"] == "origin/main"
+
+
+# --- Never raises, even on a non-UTF-8 committed blob -----------------------
+
+
+def test_non_utf8_ledger_blob_degrades_instead_of_raising(tmp_path: Path) -> None:
+    """The spec's Always boundary is "degrade to a WARN/OK Finding on any
+    unreadable/missing input, never raise". ``cli_bridge.run_git`` decodes with
+    ``text=True`` and catches only TimeoutExpired/OSError, so a tracked ledger
+    holding a non-UTF-8 byte used to raise UnicodeDecodeError straight out of
+    ``gather``. The blob is unreadable, so the ledger reads as absent at head --
+    a FAIL is an acceptable verdict here; an exception is not."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    base_sha = _commit_all(repo, "seed ledger")
+    _branch_at(repo, "origin/main", base_sha)
+
+    bad = (
+        repo / "_bmad-output" / "projects" / "doctor"
+        / "planning-artifacts" / "sprint-status-ledger.yaml"
+    )
+    bad.write_bytes(b"development_status:\n  1-1-f\xe9o: done\n")
+    _commit_all(repo, "ledger with a non-utf8 byte")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert findings  # the point is that it RETURNED rather than raised
+    assert all(f.source is Source.LEDGER_REGRESSION for f in findings)
+
+
+# --- Evidence shape is uniform across both cannot-evaluate WARNs -----------
+
+
+def test_both_warn_paths_carry_the_same_evidence_keys(tmp_path: Path) -> None:
+    """Same source, same check, same status -- a consumer reading
+    evidence["target"] must not KeyError depending on which WARN fired."""
+    unresolvable = tmp_path / "unresolvable"
+    _init_repo(unresolvable)
+    _write_ledger(unresolvable, "doctor", {"1-1-foo": "done"})
+    _commit_all(unresolvable, "seed ledger")  # no origin/main branch created
+
+    no_parent = tmp_path / "no-parent"
+    _init_repo(no_parent)
+    _write_ledger(no_parent, "doctor", {"1-1-foo": "done"})
+    only_sha = _commit_all(no_parent, "the only commit")
+    _branch_at(no_parent, "origin/main", only_sha)
+
+    a = ledger.gather(unresolvable, base="origin/main", head="HEAD")[0]
+    b = ledger.gather(no_parent, base="origin/main", head="HEAD")[0]
+
+    assert a.status is DoctorStatus.WARN
+    assert b.status is DoctorStatus.WARN
+    assert set(a.evidence) == set(b.evidence) == {"base", "head", "target"}
+
+
+# --- Evidence is machine-shaped, not print-shaped --------------------------
+
+
+def test_regression_evidence_carries_structured_transitions(tmp_path: Path) -> None:
+    """``keys`` is bare story keys under BOTH check kinds; the old->new
+    transition travels beside it already parsed, so a --json consumer never has
+    to re-parse a display string."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    base_sha = _commit_all(repo, "seed ledger")
+    _branch_at(repo, "origin/main", base_sha)
+
+    _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
+    _commit_all(repo, "regress the story")
+
+    finding = ledger.gather(repo, base="origin/main", head="HEAD")[0]
+
+    assert finding.evidence["keys"] == ["1-1-foo"]
+    assert finding.evidence["transitions"] == [
+        {"key": "1-1-foo", "from": "done", "to": "in-progress"}
+    ]
+
+
+# --- A green verdict says how much it measured ------------------------------
+
+
+def test_ok_finding_reports_how_many_ledgers_were_compared(tmp_path: Path) -> None:
+    """"Clean" and "found nothing to look at" are the same empty finding list.
+    Both still report OK (that verdict question is deferred), but the count
+    makes them distinguishable in the report."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    _write_ledger(repo, "warden", {"2-1-bar": "done"})
+    base_sha = _commit_all(repo, "seed two ledgers")
+    _branch_at(repo, "origin/main", base_sha)
+
+    (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
+    _commit_all(repo, "unrelated change")
+
+    finding = ledger.gather(repo, base="origin/main", head="HEAD")[0]
+    assert finding.status is DoctorStatus.OK
+    assert finding.evidence["ledgers_compared"] == 2
+
+    empty = tmp_path / "empty"
+    _init_repo(empty)
+    (empty / "x.txt").write_text("x\n", encoding="utf-8")
+    empty_base = _commit_all(empty, "no ledgers at all")
+    _branch_at(empty, "origin/main", empty_base)
+    (empty / "y.txt").write_text("y\n", encoding="utf-8")
+    _commit_all(empty, "still no ledgers")
+
+    vacuous = ledger.gather(empty, base="origin/main", head="HEAD")[0]
+    assert vacuous.status is DoctorStatus.OK
+    assert vacuous.evidence["ledgers_compared"] == 0
