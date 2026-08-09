@@ -16,10 +16,14 @@ authors = [{ name = "rxm7706" }]
 # transport (sources/atlas.py, the sole sanctioned import site) -- mirrors
 # pyforge-herald's identical mcp>=1.28.1 runtime dependency (pixi.toml's
 # in-repo conda pin is the tighter mcp>=2.0.0 floor already in use
-# repo-wide).
+# repo-wide). PyYAML is Story 6.6's sources/chain.py frontmatter parser --
+# the epic's own explicit departure from 6.4/6.5's hand-rolled-parser
+# precedent, matching scripts/dream_chain_check.py's own `import yaml`
+# (floor mirrors pixi.toml's own pyyaml>=6.0 in-repo conda pin).
 dependencies = [
     "jsonschema",
     "mcp>=1.28.1",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]

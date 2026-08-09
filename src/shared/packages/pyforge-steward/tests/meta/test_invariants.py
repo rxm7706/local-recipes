@@ -166,6 +166,54 @@ def test_no_third_party_provider_api_client_imported():
     assert not offenders, f"third-party provider API client import found: {offenders}"
 
 
+def test_deploy_has_no_story_status_derivation():
+    """Story 5.2 / AD-71 / AD-1: `deploy.py` may check whether its tracked
+    ledger EXISTS and is SHAPED like one, but must never re-derive an
+    individual story's status itself -- that computation stays inside the
+    wrapped `dashboard-gen` subprocess (`docs/dashboard/generate.py`'s own
+    `parse_sprint_status`), never reimplemented here.
+
+    AST-based, same rationale as `test_no_rotation_scheduler_exists`/
+    `test_no_third_party_provider_api_client_imported`: (1) no `import re`
+    or `import yaml` -- either would be the toolkit for parsing individual
+    ledger entries rather than just checking presence/shape via a substring
+    check; (2) no `ast.Compare` anywhere in the module against a
+    story-status vocabulary string literal (`done`, `in-progress`,
+    `backlog`, `blocked`, `pending`, `active`, `gated`) -- comparing against
+    one of these would BE the re-derivation this story exists to prevent.
+    """
+    import ast
+
+    deploy_path = PKG_ROOT / "steward" / "deploy.py"
+    tree = ast.parse(deploy_path.read_text(encoding="utf-8"))
+
+    banned_modules = {"re", "yaml"}
+    status_vocabulary = {
+        "done", "in-progress", "backlog", "blocked", "pending", "active", "gated",
+    }
+    offenders: list[str] = []
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] in banned_modules:
+                    offenders.append(f"deploy.py:{node.lineno} imports {alias.name!r}")
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            if node.module.split(".")[0] in banned_modules:
+                offenders.append(f"deploy.py:{node.lineno} imports from {node.module!r}")
+        elif isinstance(node, ast.Compare):
+            operands = [node.left, *node.comparators]
+            for operand in operands:
+                if isinstance(operand, ast.Constant) and isinstance(operand.value, str) \
+                        and operand.value in status_vocabulary:
+                    offenders.append(
+                        f"deploy.py:{node.lineno} compares against status literal "
+                        f"{operand.value!r}"
+                    )
+
+    assert not offenders, f"story-status derivation found in deploy.py: {offenders}"
+
+
 def test_no_cost_integration_sdk_imported_in_budget():
     """Story 4.3 / AD-6 / this story's own second AC: `budget.py`'s
     "honest stub" property is structural, not just behavioral -- no

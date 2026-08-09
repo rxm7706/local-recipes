@@ -131,6 +131,18 @@ today's advisory CI is why "merged green" and "actually green" can differ) ·
 
 ## Realization log
 
+- **2026-08-09 (later)** — Reopened again, for the half FR-173 missed. That FR
+  makes a LANDING leave the home current; it says nothing about pushing the
+  station branch, and — decisively — a landing done **by hand** never runs that
+  code at all. Every landing on 2026-08-09 was `gh pr merge`, so the eight loop
+  homes drifted **33–74 commits** behind main with nothing reporting it, and
+  origin's `loop/*` refs drifted further still. The cost was not cosmetic:
+  mason's stale home made the S-13.7 surface guard silently stop biting (0/3
+  reconciled, against steward's 4/4 from a current home) and **nothing failed and
+  nothing was logged**. The durable fix is therefore a CHECK at the chokepoint
+  every spin must pass — preflight — rather than a promise attached to a landing
+  path that can be bypassed.
+
 - **2026-08-09** — Reopened after operating `marshal land` alongside a live 9-story run.
   Two gaps, neither of which existed when the Dream was written because landing was then a
   post-run act: the verb retires the station branch with no live-run guard, and its

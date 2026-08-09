@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-178, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
+updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-180, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
 # 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
 # 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
@@ -431,6 +431,23 @@ Isolation covers the shared git directory, not just the working tree.
 - Observed three times, most recently **while a run was live**: a dev session re-added `/.claude/skills` to `.git/info/exclude`, which hides only NEW files, from `git status` and `git add -A`, in **every** worktree at once. It cannot be spotted with the tool you would use to spot it, and it nearly cost this session's own new test file.
 - `marshal preflight`/`homes` reports a loop home whose shared git state has been mutated — at minimum `info/exclude` — so the condition is visible rather than discovered by a missing file weeks later.
 - The existing filesystem-walking guard (`test_skill_files_tracked.py`) stays: it is the only signal that survives the rule, and it is what caught the third recurrence.
+
+#### FR-179: The board answers "how much is left" *(added 2026-08-09 — `docs/dreams/factory-console.md`)*
+A fleet roll-up renders on both boards; live-only fields stay local.
+**Consequences:**
+- Per-station `done / total`, `epics done / total` and a **PyForge roll-up** row, counted from each project's **tracked** `sprint-status-ledger.yaml` via the same `parse_sprint_status` the deploy already uses — never a second parser, and never the gitignored Tier-3 feed CI cannot read.
+- **`blocked` is counted separately**, because the board's own story states are `done`/`active`/`pending` and structurally cannot distinguish a blocked story from an unstarted one. Measured 2026-08-09: 6 blocked looked identical to 119 pending.
+- **No live fields on Pages.** Run state, projection and the ATTENTION block derive from `marshal status`, which reads tmux and `~/.bmad-loops`; CI has neither, so publishing them would publish what the deploy cannot measure. `pixi run -e local-recipes fleet-picture` is the local view that adds them.
+- An epic counts as done only when every story in it is done — the same rule the report uses, so the two can never disagree.
+
+#### FR-180: A stale loop home cannot be spun *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)*
+Preflight refuses a loop home that is behind `main`, and reports one that has diverged from origin.
+**Consequences:**
+- **Preflight, not the landing path.** FR-173 makes a landing leave the home current, but a landing done by hand (`gh pr merge`) never runs it. Preflight is the chokepoint every `factory spin` must pass, so the check cannot be skipped.
+- **ERROR, not WARN**, because the failure is silent: a home on an old baseline sees its drift as non-gating `[drift-presumed]`, `spec_surface_check` exits 0, and the S-13.7 guard never bites. Measured 2026-08-09 — a current home self-reconciled 4/4, a stale one 0/3, with nothing failed and nothing logged. It is clearable by one `git merge --ff-only`, so it gates without being an unclearable red.
+- **AHEAD is not BEHIND.** A home carrying unlanded story merges is the ordinary mid-run state and must not be refused.
+- **FR-173 is amended to include the push.** Returning the station branch to `main` locally is not enough: provisioning reads **origin**, so a re-provisioned home would clone a stale branch. Measured the same day — seven homes sat 33–74 commits behind on origin after their work had already landed.
+- Any probe failure yields no finding: a diagnostic must never become a refusal.
 
 ---
 
