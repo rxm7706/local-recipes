@@ -565,7 +565,28 @@ not a bigger constant. Epic 6's remaining stories are unblocked.
 enumerable with its scope, subject station and owning station
 **And** a source with no declared subject is a startup error, not a default
 
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-08-08).** `sources/__init__.py` (was empty) now holds a validated
+`SourceRegistration` registry (scope + subject station + owning station per current
+`Source` member, `__post_init__` raising loud on an empty subject/owner or an invalid
+scope — including a whitespace-only value) covering all 9 sources that existed before
+this story; a coherence test enforces exact set-equality between `Source` and the
+registry in both directions. `scripts/detectors.py` gained a `_doctor_sources()` helper
+that reads this registry directly (never AST-scanning Doctor's package) and reports a
+`doctor_sources_available` flag alongside the rows, so "zero sources" is never confused
+with "the package isn't importable here" — verified true in both the dedicated
+`pyforge-doctor` env (9 rows) and the default `local-recipes` env / `detectors.yml` CI
+workflow (neither installs `pyforge-doctor`; the flag reads `false` there, not a silent
+empty list). This story is the registry MECHANISM only: no `scripts/*_check.py` logic
+moved, and none of the 10 not-yet-implemented detector identities (`ledger_regression`
+etc.) were added — those land with their own `gather()` in Stories 6.4-6.9, each
+registering its own entry against the coherence test built here. One pre-existing gap
+surfaced incidentally: `Source.BEHIND_UPSTREAM` has no backing `gather()` anywhere in
+`pyforge.doctor` (only 4 of the 5 named atlas axes were ever wired) — logged as deferred
+work, not fixed here (outside this story's surface). 435 doctor tests pass
+(`pyforge-doctor-test`), plus 4 new stdlib-only tests under the lean `pyforge-ci` env
+(`pyforge-doctor-scripts-test`, new task).
 
 ### Story 6.3: The repo/runtime split survives the move
 

@@ -45,7 +45,10 @@ class Source(StrEnum):
     """The wrapped instruments (closed) — one member per gather filter the
     architecture spine names (AD-1 warden-doctor; AD-6 the five atlas Watch
     axes; AD-3/FR-3 env-hygiene; AD-9/FR-12 adoption, Story 4.3 — the closed
-    taxonomy EXTENDED, never opened)."""
+    taxonomy EXTENDED, never opened).
+
+    Each member's scope, subject station, and owning station are declared in
+    ``doctor.sources.REGISTRY`` (Story 6.2)."""
 
     WARDEN_DOCTOR = "warden-doctor"
     STALENESS_REPORT = "staleness-report"
