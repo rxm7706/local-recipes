@@ -39,19 +39,35 @@ Doctor's whole purpose is to survive and report on a broken environment.
 
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 
-__all__ = ("gather",)
+__all__ = ("gather", "gather_story_status")
 
 LEDGER_REL = "planning-artifacts/sprint-status-ledger.yaml"
 PROJECTS_REL = "_bmad-output/projects"
 TERMINAL = frozenset({"done"})
 
+# --- gather_story_status (Story 6.4, FR-15) -------------------------------
+#
+# Ported from scripts/story_status_check.py -- see that script's own module
+# docstring for the full false-green defect and the three-route evidence
+# rationale ("git is the sole authority for repository facts; the journal
+# owns process facts"). Independence: `_harness_tasks` reads ONLY host
+# filesystem state under `loop_root` (plain pathlib/json, never Marshal's
+# code) and the two git calls below route through this module's own `_git`
+# wrapper -- no second subprocess pathway.
 
-def _git(target: Path, *args: str) -> str | None:
+SPRINT_STATUS_GLOB = "_bmad-output/projects/pyforge-*/implementation-artifacts/sprint-status.yaml"
+DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
+NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
+
+
+def _git(target: Path, *args: str, timeout: float = 30.0) -> str | None:
     """``git`` stdout, or None on any failure.
 
     Routes through ``cli_bridge.run_git`` — AD-5 makes that module the SOLE
@@ -59,12 +75,17 @@ def _git(target: Path, *args: str) -> str | None:
     ``tests/meta/test_cli_bridge_sole_subprocess.py``. The first cut of this module
     called ``subprocess`` directly and that meta-test caught it.
 
+    ``timeout`` defaults to ``run_git``'s own default (kept explicit here so a
+    caller can widen it) -- ``gather_story_status``'s two ``git log`` calls pass
+    ``timeout=60.0`` to match ``scripts/story_status_check.py``'s own ``sh()``
+    helper exactly; every other call site in this module is unaffected.
+
     Never raises: a missing binary, a non-repo target and a failed command are all
     "cannot evaluate", which this module reports as a WARN Finding rather than
     crashing on — the house rule for every Doctor source.
     """
     try:
-        return run_git(target, list(args))
+        return run_git(target, list(args), timeout=timeout)
     except CliBridgeError:
         return None
 
@@ -222,3 +243,145 @@ def gather(target: Path) -> tuple[Finding, ...]:
             evidence={"lost": total_lost, "ledgers": len(ledgers)},
         ))
     return tuple(findings)
+
+
+def _harness_tasks(loop_root: Path, slug: str) -> dict[str, dict]:
+    """Most-advanced run record per story key, across every run of a station.
+
+    'Most advanced' = prefer a record carrying a ``commit_sha``, since a
+    later run can re-drive a story an earlier run deferred. Port of
+    ``scripts/story_status_check.py``'s own ``harness_tasks`` -- reads ONLY
+    host filesystem state (``pathlib``/``json``, no git, no subprocess), and
+    a missing or corrupt ``state.json`` is silently skipped rather than
+    raising, mirroring the script's own broad try/except-and-continue.
+    """
+    out: dict[str, dict] = {}
+    home = loop_root / f"pyforge-{slug}"
+    for state in sorted(home.glob(".bmad-loop/runs/*/state.json")):
+        try:
+            tasks = json.loads(state.read_text(encoding="utf-8")).get("tasks") or {}
+            for key, task in tasks.items():
+                prev = out.get(key)
+                if prev is None or (
+                    task.get("commit_sha") and not prev.get("commit_sha")
+                ):
+                    out[key] = task
+        except Exception:  # noqa: BLE001, S112 -- a corrupt/unreadable run
+            # record (unreadable file, invalid JSON, or a `tasks`/per-task
+            # shape that isn't the expected dict -- e.g. a list, or a task
+            # value with no `.get`) is skipped whole, not fatal to the whole
+            # gather; a WARN Finding would misattribute a per-run read
+            # failure to the story-status verdict itself, so this degrades
+            # silently instead (mirrors the source script's own broad
+            # try/except-and-continue, widened to cover the same shape
+            # assumptions the original script also makes without guarding).
+            continue
+    return out
+
+
+def gather_story_status(
+    target: Path, *, loop_root: Path | None = None
+) -> tuple[Finding, ...]:
+    """Judge whether every ``done`` story in every station's Tier-3 sprint
+    feed is backed by real landing evidence -- the library form of
+    ``scripts/story_status_check.py``'s own ``main()``, minus the print/exit
+    CLI surface.
+
+    A ``done`` story is confirmed landed if any of three routes holds: a
+    merge commit naming its key exists on any ref; the harness recorded a
+    ``commit_sha`` for it; or a commit reachable from ``main`` names it as
+    ``Story <epic>.<seq>`` (the hand-landed route). It is reported ONLY when
+    none of those hold AND the harness positively says the story is
+    ``deferred``/``escalated``/``abandoned`` -- a story with no run record at
+    all (hand-implemented, pre-loop) stays silent, since absence of evidence
+    is not evidence of absence.
+
+    ``loop_root`` defaults to ``Path.home() / ".bmad-loops"``, matching the
+    script's own hardcoded ``LOOP_ROOT``. Tier-3 feeds
+    (``_bmad-output/projects/pyforge-*/implementation-artifacts/
+    sprint-status.yaml``) are gitignored, so in a bare CI checkout this glob
+    finds nothing and the gather degrades to a vacuous ``audited=0`` OK
+    Finding rather than crashing.
+    """
+    if loop_root is None:
+        loop_root = Path.home() / ".bmad-loops"
+
+    false_greens: list[dict] = []
+    audited = 0
+    for feed in sorted(target.glob(SPRINT_STATUS_GLOB)):
+        slug = feed.parent.parent.name.removeprefix("pyforge-")
+        tasks = _harness_tasks(loop_root, slug)
+        try:
+            text = feed.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        for key in DONE_RE.findall(text):
+            audited += 1
+            task = tasks.get(key)
+            # No run record at all -> pre-loop or hand-implemented. Stay silent.
+            if task is None:
+                continue
+            if task.get("commit_sha"):
+                continue  # harness recorded a commit
+
+            if _git(
+                target, "log", "--oneline", "--all", "-F", f"--grep=/{key} into",
+                timeout=60.0,
+            ):
+                continue  # merge commit found
+
+            # Route 3: landed BY HAND, reachable from main -- see the source
+            # script's own docstring for why this must be a commit SUBJECT
+            # (not anywhere in the message) naming both the slug and the
+            # `Story <epic>.<seq>` phrase.
+            m = re.match(r"^(\d+)-(\d+)-", key)
+            if m:
+                needle = f"story {m.group(1)}.{m.group(2)}"
+                subjects = (
+                    _git(target, "log", "--format=%s", "main", timeout=60.0) or ""
+                ).lower().splitlines()
+                if any(slug in s and needle in s for s in subjects):
+                    continue  # hand-landed; named in a commit subject on main
+
+            phase = task.get("phase", "")
+            if phase in NOT_LANDED:
+                false_greens.append({
+                    "slug": slug, "key": key, "phase": phase,
+                    "defer_reason": task.get("defer_reason") or "",
+                })
+
+    # Findings are constructed AFTER the loop, not appended during it, so
+    # every one -- FAIL or OK -- carries the FINAL `audited` total in its
+    # evidence: an automated `--json` consumer reading a FAIL finding must
+    # be able to tell "3 of 50 audited" from "3 of 3 audited" without a
+    # separate summary finding.
+    if false_greens:
+        return tuple(
+            Finding(
+                source=Source.STORY_STATUS,
+                check="story-status",
+                status=DoctorStatus.FAIL,
+                message=(
+                    f"{fg['slug']}/{fg['key']}: reads `done` in the sprint feed, "
+                    f"but the harness says {fg['phase']!r} with no commit and no "
+                    f"merge commit anywhere"
+                    + (f" — {fg['defer_reason']}" if fg["defer_reason"] else "")
+                ),
+                evidence={**fg, "audited": audited},
+            )
+            for fg in false_greens
+        )
+
+    return (
+        Finding(
+            source=Source.STORY_STATUS,
+            check="story-status",
+            status=DoctorStatus.OK,
+            message=(
+                f"every `done` story is backed by a merge commit or a recorded "
+                f"commit sha ({audited} audited)"
+            ),
+            evidence={"audited": audited},
+        ),
+    )

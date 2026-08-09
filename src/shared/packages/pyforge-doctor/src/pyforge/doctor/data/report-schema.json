@@ -62,7 +62,9 @@
             "release-cadence",
             "env-hygiene",
             "adoption",
-            "marshal-durability"
+            "marshal-durability",
+            "ledger-regression",
+            "story-status"
           ]
         },
         "check": { "type": "string" },

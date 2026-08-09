@@ -27,7 +27,9 @@ mirroring ``checks/registry.py``'s own
 ``test_every_cataloged_category_is_dispatchable_by_gather_one`` tripwire.
 Registering a *new* ``Source`` member is each of Stories 6.4-6.9's own job
 (their own ``gather()`` lands alongside their own registration); this module
-only builds the mechanism and covers today's 9.
+built the mechanism covering the original 9, and Story 6.4 was the first to
+land two of its own registrations on top (``LEDGER_REGRESSION``,
+``STORY_STATUS``), bringing the count to 11.
 
 ``scripts/detectors.py``'s consumption of this module (its ``_doctor_sources``
 helper) degrades to ``(False, [])`` when ``pyforge.doctor`` isn't importable
@@ -132,11 +134,15 @@ class SourceRegistration:
         }
 
 
-# Subject/owner assignment for today's 9 sources (story's Design Notes carries
-# the full rationale per row). All nine are owning_station="doctor" (Doctor
-# holds every verdict) and scope="repo" (none reads host/tmux state yet --
+# Subject/owner assignment for today's 11 sources (each story's own Design
+# Notes carries the full rationale per row). Every entry is
+# owning_station="doctor" (Doctor holds every verdict) and scope="repo" --
 # Story 6.3 builds the scope-selection mechanism without registering a
-# "runtime" entry; Story 6.5's dashboard_drift is the first one).
+# "runtime" entry; Story 6.5's dashboard_drift is the first one. "repo" means
+# "declares itself CI-safe," not "never reads host state": Story 6.4's
+# STORY_STATUS is scope="repo" (matching its own script's DETECTOR
+# declaration) despite reading `~/.bmad-loops` -- see its own row's comment
+# below for why that classification is preserved rather than corrected here.
 REGISTRY: tuple[SourceRegistration, ...] = (
     SourceRegistration(
         source=Source.WARDEN_DOCTOR,
@@ -192,6 +198,21 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         subject_station="atlas",
         owning_station="doctor",
     ),
+    SourceRegistration(
+        source=Source.LEDGER_REGRESSION,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.4 -- ported from scripts/ledger_regression_check.py
+    SourceRegistration(
+        source=Source.STORY_STATUS,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.4 -- ported from scripts/story_status_check.py; scope stays
+    # "repo" per the original script's own DETECTOR declaration even though
+    # gather_story_status reads host state (~/.bmad-loops) -- preserve, don't
+    # redesign (see the story spec's Design Notes).
 )
 
 
