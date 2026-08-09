@@ -216,6 +216,26 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # "repo" per the original script's own DETECTOR declaration even though
     # gather_story_status reads host state (~/.bmad-loops) -- preserve, don't
     # redesign (see the story spec's Design Notes).
+    SourceRegistration(
+        source=Source.CHAIN_COMPLETENESS,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.5 -- ported from scripts/chain_completeness_check.py
+    SourceRegistration(
+        source=Source.DASHBOARD_DRIFT,
+        scope="runtime",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.5 -- ported from scripts/dashboard_drift_check.py; the first
+    # "runtime" member -- it reads the gitignored Tier-3 sprint feeds this
+    # module's own docstring describes, invisible to CI.
+    SourceRegistration(
+        source=Source.CHECK_LAYOUT,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.5 -- ported from docs/dashboard/check_layout.py
 )
 
 

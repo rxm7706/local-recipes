@@ -131,7 +131,10 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # four stations and every guard written in response lived in Marshal's own surface.
     # Story 6.4 (FR-15) added LEDGER_REGRESSION and STORY_STATUS, porting
     # scripts/ledger_regression_check.py and scripts/story_status_check.py's own
-    # judgements into Doctor's package.
+    # judgements into Doctor's package. Story 6.5 (FR-15) added
+    # CHAIN_COMPLETENESS, DASHBOARD_DRIFT and CHECK_LAYOUT, porting
+    # scripts/chain_completeness_check.py, scripts/dashboard_drift_check.py and
+    # docs/dashboard/check_layout.py's own judgements on the fleet-status board.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -144,6 +147,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "marshal-durability",
         "ledger-regression",
         "story-status",
+        "chain-completeness",
+        "dashboard-drift",
+        "check-layout",
     }
 
 
