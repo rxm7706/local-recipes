@@ -519,12 +519,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "18/28",
+            "19/28",
             "stories complete",
             "var(--done)"
           ],
           [
-            "10",
+            "9",
             "remaining",
             ""
           ]
@@ -549,7 +549,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "5.2"
+        "at": "6.2"
       },
       "epics": [
         {
@@ -667,7 +667,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "5.2",
-              "pending",
+              "done",
               "Render the verdict through a `doctor` verb"
             ]
           ]
@@ -3155,7 +3155,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-08 23:22 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 00:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5045,7 +5045,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 18,
+          "done": 19,
           "total": 28
         },
         {
@@ -5403,7 +5403,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "18/28",
+        "progress": "19/28",
         "complete": 14,
         "of": 14
       },
@@ -9851,7 +9851,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08T18:22",
+          "spec": "2026-08-08T18:23",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12586,7 +12586,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 5.2",
+        "line": "paused 6.2",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -14349,8 +14349,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-08 23:22 UTC",
-    "generatedEpoch": 1786231342
+    "generatedAt": "2026-08-09 00:16 UTC",
+    "generatedEpoch": 1786234613
   },
   "storySpecs": [
     {
@@ -14361,9 +14361,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 18,
+      "done": 19,
       "tracked": 16,
-      "gap": 2
+      "gap": 3
     },
     {
       "station": "pyforge-genesis",
@@ -14515,31 +14515,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [],
-        "done": 18,
-        "backlog": 10,
-        "blocked": 0,
-        "total": 28,
-        "next": "5-2-render-the-verdict-through-a-doctor-verb",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "5-2-render-the-verdict-through-a-doctor-verb",
-          "6-10-independence-is-structural-for-every-source",
-          "6-2-a-source-registry-doctor-owns",
-          "6-3-the-repo-runtime-split-survives-the-move",
-          "6-4-the-ledger-verdicts-come-home",
-          "6-5-the-board-verdicts-come-home",
-          "6-6-the-chain-verdicts-come-home",
-          "6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "steward",
         "project": "pyforge-steward",
         "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
@@ -14583,6 +14558,31 @@ window.DASHBOARD_DATA = {
           "7-1-one-build-whole-guild",
           "7-2-the-repo-at-a-fixed-short-path",
           "7-3-credentials-never-enter-image-layers"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 19,
+        "backlog": 9,
+        "blocked": 0,
+        "total": 28,
+        "next": "6-10-independence-is-structural-for-every-source",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "6-10-independence-is-structural-for-every-source",
+          "6-2-a-source-registry-doctor-owns",
+          "6-3-the-repo-runtime-split-survives-the-move",
+          "6-4-the-ledger-verdicts-come-home",
+          "6-5-the-board-verdicts-come-home",
+          "6-6-the-chain-verdicts-come-home",
+          "6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided",
+          "6-8-bmad-drift-comes-home-without-breaking-the-board"
         ],
         "state": "ready"
       },
@@ -14678,8 +14678,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 215,
-      "backlog": 101,
+      "done": 216,
+      "backlog": 100,
       "blocked": 6,
       "total": 322
     }

@@ -44,7 +44,7 @@ import jsonschema
 from . import fleet_surface, prescribe, score
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
-from .sources import atlas, warden as warden_source
+from .sources import atlas, marshal as marshal_source, warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
 
 # Story 2.3 AC1: omitting `--watch` runs this documented default axis set
@@ -121,11 +121,21 @@ def _build_parser() -> tuple[
         ),
     )
     check.add_argument(
+        "--durability",
+        action="store_true",
+        help=(
+            "run the 'durability' category (Marshal's tracked sprint ledgers "
+            "still hold every completion they once held) -- whole category "
+            "only, no NAME (see _gather_durability)"
+        ),
+    )
+    check.add_argument(
         "--list",
         action="store_true",
         help=(
             "list the full check catalog as text and exit -- never "
-            "gathers/runs anything (ignores --engines/--env/--json/path)"
+            "gathers/runs anything (ignores "
+            "--engines/--env/--durability/--json/path)"
         ),
     )
     check.add_argument(
@@ -439,6 +449,26 @@ def _gather_env(name: object, target: Path) -> tuple[Finding, ...]:
     return (finding,) if finding is not None else ()
 
 
+def _gather_durability(target: Path) -> tuple[Finding, ...]:
+    """Findings for the "durability" category (Story 5.2, FR-14/AD-11).
+
+    WHOLE-CATEGORY ONLY -- deliberately no per-check NAME, unlike
+    ``--engines``/``--env``. Per-check addressability is a
+    ``checks.registry`` concern (a ``_CATALOG`` entry plus a ``gather_one``
+    dispatch branch), and this story's surface is ``__main__.py``; a NAME
+    argument here would have to hand-roll a second filter path beside
+    ``gather_one``, which is exactly the drift ``registry.gather_one``'s
+    "filter, not a second code path" rule exists to prevent. So the flag is
+    a plain switch, and ``--list`` does not advertise durability checks.
+
+    ``sources.marshal.gather`` is all-or-nothing like warden's and never
+    raises (its own contract: git missing, target not a repo, or no ledger
+    all degrade to WARN), so there is no synthetic-degradation branch to
+    mirror ``_gather_engines``'.
+    """
+    return marshal_source.gather(target)
+
+
 def _run_check(args: argparse.Namespace) -> int:
     if args.list:
         return _render_list()
@@ -446,13 +476,14 @@ def _run_check(args: argparse.Namespace) -> int:
     target = Path(args.path)
     run_engines = args.engines is not None
     run_env = args.env is not None
-    if not run_engines and not run_env:
+    run_durability = args.durability
+    if not run_engines and not run_env and not run_durability:
         # Neither flag given -> both categories run (FR-2), each as the
         # WHOLE category -- args.engines/args.env are still None here (the
         # "flag absent" default, distinct from _WHOLE_CATEGORY, the "flag
         # given with no value" const), so the sentinel must be substituted
         # explicitly rather than forwarded as-is.
-        run_engines = run_env = True
+        run_engines = run_env = run_durability = True
         engines_name: object = _WHOLE_CATEGORY
         env_name: object = _WHOLE_CATEGORY
     else:
@@ -464,6 +495,8 @@ def _run_check(args: argparse.Namespace) -> int:
         findings += _gather_engines(engines_name, target)
     if run_env:
         findings += _gather_env(env_name, target)
+    if run_durability:
+        findings += _gather_durability(target)
 
     # Computed BEFORE emission: a stdout write failure must never replace
     # the already-computed exit code (mirrors warden's cli.py discipline).
