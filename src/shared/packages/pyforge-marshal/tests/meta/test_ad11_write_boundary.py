@@ -77,6 +77,9 @@ class _RecordingVcs:
     def resolve_ref(self, repo_root, ref):
         return "same-sha"
 
+    def worktree_head_sha(self, worktree_path):
+        return "same-sha"
+
     def merge_base(self, repo_root, a, b):
         return a
 
