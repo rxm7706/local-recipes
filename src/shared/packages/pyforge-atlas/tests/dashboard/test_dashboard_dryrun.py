@@ -221,9 +221,12 @@ def test_factory_status_reads_the_real_sprint_status():
     frame = fs.build_factory_status_frame(build_stamp=STAMP)
     sprint = frame[frame["source"] == "sprint-status.yaml"]
     keyed = dict(zip(sprint["key"], sprint["status"]))
-    # D1/D2 are real stories in the live sprint feed.
-    assert "d1-define-the-boring-semantic-layer-bsl-models" in keyed
-    assert "d2-build-the-vizro-dashboard-port-the-28-clis-to-pages" in keyed
+    # Epic 5's stories (D1/D2 in epics.md's spec-ID alias) are real stories in the live sprint
+    # feed. Matched by suffix, not the full key, since the leading numbering scheme is a ledger
+    # convention (currently Epic.Story, e.g. "5-1-...") that has already been renamed once
+    # (PR #322, 2026-08-08) and may be renamed again.
+    assert any(k.endswith("define-the-boring-semantic-layer-bsl-models") for k in keyed)
+    assert any(k.endswith("build-the-vizro-dashboard-port-the-28-clis-to-pages") for k in keyed)
     # epics.md frontmatter + spec statuses are surfaced too.
     assert (frame["source"] == "epics.md").any()
     assert (frame["source"] == "docs/specs").sum() >= 1
@@ -248,6 +251,16 @@ def test_factory_status_exposes_a_semantic_table(dashboard):
     assert any(isinstance(c, vm.AgGrid) for c in factory_page.components)
     frame = fs.build_factory_status_frame(build_stamp=STAMP)
     assert list(frame.columns) == fs.FRAME_COLUMNS
+
+
+def test_factory_status_grid_pins_text_celldatatype(dashboard):
+    """AG Grid infers a column's cellDataType from row 0 alone; row 0's "status" is the
+    ISO build_stamp, which would otherwise get the column misread as a date and blank
+    every later status string. Offline regression lock for the fix (mirrors the
+    Playwright-only e2e coverage at a fast, deterministic layer)."""
+    factory_page = next(p for p in dashboard.pages if p.id == "factory-status")
+    grid = next(c for c in factory_page.components if isinstance(c, vm.AgGrid))
+    assert grid.figure["defaultColDef"]["cellDataType"] == "text"
 
 
 def test_factory_status_reads_injected_fixture_artifacts(bmad_fixture):
