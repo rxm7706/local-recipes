@@ -21,7 +21,7 @@ window.DASHBOARD_DATA = {
         "median": 29,
         "lo": 4,
         "hi": 227,
-        "phaseAsOf": "2026-08-09 09:35 UTC"
+        "phaseAsOf": "2026-08-09 09:41 UTC"
       },
       "velocity": {
         "derived": true,
@@ -497,10 +497,10 @@ window.DASHBOARD_DATA = {
         "phase": "review",
         "attempt": "1",
         "startEpoch": 1786262285,
-        "median": 80,
+        "median": 76,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-09 09:35 UTC"
+        "phaseAsOf": "2026-08-09 09:41 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1193,7 +1193,7 @@ window.DASHBOARD_DATA = {
         "median": 104,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-09 09:35 UTC"
+        "phaseAsOf": "2026-08-09 09:41 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1957,10 +1957,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786268138,
-        "median": 91,
-        "lo": 36,
+        "median": 36,
+        "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-09 09:35 UTC"
+        "phaseAsOf": "2026-08-09 09:41 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2411,10 +2411,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786267564,
-        "median": 79,
-        "lo": 69,
+        "median": 74,
+        "lo": 42,
         "hi": 360,
-        "phaseAsOf": "2026-08-09 09:35 UTC"
+        "phaseAsOf": "2026-08-09 09:41 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3302,7 +3302,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 09:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 09:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5813,8 +5813,8 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-02",
           "epics": "2026-08-02",
-          "sprint": "2026-08-02",
-          "tea": "2026-07-31",
+          "sprint": "2026-08-09",
+          "tea": "2026-08-09",
           "gates": "2026-08-01",
           "code": "2026-07-25",
           "verify": "2026-07-25",
@@ -6051,7 +6051,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-02",
-          "sprint": "2026-08-08",
+          "sprint": "2026-08-09",
           "tea": "2026-08-09",
           "gates": "2026-08-01",
           "code": "2026-08-07",
@@ -14558,15 +14558,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "doctor",
-      "story": "6.5",
-      "epoch": 1786262280,
-      "sha": "5dcb64299",
-      "subject": "Merge bmad-loop/20260808-210255-c88b/6-5-the-board-verdicts-come-home into loop/pyforge-doctor (bmad-loop)"
+      "station": "steward",
+      "story": "5.2",
+      "epoch": 1786267563,
+      "sha": "86d9c5b74",
+      "subject": "Merge bmad-loop/20260809-034341-2f9c/5-2-consume-the-sprint-ledger-never-derive-story-status into loop/pyforge-steward ("
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 09:35 UTC",
-    "generatedEpoch": 1786268156
+    "generatedAt": "2026-08-09 09:41 UTC",
+    "generatedEpoch": 1786268475
   },
   "storySpecs": [
     {
