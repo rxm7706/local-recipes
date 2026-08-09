@@ -17,6 +17,7 @@ import tomllib
 import pytest
 
 from pyforge.marshal.adapters.harness_bmadloop import (
+    _SURFACE_RECONCILE_COMMAND,
     HarnessPolicyWriteError,
     render_policy_toml,
     write_policy_toml,
@@ -49,7 +50,9 @@ def test_full_composition_maps_all_six_keys_and_keeps_template_baseline_elsewher
     assert doc["limits"]["max_dev_attempts"] == 5
     assert doc["limits"]["max_review_cycles"] == 6
     assert doc["limits"]["max_followup_reviews"] == 7
-    assert doc["verify"]["commands"] == ["pytest -q", "ruff check ."]
+    # S-13.7: the station's own commands, THEN the appended surface guard.
+    assert doc["verify"]["commands"] == [
+        "pytest -q", "ruff check .", _SURFACE_RECONCILE_COMMAND]
     assert doc["scm"]["worktree_seed"] == [
         "_bmad-output/projects/acme/implementation-artifacts",
         "_bmad/custom/.active-project",
@@ -88,7 +91,10 @@ def test_defaults_only_composition_maps_marshal_defaults():
     # projects into a gitignored ledger (DW-AD23-3). A station layer restating
     # it would be nine copies of one decision -- Story 1.10's review said so.
     assert doc["limits"]["max_followup_reviews"] == 2
-    assert doc["verify"]["commands"] == []
+    # S-13.7: never empty — a station that declares no tests still reconciles
+    # the surface it drifts, or the loop could skip reconciliation by
+    # declaring nothing.
+    assert doc["verify"]["commands"] == [_SURFACE_RECONCILE_COMMAND]
     assert doc["scm"]["worktree_seed"] == [
         "_bmad-output/projects/acme/implementation-artifacts",
         "_bmad/custom/.active-project",
@@ -192,7 +198,10 @@ def test_zero_max_followup_reviews_renders_fine():
 def test_empty_verify_commands_renders_empty_list():
     effective = _compose(verify_commands=[])
     doc = tomllib.loads(render_policy_toml(effective))
-    assert doc["verify"]["commands"] == []
+    # S-13.7: never empty — a station that declares no tests still reconciles
+    # the surface it drifts, or the loop could skip reconciliation by
+    # declaring nothing.
+    assert doc["verify"]["commands"] == [_SURFACE_RECONCILE_COMMAND]
 
 
 # --- rendered text validity ---------------------------------------------------
@@ -306,6 +315,11 @@ def test_cli_writes_the_harness_policy_via_the_convention_layer(tmp_path):
     assert parsed["verify"]["commands"] == [
         "pixi run --frozen -e pyforge-marshal pyforge-marshal-test",
         "pixi run --frozen -e pyforge-ci pyforge-deps-test",
+        # S-13.7 (2026-08-09): the repo-wide surface guard, APPENDED at render.
+        # Kept inside the exact list on purpose -- this assertion is what stands
+        # between a mis-composed layer and a run with no gate, and the guard is
+        # now part of what "gated" means.
+        _SURFACE_RECONCILE_COMMAND,
     ], "the project layer was not composed in -- verify would be EMPTY (no gate)"
     assert parsed["gates"]["mode"] == "none"
     assert parsed["limits"]["max_followup_reviews"] == 2
@@ -325,3 +339,32 @@ def test_cli_refuses_to_write_a_policy_from_an_error_composition(tmp_path):
         "a policy was written despite error-severity findings"
     )
     assert rc != 0
+
+
+def test_the_surface_guard_survives_a_project_layer_that_sets_its_own_verify():
+    """S-13.7 (FR-174). `verify_commands` composes LAST-WINS across the four
+    layers, and all eight stations set their own — so a repo-wide default would
+    be silently dropped by every one of them. Appending at render is what makes
+    the guard un-droppable, and this test is the proof."""
+    doc = tomllib.loads(render_policy_toml(_compose(verify_commands=["pytest -q"])))
+    assert doc["verify"]["commands"][-1] == _SURFACE_RECONCILE_COMMAND
+    assert "pytest -q" in doc["verify"]["commands"], "the station's own gate must survive too"
+
+
+def test_rendering_twice_does_not_duplicate_the_surface_guard():
+    """`marshal config --write-harness-policy` is run repeatedly by design (every
+    preflight, every loop-home refresh). A guard that accumulated on each render
+    would have bmad-loop run the same check N times and grow the file forever."""
+    once = tomllib.loads(
+        render_policy_toml(_compose(verify_commands=["pytest -q"])))["verify"]["commands"]
+    twice = tomllib.loads(
+        render_policy_toml(_compose(verify_commands=list(once))))["verify"]["commands"]
+    assert twice.count(_SURFACE_RECONCILE_COMMAND) == 1, twice
+    assert twice == once, "re-rendering an already-rendered policy must be a no-op"
+
+
+def test_the_guard_never_hands_the_loop_write_baseline():
+    """A producer that can stamp its own baseline is exactly the laundering
+    S-13.2 exists to end: the loop must RECONCILE by naming the paths it
+    changed, never accept its own drift as correct."""
+    assert "--write-baseline" not in _SURFACE_RECONCILE_COMMAND

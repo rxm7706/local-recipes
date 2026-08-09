@@ -334,6 +334,31 @@ low_frame_rate = false
 _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 
 
+#: S-13.7 (FR-174): the repo-wide surface-reconciliation guard, APPENDED to every
+#: station's own verify commands at render time.
+#:
+#: bmad-loop writes governed code all day with no knowledge of the repo's
+#: spec-surface contract, so every loop-produced story that touches governed
+#: files reds `spec_surface_check` until a human names the changed paths in the
+#: owning Spec's `.memlog.md`. Measured 2026-08-09 on the first loop stories
+#: ever landed (doctor 6.2-6.4, then 6.5): 14 governed paths, then 9 more, all
+#: named by hand AT LANDING. This makes the producer pay it instead.
+#:
+#: APPENDED AT RENDER, deliberately not added as a policy layer: `verify_commands`
+#: composes last-wins across the four layers (AD-16), so a repo-wide default would
+#: be silently DROPPED the moment any project layer sets its own -- which all eight
+#: stations do. Rendering appends, so a new station inherits this automatically and
+#: nobody has to remember to declare it in a ninth place (derive, don't declare).
+#:
+#: Plain `python`, not a pixi task: `scripts/spec_surface_check.py` is pure stdlib
+#: (git + hashlib), so it needs no environment, and it avoids the deep-worktree
+#: pixi path-length panic that breaks other gates inside bmad-loop run worktrees.
+#:
+#: NEVER `--write-baseline`. A producer that can stamp its own baseline is exactly
+#: the laundering S-13.2 exists to end: the loop must RECONCILE by naming the paths
+#: it changed, never accept its own drift as correct.
+_SURFACE_RECONCILE_COMMAND = "python scripts/spec_surface_check.py"
+
 def render_policy_toml(
     effective: policy.EffectivePolicy,
     *,
@@ -399,7 +424,13 @@ def render_policy_toml(
     doc["limits"]["max_dev_attempts"] = seed["max_dev_attempts"].value
     doc["limits"]["max_review_cycles"] = seed["max_review_cycles"].value
     doc["limits"]["max_followup_reviews"] = seed["max_followup_reviews"].value
-    doc["verify"]["commands"] = list(effective.verify_commands.value)
+    # S-13.7 (FR-174): the station's own commands, THEN the repo-wide surface
+    # guard. Appended rather than composed (see _SURFACE_RECONCILE_COMMAND), and
+    # de-duplicated so re-rendering an already-rendered home stays idempotent --
+    # `marshal config --write-harness-policy` is run repeatedly by design.
+    _verify = [c for c in effective.verify_commands.value
+               if c != _SURFACE_RECONCILE_COMMAND]
+    doc["verify"]["commands"] = [*_verify, _SURFACE_RECONCILE_COMMAND]
     doc["scm"]["worktree_seed"] = list(effective.worktree_seed_paths.value)
 
     if adapter is not None:
