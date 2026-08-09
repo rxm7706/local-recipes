@@ -130,6 +130,31 @@ def discover() -> tuple[list[dict], list[str]]:
     return detectors, findings
 
 
+def _doctor_sources() -> tuple[bool, list[dict]]:
+    """Doctor-owned sources, declared not scanned.
+
+    A source can live inside `pyforge.doctor`'s own package (e.g.
+    `marshal-durability`) with no `scripts/*_check.py` file to AST-scan --
+    `discover()` above is blind to it by construction. This reads Doctor's
+    own `sources.REGISTRY` (Story 6.2) directly instead of scanning for it.
+
+    Returns `(available, rows)`. `available` is False -- and `rows` is `[]`
+    -- when `pyforge.doctor` isn't importable in the active environment
+    (Doctor is a dedicated lean package, not installed in every environment
+    that runs this script). That is DELIBERATELY not the same discipline as
+    `discover()`'s "unknown, never green" handling of a detector it cannot
+    run: a Doctor-owned source's absence here is a normal, expected outcome,
+    not a detector failing to execute, so it is never a registry finding and
+    never a crash -- but the caller still needs `available` to tell "the
+    package is here and reports zero" apart from "the package isn't here."
+    """
+    try:
+        from pyforge.doctor.sources import list_sources
+    except ImportError:
+        return False, []
+    return True, [reg.to_json_dict() for reg in list_sources()]
+
+
 def run_one(det: dict, timeout: int) -> dict:
     started = time.monotonic()
     try:
@@ -159,13 +184,26 @@ def main() -> int:
     selected = [d for d in detectors if args.scope in ("all", d["scope"])]
 
     if args.list:
+        doctor_sources_available, doctor_sources = _doctor_sources()
         if args.json:
-            print(json.dumps({"detectors": detectors, "registry": registry_findings}, indent=1))
+            print(json.dumps({
+                "detectors": detectors,
+                "registry": registry_findings,
+                "doctor_sources_available": doctor_sources_available,
+                "doctor_sources": doctor_sources,
+            }, indent=1))
         else:
             for d in detectors:
                 print(f"  {d['scope']:7} {d['name']:22} task={d['task'] or '(NONE)'}")
             for f in registry_findings:
                 print(f"  ✗ registry: {f}")
+            print("\n  doctor sources (declared, not scanned):")
+            if not doctor_sources_available:
+                print("    (unavailable -- pyforge.doctor is not importable "
+                      "in this environment)")
+            for s in doctor_sources:
+                print(f"  {s['scope']:7} {s['source']:22} "
+                      f"subject={s['subject_station']:<8} owner={s['owning_station']}")
         return 1 if registry_findings else 0
 
     results = [run_one(d, args.timeout) for d in selected]

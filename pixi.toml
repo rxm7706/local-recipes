@@ -302,6 +302,16 @@ twine = ">=7.0.0"                         # PyPI upload
 description = "Dependency-completeness + wheel/.conda manifest parity for every pyforge-* package (pure stdlib; no runtime deps required)"
 cmd = "python -m pytest tests/packaging -q"
 
+# `scripts/detectors.py`'s `_doctor_sources()` (Story 6.2) reads
+# `pyforge.doctor.sources.REGISTRY` directly from source (sys.path insertion,
+# no built package needed) -- both it and `pyforge.doctor.models` are pure
+# stdlib, so this fits the same lean env as `pyforge-deps-test` above. Lives
+# here, not under `pyforge-doctor-test`, because the thing under test is the
+# repo-root detector CLI, not the pyforge-doctor package itself.
+[feature.pyforge-ci.tasks.pyforge-doctor-scripts-test]
+description = "scripts/detectors.py's Doctor-registry integration (Story 6.2; pure stdlib, no runtime deps required)"
+cmd = "python -m pytest tests/scripts -q"
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
