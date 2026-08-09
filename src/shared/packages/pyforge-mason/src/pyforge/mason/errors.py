@@ -86,3 +86,43 @@ class CfeImportFloorError(MasonError):
             f"{', '.join(missing)}"
         )
         super().__init__("cfe:import-floor-missing", message)
+
+
+class CfeUnresolvedError(MasonError):
+    """The CFE root could not be resolved by any step of `resolve.py`'s
+    chain (FR-5, D-2, NFR-14).
+
+    Raised by `cfe.py::ensure_cfe_root` when the already-computed
+    `ResolvedCfeRoot.step` is `STEP_NOT_FOUND`. Unlike `CfeImportFloorError`,
+    there is no per-call variable data to report -- the four steps either
+    matched or did not, and nothing about *which* value was tried is
+    meaningful once resolution has already failed -- so the constructor
+    takes no arguments and the message is a fixed string naming all four
+    step names and how to satisfy the first three.
+    """
+
+    # `.claude/scripts/conda-forge-expert/` below duplicates `resolve.py`'s
+    # `_CFE_MARKER` literal -- the same sanctioned duplication pattern as
+    # `_ENV_CFE_ROOT`/`_ENV_CFE_PYTHON` (documented in resolve.py's module
+    # docstring): AD-2's dependency-direction rule forbids this leaf module
+    # from importing `resolve.py`, so the marker path is spelled out again
+    # here rather than imported. Not an oversight.
+    _MESSAGE = (
+        "the CFE root could not be resolved: none of the three discoverable "
+        "resolution steps matched (flag, environment, cwd-walk), leaving the "
+        "chain in its not-found terminal state. Set --cfe-root, set the "
+        "MASON_CFE_ROOT environment variable, or run mason from within or "
+        "below a directory containing .claude/scripts/conda-forge-expert/."
+    )
+
+    def __init__(self) -> None:
+        super().__init__("cfe:unresolved", self._MESSAGE)
+
+    def __reduce__(self):
+        # `Exception.__reduce__` (used by both `copy.deepcopy` and
+        # `pickle`) reconstructs via `cls(*self.args)`; `MasonError.__init__`
+        # sets `self.args = (identifier, message)` (two items), but this
+        # class's constructor takes zero arguments. Without this override,
+        # `CfeUnresolvedError(*self.args)` would raise `TypeError` on every
+        # deepcopy/pickle round-trip.
+        return (self.__class__, ())

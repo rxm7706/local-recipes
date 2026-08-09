@@ -38,15 +38,15 @@ import sys
 from typing import Sequence
 
 from . import __version__, render
-from .errors import MasonError
-from .exit_codes import EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE
+from .errors import CfeUnresolvedError, MasonError
+from .exit_codes import (
+    EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
+)
 
 # main() is the sole owner of the process exit code. A verb never calls
 # sys.exit() directly; it returns an int and main() projects it. The
-# exit-code contract lives in exit_codes.py (AD-7) -- this module imports
-# only the names it produces today (EXIT_CFE_UNAVAILABLE arrives with Story
-# 1.7), and an argparse-raised SystemExit's own code (0 or 2) passes through
-# in main()'s handler.
+# exit-code contract lives in exit_codes.py (AD-7), and an argparse-raised
+# SystemExit's own code (0 or 2) passes through in main()'s handler.
 
 _NOUNS = {
     "recipe": "author, validate and build conda recipes (wraps the conda-forge-expert craft)",
@@ -238,6 +238,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         if code is None:
             return EXIT_OK
         return code if isinstance(code, int) else EXIT_USAGE
+    except CfeUnresolvedError as exc:
+        # A CfeUnresolvedError is a MasonError subclass (AD-7): this branch
+        # must precede `except MasonError` below, since Python matches the
+        # first except clause the raised exception is an instance of, and
+        # this one maps to the distinct EXIT_CFE_UNAVAILABLE (3), not the
+        # generic EXIT_FAILED the MasonError branch produces (Story 1.7,
+        # FR-5). Same print-to-stderr/no-traceback pattern as MasonError.
+        print(str(exc), file=sys.stderr)
+        return EXIT_CFE_UNAVAILABLE
     except MasonError as exc:
         # Anticipated failure (AD-7): the identifier + message is the whole
         # diagnostic, no traceback. Must precede the bare `Exception` catch
