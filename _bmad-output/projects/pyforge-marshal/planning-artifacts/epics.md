@@ -487,6 +487,8 @@ So that a test quietly removed after the spec was tracked shows up as a contract
 
 ## Epic 3: Supervised unattended runs
 
+**Reopened 2026-08-09 for S-3.9 + S-3.10.** FR-61's stage-boundary push was verified WORKING in a live run; what failed was its *reporting* — a false `push-failed` on the success path, and a detector comparing branch names instead of tips. The guarantee holds; the claim about it did not.
+
 **Goal:** the operator can launch a gated run and walk away. The supervisor — a separate process the session cannot disable — catches idle strands well before any token cap, enforces budgets over externally-observed quantities, surfaces escalations, and writes a durable journal that survives teardown.
 
 ### Story 3.1: Run identity and the journal writer
@@ -663,6 +665,59 @@ So that worst-case loss is bounded by the run's own structure, and nobody has to
 **And** the watcher exits on its own when the fleet does
 
 ---
+
+### Story 3.9: A retired story branch is not a push failure
+
+As the operator,
+I want the durability signal to stop reporting failure on its own success path,
+So that a real durability alarm still means something when it fires.
+
+**Type:** change • **Effort:** S • **Deps:** S-3.8 • **FR/AD:** FR-170; AD-46
+
+**Added 2026-08-09**, reopening a `done` epic. Found by operating FR-61 in a live
+9-story run, not by reading it: 6 of 22 `stage-push` records reported `push-failed`
+on branches whose work was already safe.
+
+**Acceptance Criteria:**
+
+**Given** a `dev-commit-landed` or `story-merged` boundary whose per-story branch bmad-loop
+has already deleted on merge
+**When** the supervisor acts on that boundary
+**Then** it does **not** attempt the push and does **not** register `MRS-SUPV-008`
+**And** it proves the work landed — the story's `commit_sha` from `TaskPhaseSnapshot` is
+reachable from the station branch — and journals a benign `retired-merged` outcome
+**And** if that `commit_sha` is **not** reachable (or is unknown), a **distinct and louder**
+finding is registered: a branch that vanished with unlanded work is real loss and must not
+inherit the benign case's silence
+**And** `GitVcs.push` is unchanged — raising on "no such branch" is correct, since falling
+back would push to a target the caller never named; the defect is the caller asking for a
+push it does not need
+**And** a test proves both directions: a merged-and-deleted branch produces no finding, and a
+deleted branch whose commit is unreachable from the station branch produces the loud one
+
+### Story 3.10: Unpushed work is measured by tip, never by name
+
+As the operator,
+I want `unpushed-work-check` to compare tips rather than branch names,
+So that a branch whose remote copy is stale stops reporting as safe.
+
+**Type:** change • **Effort:** S • **Deps:** — • **FR/AD:** FR-171
+
+**Added 2026-08-09.** `find_unpushed`'s `if br in remote: continue` asks *"does a remote copy
+exist?"* while the detector presents itself as answering *"is the work safe?"*
+
+**Acceptance Criteria:**
+
+**Given** a local branch whose name exists on origin but whose remote tip is behind
+**When** `unpushed-work-check` runs
+**Then** it is reported as unpushed work, with the count of commits the remote lacks
+**And** station branches (`loop/*`) are in scope — they are exactly the long-lived branches
+whose name always exists remotely and whose tip silently falls behind between runs
+**And** a branch whose remote tip matches, or which is an ancestor of the remote, is still
+silent — the fix must not turn every branch into a finding
+**And** a regression test replays the live case: `loop/pyforge-doctor` on origin at
+`3f43f486c9` with the local branch 8 commits ahead reported clean under the name check, and
+reports under the tip check
 
 ## Epic 4: Landing with a durable paper trail
 

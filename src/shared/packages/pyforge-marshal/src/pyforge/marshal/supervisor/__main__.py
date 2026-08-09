@@ -427,6 +427,17 @@ _ESCALATION_MARKER_FILENAME = "ESCALATION"
 # ceilings do), success or failure alike, so "how many pushes did this run
 # attempt, and did they land" is answerable from the journal alone.
 _STAGE_PUSH_KIND = "stage-push"
+#: S-3.9/FR-170 outcomes for a per-story branch the harness already retired.
+#: bmad-loop deletes a story's branch when the story merges into the station
+#: branch, and this supervisor POLLS -- so acting on a `dev-commit-landed` or
+#: `story-merged` boundary after the branch is gone is the ordinary success
+#: path, not a fault. Measured 2026-08-09: 6 of 22 pushes in one run reported
+#: `push-failed` for exactly this reason, on work that was already safe. The
+#: two outcomes are kept DISTINCT rather than collapsed into one "retired":
+#: silence is earned only by proving the commit landed, never by the branch
+#: merely being absent.
+_RETIRED_MERGED_OUTCOME = "retired-merged"
+_RETIRED_UNMERGED_OUTCOME = "retired-unmerged"
 
 # The interval-watcher fallback's own boundary name (distinct from the three
 # named stage boundaries `supervisor/durability.py::PushTrigger` classifies)
@@ -1048,6 +1059,74 @@ def run_supervisor(
                 push_payload["finding"] = push_finding
             _append(_STAGE_PUSH_KIND, push_payload)
 
+        def _classify_retired_branch(
+            branch: str, commit_sha: str | None, into: str,
+            boundary: str, story_key: str | None,
+        ) -> bool:
+            """S-3.9 (FR-170): is this per-story branch RETIRED rather than
+            pushable? Returns ``True`` when it handled the boundary itself
+            (journaling exactly one ``"stage-push"`` observation, like every
+            other path here), ``False`` to let the ordinary push proceed.
+
+            bmad-loop deletes a story's branch the moment the story merges
+            into the station branch, and this supervisor polls -- so acting
+            on ``dev-commit-landed``/``story-merged`` after the branch is
+            gone is the SUCCESS path. Before this, that path ran the full
+            push and reported ``push-failed``/``MRS-SUPV-008``, because
+            ``GitVcs.push`` correctly refuses a branch it cannot resolve
+            (falling back would push to a target the caller never named --
+            the port is right; the CALLER was asking for a push it did not
+            need). Measured 2026-08-09 on the doctor Epic 6 run: 6 of 22
+            pushes, every one on work already safe on the station branch. A
+            durability alarm that fires on success is worse than silence --
+            it produced the wrong diagnosis "durability is broken" and cost
+            an operator an hour.
+
+            Absence alone does NOT earn that silence. The benign reading is
+            "merged, therefore retired", so it is PROVEN: the story's own
+            ``commit_sha`` must be reachable from ``into``. A branch that
+            vanished carrying work which never landed is real loss, and gets
+            a distinct, louder finding rather than inheriting the quiet of
+            the case it superficially resembles. An unknown ``commit_sha``
+            is treated as unproven for the same reason -- the durability
+            watcher's standing bias is one redundant finding over one
+            missed loss.
+
+            Any error resolving the repo, the branch or the ancestry is
+            swallowed into ``False`` (let the ordinary push run and report
+            whatever it reports): this must never become a new way for the
+            tick loop to die, per AD-46's "never a new refusal gate."
+            """
+            try:
+                repo_root = vcs.repo_common_root(home)
+                if vcs.branch_exists(repo_root, branch):
+                    return False
+                landed = False
+                if commit_sha:
+                    landed = vcs.merge_base(repo_root, commit_sha, into) == commit_sha
+            except (VcsCommandError, OSError, subprocess.SubprocessError):
+                return False
+            payload: dict[str, object] = {"boundary": boundary, "branch": branch}
+            if story_key is not None:
+                payload["story_key"] = story_key
+            if landed:
+                payload["outcome"] = _RETIRED_MERGED_OUTCOME
+                payload["merged_into"] = into
+            else:
+                payload["outcome"] = _RETIRED_UNMERGED_OUTCOME
+                payload["finding"] = Finding(
+                    code="MRS-SUPV-009",
+                    severity=Severity.WARN,
+                    message=(
+                        f"per-story branch {branch!r} no longer exists and its work "
+                        f"is NOT reachable from {into!r} "
+                        f"(commit_sha={commit_sha or 'unknown'}): a retired branch is "
+                        f"only benign when the commit landed — this one may be lost"
+                    ),
+                ).to_json_dict()
+            _append(_STAGE_PUSH_KIND, payload)
+            return True
+
         def _process_stage_pushes(status_snapshot: RunStatusSnapshot | None) -> None:
             """Diffs ``status_snapshot.tasks`` against the previous tick's
             own reading (``previous_task_phases``) via the pure
@@ -1082,6 +1161,11 @@ def run_supervisor(
                 last_durability_push_monotonic = clock.monotonic()
                 task = current_task_phases.get(trigger.story_key)
                 if task is not None and task.branch:
+                    if _classify_retired_branch(
+                        task.branch, task.commit_sha, station_branch,
+                        trigger.boundary, feed_key,
+                    ):
+                        continue          # retired: nothing to push, already journaled
                     _push_branch(task.branch, trigger.boundary, feed_key)
                     last_durability_push_monotonic = clock.monotonic()
             previous_task_phases = current_task_phases

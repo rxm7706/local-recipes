@@ -2599,6 +2599,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_files_tracked.py": "492e8be23f0ac59ff92d836b4238f649587ded1f",
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py": "abcb235f389aca72660af131feacf7f9af298468",
    ".claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py": "e583fc29622becb57aeaf51615421d1d0bf06a6e",
+   ".claude/skills/conda-forge-expert/tests/meta/test_unpushed_work_check.py": "36e123f54a48d409640a19e61016aa2c1d0c3130",
    ".claude/skills/conda-forge-expert/tests/pytest.ini": "6253aa543e8c7a2b1fd6e13cea99c64767d48b4c",
    ".claude/skills/conda-forge-expert/tests/run_skill_suite.py": "78de5e37d17b36cb46a6a58d2542836faccd4c44",
    ".claude/skills/conda-forge-expert/tests/unit/test_add_handoff.py": "e0326684cea99d3c57139a43d117e33af89efcbd",
@@ -2693,7 +2694,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "5e4b8db5da15d2d54c575fc854d76d00c3ffe100"
   },
-  "memlog": "de5e4b2e26bf3aa4da00e76d428086d5e6da4491"
+  "memlog": "9dbc43d384b9017f69c6fe8feeec63d4fc81a5bb"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},
