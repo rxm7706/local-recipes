@@ -947,6 +947,113 @@ def test_push_raises_on_a_malformed_upstream_with_no_remote_slash(vcs, repo):
         vcs.push(repo, "main")
 
 
+# --- fetch / fast_forward (Story 4.12, FR-64) -----------------------------
+
+
+def _push_a_forge_side_commit(remote: Path, tmp_path: Path, *, dirname: str, filename: str) -> str:
+    """Simulates a PR merged on the forge: a THIRD clone of ``remote``
+    (never ``cloned_repo`` itself, which is the worktree under test) commits
+    one new file directly onto ``main`` and pushes it, advancing ``remote``
+    independently of the repo ``fetch``/``fast_forward`` are exercised
+    against. Returns the new commit's sha."""
+    other_clone = tmp_path / dirname
+    subprocess.run(
+        ["git", "clone", str(remote), str(other_clone)], capture_output=True, text=True, check=True
+    )
+    _git(other_clone, "config", "user.email", "test@example.com")
+    _git(other_clone, "config", "user.name", "Test")
+    (other_clone / filename).write_text(f"{filename}\n", encoding="utf-8")
+    _git(other_clone, "add", filename)
+    _git(other_clone, "commit", "-m", f"a commit merged on the forge ({filename})")
+    _git(other_clone, "push", "origin", "main")
+    return _git(remote, "rev-parse", "main").stdout.strip()
+
+
+def test_fetch_updates_the_remote_tracking_ref_without_touching_local_main(
+    vcs, cloned_repo, remote, tmp_path
+):
+    """A commit lands directly on ``remote``'s own ``main`` (simulating a PR
+    merged on the forge) -- ``fetch`` must update
+    ``refs/remotes/origin/main`` in ``cloned_repo`` to reflect it, without
+    advancing ``cloned_repo``'s own checked-out ``main`` (that is
+    ``fast_forward``'s job, exercised separately below)."""
+    remote_head = _push_a_forge_side_commit(remote, tmp_path, dirname="other-clone-fetch", filename="upstream.txt")
+    local_head_before = _git(cloned_repo, "rev-parse", "main").stdout.strip()
+
+    vcs.fetch(cloned_repo, "origin", "main")
+
+    tracking_ref = _git(cloned_repo, "rev-parse", "refs/remotes/origin/main").stdout.strip()
+    assert tracking_ref == remote_head
+    assert _git(cloned_repo, "rev-parse", "main").stdout.strip() == local_head_before
+
+
+def test_fetch_raises_on_no_configured_remote(vcs, repo):
+    """``repo`` (the module-level fixture) has no remote at all."""
+    with pytest.raises(VcsCommandError):
+        vcs.fetch(repo, "origin", "main")
+
+
+def test_fetch_raises_on_an_unresolvable_ref(vcs, cloned_repo):
+    with pytest.raises(VcsCommandError):
+        vcs.fetch(cloned_repo, "origin", "no-such-branch-on-the-remote")
+
+
+def test_fast_forward_advances_a_behind_branch_and_returns_the_new_sha(
+    vcs, cloned_repo, remote, tmp_path
+):
+    """The ordinary case: ``origin/main`` has moved ahead of
+    ``cloned_repo``'s own checked-out ``main``, which is still an ancestor
+    of it -- ``--ff-only`` succeeds, advances the local branch, and the new
+    file's content lands in the working tree."""
+    remote_head = _push_a_forge_side_commit(remote, tmp_path, dirname="other-clone-ff", filename="new.txt")
+    vcs.fetch(cloned_repo, "origin", "main")
+
+    new_sha = vcs.fast_forward(cloned_repo, "origin/main")
+
+    assert new_sha == remote_head
+    assert _git(cloned_repo, "rev-parse", "main").stdout.strip() == remote_head
+    assert (cloned_repo / "new.txt").read_text(encoding="utf-8") == "new.txt\n"
+
+
+def test_fast_forward_is_a_no_op_when_already_current(vcs, cloned_repo, remote):
+    """``cloned_repo``'s own ``main`` already equals the fetched
+    ``origin/main`` -- ``merge --ff-only`` no-ops ("Already up to date"),
+    and this method still returns the (unchanged) HEAD sha, never an
+    error."""
+    vcs.fetch(cloned_repo, "origin", "main")
+    head_before = _git(cloned_repo, "rev-parse", "main").stdout.strip()
+
+    result = vcs.fast_forward(cloned_repo, "origin/main")
+
+    assert result == head_before
+    assert _git(cloned_repo, "rev-parse", "main").stdout.strip() == head_before
+
+
+def test_fast_forward_refuses_a_diverged_branch(vcs, cloned_repo, remote, tmp_path):
+    """``cloned_repo``'s own ``main`` gains a LOCAL commit never pushed,
+    while ``remote``'s ``main`` independently advances -- the two have
+    diverged, and ``--ff-only`` must refuse (``VcsCommandError``) rather
+    than force/rebase/merge; the local commit is left completely
+    untouched."""
+    (cloned_repo / "local-only.txt").write_text("local\n", encoding="utf-8")
+    _git(cloned_repo, "add", "local-only.txt")
+    _git(cloned_repo, "commit", "-m", "a local commit never pushed")
+    local_head = _git(cloned_repo, "rev-parse", "main").stdout.strip()
+
+    _push_a_forge_side_commit(remote, tmp_path, dirname="other-clone-diverge", filename="remote-only.txt")
+    vcs.fetch(cloned_repo, "origin", "main")
+
+    with pytest.raises(VcsCommandError):
+        vcs.fast_forward(cloned_repo, "origin/main")
+
+    assert _git(cloned_repo, "rev-parse", "main").stdout.strip() == local_head
+
+
+def test_fast_forward_raises_on_an_unresolvable_ref(vcs, cloned_repo):
+    with pytest.raises(VcsCommandError):
+        vcs.fast_forward(cloned_repo, "origin/no-such-ref")
+
+
 # --- changed_files (Story 2.3, AD-27) -----------------------------------------
 
 

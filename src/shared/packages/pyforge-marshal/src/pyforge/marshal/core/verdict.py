@@ -747,6 +747,16 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-005": Verdict.WARN,
     "MRS-LAND-006": Verdict.ERROR,
     "MRS-LAND-007": Verdict.ERROR,
+    # Story 4.12 (loop-home currency after landing, FR-64): MRS-LAND-009
+    # (VcsPort.fetch/fast_forward could not bring the loop-home's own
+    # station branch current with origin/<base> after a wave lands -- the
+    # fetch itself failed, or the branch has diverged) at WARN, alongside
+    # MRS-LAND-003's own "reported, never blocking" tier -- the landing
+    # this run performed already succeeded, and git's own --ff-only
+    # atomicity is the safety mechanism, never a forced correction.
+    # MRS-LAND-008 is deliberately left unregistered here, reserved by
+    # Story 4.11 (is_run_live), to avoid a future collision.
+    "MRS-LAND-009": Verdict.WARN,
     "MRS-DEPLOY-023": Verdict.WARN,
     "MRS-RETIRE-001": Verdict.UNEVALUABLE,
     "MRS-RETIRE-002": Verdict.WARN,

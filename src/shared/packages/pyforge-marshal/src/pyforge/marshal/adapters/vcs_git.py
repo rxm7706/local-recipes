@@ -60,7 +60,16 @@ the merge in a throwaway DETACHED worktree instead (``git worktree add
 also closes the P4 TOCTOU gap a blind ref update would leave (``into``
 moving between when this method reads its tip and when it advances it) --
 and finally removes the temp worktree in a ``finally`` block, on every exit
-path, conflict or CAS failure included."""
+path, conflict or CAS failure included.
+
+Story 4.12 (loop-home currency after landing, FR-64) adds ``fetch``
+(``git fetch <remote> <ref>``, under a dedicated ``_GIT_FETCH_TIMEOUT_S``
+network tier) and ``fast_forward`` (``git merge --ff-only <ref>``, under
+``_GIT_CHECKOUT_TIMEOUT_S`` -- tree-mutating, like ``merge_branch``'s own
+merge step -- then ``git rev-parse HEAD``) -- ``cli/land.py``'s own
+resync-adjacent primitives, keeping a loop home's station branch current
+with the just-landed base branch without ever forcing, rebasing, or
+resetting. See ``ports/vcs.py``'s own docstring for the full rationale."""
 
 from __future__ import annotations
 
@@ -105,6 +114,15 @@ _GIT_CHECKOUT_TIMEOUT_S = 600.0
 # plenty of headroom without leaving a hung push indefinitely blocking the
 # tick loop's durability watcher.
 _GIT_PUSH_TIMEOUT_S = 120.0
+# `git fetch`, like `push` above, is a NETWORK call, not a local query or
+# tree-populating checkout -- this package's other timeouts are all sub-30s
+# local-process budgets, none of which touch a real network round-trip. A
+# dedicated constant, kept separate from `_GIT_PUSH_TIMEOUT_S` even though
+# the value happens to match today: fetch and push are operationally
+# distinct network calls this module may need to tune independently later
+# (e.g. a large `git fetch` on this repo's own staged-recipes-fork history
+# vs. a small, single-branch push).
+_GIT_FETCH_TIMEOUT_S = 120.0
 
 
 def _run(
@@ -975,3 +993,47 @@ class GitVcs:
                 f"git rev-parse HEAD failed in {worktree_path}: {result.stderr.strip()}"
             )
         return result.stdout.strip()
+
+    def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        """Story 4.12 (FR-64): ``git fetch <remote> <ref>``, updating ONLY
+        ``refs/remotes/<remote>/<ref>`` -- a remote-tracking ref, always
+        safe to move regardless of which worktree of this repo currently
+        has a local branch checked out. Uses ``_GIT_FETCH_TIMEOUT_S`` (a
+        network round-trip, not a local query or tree-populating checkout --
+        see that constant's own comment)."""
+        result = _run(
+            ["git", "-C", str(repo_root), "fetch", remote, ref],
+            timeout_s=_GIT_FETCH_TIMEOUT_S,
+        )
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git fetch {remote} {ref} failed in {repo_root}: {result.stderr.strip()}"
+            )
+
+    def fast_forward(self, worktree_path: Path, ref: str) -> str:
+        """Story 4.12 (FR-64): ``git merge --ff-only <ref>`` run against
+        ``worktree_path``, then ``git rev-parse HEAD`` to return the new
+        tip. Uses ``_GIT_CHECKOUT_TIMEOUT_S`` (tree-mutating, like
+        ``merge_branch``'s own merge step above) -- never ``_GIT_TIMEOUT_S``,
+        which is sized for a bounded metadata query, not a working-tree
+        update. ``--ff-only`` is the entire safety mechanism: git itself
+        refuses, atomically, if ``worktree_path``'s checked-out branch is
+        not already an ancestor of ``ref`` (a dirty tree, a diverged branch,
+        a held lock) -- this method never forces, rebases, or resets to
+        make the merge succeed anyway."""
+        merge_result = _run(
+            ["git", "-C", str(worktree_path), "merge", "--ff-only", ref],
+            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+        )
+        if merge_result.returncode != 0:
+            raise VcsCommandError(
+                f"git merge --ff-only {ref} failed in {worktree_path}: "
+                f"{merge_result.stderr.strip()}"
+            )
+        rev_result = _run(["git", "-C", str(worktree_path), "rev-parse", "HEAD"])
+        if rev_result.returncode != 0:
+            raise VcsCommandError(
+                f"git rev-parse HEAD failed in {worktree_path} after "
+                f"fast-forwarding to {ref}: {rev_result.stderr.strip()}"
+            )
+        return rev_result.stdout.strip()

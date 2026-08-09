@@ -754,6 +754,21 @@ tier) covers the one failure mode that write can still hit -- an
 unwritable loop home -- degrading to whatever policy was already on disk
 rather than aborting the launch.
 
+Story 4.12 (loop-home currency after landing, FR-64) adds one more
+``MRS-LAND-*`` code, ``MRS-LAND-009`` (``VcsPort.fetch``/``fast_forward``
+could not bring the loop-home's own station branch current with
+``origin/<base>`` after a wave lands -- the fetch itself failed, or the
+branch has diverged, e.g. a live run kept committing to it after the wave
+was captured for landing). Classifies ``Verdict.WARN``, the same
+"reported, never blocking" tier as ``MRS-LAND-003``: the landing this run
+performed already succeeded; this is a best-effort convenience layered on
+top, and git's own ``--ff-only`` atomicity is what makes it safe, never a
+forced correction. ``MRS-LAND-008`` is deliberately left unregistered here
+-- reserved by Story 4.11 (``is_run_live``), which exists only in a
+sibling, not-yet-merged worktree of this same bmad-loop run as of this
+story -- so that story's own eventual registration of 008 never collides
+with a different meaning already claimed here.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -1093,6 +1108,12 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # probe reads ONLY the home's own rendered `.mcp.json` plus `PATH`/disk
 # state -- never `~/.claude.json` or any other user-scoped registry (AD-43's
 # own hard constraint).
+# Story 4.12 (loop-home currency after landing, FR-64) adds one more
+# MRS-LAND-* code, MRS-LAND-009 (VcsPort.fetch/fast_forward could not bring
+# the loop-home's own station branch current with origin/<base> after a
+# wave lands) at WARN, alongside MRS-LAND-003's own "reported, never
+# blocking" tier. MRS-LAND-008 is deliberately left unregistered, reserved
+# by Story 4.11 (is_run_live), to avoid a future collision.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1241,6 +1262,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-UPSTREAM-002",
         "MRS-PREFLIGHT-012",
         "MRS-PREFLIGHT-013",
+        "MRS-LAND-009",
     }
 )
 

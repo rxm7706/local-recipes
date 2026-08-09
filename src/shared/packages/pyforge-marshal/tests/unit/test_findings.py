@@ -47,7 +47,10 @@ def test_registered_codes_contains_the_real_codes():
     Story 4.3's cli/deploy.py::run_land_story adds MRS-DEPLOY-006/007/008/
     009. Story 4.8's cli/land.py adds a NEW area, MRS-LAND-001..007. Story
     4.9's cli/deploy.py::run_promote adds MRS-DEPLOY-023 (the new specs_dir
-    advisory lock, AD-42). This asserts the registry's exact real
+    advisory lock, AD-42). Story 4.12's cli/land.py adds MRS-LAND-009 (the
+    loop-home's own station branch could not be resynced with
+    origin/<base> after a wave lands) -- MRS-LAND-008 is deliberately
+    skipped, reserved by Story 4.11. This asserts the registry's exact real
     contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -197,6 +200,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-UPSTREAM-002",
             "MRS-PREFLIGHT-012",
             "MRS-PREFLIGHT-013",
+            "MRS-LAND-009",
         }
     )
 

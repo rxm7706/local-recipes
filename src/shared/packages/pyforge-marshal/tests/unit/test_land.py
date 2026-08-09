@@ -46,6 +46,9 @@ class _FakeVcs:
         worktree_head_sha_raises: bool = False,
         changed_paths: tuple[str, ...] = (),
         changed_files_raises: bool = False,
+        fetch_raises: bool = False,
+        fast_forward_raises: bool = False,
+        fast_forward_sha: str = "ff-sha-abc",
     ) -> None:
         self.existing_branches = existing_branches
         self.branch_exists_raises = branch_exists_raises
@@ -62,6 +65,13 @@ class _FakeVcs:
         self.worktree_head_sha_raises = worktree_head_sha_raises
         self.changed_paths = changed_paths
         self.changed_files_raises = changed_files_raises
+        # Story 4.12 (FR-64): configurable fetch/fast_forward fakes, same
+        # raise-flag/call-recording shape as every other method above.
+        self.fetch_raises = fetch_raises
+        self.fetch_calls: list[tuple] = []
+        self.fast_forward_raises = fast_forward_raises
+        self.fast_forward_sha = fast_forward_sha
+        self.fast_forward_calls: list[tuple] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -102,6 +112,17 @@ class _FakeVcs:
         if self.changed_files_raises:
             raise VcsCommandError("git diff --name-status failed")
         return self.changed_paths
+
+    def fetch(self, repo_root, remote, ref):
+        self.fetch_calls.append((repo_root, remote, ref))
+        if self.fetch_raises:
+            raise VcsCommandError("git fetch origin main failed: could not read from remote repository")
+
+    def fast_forward(self, worktree_path, ref):
+        self.fast_forward_calls.append((worktree_path, ref))
+        if self.fast_forward_raises:
+            raise VcsCommandError("git merge --ff-only failed: not possible to fast-forward, aborting")
+        return self.fast_forward_sha
 
 
 class _FakeForge:
@@ -657,6 +678,128 @@ def test_landing_resync_true_calls_refresh_feed_once(tmp_path, capsys, monkeypat
     assert payload["data"]["resynced"] is True
     assert len(calls) == 1
     assert calls[0].project == "acme"
+
+
+# --- home_current: loop-home station-branch resync (Story 4.12, FR-64) --
+
+
+def test_home_current_true_when_fast_forward_succeeds(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["home_current"] is True
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" not in codes
+    assert vcs.fetch_calls == [(Path("/fake-repo-root"), "origin", "main")]
+    assert len(vcs.fast_forward_calls) == 1
+    assert vcs.fast_forward_calls[0][1] == "origin/main"
+
+
+def test_home_current_false_when_fast_forward_refuses_a_diverged_branch(
+    tmp_path, capsys, monkeypatch
+):
+    """`--ff-only` refuses when the loop-home's own station branch has
+    diverged from `origin/<base>` -- `MRS-LAND-009` fires, naming
+    `head_branch` and git's own reason, and `land`'s own exit/verdict is
+    unaffected: the merge this run performed already succeeded, so a
+    resync failure only ever reaches `Verdict.WARN` (exit 0), never
+    escalates."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+        fast_forward_raises=True,
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    assert any(
+        f["code"] == "MRS-LAND-009" and "loop/acme" in f["message"]
+        for f in payload["findings"]
+    )
+    assert payload["data"]["home_current"] is False
+    assert payload["data"]["merged"] is True
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+
+
+def test_home_current_false_models_a_live_run_committing_past_the_landed_wave(
+    tmp_path, capsys, monkeypatch
+):
+    """Epic-level requirement: this story's resync must interact correctly
+    with a LIVE bmad-loop run that kept committing to `loop/<slug>` after
+    this run's own wave was already captured for landing -- the exact
+    scenario Story 4.11's (not-yet-merged) `is_run_live` gate is separately
+    built to guard against. This story deliberately never checks liveness
+    itself (see the spec's own Design Notes): `VcsPort.fast_forward`'s
+    `--ff-only` semantics make the two situations -- a genuinely diverged
+    branch, and a live run's own further commits -- indistinguishable AND
+    equally safe by construction, so this test exercises the identical
+    code path as the plain-divergence test above under the live-run
+    framing the epic names, rather than a second, bespoke mechanism."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+        # A live run kept committing to loop/acme past the wave this
+        # invocation just landed -- `fast_forward` observes exactly the
+        # same non-ff-able shape as a plain divergence.
+        fast_forward_raises=True,
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    assert payload["data"]["home_current"] is False
+    # The landing itself is unaffected by the still-live station branch --
+    # this run's own merge already succeeded before the resync ran.
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0
+
+
+def test_landing_resync_false_skips_home_current_and_never_touches_the_branch(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_project_policy(
+        tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None)
+    )
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "home_current" not in payload["data"]
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
 
 
 # --- re-entrancy: PR open, checks green, merge never issued --------------

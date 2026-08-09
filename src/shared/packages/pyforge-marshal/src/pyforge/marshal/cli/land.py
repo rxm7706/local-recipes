@@ -116,6 +116,14 @@ _MRS_LAND_004 = "MRS-LAND-004"
 _MRS_LAND_005 = "MRS-LAND-005"
 _MRS_LAND_006 = "MRS-LAND-006"
 _MRS_LAND_007 = "MRS-LAND-007"
+# MRS-LAND-008 is deliberately SKIPPED here: Story 4.11 (`is_run_live`, the
+# `--retire-live-branch` flag) claims it in a sibling, not-yet-merged
+# worktree of this same bmad-loop run -- this module ends at Story 4.10 as
+# far as this codebase can see. Registering 008 here for an unrelated
+# meaning would collide the moment 4.11 lands; this story's own new code is
+# 009 instead (see this module's own docstring and the spec's Design Notes
+# for the full rationale).
+_MRS_LAND_009 = "MRS-LAND-009"
 
 # This module's own journal kinds (AD-28: distinct writer namespaces, never
 # conflated with `cli/deploy.py`'s `_LAND_MERGE_KIND`/`_BATCH_PR_WRITE_KIND`
@@ -509,6 +517,11 @@ def run_land(
         data["resynced"] = _run_resync_if_enabled(
             reconcile_feed, args, vcs, fs, resync_enabled, slug, findings
         )
+        home_current = _resync_home_branch(
+            vcs, resync_enabled, git_repo_root, home, base, head_branch, findings
+        )
+        if home_current is not None:
+            data["home_current"] = home_current
         return _emit(args, data, findings)
 
     # --- PR open/update+labels (byte-for-byte batch-pr's own sequence) --
@@ -869,6 +882,11 @@ def run_land(
     data["resynced"] = _run_resync_if_enabled(
         reconcile_feed, args, vcs, fs, resync_enabled, slug, findings
     )
+    home_current = _resync_home_branch(
+        vcs, resync_enabled, git_repo_root, home, base, head_branch, findings
+    )
+    if home_current is not None:
+        data["home_current"] = home_current
 
     return _emit(args, data, findings)
 
@@ -884,7 +902,14 @@ def _run_resync_if_enabled(
     ``data["resynced"]: false`` with no finding, per the story's own Always
     bullet. Any findings the reconciliation itself surfaces are folded into
     THIS run's own ``findings`` list -- never silently dropped, and never
-    printed as a second envelope."""
+    printed as a second envelope.
+
+    Story 4.12 adds a sibling, ``_resync_home_branch`` below, called
+    alongside this function at both of ``run_land``'s own call sites: this
+    function keeps the sprint FEED current, while ``_resync_home_branch``
+    keeps the loop-home's own checked-out GIT BRANCH current -- two
+    different kinds of staleness the SAME ``landing_resync`` toggle gates,
+    neither one a substitute for the other."""
     if not resync_enabled:
         return False
     refresh_args = argparse.Namespace(project=slug, format=args.format)
@@ -892,6 +917,81 @@ def _run_resync_if_enabled(
         refresh_args, vcs=vcs, fs=fs, process=PosixProcess(), harness=BmadLoopHarness()
     )
     findings.extend(resync_findings)
+    return True
+
+
+def _resync_home_branch(
+    vcs: VcsPort,
+    resync_enabled: bool,
+    git_repo_root: Path,
+    home: Path,
+    base: str,
+    head_branch: str,
+    findings: list[Finding],
+) -> bool | None:
+    """Story 4.12 (FR-64): advances the loop-home's own checked-out station
+    branch (``home``, on ``head_branch``) to ``origin/<base>`` after a wave
+    lands. ``home`` shares the SAME ``.git`` as ``git_repo_root`` -- the
+    problem this story exists to close: a ``gh pr merge`` on the forge never
+    updates any LOCAL ref there, so ``head_branch`` and local ``main`` both
+    go stale the moment a wave merges (this story's own Intent: measured
+    2026-08-09, 5 commits behind minutes after its own stories landed).
+
+    Gated by the SAME ``landing_resync`` toggle ``_run_resync_if_enabled``
+    already is -- no new policy key. ``False`` returns ``None`` immediately:
+    no I/O, no finding, mirroring that function's own off-switch shape.
+    Returns ``True``/``False`` only when the resync was actually attempted,
+    so a caller can tell "not attempted" (``None``) apart from "attempted
+    and failed" (``False``) -- a three-state distinction
+    ``_run_resync_if_enabled``'s own plain ``bool`` does not need, since
+    that resync has no ff-only-shaped refusal mode.
+
+    Targets ``origin/<base>``, never local ``main`` directly (this story's
+    own Design Notes): local ``main`` is checked out in a SEPARATE worktree
+    of this same shared repo, and ``git fetch`` cannot update a branch ref
+    checked out elsewhere -- ``origin/<base>`` (a remote-tracking ref) is
+    always safe to move and is what actually goes stale ("8 PRs behind on
+    origin" per the motivating measurement).
+
+    Any failure -- the fetch itself, or a non-fast-forward ``head_branch``
+    (e.g. a live run kept committing to it after the wave was captured for
+    landing) -- is one new WARN finding (``MRS-LAND-009``) naming
+    ``head_branch`` and git's own precise reason. Never escalated, never a
+    forced correction, and never affects ``land``'s own exit/verdict: the
+    merge this run performed already succeeded; this is a best-effort
+    convenience layered on top, with its own safety coming entirely from
+    ``VcsPort.fast_forward``'s ff-only atomicity rather than a second
+    liveness predicate (see ``ports/vcs.py``'s own docstring)."""
+    if not resync_enabled:
+        return None
+    try:
+        vcs.fetch(git_repo_root, "origin", base)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_LAND_009,
+                severity=Severity.WARN,
+                message=(
+                    f"could not fetch 'origin' to resync {head_branch!r} "
+                    f"with {base!r}: {exc}"
+                ),
+            )
+        )
+        return False
+    try:
+        vcs.fast_forward(home, f"origin/{base}")
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_LAND_009,
+                severity=Severity.WARN,
+                message=(
+                    f"{head_branch!r} could not be fast-forwarded to "
+                    f"'origin/{base}': {exc}"
+                ),
+            )
+        )
+        return False
     return True
 
 
@@ -937,6 +1037,8 @@ def _render_text_land(data: Mapping[str, object], findings: tuple[Finding, ...])
         lines.append(f"branch retired: {data.get('branch_retired')}")
     if "resynced" in data:
         lines.append(f"resynced: {data.get('resynced')}")
+    if "home_current" in data:
+        lines.append(f"home current: {data.get('home_current')}")
     if findings:
         lines.append("findings:")
         for finding in findings:
