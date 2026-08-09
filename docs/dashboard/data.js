@@ -490,7 +490,7 @@ window.DASHBOARD_DATA = {
         "median": 80,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-09 08:29 UTC"
+        "phaseAsOf": "2026-08-09 08:38 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1275,12 +1275,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "59/101",
+            "60/101",
             "stories complete",
             "var(--done)"
           ],
           [
-            "42",
+            "41",
             "remaining",
             ""
           ]
@@ -1905,7 +1905,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "13.7",
-              "pending",
+              "done",
               "The producer reconciles the surface it drifts *(added 2026-08-09 — FR-174)*"
             ]
           ]
@@ -3241,7 +3241,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 08:29 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 08:38 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5163,7 +5163,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 59,
+          "done": 60,
           "total": 101
         },
         {
@@ -5713,7 +5713,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "59/101",
+        "progress": "60/101",
         "complete": 13,
         "of": 13
       },
@@ -14480,8 +14480,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260808-210255-c88b/6-5-the-board-verdicts-come-home into loop/pyforge-doctor (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 08:29 UTC",
-    "generatedEpoch": 1786264166
+    "generatedAt": "2026-08-09 08:38 UTC",
+    "generatedEpoch": 1786264697
   },
   "storySpecs": [
     {
@@ -14510,9 +14510,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 59,
+      "done": 60,
       "tracked": 51,
-      "gap": 8
+      "gap": 9
     },
     {
       "station": "pyforge-mason",
@@ -14594,8 +14594,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 59,
-        "backlog": 41,
+        "done": 60,
+        "backlog": 40,
         "blocked": 1,
         "total": 101,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -14806,8 +14806,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 230,
-      "backlog": 97,
+      "done": 231,
+      "backlog": 96,
       "blocked": 6,
       "total": 333
     }

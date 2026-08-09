@@ -50,7 +50,7 @@ development_status:
   13-4-the-34-drift-findings-are-reconciled-or-recorded: done
   13-5-a-spec-cannot-declare-a-surface-it-has-no-contract-for: done
   13-6-the-presumed-set-is-worked-down-by-measurement: done
-  13-7-the-producer-reconciles-the-surface-it-drifts: backlog
+  13-7-the-producer-reconciles-the-surface-it-drifts: done
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done
