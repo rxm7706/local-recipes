@@ -9,6 +9,12 @@
 # per station -- atlas's is `pyforge-atlas`, not `atlas` -- see each
 # package's [project.scripts] in pyproject.toml).
 #
+# BUILD: `docker build -f Containerfile -t pyforge-guild .` from the repo
+# root. The `-f` is not optional under docker/BuildKit, which only
+# auto-detects the name `Dockerfile`; podman and buildah also accept
+# `Containerfile` unflagged. The name is deliberate -- this is an OCI image
+# definition, not a docker-specific one.
+#
 # SCOPE OF THIS IMAGE (Story 7.1): it materializes the eight station CLIs and
 # nothing else. The runtime stage carries no `git`, `gh`, `pixi` or `tmux`
 # binary, so station code paths that subprocess-wrap them (marshal's git
@@ -19,6 +25,16 @@
 # verbatim, no new dependency curation -- and is logged to deferred-work.md,
 # not an oversight. What IS contracted here: the build succeeds, all eight
 # CLIs answer `--version`, and bare `docker run` lands on `marshal`.
+#
+# EVERY INVOCATION MUST GO THROUGH THE ENTRYPOINT. The station CLIs are on
+# PATH only because /entrypoint.sh sources the shell-hook, and that hook is
+# also what runs each package's activation scripts (SSL_CERT_FILE,
+# GDK_PIXBUF_MODULE_FILE, FONTCONFIG_FILE and friends). Paths that bypass it
+# -- `docker exec <ctr> marshal`, `docker run --entrypoint marshal <image>`
+# -- fail with "executable file not found". Deliberately NOT papered over
+# with a baked `ENV PATH`: that would make those paths resolve the binary
+# while still missing the activation env, trading a loud failure for a quiet
+# one. Use `docker exec <ctr> /entrypoint.sh marshal ...` instead.
 #
 # --platform=linux/amd64 pinned on both stages: the workspace's pixi.toml
 # declares linux-64/win-64/osx-arm64-min only (no linux-aarch64), so building
@@ -31,9 +47,16 @@ FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.1 AS builder
 WORKDIR /pyforge
 COPY . /pyforge
 
-# --frozen: fail loudly on a stale pixi.lock rather than silently re-solving
-# inside the build -- the lock file is the source of truth, kept in sync by
-# `pixi install -e pyforge-container` outside the container.
+# --frozen: install EXACTLY what pixi.lock says and never re-solve inside the
+# build, so the image is a function of the committed lock alone. Note what it
+# does NOT do: per `pixi install --help`, `--frozen` "doesn't update lock file
+# if it isn't up-to-date with the manifest" -- it is silent about staleness,
+# not loud. `--locked` is the flag that aborts on a lock/manifest mismatch,
+# and it is deliberately not used here: `--frozen` is this repo's convention
+# at every call site. Keeping pixi.lock in step with pixi.toml therefore
+# remains the author's job (`pixi install -e pyforge-container` outside the
+# container, or `pixi lock --check` as the probe) -- a stale lock yields a
+# green build of an out-of-date image.
 RUN pixi install --frozen -e pyforge-container
 
 # The activation script for `pyforge-container` -- sourced by the runtime

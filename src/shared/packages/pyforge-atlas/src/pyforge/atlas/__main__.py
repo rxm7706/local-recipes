@@ -29,12 +29,16 @@ def main(*args, **kwargs) -> Any:
     # (`pyforge-atlas = ...__main__:main`) is invoked bare, so the real args
     # live in `sys.argv[1:]`; an explicit `args[0]` (e.g. `python -m
     # pyforge.atlas` callers passing argv directly) and Click's own
-    # `main(args=[...])` keyword form are honored too. Scoped to the FIRST
-    # token only -- mirrors marshal's own documented `--version` convention
-    # (root-only, wins before anything else claims the rest of parsing) --
-    # so `--version` appearing later among real run flags/values doesn't
-    # short-circuit a legitimate invocation.
-    if args:
+    # `main(args=[...])` keyword form are honored too. An explicit `None` in
+    # EITHER position means Click's documented "read sys.argv" -- so both
+    # branches test `is not None` rather than truthiness, or `main(None)`
+    # would resolve to a `None` argv and silently skip the intercept while
+    # `main(args=None)` honored it. Scoped to the FIRST token only -- mirrors
+    # marshal's own documented `--version` convention (root-only, wins before
+    # anything else claims the rest of parsing) -- so `--version` appearing
+    # later among real run flags/values doesn't short-circuit a legitimate
+    # invocation.
+    if args and args[0] is not None:
         cli_args = args[0]
     elif kwargs.get("args") is not None:
         cli_args = kwargs["args"]

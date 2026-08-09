@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -45,6 +46,25 @@ def test_version_via_args_keyword(capsys: pytest.CaptureFixture[str]) -> None:
     positional args would have silently bypassed `--version` for them.
     """
     result = main(args=["--version"])
+
+    captured = capsys.readouterr()
+    assert captured.out.strip() == f"pyforge-atlas {__version__}"
+    assert result is None
+
+
+def test_explicit_none_positional_falls_back_to_sys_argv(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`main(None)` is Click's documented "read sys.argv" shape.
+
+    The keyword branch has always tested `is not None`; the positional branch
+    tested truthiness, so `(None,)` -- a non-empty tuple -- resolved `cli_args`
+    to `None` and skipped the intercept, making the two shapes disagree about
+    the same value.
+    """
+    monkeypatch.setattr("sys.argv", ["pyforge-atlas", "--version"])
+
+    result = main(None)
 
     captured = capsys.readouterr()
     assert captured.out.strip() == f"pyforge-atlas {__version__}"
@@ -88,3 +108,11 @@ def test_version_is_one_clean_line_in_a_real_process() -> None:
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip() == f"pyforge-atlas {__version__}"
     assert proc.stdout.count("\n") == 1
+    # Asserted on BOTH streams, not just stdout: the contract this guards is
+    # "one clean version line, no checkout path leaked", and a logging config
+    # is free to be emitted on stderr instead -- which would keep the stdout
+    # assertions green while `pyforge-atlas --version 2>&1` stayed exactly as
+    # polluted as before the deferred-import fix.
+    combined = proc.stdout + proc.stderr
+    assert "logging configuration" not in combined
+    assert str(Path(__file__).resolve().parents[1]) not in combined
