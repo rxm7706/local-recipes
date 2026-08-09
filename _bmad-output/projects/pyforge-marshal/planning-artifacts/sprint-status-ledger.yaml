@@ -45,8 +45,8 @@ development_status:
   12-6-readme-adoption-guide-and-the-finding-remedy-reference: backlog
   13-1-a-baseline-can-be-stamped-for-one-spec: done
   13-2-a-moved-contract-reconciles-only-the-paths-it-names: done
-  13-3-the-no-baseline-ungoverned-and-stale-allowlist-findings-are-cleared: backlog
-  13-4-the-34-drift-findings-are-reconciled-or-recorded: backlog
+  13-3-the-no-baseline-ungoverned-and-stale-allowlist-findings-are-cleared: done
+  13-4-the-34-drift-findings-are-reconciled-or-recorded: done
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done
@@ -112,7 +112,7 @@ development_status:
   epic-11-retrospective: optional
   epic-12: backlog
   epic-12-retrospective: optional
-  epic-13: in-progress
+  epic-13: done
   epic-13-retrospective: optional
   epic-2: done
   epic-2-retrospective: done

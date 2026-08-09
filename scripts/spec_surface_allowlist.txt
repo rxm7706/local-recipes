@@ -5,6 +5,7 @@ docs/dreams/**           # Tier-0 prose (Dream convention governs), not code
 docs/reference/**        # reference prose; catalog drift has its own detector (llms-full-check)
 docs/intake/**           # intake inbox (triage rules in its README), not code
 docs/specs/**            # LEGACY Tier-1 specs (frozen; drift-check --specs governs)
+docs/governance/**           # the CONSTITUTIVE governance kernel (Charter §5, precedes stations). Cannot declare a `surface:` — spec_surface_check's SPEC_GLOB only discovers _bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md, so this kernel is not a spec to this detector at all. Same class as docs/dreams/**: a contract, not code. Governing it would mean moving it under a station, which is a governance decision, not a detector fix.
 archive/**               # discarded material, retained for history
 _bmad/**                 # BMAD installer tree (vendor-managed, regenerated)
 _bmad-output/**          # the contracts themselves (bmad-drift-check governs)
@@ -61,7 +62,6 @@ GEMINI.md                # per-tool pointer (governance doc)
 README.md                # repo front page
 CHANGELOG.md             # historical record
 LICENSE*                 # license
-pixi.toml                # env manifest; llms-full-check + env-sync CI govern it
 pixi.lock                # lockfile (derived from pixi.toml)
 environment.yaml         # derived export of pixi.toml (CI sync check governs)
 .gitignore               # repo plumbing
