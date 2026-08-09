@@ -14,6 +14,7 @@ from pathlib import Path
 
 import typer
 
+from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
 from pyforge.scribe.compile import compile_graph, default_store_path
 from pyforge.scribe.graph_store import FlatFileGraphStore
@@ -38,6 +39,29 @@ app.add_typer(graph_app, name="graph")
 # `scribe` is always run from the repo root (never a hardcoded absolute
 # path), matching capture.py's injectable-memory-root contract.
 _MEMORY_ROOT = Path(".claude") / "memory"
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"scribe {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _main(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show scribe's version and exit.",
+    ),
+) -> None:
+    # No docstring on purpose: `typer.Typer(help=...)` above already sets the
+    # app's help text; a callback docstring would shadow it. Purely additive
+    # -- this callback exists only to host the eager `--version` option, and
+    # `no_args_is_help=True` on `app` still governs bare `scribe` invocation.
+    pass
 
 
 @app.command("capture")
