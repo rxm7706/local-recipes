@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-171, no gaps (FR-170/FR-171 reopen § 7.2 durability: the guarantee holds, its SIGNAL did not).
+updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-178, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
 # 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
 # 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
@@ -377,6 +377,60 @@ The supervisor distinguishes a branch that **cannot** be pushed from one that no
 - `find_unpushed`'s `if br in remote: continue` is replaced by a tip comparison: a local branch whose remote sha differs and which carries commits the remote lacks is unpushed work, however long its name has existed on origin.
 - Station branches (`loop/*`) are in scope: they are precisely the long-lived branches whose name always exists remotely and whose tip silently falls behind between runs — the case the name check structurally cannot see.
 - *Motivating evidence: measured 2026-08-09 — `loop/pyforge-doctor` on origin at `3f43f486c9` while the local branch stood 8 PRs ahead at `cbd965110b`, reported clean. The Dream's own founding observation ("nine detectors ran green because none asked the durability question") reproduced inside the detector written to ask it.*
+
+#### FR-172: `marshal land` refuses while a run is in flight *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)*
+The last mile knows whether the road is still in use.
+**Consequences:**
+- `land` resolves its head branch to the loop-home **station branch** and retires it by default; invoked during a live run it would merge and then **delete the branch bmad-loop is actively merging stories into**. It now refuses, by name, when a supervisor/engine is live for that slug — the same liveness reading `marshal status` already produces, not a new mechanism.
+- The refusal is overridable **explicitly** (a flag that says what it accepts), because landing mid-run is legitimate when the operator knows the run is between stories — it must simply never be the silent default.
+- Landing a wave while a run continues stays supported; what is refused is the **branch retirement**, not the merge.
+- *Motivating evidence: measured 2026-08-09 — avoided only because a human read `cli/land.py` before invoking it. A safety property that depends on someone reading the source is not one.*
+
+#### FR-173: A landing leaves the loop home current with `main` *(added 2026-08-09 — `docs/dreams/pr-lifecycle.md`)*
+"Resync" means the station branch is current, not merely that the feed is.
+**Consequences:**
+- `landing_resync` today resyncs the **feed**; `landing_resync_commands` is empty by default, so nothing returns the loop home to `main` after its own work merges. The station branch begins drifting the moment the first PR lands.
+- Landing brings the station branch back to `main` (fast-forward where possible), or reports precisely why it cannot — never silently leaves it behind.
+- Between-runs staleness is in scope: a home with no live run is exactly where drift accumulates unobserved.
+- *Motivating evidence: `loop/pyforge-doctor` measured 5 commits behind `main` minutes after its own stories landed, and 8 PRs behind on origin between runs — reported clean by every detector at the time.*
+
+#### FR-174: The producer reconciles the surface it drifts *(added 2026-08-09 — `docs/dreams/surface-drift-reconciliation.md`)*
+bmad-loop names the governed paths it changed, in the owning Spec's memlog, as part of the story.
+**Consequences:**
+- A loop-produced story that touches governed files leaves that Spec's `.memlog.md` naming each changed path **before the story is complete**, so `spec-surface-check` is green on the station branch without a human editing a memlog at landing.
+- A story that changes no governed file writes nothing — silence is not a finding, and a memlog entry per story would be noise.
+- Reconciliation is **per-file naming** under FR-165's rule. The loop is never handed `--write-baseline`: a producer that can stamp its own baseline is the laundering FR-165 exists to end.
+- *Motivating evidence: measured 2026-08-09 — the first three loop-produced stories landed drifted 14 governed paths across `spec-pyforge-doctor` plus `pixi.toml` against two further surfaces, every one named by hand at landing. The gate is correct; the machine writing most of the repo's code does not know it exists.*
+
+#### FR-175: The loop's deferred work reaches the tracked ledger *(added 2026-08-09 — the Marshal↔loop seam review)*
+A follow-up the loop defers is a decision of record, not a local note.
+**Consequences:**
+- When bmad-loop spends its damping cap it files "follow-up review still recommended" into `implementation-artifacts/deferred-work.md` — **gitignored Tier-3**, invisible to CI and absent from every clone — under a **generic `DW-<n>` id** that the next damped story collides with.
+- Measured 2026-08-09: `DW-1`/`DW-2` were promoted by hand as `DW-FU-1-1`/`DW-FU-1-3`; **`DW-3`…`DW-7` never were**, and stand today as five `tier3-only-deferral` findings on marshal.
+- Promotion carries the ledger's `DW-<story>-<n>` convention so ids cannot collide, and happens as part of the story or its landing — not as archaeology someone performs later.
+- Scope note: this is about the **transport** of a deferral into the tracked tier. Whether each follow-up review is then *done* stays the operator's call.
+
+#### FR-176: The failed-story safety net is reported, not merely written *(added 2026-08-09 — the Marshal↔loop seam review)*
+A `changes.patch` left by a killed story is surfaced, so a patch holding unlanded work cannot sit unnoticed.
+**Consequences:**
+- A session-timeout kill defers a story and preserves its work at `<run>/failed/<story>/changes.patch`. **Nothing in the repo reads that path** — measured 2026-08-09: **7 patches on disk, 26 KB to 205 KB**, across doctor/herald/marshal/mason/warden.
+- All seven belong to stories that later reached `done`, so **nothing is lost today** — which is precisely why it has gone unnoticed. The gap is the absence of a signal, not a present loss.
+- Reported alongside the other durability signals (`unpushed-work-check`'s family), keyed on whether the owning story has since landed: a patch whose story is `done` is spent and can be said so; one whose story is not is real pending work on one disk.
+
+#### FR-177: One pusher, not two *(added 2026-08-09 — the Marshal↔loop seam review)*
+`loop_push_watch.py`'s role is reconciled with the supervisor that now subsumes it.
+**Consequences:**
+- FR-61 gave the supervisor its own `boundary: "interval"` push (`_INTERVAL_PUSH_BOUNDARY`), so during a run the standalone watcher duplicates it — two processes pushing the same branches on overlapping timers.
+- The script's own pixi description still calls itself "a STOPGAP — the durable fix is for the loop to push at its own stage boundaries", a statement **Marshal made false when FR-61 shipped**. Documentation that describes a world that no longer exists is how an operator (2026-08-09) concluded nothing was pushing at all.
+- Either retired, or re-scoped to the one case the supervisor structurally cannot cover — a home with **no live run** — with its description corrected either way. It must not keep claiming to be the fallback for something already built.
+
+#### FR-178: A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — the Marshal↔loop seam review)*
+Isolation covers the shared git directory, not just the working tree.
+**Consequences:**
+- Every loop home **and every per-story worktree** resolves `--git-common-dir` to the **same** `local-recipes/.git`. `.git/info/exclude`, `.git/config` and the rest of that directory are therefore **repo-wide shared state** that any dev session can write — Marshal's isolation contract (FR-8) covers worktrees and branches, not this.
+- Observed three times, most recently **while a run was live**: a dev session re-added `/.claude/skills` to `.git/info/exclude`, which hides only NEW files, from `git status` and `git add -A`, in **every** worktree at once. It cannot be spotted with the tool you would use to spot it, and it nearly cost this session's own new test file.
+- `marshal preflight`/`homes` reports a loop home whose shared git state has been mutated — at minimum `info/exclude` — so the condition is visible rather than discovered by a missing file weeks later.
+- The existing filesystem-walking guard (`test_skill_files_tracked.py`) stays: it is the only signal that survives the rule, and it is what caught the third recurrence.
 
 ---
 

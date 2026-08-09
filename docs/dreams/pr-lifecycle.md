@@ -2,7 +2,7 @@
 title: PR lifecycle — a story lands itself
 type: dream
 owner: marshal
-status: archived
+status: realized
 archived-reason: absorbed
 ---
 
@@ -66,6 +66,31 @@ every stage has all three.
   (story 1.2), and `marshal config` already knows how to compose and record a
   policy — which is where landing rules belong.
 
+## What is real, part two — the last mile has no idea a run is happening (measured 2026-08-09)
+
+`marshal land` shipped and does what CAP-2 asked: open/label/wait/merge/retire/resync, no
+human in the sequencing loop. Operating it during a **live** run exposed two things the
+Dream never considered, because when it was written landing happened *after* a run, never
+*during* one.
+
+- **`land` would have destroyed a running fleet.** Its head branch is *the loop-home station
+  branch* (`cli/land.py` resolves `head_branch` to exactly that), and
+  `landing_branch_retirement` defaults to **True**. Invoked while bmad-loop was mid-story on
+  `loop/pyforge-doctor`, it would have merged and then **deleted the branch the harness was
+  actively merging stories into**. Nothing in the verb asks whether a run is in flight. It
+  was avoided on 2026-08-09 only because a human read the source first — which is not a
+  safety mechanism.
+- **"Resync" does not mean what the operator needs it to mean.** `landing_resync` resyncs
+  the **feed**; `landing_resync_commands` defaults to empty. Nothing brings the loop home's
+  station branch back to `main` after a landing, so it drifts from the moment the first PR
+  merges. Measured the same day: `loop/pyforge-doctor` **5 commits behind main** minutes
+  after its own stories landed, and — before that — **8 PRs behind** on origin between runs,
+  reported clean by every detector.
+
+Both are the same shape as the durability finding of the same day: **the verb is right, its
+awareness of context is missing.** A last mile that cannot tell whether the road is still in
+use is not finished.
+
 ## The frontier
 
 - **Landing as a policy surface, not a script.** Required checks, merge
@@ -105,6 +130,13 @@ today's advisory CI is why "merged green" and "actually green" can differ) ·
 [[pyforge-doctor]] (holds the verdict on Marshal's own rows) · [[pyforge-charter]].
 
 ## Realization log
+
+- **2026-08-09** — Reopened after operating `marshal land` alongside a live 9-story run.
+  Two gaps, neither of which existed when the Dream was written because landing was then a
+  post-run act: the verb retires the station branch with no live-run guard, and its
+  "resync" is the feed rather than the loop home's own currency with `main`. Recorded here
+  rather than as a new Dream — this IS the last mile, it just turns out the last mile has
+  to know whether anyone is still driving on it.
 
 - **2026-07-31** — Dream seeded (operator call): **"Marshal should own the PR
   lifecycle."** This **resolves open question #10 in `spec-pyforge-marshal`**,
