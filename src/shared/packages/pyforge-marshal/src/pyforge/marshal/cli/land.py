@@ -63,7 +63,17 @@ LOCAL, inside ``run_land`` -- never module-level. ``cli/init.py`` imports
 either from here would risk a load-order-fragile cycle the moment either of
 those modules ever imports ``cli/land.py`` back (mirrors
 ``run_land_story``'s/``run_batch_pr``'s own identical, already-documented
-convention in ``cli/deploy.py``)."""
+convention in ``cli/deploy.py``).
+
+**A policy-true branch retirement is refused while this slug's own
+bmad-loop run is still using the branch (Story 4.11, FR-172).** Before
+honoring ``landing_branch_retirement``, ``run_land`` gathers the SAME
+liveness facts ``marshal status`` gathers (``cli/status.py::
+_gather_home_facts``) and checks them with ``core/status.py::is_run_live``
+-- a live run downgrades ``delete_branch`` to ``False`` for THIS
+invocation's ``merge_pr`` call only (never writing back to policy) and
+raises ``MRS-LAND-008``, overridable with ``--retire-live-branch``. The
+merge itself is never blocked by this gate -- only retirement is."""
 
 from __future__ import annotations
 
@@ -73,6 +83,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness
@@ -82,9 +93,13 @@ from ..core import policy, promotion
 from ..core.journal import Phase
 from ..core.landing import rule_applies
 from ..core.model import Finding, Severity, build_envelope
+from ..core.status import is_run_live
 from ..core.verdict import compute_verdict, exit_code_for
+from ..ports.clock import ClockPort
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
+from ..ports.harness import HarnessPort
+from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .config import (
     PolicyIOError,
@@ -116,6 +131,7 @@ _MRS_LAND_004 = "MRS-LAND-004"
 _MRS_LAND_005 = "MRS-LAND-005"
 _MRS_LAND_006 = "MRS-LAND-006"
 _MRS_LAND_007 = "MRS-LAND-007"
+_MRS_LAND_008 = "MRS-LAND-008"
 
 # This module's own journal kinds (AD-28: distinct writer namespaces, never
 # conflated with `cli/deploy.py`'s `_LAND_MERGE_KIND`/`_BATCH_PR_WRITE_KIND`
@@ -148,6 +164,23 @@ def add_land_subparser(subparsers: argparse._SubParsersAction) -> None:
         ),
     )
     parser.add_argument("slug", help="The BMAD project slug.")
+    parser.add_argument(
+        "--retire-live-branch",
+        action="store_true",
+        default=False,
+        help=(
+            "Override refusal (Story 4.11): retire (delete) the loop-home "
+            "station branch even while this slug's bmad-loop run is still "
+            "live -- a supervisor confirmed alive with the run not yet "
+            "finished, or a run whose journal/state could not be read far "
+            "enough to prove it is NOT live. Without this flag, a live "
+            "run downgrades a policy-true landing_branch_retirement to "
+            "False for this invocation only (never mutating policy) and "
+            "reports MRS-LAND-008. The merge itself always proceeds either "
+            "way -- this flag affects ONLY whether the branch is retired "
+            "afterward, never whether the wave lands."
+        ),
+    )
     parser.add_argument(
         "--format",
         choices=("text", "json"),
@@ -280,6 +313,9 @@ def run_land(
     vcs: VcsPort | None = None,
     fs: FsPort | None = None,
     forge: ForgePort | None = None,
+    harness: HarnessPort | None = None,
+    process: ProcessPort | None = None,
+    clock: ClockPort | None = None,
     context: MarshalContext | None = None,
 ) -> int:
     # Story 5.6 (FR-65/AD-50): `context`, if `cli/main.py`'s dispatch
@@ -309,6 +345,9 @@ def run_land(
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
     forge = forge if forge is not None else GhForge()
+    harness = harness if harness is not None else BmadLoopHarness()
+    process = process if process is not None else PosixProcess()
+    clock = clock if clock is not None else SystemClock()
 
     slug = args.slug
     findings: list[Finding] = []
@@ -507,7 +546,15 @@ def run_land(
             else:
                 data["branch_retired"] = True
         data["resynced"] = _run_resync_if_enabled(
-            reconcile_feed, args, vcs, fs, resync_enabled, slug, findings
+            reconcile_feed,
+            args,
+            vcs,
+            fs,
+            resync_enabled,
+            slug,
+            findings,
+            harness=harness,
+            process=process,
         )
         return _emit(args, data, findings)
 
@@ -786,6 +833,63 @@ def run_land(
         if blocked:
             return _emit(args, data, findings)
 
+    # --- liveness gate (Story 4.11): a policy-true delete_branch is never
+    # honored while THIS slug's own bmad-loop run is still using
+    # head_branch -- confirmed 2026-08-09 against a live 9-story run,
+    # avoided only because a human read the source first. Gathers the SAME
+    # facts `marshal status` already gathers (`cli/status.py::
+    # _gather_home_facts`, reused verbatim, never re-derived independently
+    # here) ONLY when `delete_branch` is already True -- a project whose
+    # `landing_branch_retirement` is False triggers no new I/O and no new
+    # finding, unchanged from before this story. `_gather_home_facts`/
+    # `_latest_run_dir`/`_resolve_harness_run_id_for_resume` are imported
+    # LOCALLY, the same load-order-cycle reason every other cross-module
+    # import in this function already documents.
+    #
+    # This check-then-act window (code review, 2026-08-09, both reviewers
+    # independently) is intentionally left OPEN rather than re-verified
+    # immediately before `forge.merge_pr` below: unlike `expected_head_sha`
+    # (closed FORGE-SIDE, atomically, by `--match-head-commit` over a
+    # required-check poll that can span minutes), there is no equivalent
+    # atomic primitive for "this branch's run is still live" -- true
+    # closure needs a cross-process lock between `land` and the bmad-loop
+    # supervisor, out of this story's scope. The remaining window is one
+    # local `deploy_run.write` journal call (no network, no polling) before
+    # `merge_pr` is invoked -- as tight as this function's own established
+    # intent-before/outcome-after ordering (AD-6) already places it.
+    if delete_branch and not args.retire_live_branch:
+        from .spin import _latest_run_dir, _resolve_harness_run_id_for_resume
+        from .status import _gather_home_facts
+
+        home_facts = _gather_home_facts(
+            fs=fs,
+            harness=harness,
+            process=process,
+            clock=clock,
+            home=home,
+            slug=slug,
+            branch=head_branch,
+            latest_run_dir=_latest_run_dir,
+            resolve_harness_run_id=_resolve_harness_run_id_for_resume,
+        )
+        if is_run_live(home_facts):
+            # Downgraded for THIS invocation's merge_pr call/journal payload
+            # only -- never writes back to the on-disk `landing_branch_
+            # retirement` policy value itself.
+            delete_branch = False
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_008,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{slug!r}'s bmad-loop run is still using "
+                        f"{head_branch!r} -- skipping branch retirement "
+                        "this run (the merge still proceeds); pass "
+                        "--retire-live-branch to retire it anyway"
+                    ),
+                )
+            )
+
     # --- merge + retire (one ForgePort call), journaled intent-before/ ---
     # outcome-after (AD-6). `expected_head_sha=head_sha` (code review,
     # 2026-08-06, both reviewers independently, the single most severe
@@ -867,14 +971,31 @@ def run_land(
     )
 
     data["resynced"] = _run_resync_if_enabled(
-        reconcile_feed, args, vcs, fs, resync_enabled, slug, findings
+        reconcile_feed,
+        args,
+        vcs,
+        fs,
+        resync_enabled,
+        slug,
+        findings,
+        harness=harness,
+        process=process,
     )
 
     return _emit(args, data, findings)
 
 
 def _run_resync_if_enabled(
-    reconcile_feed, args, vcs, fs, resync_enabled: bool, slug: str, findings: list[Finding]
+    reconcile_feed,
+    args,
+    vcs,
+    fs,
+    resync_enabled: bool,
+    slug: str,
+    findings: list[Finding],
+    *,
+    harness: HarnessPort,
+    process: ProcessPort,
 ) -> bool:
     """Gated by ``landing_resync`` (Story 4.7): calls ``cli/deploy.py::
     reconcile_feed`` in-process (the non-printing core ``run_refresh_feed``
@@ -884,12 +1005,17 @@ def _run_resync_if_enabled(
     ``data["resynced"]: false`` with no finding, per the story's own Always
     bullet. Any findings the reconciliation itself surfaces are folded into
     THIS run's own ``findings`` list -- never silently dropped, and never
-    printed as a second envelope."""
+    printed as a second envelope.
+
+    ``harness``/``process`` are ``run_land``'s own DI params (Story 4.11),
+    threaded through rather than each call constructing its own default
+    adapter -- one instantiation policy for both of this function's own
+    port uses, never two independently-drifting ones."""
     if not resync_enabled:
         return False
     refresh_args = argparse.Namespace(project=slug, format=args.format)
     _resync_data, resync_findings = reconcile_feed(
-        refresh_args, vcs=vcs, fs=fs, process=PosixProcess(), harness=BmadLoopHarness()
+        refresh_args, vcs=vcs, fs=fs, process=process, harness=harness
     )
     findings.extend(resync_findings)
     return True
