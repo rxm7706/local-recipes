@@ -36,7 +36,7 @@ development_status:
   5-2-consume-the-sprint-ledger-never-derive-story-status: done
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
-  6-3-partial-install-is-a-named-failure: backlog
+  6-3-partial-install-is-a-named-failure: done
   7-1-one-build-whole-guild: backlog
   7-2-the-repo-at-a-fixed-short-path: backlog
   7-3-credentials-never-enter-image-layers: backlog

@@ -2,7 +2,7 @@
 title: Factory console — the whole pipeline on one page
 type: dream
 owner: marshal
-status: archived
+status: realized
 archived-reason: absorbed
 ---
 
@@ -63,6 +63,18 @@ console already knows.
 mono/panel language).
 
 ## Realization log
+
+- **2026-08-09** — Reopened for the fleet roll-up. Five stations ran in parallel
+  overnight and the operator's first question was one the board could not answer:
+  *how much is done, how much is left, and is anything waiting on me?* The board
+  had the per-epic story lists all along but no total, and — worse — its own
+  story states are `done`/`active`/`pending` only, so a BLOCKED story is
+  indistinguishable from one merely not started. Six stories that will never run
+  looked exactly like 119 that will. Split deliberately: the tracked half
+  (done/total/blocked, roll-up) renders on Pages, the live half (run state,
+  projection, ATTENTION) stays local, because it derives from tmux and
+  `~/.bmad-loops` and CI has neither — publishing it would publish a number the
+  deploy cannot measure.
 
 - **2026-07** — Warden+Atlas program console built and published on Pages
   during the bmad-loop runs; `--source git` auto-refresh added so the public

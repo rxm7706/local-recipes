@@ -2095,10 +2095,10 @@
  },
  "pyforge-marshal/spec-dashboard-project-path-derivation": {
   "files": {
-   "docs/dashboard/generate.py": "88299f5caceabf896bb1a0b9870b34b616d94faa",
-   "docs/dashboard/index.html": "407c628116deaaa5af7ee213ed62f393ed180d29"
+   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23",
+   "docs/dashboard/index.html": "ab517db53ee93c50ed28a5e3fc6d126eea449962"
   },
-  "memlog": "bb249ea087fe5e95a20d4036732ae0d9298be4f9"
+  "memlog": "43522ee5d76603bc881581ff96c841a2c5b8f8d7"
  },
  "pyforge-marshal/spec-dream-to-code-model-self-verification": {
   "files": {
@@ -2116,10 +2116,10 @@
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
    "docs/dashboard/check_layout.py": "4163852dd4ce3b1d0691790675b65e58e6c95017",
    "docs/dashboard/check_render.js": "a24955d88fc73dc6ba2e790d843a99619aebae59",
-   "docs/dashboard/generate.py": "88299f5caceabf896bb1a0b9870b34b616d94faa",
-   "docs/dashboard/index.html": "407c628116deaaa5af7ee213ed62f393ed180d29"
+   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23",
+   "docs/dashboard/index.html": "ab517db53ee93c50ed28a5e3fc6d126eea449962"
   },
-  "memlog": "c2b9460288aaf819f519c2fed3dcf4bbbb7025fc"
+  "memlog": "c6caf70150fcffea9d131440639fcab0a25ad6f1"
  },
  "pyforge-marshal/spec-fidelity-enforcement": {
   "files": {},
@@ -2158,9 +2158,9 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "139243eeb258e8b354d7e4e1d019d5791ae4e6fc"
+   "pixi.toml": "42a1005af94d3c1190d802aca779eae40d500864"
   },
-  "memlog": "c498e0d3de75a05ae5c21e36cc4f311f2b51ff4a"
+  "memlog": "8f2c4f48966d11dd71231205c3f0d47f1139cd4a"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -2309,9 +2309,9 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "bd094688e43a629ffee75daffd59af19f71d6fd5",
-   "docs/dashboard/generate.py": "88299f5caceabf896bb1a0b9870b34b616d94faa"
+   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23"
   },
-  "memlog": "b5103fc0fd0095516c3e900adfef7badad4f15be"
+  "memlog": "4d07d9b23d250a99d9e41c7a0cc3c991659d72c9"
  },
  "pyforge-marshal/spec-regenerable-factory": {
   "files": {
@@ -2324,10 +2324,10 @@
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
-   "docs/dashboard/generate.py": "88299f5caceabf896bb1a0b9870b34b616d94faa",
+   "docs/dashboard/generate.py": "0742872638eb7be0040c7d4ac87a2063d28e8f23",
    "scripts/promote_sprint_status.py": "f3f59ad191e3b7ac951ba6e3da2b867f2b112e65"
   },
-  "memlog": "8fd0c7d70c0884cd744a2c9f56cc798cc752b986"
+  "memlog": "6af2f8f7da455bcc8247564deebca762f951b21b"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {
@@ -3247,9 +3247,9 @@
  },
  "pyforge-steward/spec-unified-container": {
   "files": {
-   "pixi.toml": "139243eeb258e8b354d7e4e1d019d5791ae4e6fc"
+   "pixi.toml": "42a1005af94d3c1190d802aca779eae40d500864"
   },
-  "memlog": "9ac4595b8bc132b51df76da95b54e627911ab7cd"
+  "memlog": "b3fa868b9c600de7dc8055d87be2132e9a3a7c7f"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {

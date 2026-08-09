@@ -602,6 +602,113 @@ def apply_tracked_ledger(projects: dict) -> None:
               f"{upgraded} story(ies) upgraded to done")
 
 
+
+def build_fleet_progress(projects: dict) -> dict:
+    """Per-station done/total/blocked plus a PyForge roll-up (CI-safe).
+
+    Reads each project's TRACKED `sprint-status-ledger.yaml` through
+    `parse_sprint_status` — the same parser `apply_tracked_ledger` uses, never a
+    second one that could drift — so this renders identically on a laptop and on
+    Pages. `implementation-artifacts/` is gitignored, so the Tier-3 feed is not
+    an option here.
+
+    **Why not read the board's own story states.** They are `done`/`active`/
+    `pending` only: the board cannot distinguish a BLOCKED story from one merely
+    not started, so 6 stories that will never run look exactly like 119 that
+    will. Counting from the ledger is what makes `blocked` real.
+
+    **Deliberately carries no live fields.** No running state, no projection, no
+    ATTENTION — those derive from `marshal status`, which reads tmux and
+    `~/.bmad-loops`. CI has neither, so publishing them would publish a number
+    the deploy cannot measure. `pixi run -e local-recipes fleet-picture` is the
+    local view that adds them; this is the half that is true everywhere.
+
+    An epic counts as done only when EVERY story in it is done, matching the
+    report's rule so the two never disagree.
+    """
+    rows, total = [], collections.Counter()
+    for pkey in sorted(projects):
+        slug = _KEY_SLUG_OVERRIDE.get(pkey, f"pyforge-{pkey}")
+        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
+                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        if not ledger.is_file():
+            continue
+        statuses = parse_sprint_status(ledger)
+        if not statuses:
+            continue
+        stories = {k: v for k, v in statuses.items() if not k.startswith("epic-")}
+        by_epic: dict[str, list[str]] = collections.defaultdict(list)
+        for key, value in stories.items():
+            head = key.split("-", 1)[0]
+            if head.isdigit():
+                by_epic[head].append(value)
+        done = sum(1 for v in stories.values() if v == "done")
+        blocked = sum(1 for v in stories.values() if v == "blocked")
+        epics_done = sum(1 for e in by_epic.values() if all(v == "done" for v in e))
+        rows.append({"key": pkey, "stories": len(stories), "done": done,
+                     "blocked": blocked, "epics": len(by_epic),
+                     "epicsDone": epics_done,
+                     "complete": done == len(stories) and len(stories) > 0})
+        for field, value in (("stories", len(stories)), ("done", done),
+                             ("blocked", blocked), ("epics", len(by_epic)),
+                             ("epicsDone", epics_done)):
+            total[field] += value
+    return {"rows": rows, "total": dict(total),
+            "note": ("counts from the tracked sprint ledgers; blocked stories are "
+                     "counted separately because they will not run. Live run state "
+                     "and projections are local-only "
+                     "(`pixi run -e local-recipes fleet-picture`).")}
+
+
+
+def enrich_fleet_progress_live(fleet: dict, projects: dict) -> None:
+    """LOCAL-ONLY: add run state and a projection to the fleet roll-up.
+
+    The operator asked the right question — the LOCAL board is generated on the
+    machine that has tmux and `~/.bmad-loops`, so it can match
+    `pixi run -e local-recipes fleet-picture` completely. Only the PAGES deploy
+    is limited, because CI has neither. So the live fields are added here, in the
+    local branch only, exactly like `apply_loop_inflight` — and their ABSENCE is
+    what makes a Pages render honest rather than stale.
+
+    `running` reuses `_live_loop_sessions()`, the same multiplexer reading
+    `apply_loop_inflight` trusts, rather than a second definition of "live" that
+    could disagree with the row directly above it on the same page.
+
+    `projected` = done + pending for a RUNNING station, done alone for a stopped
+    one. Blocked is excluded by construction: those stories are not pending and
+    will not be dispatched.
+    """
+    # Authority: `marshal status`, the SAME source `scripts/fleet_picture.py`
+    # reads — so the local board and the CLI can never disagree about who is
+    # running. An earlier cut used `_live_loop_sessions()` (tmux) and was WRONG
+    # on both counts: it reported marshal running because a tmux session lingered
+    # after its engine died, and missed steward/mason entirely. A multiplexer
+    # session is not an engine.
+    running: set[str] = set()
+    try:
+        out = subprocess.run(
+            ["pixi", "run", "-e", "pyforge-marshal", "--", "marshal", "status",
+             "--format", "json"],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=300).stdout
+        rows = json.loads(out[out.index("{"):out.rindex("}") + 1]).get("homes", [])
+        for r in rows:
+            if r.get("state") == "running":
+                running.add((r.get("slug") or "").replace("pyforge-", ""))
+    except Exception as exc:                       # never break a local render
+        fleet["liveError"] = f"marshal status unavailable: {exc}"
+    total_proj = 0
+    for row in fleet.get("rows", []):
+        is_running = row["key"] in running
+        pending = row["stories"] - row["done"] - row["blocked"]
+        row["running"] = is_running
+        row["projected"] = row["done"] + (pending if is_running else 0)
+        total_proj += row["projected"]
+    fleet["live"] = {"running": sorted(running), "projected": total_proj}
+    fleet["note"] += (" Live fields present: this is a LOCAL render. A Pages "
+                      "render omits them because CI cannot read tmux or "
+                      "~/.bmad-loops.")
+
 def apply_git(projects: dict) -> None:
     per_project = done_ids_from_git(MAIN_BRANCH, tuple(projects))
     for pkey, ids in per_project.items():
@@ -2721,6 +2828,12 @@ def main() -> int:
     spec_c = scan_campaign()
     build_c = scan_impl_campaign(data["projects"])
     apply_line_state(data["projects"])
+    # Fleet roll-up: tracked-only, so it renders the same on Pages as locally.
+    data["fleetProgress"] = build_fleet_progress(data["projects"])
+    if args.source != "git":
+        # Local render only — see the function's own docstring for why
+        # Pages must NOT carry these.
+        enrich_fleet_progress_live(data["fleetProgress"], data["projects"])
     data["health"] = scan_health()
     # Pitch BEFORE fleet: the deck dot is sub-scored against the six-artifact family
     # contract, and scan_pitch already computes exactly that per deck. Recomputing it
