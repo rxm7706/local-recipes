@@ -4,6 +4,7 @@ status: draft
 owner-dream: docs/dreams/unified-container.md
 surface:
   - Containerfile                     # multi-stage: pixi-install lean env -> checkout at /pyforge -> entrypoint marshal
+  - .dockerignore                     # build-context exclusions (credentials/state-leak + arm64/size gaps closed in 7.1's review pass)
   - pixi.toml                         # new composed `pyforge-container` env (pyforge-ci precedent)
   - scripts/container-gates           # image gates: keys audit --secrets over rootfs; provision --verify + per-station --help smoke
 sources:
