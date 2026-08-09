@@ -33,9 +33,9 @@ development_status:
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
   5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init: done
-  5-2-consume-the-sprint-ledger-never-derive-story-status: backlog
-  6-1-provision-module-name: backlog
-  6-2-provision-list-modules: backlog
+  5-2-consume-the-sprint-ledger-never-derive-story-status: done
+  6-1-provision-module-name: done
+  6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: backlog
   7-1-one-build-whole-guild: backlog
   7-2-the-repo-at-a-fixed-short-path: backlog

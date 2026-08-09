@@ -42,6 +42,9 @@ class FakeVcs:
         self.worktrees: dict[str, Path] = {}
         self.calls: list[str] = []
         self.fail_repo_common_root: Exception | None = None
+        #: S-1.11 -- pathspec -> tracked paths it shadows (empty = shadows nothing)
+        self.tracked_matches: dict[str, tuple[str, ...]] = {}
+
         self.fail_worktree_path_for_branch: Exception | None = None
         self.fail_add_worktree: Exception | None = None
         self.fail_list_worktrees: Exception | None = None
@@ -87,6 +90,9 @@ class FakeVcs:
         if self.fail_repo_common_root:
             raise self.fail_repo_common_root
         return self.repo_root
+
+    def tracked_paths_matching(self, repo_root: Path, pathspec: str) -> tuple[str, ...]:
+        return self.tracked_matches.get(pathspec.lstrip("/"), ())
 
     def branch_exists(self, repo_root: Path, branch: str) -> bool:
         self.calls.append("branch_exists")
@@ -1652,6 +1658,85 @@ def test_preflight_fully_converged_reports_zero_findings(repo_root, tmp_path, ca
     assert "story_feed: resolvable=True error=None" in out
     assert "main_checked_out_once: True" in out
     assert "first_run_acknowledged: True" in out
+
+
+def _write_exclude(repo_root, body: str) -> None:
+    d = repo_root / ".git" / "info"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "exclude").write_text(body, encoding="utf-8")
+
+
+def test_preflight_reports_a_shared_exclude_rule_that_shadows_tracked_files(
+    repo_root, tmp_path, capsys
+):
+    """S-1.11 / FR-178, replaying the live incident. `/.claude/skills` was
+    re-added to .git/info/exclude THREE times on 2026-08-09, once while a run
+    was live. info/exclude is shared by every loop home and story worktree
+    (one --git-common-dir), and it hides only NEW files -- so neither
+    `git status` nor `git add -A` shows what it suppresses."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.tracked_matches = {".claude/skills": (".claude/skills/x/tests/meta/a.py",) * 12}
+    _write_exclude(repo_root, "# a comment\n\n/.claude/skills\n")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=_converged_harness())
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-013" in out, out
+    assert "/.claude/skills" in out
+    assert "12 tracked path(s)" in out
+
+
+def test_preflight_is_silent_on_an_exclude_rule_shadowing_nothing_tracked(
+    repo_root, tmp_path, capsys
+):
+    """A rule matching nothing tracked is ordinary local hygiene. The check
+    must not turn every developer's scratch ignore into a finding, or it is
+    noise and stops being read."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)          # tracked_matches empty
+    _write_exclude(repo_root, "*.swp\n/scratch/\n")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=_converged_harness())
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-013" not in out, out
+
+
+def test_preflight_ignores_comments_and_negations_in_the_shared_exclude(
+    repo_root, tmp_path, capsys
+):
+    """A commented-out rule suppresses nothing, and a `!` negation UN-ignores
+    -- treating either as a shadowing rule would report a file that is in fact
+    visible."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.tracked_matches = {".claude/skills": ("a.py",)}
+    _write_exclude(repo_root, "# /.claude/skills\n!/.claude/skills\n")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=_converged_harness())
+    assert "MRS-PREFLIGHT-013" not in capsys.readouterr().out
+
+
+def test_preflight_survives_an_unreadable_shared_exclude(repo_root, tmp_path, capsys):
+    """A diagnostic about shared state must never become a refusal: no
+    exclude file at all is the ordinary case, not a finding."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=_converged_harness())
+    assert code == EXIT_OK
+    assert "MRS-PREFLIGHT-013" not in capsys.readouterr().out
 
 
 def test_preflight_fully_converged_json_matches_schema(repo_root, tmp_path):

@@ -2,7 +2,7 @@
 title: Durable runs — work survives the machine that made it
 type: dream
 owner: marshal
-status: archived
+status: realized
 archived-reason: absorbed
 ---
 
@@ -64,6 +64,42 @@ its life with an hour of unsaved work somewhere.
   so it is safe beside a live run. It **bounds** worst-case loss to one interval;
   it does not remove it.
 - **156 rescue tags** on origin, making previously unreachable commits reachable.
+
+## What is real, part two — the durability signal itself (measured 2026-08-09)
+
+FR-61 shipped and **works**: during the doctor Epic 6 run, Marshal's supervisor
+journaled **22 `stage-push` records** across `dev-commit-landed`, `story-merged`
+and `interval` boundaries, and `origin/loop/pyforge-doctor` carried the merges of
+6-2, 6-3 and 6-4 without anyone intervening. Bounded-loss durability is real.
+
+What is *not* real is the **signal** that reports it. Two defects, both found by
+operating the thing rather than reading it, and both the same disease this repo
+keeps finding: **a green nobody measured.**
+
+- **6 of those 22 pushes reported `push-failed` (`MRS-SUPV-008`) on the success
+  path.** bmad-loop deletes a story's branch when the story merges into the
+  station branch; the supervisor is a *polling* observer, so by the time it acts
+  on the boundary the branch is gone and `git rev-parse <branch>@{upstream}`
+  answers "no such branch". `GitVcs.push` is right to raise — its docstring
+  reasons that falling back would push to a target the caller never named. The
+  **caller** is wrong: it asks to push a branch that was legitimately retired,
+  then calls the refusal a failure. The work was safe on the station branch the
+  entire time. A durability alarm that fires on success is worse than silence:
+  it cost an operator an hour of wrong diagnosis on 2026-08-09, and the wrong
+  diagnosis was *"durability is broken."*
+- **`unpushed_work_check.py` compares branch NAMES, not tips.** `find_unpushed`
+  skips any local branch with `br in remote` — so a branch whose remote copy
+  merely *exists* is declared safe no matter how far behind it is.
+  `loop/pyforge-doctor` sat on origin at `3f43f486c9` while the local branch was
+  **8 PRs ahead** at `cbd965110b`, and the detector said nothing. It answers
+  *"does a remote copy exist?"* while presenting itself as *"is the work safe?"*
+  This is exactly the gap the original Dream describes — "nine detectors ran
+  green throughout because none asked the durability question" — reproduced
+  *inside the detector written to ask it.*
+
+The unifying rule, and the one the original Dream already stated: **loss is
+bounded only if the report is true.** A false alarm and a false all-clear are the
+same defect wearing different signs, and this Dream now owns both.
 
 ## The frontier
 
@@ -127,6 +163,14 @@ credible claim on this Dream if durability becomes an operations concern rather
 than a loop-lifecycle one) · [[pyforge-charter]].
 
 ## Realization log
+
+- **2026-08-09** — Reopened for the *signal*, not the mechanism. FR-61's
+  stage-boundary push was verified working in a live 9-story run; what failed was
+  its reporting. Recorded as two capabilities (retired-branch classification, and
+  tip-comparison in the detector) rather than a new durability feature, because
+  nothing about the guarantee needs building — only the truth of the claim about
+  it. Found the way the Dream's own motivating evidence was found: by looking at
+  a real run, not by reading the code.
 
 - **2026-07-31** — Dream seeded (operator call), after a push-everything sweep
   found six unpushed station branches, ~5,150 lines on `recover/*`, herald 1.2's
