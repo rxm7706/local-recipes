@@ -1201,6 +1201,64 @@ def add_preflight_subparser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(handler=run_preflight)
 
 
+
+def _shared_git_state_findings(vcs: VcsPort, home: Path) -> tuple[list[Finding], dict]:
+    """S-1.11 (FR-178): does the SHARED git directory carry an ignore rule that
+    shadows tracked files?
+
+    Every loop home and every per-story worktree resolves ``--git-common-dir``
+    to the SAME ``.git``. ``info/exclude`` is therefore repo-wide state any dev
+    session can write, and Marshal's isolation contract (FR-8) -- worktrees and
+    branches -- structurally cannot see it. Observed three times on 2026-08-09,
+    once while a run was live: ``/.claude/skills`` re-added, hiding NEW files
+    from ``git status`` AND ``git add -A`` in every worktree at once. It nearly
+    cost a commit its own new test file.
+
+    The test is "does this rule shadow TRACKED paths", not "is this rule on a
+    list". A rule matching nothing tracked is ordinary local hygiene and stays
+    silent; one matching tracked paths hides their future siblings, invisibly.
+    That needs no baseline to maintain and no vocabulary to keep current -- it
+    is self-validating against the repo as it actually is.
+
+    WARN, never ERROR: this is a diagnostic about shared state, not a reason to
+    refuse to run a loop. Any failure to read is reported as no finding rather
+    than a refusal."""
+    findings: list[Finding] = []
+    data: dict = {}
+    try:
+        repo_root = vcs.repo_common_root(home)
+        exclude = repo_root / ".git" / "info" / "exclude"
+        text = exclude.read_text(encoding="utf-8", errors="replace")
+    except (VcsCommandError, OSError):
+        return findings, data
+    shadowing: list[dict] = []
+    for raw in text.splitlines():
+        rule = raw.strip()
+        if not rule or rule.startswith("#") or rule.startswith("!"):
+            continue
+        matched = vcs.tracked_paths_matching(repo_root, rule)
+        if matched:
+            shadowing.append({"rule": rule, "tracked_shadowed": len(matched),
+                              "example": matched[0]})
+    data["shared_git_exclude_rules_shadowing_tracked"] = shadowing
+    for entry in shadowing:
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-013",
+                severity=Severity.WARN,
+                message=(
+                    f"the SHARED git directory's info/exclude carries "
+                    f"{entry['rule']!r}, which shadows {entry['tracked_shadowed']} "
+                    f"tracked path(s) (e.g. {entry['example']}). info/exclude is "
+                    f"repo-wide -- every loop home and story worktree shares one "
+                    f"--git-common-dir -- and it hides only NEW files, so neither "
+                    f"`git status` nor `git add -A` will show what it is "
+                    f"suppressing. Remove the rule unless it is deliberate."
+                ),
+            )
+        )
+    return findings, data
+
 def run_preflight(
     args: argparse.Namespace,
     *,
@@ -1686,6 +1744,17 @@ def run_preflight(
     )
     data["projection_conformance"] = conform_data
     findings.extend(conform_findings)
+
+    # S-1.11 (FR-178): the SHARED git directory is state no worktree owns --
+
+    # checked on the main path, not only in an error branch.
+
+    shared_findings, shared_data = _shared_git_state_findings(vcs, home)
+
+    data.update(shared_data)
+
+    findings.extend(shared_findings)
+
 
     return _emit_preflight(args, data, findings)
 

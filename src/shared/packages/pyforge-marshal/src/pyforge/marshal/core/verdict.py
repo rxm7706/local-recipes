@@ -818,6 +818,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # server's command not resolvable) at ERROR -- the same tier as
     # MRS-PREFLIGHT-006/008/009: a real, attempted resolvability check
     # found (or could not confirm) a real problem.
+    "MRS-PREFLIGHT-013": Verdict.WARN,
     "MRS-PREFLIGHT-012": Verdict.ERROR,
 }
 

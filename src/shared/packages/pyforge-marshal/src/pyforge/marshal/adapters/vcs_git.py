@@ -510,6 +510,21 @@ class GitVcs:
                 f"git branch {flag} failed for {branch}: {result.stderr.strip()}"
             )
 
+    def tracked_paths_matching(self, repo_root: Path, pathspec: str) -> tuple[str, ...]:
+        """Story 1.11 (FR-178): ``git ls-files -- <pathspec>``, read-only.
+
+        A leading ``/`` (gitignore's "anchored at the repo root") is stripped,
+        since ls-files pathspecs are already root-relative -- without that,
+        every anchored rule would silently match nothing and the check would
+        report a clean tree over a shadowed one. A failing invocation returns
+        empty rather than raising: this is a diagnostic, and an unreadable
+        answer must not turn preflight into a refusal."""
+        spec = pathspec.lstrip("/") or "."
+        result = _run(["git", "-C", str(repo_root), "ls-files", "--", spec])
+        if result.returncode != 0:
+            return ()
+        return tuple(line for line in result.stdout.splitlines() if line.strip())
+
     def push(self, repo_root: Path, branch: str) -> None:
         """Story 3.8 (AD-46): resolves whether ``branch`` already has a
         configured upstream via ``git rev-parse --abbrev-ref

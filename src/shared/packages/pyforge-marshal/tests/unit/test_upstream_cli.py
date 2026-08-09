@@ -78,10 +78,18 @@ def test_well_formed_register_round_trips(capsys):
     assert code == 0
 
 
-def test_the_real_five_entry_register_content_round_trips(capsys):
-    """Reads the ACTUAL tracked register content this story ships,
-    round-tripped through a FakeFs (not a real filesystem read) --
-    confirms the file this story commits parses cleanly."""
+def test_the_real_register_content_round_trips(capsys):
+    """Reads the ACTUAL tracked register content, round-tripped through a
+    FakeFs (not a real filesystem read) -- confirms the committed file parses
+    cleanly.
+
+    Asserts the register CONTAINS its founding five and that the landed entry
+    is still flagged, rather than pinning an exact set. The exact-set form was
+    renamed from `..._five_entry_...` on 2026-08-09, when the seam review added
+    three genuine bmad-loop gaps and the test failed for being right about a
+    number that was never the contract. A register that must not grow is not a
+    register; what must hold is that entries round-trip and a landed gap still
+    reports MRS-UPSTREAM-002."""
     register_path = (
         Path(__file__).resolve().parents[6]
         / "_bmad-output"
@@ -97,13 +105,13 @@ def test_the_real_five_entry_register_content_round_trips(capsys):
     code = upstream_cli.run_upstream(_args(), fs=fs)
     envelope = _envelope_from(capsys)
     ids = {entry["id"] for entry in envelope["data"]["entries"]}
-    assert ids == {
+    assert {
         "idle-strand-detection",
         "per-story-model-tiering",
         "hardcoded-planning-artifacts-composition",
         "acp-evaluation",
         "non-posix-multiplexer-support",
-    }
+    } <= ids, "the founding five must survive every later addition"
     assert len(envelope["data"]["flagged_for_removal"]) == 1
     assert envelope["data"]["flagged_for_removal"][0]["id"] == "non-posix-multiplexer-support"
     codes = {f["code"] for f in envelope["findings"]}

@@ -172,6 +172,17 @@ class VcsPort(Protocol):
         ``start`` is not inside a git repository."""
         ...
 
+    def tracked_paths_matching(self, repo_root: Path, pathspec: str) -> tuple[str, ...]:
+        """Tracked paths under ``pathspec`` (Story 1.11, FR-178).
+
+        Exists to answer one question: does an ignore rule shadow files this
+        repo actually TRACKS? A rule that matches nothing tracked is ordinary
+        local hygiene; one that matches tracked paths hides their siblings --
+        and ``.git/info/exclude`` hides only NEW files, so the condition is
+        invisible to ``git status``, the very tool an operator would reach for.
+        Read-only; never mutates the index or the working tree."""
+        raise NotImplementedError
+
     def branch_exists(self, repo_root: Path, branch: str) -> bool:
         """``True`` if ``branch`` already exists as a ref in the repo rooted
         at ``repo_root``."""
