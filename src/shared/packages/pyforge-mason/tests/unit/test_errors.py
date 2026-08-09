@@ -2,13 +2,18 @@
 
 Story 1.6 extends this file with `CfeImportFloorError` coverage: its
 identifier and a message naming every missing module plus the interpreter
-path."""
+path. Story 1.7 extends it again with `CfeUnresolvedError` coverage: its
+fixed identifier and message naming all four `resolve.py` step names plus
+how to satisfy the first three."""
 
 from __future__ import annotations
 
+import copy
+import pickle
+
 import pytest
 
-from pyforge.mason.errors import CfeImportFloorError, MasonError
+from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError, MasonError
 
 
 def test_valid_identifier_constructs_and_stores_attributes():
@@ -131,3 +136,61 @@ def test_cfe_import_floor_error_coerces_missing_to_a_tuple():
     exc = CfeImportFloorError(missing=["pyyaml", "requests"], interpreter="/opt/py")
     assert exc.missing == ("pyyaml", "requests")
     assert isinstance(exc.missing, tuple)
+
+
+# --- Story 1.7: CfeUnresolvedError -------------------------------------------
+
+def test_cfe_unresolved_error_identifier():
+    exc = CfeUnresolvedError()
+    assert exc.identifier == "cfe:unresolved"
+
+
+def test_cfe_unresolved_error_message_names_all_four_step_names():
+    exc = CfeUnresolvedError()
+    for step_name in ("flag", "environment", "cwd-walk", "not-found"):
+        assert step_name in str(exc)
+
+
+def test_cfe_unresolved_error_message_names_how_to_satisfy_the_first_three():
+    exc = CfeUnresolvedError()
+    message = str(exc)
+    assert "--cfe-root" in message
+    assert "MASON_CFE_ROOT" in message
+    assert ".claude/scripts/conda-forge-expert" in message
+
+
+def test_cfe_unresolved_error_is_a_mason_error():
+    assert issubclass(CfeUnresolvedError, MasonError)
+    with pytest.raises(MasonError):
+        raise CfeUnresolvedError()
+
+
+def test_cfe_unresolved_error_takes_no_constructor_arguments():
+    with pytest.raises(TypeError):
+        CfeUnresolvedError("cfe:unresolved")  # type: ignore[call-arg]
+
+
+def test_cfe_unresolved_error_str_format_is_identifier_colon_space_message():
+    exc = CfeUnresolvedError()
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_cfe_unresolved_error_survives_deepcopy():
+    """Review pass (2026-08-09): `Exception.__reduce__` reconstructs via
+    `cls(*self.args)`, but `MasonError.__init__` sets `self.args` to a
+    two-item tuple while this class's constructor takes zero arguments --
+    without the `__reduce__` override, this would raise `TypeError` instead
+    of round-tripping."""
+    original = CfeUnresolvedError()
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, CfeUnresolvedError)
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_cfe_unresolved_error_survives_pickle_round_trip():
+    original = CfeUnresolvedError()
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, CfeUnresolvedError)
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message

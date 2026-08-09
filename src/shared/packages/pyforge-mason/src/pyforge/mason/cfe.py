@@ -9,11 +9,22 @@ the probing itself, because that requires spawning the candidate
 interpreter as a subprocess, which only `cli.py`/`cfe.py`/`engines/*.py` may
 do (AD-2, enforced by `tests/meta/test_dependency_direction.py`).
 
+Story 1.7 adds `ensure_cfe_root`, mirroring `ensure_import_floor`'s split
+from `probe_import_floor`: it takes the already-computed `ResolvedCfeRoot`
+(never re-resolving -- `resolve.py`'s own docstring says a later caller
+"never needs to re-resolve") and raises `CfeUnresolvedError` when
+`resolved.step == STEP_NOT_FOUND`. It lives here, not in `resolve.py`,
+because `resolve.py`'s own docstring and every existing test treat
+`resolve_cfe_root` as a function that "never raises" -- raising is `cfe.py`'s
+job, matching the Capability -> Architecture map's "CFE seam (FR-1 - FR-6)"
+row, which assigns FR-5 to `cfe.py` and `resolve.py` together.
+
 Story 2.1 extends this same file with CFE's full script-invocation adapter
 table (AD-3: "every CFE script Mason uses is declared once in a module-level
 table in this file"), `CfeResult`, and JSON-stdout extraction (AD-4). None of
 that exists yet -- this story adds only `CFE_IMPORT_FLOOR`,
-`ImportFloorResult`, `probe_import_floor`, and `ensure_import_floor`.
+`ImportFloorResult`, `probe_import_floor`, `ensure_import_floor`, and
+`ensure_cfe_root`.
 
 `CFE_IMPORT_FLOOR` maps each floor dependency's pip/conda *distribution*
 name to its Python *import* name -- the two differ for `pyyaml` (imports as
@@ -45,7 +56,8 @@ import functools
 import subprocess
 from dataclasses import dataclass
 
-from .errors import CfeImportFloorError
+from .errors import CfeImportFloorError, CfeUnresolvedError
+from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND
 
 CFE_IMPORT_FLOOR: dict[str, str] = {
     "pyyaml": "yaml",
@@ -151,3 +163,15 @@ def ensure_import_floor(interpreter: str) -> None:
     result = probe_import_floor(interpreter)
     if result.missing:
         raise CfeImportFloorError(missing=result.missing, interpreter=interpreter)
+
+
+def ensure_cfe_root(resolved: ResolvedCfeRoot) -> None:
+    """Raise `CfeUnresolvedError` if `resolved.step` is `STEP_NOT_FOUND`;
+    otherwise return `None`.
+
+    Takes the already-computed `ResolvedCfeRoot` -- never re-resolves by
+    calling `resolve_cfe_root` itself (spec Never boundary; mirrors
+    `ensure_import_floor`'s split from `probe_import_floor` above).
+    """
+    if resolved.step == STEP_NOT_FOUND:
+        raise CfeUnresolvedError()
