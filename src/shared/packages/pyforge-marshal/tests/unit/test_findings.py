@@ -197,6 +197,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-UPSTREAM-002",
             "MRS-PREFLIGHT-012",
             "MRS-PREFLIGHT-013",
+            "MRS-PREFLIGHT-014",
         }
     )
 

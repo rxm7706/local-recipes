@@ -1259,6 +1259,62 @@ def _shared_git_state_findings(vcs: VcsPort, home: Path) -> tuple[list[Finding],
         )
     return findings, data
 
+
+def _home_currency_findings(vcs: VcsPort, home: Path, slug: str) -> tuple[list[Finding], dict]:
+    """S-1.12 (FR-180): is this loop home CURRENT with main before we spin it?
+
+    Preflight is the chokepoint every spin passes through, which is why the check
+    lives here and not only in the landing path. S-4.12 makes a LANDING leave the
+    home current -- but a landing done by hand (`gh pr merge`, as every landing on
+    2026-08-09 was) never runs that code, so relying on it alone leaves the hole
+    wide open. Preflight cannot be skipped.
+
+    **Why ERROR, not WARN.** A stale home degrades SILENTLY: the S-13.7 surface
+    guard only bites when drift GATES, and a home carrying an old baseline sees its
+    drift as non-gating `[drift-presumed]`, so `spec_surface_check` exits 0 and the
+    loop never reconciles. Measured 2026-08-09 -- steward (current home)
+    self-reconciled 4/4, mason (stale home) 0/3, and NOTHING reported why: nothing
+    failed and nothing was logged, three stories' worth of governance simply did
+    not happen. It is also trivially clearable by one `git merge --ff-only`, so it
+    gates without ever being an unclearable red.
+
+    Any probe failure returns no finding: a diagnostic must not become a refusal.
+    """
+    findings: list[Finding] = []
+    data: dict = {}
+    try:
+        repo_root = vcs.repo_common_root(home)
+        base = vcs.resolve_ref(repo_root, "origin/main")
+        head = vcs.resolve_ref(home, "HEAD")
+    except (VcsCommandError, OSError, subprocess.SubprocessError):
+        return findings, data
+    data["home_head"] = head[:10]
+    data["main_head"] = base[:10]
+    data["home_current_with_main"] = head == base
+    if head == base:
+        return findings, data
+    try:
+        behind = vcs.merge_base(repo_root, head, base) == head
+    except (VcsCommandError, OSError, subprocess.SubprocessError):
+        behind = True
+    if behind:
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-014",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home {slug!r} is BEHIND main ({head[:10]} vs {base[:10]}) "
+                    f"-- spinning now would run stories against a stale baseline and "
+                    f"the spec-surface guard would silently stop biting (measured "
+                    f"2026-08-09: a current home self-reconciled 4/4, a stale one 0/3, "
+                    f"with nothing reported). Fix: git -C {home} merge --ff-only "
+                    f"origin/main && marshal config --project {slug} "
+                    f"--write-harness-policy {home}"
+                ),
+            )
+        )
+    return findings, data
+
 def run_preflight(
     args: argparse.Namespace,
     *,
@@ -1748,6 +1804,11 @@ def run_preflight(
     # S-1.11 (FR-178): the SHARED git directory is state no worktree owns --
 
     # checked on the main path, not only in an error branch.
+
+    # S-1.12 (FR-180): a stale home degrades the surface guard SILENTLY.
+    currency_findings, currency_data = _home_currency_findings(vcs, home, slug)
+    data.update(currency_data)
+    findings.extend(currency_findings)
 
     shared_findings, shared_data = _shared_git_state_findings(vcs, home)
 
