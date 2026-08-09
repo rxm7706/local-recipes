@@ -41,7 +41,7 @@ from pathlib import Path
 
 import jsonschema
 
-from . import fleet_surface, prescribe, score
+from . import fleet_surface, prescribe, score, sources
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
 from .sources import atlas, marshal as marshal_source, warden as warden_source
@@ -70,6 +70,16 @@ __version__ = "0.1.0"
 # a real check name (a plain string) or with the flag's absent-default
 # (None).
 _WHOLE_CATEGORY = object()
+
+# Story 6.3: `check`'s three categories, mapped to the `Source` each one's
+# whole-category gather reports under -- `_category_in_scope`'s only way to
+# ask `sources.scope_for` "is this category in scope?" without a second,
+# hand-rolled category->scope table living beside `sources.REGISTRY`.
+_CATEGORY_SOURCE: dict[str, Source] = {
+    "engines": Source.WARDEN_DOCTOR,
+    "env": Source.ENV_HYGIENE,
+    "durability": Source.MARSHAL_DURABILITY,
+}
 
 
 def _build_parser() -> tuple[
@@ -130,12 +140,28 @@ def _build_parser() -> tuple[
         ),
     )
     check.add_argument(
+        "--scope",
+        choices=("repo", "runtime", "all"),
+        default="all",
+        help=(
+            "restrict which categories run to those whose "
+            "sources.REGISTRY-declared scope matches ('repo': reads only "
+            "tracked files/git history, runs anywhere; 'runtime': reads "
+            "host state, cannot run in CI -- no check is registered "
+            "runtime-scope yet, so this always yields zero findings today); "
+            "default 'all' matches every category (today's behavior, "
+            "unchanged); combining with an explicit --engines/--env/"
+            "--durability whose own scope doesn't match is a usage error, "
+            "not a silent empty result -- ignored by --list"
+        ),
+    )
+    check.add_argument(
         "--list",
         action="store_true",
         help=(
             "list the full check catalog as text and exit -- never "
             "gathers/runs anything (ignores "
-            "--engines/--env/--durability/--json/path)"
+            "--engines/--env/--durability/--json/path/--scope)"
         ),
     )
     check.add_argument(
@@ -240,10 +266,10 @@ def _validate_check_names(
     prior stories' "validate vs pass through" deferral).
 
     Skipped entirely when ``--list`` is given: ``--list``'s own contract is
-    to ignore ``--engines``/``--env``/``--json``/``path`` and never gather
-    anything (review finding) -- validating a name it will never act on
-    would make ``doctor check --list --engines <bad-name>`` a usage error
-    instead of the promised catalog listing.
+    to ignore ``--engines``/``--env``/``--durability``/``--scope``/``--json``/
+    ``path`` and never gather anything (review finding) -- validating a name
+    it will never act on would make ``doctor check --list --engines
+    <bad-name>`` a usage error instead of the promised catalog listing.
 
     A NAME rejected here that also happens to be an existing path is very
     likely a path-argument-ordering mistake, not a typo'd check name: the
@@ -280,6 +306,68 @@ def _validate_check_names(
             check_parser.error(
                 f"argument --{category}: unknown check name {value!r} "
                 f"(known: {', '.join(known_names)}){hint}"
+            )
+
+
+def _category_in_scope(category: str, requested_scope: str) -> bool:
+    """Whether ``category`` (one of ``_CATEGORY_SOURCE``'s keys) should run
+    under ``--scope``'s already-validated ``requested_scope`` value ("repo",
+    "runtime", or "all").
+
+    ``"all"`` (the default) matches every category unconditionally --
+    preserving today's behavior exactly, per the story's own "omitting
+    --scope behaves exactly as today" constraint. ``"repo"``/``"runtime"``
+    match only a category whose OWN registered scope (read live from
+    ``sources.scope_for``, never a second hardcoded scope list -- the
+    story's own Always constraint) equals the request.
+    """
+    if requested_scope == "all":
+        return True
+    return sources.scope_for(_CATEGORY_SOURCE[category]) == requested_scope
+
+
+def _validate_scope_against_explicit_categories(
+    args: argparse.Namespace, check_parser: argparse.ArgumentParser
+) -> None:
+    """An EXPLICITLY-requested category (``--engines``/``--env`` given, or
+    ``--durability``) whose registered scope doesn't match a non-``"all"``
+    ``--scope`` is a usage error (``.error()``, exit 2) raised HERE, before
+    dispatch -- mirrors ``_validate_check_names``'s own "validate at the
+    call boundary, not inside gather" discipline.
+
+    Review finding: without this check, ``doctor check --engines --scope
+    runtime`` silently narrowed ``run_engines`` to ``False`` in
+    ``_run_check`` and reported ``0 finding(s)``, exit ``0`` -- byte-for-byte
+    indistinguishable from "ran the requested check and it passed clean" for
+    an automated ``--json`` consumer. An operator who names a category
+    explicitly is asking for its result, not silence; the contradiction is
+    surfaced loudly instead.
+
+    Skipped when ``--list`` is given (mirrors ``_validate_check_names``'s own
+    ``--list`` bypass) or when ``--scope`` is ``"all"`` (nothing to
+    contradict). The DEFAULT run (no category flag given at all) is
+    untouched -- ``--scope runtime`` narrowing an implicit "run everything"
+    down to zero categories is the documented, intentional CI-selection
+    behavior (story spec's I/O matrix), not a contradiction to flag.
+    """
+    if args.list or args.scope == "all":
+        return
+    explicit = [
+        (flag, category)
+        for flag, category, given in (
+            ("--engines", "engines", args.engines is not None),
+            ("--env", "env", args.env is not None),
+            ("--durability", "durability", args.durability),
+        )
+        if given
+    ]
+    for flag, category in explicit:
+        category_scope = sources.scope_for(_CATEGORY_SOURCE[category])
+        if category_scope != args.scope:
+            check_parser.error(
+                f"argument {flag}: {category!r} is scope={category_scope!r}, "
+                f"excluded by --scope {args.scope!r} -- remove --scope or "
+                f"drop {flag}"
             )
 
 
@@ -339,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
             args = parser.parse_args(argv)
             if args.command == "check":
                 _validate_check_names(args, check_parser)
+                _validate_scope_against_explicit_categories(args, check_parser)
             elif args.command == "monitor":
                 _validate_monitor_args(args, monitor_parser)
             # "diagnose" has no name/axis catalog to validate against --
@@ -489,6 +578,15 @@ def _run_check(args: argparse.Namespace) -> int:
     else:
         engines_name = args.engines
         env_name = args.env
+
+    # Story 6.3: narrow the already-resolved run_* booleans by --scope
+    # (default "all" leaves every category untouched, matching today's
+    # behavior exactly). Applied AFTER the default/explicit-flag resolution
+    # above -- --scope filters WHAT was already selected to run, it never
+    # itself selects a category.
+    run_engines = run_engines and _category_in_scope("engines", args.scope)
+    run_env = run_env and _category_in_scope("env", args.scope)
+    run_durability = run_durability and _category_in_scope("durability", args.scope)
 
     findings: tuple[Finding, ...] = ()
     if run_engines:

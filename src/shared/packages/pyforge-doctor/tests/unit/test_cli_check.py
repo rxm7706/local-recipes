@@ -377,6 +377,182 @@ def test_path_hint_shell_quotes_a_path_containing_whitespace(
     assert shlex.quote(str(weird)) in captured.err
 
 
+# --- --scope (Story 6.3) -----------------------------------------------------
+
+
+def test_scope_repo_matches_the_default_all_scope_run(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # All 9 registered sources are scope="repo" today (story spec's I/O
+    # matrix row 2) -- `--scope repo` must therefore run all three
+    # categories exactly like omitting `--scope` entirely.
+    _stub_healthy_warden(monkeypatch)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        env_hygiene, "gather", lambda target: calls.append("env") or ()
+    )
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather",
+        lambda target: calls.append("durability") or (),
+    )
+
+    exit_code = main(["check", str(tmp_path), "--scope", "repo"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "warden-doctor" in captured.out
+    assert calls == ["env", "durability"], (
+        "--scope repo must run env and durability too -- both are "
+        "registered scope='repo', same as engines"
+    )
+
+
+def test_scope_runtime_yields_zero_findings_and_never_gathers_any_category(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # All 9 registered sources are scope="repo" today -- `--scope runtime`
+    # must therefore exclude all three `check` categories entirely (story
+    # spec's I/O matrix row 3 + acceptance criteria).
+    _forbid_warden_gather(monkeypatch)
+
+    def _forbid_env(target):
+        raise _ForbiddenGatherError("must never gather the 'env' category here")
+
+    def _forbid_durability(target):
+        raise _ForbiddenGatherError(
+            "must never gather the 'durability' category here"
+        )
+
+    monkeypatch.setattr(env_hygiene, "gather", _forbid_env)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather", _forbid_durability
+    )
+
+    exit_code = main(["check", str(tmp_path), "--scope", "runtime", "--json"])
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.validate(document, _schema())
+    assert exit_code == 0
+    assert document["findings"] == []
+
+
+def test_scope_runtime_zero_findings_renders_as_text_too(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # Review finding: the --json render of this scenario was covered above,
+    # but _emit_text's own zero-finding header path was never exercised for
+    # --scope -- FR-9 parity means both renders must agree, and only testing
+    # one leaves the other's behavior unverified.
+    _forbid_warden_gather(monkeypatch)
+    monkeypatch.setattr(
+        env_hygiene,
+        "gather",
+        lambda target: (_ for _ in ()).throw(
+            _ForbiddenGatherError("must never gather the 'env' category here")
+        ),
+    )
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather",
+        lambda target: (_ for _ in ()).throw(
+            _ForbiddenGatherError("must never gather the 'durability' category here")
+        ),
+    )
+
+    exit_code = main(["check", str(tmp_path), "--scope", "runtime"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "0 finding(s)" in captured.out
+
+
+# --- --scope contradicting an explicit category (Story 6.3 review finding) --
+
+
+def test_explicit_engines_flag_excluded_by_scope_is_a_usage_error(
+    tmp_path: Path, capsys
+):
+    # Review finding: `--engines` (scope="repo") together with `--scope
+    # runtime` used to silently narrow to zero findings/exit 0 -- byte-for-
+    # byte indistinguishable from "ran clean" for an automated --json
+    # consumer. An explicitly-named category now surfaces the contradiction
+    # as a usage error instead.
+    exit_code = main(["check", str(tmp_path), "--engines", "--scope", "runtime"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "--engines" in captured.err
+    assert "--scope" in captured.err
+    assert captured.out == ""
+
+
+def test_explicit_durability_flag_excluded_by_scope_is_a_usage_error(
+    tmp_path: Path, capsys
+):
+    exit_code = main(
+        ["check", str(tmp_path), "--durability", "--scope", "runtime"]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "--durability" in captured.err
+
+
+def test_explicit_flag_matching_scope_is_not_an_error(
+    monkeypatch, tmp_path: Path, capsys
+):
+    _stub_healthy_warden(monkeypatch)
+
+    exit_code = main(
+        ["check", str(tmp_path), "--engines", "--scope", "repo", "--json"]
+    )
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    assert exit_code == 0
+    assert document["findings"]
+
+
+def test_implicit_default_run_with_scope_runtime_is_not_a_usage_error(
+    tmp_path: Path, capsys
+):
+    # The DEFAULT run (no category flag given) is the documented CI-
+    # selection path (story spec's I/O matrix row 3) -- --scope narrowing it
+    # to zero categories is intentional, never a usage error, unlike an
+    # EXPLICIT category flag contradicting --scope above.
+    exit_code = main(["check", str(tmp_path), "--scope", "runtime", "--json"])
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    assert exit_code == 0
+    assert document["findings"] == []
+
+
+def test_unknown_scope_value_is_a_usage_error(capsys):
+    exit_code = main(["check", "--scope", "bogus"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "bogus" in captured.err
+    assert captured.out == ""
+
+
+def test_list_with_scope_runtime_still_prints_the_full_catalog(
+    monkeypatch, capsys
+):
+    # --list wins over --scope too, per its own "ignores ... --scope" help
+    # text -- never a narrowed or empty catalog.
+    _forbid_warden_gather(monkeypatch)
+
+    exit_code = main(["check", "--list", "--scope", "runtime"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "osv-scanner" in captured.out
+    assert "deptry" in captured.out
+    assert ENV_CHECK_NAME in captured.out
+
+
 # --- --list --------------------------------------------------------------
 
 

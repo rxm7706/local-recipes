@@ -39,15 +39,35 @@ env that runs this script), not a detector failing to execute. The caller
 still needs to tell "the package is here and reports zero" apart from "the
 package isn't here," which is what the leading ``bool`` is for, not a
 registry finding.
+
+Story 6.3 adds two consumers of this same ``REGISTRY``: ``scope_for`` is the
+one canonical per-source scope lookup — the CLI's ``doctor check --scope
+{repo,runtime,all}`` filter reads every category's scope through it, rather
+than a second hand-rolled scope list that would drift the moment a
+``SourceRegistration``'s ``scope`` changes. ``degrade_on_exception`` is a
+reusable "cannot evaluate here" wrapper for a future ``scope="runtime"``
+source's own gather (e.g. Story 6.5's ``dashboard_drift``, which reads tmux/
+``~/.bmad-loops`` state absent in CI) — see Story 6.3's OWN spec Design Notes
+(review finding: this used to point at Story 6.5, which is the source named
+in the example, not the story that wrote this rationale) for why it is
+deliberately NOT wired into today's three existing (``scope="repo"``)
+dispatch calls, whose own gather functions already promise never to raise.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
-from ..models import Source
+from ..models import DoctorStatus, Finding, Source
 
-__all__ = ("SourceRegistration", "REGISTRY", "list_sources")
+__all__ = (
+    "SourceRegistration",
+    "REGISTRY",
+    "list_sources",
+    "scope_for",
+    "degrade_on_exception",
+)
 
 _VALID_SCOPES = frozenset({"repo", "runtime"})
 
@@ -60,7 +80,9 @@ class SourceRegistration:
     anywhere) or ``"runtime"`` (reads host state, cannot run in CI) — the same
     two values ``scripts/detectors.py``'s own ``DETECTOR = {"scope": ...}``
     declares. Every source registered here today is ``"repo"``; Story 6.3
-    is what introduces the first ``"runtime"`` member.
+    builds the scope-selection mechanism (``scope_for``,
+    ``degrade_on_exception``) without registering one — Story 6.5's
+    ``dashboard_drift`` is what introduces the first ``"runtime"`` member.
 
     ``subject_station`` is the station whose artifact this source judges;
     ``owning_station`` is the station whose ``gather()`` implements the
@@ -113,7 +135,8 @@ class SourceRegistration:
 # Subject/owner assignment for today's 9 sources (story's Design Notes carries
 # the full rationale per row). All nine are owning_station="doctor" (Doctor
 # holds every verdict) and scope="repo" (none reads host/tmux state yet --
-# Story 6.3 is what introduces "runtime").
+# Story 6.3 builds the scope-selection mechanism without registering a
+# "runtime" entry; Story 6.5's dashboard_drift is the first one).
 REGISTRY: tuple[SourceRegistration, ...] = (
     SourceRegistration(
         source=Source.WARDEN_DOCTOR,
@@ -179,3 +202,73 @@ def list_sources() -> tuple[SourceRegistration, ...]:
     ``scripts/detectors.py``'s ``_doctor_sources()`` read from.
     """
     return REGISTRY
+
+
+def scope_for(source: Source) -> str:
+    """Return ``source``'s registered scope (``"repo"`` or ``"runtime"``).
+
+    The one canonical per-source scope lookup — Story 6.3's ``doctor check
+    --scope`` filter reads through THIS function rather than a second
+    hand-rolled loop over ``REGISTRY``, so a future ``SourceRegistration``'s
+    scope change (e.g. a source moving from ``"repo"`` to ``"runtime"``)
+    cannot silently desync a duplicated call site.
+
+    Raises ``ValueError`` if ``source`` has no ``REGISTRY`` entry — this
+    module's own exhaustiveness test
+    (``test_every_source_member_has_exactly_one_registry_entry``) already
+    guarantees every current ``Source`` member resolves; a ``source`` that
+    reaches this branch is a bug in ``REGISTRY``, not a value worth
+    defaulting past.
+    """
+    for registration in REGISTRY:
+        if registration.source is source:
+            return registration.scope
+    raise ValueError(f"{source!r} has no REGISTRY entry")
+
+
+def degrade_on_exception(
+    source: Source,
+    check: str,
+    gather: Callable[[], tuple[Finding, ...]],
+) -> tuple[Finding, ...]:
+    """Run ``gather()``; convert any raised ``Exception`` into exactly one
+    WARN ``Finding`` naming it, rather than letting it propagate.
+
+    This is the reusable "cannot evaluate here" path a ``scope="runtime"``
+    source needs (Story 6.5+'s ``dashboard_drift`` and whatever follows it):
+    unlike ``sources/warden.py``, ``sources/marshal.py``, and
+    ``checks/env_hygiene.py`` — whose own ``gather`` functions already
+    document and enforce their own "degrades, never crashes" contract (see
+    ``sources/marshal.py``'s module docstring) — a source whose inputs are
+    host state (tmux, ``~/.bmad-loops``) that is simply ABSENT outside an
+    operator's own machine has no such contract to lean on yet. This helper
+    is that contract, generalized, for a caller that wraps its own raw
+    host-state read with it.
+
+    Deliberately NOT wired into today's three existing (repo-scope)
+    dispatch calls in ``__main__.py`` — an exception escaping one of THOSE
+    today would be a real bug in a module that already promises never to
+    raise, and must keep propagating to ``main()``'s own top-level
+    exception net (exit 2), never get silently reclassified as WARN (see
+    the story spec's Design Notes).
+
+    Catches ``Exception``, never ``BaseException`` — a ``KeyboardInterrupt``
+    or ``SystemExit`` raised inside ``gather`` must still propagate
+    untouched, mirroring ``main()``'s own three-tier handler ordering.
+    """
+    try:
+        return gather()
+    except Exception as exc:  # noqa: BLE001 -- this IS the degrade
+        # boundary this function exists to provide, not a suppressed bug.
+        return (
+            Finding(
+                source=source,
+                check=check,
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{check} could not be evaluated here — "
+                    f"{exc.__class__.__name__}: {exc}"
+                ),
+                evidence={"exception": exc.__class__.__name__},
+            ),
+        )
