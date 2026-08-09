@@ -703,6 +703,106 @@ class TestDeriveHomeState:
         assert state == "running"
 
 
+class TestIsRunLive:
+    """Story 4.11's own pure predicate: the full boolean matrix over
+    ``FleetHomeFacts``, no I/O. Deliberately reads the RAW facts, never
+    ``derive_home_state``'s own state string -- see ``is_run_live``'s own
+    docstring."""
+
+    def test_no_run_ever_is_not_live(self):
+        facts = status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=False)
+        assert status.is_run_live(facts) is False
+
+    def test_journal_unreadable_is_conservatively_live(self):
+        """Liveness cannot be proven either way -- mirrors core/retire.py's
+        own 'an unprovable fact is refused, never defaulted to delete'."""
+        facts = status.FleetHomeFacts(
+            slug="acme", branch="loop/acme", has_run=True, journal_unreadable=True
+        )
+        assert status.is_run_live(facts) is True
+
+    def test_journal_unreadable_is_live_even_if_finished_also_claims_true(self):
+        """journal_unreadable takes precedence over every other field --
+        mirrors build_fleet_row's own identical precedence."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            journal_unreadable=True,
+            finished=True,
+            supervisor_alive=False,
+        )
+        assert status.is_run_live(facts) is True
+
+    def test_finished_run_is_not_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=True,
+            supervisor_alive=True,
+        )
+        assert status.is_run_live(facts) is False
+
+    def test_dead_supervisor_on_unfinished_run_is_not_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=False,
+        )
+        assert status.is_run_live(facts) is False
+
+    def test_alive_supervisor_with_task_in_flight_is_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=True,
+            tasks=(_task(phase="dev-running"),),
+        )
+        assert status.is_run_live(facts) is True
+
+    def test_alive_supervisor_between_stories_is_still_live(self):
+        """The live-between-stories case derive_home_state's own 'idle'
+        state collapses away -- is_run_live must still catch it."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=True,
+            tasks=(_task(phase="done"),),
+        )
+        assert status.is_run_live(facts) is True
+
+    def test_alive_supervisor_paused_on_escalation_is_live(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=True,
+            paused_stage="escalation",
+        )
+        assert status.is_run_live(facts) is True
+
+    def test_supervisor_alive_none_is_not_live(self):
+        """Never reachable from a real `_gather_home_facts` call (a real pid
+        absence degrades to journal_unreadable instead), but the pure
+        predicate itself must never treat an unproven `None` as `True`."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            supervisor_alive=None,
+        )
+        assert status.is_run_live(facts) is False
+
+
 class TestBuildFleetRow:
     def test_no_run_yet_is_idle_no_finding(self):
         facts = status.FleetHomeFacts(slug="acme", branch="loop/acme", has_run=False)
