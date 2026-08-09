@@ -12,10 +12,11 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 118
+# stories: 127
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
+  1-11-a-loop-agent-cannot-mutate-repo-wide-git-state: backlog
   1-2-story-identity-merge-subject-rendering-and-feed-completeness: done
   1-3-layered-policy-composition-with-provenance-and-validation: done
   1-4-provision-a-loop-home: done
@@ -49,6 +50,7 @@ development_status:
   13-4-the-34-drift-findings-are-reconciled-or-recorded: done
   13-5-a-spec-cannot-declare-a-surface-it-has-no-contract-for: done
   13-6-the-presumed-set-is-worked-down-by-measurement: done
+  13-7-the-producer-reconciles-the-surface-it-drifts: backlog
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done
@@ -57,6 +59,7 @@ development_status:
   2-6-gate-evidence-record-with-redaction-at-egress: done
   2-7-a-gate-binds-to-the-specs-success-signal: done
   3-1-run-identity-and-the-journal-writer: done
+  3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: done
   3-3-detached-launch-with-scoped-story-selection: done
   3-4-supervisor-process-lifecycle: done
@@ -64,8 +67,14 @@ development_status:
   3-6-budget-ceilings-and-the-heaviest-story-advisory: done
   3-7-escalation-deferral-and-resume: done
   3-8-stage-bound-durability-and-fleet-launch-wiring: done
+  3-9-a-retired-story-branch-is-not-a-push-failure: done
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
+  4-11-marshal-land-refuses-while-a-run-is-in-flight: backlog
+  4-12-a-landing-leaves-the-loop-home-current-with-main: backlog
+  4-13-the-loops-deferred-work-reaches-the-tracked-ledger: backlog
+  4-14-the-failed-story-safety-net-is-reported: backlog
+  4-15-one-pusher-not-two: backlog
   4-2-teardown-reachability-and-spec-recovery-assistance: done
   4-3-merge-subject-conformance-and-review-cap-landing: done
   4-4-batch-pull-request-with-hygiene-preflight: done

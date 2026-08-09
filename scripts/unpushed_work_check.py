@@ -78,10 +78,26 @@ def default_remote_head() -> str:
     return ""
 
 
-def remote_branches() -> set[str]:
+def remote_branches() -> dict[str, str]:
+    """branch name -> remote tip sha (S-3.10, FR-171).
+
+    A NAME, not a tip, was the old unit of comparison here, and the difference is
+    the whole finding: `find_unpushed` skipped any branch whose name existed on
+    origin, so a long-lived branch whose remote copy had fallen arbitrarily far
+    behind reported as safe. Live case — `loop/pyforge-doctor` sat on origin at
+    3f43f486c9 while the local branch stood 8 PRs ahead at cbd965110b, and this
+    detector said nothing, on the day its own Dream was reopened for durability.
+    Station branches are the structural blind spot: their names always exist
+    remotely, so a name check can never see them fall behind.
+    """
     out = git("ls-remote", "--heads", "origin")
-    return {ln.split("refs/heads/", 1)[1] for ln in out.splitlines()
-            if "refs/heads/" in ln}
+    tips: dict[str, str] = {}
+    for ln in out.splitlines():
+        if "refs/heads/" not in ln:
+            continue
+        sha, _, ref = ln.partition("\t")
+        tips[ref.split("refs/heads/", 1)[1]] = sha.strip()
+    return tips
 
 
 def rescued() -> set[str]:
@@ -90,18 +106,40 @@ def rescued() -> set[str]:
     return set(out.split())
 
 
-def find_unpushed(base: str, remote: set[str]) -> list[dict]:
+def find_unpushed(base: str, remote: dict[str, str]) -> list[dict]:
     findings = []
     for br in git("for-each-ref", "--format=%(refname:short)", "refs/heads/").splitlines():
         br = br.strip()
-        if not br or br in remote:
+        if not br:
             continue
+        remote_sha = remote.get(br)
+        ahead = 0
+        if remote_sha:
+            # S-3.10/FR-171: compare TIPS. `br in remote` answered "does a remote
+            # copy exist?" while this detector presents itself as answering "is the
+            # work safe?" — so a stale remote copy read as pushed. Count what the
+            # remote lacks; an unknown remote sha (never fetched) counts as behind
+            # rather than as safe, which is the correct default for a durability
+            # check: better one redundant finding than one missed loss.
+            ahead_out = git("rev-list", "--count", f"{remote_sha}..{br}")
+            if ahead_out.isdigit():
+                ahead = int(ahead_out)
+            elif not git("cat-file", "-e", f"{remote_sha}^{{commit}}"):
+                ahead = -1                # remote tip not present locally
+            if ahead == 0:
+                continue                  # remote is at or ahead of us: safe
         files = [f for f in git("diff", "--name-only", f"{base}...{br}").splitlines() if f]
         if not files:
             continue                      # merged/empty: untidy, not at risk
         stat = git("diff", "--shortstat", f"{base}...{br}")
+        if remote_sha:
+            behind = f"{ahead} commit(s)" if ahead > 0 else "an unfetched tip"
+            note = (f"origin has this branch at {remote_sha[:10]} but is behind by "
+                    f"{behind} — a remote copy existing is not the work being safe")
+        else:
+            note = "no branch of this name on origin at all"
         findings.append({"kind": "unpushed-branch", "ref": br,
-                         "files": len(files), "stat": stat,
+                         "files": len(files), "stat": stat, "detail": note,
                          "remedy": f"git push origin {br}"})
     return findings
 
@@ -165,6 +203,8 @@ def main() -> int:
         for f in findings[:60]:
             print(f"  ✗ [{f['kind']}] {f['ref']}  ({f['files']} files)")
             print(f"      {f['stat']}")
+            if f.get("detail"):
+                print(f"      {f['detail']}")
             print(f"      → {f['remedy']}")
         if len(findings) > 60:
             # No silent caps: say what was withheld and how to see it.

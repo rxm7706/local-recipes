@@ -36,8 +36,8 @@ development_status:
   6-10-independence-is-structural-for-every-source: backlog
   6-2-a-source-registry-doctor-owns: done
   6-3-the-repo-runtime-split-survives-the-move: done
-  6-4-the-ledger-verdicts-come-home: backlog
-  6-5-the-board-verdicts-come-home: backlog
+  6-4-the-ledger-verdicts-come-home: done
+  6-5-the-board-verdicts-come-home: done
   6-6-the-chain-verdicts-come-home: backlog
   6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided: backlog
   6-8-bmad-drift-comes-home-without-breaking-the-board: backlog

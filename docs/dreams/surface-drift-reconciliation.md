@@ -2,7 +2,7 @@
 title: A drift gate nobody can clear, and a drift signal anyone can launder
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # A drift gate nobody can clear, and a drift signal anyone can launder
@@ -144,6 +144,14 @@ green gate immediately surfaced a hole none of them covered, twice in two days:
   those exist and are correctly silent. `surface-drift: exempt` records no file
   hashes at all, and `sentinel:` supplies a second hash that *can* move; neither
   is blind. The finding is for the default mode with a real governed set.
+
+- **The producer reconciles what it drifts.** A gate the *author* of a change never
+  consults is a gate paid for by whoever lands the change. bmad-loop writes governed
+  code all day and has no idea `spec_surface_check` exists: on 2026-08-09 the first
+  three loop-produced stories to be landed drifted **14 governed paths** across
+  `spec-pyforge-doctor`, plus `pixi.toml` against two further surfaces, and every one
+  had to be named by hand at landing. The rule S-13.2 built is correct; the machine
+  producing most of the repo's code simply does not know it.
 
 ## What is real, part three — the 994 presumed (measured 2026-08-09, on `main` at `1b94994d42`)
 
