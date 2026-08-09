@@ -242,6 +242,27 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # Nothing dispatches it yet; the choice has to be revisited when Story 6.9
     # wires it, because `doctor check` reads scope_for() live and holds a 5s
     # NFR-4 budget a browser sweep cannot meet (recorded in deferred-work.md).
+    SourceRegistration(
+        source=Source.DREAM_CHAIN,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.6 -- ported from scripts/dream_chain_check.py
+    SourceRegistration(
+        source=Source.SPEC_SURFACE,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.6 -- ported from scripts/spec_surface_check.py
+    SourceRegistration(
+        source=Source.DEFERRED_WORK,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.6 -- ported from scripts/deferred_work_check.py; scope stays
+    # "repo" per that script's own DETECTOR declaration even though it reads
+    # each project's gitignored Tier-3 implementation-artifacts/deferred-work.md
+    # -- preserve, don't redesign (mirrors Story 6.4's STORY_STATUS row above).
 )
 
 
