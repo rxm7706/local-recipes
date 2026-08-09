@@ -1,0 +1,22 @@
+Fixture for test_failure_analyzer.py's two unmatched-log cases.
+
+This log must match NONE of failure_analyzer.py's ERROR_LIBRARY patterns, so the
+analyzer takes its no-match branch and emits the structured
+"ERROR_LIBRARY contains N patterns across ..." hint the tests assert on.
+
+Deliberately free of the vocabulary those patterns key on -- no compiler
+diagnostics, no missing headers or shared objects, no solver/resolution
+conflicts, no HTTP or checksum failures, no import errors, no permission
+denials. It reads like a build that simply ended without a recognised failure
+signature, which is exactly the case the no-match branch exists to describe.
+
+If a future ERROR_LIBRARY entry ever starts matching this text, the fix is to
+make THIS fixture blander again -- not to relax the assertion. A fixture that
+quietly starts matching would turn both tests green while testing nothing.
+
+[  1/  3] Preparing working area
+[  2/  3] Collecting inputs
+[  3/  3] Finishing up
+Elapsed: 0.42 seconds
+Summary: 3 steps attempted, 0 completed
+Result: the run stopped early and reported no recognised diagnostic

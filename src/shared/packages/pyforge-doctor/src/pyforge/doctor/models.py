@@ -97,6 +97,15 @@ class Source(StrEnum):
     DREAM_CHAIN = "dream-chain"
     SPEC_SURFACE = "spec-surface"
     DEFERRED_WORK = "deferred-work"
+    # Story 6.7 (FR-15): the closed taxonomy EXTENDED once more -- Doctor's
+    # verdict on the one defect bmad-loop's own picker is blind to: a story
+    # whose documented **Deps:** names a story in a LATER epic, which the
+    # engine's strict within-epic file-order scan cannot see (ported from
+    # scripts/forward_dependency_check.py). Judges a Marshal-produced artifact
+    # (each station's epics doc + tracked ledger); see sources/deps.py for the
+    # independence rationale and AD-13 for why it restates the harness's
+    # ACTIONABLE_STATUSES rather than importing it.
+    FORWARD_DEPENDENCY = "forward-dependency"
 
 
 class Partition(StrEnum):

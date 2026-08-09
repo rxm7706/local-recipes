@@ -796,3 +796,15 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # root only, and an unanchored pattern would silently swallow any future
 # tracked `.herald/` test fixture deeper in the tree.
 /.herald/
+
+# The VisualStudio template block above contributes a blanket `*.log`, which
+# silently swallowed the conda-forge-expert failure-analyzer's own `.log` test
+# fixtures: `tests/fixtures/error_logs/` sat EMPTY and `unmatched.log` could
+# never be added, so test_failure_analyzer.py's two unmatched-log cases ran
+# against a missing file and asserted on "Log file not found" instead of on the
+# no-match contract. Found 2026-08-09 while landing doctor 6.7 -- the same
+# failure class as the `/.claude/skills` .git/info/exclude incidents: a broad
+# ignore rule hides only NEW files, so `git status` can never show you what it
+# is costing. Negated narrowly (this one fixture tree), not by weakening `*.log`.
+!.claude/skills/conda-forge-expert/tests/fixtures/error_logs/
+!.claude/skills/conda-forge-expert/tests/fixtures/error_logs/**/*.log

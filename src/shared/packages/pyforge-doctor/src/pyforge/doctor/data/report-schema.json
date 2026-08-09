@@ -70,7 +70,8 @@
             "check-layout",
             "dream-chain",
             "spec-surface",
-            "deferred-work"
+            "deferred-work",
+            "forward-dependency"
           ]
         },
         "check": { "type": "string" },
