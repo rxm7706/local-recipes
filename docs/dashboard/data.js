@@ -3312,7 +3312,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 15:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 15:21 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5447,7 +5447,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T15:35",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
@@ -5530,7 +5530,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-08",
+            "at": "2026-08-09T15:35",
             "other": "2026-08-02"
           }
         ],
@@ -5693,7 +5693,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T15:35",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-09",
@@ -14556,14 +14556,14 @@ window.DASHBOARD_DATA = {
     "running": [],
     "lastShipped": {
       "station": "atlas",
-      "story": "12.1",
-      "epoch": 1786287124,
-      "sha": "6ffdf8822",
-      "subject": "Merge bmad-loop/20260809-034342-8683/12-1-kedro-skills-audit-then-adopt into loop/pyforge-atlas (bmad-loop)"
+      "story": "12.2",
+      "epoch": 1786288016,
+      "sha": "c2ca76d34",
+      "subject": "Merge bmad-loop/20260809-034342-8683/12-2-publish-the-real-dag-continuously into loop/pyforge-atlas (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 15:11 UTC",
-    "generatedEpoch": 1786288273
+    "generatedAt": "2026-08-09 15:21 UTC",
+    "generatedEpoch": 1786288884
   },
   "storySpecs": [
     {

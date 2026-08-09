@@ -8381,7 +8381,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.52.1-pyhc90fa1f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-doctor[ad3bb453] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-doctor[6dfaaf73] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-warden[10536fc3] @ src/shared/packages/pyforge-warden
       p1:
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -8468,7 +8468,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hd3d0363_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h925e9cb_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - conda_source: pyforge-doctor[189cff80] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-doctor[526f3b11] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-warden[8c8d0f3d] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -8557,7 +8557,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-      - conda_source: pyforge-doctor[e9cd002d] @ src/shared/packages/pyforge-doctor
+      - conda_source: pyforge-doctor[b63a3524] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-warden[550d523d] @ src/shared/packages/pyforge-warden
   pyforge-herald:
     channels:
@@ -45820,7 +45820,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hd3d0363_3.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.3-h11277c2_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-- conda_source: pyforge-doctor[189cff80] @ src/shared/packages/pyforge-doctor
+- conda_source: pyforge-doctor[526f3b11] @ src/shared/packages/pyforge-doctor
   variants:
     target_platform: noarch
   depends:
@@ -45828,6 +45828,7 @@ packages:
   - python *
   - jsonschema
   - pyyaml >=6.0
+  - mcp >=1.28.1
   license: MIT
   host_packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
@@ -45856,7 +45857,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hd3d0363_3.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.1-h11277c2_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-- conda_source: pyforge-doctor[ad3bb453] @ src/shared/packages/pyforge-doctor
+- conda_source: pyforge-doctor[6dfaaf73] @ src/shared/packages/pyforge-doctor
   variants:
     target_platform: noarch
   depends:
@@ -45864,6 +45865,7 @@ packages:
   - python *
   - jsonschema
   - pyyaml >=6.0
+  - mcp >=1.28.1
   license: MIT
   host_packages:
   - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -45897,7 +45899,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.4.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.6.1.19-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-doctor[e9cd002d] @ src/shared/packages/pyforge-doctor
+- conda_source: pyforge-doctor[b63a3524] @ src/shared/packages/pyforge-doctor
   variants:
     target_platform: noarch
   depends:
@@ -45905,6 +45907,7 @@ packages:
   - python *
   - jsonschema
   - pyyaml >=6.0
+  - mcp >=1.28.1
   license: MIT
   host_packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
