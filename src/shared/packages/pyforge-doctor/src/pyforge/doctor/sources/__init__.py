@@ -27,9 +27,12 @@ mirroring ``checks/registry.py``'s own
 ``test_every_cataloged_category_is_dispatchable_by_gather_one`` tripwire.
 Registering a *new* ``Source`` member is each of Stories 6.4-6.9's own job
 (their own ``gather()`` lands alongside their own registration); this module
-built the mechanism covering the original 9, and Story 6.4 was the first to
-land two of its own registrations on top (``LEDGER_REGRESSION``,
-``STORY_STATUS``), bringing the count to 11.
+built the mechanism, and Story 6.4 was the first to land registrations of its
+own on top of it (``LEDGER_REGRESSION``, ``STORY_STATUS``). The count itself
+is deliberately NOT written down in prose here: ``REGISTRY`` is the count, and
+``test_sources_registry.py`` pins it to ``Source`` in both directions, so a
+number in this docstring could only ever be a second source of truth that goes
+stale the next time a story appends a row (it already did once, at 9).
 
 ``scripts/detectors.py``'s consumption of this module (its ``_doctor_sources``
 helper) degrades to ``(False, [])`` when ``pyforge.doctor`` isn't importable
@@ -134,7 +137,7 @@ class SourceRegistration:
         }
 
 
-# Subject/owner assignment for today's 11 sources (each story's own Design
+# Subject/owner assignment, one row per Source member (each story's own Design
 # Notes carries the full rationale per row). Every entry is
 # owning_station="doctor" (Doctor holds every verdict) and scope="repo" --
 # Story 6.3 builds the scope-selection mechanism without registering a

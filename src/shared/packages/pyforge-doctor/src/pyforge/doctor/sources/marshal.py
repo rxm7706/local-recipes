@@ -67,7 +67,7 @@ DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
 NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
 
 
-def _git(target: Path, *args: str, timeout: float = 30.0) -> str | None:
+def _git(target: Path, *args: str, timeout: float | None = None) -> str | None:
     """``git`` stdout, or None on any failure.
 
     Routes through ``cli_bridge.run_git`` — AD-5 makes that module the SOLE
@@ -75,17 +75,20 @@ def _git(target: Path, *args: str, timeout: float = 30.0) -> str | None:
     ``tests/meta/test_cli_bridge_sole_subprocess.py``. The first cut of this module
     called ``subprocess`` directly and that meta-test caught it.
 
-    ``timeout`` defaults to ``run_git``'s own default (kept explicit here so a
-    caller can widen it) -- ``gather_story_status``'s two ``git log`` calls pass
-    ``timeout=60.0`` to match ``scripts/story_status_check.py``'s own ``sh()``
-    helper exactly; every other call site in this module is unaffected.
+    ``timeout=None`` means "whatever ``run_git``'s own default is" -- the kwarg is
+    genuinely not forwarded in that case, rather than restating the default as a
+    literal here (which would silently pin the old value if ``run_git``'s default
+    ever moved). ``gather_story_status``'s ``git log`` calls pass ``timeout=60.0``
+    to match ``scripts/story_status_check.py``'s own ``sh()`` helper exactly;
+    every other call site in this module is unaffected.
 
     Never raises: a missing binary, a non-repo target and a failed command are all
     "cannot evaluate", which this module reports as a WARN Finding rather than
     crashing on — the house rule for every Doctor source.
     """
+    kwargs = {} if timeout is None else {"timeout": timeout}
     try:
-        return run_git(target, list(args), timeout=timeout)
+        return run_git(target, list(args), **kwargs)
     except CliBridgeError:
         return None
 
@@ -258,24 +261,36 @@ def _harness_tasks(loop_root: Path, slug: str) -> dict[str, dict]:
     out: dict[str, dict] = {}
     home = loop_root / f"pyforge-{slug}"
     for state in sorted(home.glob(".bmad-loop/runs/*/state.json")):
+        # Only the READ+PARSE is guarded by try/except: an unreadable file or
+        # invalid JSON makes the whole record unusable, so that file is skipped
+        # whole. A WARN Finding would misattribute a per-run read failure to the
+        # story-status verdict itself, so this degrades silently instead
+        # (mirrors the source script's own try/except-and-continue).
         try:
-            tasks = json.loads(state.read_text(encoding="utf-8")).get("tasks") or {}
-            for key, task in tasks.items():
-                prev = out.get(key)
-                if prev is None or (
-                    task.get("commit_sha") and not prev.get("commit_sha")
-                ):
-                    out[key] = task
-        except Exception:  # noqa: BLE001, S112 -- a corrupt/unreadable run
-            # record (unreadable file, invalid JSON, or a `tasks`/per-task
-            # shape that isn't the expected dict -- e.g. a list, or a task
-            # value with no `.get`) is skipped whole, not fatal to the whole
-            # gather; a WARN Finding would misattribute a per-run read
-            # failure to the story-status verdict itself, so this degrades
-            # silently instead (mirrors the source script's own broad
-            # try/except-and-continue, widened to cover the same shape
-            # assumptions the original script also makes without guarding).
+            payload = json.loads(state.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001, S112 -- corrupt/unreadable run record
             continue
+
+        # SHAPE guards are per-entry and OUTSIDE the try, deliberately. Folding
+        # the loop into the try above looks equivalent but is not, twice over:
+        # (a) `prev is None or task.get(...)` short-circuits on a key's FIRST
+        # sighting, so a non-dict task value is stored without `.get` ever being
+        # evaluated -- it then detonates in `gather_story_status`'s own
+        # `task.get("commit_sha")` instead, where nothing catches it (the exact
+        # AttributeError this guard exists to prevent); and (b) an exception
+        # mid-iteration would discard every remaining entry in that file, so one
+        # malformed record would silently un-audit its healthy neighbours. Both
+        # violate this module's "degrades, never crashes" rule. `isinstance` is
+        # the honest guard: skip exactly the malformed entry, keep the rest.
+        tasks = payload.get("tasks") if isinstance(payload, dict) else None
+        if not isinstance(tasks, dict):
+            continue
+        for key, task in tasks.items():
+            if not isinstance(task, dict):
+                continue  # malformed entry -- skip it, keep its neighbours
+            prev = out.get(key)
+            if prev is None or (task.get("commit_sha") and not prev.get("commit_sha")):
+                out[key] = task
     return out
 
 
@@ -302,13 +317,50 @@ def gather_story_status(
     sprint-status.yaml``) are gitignored, so in a bare CI checkout this glob
     finds nothing and the gather degrades to a vacuous ``audited=0`` OK
     Finding rather than crashing.
+
+    Feeds present but git unusable is the one case that must NOT fall through:
+    two of the three evidence routes are git queries, so an ungathered answer
+    would read as "no evidence found" and convict a genuinely-landed story.
+    That case returns a single WARN instead — cannot-evaluate is never a FAIL.
     """
     if loop_root is None:
         loop_root = Path.home() / ".bmad-loops"
 
+    feeds = sorted(target.glob(SPRINT_STATUS_GLOB))
+
+    # Two of the three landing-evidence routes are git queries. With git absent
+    # or `target` not a repository, both fail closed -- and a story would fall
+    # through to the `phase in NOT_LANDED` test and be ACCUSED of being a false
+    # green on the strength of evidence that was never actually gathered. That
+    # is the one outcome this detector must never produce, so "cannot evaluate"
+    # is reported as WARN instead, mirroring the probe `gather()` above already
+    # runs for exactly the same reason. Probed only when feeds exist, so the
+    # no-feeds case still degrades to the vacuous audited=0 OK.
+    if feeds and _git(target, "rev-parse", "--git-dir") is None:
+        return (
+            Finding(
+                source=Source.STORY_STATUS,
+                check="story-status",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{len(feeds)} sprint feed(s) present but git is unavailable "
+                    f"or {target} is not a repository — landing evidence cannot "
+                    f"be checked"
+                ),
+                evidence={"target": str(target), "feeds": len(feeds), "audited": 0},
+            ),
+        )
+
+    # Route 3 asks one question of `main`'s whole history, and the answer is
+    # identical for every key in every feed (`target` never changes mid-gather).
+    # Computed once, lazily, on the first key that actually reaches Route 3 --
+    # a full history walk per candidate key would be O(keys x history) shell-outs
+    # against Doctor's own NFR-4 wall-clock budget.
+    main_subjects: list[str] | None = None
+
     false_greens: list[dict] = []
     audited = 0
-    for feed in sorted(target.glob(SPRINT_STATUS_GLOB)):
+    for feed in feeds:
         slug = feed.parent.parent.name.removeprefix("pyforge-")
         tasks = _harness_tasks(loop_root, slug)
         try:
@@ -338,10 +390,11 @@ def gather_story_status(
             m = re.match(r"^(\d+)-(\d+)-", key)
             if m:
                 needle = f"story {m.group(1)}.{m.group(2)}"
-                subjects = (
-                    _git(target, "log", "--format=%s", "main", timeout=60.0) or ""
-                ).lower().splitlines()
-                if any(slug in s and needle in s for s in subjects):
+                if main_subjects is None:
+                    main_subjects = (
+                        _git(target, "log", "--format=%s", "main", timeout=60.0) or ""
+                    ).lower().splitlines()
+                if any(slug in s and needle in s for s in main_subjects):
                     continue  # hand-landed; named in a commit subject on main
 
             phase = task.get("phase", "")

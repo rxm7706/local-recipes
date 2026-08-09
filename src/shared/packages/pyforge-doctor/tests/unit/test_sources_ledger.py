@@ -13,25 +13,48 @@ exactly like a remote-tracking ref would.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import ledger
 
+# A contributor's own git config must not decide whether this suite passes.
+# `git init` inherits GIT_DIR/GIT_WORK_TREE from the environment (and
+# cli_bridge.run_git forwards os.environ verbatim, so the module under test
+# would inherit them too), commit signing turns every fixture commit into a
+# gpg prompt or failure, and a global core.hooksPath can reject the commit
+# outright. Scrub all three at the fixture boundary.
+_GIT_ENV = {
+    k: v
+    for k, v in os.environ.items()
+    if k not in {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY"}
+}
+
 
 def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(
-        ["git", *args], cwd=repo, capture_output=True, text=True, check=True
+        ["git", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+        env=_GIT_ENV,
     )
     return result.stdout
 
 
 def _init_repo(repo: Path) -> None:
     repo.mkdir(parents=True, exist_ok=True)
-    _git(repo, "init", "-q")
+    # --initial-branch pins the default branch regardless of the contributor's
+    # own init.defaultBranch; these tests name `origin/main` explicitly, but a
+    # deterministic starting branch keeps failures readable.
+    _git(repo, "init", "-q", "--initial-branch=main")
     _git(repo, "config", "user.email", "doctor-test@example.com")
     _git(repo, "config", "user.name", "Doctor Test")
+    _git(repo, "config", "commit.gpgsign", "false")
+    _git(repo, "config", "core.hooksPath", "/dev/null")
 
 
 def _write_ledger(
@@ -270,3 +293,66 @@ def test_regressions_across_multiple_projects_are_all_reported_independently(
     assert {f.evidence["project"] for f in findings} == {"doctor", "warden"}
     assert all(f.check == "done-key-regressed" for f in findings)
     assert all(f.status is DoctorStatus.FAIL for f in findings)
+
+
+# --- Cannot-evaluate names its real cause ----------------------------------
+
+
+def test_non_repository_target_names_the_repository_not_the_ref(
+    tmp_path: Path,
+) -> None:
+    """Both cases WARN, but the message must not send an operator hunting for
+    a ref problem when the real state is "this isn't a git repository."."""
+    plain_dir = tmp_path / "not-a-repo"
+    plain_dir.mkdir()
+
+    findings = ledger.gather(plain_dir, base="origin/main", head="HEAD")
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.WARN
+    assert "not a repository" in finding.message
+    assert "not resolvable" not in finding.message
+
+
+# --- The same-commit fallback announces itself ------------------------------
+
+
+def test_base_substitution_is_recorded_in_evidence(tmp_path: Path) -> None:
+    """When base==head the comparison silently moves to ``head^``. A --json
+    consumer that asked for ``origin/main`` must be able to tell that it got a
+    substituted base back, not the one it requested."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    _commit_all(repo, "seed ledger")
+
+    _write_ledger(repo, "doctor", {"1-1-foo": "done", "1-2-bar": "done"})
+    head_sha = _commit_all(repo, "add another done story")
+    _branch_at(repo, "origin/main", head_sha)
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.OK
+    assert finding.evidence["base_substituted"] is True
+    assert finding.evidence["base_requested"] == "origin/main"
+    assert finding.evidence["base"] != "origin/main"
+
+
+def test_no_substitution_flag_when_base_is_used_as_requested(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    base_sha = _commit_all(repo, "seed ledger")
+    _branch_at(repo, "origin/main", base_sha)
+
+    (repo / "unrelated.txt").write_text("noop\n", encoding="utf-8")
+    _commit_all(repo, "unrelated change")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert len(findings) == 1
+    assert "base_substituted" not in findings[0].evidence
+    assert findings[0].evidence["base"] == "origin/main"

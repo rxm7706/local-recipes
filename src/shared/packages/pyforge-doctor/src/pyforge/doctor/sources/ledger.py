@@ -200,16 +200,28 @@ def gather(
     report clean forever).
     """
     if _git(target, "rev-parse", "--verify", "--quiet", base) is None:
+        # Both statuses are WARN, but the MESSAGE has to name the real cause:
+        # "no such ref" sends an operator hunting for a ref problem, when the
+        # actual state may be "this isn't a git repository at all." Probed only
+        # on the failure path, so the healthy case pays nothing extra. Mirrors
+        # the dedicated probe `sources/marshal.py`'s own gather() already runs.
+        if _git(target, "rev-parse", "--git-dir") is None:
+            message = (
+                f"git is unavailable or {target} is not a repository — ledger "
+                f"regression cannot be evaluated"
+            )
+        else:
+            message = (
+                f"base revision {base!r} not resolvable — ledger regression "
+                f"cannot be evaluated"
+            )
         return (
             Finding(
                 source=Source.LEDGER_REGRESSION,
                 check="ledger-regression",
                 status=DoctorStatus.WARN,
-                message=(
-                    f"base revision {base!r} not resolvable — ledger regression "
-                    f"cannot be evaluated"
-                ),
-                evidence={"base": base, "head": head},
+                message=message,
+                evidence={"base": base, "head": head, "target": str(target)},
             ),
         )
 
@@ -235,6 +247,17 @@ def gather(
             )
         effective_base = parent
 
+    # The original script PRINTED a "comparing against {head}^ instead" note
+    # when it substituted. A library has no stdout to say that on, so the
+    # substitution is carried in evidence instead: without it a `--json`
+    # consumer that asked for base="origin/main" gets a 40-char sha back with
+    # no way to tell "you asked for this" from "we quietly swapped it."
+    substituted = effective_base != base
+    range_evidence: dict[str, object] = {"base": effective_base, "head": head}
+    if substituted:
+        range_evidence["base_requested"] = base
+        range_evidence["base_substituted"] = True
+
     raw_findings = _check(target, effective_base, head)
 
     if not raw_findings:
@@ -247,7 +270,7 @@ def gather(
                     f"no tracked ledger un-finishes a story between "
                     f"{effective_base} and {head}"
                 ),
-                evidence={"base": effective_base, "head": head},
+                evidence=dict(range_evidence),
             ),
         )
 
@@ -271,8 +294,7 @@ def gather(
                     # match a print-width choice that doesn't apply to this
                     # shape.
                     "keys": item["keys"][:20],
-                    "base": effective_base,
-                    "head": head,
+                    **range_evidence,
                     "remedy": f"git checkout {effective_base} -- {item['path']}",
                 },
             )
