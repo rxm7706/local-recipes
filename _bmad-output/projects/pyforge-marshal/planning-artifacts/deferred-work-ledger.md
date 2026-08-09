@@ -586,9 +586,26 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   why it was NOT fixed alongside the two tests found with it: the other two failures in the same suite were hermeticity bugs in the tests (an uninjected `cli_runner` falling through to the real on-disk script), contained and correct to fix in place. This one is different in kind. The only two changes available without profiling are a blind performance edit or relaxing the budget, and the second is precisely the "weaken the threshold rather than meet it" move that Charter §6 forbids a station from making about its own gate. It needs a profile first: whether the cost is warden's `--version` subprocesses, the atlas MCP/CLI fallbacks, or the env-hygiene walk is unknown.
   discovered by: running Doctor's full suite while adding `sources/marshal.py`; confirmed pre-existing by stashing the change and re-running.
 
+  status: done 2026-08-08 — Story 6.1.
+
+  resolution: the profile ran and the cost was ATTRIBUTED, not estimated. Of the three suspects this entry named, two are cleared: warden's `--version` subprocesses are **0.18s**, and the atlas MCP/CLI fallbacks are not in `check`'s path at all (they belong to `monitor`). The env-hygiene walk is **97%** of it — re-measured worse than this entry recorded, at 7.98s / 8.13s / 8.45s. Splitting that gather again: discovery **0.21s**, per-file parse **7.73s** over 3,721 files / 33.2MB of source. **6.43s of the 7.73s — 3,216 of the 3,721 files — was the gitignored 590MB `build_artifacts/`**, i.e. extracted THIRD-PARTY conda sources and test envs (idna, typing-extensions, anyio, websockets, fastmcp).
+  the fix was NOT a speed trade: `build_artifacts` sorts before `docs`/`recipes`/`scripts`/`src`, so the walk burned its whole `_DISCOVERY_ENTRY_CAP` inside it (74,340 entries walked against the 50,000 cap, first crossed under `.../test_env/include/openssl`) and reached **zero** first-party files — all **609** under `src/` and `scripts/` went unscanned, including this scanner's own module. Pruning build-output/tool-cache dir names therefore **raised** coverage (first-party 0 → 602 files) while cutting the gather to ~3.2s, and surfaced a **third real finding** that had been invisible (`pyforge-steward/tests/conformance/fixtures/ungated_jfrog_auth.py:21`). The 5.0s budget is untouched — no re-thresholding.
+  guarded by: `test_discovery_walk_reaches_this_packages_own_source` (asserts the walk reaches `env_hygiene.py` itself and excludes `build_artifacts`) plus a parametrized prune test. Both mutation-tested: removing `build_artifacts` from the prune set fails the coverage test AND the budget test (7.01s).
+  residual, split out: the walk is still `incomplete` — see `DW-DOCTOR-2026-08-08-2`.
+
+  verified: 2026-08-08 — three timed iterations, all over budget; re-verified green after the fix (411 → 418 tests pass).
+
+## DW-DOCTOR-2026-08-08-2 — Doctor's discovery walk borrowed warden's entry cap, where hitting it means the opposite thing
+
+- source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md`
+  summary: `env_hygiene._DISCOVERY_ENTRY_CAP = 50_000` is documented as "mirroring `pyforge.warden.hygiene._ADJACENT_PYTHON_SOURCE_ENTRY_CAP`", but the two caps bound **opposite-shaped** walks. Warden's walk EARLY-EXITS on the first `*.py` it sees and returns `True` at the cap — hitting it is harmless. Doctor's walk is an EXHAUSTIVE collection, so hitting the same cap silently **drops source files** from a security scan. The number was borrowed; the semantics were not.
+  evidence: measured 2026-08-08 on `main` after Story 6.1's prune landed. The pruned tree is **52,968** entries against the 50,000 cap, so the walk still reports `incomplete=True`. **`SDKs/` alone is 39,379 of those entries (74%)** — the 81MB gitignored macOS cross-compilation SDK, which contains **zero** `*.py` files — and `SDKs` sorts before `src` in ASCII (uppercase < lowercase), so it starves the first-party tree it precedes: `src/` is truncated at 545 of ~588 files (cap first crossed inside `src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes`) and the top-level `tests/` tree is never reached at all.
+  why it was NOT fixed in Story 6.1: 6.1's ACs (attribute the cost, meet the budget, do not re-threshold) are all met, and this needs a design decision rather than a bigger magic number — cap entries walked, cap files collected (the walk is 0.24s for the whole tree; parsing is the real cost), or make the scanner gitignore-aware so it never descends into build/vendor output in the first place. Picking a new constant to make the symptom go away is the same "blind performance edit" the parent entry refused.
+  not silent: the walk does emit its `env-hygiene` INCOMPLETE sentinel finding, so the truncation is self-reported rather than a false all-clear — consistent with this scanner's documented WARN-only v1 posture and its other logged coverage gaps.
+
   status: open
 
-  verified: 2026-08-08 — three timed iterations, all over budget.
+  verified: 2026-08-08 — entry census by top-level directory; `SDKs` confirmed 0 `*.py` and gitignored.
 
 ## DW-BOARD-2026-08-08-1 — Herald's build line and Herald's ledger describe DIFFERENT sto…
 

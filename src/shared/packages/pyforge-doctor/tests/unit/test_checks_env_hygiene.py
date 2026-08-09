@@ -304,6 +304,52 @@ def test_gather_one_env_returns_none_for_a_target_with_no_matches(
     assert gather_one("env", CHECK_NAME, tmp_path) is None
 
 
+# --- discovery-walk pruning (Story 6.1) ----------------------------------
+
+
+@pytest.mark.parametrize(
+    "pruned",
+    ["build_artifacts", "build", "dist", ".tox", ".pytest_cache", "site-packages"],
+)
+def test_discover_python_files_prunes_build_output_and_tool_caches(
+    tmp_path: Path, pruned: str
+):
+    # Story 6.1: the profile attributed 6.43s of `doctor check`'s 7.7s scan
+    # to this monorepo's gitignored build_artifacts/ (extracted THIRD-PARTY
+    # conda sources), which also exhausted the entry cap before the walk
+    # reached any first-party file. These directories are build output, not
+    # a project's own scannable source.
+    (tmp_path / pruned).mkdir()
+    _write(tmp_path, f"{pruned}/vendored.py", "x = 1\n")
+    _write(tmp_path, "mine.py", "y = 2\n")
+
+    files, incomplete = env_hygiene._discover_python_files(tmp_path)
+
+    assert [f.name for f in files] == ["mine.py"]
+    assert incomplete is False
+
+
+def test_discovery_walk_reaches_this_packages_own_source(tmp_path: Path):
+    """The regression this pruning exists to prevent.
+
+    Before Story 6.1 the walk spent its whole entry cap inside
+    ``build_artifacts/`` -- which sorts before ``docs``/``recipes``/
+    ``scripts``/``src`` -- and reached ZERO first-party files: all 609 under
+    ``src/`` and ``scripts/`` went unscanned, including this scanner's own
+    module. A pass here proves the scan actually covers the repo it claims
+    to, so a future prune-list addition cannot silently re-truncate it.
+    """
+    if not (_REPO_ROOT / ".claude").is_dir():
+        pytest.skip("not running inside the local-recipes monorepo checkout")
+
+    files, _incomplete = env_hygiene._discover_python_files(_REPO_ROOT)
+    discovered = set(files)
+
+    assert Path(env_hygiene.__file__).resolve() in discovered
+    # ...and nothing from the build-output tree that motivated the prune.
+    assert not [f for f in discovered if "build_artifacts" in f.parts]
+
+
 # --- discovery-walk incompleteness signal --------------------------------
 
 
