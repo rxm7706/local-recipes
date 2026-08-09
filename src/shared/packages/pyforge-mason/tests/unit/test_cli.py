@@ -9,6 +9,12 @@ docstring names all three rather than whichever landed last.
 Note the stream split 1.4 established and 1.3 must not undo: `doctor`'s stub
 result flows through `render.write` to STDOUT (AD-8), while a MasonError and a
 bare-noun usage error go to STDERR. The doctor tests below assert on stdout.
+
+Story 1.7 extends this file with `CfeUnresolvedError`'s dedicated
+EXIT_CFE_UNAVAILABLE branch in main(); the pre-existing
+`test_mason_error_raised_in_main_prints_message_and_returns_exit_failed`
+already proves the generic MasonError -> EXIT_FAILED path is unchanged, so
+no separate regression test was needed for it (review pass, 2026-08-09).
 """
 
 from __future__ import annotations
@@ -19,8 +25,10 @@ import pytest
 
 from pyforge.mason import __version__
 from pyforge.mason.cli import _resolve_bool, _resolve_str, build_parser, main
-from pyforge.mason.errors import MasonError
-from pyforge.mason.exit_codes import EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE
+from pyforge.mason.errors import CfeUnresolvedError, MasonError
+from pyforge.mason.exit_codes import (
+    EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
+)
 
 
 def test_version_is_reported(capsys):
@@ -209,6 +217,29 @@ def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monke
     err = capsys.readouterr().err
     assert err.strip() == "test:injected-failure: synthetic anticipated failure"
     assert "Traceback" not in err
+
+
+# --- Story 1.7: CfeUnresolvedError degrades to EXIT_CFE_UNAVAILABLE --------
+
+def test_cfe_unresolved_error_raised_in_main_returns_exit_cfe_unavailable(monkeypatch, capsys):
+    """A `CfeUnresolvedError` raised inside main()'s try block must be caught
+    by its own branch -- listed before `except MasonError`, since it is a
+    subclass -- and mapped to EXIT_CFE_UNAVAILABLE (3), not the generic
+    EXIT_FAILED the MasonError branch below it produces. Same monkeypatch
+    pattern as the synthetic-MasonError test above; no `recipe` verb exists
+    yet to dispatch through, so this proves the handler itself (spec
+    Acceptance Criteria)."""
+    monkeypatch.setattr(
+        "pyforge.mason.cli.build_parser",
+        lambda: (_ for _ in ()).throw(CfeUnresolvedError()),
+    )
+    rc = main([])
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+    for step_name in ("flag", "environment", "cwd-walk", "not-found"):
+        assert step_name in err
 
 
 # --- AD-13 precedence helpers, tested directly as pure functions -----------

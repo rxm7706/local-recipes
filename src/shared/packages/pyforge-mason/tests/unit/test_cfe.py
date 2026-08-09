@@ -2,7 +2,10 @@
 the `OSError`/`TimeoutExpired` fold-into-missing path, and
 `ensure_import_floor`'s raise/no-raise paths. `subprocess.run` is mocked
 throughout (AD-16: no test in this suite requires a real interpreter to
-probe)."""
+probe).
+
+Story 1.7 extends this file with `ensure_cfe_root`'s raise/no-raise paths
+over every `resolve.py` step."""
 
 from __future__ import annotations
 
@@ -14,9 +17,12 @@ import pytest
 
 from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, ImportFloorResult, _build_probe_script,
-    ensure_import_floor, probe_import_floor,
+    ensure_cfe_root, ensure_import_floor, probe_import_floor,
 )
-from pyforge.mason.errors import CfeImportFloorError
+from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
+from pyforge.mason.resolve import (
+    STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -209,3 +215,37 @@ def test_nonzero_returncode_with_partial_output_still_credits_printed_modules():
     assert "pyyaml" not in result.missing
     assert "requests" not in result.missing
     assert result.missing == ("packaging", "truststore", "ruamel.yaml", "conda-forge-metadata")
+
+
+# --- Story 1.7: ensure_cfe_root ----------------------------------------------
+
+@pytest.mark.parametrize("step", [STEP_FLAG, STEP_ENVIRONMENT, STEP_CWD_WALK])
+def test_ensure_cfe_root_returns_none_for_every_resolved_step(step, tmp_path):
+    resolved = ResolvedCfeRoot(root=tmp_path, step=step)
+    assert ensure_cfe_root(resolved) is None
+
+
+def test_ensure_cfe_root_raises_cfe_unresolved_error_when_not_found():
+    resolved = ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND)
+    with pytest.raises(CfeUnresolvedError):
+        ensure_cfe_root(resolved)
+
+
+def test_ensure_cfe_root_never_re_resolves():
+    """`ensure_cfe_root` takes the already-computed `ResolvedCfeRoot` -- it
+    must never call `resolve_cfe_root` to re-derive it (spec Never
+    boundary).
+
+    Review pass (2026-08-09): this used to monkeypatch
+    `pyforge.mason.resolve.resolve_cfe_root`, but `cfe.py` never imports
+    that name -- only `ResolvedCfeRoot`/`STEP_NOT_FOUND` -- so the
+    monkeypatch exercised nothing and would not catch the realistic
+    regression: a future `from .resolve import resolve_cfe_root` added to
+    `cfe.py` and called unqualified would bind its own name in `cfe.py`'s
+    module namespace, untouched by patching the attribute on the `resolve`
+    module. A structural assertion that `cfe.py` never binds that name at
+    all is the stronger guard -- it fails the moment such an import is
+    added, regardless of whether it is ever called."""
+    import pyforge.mason.cfe as cfe_module
+
+    assert not hasattr(cfe_module, "resolve_cfe_root")

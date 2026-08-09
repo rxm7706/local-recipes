@@ -21,7 +21,7 @@ development_status:
   1-4-dual-output-format-with-stream-discipline: done
   1-5-cfe-root-resolution-chain: done
   1-6-interpreter-selection-and-cfe-import-floor-probe: done
-  1-7-degradation-when-cfe-is-unavailable: backlog
+  1-7-degradation-when-cfe-is-unavailable: done
   1-8-mason-doctor: backlog
   1-9-fake-cfe-root-fixture-and-test-harness: backlog
   2-1-the-cfe-port: backlog
