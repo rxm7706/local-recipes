@@ -57,6 +57,24 @@
 
 FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.1 AS builder
 
+# WORKDIR /pyforge -- fixed, short, and literal by design, not merely the
+# default choice. `/pyforge` is deliberately NOT a build ARG or ENV: this
+# repo's own worktree tooling has a documented path-length panic in
+# `pixi-build-backends` -- crates/pixi-build-backend/src/tools.rs::
+# output_directory does an unchecked `usize` subtraction that underflows
+# once <workspace-root> plus a per-package build-dir suffix exceeds 255
+# bytes, which empirically panics around a ~173-byte workspace root for
+# this repo's package-name lengths (auto-memory
+# project_bmad_loop_worktree_path_length_limit). A build ARG/ENV here would
+# reopen exactly that "can grow past the ceiling" risk; a hardcoded literal
+# forecloses it. `/pyforge` is 8 bytes -- roughly 20x margin under the
+# ~173-byte ceiling. Every duty module locates the repo root by
+# marker-file walk-up (see the "Full repo checkout" comment on the runtime
+# stage below), which is mount-point agnostic -- nothing hardcodes a host
+# path -- so any short fixed root would work; `/pyforge` is simply the one
+# this repo settled on. Full analysis:
+# _bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-steward-pixi-workspace-member-research-2026-07-25.md
+# § A3.1.
 WORKDIR /pyforge
 COPY . /pyforge
 
@@ -79,6 +97,8 @@ RUN pixi shell-hook -e pyforge-container -s bash > /shell-hook.sh
 
 FROM --platform=linux/amd64 ubuntu:24.04
 
+# WORKDIR /pyforge -- same fixed short root as the builder stage; see the
+# rationale comment there.
 WORKDIR /pyforge
 
 # Full repo checkout, not just the installed packages: every station duty
