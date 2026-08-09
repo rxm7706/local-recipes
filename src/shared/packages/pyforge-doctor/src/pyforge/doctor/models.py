@@ -84,6 +84,19 @@ class Source(StrEnum):
     CHAIN_COMPLETENESS = "chain-completeness"
     DASHBOARD_DRIFT = "dashboard-drift"
     CHECK_LAYOUT = "check-layout"
+    # Story 6.6 (FR-15): the closed taxonomy EXTENDED a further time -- Doctor's
+    # verdict on the Dream-to-Code chain itself: every Spec links a Dream and
+    # every Dream has a Spec in its owner's project, using the 6.10 sharded
+    # planning tree (ported from scripts/dream_chain_check.py); every tracked
+    # file is governed by a spec surface or an allowlist entry, and a governed
+    # file's content has not drifted out from under its spec's contract
+    # (ported from scripts/spec_surface_check.py); no deferred-work entry lives
+    # only in gitignored Tier-3 scratch (ported from
+    # scripts/deferred_work_check.py). All three judge Marshal-governed factory
+    # apparatus; see sources/chain.py for the independence rationale.
+    DREAM_CHAIN = "dream-chain"
+    SPEC_SURFACE = "spec-surface"
+    DEFERRED_WORK = "deferred-work"
 
 
 class Partition(StrEnum):

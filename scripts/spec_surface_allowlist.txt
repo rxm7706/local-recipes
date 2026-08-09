@@ -29,6 +29,7 @@ scripts/dashboard_drift_check.py      # detector, unowned — §6 re-home to Doc
 scripts/ledger_regression_check.py    # detector, unowned — §6 re-home to Doctor pending; Doctor's sources/marshal.py already holds the independent verdict
 scripts/story_status_check.py         # detector, unowned — §6 re-home to Doctor pending (judges Marshal's ledger)
 scripts/loop_stall_check.py           # detector — stays Marshal's: an operational watchdog over live runs, not a conformance verdict on an artifact
+scripts/fleet_picture.py              # progress REPORT, not a detector — never gates, always exits 0; read-only over the tracked sprint ledgers + `marshal status`. Allowlisted for the same reason unpushed_work_check.py is: operator tooling, not a governed surface.
 scripts/unpushed_work_check.py        # detector — stays Marshal's: same operational class as loop_stall_check
 scripts/detectors.py                  # the detector REGISTRY itself — governs the others, governed by none; §6 re-home decides its home
 scripts/spec_surface_allowlist.txt    # this file — the allowlist cannot govern itself

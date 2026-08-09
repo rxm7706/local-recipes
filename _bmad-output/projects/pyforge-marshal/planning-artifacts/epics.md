@@ -1200,6 +1200,31 @@ So that I stop needing to remember a separate pixi task exists, and two routed c
 
 ---
 
+### Story 5.7: The board answers "how much is left" *(added 2026-08-09 — FR-179)*
+
+As the operator,
+I want the console to show done/total/blocked per station and a PyForge roll-up,
+So that the first question anyone asks of a fleet is answerable without a CLI.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-179
+
+**Why now.** Five stations ran in parallel overnight and the board could not answer "how much is
+done, how much is left". It had every per-epic story list and no total.
+
+**Acceptance Criteria:**
+
+**Given** the tracked `sprint-status-ledger.yaml` of each project
+**When** the board is generated
+**Then** `data.js` carries per-station `done`/`stories`/`blocked`/`epicsDone`/`epics` plus a
+PyForge roll-up, counted through the **same** `parse_sprint_status` the deploy already uses
+**And** `blocked` is counted separately — the board's own states (`done`/`active`/`pending`)
+cannot distinguish blocked from unstarted, and 6 blocked looked identical to 119 pending
+**And** an epic counts done only when every story in it is done, matching
+`scripts/fleet_picture.py` so the two can never disagree
+**And** **no live field is published**: run state, projection and ATTENTION derive from tmux and
+`~/.bmad-loops`, which CI cannot read — they stay in the local `fleet-picture` report
+**And** `dashboard-check` (which executes the board's own JS) passes
+
 ## Epic 6: Portability proven
 
 **Goal:** the operator can run the method on an agent other than the default, and hold a dated artifact that says so. This epic exists because 89 skills currently live only in one adapter's tree while four of six adapter profiles read from another — so "BMAD runs on any agent" is today an aspiration, not a fact.

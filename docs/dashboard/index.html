@@ -762,6 +762,12 @@
     <div id="drows"></div>
   </details>
 
+  <details class="dreams zsec" id="fleetprogsec" hidden open>
+    <summary><span class="program-h" id="fleetprogh">Fleet picture · tracked</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>done / total per station</b>, counted from each project's tracked <b>sprint-status-ledger.yaml</b> — the twin CI can read. <b>Blocked</b> is counted separately because those stories will not run; the board's own story states cannot tell blocked from not-started. Same counts as <b>pixi run -e local-recipes fleet-picture</b>, which is the fuller local view: it adds live run state, a projection, and an ATTENTION block naming anything waiting on a human. Those cannot appear here — they derive from tmux and <b>~/.bmad-loops</b>, which CI cannot read. Hence <b>tracked</b> in the name.</div>
+    <div id="fleetprogrows"></div>
+  </details>
+
   <details class="dreams zsec" id="specsec" hidden>
     <summary><span class="program-h" id="spech">The Specs</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>_bmad-output/projects/*/planning-artifacts/specs/</b> — every BMAD-Method <b>Spec</b>: five-field contract + companions, derived from its append-only memlog. Legacy <b>docs/specs/</b> is excluded.</div>
@@ -936,6 +942,41 @@
   }
 
   // ---- 2 · The Specs (every BMAD Spec) ----
+
+  // --- Fleet progress (tracked-only, so Pages and local agree) --------------
+  const FLEETPROG = window.DASHBOARD_DATA.fleetProgress || null;
+  if (FLEETPROG && FLEETPROG.rows && FLEETPROG.rows.length) {
+    const tot = FLEETPROG.total || {};
+    const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "—";
+    const row = r => {
+      // A blocked count is shown ONLY when non-zero: a column of zeros trains the
+      // eye to skip it, and the whole point is that 6 blocked stories are not the
+      // same as 119 merely unstarted ones.
+      const blk = r.blocked ? ' <span style="color:var(--accent)">' + r.blocked + ' blocked</span>' : "";
+      // `projected` only exists on a LOCAL render; a Pages render must show the
+      // counts alone rather than a projection CI could not have measured.
+      const proj = (r.projected != null && r.projected !== r.done)
+        ? ' → ' + r.projected : "";
+      const state = r.running ? "RUNNING" : (r.complete ? "complete" : pct(r.done, r.stories));
+      return '<div class="drow"><span class="fleet-name">' + esc(r.key) + '</span>'
+        + '<span class="dmeta">' + r.done + '/' + r.stories + ' stories · '
+        + r.epicsDone + '/' + r.epics + ' epics' + proj + blk + '</span>'
+        + '<span class="dstat">' + state + '</span></div>';
+    };
+    document.getElementById("fleetprogsec").hidden = false;
+    document.getElementById("fleetprogh").textContent =
+      "Fleet picture" + (FLEETPROG.live ? " · live" : " · tracked") + " · " + tot.done + "/" + tot.stories + " stories · "
+      + tot.epicsDone + "/" + tot.epics + " epics"
+      + (tot.blocked ? " · " + tot.blocked + " blocked" : "");
+    document.getElementById("fleetprogrows").innerHTML =
+      FLEETPROG.rows.map(row).join("")
+      + '<div class="drow"><span class="fleet-name">PYFORGE</span>'
+      + '<span class="dmeta">' + tot.done + '/' + tot.stories + ' stories · '
+      + tot.epicsDone + '/' + tot.epics + ' epics'
+      + (tot.blocked ? ' · ' + tot.blocked + ' blocked' : '') + '</span>'
+      + '<span class="dstat">' + pct(tot.done, tot.stories) + '</span></div>';
+  }
+
   const SPECS = window.DASHBOARD_DATA.specs || [];
   if (SPECS.length) {
     document.getElementById("specsec").hidden = false;
