@@ -1,0 +1,6 @@
+{
+  // Recommends vscode-kedro for optional human sessions; see the dated defer
+  // decision at _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/
+  // spec-kedro-org-tooling-adoption/vscode-kedro-decision.md
+  "recommendations": ["kedro.Kedro"]
+}
