@@ -17,6 +17,7 @@ and its validation only -- no formatting beyond `__str__`, no I/O.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 
 # Two lowercase, hyphen-delimited segments joined by a single colon, e.g.
 # "cfe:unresolved" or "ship:credential-missing". Neither segment may be
@@ -54,3 +55,74 @@ class MasonError(Exception):
 
     def __str__(self) -> str:
         return f"{self.identifier}: {self.message}"
+
+
+class CfeImportFloorError(MasonError):
+    """The selected CFE interpreter is missing part of CFE's import floor
+    (FR-3, NFR-14).
+
+    Raised by `cfe.py::ensure_import_floor` when `probe_import_floor`
+    reports any gap -- construction raises `ValueError` for an empty
+    `missing`, since an import-floor error naming nothing missing is
+    exactly the incoherent state this class exists to rule out. `missing`
+    holds pip/conda *distribution* names (e.g. `pyyaml`), not import names
+    (`yaml`), in `cfe.CFE_IMPORT_FLOOR`'s declared order, so the message
+    names exactly what a user would `pip install`/`conda install`; it is
+    stored as a `tuple`, not whatever `Sequence` was passed, matching the
+    immutable-shape convention every other dataclass in this story follows.
+    """
+
+    def __init__(self, missing: Sequence[str], interpreter: str) -> None:
+        missing = tuple(missing)
+        if not missing:
+            raise ValueError(
+                "CfeImportFloorError requires a non-empty `missing`: an "
+                "import-floor error naming nothing missing is incoherent"
+            )
+        self.missing = missing
+        self.interpreter = interpreter
+        message = (
+            f"interpreter {interpreter!r} is missing CFE's import floor: "
+            f"{', '.join(missing)}"
+        )
+        super().__init__("cfe:import-floor-missing", message)
+
+
+class CfeUnresolvedError(MasonError):
+    """The CFE root could not be resolved by any step of `resolve.py`'s
+    chain (FR-5, D-2, NFR-14).
+
+    Raised by `cfe.py::ensure_cfe_root` when the already-computed
+    `ResolvedCfeRoot.step` is `STEP_NOT_FOUND`. Unlike `CfeImportFloorError`,
+    there is no per-call variable data to report -- the four steps either
+    matched or did not, and nothing about *which* value was tried is
+    meaningful once resolution has already failed -- so the constructor
+    takes no arguments and the message is a fixed string naming all four
+    step names and how to satisfy the first three.
+    """
+
+    # `.claude/scripts/conda-forge-expert/` below duplicates `resolve.py`'s
+    # `_CFE_MARKER` literal -- the same sanctioned duplication pattern as
+    # `_ENV_CFE_ROOT`/`_ENV_CFE_PYTHON` (documented in resolve.py's module
+    # docstring): AD-2's dependency-direction rule forbids this leaf module
+    # from importing `resolve.py`, so the marker path is spelled out again
+    # here rather than imported. Not an oversight.
+    _MESSAGE = (
+        "the CFE root could not be resolved: none of the three discoverable "
+        "resolution steps matched (flag, environment, cwd-walk), leaving the "
+        "chain in its not-found terminal state. Set --cfe-root, set the "
+        "MASON_CFE_ROOT environment variable, or run mason from within or "
+        "below a directory containing .claude/scripts/conda-forge-expert/."
+    )
+
+    def __init__(self) -> None:
+        super().__init__("cfe:unresolved", self._MESSAGE)
+
+    def __reduce__(self):
+        # `Exception.__reduce__` (used by both `copy.deepcopy` and
+        # `pickle`) reconstructs via `cls(*self.args)`; `MasonError.__init__`
+        # sets `self.args = (identifier, message)` (two items), but this
+        # class's constructor takes zero arguments. Without this override,
+        # `CfeUnresolvedError(*self.args)` would raise `TypeError` on every
+        # deepcopy/pickle round-trip.
+        return (self.__class__, ())

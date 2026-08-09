@@ -334,6 +334,32 @@ So that the wrap decision pays off at the point of use.
 
 ---
 
+### Story 1.12: A stale loop home cannot be spun *(added 2026-08-09 — FR-180)*
+
+As the operator,
+I want preflight to refuse a loop home that is behind `main`,
+So that a stale baseline cannot silently switch the surface guard off.
+
+**Type:** feature • **Effort:** S • **Deps:** S-1.11 • **FR/AD:** FR-180
+
+**Why preflight and not the landing.** FR-173 makes a landing leave the home current — but every
+landing on 2026-08-09 was done by hand (`gh pr merge`), so that code never ran and eight homes
+drifted 33–74 commits behind with nothing reporting it.
+
+**Acceptance Criteria:**
+
+**Given** a provisioned loop home whose HEAD is an ancestor of `origin/main`
+**When** `marshal preflight <slug>` runs
+**Then** it reports **`MRS-PREFLIGHT-014` at ERROR** and exits non-zero, naming both shas and
+printing a remedy that is runnable exactly as shown
+**And** a home whose HEAD equals `origin/main` is silent — otherwise every preflight reds and
+the gate stops being read
+**And** a home merely **AHEAD** (unlanded story merges — the ordinary mid-run state) is **not**
+refused
+**And** any probe failure yields no finding: a diagnostic must never become a refusal
+**And** FR-173's landing resync is amended to **push** the station branch, since provisioning
+reads origin and seven homes sat 33–74 commits behind there after their work had landed
+
 ### Story 1.11: A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — FR-178)*
 
 As the operator,
@@ -1199,6 +1225,31 @@ So that I stop needing to remember a separate pixi task exists, and two routed c
 **And** this story does not rename `factory spin`/`status`/`land` (Q-15 stays open) and does not decide the route-versus-contain boundary for any other `bmad-*` skill beyond this one concrete case (Q-16 stays open)
 
 ---
+
+### Story 5.7: The board answers "how much is left" *(added 2026-08-09 — FR-179)*
+
+As the operator,
+I want the console to show done/total/blocked per station and a PyForge roll-up,
+So that the first question anyone asks of a fleet is answerable without a CLI.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-179
+
+**Why now.** Five stations ran in parallel overnight and the board could not answer "how much is
+done, how much is left". It had every per-epic story list and no total.
+
+**Acceptance Criteria:**
+
+**Given** the tracked `sprint-status-ledger.yaml` of each project
+**When** the board is generated
+**Then** `data.js` carries per-station `done`/`stories`/`blocked`/`epicsDone`/`epics` plus a
+PyForge roll-up, counted through the **same** `parse_sprint_status` the deploy already uses
+**And** `blocked` is counted separately — the board's own states (`done`/`active`/`pending`)
+cannot distinguish blocked from unstarted, and 6 blocked looked identical to 119 pending
+**And** an epic counts done only when every story in it is done, matching
+`scripts/fleet_picture.py` so the two can never disagree
+**And** **no live field is published**: run state, projection and ATTENTION derive from tmux and
+`~/.bmad-loops`, which CI cannot read — they stay in the local `fleet-picture` report
+**And** `dashboard-check` (which executes the board's own JS) passes
 
 ## Epic 6: Portability proven
 

@@ -1241,6 +1241,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-UPSTREAM-002",
         "MRS-PREFLIGHT-012",
         "MRS-PREFLIGHT-013",
+        "MRS-PREFLIGHT-014",
     }
 )
 

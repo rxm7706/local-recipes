@@ -12,11 +12,12 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 127
+# stories: 129
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
   1-11-a-loop-agent-cannot-mutate-repo-wide-git-state: done
+  1-12-a-stale-loop-home-cannot-be-spun: done
   1-2-story-identity-merge-subject-rendering-and-feed-completeness: done
   1-3-layered-policy-composition-with-provenance-and-validation: done
   1-4-provision-a-loop-home: done
@@ -70,7 +71,7 @@ development_status:
   3-9-a-retired-story-branch-is-not-a-push-failure: done
   4-1-story-spec-promotion-with-a-durability-predicate: done
   4-10-fleet-wide-branch-retirement: done
-  4-11-marshal-land-refuses-while-a-run-is-in-flight: backlog
+  4-11-marshal-land-refuses-while-a-run-is-in-flight: done
   4-12-a-landing-leaves-the-loop-home-current-with-main: backlog
   4-13-the-loops-deferred-work-reaches-the-tracked-ledger: backlog
   4-14-the-failed-story-safety-net-is-reported: backlog
@@ -89,6 +90,7 @@ development_status:
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: done
   5-5-durability-as-a-reported-fleet-status-dimension: done
   5-6-marshal-check-the-detector-registry-through-the-front-door: done
+  5-7-the-board-answers-how-much-is-left: done
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done

@@ -33,20 +33,22 @@ sibling stations dispatch the same way.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import os
 import sys
+from pathlib import Path
 from typing import Sequence
 
-from . import __version__, render
-from .errors import MasonError
-from .exit_codes import EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE
+from . import __version__, doctor, render
+from .errors import CfeUnresolvedError, MasonError
+from .exit_codes import (
+    EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
+)
 
 # main() is the sole owner of the process exit code. A verb never calls
 # sys.exit() directly; it returns an int and main() projects it. The
-# exit-code contract lives in exit_codes.py (AD-7) -- this module imports
-# only the names it produces today (EXIT_CFE_UNAVAILABLE arrives with Story
-# 1.7), and an argparse-raised SystemExit's own code (0 or 2) passes through
-# in main()'s handler.
+# exit-code contract lives in exit_codes.py (AD-7), and an argparse-raised
+# SystemExit's own code (0 or 2) passes through in main()'s handler.
 
 _NOUNS = {
     "recipe": "author, validate and build conda recipes (wraps the conda-forge-expert craft)",
@@ -203,16 +205,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             # all, and a verb-less `doctor` is a complete command (EXIT_OK),
             # not a usage error.
             #
-            # FR-34 frames `doctor` as a reporting command, so its stub
-            # result goes through the one formatter (AD-8) to stdout, not a
-            # raw stderr print(). Story 1.8 replaces the placeholder `data`
-            # with real diagnosis; the plumbing here does not change then.
+            # FR-34 frames `doctor` as a reporting command, so its result
+            # goes through the one formatter (AD-8) to stdout, not a raw
+            # stderr print(). `doctor.build_report` never raises (Story
+            # 1.8), so this branch always reports EXIT_OK, even with CFE or
+            # an engine absent -- the gap is data in the report, not a
+            # failure of the `doctor` command itself.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
-            render.write(
-                fmt, sys.stdout, "doctor", "ok",
-                {"message": "not implemented yet (Story 1.8 implements real diagnosis)"},
-                [],
+            report = doctor.build_report(
+                getattr(ns, "cfe_root", None),
+                getattr(ns, "cfe_python", None),
+                os.environ,
+                Path.cwd(),
             )
+            render.write(fmt, sys.stdout, "doctor", "ok", dataclasses.asdict(report), [])
             return EXIT_OK
 
         if not getattr(ns, "verb", None):
@@ -238,6 +244,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         if code is None:
             return EXIT_OK
         return code if isinstance(code, int) else EXIT_USAGE
+    except CfeUnresolvedError as exc:
+        # A CfeUnresolvedError is a MasonError subclass (AD-7): this branch
+        # must precede `except MasonError` below, since Python matches the
+        # first except clause the raised exception is an instance of, and
+        # this one maps to the distinct EXIT_CFE_UNAVAILABLE (3), not the
+        # generic EXIT_FAILED the MasonError branch produces (Story 1.7,
+        # FR-5). Same print-to-stderr/no-traceback pattern as MasonError.
+        print(str(exc), file=sys.stderr)
+        return EXIT_CFE_UNAVAILABLE
     except MasonError as exc:
         # Anticipated failure (AD-7): the identifier + message is the whole
         # diagnostic, no traceback. Must precede the bare `Exception` catch

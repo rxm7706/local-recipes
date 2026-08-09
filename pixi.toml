@@ -151,8 +151,12 @@ description = "Build BOTH pyforge-mason artifacts (conda + wheel/sdist) from one
 depends-on = ["pyforge-mason-build-conda", "pyforge-mason-build-dist"]
 
 [feature.pyforge-mason.tasks.pyforge-mason-test]
-description = "Run the pyforge-mason test suite (unit + meta)."
-cmd = "pytest src/shared/packages/pyforge-mason/tests -q"
+description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
+cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\""
+
+[feature.pyforge-mason.tasks.pyforge-mason-test-slow]
+description = "Run the slow, real-CFE-dependent tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-marshal-test-slow's split; collects zero tests until Story 5.3 lands FR-46's delegation-fidelity test)."
+cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m slow"
 
 # --- pyforge-steward (Steward): pixi build workspace member (warden mirror, Story 1.1) --
 # Task names mirror pyforge-warden's verbatim, per the story's acceptance criteria.
@@ -468,6 +472,10 @@ cmd = "python docs/dashboard/check_layout.py"
 [feature.local-recipes.tasks.loop-push-watch]
 description = "Push every loop home's station + per-story worktree branches on an interval, for as long as any bmad-loop engine is running, then EXIT on its own (same lifecycle contract as dashboard-watch). Closes the window in which a finished dev phase's work exists only on one disk: marshal 1.8 sat as a local-only 1,748-line commit for ~40 minutes on 2026-07-31, and that window reopens every time any of nine stations finishes a dev phase. Push is read-only w.r.t. working trees, so it cannot disturb a live session. A STOPGAP — the durable fix is for the loop to push at its own stage boundaries; this bounds worst-case loss to one interval meanwhile. Flags: -- --interval N (default 1800 = 30 min; a dev phase runs 60-90 min, so 30 catches a finished phase sitting unpushed through review without a round trip per home every few minutes), -- --once, -- --quiet."
 cmd = "python scripts/loop_push_watch.py"
+
+[feature.local-recipes.tasks.fleet-picture]
+description = "PyForge fleet progress REPORT: per-station done / in-progress / projected / blocked, plus an ATTENTION block naming anything that needs a human (escalation, dead run, idle-with-backlog, open PR). Read-only and NEVER gating -- always exits 0, unlike the six detectors. Counts come from each station's TRACKED planning-artifacts/sprint-status-ledger.yaml (the twin of the gitignored Tier-3 feed), never from an ad-hoc regex over commit subjects and never from docs/dashboard/data.js, which lags until a merge to main. Running stations are detected live from `marshal status --format json`, so a finished run flips to `complete` on its own rather than rotting in a hardcoded list."
+cmd = "python scripts/fleet_picture.py"
 
 [feature.local-recipes.tasks.unpushed-work-check]
 description = "Detector: no work exists only on this disk — local branches carrying unique content that are on no remote, plus dangling commits holding real work that `git gc` may collect without warning. scope=runtime and deliberately NOT in CI: a runner has neither local branches nor dangling objects, so this check would pass vacuously there, which is a false green of the purest kind. Live cost 2026-07-31 when nothing checked: six station loop branches, ~5,150 lines on recover/*, herald 1.2's 734-line transport story (spec included) unpushed for six days, 156 dangling commits, and marshal 1.8's 1,748 lines committed 40 minutes earlier. Flags: -- --branches-only (skip the fsck scan), -- --min-files N, -- --json. Contract: docs/dreams/fidelity-enforcement.md."
@@ -1541,6 +1549,7 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 mcp = ">=2.0.0"                         # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py, mirrors [feature.pyforge-herald.dependencies]'s identical pin; also a package run-dep)
+pyyaml = ">=6.0"                        # PyYAML -- Story 6.6's sources/chain.py frontmatter parser (also a package run-dep; a library add, not a feature union)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner

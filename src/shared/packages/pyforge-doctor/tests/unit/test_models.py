@@ -135,6 +135,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # CHAIN_COMPLETENESS, DASHBOARD_DRIFT and CHECK_LAYOUT, porting
     # scripts/chain_completeness_check.py, scripts/dashboard_drift_check.py and
     # docs/dashboard/check_layout.py's own judgements on the fleet-status board.
+    # Story 6.6 (FR-15) added DREAM_CHAIN, SPEC_SURFACE and DEFERRED_WORK, porting
+    # scripts/dream_chain_check.py, scripts/spec_surface_check.py and
+    # scripts/deferred_work_check.py's own judgements on the Dream-to-Code chain.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -150,6 +153,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "chain-completeness",
         "dashboard-drift",
         "check-layout",
+        "dream-chain",
+        "spec-surface",
+        "deferred-work",
     }
 
 
