@@ -546,6 +546,15 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # force. MRS-LAND-007 (ForgePort.merge_pr itself failed) classifies ERROR,
 # the same tier as MRS-DEPLOY-008/014 -- a real, irreversible-step write was
 # attempted and did not converge.
+# Story 4.11 ("marshal land refuses while a run is in flight") adds an
+# EIGHTH MRS-LAND-* code, MRS-LAND-008: core.status.is_run_live confirmed
+# this slug's own bmad-loop supervisor/engine run is still using the
+# station branch a policy-true landing_branch_retirement was about to
+# delete, so retirement was downgraded to False for THIS invocation only
+# (never a policy write) -- never fired when --retire-live-branch overrode
+# the refusal. Classifies WARN, the same tier as MRS-LAND-003 -- reported,
+# never blocking: the merge itself still proceeds, only the branch's own
+# retirement is skipped this run.
 # Story 4.9 (an advisory lock serializes concurrent writes to the shared
 # planning-artifacts/specs/ store, AD-42) adds MRS-DEPLOY-023 (run_promote's
 # new FsPort.acquire_advisory_lock call could not acquire the lock within
@@ -747,6 +756,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-005": Verdict.WARN,
     "MRS-LAND-006": Verdict.ERROR,
     "MRS-LAND-007": Verdict.ERROR,
+    "MRS-LAND-008": Verdict.WARN,
     "MRS-DEPLOY-023": Verdict.WARN,
     "MRS-RETIRE-001": Verdict.UNEVALUABLE,
     "MRS-RETIRE-002": Verdict.WARN,

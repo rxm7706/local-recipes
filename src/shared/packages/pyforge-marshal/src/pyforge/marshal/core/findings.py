@@ -885,6 +885,16 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # required_check has not concluded yet), MRS-LAND-006 (an unacknowledged
 # WARN-tier finding from this run's own evaluation, escalated), and
 # MRS-LAND-007 (ForgePort.merge_pr itself failed).
+# Story 4.11 ("marshal land refuses while a run is in flight") adds an
+# EIGHTH MRS-LAND-* code, MRS-LAND-008: a policy-true landing_branch_
+# retirement was downgraded to False for THIS invocation only (never
+# policy) because core.status.is_run_live confirmed the slug's own
+# bmad-loop supervisor/engine run is still using the station branch about
+# to be deleted -- names the slug and branch, never fires when
+# --retire-live-branch overrode the refusal or when policy already had
+# landing_branch_retirement=False. Classifies WARN, the same "reported,
+# never blocks progression" tier as MRS-LAND-003/MRS-DEPLOY-001: the merge
+# itself still proceeds, only the branch's own retirement is skipped.
 # Story 4.9 (an advisory lock serializes concurrent writes to the shared
 # planning-artifacts/specs/ store, AD-42) adds a twenty-third MRS-DEPLOY-*
 # code, MRS-DEPLOY-023: run_promote's new FsPort.acquire_advisory_lock call
@@ -1191,6 +1201,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-005",
         "MRS-LAND-006",
         "MRS-LAND-007",
+        "MRS-LAND-008",
         "MRS-DEPLOY-023",
         "MRS-RETIRE-001",
         "MRS-RETIRE-002",

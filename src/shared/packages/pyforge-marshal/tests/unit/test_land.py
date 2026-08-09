@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,10 @@ from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
 from pyforge.marshal.cli import land as land_module
+from pyforge.marshal.cli import spin as spin_module
+from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
+from pyforge.marshal.ports.harness import RunStatusSnapshot, TaskPhaseSnapshot
 from pyforge.marshal.ports.process import ProcessResult
 
 _BMADLOOP_WAVE_SUBJECT = "Merge bmad-loop/run-1/4-4-batch into loop/acme (bmad-loop)"
@@ -181,8 +185,10 @@ class _FakeForge:
             raise ForgeCommandError("gh pr merge failed")
 
 
-def _args(*, slug: str = "acme", format: str = "json") -> argparse.Namespace:
-    return argparse.Namespace(slug=slug, format=format)
+def _args(
+    *, slug: str = "acme", format: str = "json", retire_live_branch: bool = False
+) -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, format=format, retire_live_branch=retire_live_branch)
 
 
 @pytest.fixture(autouse=True)
@@ -657,6 +663,415 @@ def test_landing_resync_true_calls_refresh_feed_once(tmp_path, capsys, monkeypat
     assert payload["data"]["resynced"] is True
     assert len(calls) == 1
     assert calls[0].project == "acme"
+
+
+# =====================================================================
+# Story 4.11: `marshal land` refuses branch retirement while this slug's
+# own bmad-loop run is still live -- `is_run_live` gates a policy-true
+# `landing_branch_retirement` between where it is resolved and the
+# `merge_pr` call. Fakes mirror `test_status.py`'s own `_FakeHarness`/
+# `_FakeProcess`/journal-line-builder shape (the SAME real read sequence
+# `cli/status.py::_gather_home_facts` performs for `marshal status`,
+# reused verbatim here) -- `_resolve_harness_run_id_for_resume` stays REAL
+# (reads the real seeded `journal.jsonl` via `LocalFs`), proving the
+# wiring through `run_land`'s new `harness`/`process`/`clock` DI params
+# end to end, never a shortcut that stubs `_gather_home_facts` itself.
+# =====================================================================
+
+
+class _FakeHarness:
+    """Keyed by ``(str(home), harness_run_id)`` -- mirrors
+    ``test_status.py::_FakeHarness``'s own convention."""
+
+    def __init__(self, snapshots: dict[tuple[str, str], RunStatusSnapshot] | None = None) -> None:
+        self.snapshots = snapshots or {}
+        self.calls: list[tuple[str, str]] = []
+
+    def run_status_snapshot(self, project, run_id):
+        self.calls.append((str(project), run_id))
+        return self.snapshots.get((str(project), run_id))
+
+
+class _FakeProcess:
+    """Mirrors ``test_status.py::_FakeProcess``'s own ``is_alive`` shape --
+    ``run`` is never exercised by the liveness gate (``land``'s own resync
+    step constructs its OWN ``PosixProcess()`` internally, unaffected by
+    this DI param), so it raises loudly if ever called, proving that."""
+
+    def __init__(self, alive_pids: frozenset[int] = frozenset()) -> None:
+        self.alive_pids = alive_pids
+        self.calls: list[int] = []
+
+    def is_alive(self, pid: int) -> bool:
+        self.calls.append(pid)
+        return pid in self.alive_pids
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        raise AssertionError("the liveness gate must never call ProcessPort.run")
+
+
+class _FakeClock:
+    def __init__(self, now: datetime) -> None:
+        self._now = now
+
+    def now(self) -> datetime:
+        return self._now
+
+    def monotonic(self) -> float:
+        return 0.0
+
+
+class _ExplosiveHarness:
+    """Proves the liveness gate is never consulted at all -- used for the
+    policy-already-off short-circuit test."""
+
+    def run_status_snapshot(self, project, run_id):
+        raise AssertionError(
+            "the liveness gate must never be consulted when policy already "
+            "has landing_branch_retirement=False"
+        )
+
+
+class _ExplosiveProcess:
+    def is_alive(self, pid: int) -> bool:
+        raise AssertionError(
+            "the liveness gate must never be consulted when policy already "
+            "has landing_branch_retirement=False"
+        )
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        raise AssertionError("must never be called")
+
+
+def _land_outcome_line(
+    run_id: str, *, pid: int, harness_run_id: str, ts: str = "2026-08-09T00:00:00.000Z"
+) -> str:
+    """A minimal, valid ``phase: outcome`` ``run-launch`` journal line --
+    the SAME shape ``cli/spin.py`` itself journals, mirroring
+    ``test_status.py::_outcome_line``'s identical shape."""
+    entry = build_entry(
+        id=JournalEntryId("spin-1", 1),
+        ts=ts,
+        run_id=run_id,
+        kind="run-launch",
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("spin-1", 0),
+        payload={"pid": pid, "harness_run_id": harness_run_id},
+    )
+    return prepare_for_write(entry).line
+
+
+def _land_supervisor_attach_line(
+    run_id: str, *, pid: int, ts: str = "2026-08-09T00:00:30.000Z"
+) -> str:
+    """A minimal, valid ``"supervisor-attach"`` journal line -- mirrors
+    ``test_status.py::_supervisor_attach_line``'s identical shape. A
+    DIFFERENT pid than ``_land_outcome_line``'s own -- the supervisor
+    sidecar is a separate process from the detached harness."""
+    entry = build_entry(
+        id=JournalEntryId("supervisor-1", 1),
+        ts=ts,
+        run_id=run_id,
+        kind="supervisor-attach",
+        phase=Phase.OBSERVATION,
+        payload={"pid": pid, "watched_pid": 4242},
+    )
+    return prepare_for_write(entry).line
+
+
+def _seed_land_run_journal(tmp_path: Path, *, run_id: str, lines: list[str]) -> Path:
+    run_dir = tmp_path / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "journal.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return run_dir
+
+
+def _stub_land_latest_run_dir(monkeypatch, run_dir_map: dict[str, Path | None]) -> None:
+    """Stubs ONLY ``cli/spin.py``'s own ``_latest_run_dir`` -- mirrors
+    ``test_status.py::_stub_latest_run_dir``'s identical per-module-
+    attribute patching (``cli/land.py`` imports it LOCALLY inside
+    ``run_land``, so the live function is re-resolved off ``spin_module``
+    at call time)."""
+
+    def _latest_run_dir(home, slug):
+        return run_dir_map.get(slug)
+
+    monkeypatch.setattr(spin_module, "_latest_run_dir", _latest_run_dir)
+
+
+def _live_snapshot(
+    *, finished: bool = False, tasks: tuple[TaskPhaseSnapshot, ...] = ()
+) -> RunStatusSnapshot:
+    return RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        finished=finished,
+        tasks=tasks,
+    )
+
+
+def test_live_run_refuses_branch_retirement_but_merge_still_proceeds(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    home_root = tmp_path / "loops"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    home = home_root / "acme"
+
+    run_dir = _seed_land_run_journal(
+        tmp_path,
+        run_id="acme-run1",
+        lines=[
+            _land_outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+            _land_supervisor_attach_line("acme-run1", pid=5252),
+        ],
+    )
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+    harness = _FakeHarness(
+        snapshots={
+            (str(home), "hrid-1"): _live_snapshot(
+                tasks=(TaskPhaseSnapshot(story_key="1.1", phase="dev-running", commit_sha=None),)
+            )
+        }
+    )
+    process = _FakeProcess(alive_pids=frozenset({5252}))
+    clock = _FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc))
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=LocalFs(), forge=forge, harness=harness, process=process, clock=clock
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" in codes
+    assert "acme" in payload["findings"][codes.index("MRS-LAND-008")]["message"]
+    assert "loop/acme" in payload["findings"][codes.index("MRS-LAND-008")]["message"]
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["branch_retired"] is False
+    assert exit_code == 0  # MRS-LAND-008 is WARN-tier -- reported, never blocking
+    assert len(forge.merge_calls) == 1
+    repo, number, strategy, expected_head_sha, delete_branch = forge.merge_calls[0]
+    assert delete_branch is False
+
+
+def test_live_run_with_override_flag_retires_normally_no_finding(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    home_root = tmp_path / "loops"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    home = home_root / "acme"
+
+    run_dir = _seed_land_run_journal(
+        tmp_path,
+        run_id="acme-run1",
+        lines=[
+            _land_outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+            _land_supervisor_attach_line("acme-run1", pid=5252),
+        ],
+    )
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+    harness = _FakeHarness(
+        snapshots={
+            (str(home), "hrid-1"): _live_snapshot(
+                tasks=(TaskPhaseSnapshot(story_key="1.1", phase="dev-running", commit_sha=None),)
+            )
+        }
+    )
+    process = _FakeProcess(alive_pids=frozenset({5252}))
+    clock = _FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc))
+
+    exit_code = land_module.run_land(
+        _args(retire_live_branch=True),
+        vcs=vcs,
+        fs=LocalFs(),
+        forge=forge,
+        harness=harness,
+        process=process,
+        clock=clock,
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" not in codes
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["branch_retired"] is True
+    assert exit_code == 0
+    repo, number, strategy, expected_head_sha, delete_branch = forge.merge_calls[0]
+    assert delete_branch is True
+
+
+def test_journal_unreadable_is_conservatively_treated_as_live(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    home_root = tmp_path / "loops"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+
+    # A run directory exists, but its journal never records a usable launch
+    # pid -- `_gather_home_facts` degrades to `journal_unreadable=True`,
+    # which `is_run_live` treats conservatively as live (mirrors
+    # core/retire.py's own "an unprovable fact is refused" precedent).
+    run_dir = _seed_land_run_journal(tmp_path, run_id="acme-run1", lines=[])
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+    harness = _FakeHarness()
+    process = _FakeProcess()
+    clock = _FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc))
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=LocalFs(), forge=forge, harness=harness, process=process, clock=clock
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" in codes
+    assert payload["data"]["branch_retired"] is False
+    assert exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "snapshot_kwargs, alive_pids",
+    [
+        pytest.param({"finished": True}, frozenset({5252}), id="finished"),
+        pytest.param({"finished": False}, frozenset(), id="dead-supervisor"),
+    ],
+)
+def test_no_live_run_retires_normally_no_finding(
+    tmp_path, capsys, monkeypatch, snapshot_kwargs, alive_pids
+):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    home_root = tmp_path / "loops"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    home = home_root / "acme"
+
+    run_dir = _seed_land_run_journal(
+        tmp_path,
+        run_id="acme-run1",
+        lines=[
+            _land_outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+            _land_supervisor_attach_line("acme-run1", pid=5252),
+        ],
+    )
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+    harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _live_snapshot(**snapshot_kwargs)})
+    process = _FakeProcess(alive_pids=alive_pids)
+    clock = _FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc))
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=LocalFs(), forge=forge, harness=harness, process=process, clock=clock
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" not in codes
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["branch_retired"] is True
+    assert exit_code == 0
+
+
+def test_never_run_home_retires_normally_no_finding(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    home_root = tmp_path / "loops"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    # No run directory exists at all for this slug.
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={})
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(),
+        vcs=vcs,
+        fs=LocalFs(),
+        forge=forge,
+        harness=_FakeHarness(),
+        process=_FakeProcess(),
+        clock=_FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc)),
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" not in codes
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["branch_retired"] is True
+    assert exit_code == 0
+
+
+def test_policy_already_off_skips_liveness_gather_entirely(tmp_path, capsys, monkeypatch):
+    """The Always bullet's short-circuit: `delete_branch` already `False`
+    from policy means NO liveness gather at all -- proven here with fakes
+    that raise if ever consulted, not merely by asserting the outcome."""
+    policy_path = _write_project_policy(
+        tmp_path, "landing_branch_retirement = false\n" + _rule_policy(required_check=None)
+    )
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+
+    def _explosive_latest_run_dir(home, slug):
+        raise AssertionError(
+            "the liveness gate must never look up a run directory when "
+            "policy already has landing_branch_retirement=False"
+        )
+
+    monkeypatch.setattr(spin_module, "_latest_run_dir", _explosive_latest_run_dir)
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(),
+        vcs=vcs,
+        fs=LocalFs(),
+        forge=forge,
+        harness=_ExplosiveHarness(),
+        process=_ExplosiveProcess(),
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" not in codes
+    assert payload["data"]["branch_retired"] is False
+    assert exit_code == 0
 
 
 # --- re-entrancy: PR open, checks green, merge never issued --------------
