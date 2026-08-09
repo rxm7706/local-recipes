@@ -52,6 +52,18 @@ module's legacy config, and `cleanup-legacy.py --module-code bmb` would
 `[module_code, "core"]` removal list (see the story spec's Design Notes for
 the full evidence trail). Wired as `steward provision --module <name>
 [--json]`, the new first precedence check ahead of `--verify`.
+
+Story 6.2 slice (Epic 6, `--list-modules`): `module_install_states` (a
+pure, read-only membership check -- `_bmad/config.yaml`'s own top-level
+keys against `_SUPPORTED_MODULES`'s registered names, the exact
+anti-zombie key `merge-config.py`'s own `config[module_code] = ...`
+writes; a missing file or a parse result that isn't a `dict` both degrade
+to "no modules installed" rather than raising) and `format_module_states`
+(mirrors `format_environments`'s own text/`--json` split). No subprocess
+call and no new state file -- derive-don't-declare, matching `--list`'s
+own `pixi.toml`-derived precedent. Wired as `steward provision
+--list-modules [--json]`, the new first precedence check ahead of
+`--module`.
 """
 
 from __future__ import annotations
@@ -448,10 +460,67 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
     )
 
 
+# ── Module discovery (FR-20, Story 6.2) ─────────────────────────────────────
+
+
+def module_install_states(*, cwd: str | Path) -> dict[str, str]:
+    """Derive each registered module's `installed`/`available` state from
+    `_bmad/config.yaml`'s own top-level keys -- the exact anti-zombie key
+    `merge-config.py`'s own `config[module_code] = module_section` writes
+    (verified against the real script; story spec Design Notes).
+
+    A missing `_bmad/config.yaml`, or one that parses to something other
+    than a `dict` (e.g. a bare YAML list), both degrade to `{}` rather than
+    raising -- both read as "no modules installed", so every registered
+    module reports `available`. A malformed (unparseable) `_bmad/
+    config.yaml` is NOT caught here -- `yaml.YAMLError` propagates to
+    `ProvisionDuty.run()`'s existing exception boundary, matching
+    `load_pixi_environments`'s own propagate-don't-swallow precedent for a
+    malformed `pixi.toml`.
+    """
+    config_path = Path(cwd) / _BMAD_RELATIVE_PATH / "config.yaml"
+    config: dict[str, object] = {}
+    if config_path.is_file():
+        with config_path.open("r", encoding="utf-8") as f:
+            loaded = yaml.safe_load(f)
+        if isinstance(loaded, dict):
+            config = loaded
+    return {name: ("installed" if name in config else "available") for name in _SUPPORTED_MODULES}
+
+
+def format_module_states(states: dict[str, str], *, as_json: bool) -> str:
+    """Render `states` for `steward provision --list-modules`.
+
+    Mirrors `format_environments`'s own JSON/text split: `as_json=True` ->
+    `{name: state}`, sorted by name (`{}` for no registered modules, the
+    correct machine-parseable empty state); `as_json=False` -> aligned
+    `name  state` text lines sorted by name, or a plain sentence when no
+    modules are registered.
+    """
+    if as_json:
+        return json.dumps({name: states[name] for name in sorted(states)}, indent=2)
+    if not states:
+        return "provision --list-modules: no modules registered"
+    width = max(len(name) for name in states)
+    lines = [f"{name:<{width}}  {states[name]}" for name in sorted(states)]
+    return "\n".join(lines)
+
+
+def _run_list_modules(ns: argparse.Namespace) -> DutyResult:
+    """`provision --list-modules [--json]` (Story 6.2). Read-only: derives
+    state from the filesystem at call time, never writes to `_bmad/
+    config.yaml` or any other file."""
+    root = repo_root()
+    states = module_install_states(cwd=root)
+    return DutyResult(
+        ok=True, summary=format_module_states(states, as_json=getattr(ns, "json", False))
+    )
+
+
 # ── ProvisionDuty (Duty-protocol adapter) ───────────────────────────────────
 
 _PROVISION_HELP = (
-    "available flags: --module <name> [--json] | --env <name> | "
+    "available flags: --list-modules [--json] | --module <name> [--json] | --env <name> | "
     "--runner bmad-loop --env <name> | --list [--json] | --verify"
 )
 
@@ -516,18 +585,20 @@ def _run_runner(ns: argparse.Namespace) -> DutyResult:
 
 
 class ProvisionDuty:
-    """The real `provision` duty — dispatches the `--module`/`--env`/
-    `--runner`/`--list`/`--verify` flags (Epic 3 grew this class one flag
-    per story through `--verify`; Epic 6 Story 6.1 adds `--module`).
+    """The real `provision` duty — dispatches the `--list-modules`/
+    `--module`/`--env`/`--runner`/`--list`/`--verify` flags (Epic 3 grew
+    this class one flag per story through `--verify`; Epic 6 Story 6.1
+    added `--module`, Story 6.2 adds `--list-modules`).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag on the bare `provision` duty parser, matching each
     story's own `steward provision --env <name>` shape. Precedence when
-    more than one flag is passed: `--module` > `--verify` > `--list` >
-    `--runner` > `--env` (a documented judgment call, not a silent one —
-    mirrors `DeployDuty`'s own `--build`-wins-over-`--dry-run` precedent;
-    no AC defines combining them; `--module` lands at the top, matching
-    each new story's flag landing at the top of this if-chain). Bare
+    more than one flag is passed: `--list-modules` > `--module` > `--verify`
+    > `--list` > `--runner` > `--env` (a documented judgment call, not a
+    silent one — mirrors `DeployDuty`'s own `--build`-wins-over-`--dry-run`
+    precedent; no AC defines combining them; `--list-modules` lands at the
+    top, matching each new story's flag landing at the top of this
+    if-chain). Bare
     `steward provision` (no flags) degrades to `DutyResult(ok=True, ...)`
     naming the available flags (AD-7), matching `KeysDuty`'s/`DeployDuty`'s
     identical precedent. A subprocess failure (pixi, bmad-loop-worktree,
@@ -541,6 +612,8 @@ class ProvisionDuty:
 
     def run(self, ns: argparse.Namespace) -> DutyResult:
         try:
+            if getattr(ns, "list_modules", False):
+                return _run_list_modules(ns)
             if getattr(ns, "module", None) is not None:
                 return _run_module(ns)
             if getattr(ns, "verify", False):
@@ -557,7 +630,13 @@ class ProvisionDuty:
             cmd_name = " ".join(str(part) for part in exc.cmd) if exc.cmd else "subprocess"
             message = f"`{cmd_name}` exited {exc.returncode}: {stderr}"
             return DutyResult(ok=False, summary=self._render_error(ns, message))
-        except (RuntimeError, FileNotFoundError, tomllib.TOMLDecodeError, yaml.YAMLError) as exc:
+        except (
+            RuntimeError,
+            FileNotFoundError,
+            tomllib.TOMLDecodeError,
+            yaml.YAMLError,
+            UnicodeDecodeError,
+        ) as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
 
     @staticmethod
