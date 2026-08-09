@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
+updated: 2026-08-09  # § 16.9 reopened: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5 of spec-surface-drift-reconciliation, found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-168, no gaps.
+# 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
 # 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
 dist: pyforge-marshal
@@ -1854,8 +1855,9 @@ station already owns**. `scripts/spec_surface_check.py` proves every tracked fil
 governed by a spec surface and that no governed file drifted from its contract — and it
 has carried **61 findings on `main`** for weeks. The repo is not 61 kinds of broken; the
 detector makes its reconciliation claim at the wrong granularity, twice, so its verdict is
-unactionable in one direction and untrustworthy in the other. Realizes CAP-1..CAP-4 of
-that Spec.
+unactionable in one direction and untrustworthy in the other. Realizes CAP-1..CAP-5 of
+that Spec — CAP-5 added 2026-08-09, after operating the gate the first four turned green
+surfaced a third instance of the same granularity error.
 
 #### FR-164: A baseline can be stamped for one spec
 **Consequences:** `--write-baseline` gains `--spec NAME` (repeatable), merging only the
@@ -1888,6 +1890,24 @@ the isolation test, and restoring the per-spec short-circuit re-reds a launderin
 replays the live incident (an unrelated memlog append dropping findings 63 → 61 and clearing
 two detectors nobody reconciled). Charter §6 applies directly: the fix is granularity, never
 a relaxed threshold.
+
+#### FR-168: A Spec cannot declare a surface it has no contract for
+**Added 2026-08-09, realizing CAP-5.** Two days of operating the now-green gate exposed a
+third instance of the same granularity error, found twice in two days: a Spec that declares a
+`surface:` but ships with **no `.memlog.md`** is **drift-blind**. `contract_hash()` returns
+`""`, the baseline stores `""`, and `"" != ""` is never true — so the contract can never move
+and every governed change reports a hard `[drift]` whose printed remedy ("reconcile the
+spec") is unreachable. **Consequences:** a spec governing ≥1 tracked file under the default
+`surface-drift: memlog` mode with no memlog reports a **gating** `[drift-blind]` finding
+naming the spec, its governed count, and where the memlog belongs; zero-file, `exempt`, and
+`sentinel:` specs report nothing, none of them being blind. `[drift-blind]` gates where
+`[drift-presumed]` does not, and the asymmetry is principled — presumed reconciliation is
+*unproven* over historical entries nobody can retro-name, while blindness is *structurally
+impossible* and clears by creating one file. The 7 live instances (**396 governed files**,
+370 of them mason's CFE tree) are dispositioned by writing each memlog **and** scoped-stamping
+its baseline in the same change, since a new memlog otherwise downgrades that spec's next
+drift from gating to informational — trading a false green for a quiet one. The detector
+never writes the memlog it checks for.
 
 ---
 

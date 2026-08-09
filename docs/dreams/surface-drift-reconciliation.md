@@ -74,6 +74,11 @@ a *visible, non-gating* signal — not silence.
 - **Nothing is silenced to get there.** If a finding cannot be honestly cleared
   in this effort, it is recorded as deferred work with its reason, not
   suppressed.
+- **A governed surface with no contract behind it is reported, not tolerated.**
+  A Spec that declares a `surface:` but ships without a `.memlog.md` is
+  **drift-blind**: its contract hash is the empty string, so the contract can
+  never move, so no governed change is ever reconcilable — only stampable. That
+  is the third granularity error in the same family, and the detector names it.
 
 ## What is real (measured 2026-08-08, on `main` at `cf885388fe`)
 
@@ -101,6 +106,44 @@ a *visible, non-gating* signal — not silence.
   change is small and local to `main()` — scoped merge on the write path,
   per-file check on the read path — and that no other detector reads the baseline
   format. That is design evidence for the Spec, not an implementation.
+
+## What is real, part two — the drift-blind Spec (measured 2026-08-09, on `main` at `7dde591811`)
+
+The first four capabilities took the detector to **0 findings**. Working with the
+green gate immediately surfaced a hole none of them covered, twice in two days:
+
+- `spec-bmad-loop-forward-dependency-blindness` (2026-08-08) and
+  `spec-bmad-module-provisioning` (2026-08-09) each shipped declaring a
+  `surface:` and **no `.memlog.md`**. `contract_hash()` returns `""` for them,
+  the baseline stores `""`, and `""  !=  ""` is never true — so `spec_moved` is
+  permanently `False`. Every future governed change reports a hard `[drift]`
+  whose only exit is `--write-baseline --spec NAME`. The sanctioned remedy the
+  finding *prints* — "reconcile the spec" — is unreachable, because there is no
+  contract to move. Both memlogs were created by hand once noticed.
+- **Nothing reports the condition.** It is invisible while the surface is
+  quiet and indistinguishable from ordinary drift once it is not — a Spec can be
+  drift-blind for months and the gate stays green the whole time, which is the
+  precise failure mode CAP-1..CAP-4 were written to end at two other levels.
+- **It is not two instances, it is seven.** Measured across the fleet on
+  2026-08-09: **7 Specs govern 396 tracked files with an empty contract hash** —
+  `pyforge-mason/spec-conda-forge-expert-rebuild` **370**,
+  `pyforge-herald/spec-herald-moments-2-4-live-backend` **18**, four marshal
+  Specs (`spec-dashboard-project-path-derivation`,
+  `spec-dream-to-code-model-self-verification`, `spec-pyforge-core`,
+  `spec-sprint-status-auto-promote`) **7** between them, and
+  `pyforge-steward/spec-unified-container` **1**. All seven are already in the
+  committed baseline with `"memlog": ""`, so all seven are green today and
+  unreconcilable tomorrow.
+- **Creating the memlog is only half the disposition.** A new memlog moves the
+  contract hash away from `""`, so the *next* comparison sees `spec_moved =
+  True` and every drifted file downgrades from gating `[drift]` to informational
+  `[drift-presumed]`. Fixing blindness by hand without stamping the baseline in
+  the same move therefore trades a false green for a quiet one. The stamp is
+  part of the remedy, not an optional follow-up.
+- A Spec that governs **zero** files cannot drift and is not blind — eleven of
+  those exist and are correctly silent. `surface-drift: exempt` records no file
+  hashes at all, and `sentinel:` supplies a second hash that *can* move; neither
+  is blind. The finding is for the default mode with a real governed set.
 
 ## Constraints
 
@@ -144,3 +187,10 @@ a *visible, non-gating* signal — not silence.
   decision to fix them through the chain rather than patch the detector by hand.
   A prototype of both fixes was written, then reverted, to keep Dream-first
   ordering honest — its findings are recorded above as design evidence.
+- **2026-08-09** — Reopened for the drift-blind Spec. CAP-1..CAP-4 shipped
+  (PRs #326, #327) and the gate reached 0 findings; using it for two days then
+  exposed the third granularity error, above. Deliberately reopened *this* Dream
+  rather than seeded as a new one: it is the same instrument, the same disease
+  (a reconciliation claim made where it cannot be measured), and the same
+  Spec's success signal — a gate that can be cleared and a signal that can be
+  trusted. A gate that is green because it cannot see is neither.

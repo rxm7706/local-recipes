@@ -1141,7 +1141,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 90 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 91 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1244,7 +1244,7 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "54/90",
+            "55/91",
             "stories complete",
             "var(--done)"
           ],
@@ -1821,6 +1821,11 @@ window.DASHBOARD_DATA = {
               "13.4",
               "done",
               "The 34 drift findings are reconciled or recorded"
+            ],
+            [
+              "13.5",
+              "done",
+              "A Spec cannot declare a surface it has no contract for"
             ]
           ]
         }
@@ -3155,7 +3160,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 00:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 01:13 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4129,7 +4134,7 @@ window.DASHBOARD_DATA = {
       "slug": "surface-drift-reconciliation",
       "project": "pyforge-marshal",
       "title": "Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted",
-      "caps": 4,
+      "caps": 5,
       "companions": 0,
       "updated": "2026-08-08",
       "dream": "surface-drift-reconciliation",
@@ -5091,8 +5096,8 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 54,
-          "total": 90
+          "done": 55,
+          "total": 91
         },
         {
           "slug": "wasm-analytics-stack",
@@ -5560,7 +5565,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-08-08",
           "research": "2026-08-08",
           "brief": "2026-08-02",
-          "prd": "2026-08-08",
+          "prd": "2026-08-09",
           "ux": "",
           "arch": "2026-08-08",
           "context": "2026-06-20",
@@ -5641,7 +5646,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "54/90",
+        "progress": "55/91",
         "complete": 13,
         "of": 13
       },
@@ -5910,7 +5915,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-08T19:38",
+          "spec": "2026-08-08T19:48",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -5919,7 +5924,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-02",
           "sprint": "2026-08-08",
-          "tea": "2026-08-07",
+          "tea": "2026-08-08",
           "gates": "2026-08-01",
           "code": "2026-08-07",
           "verify": "2026-08-07",
@@ -5993,7 +5998,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-08T19:38",
+            "at": "2026-08-08T19:48",
             "other": "2026-08-01"
           }
         ],
@@ -6989,7 +6994,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8050,7 +8055,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8156,7 +8161,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9323,7 +9328,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9752,7 +9757,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9858,7 +9863,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08T19:29",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9964,7 +9969,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11026,7 +11031,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-08T19:49",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11450,7 +11455,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12014,9 +12019,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 3,
-        "verdict": "FINDINGS (3):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -14356,8 +14361,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 00:48 UTC",
-    "generatedEpoch": 1786236513
+    "generatedAt": "2026-08-09 01:13 UTC",
+    "generatedEpoch": 1786238012
   },
   "storySpecs": [
     {
@@ -14386,9 +14391,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 54,
+      "done": 55,
       "tracked": 51,
-      "gap": 3
+      "gap": 4
     },
     {
       "station": "pyforge-mason",
@@ -14466,14 +14471,14 @@ window.DASHBOARD_DATA = {
           },
           {
             "slug": "spec-surface-drift-reconciliation",
-            "status": "draft",
+            "status": "in-progress",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 54,
+        "done": 55,
         "backlog": 35,
         "blocked": 1,
-        "total": 90,
+        "total": 91,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
@@ -14685,10 +14690,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 221,
+      "done": 222,
       "backlog": 95,
       "blocked": 6,
-      "total": 322
+      "total": 323
     }
   }
 };

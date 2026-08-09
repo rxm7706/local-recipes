@@ -2129,7 +2129,12 @@ cannot go stale
 carried **61 findings on `main`** for weeks, and the repo is not 61 kinds of broken — the
 detector makes its reconciliation claim at the wrong granularity, twice, so its verdict is
 unactionable in one direction and untrustworthy in the other. Decomposes
-`spec-surface-drift-reconciliation` (FR-164..FR-167).
+`spec-surface-drift-reconciliation` (FR-164..FR-168).
+
+**Reopened 2026-08-09 for S-13.5.** S-13.1..S-13.4 took the gate to 0 findings; two days of
+*using* it exposed a third instance of the same granularity error — a Spec that declares a
+surface with no `.memlog.md` has an empty contract hash, so its contract can never move and
+nothing reports it. Same instrument, same disease, same Spec: it belongs in this epic.
 
 **Why the two fixes are one epic.** They are the same disease at two levels: baselines stamp
 all-or-nothing when they should be per-spec; drift clears per-spec when it should be per-file.
@@ -2138,7 +2143,10 @@ finding-clearing stories need both levers.
 
 **Sequenced, not parallel.** S-13.3 and S-13.4 exist to *use* the levers S-13.1/S-13.2 build;
 running them first would mean clearing findings with the blanket tools this epic exists to
-replace. Every dependency is within-epic and earlier — no forward-epic reference.
+replace. S-13.5 needs both levers too — it disposes of seven drift-blind specs, which takes
+the scoped stamp (S-13.1) to avoid blessing anyone else's drift, and the per-file rule
+(S-13.2) to prove no `[drift]` was downgraded on the way. Every dependency is within-epic and
+earlier — no forward-epic reference.
 
 ### Story 13.1: A baseline can be stamped for one spec
 
@@ -2230,6 +2238,43 @@ if that surface changed, its contract moves
 **And** the epic's own changes to `scripts/spec_surface_check.py` are themselves reconciled
 against `spec-surface-drift-reconciliation` — the detector must not be the one file that
 escapes its own gate
+
+### Story 13.5: A Spec cannot declare a surface it has no contract for
+
+As the operator,
+I want a governed Spec with no `.memlog.md` reported by name,
+So that a surface whose contract can never move stops passing as green.
+
+**Type:** change • **Effort:** M • **Deps:** S-13.1, S-13.2 • **FR/AD:** FR-168
+
+**Added 2026-08-09**, reopening a `done` epic. Found by *operating* the gate S-13.1..S-13.4
+turned green: two Specs shipped drift-blind two days apart, and the fleet sweep that followed
+found seven. Same Spec, same disease, so it belongs here rather than in a new epic.
+
+**Acceptance Criteria:**
+
+**Given** a spec that governs ≥1 tracked file under the default `surface-drift: memlog` mode
+**When** its `.memlog.md` does not exist
+**Then** a **gating** `[drift-blind]` finding names the spec, its governed-file count, and the
+path the memlog belongs at — because `contract_hash()` returns `""`, so the contract can never
+move and the "reconcile the spec" remedy the detector prints is unreachable
+**And** a spec governing **zero** files, a `surface-drift: exempt` spec, and a
+`surface-drift: sentinel:<path>` spec each report **nothing** — none of them can go blind
+**And** `[drift-blind]` gates even though `[drift-presumed]` does not: presumed reconciliation
+is *unproven* over historical entries nobody can retro-name, blindness is *structurally
+impossible* and clears by creating one file
+**And** the detector never creates the memlog it checks for — a self-clearing finding is not a
+finding, and it would author a decision record nobody decided
+**And** the 7 live instances (**396 governed files**: mason/spec-conda-forge-expert-rebuild
+**370**, herald/spec-herald-moments-2-4-live-backend **18**, four marshal specs **7**,
+steward/spec-unified-container **1**) are dispositioned by writing each memlog **and**
+scoped-stamping its baseline in the **same** change — a new memlog moves the contract hash off
+`""`, so stamping later would silently downgrade that spec's next drift from gating `[drift]`
+to informational `[drift-presumed]`
+**And** a before/after finding diff proves no `[drift]` became `[drift-presumed]` as a side
+effect of the seven memlogs
+**And** a mutation test proves the guard both ways: deleting a governed fixture's memlog reds
+the new test, and removing the check re-greens it
 
 ---
 
