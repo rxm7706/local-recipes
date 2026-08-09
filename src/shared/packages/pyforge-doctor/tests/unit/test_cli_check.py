@@ -377,6 +377,91 @@ def test_path_hint_shell_quotes_a_path_containing_whitespace(
     assert shlex.quote(str(weird)) in captured.err
 
 
+# --- --scope (Story 6.3) -----------------------------------------------------
+
+
+def test_scope_repo_matches_the_default_all_scope_run(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # All 9 registered sources are scope="repo" today (story spec's I/O
+    # matrix row 2) -- `--scope repo` must therefore run all three
+    # categories exactly like omitting `--scope` entirely.
+    _stub_healthy_warden(monkeypatch)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        env_hygiene, "gather", lambda target: calls.append("env") or ()
+    )
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather",
+        lambda target: calls.append("durability") or (),
+    )
+
+    exit_code = main(["check", str(tmp_path), "--scope", "repo"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "warden-doctor" in captured.out
+    assert calls == ["env", "durability"], (
+        "--scope repo must run env and durability too -- both are "
+        "registered scope='repo', same as engines"
+    )
+
+
+def test_scope_runtime_yields_zero_findings_and_never_gathers_any_category(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # All 9 registered sources are scope="repo" today -- `--scope runtime`
+    # must therefore exclude all three `check` categories entirely (story
+    # spec's I/O matrix row 3 + acceptance criteria).
+    _forbid_warden_gather(monkeypatch)
+
+    def _forbid_env(target):
+        raise _ForbiddenGatherError("must never gather the 'env' category here")
+
+    def _forbid_durability(target):
+        raise _ForbiddenGatherError(
+            "must never gather the 'durability' category here"
+        )
+
+    monkeypatch.setattr(env_hygiene, "gather", _forbid_env)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather", _forbid_durability
+    )
+
+    exit_code = main(["check", str(tmp_path), "--scope", "runtime", "--json"])
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.validate(document, _schema())
+    assert exit_code == 0
+    assert document["findings"] == []
+
+
+def test_unknown_scope_value_is_a_usage_error(capsys):
+    exit_code = main(["check", "--scope", "bogus"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "bogus" in captured.err
+    assert captured.out == ""
+
+
+def test_list_with_scope_runtime_still_prints_the_full_catalog(
+    monkeypatch, capsys
+):
+    # --list wins over --scope too, per its own "ignores ... --scope" help
+    # text -- never a narrowed or empty catalog.
+    _forbid_warden_gather(monkeypatch)
+
+    exit_code = main(["check", "--list", "--scope", "runtime"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "osv-scanner" in captured.out
+    assert "deptry" in captured.out
+    assert ENV_CHECK_NAME in captured.out
+
+
 # --- --list --------------------------------------------------------------
 
 

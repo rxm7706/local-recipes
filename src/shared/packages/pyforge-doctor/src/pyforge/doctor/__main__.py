@@ -41,7 +41,7 @@ from pathlib import Path
 
 import jsonschema
 
-from . import fleet_surface, prescribe, score
+from . import fleet_surface, prescribe, score, sources
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
 from .sources import atlas, marshal as marshal_source, warden as warden_source
@@ -70,6 +70,16 @@ __version__ = "0.1.0"
 # a real check name (a plain string) or with the flag's absent-default
 # (None).
 _WHOLE_CATEGORY = object()
+
+# Story 6.3: `check`'s three categories, mapped to the `Source` each one's
+# whole-category gather reports under -- `_category_in_scope`'s only way to
+# ask `sources.scope_for` "is this category in scope?" without a second,
+# hand-rolled category->scope table living beside `sources.REGISTRY`.
+_CATEGORY_SOURCE: dict[str, Source] = {
+    "engines": Source.WARDEN_DOCTOR,
+    "env": Source.ENV_HYGIENE,
+    "durability": Source.MARSHAL_DURABILITY,
+}
 
 
 def _build_parser() -> tuple[
@@ -130,12 +140,24 @@ def _build_parser() -> tuple[
         ),
     )
     check.add_argument(
+        "--scope",
+        choices=("repo", "runtime", "all"),
+        default="all",
+        help=(
+            "restrict which categories run to those whose "
+            "sources.REGISTRY-declared scope matches ('repo': reads only "
+            "tracked files/git history, runs anywhere; 'runtime': reads "
+            "host state, cannot run in CI); default 'all' matches every "
+            "category (today's behavior, unchanged) -- ignored by --list"
+        ),
+    )
+    check.add_argument(
         "--list",
         action="store_true",
         help=(
             "list the full check catalog as text and exit -- never "
             "gathers/runs anything (ignores "
-            "--engines/--env/--durability/--json/path)"
+            "--engines/--env/--durability/--json/path/--scope)"
         ),
     )
     check.add_argument(
@@ -281,6 +303,23 @@ def _validate_check_names(
                 f"argument --{category}: unknown check name {value!r} "
                 f"(known: {', '.join(known_names)}){hint}"
             )
+
+
+def _category_in_scope(category: str, requested_scope: str) -> bool:
+    """Whether ``category`` (one of ``_CATEGORY_SOURCE``'s keys) should run
+    under ``--scope``'s already-validated ``requested_scope`` value ("repo",
+    "runtime", or "all").
+
+    ``"all"`` (the default) matches every category unconditionally --
+    preserving today's behavior exactly, per the story's own "omitting
+    --scope behaves exactly as today" constraint. ``"repo"``/``"runtime"``
+    match only a category whose OWN registered scope (read live from
+    ``sources.scope_for``, never a second hardcoded scope list -- the
+    story's own Always constraint) equals the request.
+    """
+    if requested_scope == "all":
+        return True
+    return sources.scope_for(_CATEGORY_SOURCE[category]) == requested_scope
 
 
 def _split_watch_axes(raw: str | None) -> tuple[str, ...]:
@@ -489,6 +528,15 @@ def _run_check(args: argparse.Namespace) -> int:
     else:
         engines_name = args.engines
         env_name = args.env
+
+    # Story 6.3: narrow the already-resolved run_* booleans by --scope
+    # (default "all" leaves every category untouched, matching today's
+    # behavior exactly). Applied AFTER the default/explicit-flag resolution
+    # above -- --scope filters WHAT was already selected to run, it never
+    # itself selects a category.
+    run_engines = run_engines and _category_in_scope("engines", args.scope)
+    run_env = run_env and _category_in_scope("env", args.scope)
+    run_durability = run_durability and _category_in_scope("durability", args.scope)
 
     findings: tuple[Finding, ...] = ()
     if run_engines:
