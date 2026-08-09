@@ -38,6 +38,9 @@ without moving that contract would reintroduce the defect the import exists to p
   have **exactly one home** and both consumers derive from it.
 - **And** no hand-mirrored copy is reintroduced — the 2026-07-28 false positive is the
   reason that import exists.
+- **And** (amended 2026-08-09, see *The constant set is four, not two*) `DREAM_STATUSES`
+  and `DREAM_TYPES` are consolidated into the same single home, not left behind — they are
+  the two constants still hand-mirrored between the pair today.
 - **And** `gather_bmad_drift` produces the same verdict as the origin script against the
   live repo — parity proven on real data, not fixtures (the standard set by 6.4–6.7).
 - **And** `sources/factory.py` imports no `pyforge.<station>` package, asserted by an
@@ -46,6 +49,32 @@ without moving that contract would reintroduce the defect the import exists to p
   stays green after the constants move.
 
 ## Design notes
+
+### The constant set is four, not two (amended 2026-08-09, before implementation)
+
+The AC as written names the **imported** pair, `GUILD_DREAMS` and `STATIONS`. An AST sweep
+of module-level upper-case constants defined in *both* files found **two more that are
+hand-mirrored rather than imported**:
+
+| constant | `bmad_drift_check.py` | `generate.py` | today |
+|---|---|---|---|
+| `GUILD_DREAMS` | defines | **imports** | safe by construction |
+| `STATIONS` | defines | **imports** | safe by construction |
+| `DREAM_STATUSES` | defines | **re-declares** | identical **by luck** |
+| `DREAM_TYPES` | defines | **re-declares** | identical **by luck** |
+
+Neither mirrored pair has diverged *yet*, so there is no live bug — which is exactly why
+they were easy to miss, and exactly the state `GUILD_DREAMS` was in on 2026-07-27. The
+source file even labels them: *"Mirrored in docs/dashboard/generate.py:DREAM_STATUSES"*.
+"Mirrored" is the defect, written down as if it were the design.
+
+Moving only the imported pair would leave the story's own AC — *"the shared constants have
+exactly one home"* — false for half the shared constants, and would leave the duplication
+hazard live in a file this story is already rewriting. All four move together.
+
+**Verification, not inspection:** re-run the AST sweep after the change and assert the
+intersection of module-level constants defined in both files is **empty**. A visual check
+is what let two survive the first fix.
 
 ### Where the constants should live, and the constraint that decides it
 
