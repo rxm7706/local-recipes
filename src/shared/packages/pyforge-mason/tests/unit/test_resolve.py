@@ -1,19 +1,26 @@
 """Story 1.5 -- the CFE-root resolution chain: precedence, whitespace
 handling, walk termination, and the marker-must-be-a-directory edge case,
-all against synthetic `tmp_path` trees (AD-5)."""
+all against synthetic `tmp_path` trees (AD-5).
+
+Story 1.6 extends this file with `resolve_cfe_interpreter`'s coverage: the
+same flag -> environment -> fallback precedence, but with no not-found
+terminal state -- `sys.executable` is a guaranteed match."""
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
 
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND,
-    ResolvedCfeRoot, resolve_cfe_root,
+    STEP_RUNNING_INTERPRETER, ResolvedCfeInterpreter, ResolvedCfeRoot,
+    resolve_cfe_interpreter, resolve_cfe_root,
 )
 
 _ENV_KEY = "MASON_CFE_ROOT"
+_ENV_PYTHON_KEY = "MASON_CFE_PYTHON"
 
 
 def _make_marker(base: Path) -> None:
@@ -145,5 +152,85 @@ def test_resolved_cfe_root_is_frozen():
     """`ResolvedCfeRoot` is `@dataclass(frozen=True)` -- immutable once
     constructed, matching every other shared shape in this codebase."""
     result = ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND)
+    with pytest.raises(AttributeError):
+        result.step = STEP_FLAG  # type: ignore[misc]
+
+
+# --- Story 1.6: resolve_cfe_interpreter I/O & Edge-Case Matrix -------------
+
+def test_interpreter_flag_wins_over_env_and_default():
+    """Flag wins over env and default."""
+    result = resolve_cfe_interpreter("/x/py", {_ENV_PYTHON_KEY: "/y/py"})
+    assert result == ResolvedCfeInterpreter(path="/x/py", step=STEP_FLAG)
+
+
+def test_interpreter_env_wins_over_running_interpreter():
+    """Env wins over `sys.executable`."""
+    result = resolve_cfe_interpreter(None, {_ENV_PYTHON_KEY: "/y/py"})
+    assert result == ResolvedCfeInterpreter(path="/y/py", step=STEP_ENVIRONMENT)
+
+
+def test_interpreter_whitespace_only_flag_and_env_fall_through():
+    """Whitespace-only flag/env falls through to `sys.executable`."""
+    result = resolve_cfe_interpreter("  ", {_ENV_PYTHON_KEY: ""})
+    assert result == ResolvedCfeInterpreter(
+        path=sys.executable, step=STEP_RUNNING_INTERPRETER
+    )
+
+
+def test_interpreter_nothing_given_falls_through_to_running_interpreter():
+    """Nothing given at all falls through to `sys.executable`."""
+    result = resolve_cfe_interpreter(None, {})
+    assert result == ResolvedCfeInterpreter(
+        path=sys.executable, step=STEP_RUNNING_INTERPRETER
+    )
+
+
+def test_interpreter_empty_string_flag_and_env_fall_through():
+    """An empty string (distinct from whitespace-only) falls through to
+    `sys.executable` -- review pass (2026-08-09): this input value was
+    previously exercised only by the never-raises parametrization, which
+    asserts no crash but not the actual outcome."""
+    result = resolve_cfe_interpreter("", {})
+    assert result == ResolvedCfeInterpreter(
+        path=sys.executable, step=STEP_RUNNING_INTERPRETER
+    )
+
+
+def test_interpreter_flag_only_match_no_env():
+    """Flag-only match: no env var present at all."""
+    result = resolve_cfe_interpreter("/explicit/py", {})
+    assert result == ResolvedCfeInterpreter(path="/explicit/py", step=STEP_FLAG)
+
+
+def test_interpreter_env_only_match_no_flag():
+    """Env-only match: no flag given (`explicit=None`)."""
+    result = resolve_cfe_interpreter(None, {_ENV_PYTHON_KEY: "/env/py"})
+    assert result == ResolvedCfeInterpreter(path="/env/py", step=STEP_ENVIRONMENT)
+
+
+@pytest.mark.parametrize(
+    ("explicit", "environ"),
+    [
+        ("/x/py", {_ENV_PYTHON_KEY: "/y/py"}),
+        (None, {_ENV_PYTHON_KEY: "/y/py"}),
+        ("  ", {_ENV_PYTHON_KEY: ""}),
+        (None, {}),
+        ("", {}),
+        (None, {_ENV_PYTHON_KEY: "   "}),
+    ],
+)
+def test_resolve_cfe_interpreter_never_raises(explicit, environ):
+    """No input combination raises -- `sys.executable` is a guaranteed-match
+    terminal step, so there is no not-found case at all."""
+    result = resolve_cfe_interpreter(explicit, environ)
+    assert isinstance(result, ResolvedCfeInterpreter)
+
+
+def test_resolved_cfe_interpreter_is_frozen():
+    """`ResolvedCfeInterpreter` is `@dataclass(frozen=True)` -- immutable
+    once constructed, matching `ResolvedCfeRoot` and every other shared
+    shape in this codebase."""
+    result = ResolvedCfeInterpreter(path=sys.executable, step=STEP_RUNNING_INTERPRETER)
     with pytest.raises(AttributeError):
         result.step = STEP_FLAG  # type: ignore[misc]
