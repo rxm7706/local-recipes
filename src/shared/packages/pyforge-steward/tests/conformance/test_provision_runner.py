@@ -1,12 +1,13 @@
-"""`run_bmad_loop_worktree` + `provision --runner bmad-loop --env` CLI
-dispatch — Story 3.2.
+"""`provision --runner bmad-loop` is RETIRED — Story 5.1 (AD-5, Marshal AD-71).
 
-The real `scripts/bmad-loop-worktree` subprocess (which itself shells out to
-`git worktree add` + `bmad-switch`) is never exercised here — `subprocess.run`
-is monkeypatched to a fast fixture, mirroring `test_deploy_build.py`'s own
-rationale. `materialize_environment`'s own subprocess call is the SECOND
-subprocess call this story composes; both are faked independently so each
-row of the I/O matrix can be driven precisely.
+Story 3.2 built `run_bmad_loop_worktree`, a subprocess wrap of the LEGACY
+`scripts/bmad-loop-worktree`. `marshal init` is a strict superset of it, so two
+stations shipped two ways to make the same thing and one was the weaker one.
+
+This file replaces that story's tests: it no longer proves the wrap works, it
+proves the wrap is GONE and that nothing provisions silently in its place. The
+old tests are deleted rather than skipped — a retirement whose tests still
+assert the old behaviour is a deprecation, not a removal.
 """
 
 from __future__ import annotations
@@ -14,10 +15,9 @@ from __future__ import annotations
 import argparse
 import subprocess
 
-import pytest
-
-from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
-from pyforge.steward.provision import ProvisionDuty, run_bmad_loop_worktree
+from pyforge.steward import provision as provision_mod
+from pyforge.steward.cli import EXIT_FAILED, main
+from pyforge.steward.provision import ProvisionDuty
 
 _PIXI_TOML = """\
 [environments]
@@ -33,179 +33,85 @@ def _write_repo_fixture(tmp_path):
     return tmp_path
 
 
-def test_run_bmad_loop_worktree_parses_the_provisioned_path(tmp_path, monkeypatch):
-    root = _write_repo_fixture(tmp_path)
-    worktree_path = str(tmp_path / "loops" / "pyforge-steward")
-
-    def _fake_run(cmd, **kwargs):  # noqa: ARG001
-        return subprocess.CompletedProcess(
-            cmd, 0, stdout=f"worktree: {worktree_path} [loop/pyforge-steward]\n", stderr=""
-        )
-
-    monkeypatch.setattr(subprocess, "run", _fake_run)
-
-    result = run_bmad_loop_worktree("pyforge-steward", root=root)
-
-    assert str(result) == worktree_path
+def _ns(**kw):
+    base = dict(runner=None, env=None, list=False, verify=False)
+    base.update(kw)
+    return argparse.Namespace(**base)
 
 
-def test_run_bmad_loop_worktree_parses_a_reused_worktree_line(tmp_path, monkeypatch):
-    root = _write_repo_fixture(tmp_path)
-    worktree_path = str(tmp_path / "loops" / "pyforge-steward")
-
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        lambda cmd, **kwargs: subprocess.CompletedProcess(  # noqa: ARG005
-            cmd, 0, stdout=f"worktree: {worktree_path} (reused)\n", stderr=""
-        ),
-    )
-
-    result = run_bmad_loop_worktree("pyforge-steward", root=root)
-
-    assert str(result) == worktree_path
+# --- the retirement itself ---------------------------------------------------
 
 
-def test_run_bmad_loop_worktree_propagates_a_nonzero_exit(tmp_path, monkeypatch):
-    root = _write_repo_fixture(tmp_path)
-
-    def _fake_run(cmd, **kwargs):  # noqa: ARG001
-        raise subprocess.CalledProcessError(
-            returncode=1, cmd=cmd, stderr="error: no such BMAD project: not-a-project"
-        )
-
-    monkeypatch.setattr(subprocess, "run", _fake_run)
-
-    with pytest.raises(subprocess.CalledProcessError):
-        run_bmad_loop_worktree("not-a-project", root=root)
+def test_the_legacy_worktree_wrapper_is_gone_not_merely_unused():
+    """`run_bmad_loop_worktree` is deleted from the module surface. Leaving it
+    importable would keep the second provisioning path one call away, which is
+    exactly the duplication Story 5.1 removes."""
+    assert not hasattr(provision_mod, "run_bmad_loop_worktree")
 
 
-def test_run_bmad_loop_worktree_raises_on_an_unexpected_stdout_shape(tmp_path, monkeypatch):
-    root = _write_repo_fixture(tmp_path)
+def test_runner_reports_and_names_marshal_init_instead_of_provisioning(monkeypatch):
+    """The AC's hard requirement: never silently provisions via the legacy
+    script. It must FAIL and name the supported path."""
+    calls = []
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: calls.append(cmd))  # noqa: ARG005
 
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 0, stdout="unexpected\n", stderr=""),  # noqa: ARG005
-    )
-
-    with pytest.raises(RuntimeError):
-        run_bmad_loop_worktree("pyforge-steward", root=root)
-
-
-def test_provision_runner_bmad_loop_via_cli_round_trips(tmp_path, monkeypatch):
-    root = _write_repo_fixture(tmp_path)
-    worktree_path = str(tmp_path / "loops" / "pyforge-steward")
-    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: root)
-
-    call_log = []
-
-    def _fake_run(cmd, **kwargs):  # noqa: ARG001
-        call_log.append(cmd)
-        if "bmad-loop-worktree" in cmd[1]:
-            return subprocess.CompletedProcess(
-                cmd, 0, stdout=f"worktree: {worktree_path} [loop/pyforge-steward]\n", stderr=""
-            )
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
-
-    monkeypatch.setattr(subprocess, "run", _fake_run)
-
-    rc = main(["provision", "--runner", "bmad-loop", "--env", "pyforge-steward"])
-
-    assert rc == EXIT_OK
-    assert len(call_log) == 2, "expected one bmad-loop-worktree call + one pixi install call"
-    assert call_log[1] == ["pixi", "install", "-e", "pyforge-steward"]
-
-
-def test_provision_runner_bmad_loop_underlying_script_failure_surfaces_clearly(tmp_path, monkeypatch):
-    root = _write_repo_fixture(tmp_path)
-    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: root)
-
-    def _fake_run(cmd, **kwargs):  # noqa: ARG001
-        raise subprocess.CalledProcessError(
-            returncode=1, cmd=cmd, stderr="error: worktree add failed:\nfatal: some git error"
-        )
-
-    monkeypatch.setattr(subprocess, "run", _fake_run)
-
-    duty = ProvisionDuty()
-    result = duty.run(
-        argparse.Namespace(runner="bmad-loop", env="pyforge-steward", list=False, verify=False)
-    )
+    result = ProvisionDuty().run(_ns(runner="bmad-loop", env="pyforge-steward"))
 
     assert result.ok is False
-    assert "fatal: some git error" in result.summary
+    assert "RETIRED" in result.summary
+    assert "marshal init pyforge-steward" in result.summary
+    assert calls == [], "the retired path still shelled out to a subprocess"
 
 
-def test_provision_runner_bmad_loop_underlying_script_failure_via_cli_exits_failed(tmp_path, monkeypatch):
-    root = _write_repo_fixture(tmp_path)
-    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: root)
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        lambda cmd, **kwargs: (_ for _ in ()).throw(  # noqa: ARG005
-            subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="boom")
-        ),
-    )
-
-    rc = main(["provision", "--runner", "bmad-loop", "--env", "pyforge-steward"])
-
-    assert rc == EXIT_FAILED
+def test_runner_names_the_slug_it_was_given():
+    """The remedy has to be copy-pasteable, so it carries the operator's own
+    slug rather than a placeholder."""
+    result = ProvisionDuty().run(_ns(runner="bmad-loop", env="pyforge-doctor"))
+    assert "marshal init pyforge-doctor" in result.summary
 
 
-def test_provision_runner_bmad_loop_env_materialization_failure_names_the_worktree(
-    tmp_path, monkeypatch
-):
-    """A failure materializing the env INSIDE an already-provisioned worktree
-    must name the worktree path, not just the failing pixi command — the
-    worktree is real, on-disk state that must never be silently unreported.
-    """
-    root = _write_repo_fixture(tmp_path)
-    worktree_path = str(tmp_path / "loops" / "pyforge-steward")
-    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: root)
-
-    def _fake_run(cmd, **kwargs):  # noqa: ARG001
-        if "bmad-loop-worktree" in cmd[1]:
-            return subprocess.CompletedProcess(
-                cmd, 0, stdout=f"worktree: {worktree_path} [loop/pyforge-steward]\n", stderr=""
-            )
-        raise subprocess.CalledProcessError(returncode=1, cmd=cmd, stderr="solve failed")
-
-    monkeypatch.setattr(subprocess, "run", _fake_run)
-
-    duty = ProvisionDuty()
-    result = duty.run(
-        argparse.Namespace(runner="bmad-loop", env="pyforge-steward", list=False, verify=False)
-    )
-
+def test_runner_without_env_reports_rather_than_crashing():
+    """`--runner` with no `--env` used to be a usage error raised before any
+    work happened. It must still report, not raise."""
+    result = ProvisionDuty().run(_ns(runner="bmad-loop"))
     assert result.ok is False
-    assert worktree_path in result.summary
-    assert "solve failed" in result.summary
+    assert "marshal init <slug>" in result.summary
 
 
-def test_provision_runner_unsupported_name_reports_a_clear_error():
-    duty = ProvisionDuty()
+def test_runner_exits_failed_through_the_cli(tmp_path, monkeypatch):
+    monkeypatch.chdir(_write_repo_fixture(tmp_path))
+    assert main(["provision", "--runner", "bmad-loop", "--env", "pyforge-steward"]) == EXIT_FAILED
 
-    result = duty.run(
-        argparse.Namespace(runner="not-bmad-loop", env="pyforge-steward", list=False, verify=False)
-    )
 
+def test_unsupported_runner_name_still_reports_a_clear_error():
+    result = ProvisionDuty().run(_ns(runner="not-bmad-loop", env="pyforge-steward"))
     assert result.ok is False
     assert "not-bmad-loop" in result.summary
 
 
-def test_provision_runner_unknown_env_name_never_reaches_the_worktree_subprocess(
-    tmp_path, monkeypatch
-):
+# --- the half that is genuinely Steward's, and must be unaffected ------------
+
+
+def test_env_only_provisioning_is_untouched(tmp_path, monkeypatch):
+    """`--env <name>` materializes a pixi environment — Steward's own job, and
+    explicitly out of scope for the retirement."""
     root = _write_repo_fixture(tmp_path)
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: root)
-    calls = []
-    monkeypatch.setattr(subprocess, "run", lambda cmd, **kwargs: calls.append(cmd))  # noqa: ARG005
+    seen = {}
+    monkeypatch.setattr(provision_mod, "materialize_environment",
+                        lambda name, cwd=None: seen.update(name=name, cwd=cwd))
 
-    duty = ProvisionDuty()
-    result = duty.run(
-        argparse.Namespace(runner="bmad-loop", env="not-a-real-env", list=False, verify=False)
-    )
+    result = ProvisionDuty().run(_ns(env="pyforge-steward"))
+
+    assert result.ok is True
+    assert seen["name"] == "pyforge-steward"
+
+
+def test_env_only_still_rejects_an_unknown_environment(tmp_path, monkeypatch):
+    root = _write_repo_fixture(tmp_path)
+    monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: root)
+
+    result = ProvisionDuty().run(_ns(env="not-a-real-env"))
 
     assert result.ok is False
-    assert calls == []
+    assert "not a valid pixi environment" in result.summary
