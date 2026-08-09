@@ -21,7 +21,7 @@ window.DASHBOARD_DATA = {
         "median": 29,
         "lo": 4,
         "hi": 227,
-        "phaseAsOf": "2026-08-09 11:14 UTC"
+        "phaseAsOf": "2026-08-09 11:19 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1955,7 +1955,7 @@ window.DASHBOARD_DATA = {
         "median": 36,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-09 11:14 UTC"
+        "phaseAsOf": "2026-08-09 11:19 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2416,10 +2416,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786273320,
-        "median": 69,
-        "lo": 42,
+        "median": 64,
+        "lo": 37,
         "hi": 360,
-        "phaseAsOf": "2026-08-09 11:14 UTC"
+        "phaseAsOf": "2026-08-09 11:19 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3318,7 +3318,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 11:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 11:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -12865,14 +12865,14 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 207,
+    "open": 208,
     "done": 20,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 2,
-      "low": 18,
+      "low": 19,
       "unspecified": 186
     },
     "projects": [
@@ -14452,7 +14452,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 5,
+        "open": 6,
         "done": 1,
         "triaged": 3,
         "entries": [
@@ -14494,6 +14494,13 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-FU-6-5",
             "title": "Follow-up review still recommended for 6-5-the-board-verdicts-come-home after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-6-6",
+            "title": "Follow-up review still recommended for 6-6-the-chain-verdicts-come-home after the damping cap was spent",
             "status": "open",
             "severity": "low",
             "triaged": false
@@ -14562,15 +14569,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "steward",
-      "story": "6.1",
-      "epoch": 1786271105,
-      "sha": "e3487fce2",
-      "subject": "Merge bmad-loop/20260809-034341-2f9c/6-1-provision-module-name into loop/pyforge-steward (bmad-loop)"
+      "station": "mason",
+      "story": "1.8",
+      "epoch": 1786272928,
+      "sha": "e0ba45630",
+      "subject": "Merge bmad-loop/20260809-034344-8063/1-8-mason-doctor into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 11:14 UTC",
-    "generatedEpoch": 1786274089
+    "generatedAt": "2026-08-09 11:19 UTC",
+    "generatedEpoch": 1786274345
   },
   "storySpecs": [
     {
