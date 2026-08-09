@@ -430,3 +430,100 @@ def test_loading_generate_does_not_leak_sys_path_entries(tmp_path: Path) -> None
 
     assert mod.X == 1  # the module still ran its own body
     assert sys.path == before
+
+
+# --- adversarial-review regressions (2026-08-09, third pass) -----------------
+
+
+def test_a_structurally_broken_projects_key_warns_instead_of_claiming_green(
+    tmp_path: Path,
+) -> None:
+    """`{"projects": null}` is not an empty board -- it is a board that could
+    not be read. Coercing it to `{}` made this gather return a confident
+    "the committed data.js matches the feeds" OK over a board it never looked
+    at; the original script crashed on the same input. Trading a loud crash
+    for a false green is the worst outcome available to a detector whose whole
+    job is catching a board that lies."""
+    _seed(tmp_path)
+    data_js = tmp_path / "docs" / "dashboard" / "data.js"
+    data_js.parent.mkdir(parents=True, exist_ok=True)
+    data_js.write_text('window.DASHBOARD_DATA = {"projects": null};\n', encoding="utf-8")
+
+    findings = board.gather_dashboard_drift(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.WARN, (
+        f"claimed green over an unreadable board: {findings[0]}"
+    )
+    assert "cannot read the board" in findings[0].message
+
+
+@pytest.mark.parametrize("payload", ['["a"]', '"marshal"', "42"])
+def test_every_non_mapping_projects_shape_warns(tmp_path: Path, payload: str) -> None:
+    _seed(tmp_path)
+    data_js = tmp_path / "docs" / "dashboard" / "data.js"
+    data_js.parent.mkdir(parents=True, exist_ok=True)
+    data_js.write_text(
+        f'window.DASHBOARD_DATA = {{"projects": {payload}}};\n', encoding="utf-8"
+    )
+
+    findings = board.gather_dashboard_drift(tmp_path)
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+
+
+def test_an_absent_projects_key_is_still_an_empty_board_not_an_error(
+    tmp_path: Path,
+) -> None:
+    """The distinction the test above turns on: ABSENT is the original's own
+    `data.get("projects", {})` empty-board reading and must stay OK."""
+    _seed(tmp_path)
+    data_js = tmp_path / "docs" / "dashboard" / "data.js"
+    data_js.parent.mkdir(parents=True, exist_ok=True)
+    data_js.write_text('window.DASHBOARD_DATA = {"generated": "x"};\n', encoding="utf-8")
+
+    findings = board.gather_dashboard_drift(tmp_path)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert findings[0].evidence["projects"] == 0
+
+
+def test_a_generate_py_that_exits_at_import_degrades_to_warn(tmp_path: Path) -> None:
+    """`sys.exit()` raises SystemExit, a BaseException -- which
+    `degrade_on_exception` documents that it deliberately never catches. The
+    loader therefore has to convert it, exactly as `_load_data_js` already
+    does, or it escapes the gather and breaks the "never a raised exception"
+    contract. Reproduced live before the fix."""
+    gen = tmp_path / "docs" / "dashboard" / "generate.py"
+    gen.parent.mkdir(parents=True, exist_ok=True)
+    gen.write_text("import sys\nsys.exit('boom')\n", encoding="utf-8")
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {})
+
+    findings = board.gather_dashboard_drift(tmp_path)  # must not raise
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert "sys.exit" in findings[0].message
+
+
+def test_a_failed_generate_py_import_leaves_no_module_and_no_path_entry(
+    tmp_path: Path,
+) -> None:
+    """The `sys.path`/`sys.modules` hygiene the two loaders now share: neither
+    a half-initialised module nor a foreign `scripts/` entry may survive a
+    failed load."""
+    import sys as _sys
+
+    gen = tmp_path / "docs" / "dashboard" / "generate.py"
+    gen.parent.mkdir(parents=True, exist_ok=True)
+    gen.write_text(
+        "import sys\nsys.path.insert(0, '/tmp/EVIL-GENERATE-PROBE')\n"
+        "raise RuntimeError('boom')\n",
+        encoding="utf-8",
+    )
+    before = list(_sys.path)
+
+    with pytest.raises(RuntimeError):
+        board._load_dashboard_generate(tmp_path)
+
+    assert _sys.path == before
+    assert "_doctor_board_dashboard_generate" not in _sys.modules

@@ -67,11 +67,11 @@ from dataclasses import dataclass
 from ..models import DoctorStatus, Finding, Source
 
 __all__ = (
-    "SourceRegistration",
     "REGISTRY",
+    "SourceRegistration",
+    "degrade_on_exception",
     "list_sources",
     "scope_for",
-    "degrade_on_exception",
 )
 
 _VALID_SCOPES = frozenset({"repo", "runtime"})
@@ -235,7 +235,13 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         scope="repo",
         subject_station="marshal",
         owning_station="doctor",
-    ),  # Story 6.5 -- ported from docs/dashboard/check_layout.py
+    ),  # Story 6.5 -- ported from docs/dashboard/check_layout.py; scope stays
+    # "repo" per that script's own declaration -- preserve, don't redesign --
+    # even though gather_check_layout binds a loopback socket and launches
+    # chromium, which is not what this field's "runs anywhere" gloss implies.
+    # Nothing dispatches it yet; the choice has to be revisited when Story 6.9
+    # wires it, because `doctor check` reads scope_for() live and holds a 5s
+    # NFR-4 budget a browser sweep cannot meet (recorded in deferred-work.md).
 )
 
 

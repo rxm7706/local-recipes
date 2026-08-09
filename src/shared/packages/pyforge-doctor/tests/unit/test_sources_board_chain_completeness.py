@@ -460,3 +460,135 @@ def test_scalar_decoding_does_not_over_strip_an_ordinary_value() -> None:
     assert board._scalar("issue#12") == "issue#12"  # no space -> not a comment
     assert board._scalar("it's") == "it's"  # unbalanced quote left alone
     assert board._scalar("") == ""
+
+
+# --- adversarial-review regressions (2026-08-09, third pass) -----------------
+#
+# Every test below reproduces a defect a review pass found in `_board_lines`
+# and `_scalar`, each confirmed by reverting the fix and watching the test
+# fail. `_board_lines` runs OUTSIDE `_check_chain_completeness`'s own
+# per-project try, so anything it raises escapes to the whole-gather
+# `degrade_on_exception` and replaces EVERY project's real findings with one
+# WARN -- turning exit 2 into exit 0. That is the shared consequence.
+
+
+def _one_real_fail(target: Path) -> None:
+    """A well-formed project carrying a genuine `spec-not-decomposed` FAIL --
+    the finding each masking test below asserts does NOT disappear."""
+    pa = _pa(target, "pyforge-good")
+    _write_spec(pa / "specs" / "spec-orphan" / "SPEC.md", "draft")
+    _write_epics_md(pa / "epics.md", ["1.1"])
+
+
+def test_truthy_non_iterable_stories_does_not_hide_another_projects_finding(
+    tmp_path: Path,
+) -> None:
+    """`{"stories": 7}` -- truthy, so `or ()` does not catch it, and not a
+    list, so it raised `TypeError: 'int' object is not iterable` out of
+    `_board_lines`. Reproduced live: the well-formed project's real FAIL
+    vanished behind one `chain-completeness` WARN."""
+    _one_real_fail(tmp_path)
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {"marshal": {"epics": [{"stories": 7}]}},
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "spec-not-decomposed" in {f.check for f in findings}, (
+        f"a malformed board line masked a real finding: {[f.check for f in findings]}"
+    )
+    assert any(f.status is DoctorStatus.FAIL for f in findings)
+
+
+def test_stories_as_a_mapping_does_not_hide_another_projects_finding(
+    tmp_path: Path,
+) -> None:
+    """The same class one shape over: a mapping iterates to its KEYS, so this
+    reached `len(s) > 1 and s[1]` with a string and raised there instead."""
+    _one_real_fail(tmp_path)
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {"marshal": {"epics": [{"stories": {"1.1": "done"}}]}},
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "spec-not-decomposed" in {f.check for f in findings}, (
+        f"a malformed board line masked a real finding: {[f.check for f in findings]}"
+    )
+
+
+def test_one_malformed_station_does_not_drop_a_well_formed_stations_board_line(
+    tmp_path: Path,
+) -> None:
+    """Per-STATION isolation, not merely per-project: a broken `marshal` line
+    must not cost `good` its INV-C comparison."""
+    pa = _pa(tmp_path, "pyforge-good")
+    _write_epics_md(pa / "epics.md", ["1.1", "1.2"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done", "1-2-b": "todo"})
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {
+            "marshal": {"epics": 7},  # malformed
+            "good": {"epics": [{"stories": [["1.1", "done"]]}]},  # 1 story vs 2 rows
+        },
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    inv_c = [f for f in findings if f.check == "board-diverges-from-ledger"]
+    assert len(inv_c) == 1, f"INV-C was skipped for the healthy station: {findings}"
+    assert inv_c[0].evidence["status"] == "board 1/1 vs ledger 1/2"
+
+
+def test_empty_epics_list_is_skipped_exactly_as_the_original_skips_it(
+    tmp_path: Path,
+) -> None:
+    """The original guards with `if not epics: continue`, so a well-formed
+    `"epics": []` is a station it deliberately does not compare. Recording
+    (0, 0) for it instead fired a false `board-diverges-from-ledger` -- a
+    divergence on input the original handled cleanly, not one where it
+    crashed."""
+    pa = _pa(tmp_path, "pyforge-good")
+    _write_epics_md(pa / "epics.md", ["1.1", "1.2"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done", "1-2-b": "todo"})
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {"good": {"epics": []}})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "board-diverges-from-ledger" not in {f.check for f in findings}, (
+        f"an empty board line produced a false INV-C FAIL: {findings}"
+    )
+
+
+def test_an_empty_story_slot_still_counts_toward_the_boards_total(
+    tmp_path: Path,
+) -> None:
+    """INV-C is a COUNT comparison, and the original counts an empty `[]`
+    slot into the total (`len(s) > 1` already guards the done-count).
+    Filtering it out shrank the denominator until a 3-slot board read as
+    matching a 2-row ledger -- a false NEGATIVE."""
+    pa = _pa(tmp_path, "pyforge-good")
+    _write_epics_md(pa / "epics.md", ["1.1", "1.2"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done", "1-2-b": "todo"})
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {"good": {"epics": [{"stories": [["1.1", "done"], ["1.2", "todo"], []]}]}},
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    inv_c = [f for f in findings if f.check == "board-diverges-from-ledger"]
+    assert len(inv_c) == 1, f"INV-C missed a real 3-vs-2 divergence: {findings}"
+    assert inv_c[0].evidence["status"] == "board 1/3 vs ledger 1/2"
+
+
+def test_scalar_keeps_a_hash_that_lives_inside_quotes() -> None:
+    """YAML treats `#` inside quotes as data. Stripping the comment BEFORE the
+    quotes truncated `"a # b"` to `"a` -- a mis-decode of exactly the kind
+    `_scalar` exists to prevent, with a stray quote left on the front."""
+    assert board._scalar('"a # b"') == "a # b"
+    assert board._scalar("'draft # x'") == "draft # x"
+    assert board._scalar("'draft' # trailing note") == "draft"
+    assert board._scalar('"draft"  # trailing note') == "draft"

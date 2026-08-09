@@ -148,13 +148,23 @@ def _scalar(raw: str) -> str:
     hazard for ``epics_role: "canonical"``, where the miss skips INV-B/INV-D
     entirely. Latent today (no consumed file is quoted) but one line to close,
     and this repo demonstrably writes quoted statuses elsewhere.
+
+    A QUOTED value is decoded first and its ``#`` left alone, because that is
+    what YAML does: inside quotes ``#`` is data, not a comment. Stripping the
+    comment first (as the first cut of this helper did) truncated
+    ``"a # b"`` to ``"a`` -- a mis-decode of exactly the kind this helper
+    exists to prevent, with a stray quote left on the front.
     """
     value = raw.strip()
+    if value[:1] in ('"', "'"):
+        quote = value[0]
+        end = value.find(quote, 1)
+        if end != -1:
+            return value[1:end]  # anything past the closing quote is a comment
+        return value  # unbalanced quote -- left alone, as YAML would reject it
     head, hash_, _ = value.partition(" #")
     if hash_:
         value = head.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        value = value[1:-1]
     return value
 
 
@@ -251,29 +261,50 @@ def _board_lines(data_js: Path) -> dict[str, tuple[int, int]] | None:
         return None
     out: dict[str, tuple[int, int]] = {}
     for key, proj in projects.items():
-        if not isinstance(proj, dict):
-            continue  # a malformed data.js entry for ONE station must not
-            # take down every other station's INV-C comparison
-        epics = proj.get("epics")
-        if not isinstance(epics, (list, tuple)):
-            continue  # ditto: `epics` as a string/mapping is not an epic list
-        stories = [
-            s
-            for e in epics
-            # This guard MUST precede the second `for`, not trail it: a
-            # comprehension evaluates the inner iterable BEFORE any trailing
-            # `if`, so `e.get(...)` runs on a non-dict `e` regardless. As a
-            # trailing filter it silently did nothing -- and because `board`
-            # is computed OUTSIDE the per-project try, the resulting
-            # AttributeError escaped to the whole-gather `degrade_on_exception`
-            # and collapsed EVERY project's real FAIL into one vacuous WARN
-            # (exit 0). Adversarial-review regression, reproduced live.
-            if isinstance(e, dict)
-            for s in (e.get("stories") or [])
-            if isinstance(s, (list, tuple)) and s
-        ]
-        done = sum(1 for s in stories if len(s) > 1 and s[1] == "done")
-        out[key] = (done, len(stories))
+        # PER-STATION isolation, as a try rather than a growing wall of
+        # isinstance guards. `board` is computed OUTSIDE `_check_chain_
+        # completeness`'s own per-project try, so ANY shape this function
+        # fails to anticipate escapes all the way to the whole-gather
+        # `degrade_on_exception` and collapses EVERY project's real FAIL into
+        # one vacuous WARN (exit 2 -> exit 0). Two review passes each closed
+        # one more nested access by hand (`projects` a list; a non-dict epic)
+        # and each time a third shape was still open -- `{"stories": 7}`, a
+        # TRUTHY non-iterable, was reproduced live doing exactly that. Guard
+        # the whole per-station read once: an unreadable station line is
+        # simply absent from the result, which is already how INV-C spells
+        # "cannot compare this station" (`station in board`).
+        try:
+            if not isinstance(proj, dict):
+                continue
+            epics = proj.get("epics")
+            # `if not epics` FIRST, mirroring the original's own guard: an
+            # empty-but-well-formed `"epics": []` is a station the original
+            # deliberately SKIPS. Letting it through recorded (0, 0) and fired
+            # a false INV-C `board-diverges-from-ledger` -- a divergence on
+            # input the original handled cleanly, not one where it crashed.
+            if not epics or not isinstance(epics, (list, tuple)):
+                continue
+            stories = [
+                s
+                # This guard MUST precede the second `for`, not trail it: a
+                # comprehension evaluates the inner iterable BEFORE any
+                # trailing `if`, so `e.get(...)` runs on a non-dict `e`
+                # regardless.
+                for e in epics
+                if isinstance(e, dict)
+                for s in (e.get("stories") or ())
+                # NO `and s`: an EMPTY story slot `[]` counts toward the total
+                # in the original (`len(s) > 1` already guards the done-count),
+                # and dropping it shrank INV-C's denominator until a 3-slot
+                # board read as matching a 2-row ledger -- a false NEGATIVE in
+                # the check, reproduced live.
+                if isinstance(s, (list, tuple))
+            ]
+            done = sum(1 for s in stories if len(s) > 1 and s[1] == "done")
+            out[key] = (done, len(stories))
+        except Exception:  # noqa: BLE001, S112 -- see the block comment above;
+            # one station's malformed board line must not take down the rest.
+            continue
     return out
 
 
@@ -493,41 +524,70 @@ _DRIFT_STORY_HEADING = re.compile(r"^###\s+Story\s+([0-9]+\.[0-9]+[a-z]?)\s*[:�
 _DRIFT_DONE = frozenset({"done"})
 
 
-def _load_dashboard_generate(target: Path):
-    """Import ``target/docs/dashboard/generate.py`` so its parsers are REUSED,
-    never reimplemented -- the same ``importlib.util.spec_from_file_location``
-    dynamic load ``dashboard_drift_check.py``'s own ``_load_generate`` already
-    uses, resolved against ``target`` rather than a hardcoded path (Boundaries).
-    ``parse_sprint_status``/``dashboard_id_to_status``/``PROJECT_SOURCES`` etc.
-    already encode the feed-key -> board-id mapping; duplicating them here
-    would let the two drift, which is the class of bug the original script --
-    and this port -- exist to catch.
+def _load_foreign_module(path: Path, mod_name: str):
+    """``exec_module`` an arbitrary ``target``-relative Python file and return
+    it -- the shared body behind ``_load_dashboard_generate`` and
+    ``_load_check_layout``, which is the same
+    ``importlib.util.spec_from_file_location`` dynamic load the two original
+    scripts already use (Boundaries: preserve, don't redesign).
+
+    ONE helper rather than two near-copies on purpose: the two loaders had
+    already drifted -- only one of them had the ``sys.path`` snapshot and the
+    ``sys.modules`` cleanup below -- and a hardening applied to one but not
+    the other is the exact defect this consolidation removes.
+
+    Three things this adds over a bare ``exec_module``, each guarding the
+    Doctor PROCESS from a file it does not own:
+
+    * ``sys.path`` is snapshotted and restored. ``generate.py`` does an
+      unguarded ``sys.path.insert(0, REPO_ROOT/"scripts")`` at import time --
+      harmless in the one-shot script this was ported from, but here it
+      permanently prepends an ARBITRARY ``target``'s ``scripts/`` to Doctor's
+      import path and grows it on every call, so a later import inside Doctor
+      could resolve against a foreign tree.
+    * A half-initialised module is not left behind in ``sys.modules`` when
+      ``exec_module`` raises.
+    * ``SystemExit`` is converted to a plain ``Exception``. A foreign file is
+      free to call ``sys.exit()`` at import; ``SystemExit`` is a
+      ``BaseException``, so ``degrade_on_exception`` -- which documents that
+      it deliberately never catches one -- would let it escape the gather and
+      break both gathers' own "never a raised exception" contract. This is
+      the same conversion ``_load_data_js`` already makes for the same reason;
+      the loader had been left out. ``KeyboardInterrupt`` is NOT converted.
     """
-    path = target / "docs" / "dashboard" / "generate.py"
     if not path.is_file():
         raise FileNotFoundError(f"{path} not found")
-    spec = importlib.util.spec_from_file_location(
-        "_doctor_board_dashboard_generate", path
-    )
+    spec = importlib.util.spec_from_file_location(mod_name, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"cannot load a module spec for {path}")
     mod = importlib.util.module_from_spec(spec)
-    sys.modules["_doctor_board_dashboard_generate"] = mod
-    # generate.py does an unguarded `sys.path.insert(0, REPO_ROOT/"scripts")`
-    # at import time. Harmless in the one-shot script this was ported from;
-    # here it permanently prepends an ARBITRARY `target`'s scripts/ to the
-    # Doctor process's import path (and grows it on every call), so a later
-    # import inside Doctor could resolve against a foreign tree. Snapshot and
-    # restore -- the module object we return is unaffected.
+    sys.modules[mod_name] = mod
     saved_path = list(sys.path)
     try:
         spec.loader.exec_module(mod)
+    except SystemExit as exc:
+        sys.modules.pop(mod_name, None)
+        raise RuntimeError(f"{path} called sys.exit({exc.code!r}) at import") from exc
     except BaseException:
-        sys.modules.pop("_doctor_board_dashboard_generate", None)
+        sys.modules.pop(mod_name, None)
         raise
     finally:
         sys.path[:] = saved_path
     return mod
+
+
+def _load_dashboard_generate(target: Path):
+    """Import ``target/docs/dashboard/generate.py`` so its parsers are REUSED,
+    never reimplemented (see ``_load_foreign_module`` for the loading
+    mechanics). ``parse_sprint_status``/``dashboard_id_to_status``/
+    ``PROJECT_SOURCES`` etc. already encode the feed-key -> board-id mapping;
+    duplicating them here would let the two drift, which is the class of bug
+    the original script -- and this port -- exist to catch.
+    """
+    return _load_foreign_module(
+        target / "docs" / "dashboard" / "generate.py",
+        "_doctor_board_dashboard_generate",
+    )
 
 
 def _load_data_js(target: Path) -> dict:
@@ -560,17 +620,38 @@ def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
     return out
 
 
-def _check_dashboard_drift(target: Path, gen, data: dict) -> list[dict]:
+def _board_projects(data: dict, target: Path) -> dict:
+    """``data.js``'s ``projects`` mapping, or a raised ``ValueError`` when the
+    file does not actually carry one.
+
+    An ABSENT ``projects`` key is an empty board -- the original script's
+    ``data.get("projects", {})`` reads it exactly that way, and an empty board
+    legitimately produces no findings. A key that is PRESENT but not a mapping
+    (``null``, a list, a string) is something else entirely: the original
+    crashed on it, and coercing it to ``{}`` instead made
+    ``gather_dashboard_drift`` return a confident OK -- *"the committed data.js
+    matches the feeds"* -- over a board it had never read. Trading a loud crash
+    for a false green is the single worst outcome available to a detector whose
+    whole purpose is catching a board that lies, so this raises instead:
+    ``gather_dashboard_drift``'s own ``degrade_on_exception`` turns it into the
+    honest WARN, exactly as it already does for an unparseable ``data.js``.
+    """
+    if "projects" not in data:
+        return {}
+    projects = data["projects"]
+    if not isinstance(projects, dict):
+        raise ValueError(
+            f"cannot read the board in {target / 'docs' / 'dashboard' / 'data.js'}: "
+            f"'projects' is {type(projects).__name__}, not a mapping"
+        )
+    return projects
+
+
+def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
     """Port of ``dashboard_drift_check.py``'s own ``main()`` body -- the three
     checks (tracked twin vs. Tier-3 feed, committed baseline vs. feed,
     epics.md vs. board), producing structured dicts instead of printed lines.
     ``kind``/message text is unchanged from the original."""
-    # `.get(k, default)` does NOT coerce a present-but-null key, so a
-    # `{"projects": null}` data.js yielded None and raised AttributeError
-    # from OUTSIDE the per-station try (mirrors _board_lines' own `or {}`).
-    projects = data.get("projects") or {}
-    if not isinstance(projects, dict):
-        projects = {}
     findings: list[dict] = []
 
     for key, proj in sorted(projects.items()):
@@ -735,13 +816,12 @@ def gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
 def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
     gen = _load_dashboard_generate(target)
     data = _load_data_js(target)
-    # `.get(k, default)` does NOT coerce a present-but-null key, so a
-    # `{"projects": null}` data.js yielded None and raised AttributeError
-    # from OUTSIDE the per-station try (mirrors _board_lines' own `or {}`).
-    projects = data.get("projects") or {}
-    if not isinstance(projects, dict):
-        projects = {}
-    raw = _check_dashboard_drift(target, gen, data)
+    # Derived ONCE and passed down. Deriving it a second time inside
+    # `_check_dashboard_drift` meant the count reported in the OK finding's
+    # evidence and the set actually scanned could silently disagree the moment
+    # either copy was edited.
+    projects = _board_projects(data, target)
+    raw = _check_dashboard_drift(target, gen, projects)
     if not raw:
         return (
             Finding(
@@ -782,25 +862,35 @@ _LAYOUT_CHECK = "console-bar-layout"
 
 
 def _load_check_layout(target: Path):
-    """Dynamically import ``target/docs/dashboard/check_layout.py`` -- same
-    technique as ``_load_dashboard_generate`` above. Importing it does NOT
-    require ``playwright``: that script's own ``from playwright.sync_api
-    import sync_playwright`` sits inside its ``main()``, guarded by its own
-    try/except, never at module level -- so this module can load ``check()``,
-    ``_rows()``, ``_serve()`` and the probe constants in an environment where
-    ``playwright`` is not installed at all (this package's own pixi env)."""
-    path = target / "docs" / "dashboard" / "check_layout.py"
-    if not path.is_file():
-        raise FileNotFoundError(f"{path} not found")
-    spec = importlib.util.spec_from_file_location(
-        "_doctor_board_check_layout", path
+    """Dynamically import ``target/docs/dashboard/check_layout.py`` -- through
+    the SAME ``_load_foreign_module`` as ``_load_dashboard_generate``, so the
+    ``sys.path``/``sys.modules``/``SystemExit`` guards documented there apply
+    to both (they had drifted: only the sibling carried them).
+
+    Importing it does NOT require ``playwright``: that script's own ``from
+    playwright.sync_api import sync_playwright`` sits inside its ``main()``,
+    guarded by its own try/except, never at module level -- so this module can
+    load ``check()``, ``_rows()``, ``_serve()`` and the probe constants in an
+    environment where ``playwright`` is not installed at all (this package's
+    own pixi env)."""
+    return _load_foreign_module(
+        target / "docs" / "dashboard" / "check_layout.py",
+        "_doctor_board_check_layout",
     )
-    if spec is None or spec.loader is None:
-        raise ImportError(f"cannot load a module spec for {path}")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["_doctor_board_check_layout"] = mod
-    spec.loader.exec_module(mod)
-    return mod
+
+
+def _suppress_close(close) -> None:
+    """Run a cleanup callable, swallowing anything it raises.
+
+    Used only in ``_run_check_layout``'s ``finally`` blocks: a browser or
+    socket that fails to shut down is not a layout verdict, and letting it
+    propagate replaced every already-collected finding with one vacuous WARN.
+    """
+    try:
+        close()
+    except Exception:  # noqa: BLE001, S110 -- see the docstring; a failed
+        # teardown must never be able to change what this gather reports.
+        pass
 
 
 def _layout_warn(message: str, target: Path) -> tuple[Finding, ...]:
@@ -826,9 +916,12 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
     never green"). A missing ``check_layout.py``, a missing ``data.js``, an
     unimportable ``playwright``, no launchable chromium, or a bar that never
     rendered at any width all degrade to exactly ONE WARN ``Finding`` --
-    never a FAIL, never a raised exception. ``playwright`` stays an optional,
-    try/except-guarded import here: this package's pixi env does not install
-    it (Boundaries).
+    never a FAIL, never a raised exception. An INDIVIDUAL width that could not
+    be measured while others were adds one WARN ``Finding`` of its own and
+    leaves the measured widths' real verdict intact (see ``_run_check_layout``
+    for why cannot-measure must not be reported as a layout FAIL).
+    ``playwright`` stays an optional, try/except-guarded import here: this
+    package's pixi env does not install it (Boundaries).
     """
     try:
         clm = _load_check_layout(target)
@@ -874,10 +967,25 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
     font-pressure combination the original script defines, and hand each
     width's probe result to the reused ``check()``. Every explicit ``exit 2``
     branch the original had (no usable chromium, the bar never rendering)
-    becomes a WARN ``Finding`` here instead of a process exit."""
+    becomes a WARN ``Finding`` here instead of a process exit.
+
+    "COULD NOT MEASURE" AND "MEASURED, AND IT IS BROKEN" ARE DIFFERENT
+    VERDICTS, and this function keeps them apart in two separate lists. A
+    ``networkidle`` goto with a 20s timeout makes a single width's flake the
+    EXPECTED failure mode, and ``exit_code_for`` maps FAIL to exit 2 while WARN
+    leaves it at 0 -- so folding an unmeasurable width in with the real layout
+    findings reported a transient browser hiccup as a broken console bar and
+    turned the gate red on a clean board (reproduced live). That also
+    contradicts this module's own two siblings, which both spell
+    cannot-evaluate ``warn`` (``chain-completeness-unevaluable``,
+    ``dashboard-drift-unevaluable``). The ``.cbstatus not found`` line stays a
+    FAIL, because that one IS the original's own finding text for a bar that
+    loaded and did not render.
+    """
     httpd, port = clm._serve(clm.HERE)
     url = f"http://127.0.0.1:{port}/index.html"
     raw_findings: list[str] = []
+    unmeasured: list[str] = []
     measured = 0
     try:
         with sync_playwright() as p:
@@ -893,13 +1001,11 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
                     )
             try:
                 for width in (*clm.WIDE, *clm.NARROW):
-                    # Per-width isolation: a `networkidle` goto with a 20s
-                    # timeout makes a single width's flake the EXPECTED failure
-                    # mode. Without this guard one late failure unwound the
-                    # whole loop and discarded every already-measured FAIL,
-                    # reporting a genuinely broken bar as "could not evaluate"
-                    # -- the same finding-masking class fixed per-project in
-                    # _check_chain_completeness.
+                    # Per-width isolation: without this guard one late failure
+                    # unwound the whole loop and discarded every
+                    # already-measured FAIL, reporting a genuinely broken bar
+                    # as "could not evaluate" -- the same finding-masking class
+                    # fixed per-project in _check_chain_completeness.
                     try:
                         page = browser.new_page(viewport={"width": width, "height": 900})
                         try:
@@ -920,46 +1026,71 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
                                 raw_findings += clm.check(width, m, name)
                         finally:
                             page.close()
-                    except Exception as exc:  # noqa: BLE001, PERF203
-                        raw_findings.append(
+                    except Exception as exc:  # noqa: BLE001
+                        unmeasured.append(
                             f"w={width}: could not be measured — "
                             f"{exc.__class__.__name__}: {exc}"
                         )
                         continue
             finally:
-                browser.close()
+                # Cleanup must not be able to DESTROY the verdict. Raising out
+                # of these two `finally` blocks put every already-collected
+                # FAIL back behind one whole-gather WARN -- the masking hole
+                # the per-width guard above closes, reopened one frame up, and
+                # reproduced live with a browser that dies on close.
+                _suppress_close(browser.close)
     finally:
         # shutdown() only stops serve_forever's loop; without server_close()
         # the listening socket stays open, leaking one fd (and one held
         # ephemeral port) per call. Harmless in the one-shot CLI this was
         # ported from, unbounded in a long-lived library caller.
-        httpd.shutdown()
-        httpd.server_close()
+        _suppress_close(httpd.shutdown)
+        _suppress_close(httpd.server_close)
+
+    warns = tuple(_layout_warn(text, target)[0] for text in unmeasured)
 
     if not measured:
-        return _layout_warn("the bar never rendered at any width", target)
+        # Nothing measured anywhere is the original's own UNKNOWN (its
+        # `exit 2`), so WARN is right -- but the collected reasons ARE the
+        # diagnosis. Returning only "the bar never rendered at any width"
+        # discarded every one of them AND asserted a cause never observed:
+        # when the page failed to LOAD, whether the bar would have rendered is
+        # exactly what is unknown.
+        detail = "; ".join([*unmeasured, *raw_findings]) or (
+            "the bar never rendered at any width"
+        )
+        return _layout_warn(detail, target)
 
     if not raw_findings:
+        message = (
+            f"console bar edges held, no overlap — {measured} measurement(s): "
+            f"{len(clm.WIDE) + len(clm.NARROW)} width(s) x "
+            f"{len(clm.PRESSURES)} font-pressure step(s)"
+        )
+        if unmeasured:
+            # Never claim a clean grid that was not measured (this gather's
+            # own headline contract).
+            message += f"; {len(unmeasured)} width(s) could not be measured"
         return (
+            *warns,
             Finding(
                 source=Source.CHECK_LAYOUT,
                 check=_LAYOUT_CHECK,
                 status=DoctorStatus.OK,
-                message=(
-                    f"console bar edges held, no overlap — {measured} measurement(s): "
-                    f"{len(clm.WIDE) + len(clm.NARROW)} width(s) x "
-                    f"{len(clm.PRESSURES)} font-pressure step(s)"
-                ),
+                message=message,
                 evidence={"measured": measured},
             ),
         )
-    return tuple(
-        Finding(
-            source=Source.CHECK_LAYOUT,
-            check=_LAYOUT_CHECK,
-            status=DoctorStatus.FAIL,
-            message=finding_text,
-            evidence={"measured": measured},
-        )
-        for finding_text in raw_findings
+    return (
+        *warns,
+        *(
+            Finding(
+                source=Source.CHECK_LAYOUT,
+                check=_LAYOUT_CHECK,
+                status=DoctorStatus.FAIL,
+                message=finding_text,
+                evidence={"measured": measured},
+            )
+            for finding_text in raw_findings
+        ),
     )

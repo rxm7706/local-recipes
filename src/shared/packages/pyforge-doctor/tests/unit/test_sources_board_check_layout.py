@@ -28,6 +28,7 @@ from pathlib import Path
 import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import board
+from pyforge.doctor.verdict import exit_code_for
 
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _HAVE_REAL_DASHBOARD = (_REPO_ROOT / "docs" / "dashboard" / "check_layout.py").is_file()
@@ -271,3 +272,289 @@ def test_gather_check_layout_end_to_end_smoke() -> None:
     assert all(
         f.status in (DoctorStatus.OK, DoctorStatus.FAIL, DoctorStatus.WARN) for f in findings
     )
+
+
+# --- _run_check_layout, driven through its own seam --------------------------
+#
+# `_run_check_layout(target, clm, sync_playwright)` already takes both the
+# layout module and the browser factory as PARAMETERS, so the orchestration --
+# the only genuinely new code in this port -- is fully drivable with stubs and
+# no `playwright` installed. A previous review pass deferred this coverage as
+# needing "a fake-browser seam or an opt-in CI lane"; the seam was already
+# there. Two review passes found four real defects living in exactly this
+# uncovered region, every one of them reproduced through the stubs below.
+
+
+class _FakePage:
+    def __init__(self, width: int, script: _Script) -> None:
+        self.width, self.script = width, script
+
+    def goto(self, *_a, **_k) -> None:
+        self.script.on_goto(self.width)
+
+    def wait_for_timeout(self, *_a) -> None:
+        pass
+
+    def evaluate(self, _code, *_a):
+        return self.script.probe(self.width)
+
+    def close(self) -> None:
+        pass
+
+
+class _FakeBrowser:
+    def __init__(self, script: _Script) -> None:
+        self.script = script
+
+    def new_page(self, viewport):
+        return _FakePage(viewport["width"], self.script)
+
+    def close(self) -> None:
+        self.script.on_close()
+
+
+class _FakeChromium:
+    def __init__(self, script: _Script) -> None:
+        self.script = script
+
+    def launch(self, **_k):
+        if self.script.no_browser:
+            raise RuntimeError("no chromium here")
+        return _FakeBrowser(self.script)
+
+
+class _FakePlaywright:
+    def __init__(self, script: _Script) -> None:
+        self.chromium = _FakeChromium(script)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_a):
+        return False
+
+
+class _Script:
+    """A scripted browser: which widths flake, whether close() blows up."""
+
+    def __init__(
+        self,
+        *,
+        flaky_widths: tuple[int, ...] = (),
+        blank_widths: tuple[int, ...] = (),
+        close_raises: bool = False,
+        no_browser: bool = False,
+    ) -> None:
+        self.flaky_widths = flaky_widths
+        self.blank_widths = blank_widths
+        self.close_raises = close_raises
+        self.no_browser = no_browser
+
+    def on_goto(self, width: int) -> None:
+        if width in self.flaky_widths:
+            raise TimeoutError("Timeout 20000ms exceeded")
+
+    def probe(self, width: int):
+        return None if width in self.blank_widths else {"measured": True}
+
+    def on_close(self) -> None:
+        if self.close_raises:
+            raise RuntimeError("browser process died on close")
+
+    def __call__(self):
+        return _FakePlaywright(self)
+
+
+class _FakeHttpd:
+    def __init__(self) -> None:
+        self.shutdown_called = self.closed = False
+
+    def shutdown(self) -> None:
+        self.shutdown_called = True
+
+    def server_close(self) -> None:
+        self.closed = True
+
+
+class _StubLayoutModule:
+    """Stands in for the dynamically loaded `check_layout.py`, exposing only
+    the attribute surface `_run_check_layout` actually consumes."""
+
+    WIDE = (1400, 1100)
+    NARROW = (700,)
+    PRESSURES = (11, 13)
+    APPLY = PROBE = "() => null"
+    HERE = Path(".")
+
+    def __init__(self, findings: tuple[str, ...] = ()) -> None:
+        self._findings = findings
+        self.httpd = _FakeHttpd()
+
+    def _serve(self, _here):
+        return self.httpd, 9999
+
+    def check(self, _width, _m, _name) -> list[str]:
+        return list(self._findings)
+
+
+def _run(clm: _StubLayoutModule, script: _Script):
+    """Through `degrade_on_exception`, exactly as `gather_check_layout` calls
+    it -- so a test can tell "returned a WARN" from "raised and got wrapped"."""
+    return board.degrade_on_exception(
+        Source.CHECK_LAYOUT,
+        "console-bar-layout",
+        lambda: board._run_check_layout(Path("/t"), clm, script),
+    )
+
+
+def test_a_clean_sweep_reports_one_ok_over_the_full_grid() -> None:
+    findings = _run(_StubLayoutModule(), _Script())
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert "6 measurement(s)" in findings[0].message  # 3 widths x 2 pressures
+    assert findings[0].evidence["measured"] == 6
+
+
+def test_a_real_layout_defect_reports_fail_per_measurement() -> None:
+    findings = _run(_StubLayoutModule(("overlap: chip A over chip B",)), _Script())
+
+    assert {f.status for f in findings} == {DoctorStatus.FAIL}
+    assert all("overlap" in f.message for f in findings)
+
+
+def test_one_flaky_width_warns_and_does_not_red_a_clean_board() -> None:
+    """`exit_code_for` maps FAIL to exit 2 and WARN to 0. Reporting a
+    `networkidle` timeout -- the EXPECTED failure mode at a 20s budget -- as a
+    layout FAIL turned the gate red on a board that measured clean everywhere
+    it could be measured. Reproduced live."""
+    findings = _run(_StubLayoutModule(), _Script(flaky_widths=(1400,)))
+
+    warns = [f for f in findings if f.status is DoctorStatus.WARN]
+    assert len(warns) == 1
+    assert "w=1400: could not be measured" in warns[0].message
+    assert not [f for f in findings if f.status is DoctorStatus.FAIL], (
+        f"a browser flake was reported as a layout defect: {findings}"
+    )
+    assert exit_code_for(findings) == 0
+
+    ok = [f for f in findings if f.status is DoctorStatus.OK]
+    assert len(ok) == 1
+    assert "could not be measured" in ok[0].message, (
+        "the OK finding must not claim a grid it did not measure"
+    )
+
+
+def test_a_flaky_width_never_hides_a_real_defect_at_another_width() -> None:
+    findings = _run(
+        _StubLayoutModule(("overlap: chip A over chip B",)), _Script(flaky_widths=(1400,))
+    )
+
+    assert [f.message for f in findings if f.status is DoctorStatus.FAIL], (
+        f"a real defect vanished behind a flake: {findings}"
+    )
+    assert exit_code_for(findings) == 2
+
+
+def test_a_browser_that_dies_on_close_does_not_erase_the_findings() -> None:
+    """The per-width guard closed this masking hole inside the loop; the
+    unguarded `finally: browser.close()` reopened it one frame up, where a
+    raise put every already-collected FAIL back behind one whole-gather WARN.
+    Reproduced live."""
+    findings = _run(
+        _StubLayoutModule(("overlap: chip A over chip B",)), _Script(close_raises=True)
+    )
+
+    assert {f.status for f in findings} == {DoctorStatus.FAIL}, (
+        f"a failed teardown erased the verdict: {findings}"
+    )
+    assert exit_code_for(findings) == 2
+
+
+def test_the_http_server_is_always_shut_down_and_closed() -> None:
+    """`shutdown()` only stops serve_forever's loop -- without
+    `server_close()` the listening socket leaks one fd per call."""
+    clm = _StubLayoutModule()
+    _run(clm, _Script(close_raises=True))
+
+    assert clm.httpd.shutdown_called
+    assert clm.httpd.closed
+
+
+def test_when_no_width_could_be_measured_the_reasons_survive() -> None:
+    """Returning only "the bar never rendered at any width" discarded every
+    collected diagnostic AND asserted a cause never observed: when the page
+    failed to LOAD, whether the bar would have rendered is precisely what is
+    unknown."""
+    findings = _run(_StubLayoutModule(), _Script(flaky_widths=(1400, 1100, 700)))
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert "Timeout 20000ms exceeded" in findings[0].message
+    assert "w=1400" in findings[0].message and "w=700" in findings[0].message
+
+
+def test_a_bar_that_never_renders_anywhere_is_unknown_but_keeps_its_reasons() -> None:
+    """`measured == 0` is the original's own UNKNOWN (`exit 2`), so WARN is
+    the faithful status -- but the `.cbstatus not found` lines it collected on
+    the way there must not be thrown away with it."""
+    findings = _run(_StubLayoutModule(), _Script(blank_widths=(1400, 1100, 700)))
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert "did not render" in findings[0].message
+    assert "w=1400" in findings[0].message and "w=700" in findings[0].message
+
+
+def test_a_bar_that_fails_to_render_at_only_one_width_stays_a_fail() -> None:
+    """The other direction of the same split: once something WAS measured,
+    `.cbstatus not found` is the ORIGINAL's own finding text for a page that
+    loaded and did not render, so it must not be softened to WARN along with
+    the flakes."""
+    findings = _run(_StubLayoutModule(), _Script(blank_widths=(700,)))
+
+    fails = [f for f in findings if f.status is DoctorStatus.FAIL]
+    assert len(fails) == 2  # one per font-pressure step at the blank width
+    assert all("did not render" in f.message for f in fails)
+    assert exit_code_for(findings) == 2
+
+
+def test_no_usable_chromium_degrades_to_exactly_one_warn() -> None:
+    findings = _run(_StubLayoutModule(), _Script(no_browser=True))
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert "no usable chromium" in findings[0].message
+
+
+def test_check_layout_loader_gets_the_same_hygiene_as_its_sibling(
+    tmp_path: Path,
+) -> None:
+    """The two dynamic loaders had drifted: only `_load_dashboard_generate`
+    snapshotted `sys.path` and cleaned `sys.modules` on failure. They now
+    share one helper, so this pins that `_load_check_layout` really routes
+    through it rather than re-growing its own copy."""
+    path = tmp_path / "docs" / "dashboard" / "check_layout.py"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "import sys\nsys.path.insert(0, '/tmp/EVIL-CHECK-LAYOUT-PROBE')\n"
+        "raise RuntimeError('boom')\n",
+        encoding="utf-8",
+    )
+    before = list(sys.path)
+
+    with pytest.raises(RuntimeError):
+        board._load_check_layout(tmp_path)
+
+    assert sys.path == before
+    assert "_doctor_board_check_layout" not in sys.modules
+
+
+def test_a_check_layout_that_exits_at_import_degrades_to_warn(tmp_path: Path) -> None:
+    """`SystemExit` is a BaseException, so `degrade_on_exception` never
+    catches it and `gather_check_layout`'s own `except Exception` misses it
+    too -- it escaped the gather entirely."""
+    path = tmp_path / "docs" / "dashboard" / "check_layout.py"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("import sys\nsys.exit('boom')\n", encoding="utf-8")
+
+    findings = board.gather_check_layout(tmp_path)  # must not raise
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert "sys.exit" in findings[0].message
