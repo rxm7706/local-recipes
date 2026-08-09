@@ -145,6 +145,32 @@ green gate immediately surfaced a hole none of them covered, twice in two days:
   hashes at all, and `sentinel:` supplies a second hash that *can* move; neither
   is blind. The finding is for the default mode with a real governed set.
 
+## What is real, part three — the 994 presumed (measured 2026-08-09, on `main` at `1b94994d42`)
+
+CAP-2 made a previously-invisible set visible: **994 `[drift-presumed]` entries** across four
+station Specs. Carrying them unexamined would repeat the mistake this Dream was seeded to
+correct — a number that hardens into terrain. Measured rather than estimated:
+
+- **932 `added`, 62 `changed`, 0 `removed`.** 94% of the set is not drift in any meaningful
+  sense; it is **baseline lag** — the surface grew and nobody re-stamped. Only the 62
+  `changed` pose the per-file question the detector was built to ask.
+- Every one of the 994 was traced to the commit that last moved it (994/994, none orphaned).
+  **178** attribute to an explicit, `done` story id; the rest to deck-family, within-epic
+  review-finding, or chain commits. **Zero files were moved by a story that is not `done`.**
+- **Herald is 834 of the 994 — and 751 of those are `presentations/**`**, which is a
+  *declared* part of its surface, contracted by **HER-9** (six artifact formats per station,
+  ~144 tracked files, an explicit tracked/gitignored split). The deck-family commits that
+  landed them are HER-4/HER-7/HER-8/HER-9 delivery. This is S-13.4's steward finding at
+  fleet scale: **the code caught up to a contract that was already correct.**
+- Two attribution traps worth recording, both caught by checking rather than trusting: a
+  commit titled only **`Atkas`** (a typo for Atlas) owns 42 of the entries and is the
+  pyforge-atlas deck scaffold, entirely inside HER-9; and 68 entries appear to name a story
+  `2026-07` because a naive id-regex matched the **date** in a deck-family-rebuild subject.
+  Neither is an unaccounted change; both look like one until read.
+- So the disposition is **a few cluster judgments and four scoped stamps**, not 994 decisions
+  — and the stamp is the honest end state precisely *because* the judgment was made first.
+  Naming 994 literal paths in a memlog would satisfy the matcher while recording nothing.
+
 ## Constraints
 
 - **Fix the granularity; do not weaken the gate.** Widening a threshold,
@@ -194,3 +220,8 @@ green gate immediately surfaced a hole none of them covered, twice in two days:
   (a reconciliation claim made where it cannot be measured), and the same
   Spec's success signal — a gate that can be cleared and a signal that can be
   trusted. A gate that is green because it cannot see is neither.
+- **2026-08-09 (later)** — reopened once more for the 994 presumed, on the same
+  principle that seeded the Dream: a standing number is a measurement, never a
+  plan. Operator called it directly — *"working them down is genuine
+  reconciliation, not noise-suppression."* The measurement above is what made it
+  a day's work instead of a campaign.

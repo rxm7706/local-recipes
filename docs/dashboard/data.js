@@ -1141,7 +1141,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 91 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 92 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1244,7 +1244,7 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "55/91",
+            "56/92",
             "stories complete",
             "var(--done)"
           ],
@@ -1826,6 +1826,11 @@ window.DASHBOARD_DATA = {
               "13.5",
               "done",
               "A Spec cannot declare a surface it has no contract for"
+            ],
+            [
+              "13.6",
+              "done",
+              "The presumed set is worked down by measurement"
             ]
           ]
         }
@@ -3160,7 +3165,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 01:13 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 01:31 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4134,7 +4139,7 @@ window.DASHBOARD_DATA = {
       "slug": "surface-drift-reconciliation",
       "project": "pyforge-marshal",
       "title": "Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted",
-      "caps": 5,
+      "caps": 6,
       "companions": 0,
       "updated": "2026-08-08",
       "dream": "surface-drift-reconciliation",
@@ -5096,8 +5101,8 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 55,
-          "total": 91
+          "done": 56,
+          "total": 92
         },
         {
           "slug": "wasm-analytics-stack",
@@ -5646,7 +5651,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "55/91",
+        "progress": "56/92",
         "complete": 13,
         "of": 13
       },
@@ -14361,8 +14366,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 01:13 UTC",
-    "generatedEpoch": 1786238012
+    "generatedAt": "2026-08-09 01:31 UTC",
+    "generatedEpoch": 1786239097
   },
   "storySpecs": [
     {
@@ -14391,9 +14396,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 55,
+      "done": 56,
       "tracked": 51,
-      "gap": 4
+      "gap": 5
     },
     {
       "station": "pyforge-mason",
@@ -14475,10 +14480,10 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 55,
+        "done": 56,
         "backlog": 35,
         "blocked": 1,
-        "total": 91,
+        "total": 92,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
@@ -14690,10 +14695,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 222,
+      "done": 223,
       "backlog": 95,
       "blocked": 6,
-      "total": 323
+      "total": 324
     }
   }
 };

@@ -86,6 +86,10 @@ is supposed to catch but currently cannot be trusted to report.
   - **intent:** Neither fix can silently regress into the blanket behavior it replaces.
   - **success:** Both are mutation-tested **both ways** — removing `--spec` scoping re-reds the isolation test, and restoring the per-spec short-circuit re-reds the laundering test — and `spec-surface-check` exits 0 on `main`.
 
+- **CAP-6** — the presumed set is worked down by measurement, not carried
+  - **intent:** The 994 `[drift-presumed]` entries CAP-2 made visible are dispositioned, so the informational channel stays small enough to read and a new entry means something.
+  - **success:** Every presumed entry is traced to the commit that last moved it and partitioned — `added` (baseline lag) vs `changed` (the per-file question) — with each cluster judged against its Spec's own capabilities and the judgment recorded in that Spec's memlog before any stamp; anything moved by a story that is **not** `done`, or landing outside a contracted capability, is reported rather than stamped; the four Specs are then scoped-stamped individually and `spec-surface-check` reports **0 findings and 0 `[drift-presumed]`**, with a before/after diff proving no gating `[drift]` was absorbed.
+
 - **CAP-5** — a governed surface with no contract behind it is reported
   - **intent:** A Spec that declares a `surface:` but has no `.memlog.md` stops being silently drift-blind — its contract hash is `""`, so the contract can never move and the "reconcile the spec" remedy the detector prints is unreachable.
   - **success:** A spec that governs ≥1 tracked file under the default `surface-drift: memlog` mode with no `.memlog.md` reports a **gating** `[drift-blind]` finding naming the spec, its governed count, and the path the memlog belongs at; a spec governing zero files, an `exempt` spec, and a `sentinel:` spec each report nothing (their contracts cannot go blind); the 7 live instances (396 governed files) are dispositioned by creating each memlog **and** scoped-stamping its baseline in the same change, verified by a before/after diff showing no `[drift]` moved to `[drift-presumed]`; mutation-tested both ways — removing the check re-greens a fixture whose memlog was deleted, restoring it re-reds.
@@ -101,6 +105,8 @@ is supposed to catch but currently cannot be trusted to report.
 - **`[drift-blind]` gates, unlike `[drift-presumed]`.** The two are not the same class: `[drift-presumed]` is *unproven* reconciliation and must stay informational, while `[drift-blind]` is a *structurally impossible* one. It is also trivially clearable — create the file — so it can gate without becoming an unclearable red.
 - **Creating a memlog and stamping its baseline are one change.** A new memlog moves the contract hash off `""`, downgrading that spec's next drift from gating `[drift]` to informational `[drift-presumed]`. Fixing blindness without stamping in the same move trades a false green for a quiet one.
 - **The detector may not create the missing memlog.** Writing the file it is checking for would make the finding self-clearing and would author a decision record nobody decided.
+- **A stamp is honest only after the judgment.** Working the presumed set down by stamping *first* and reasoning later is the laundering this Spec exists to end; measuring first and stamping second is reconciliation. The difference is invisible in the resulting number, which is exactly why the measurement has to be recorded in the memlog.
+- **Do not clear a presumed entry by naming 994 literal paths.** The matcher would be satisfied and nothing would be recorded. Cluster judgments plus a scoped stamp say what was actually decided; a wall of paths says only that someone knew how the matcher works.
 
 ## Non-goals
 
