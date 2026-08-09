@@ -67,7 +67,10 @@
             "story-status",
             "chain-completeness",
             "dashboard-drift",
-            "check-layout"
+            "check-layout",
+            "dream-chain",
+            "spec-surface",
+            "deferred-work"
           ]
         },
         "check": { "type": "string" },
