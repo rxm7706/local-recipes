@@ -21,3 +21,14 @@ mason = "pyforge.mason.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
+
+[tool.pytest.ini_options]
+# Story 1.9 / AD-16: the whole suite runs against the fixture CFE root
+# (tests/fixtures/fake_cfe_root/) with no real conda-forge-expert install,
+# network, or `recipes/` dir. The single exception is Story 5.3's FR-46
+# delegation-fidelity test, which requires a real CFE installation/subprocess
+# dependency outside this suite's fixtures -- it is marked `slow` and
+# excluded from the default pyforge-mason-test task (pixi.toml passes
+# -m "not slow" there), running instead via the separate
+# pyforge-mason-test-slow task (-m slow).
+markers = ["slow: requires a real CFE installation/subprocess dependency outside this suite's fixtures; excluded from the default pyforge-mason-test task"]
