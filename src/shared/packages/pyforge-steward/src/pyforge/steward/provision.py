@@ -64,6 +64,23 @@ call and no new state file -- derive-don't-declare, matching `--list`'s
 own `pixi.toml`-derived precedent. Wired as `steward provision
 --list-modules [--json]`, the new first precedence check ahead of
 `--module`.
+
+Story 6.3 slice (Epic 6, `--module` partial-install naming): a partial
+`--module` failure is no longer left for the operator to infer.
+`_format_called_process_error` dedupes the `` `{cmd}` exited {code}:
+{stderr} `` formatting `ProvisionDuty.run()`'s own except block already
+applied inline; `_run_module` now wraps its `provision_module()` call in
+a local `try/except (subprocess.CalledProcessError, RuntimeError)` that
+appends whether `_bmad/config.yaml` already gained a `<name>` section
+before the failure -- reusing `module_install_states` (Story 6.2) as the
+one oracle, never a second, divergent check -- and, after a successful
+call, consults `module_install_states` once more before reporting
+`ok=True`, refusing to trust the wrapped scripts' own "exited 0"
+self-report if `<name>` never actually landed (FR-21's "succeeds while
+leaving the module unimportable" clause). `FileNotFoundError`
+(unregistered name / missing backend dir) is deliberately not caught
+locally -- both occur before any subprocess call, so Story 6.1's existing
+message via `ProvisionDuty.run()`'s outer boundary already covers it.
 """
 
 from __future__ import annotations
@@ -347,8 +364,12 @@ def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
     Raises `FileNotFoundError` if the module's setup-skill directory isn't
     installed under `.pixi/envs/local-recipes/...` (the `bmad-builder` pixi
     dependency), and `subprocess.CalledProcessError` if either script exits
-    non-zero -- both propagated, not swallowed, caught only at
-    `ProvisionDuty`'s existing boundary.
+    non-zero -- both propagated, not swallowed. `FileNotFoundError`
+    propagates all the way to `ProvisionDuty`'s own boundary;
+    `subprocess.CalledProcessError` (and the `RuntimeError`s raised
+    elsewhere in this function) are caught one level earlier, inside
+    `_run_module` itself, since Story 6.3 (review finding: this docstring
+    previously claimed a single shared boundary for both).
     """
     if name not in _SUPPORTED_MODULES:
         raise FileNotFoundError(f"module {name!r} is not registered in _SUPPORTED_MODULES")
@@ -433,19 +454,108 @@ def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
     }
 
 
+def _format_called_process_error(exc: subprocess.CalledProcessError) -> str:
+    """Format a `subprocess.CalledProcessError` as `` `{cmd}` exited {code}:
+    {stderr} `` -- the one formatting `ProvisionDuty.run()`'s own except
+    block already applied inline (Story 3.1-3.4/6.1); extracted (Story 6.3)
+    so `_run_module`'s new local handler below can build the identical base
+    message before appending its own already-landed/nothing-written note,
+    never a second, divergent copy of the same formatting."""
+    stderr = (exc.stderr or "").strip()
+    cmd_name = " ".join(str(part) for part in exc.cmd) if exc.cmd else "subprocess"
+    return f"`{cmd_name}` exited {exc.returncode}: {stderr}"
+
+
+def _module_install_state_or_none(name: str, *, cwd: str | Path) -> str | None:
+    """`module_install_states(cwd=cwd).get(name)`, degrading a failed read
+    (a malformed or unreadable `_bmad/config.yaml`) to `None` rather than
+    letting a second exception mask whatever failure `_run_module` is
+    already reporting, or crash past `ProvisionDuty.run()`'s boundary on
+    the success path where nothing else is there to catch it (review
+    finding: an earlier draft called `module_install_states` directly in
+    both spots, so a malformed `_bmad/config.yaml` replaced a genuinely
+    diagnostic subprocess stderr with an unrelated `yaml.YAMLError`)."""
+    try:
+        return module_install_states(cwd=cwd).get(name)
+    except (yaml.YAMLError, OSError):
+        return None
+
+
 def _run_module(ns: argparse.Namespace) -> DutyResult:
-    """`provision --module <name>` (Story 6.1). An unrecognized name never
-    reaches `provision_module`/a subprocess call -- it is reported directly,
-    honoring `--json` via `ProvisionDuty._render_error` exactly like every
-    other failure path this duty has (I/O Matrix: `--module <bad> --json`
-    still yields a parseable `{"error": ...}` shape)."""
+    """`provision --module <name>` (Story 6.1; Story 6.3 adds the local
+    failure-naming handler and the post-success verification gate below).
+    An unrecognized name never reaches `provision_module`/a subprocess
+    call -- it is reported directly, honoring `--json` via
+    `ProvisionDuty._render_error` exactly like every other failure path
+    this duty has (I/O Matrix: `--module <bad> --json` still yields a
+    parseable `{"error": ...}` shape).
+
+    `provision_module()`'s own `subprocess.CalledProcessError`/
+    `RuntimeError` are caught locally here (not left to `ProvisionDuty.
+    run()`'s outer boundary) so the failure can name whether THIS RUN
+    already wrote a `<name>` section to `_bmad/config.yaml` before the
+    failure -- comparing a state snapshot taken before `provision_module()`
+    is called against one taken after it fails (review finding: an earlier
+    draft compared only the post-failure state against nothing, so a
+    failure against an ALREADY-installed module -- e.g. a transient `uv`
+    error that touches no file -- was misreported as "provisioning is
+    INCOMPLETE" even though this run changed nothing). Both snapshots reuse
+    `module_install_states` (Story 6.2) as the one oracle, never a second,
+    divergent check, via `_module_install_state_or_none` so a malformed/
+    unreadable `_bmad/config.yaml` degrades to "unknown" instead of
+    masking the real failure or crashing past this boundary. `FileNotFoundError`
+    (unregistered name / missing backend dir) is deliberately NOT caught
+    here: both occur before any subprocess call, so nothing could have
+    landed, and Story 6.1's existing message (via `ProvisionDuty.run()`'s
+    outer boundary) already covers it.
+
+    After a successful `provision_module()` call, `module_install_states`
+    is consulted once more before reporting `ok=True` -- if `<name>` isn't
+    actually present in `_bmad/config.yaml`, the scripts' own "exited 0"
+    self-report is not trusted at face value (FR-21's "succeeds while
+    leaving the module unimportable" clause)."""
     name = ns.module
     if name not in _SUPPORTED_MODULES:
         supported = ", ".join(sorted(_SUPPORTED_MODULES))
         message = f"{name!r} is not a supported module. Supported modules: {supported}"
         return DutyResult(ok=False, summary=ProvisionDuty._render_error(ns, message))
     root = repo_root()
-    steps = provision_module(name, cwd=root)
+    state_before = _module_install_state_or_none(name, cwd=root)
+    try:
+        steps = provision_module(name, cwd=root)
+    except (subprocess.CalledProcessError, RuntimeError) as exc:
+        message = (
+            _format_called_process_error(exc)
+            if isinstance(exc, subprocess.CalledProcessError)
+            else str(exc)
+        )
+        state_after = _module_install_state_or_none(name, cwd=root)
+        if state_after == "installed" and state_before != "installed":
+            message += (
+                f"; already wrote a {name!r} section to _bmad/config.yaml during this "
+                "run before the failure above -- provisioning is INCOMPLETE"
+            )
+        elif state_after is None:
+            message += (
+                "; could not confirm whether _bmad/config.yaml was touched before this "
+                "failure (its own state could not be read)"
+            )
+        elif state_after != "installed":
+            message += "; nothing was written to _bmad/config.yaml before this failure"
+        # else: state_after == "installed" and state_before == "installed" --
+        # `<name>` was already provisioned by an earlier run and this
+        # failure did not change that; no landed-state note is appended,
+        # since nothing about THIS run's outcome is newly incomplete.
+        return DutyResult(ok=False, summary=ProvisionDuty._render_error(ns, message))
+    if _module_install_state_or_none(name, cwd=root) != "installed":
+        return DutyResult(
+            ok=False,
+            summary=ProvisionDuty._render_error(
+                ns,
+                f"{name!r}'s setup-skill scripts both exited 0, but {name!r} is not present "
+                "in _bmad/config.yaml afterward -- not counted as provisioned",
+            ),
+        )
     if getattr(ns, "json", False):
         return DutyResult(ok=True, summary=json.dumps(steps, indent=2))
     dirs_note = (
@@ -626,10 +736,9 @@ class ProvisionDuty:
                 return _run_env(ns)
             return DutyResult(ok=True, summary=f"provision: {_PROVISION_HELP}")
         except subprocess.CalledProcessError as exc:
-            stderr = (exc.stderr or "").strip()
-            cmd_name = " ".join(str(part) for part in exc.cmd) if exc.cmd else "subprocess"
-            message = f"`{cmd_name}` exited {exc.returncode}: {stderr}"
-            return DutyResult(ok=False, summary=self._render_error(ns, message))
+            return DutyResult(
+                ok=False, summary=self._render_error(ns, _format_called_process_error(exc))
+            )
         except (
             RuntimeError,
             FileNotFoundError,
