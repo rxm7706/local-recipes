@@ -33,11 +33,13 @@ sibling stations dispatch the same way.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import os
 import sys
+from pathlib import Path
 from typing import Sequence
 
-from . import __version__, render
+from . import __version__, doctor, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -203,16 +205,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             # all, and a verb-less `doctor` is a complete command (EXIT_OK),
             # not a usage error.
             #
-            # FR-34 frames `doctor` as a reporting command, so its stub
-            # result goes through the one formatter (AD-8) to stdout, not a
-            # raw stderr print(). Story 1.8 replaces the placeholder `data`
-            # with real diagnosis; the plumbing here does not change then.
+            # FR-34 frames `doctor` as a reporting command, so its result
+            # goes through the one formatter (AD-8) to stdout, not a raw
+            # stderr print(). `doctor.build_report` never raises (Story
+            # 1.8), so this branch always reports EXIT_OK, even with CFE or
+            # an engine absent -- the gap is data in the report, not a
+            # failure of the `doctor` command itself.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
-            render.write(
-                fmt, sys.stdout, "doctor", "ok",
-                {"message": "not implemented yet (Story 1.8 implements real diagnosis)"},
-                [],
+            report = doctor.build_report(
+                getattr(ns, "cfe_root", None),
+                getattr(ns, "cfe_python", None),
+                os.environ,
+                Path.cwd(),
             )
+            render.write(fmt, sys.stdout, "doctor", "ok", dataclasses.asdict(report), [])
             return EXIT_OK
 
         if not getattr(ns, "verb", None):
