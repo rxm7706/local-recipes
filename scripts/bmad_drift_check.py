@@ -86,7 +86,8 @@ TRACKED: list[tuple[str, str]] = [
 ]
 TRACKED_CAT = dict(TRACKED)
 TRACKED_REL = set(TRACKED_CAT)
-CONFIG_FILES = {".bmad-config.toml"}            # config, not pin-synced — but must be accounted-for
+CONFIG_FILES = {".bmad-config.toml",            # config, not pin-synced — but must be accounted-for
+                ".bmad-config.user.toml"}       # layer 6 of the config merge; gitignored, per-user
 IGNORE_PARTS = {"__pycache__"}
 
 # Known-stale CONTENT patterns: claims wrong regardless of version, seeded by the deep agent
@@ -486,6 +487,35 @@ def classify(path: Path) -> str:
         return "tracked:snapshot"
     if rel == "planning-artifacts/README.md":
         return "tracked:living"
+    # --- shapes that landed as `uncovered` on 2026-08-08 ----------------------
+    # Same lesson as the 6.10 sharding block above: an unclassified file is a hole,
+    # not a pass. These eleven were the standing HARD findings that made
+    # test_bmad_artifacts_integrity red.
+    if rel == "README.md":
+        # The station's own README (`# PyForge Station: <slug>`) — hand-maintained
+        # orientation for the project dir, sibling of planning-artifacts/README.md.
+        return "tracked:living"
+    if rel == "planning-artifacts/specs/README.md":
+        # The story-spec index that documents the tracked/durable spec convention
+        # (specs survive worktree teardown). Hand-authored prose, not pin-gated.
+        return "tracked:living"
+    if rel == "planning-artifacts/test-architecture.md":
+        # bmad test-architecture output — a chain artifact alongside prd/architecture,
+        # so it classifies with them rather than earning its own category.
+        return "tracked:plan"
+    if rel == "planning-artifacts/upstream-register.json":
+        # Marshal's hand-curated register of upstream bmad-loop gaps + workarounds
+        # (FR-58/AD-2), read by `marshal upstream`. Curated data, so git review — not
+        # a version pin — decides content changes.
+        return "tracked:register"
+    if re.fullmatch(r"implementation-artifacts/epic-\d+-retro-\d{4}-\d{2}-\d{2}\.md", rel):
+        # Dated per-epic retros written at the implementation-artifacts ROOT. The
+        # pre-existing rule only matched the retros/ subdir, so these fell through.
+        return "archive:retros"
+    if re.fullmatch(r"implementation-artifacts/runs/[A-Za-z0-9._-]+/.*", rel):
+        # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
+        # the engine per run. Never hand-edited and never pin-gated.
+        return "local:run-journal"
     if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
         return "local:sprint-feed"     # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):

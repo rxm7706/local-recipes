@@ -46,11 +46,12 @@ import tomllib
 # Discovery should scan _bmad-output/projects/ and auto-derive the active project set. Tracked
 # by the (draft, not yet folded in) spec-dashboard-project-path-derivation Dream Spec.
 #
-# No "regen" entry: `_bmad-output/projects/local-recipes/` was retired 2026-07-28 and never
-# existed at this path afterward (confirmed 2026-08-08 -- every run silently warned
-# "sprint-status not found... statuses left as-is"). regen's DONE detection is independent of
-# this dict anyway -- it comes from git-log `rf(<id>):` commit parsing (see `_RF_STORY` /
-# `done.setdefault("regen", ...)` below), which this entry never fed.
+# The "regen" line was RETIRED 2026-08-08 (operator decision). It rendered the
+# regenerable-factory practice as a board program, but its project dir
+# (`_bmad-output/projects/local-recipes/`) was retired 2026-07-28 and never replaced, so
+# `scan_projects` could not refresh it: its W0-W5 chips were frozen hand-authored state that
+# could never move. The plan it displayed lives where it is maintained -- that Spec's own
+# `waves.md` -- and its open work is decomposed into pyforge-marshal's Epic 13.
 PROJECT_SOURCES = {
     "warden": "_bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml",
     "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
@@ -116,7 +117,6 @@ _QUALIFIED_STORY = re.compile(r"^([a-z0-9 +\-]+?):\s*story\s+(\d+\.\d+)\b", re.I
 _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
 _ATLAS_GH = re.compile(r"\b([GH]\d+):")
 # Regenerable-factory program: per-story commits `rf(<id>): …` on main.
-_RF_STORY = re.compile(r"\brf\((\d+\.\w+)\):")
 
 HERE = Path(__file__).resolve().parent
 DATA_JS = HERE / "data.js"
@@ -179,13 +179,13 @@ def sprint_to_dashboard_status(sprint_status: str, current: str) -> str:
 _EDITORIAL = ("label", "accentVar", "branch", "contract", "seglabels",
               "inflight", "velocity", "timing", "lineState", "sub", "roadmap")
 
-# Dashboard key -> BMAD project slug, where they differ.
-_KEY_SLUG_OVERRIDE = {"regen": "local-recipes"}
-# Lines whose story set is NOT its project's epics.md. `regen` renders the
-# regenerable-factory PRACTICE (4 CAPs / 14 stories from its own Spec), while
-# local-recipes/epics.md is the 15-epic factory REBUILD spec — different things.
-# Deriving it would replace 14 stories with 239.
-_DERIVE_EXCLUDE = {"regen"}
+# Dashboard key -> BMAD project slug, where they differ. Empty since the `regen`
+# line was retired (2026-08-08) -- every remaining key matches its project slug.
+_KEY_SLUG_OVERRIDE: dict[str, str] = {}
+# Lines whose story set is NOT its project's epics.md. Empty since `regen` retired;
+# a future entry here means a line deliberately renders something other than its
+# project's epics.
+_DERIVE_EXCLUDE: set[str] = set()
 
 
 def scan_projects(existing: dict) -> dict:
@@ -493,9 +493,9 @@ def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -
 def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[str, set[str]]:
     """PER-PROJECT done story ids from `branch`'s commit subjects.
 
-    Numeric story ids collide across projects (the regen program's rf(5.1)
-    is NOT warden's 5.1), so each project matches ONLY its own commit
-    convention — never a shared pool.
+    Numeric story ids collide across projects (marshal's 5.1 is NOT warden's
+    5.1), so each project matches ONLY its own commit convention — never a
+    shared pool.
 
     `project_keys` seeds the buckets from the LIVE project set rather than a
     literal, so a newly provisioned smith is never missing one.
@@ -509,7 +509,7 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
     ).stdout
     done: dict[str, set[str]] = {k: set() for k in project_keys}
-    for fixed in ("warden", "atlas", "regen", "herald", "doctor", "scribe"):
+    for fixed in ("warden", "atlas", "herald", "doctor", "scribe"):
         done.setdefault(fixed, set())  # always present, even pre-scan
     unattributed: set[str] = set()
     for line in log.splitlines():
@@ -552,8 +552,6 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
                 key = key.removeprefix("pyforge-")
                 if key in done:          # validated against the live project set
                     done[key].add(sid)
-        for a in _RF_STORY.finditer(line):
-            done["regen"].add(a.group(1))  # 1.1, 4.R ...
     if unattributed:
         print(f"[git] WARN {len(unattributed)} bmad-loop merge target(s) matched no "
               f"known project — their stories are NOT counted (previously they were "
@@ -681,7 +679,6 @@ DREAM_DECK_ALIASES = {
 DREAM_PROGRAM = {
     "pyforge-warden": "warden",
     "pyforge-atlas": "atlas",
-    "regenerable-factory": "regen",
 }
 
 
@@ -2490,7 +2487,7 @@ def scan_timing(projects: dict) -> None:
 # Console program key -> the Dream whose owner is accountable for that build line.
 PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
                  "herald": "pyforge-herald", "doctor": "pyforge-doctor",
-                 "scribe": "pyforge-scribe", "regen": "regenerable-factory",
+                 "scribe": "pyforge-scribe",
                  "marshal": "pyforge-marshal", "mason": "pyforge-mason",
                  "steward": "pyforge-steward",
                  # auto-discovered lines whose Dream slug is NOT pyforge-prefixed
