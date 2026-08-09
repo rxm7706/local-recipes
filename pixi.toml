@@ -1525,6 +1525,7 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 mcp = ">=2.0.0"                         # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py, mirrors [feature.pyforge-herald.dependencies]'s identical pin; also a package run-dep)
+pyyaml = ">=6.0"                        # PyYAML -- Story 6.6's sources/chain.py frontmatter parser (also a package run-dep; a library add, not a feature union)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
