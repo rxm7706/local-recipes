@@ -490,7 +490,7 @@ window.DASHBOARD_DATA = {
         "median": 80,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-09 08:05 UTC"
+        "phaseAsOf": "2026-08-09 08:15 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3241,7 +3241,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 08:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 08:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4217,7 +4217,7 @@ window.DASHBOARD_DATA = {
       "title": "Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted",
       "caps": 7,
       "companions": 0,
-      "updated": "2026-08-08",
+      "updated": "2026-08-09",
       "dream": "surface-drift-reconciliation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation"
     },
@@ -5947,8 +5947,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-08",
-        "age": 1,
+        "updated": "2026-08-09",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "9/9",
@@ -9287,7 +9287,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-02",
+          "dream": "2026-08-09",
           "deck": "",
           "spec": "2026-08-02",
           "research": "2026-08-08",
@@ -9928,7 +9928,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-08",
+          "dream": "2026-08-09",
           "deck": "",
           "spec": "2026-08-09T10:15",
           "research": "2026-08-08",
@@ -10851,8 +10851,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-08",
-        "age": 1,
+        "updated": "2026-08-09",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10957,8 +10957,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-08",
-        "age": 1,
+        "updated": "2026-08-09",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11063,8 +11063,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-08",
-        "age": 1,
+        "updated": "2026-08-09",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -14480,8 +14480,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260808-210255-c88b/6-4-the-ledger-verdicts-come-home into loop/pyforge-doctor (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 08:05 UTC",
-    "generatedEpoch": 1786262752
+    "generatedAt": "2026-08-09 08:15 UTC",
+    "generatedEpoch": 1786263342
   },
   "storySpecs": [
     {
