@@ -1,7 +1,7 @@
 ---
 id: SPEC-surface-drift-reconciliation
 spec: surface-drift-reconciliation
-status: draft
+status: in-progress
 owner-dream: docs/dreams/surface-drift-reconciliation.md
 companions: []
 sources:
@@ -19,13 +19,14 @@ surface-drift-exclude:
   # correct use of the feature this Spec adds.
   - scripts/.spec-surface-baseline.json
 assumptions:
-  - The two `[ungoverned]` Charter files want a real surface rather than an
-    allowlist exemption — unconfirmed; an allowlist entry would also clear them.
+  - "RETIRED 2026-08-09 — the assumption that the two `[ungoverned]` Charter files
+    wanted a real surface was wrong on a fact. `docs/governance/spec-pyforge-charter/`
+    is not discovered by `SPEC_GLOB`, so it cannot declare one. Allowlisted."
 open_questions:
-  - Should `docs/governance/spec-pyforge-charter/` be governed by a surface (and
-    whose?) or allowlisted as governance-tier content outside the station model?
-  - Which of the 34 `[drift]` findings are genuine surface changes whose contract
-    must move, versus reconciled work that only lacks a stamp?
+  - "RESOLVED (S-13.3) — the Charter's spec folder is allowlisted, the only
+    mechanism available to it."
+  - "RESOLVED (S-13.4) — the 34 `[drift]` split 9 archived-spec baseline lag /
+    2 genuine console change / 23 steward files whose contract was already correct."
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what to build, test, and validate. The source document in frontmatter is for traceability only.
@@ -85,6 +86,10 @@ is supposed to catch but currently cannot be trusted to report.
   - **intent:** Neither fix can silently regress into the blanket behavior it replaces.
   - **success:** Both are mutation-tested **both ways** — removing `--spec` scoping re-reds the isolation test, and restoring the per-spec short-circuit re-reds the laundering test — and `spec-surface-check` exits 0 on `main`.
 
+- **CAP-5** — a governed surface with no contract behind it is reported
+  - **intent:** A Spec that declares a `surface:` but has no `.memlog.md` stops being silently drift-blind — its contract hash is `""`, so the contract can never move and the "reconcile the spec" remedy the detector prints is unreachable.
+  - **success:** A spec that governs ≥1 tracked file under the default `surface-drift: memlog` mode with no `.memlog.md` reports a **gating** `[drift-blind]` finding naming the spec, its governed count, and the path the memlog belongs at; a spec governing zero files, an `exempt` spec, and a `sentinel:` spec each report nothing (their contracts cannot go blind); the 7 live instances (396 governed files) are dispositioned by creating each memlog **and** scoped-stamping its baseline in the same change, verified by a before/after diff showing no `[drift]` moved to `[drift-presumed]`; mutation-tested both ways — removing the check re-greens a fixture whose memlog was deleted, restoring it re-reds.
+
 ## Constraints
 
 - **Fix the granularity; do not weaken the gate.** Widening a threshold, allowlisting the noisy specs, or making drift non-gating clears the red without making the signal true. Charter §6 forbids meeting a gate by relaxing it.
@@ -93,12 +98,16 @@ is supposed to catch but currently cannot be trusted to report.
 - **`[drift-presumed]` is informational and never gates.** Its purpose is making an unproven set visible; a gating variant is the same unclearable red renamed.
 - **A scoped stamp merges into the committed baseline.** Rewriting from the in-memory current set would silently drop every spec not named on that invocation.
 - **Path matching is literal substring on the repo-relative path** — the form these entries already cite files in. Inferring intent from prose reintroduces the presumed-reconciled blanket this replaces.
+- **`[drift-blind]` gates, unlike `[drift-presumed]`.** The two are not the same class: `[drift-presumed]` is *unproven* reconciliation and must stay informational, while `[drift-blind]` is a *structurally impossible* one. It is also trivially clearable — create the file — so it can gate without becoming an unclearable red.
+- **Creating a memlog and stamping its baseline are one change.** A new memlog moves the contract hash off `""`, downgrading that spec's next drift from gating `[drift]` to informational `[drift-presumed]`. Fixing blindness without stamping in the same move trades a false green for a quiet one.
+- **The detector may not create the missing memlog.** Writing the file it is checking for would make the finding self-clearing and would author a decision record nobody decided.
 
 ## Non-goals
 
 - **Not re-homing this detector to Doctor.** That is Charter §6 work already scoped as Doctor's Epic 6 (S-6.1 → S-6.10). This Spec fixes the instrument where it lives; Marshal keeps the operational guard either way — only the *verdict* moves, later.
 - **Not a general dependency or provenance graph.** The reconciliation claim is "does the memlog name this path", deliberately literal.
 - **Not a rewrite of the coverage half.** Coverage works; the two `[ungoverned]` files are a missing entry, not a design flaw.
+- **Not requiring a memlog of every Spec.** A Spec governing zero files cannot drift, and `exempt`/`sentinel:` contracts are declared, printed, and able to move. CAP-5 covers exactly the default mode over a non-empty governed set.
 - **Not bulk-reconciling the 23-file steward cluster by stamping it.** If that surface genuinely changed, its contract moves — stamping it would be the laundering this Spec exists to end.
 - **Not settling whether the detector suite should gate CI.** It already runs on every PR and push (`.github/workflows/detectors.yml`, `scope=repo` registry subset) but is deliberately **advisory** — an operator decision of 2026-07-31 that `docs/dreams/fidelity-enforcement.md` records as still open. This Spec makes the signal true; whether a true signal should block a merge is that Dream's call, not this one's.
 
@@ -110,6 +119,12 @@ reasoning, or filed as deferred work — and the two defects proven fixed by mut
 re-introducing the all-or-nothing stamp re-reds the isolation test, and
 re-introducing the per-spec short-circuit re-reds the laundering test that replays
 the live 63 → 61 incident.
+
+And (CAP-5, added 2026-08-09) **no Spec can declare a surface it has no contract
+for**: a governed spec with no `.memlog.md` reds the gate by name instead of
+passing silently, the 7 live instances covering 396 files are dispositioned with a
+memlog *and* a scoped stamp, and deleting any memlog from a governed spec re-reds
+the gate.
 
 ## Assumptions
 

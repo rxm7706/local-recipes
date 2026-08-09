@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 116
+# stories: 117
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -47,6 +47,7 @@ development_status:
   13-2-a-moved-contract-reconciles-only-the-paths-it-names: done
   13-3-the-no-baseline-ungoverned-and-stale-allowlist-findings-are-cleared: done
   13-4-the-34-drift-findings-are-reconciled-or-recorded: done
+  13-5-a-spec-cannot-declare-a-surface-it-has-no-contract-for: done
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done

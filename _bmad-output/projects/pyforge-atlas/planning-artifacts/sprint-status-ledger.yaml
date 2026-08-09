@@ -49,6 +49,17 @@ development_status:
   5-3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
   6-1-implement-the-a2a-communication-interfaces: done
   6-2-integrate-openlineage-opentelemetry: done
+  7-1-complete-the-duckdb-consolidation-prove-the-cold-start-claim: done
+  7-2-implement-the-data-validation-hook-and-inline-pandera-contracts: done
+  7-3-implement-vector-similarity-search-rag-via-duckdb-vss: done
+  7-4-dependency-hygiene-node-unified-ci-policy-gate: done
+  8-1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm: done
+  8-2-emit-parquet-artifacts-to-a-static-web-host: done
+  8-3-implement-dagster-sensors-for-near-real-time-ingestion: done
+  9-1-scaffold-the-karpathy-wiki-folder-structure-and-agent-personas: done
+  9-2-implement-agno-compilation-linting-and-qa-crews: done
+  9-3-integrate-la-suite-docs-rest-api-sync: done
+  9-4-orchestrate-crews-via-dagster: done
   epic-1: done
   epic-1-retrospective: done
   epic-10: done
@@ -70,14 +81,3 @@ development_status:
   epic-8-retrospective: done
   epic-9: done
   epic-9-retrospective: done
-  7-1-complete-the-duckdb-consolidation-prove-the-cold-start-claim: done
-  7-2-implement-the-data-validation-hook-and-inline-pandera-contracts: done
-  7-3-implement-vector-similarity-search-rag-via-duckdb-vss: done
-  7-4-dependency-hygiene-node-unified-ci-policy-gate: done
-  8-1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm: done
-  8-2-emit-parquet-artifacts-to-a-static-web-host: done
-  8-3-implement-dagster-sensors-for-near-real-time-ingestion: done
-  9-1-scaffold-the-karpathy-wiki-folder-structure-and-agent-personas: done
-  9-2-implement-agno-compilation-linting-and-qa-crews: done
-  9-3-integrate-la-suite-docs-rest-api-sync: done
-  9-4-orchestrate-crews-via-dagster: done

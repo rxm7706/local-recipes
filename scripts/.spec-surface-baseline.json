@@ -412,7 +412,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py": "436b169730769577db45d64974b1f5068c6d3015",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py": "68647a65dc044cb42543907dcf57ca5288b53c92"
   },
-  "memlog": ""
+  "memlog": "483897a01c16b134a551fd7f253e6e1b94e67d80"
  },
  "pyforge-herald/spec-herald-moments-2-4-missing-surface": {
   "files": {},
@@ -1242,14 +1242,14 @@
    "docs/dashboard/generate.py": "88299f5caceabf896bb1a0b9870b34b616d94faa",
    "docs/dashboard/index.html": "407c628116deaaa5af7ee213ed62f393ed180d29"
   },
-  "memlog": ""
+  "memlog": "bb249ea087fe5e95a20d4036732ae0d9298be4f9"
  },
  "pyforge-marshal/spec-dream-to-code-model-self-verification": {
   "files": {
    "scripts/bmad_drift_check.py": "2276e2790393c300c210cafcfb83b611be7210db",
    "scripts/dream_chain_check.py": "8a4c64bcad2cf4bd49a179f5bd2cf5acacd84579"
   },
-  "memlog": ""
+  "memlog": "f08c157d9b37c30c4d09c2c9975bc44bb4a57287"
  },
  "pyforge-marshal/spec-durable-runs": {
   "files": {},
@@ -1304,7 +1304,7 @@
   "files": {
    "pixi.toml": "7bb77076d9ee69e7dcd4655740be5d44233ad4e8"
   },
-  "memlog": ""
+  "memlog": "38c36ce4787beff8356658809736d413b730313d"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -1387,13 +1387,13 @@
    "docs/dashboard/generate.py": "88299f5caceabf896bb1a0b9870b34b616d94faa",
    "scripts/promote_sprint_status.py": "f3f59ad191e3b7ac951ba6e3da2b867f2b112e65"
   },
-  "memlog": ""
+  "memlog": "8fd0c7d70c0884cd744a2c9f56cc798cc752b986"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {
-   "scripts/spec_surface_check.py": "25e243cc30084bdfa6326d604f5b2eb7a2f6c9d2"
+   "scripts/spec_surface_check.py": "1486ad6729ea74234a257c4b4b7d67302840775e"
   },
-  "memlog": "2451f9bf8410f69dd6e743f0e55a200c4b53ab9d"
+  "memlog": "40501bb1994090e7463428f40ce6144e94087313"
  },
  "pyforge-mason/spec-conda-forge-expert-rebuild": {
   "files": {
@@ -1673,7 +1673,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_schema_header.py": "54b57ab14b4e154515b2a3c0e1cd8e66256d197d",
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_files_tracked.py": "492e8be23f0ac59ff92d836b4238f649587ded1f",
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py": "abcb235f389aca72660af131feacf7f9af298468",
-   ".claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py": "f60b77d9d86287364f131aac22d06bb6aa36385a",
+   ".claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py": "e583fc29622becb57aeaf51615421d1d0bf06a6e",
    ".claude/skills/conda-forge-expert/tests/pytest.ini": "6253aa543e8c7a2b1fd6e13cea99c64767d48b4c",
    ".claude/skills/conda-forge-expert/tests/run_skill_suite.py": "78de5e37d17b36cb46a6a58d2542836faccd4c44",
    ".claude/skills/conda-forge-expert/tests/unit/test_add_handoff.py": "e0326684cea99d3c57139a43d117e33af89efcbd",
@@ -1768,7 +1768,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "5e4b8db5da15d2d54c575fc854d76d00c3ffe100"
   },
-  "memlog": ""
+  "memlog": "de5e4b2e26bf3aa4da00e76d428086d5e6da4491"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},
@@ -2285,7 +2285,7 @@
   "files": {
    "pixi.toml": "7bb77076d9ee69e7dcd4655740be5d44233ad4e8"
   },
-  "memlog": ""
+  "memlog": "6999ace61a77727bfb2b3b36bc58599374130ddf"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {

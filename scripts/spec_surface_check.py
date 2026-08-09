@@ -21,6 +21,11 @@ enforces two properties over `git ls-files`:
              file in the surface reconciled, so unrelated activity silently
              laundered pending drift.
 
+  blindness — a spec governs files but has NO .memlog.md, so its contract hash
+             is "" and can never move: every governed change reports [drift]
+             whose printed remedy ("reconcile the spec") is unreachable, there
+             being no contract to move. Reported as [drift-blind] (S-13.5).
+
 Exit non-zero on any finding (never false-green). Glob dialect: `**` spans
 path separators, `*`/`?` do not; a pattern with no glob chars matches exactly.
 
@@ -198,6 +203,32 @@ def main() -> int:
     for pat, n in allow_hits.items():
         if n == 0:
             findings.append(f"[stale-allowlist] {pat!r} matches nothing — remove or fix")
+
+    # S-13.5 — a governed surface with no contract behind it. contract_hash()
+    # returns "" for such a spec, and "" != "" is never true, so `spec_moved` is
+    # permanently False: every governed change reports a hard [drift] whose
+    # printed remedy ("reconcile the spec") is UNREACHABLE, there being no
+    # contract to move. Only the stamp clears it, which is the laundering S-13.2
+    # exists to end. Two specs shipped this way two days apart and nothing said so.
+    #
+    # This GATES, unlike [drift-presumed], and the asymmetry is deliberate:
+    # presumed reconciliation is UNPROVEN over historical entries nobody can
+    # retro-name (gating it recreates the unclearable red), while blindness is
+    # STRUCTURALLY IMPOSSIBLE reconciliation and clears by creating one file.
+    #
+    # Silent for a spec governing zero files (cannot drift), for `exempt` (records
+    # no file hashes at all) and for `sentinel:` (a second hash that CAN move) —
+    # none of the three can go blind. And the check never CREATES the memlog: a
+    # self-clearing finding is not a finding, and it would author a decision
+    # record nobody decided.
+    for name, s in sorted(specs.items()):
+        if (s["drift"] == "memlog" and governed.get(name)
+                and not s["memlog"].is_file()):
+            findings.append(
+                f"[drift-blind] {name}: governs {len(governed[name])} file(s) with no "
+                f"{s['memlog'].relative_to(REPO_ROOT)} — the contract hash is empty, so "
+                f"it can never move and no governed change is reconcilable. Create the "
+                f"memlog, then --write-baseline --spec {name} in the SAME change")
 
     # drift: governed content moved while the spec's contract did not.
     # The contract hash is the memlog, plus any sentinel file (a repo file
