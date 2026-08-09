@@ -2,44 +2,67 @@
 # (stations locate their repo root by marker-file walk-up, so a partial
 # checkout breaks that) -- this file only strips VCS metadata, local caches,
 # and build artifacts that are never needed inside the image.
+#
+# PATTERN SEMANTICS -- .dockerignore is NOT .gitignore. Docker matches each
+# pattern against the whole context-relative path, so a bare `__pycache__/`
+# matches ONLY a root-level one and silently misses all 67 nested under
+# src/**. Anything that can occur at any depth therefore needs an explicit
+# `**/` prefix; entries WITHOUT one below are deliberately root-anchored
+# because that is the only place they exist.
 
 .git/
 .pixi/
 
 # BMAD Tier-3 runtime scratch -- gitignored, local-only, never git-tracked.
+# `_bmad-output/implementation-artifacts` is only a SYMLINK into the active
+# project; the real per-project trees (run state, transcripts, patches,
+# logs) live under projects/*/ and need their own pattern, or they ride
+# along on any checkout where more than one station has run.
 _bmad-output/implementation-artifacts/
+_bmad-output/projects/*/implementation-artifacts
 
 # Deprecated/historical content, not needed at runtime.
 archive/
 
-# Herald deck output -- large, irrelevant to any station CLI (~659MB measured
-# on a real checkout); no marker-file walk-up ever looks here.
+# Herald deck output -- large (84MB in this checkout) and not needed to run
+# any station CLI. NOTE the real trade-off: herald's deck duty IS rooted
+# here (`deck_pipeline.py`: `repo_root / "presentations" / slug`), so
+# `herald deck` subcommands are host-only in this image by design. Story
+# 7.4's volume mount is the seam if they ever need to run in-container.
 presentations/
 
-# Local secrets/credentials -- must never enter an image layer (mirrors the
-# same patterns .gitignore already treats as secret-shaped). .claude/data/ is
-# also the gitignored mutable runtime cache (cf_atlas.db, vdb/, cve/, mapping
-# caches) that Story 7.4 mounts as a volume -- baking today's snapshot in
-# would both leak whatever is locally cached and freeze stale state.
+# Local secrets/credentials -- must never enter an image layer (these mirror
+# entries .gitignore already treats as secret-shaped: .env, .env.github,
+# .secrets, .private, SDKs/). `.steward/` is the steward station's own repo-
+# root state dir -- keys-inventory.yaml carries identity_path pointers,
+# provenance and rotation history, budget.yaml the spend ceilings; neither
+# belongs to whoever pulls the image. `.claude/data/` is the gitignored
+# mutable runtime cache (cf_atlas.db, vdb/, cve/, mapping caches) that Story
+# 7.4 mounts as a volume -- baking today's snapshot in would both leak
+# whatever is locally cached and freeze stale state.
 .env
 .env.github
 .secrets
+.private
+SDKs/
+.steward/
 .claude/settings.local.json
 .claude/data/
 
-# Python build/test artifacts
-__pycache__/
-*.py[cod]
-*.egg-info/
-.pytest_cache/
-.import_linter_cache/
-build/
-dist/
-dist-conda/
-build_artifacts/
+# Python build/test artifacts -- all occur at any depth (each package under
+# src/shared/packages/ grows its own), hence `**/`.
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+**/.pytest_cache/
+**/.import_linter_cache/
+**/build/
+**/dist/
+**/dist-conda/
+**/build_artifacts/
 
 # Node artifacts (present under some presentations/* subprojects)
-node_modules/
+**/node_modules/
 
 # Editor/IDE metadata
 .idea/
@@ -47,5 +70,5 @@ node_modules/
 .junie/
 
 # Misc local noise
-.DS_Store
-*.log
+**/.DS_Store
+**/*.log

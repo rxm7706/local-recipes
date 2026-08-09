@@ -9,6 +9,17 @@
 # per station -- atlas's is `pyforge-atlas`, not `atlas` -- see each
 # package's [project.scripts] in pyproject.toml).
 #
+# SCOPE OF THIS IMAGE (Story 7.1): it materializes the eight station CLIs and
+# nothing else. The runtime stage carries no `git`, `gh`, `pixi` or `tmux`
+# binary, so station code paths that subprocess-wrap them (marshal's git
+# worktree orchestration, steward's `provision`/`deploy build`) cannot run
+# in-container yet; `herald deck` is likewise host-only because
+# `.dockerignore` strips `presentations/`. That is a consequence of this
+# story's Always constraint -- compose the eight existing pyforge-* features
+# verbatim, no new dependency curation -- and is logged to deferred-work.md,
+# not an oversight. What IS contracted here: the build succeeds, all eight
+# CLIs answer `--version`, and bare `docker run` lands on `marshal`.
+#
 # --platform=linux/amd64 pinned on both stages: the workspace's pixi.toml
 # declares linux-64/win-64/osx-arm64-min only (no linux-aarch64), so building
 # on an arm64 Docker host (e.g. Apple Silicon) without this pin makes `pixi
