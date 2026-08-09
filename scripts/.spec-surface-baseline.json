@@ -2153,9 +2153,9 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "63f2ec4d772196743b32f38597966f9feb883da1"
+   "pixi.toml": "7dee9b54b76e53a9113f64c45a49c7dc41966de6"
   },
-  "memlog": "9e3be8531d14d18c85323f202547c793d17960fa"
+  "memlog": "52491375ef1adad4b1c8d133a8b362e6f484cad4"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3228,9 +3228,9 @@
  },
  "pyforge-steward/spec-unified-container": {
   "files": {
-   "pixi.toml": "63f2ec4d772196743b32f38597966f9feb883da1"
+   "pixi.toml": "7dee9b54b76e53a9113f64c45a49c7dc41966de6"
   },
-  "memlog": "3275e69ac3f73a860d6ba6c2dc1340d87c8d51e6"
+  "memlog": "d42ef3a3d24af5b51db8c02bb9cf59bb9fca9980"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {
