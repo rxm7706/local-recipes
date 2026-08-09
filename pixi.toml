@@ -1476,6 +1476,12 @@ playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # kedro-mcp) so it cannot be a conda run-dep of the package. Supplied to the ENV here
 # so kedro-test can collect tests/semantic. Mirrors [feature.local-recipes.pypi-dependencies].
 boring-semantic-layer = ">=0.3.16"
+# Story 12-1 (kedro-skills-audit-then-adopt): dev/tooling-only CLI, never a
+# pyproject.toml runtime dep. Exact-pinned to the evaluated version (no floor) —
+# this is the artifact the audit report evaluated; a newer release audits a
+# different artifact than the one this story names. See
+# _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md.
+kedro-skills = "==0.1.1"
 
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
@@ -1504,6 +1510,16 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
 [feature.pyforge-atlas.tasks.viz]
 description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
 cmd = "kedro viz run --no-browser"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.kedro-skills-audit]
+description = "Story 12-1: list the kedro-skills registry against the real atlas project — re-verifies the skill set didn't silently grow beyond `catalog-config` before trusting any generated guidance."
+cmd = "kedro skills list"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.kedro-skills-install]
+description = "Story 12-1: install the `catalog-config` skill into the atlas project. --ide claude restricts the IDE-specific renderer to Claude Code (.claude/skills/); the canonical .agents/skills/ copy, .installed.json state, and the AGENTS.md block are written unconditionally regardless of --ide. Refuses on drift (both managed SKILL.md copies carry an appended Atlas-overrides correction) unless --force. See kedro-skills-audit-report.md for the audited guidance."
+cmd = "kedro skills install catalog-config --ide claude"
 cwd = "src/shared/packages/pyforge-atlas"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
