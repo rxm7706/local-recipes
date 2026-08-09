@@ -1,0 +1,19 @@
+{
+  "code": "def refresh_osv_offline_store(refresh_cadences: dict) -> RefreshRequest:\n    # legacy: update-cve-db  (cve_manager.py, osv.dev GCS bucket; spec §3.4/§5.4)\n    \"\"\"External-refresh asset for the offline OSV CVE store. PURE trigger; the osv.dev\n    bucket download is dataset-owned IO (``OSVOfflineStoreDataset`` via the injected fetcher\n    + the ``OSV_VULNS_BUCKET_URL`` endpoint base — no HTTP client in the node). Cadence\n    weekly (== ``CVE_TTL_DAYS`` legacy TTL, AC-1). Single writer of\n    ``vulnerability_osv_offline_store``; the offline scanner keeps consuming it read-only,\n    air-gapped (AD-13).\"\"\"\n    return RefreshRequest(\n        store=\"vulnerability_osv_offline_store\",\n        cadence_seconds=_coerce_cadence(refresh_cadences, \"vulnerability_osv_offline_store\"),\n    )\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py",
+  "parameters": {
+    "refresh_cadences": {
+      "vulnerability_vdb_store": 604800,
+      "vulnerability_osv_offline_store": 604800,
+      "pypi_conda_map_store": 604800
+    }
+  },
+  "run_command": "kedro run --to-nodes='refresh_osv_offline_store'",
+  "inputs": [
+    "params:refresh_cadences"
+  ],
+  "outputs": [
+    "vulnerability_osv_offline_store"
+  ],
+  "preview": null
+}

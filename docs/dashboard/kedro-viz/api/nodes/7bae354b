@@ -1,0 +1,8 @@
+{
+  "type": "pandas.parquet_dataset.ParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/vcs_release_velocity/vcs_release_velocity.parquet",
+  "run_command": "kedro run --to-outputs=vcs_release_velocity",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

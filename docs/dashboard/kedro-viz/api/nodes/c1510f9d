@@ -1,0 +1,8 @@
+{
+  "type": "yaml.yaml_dataset.YAMLDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/.claude/skills/conda-forge-expert/data/lts-registry.yaml",
+  "run_command": null,
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

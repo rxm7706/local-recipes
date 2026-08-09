@@ -1,0 +1,13 @@
+{
+  "code": "def attribute_feedstocks(core_feedstock_outputs_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase B.5  (phase_b5_feedstock_outputs CFA:1593)\n    \"\"\"Attribute each conda package (output) to its feedstock via\n    :func:`_pick_feedstock`. Input: ``conda_name`` + ``feedstocks`` (a list per row,\n    the 1:N feedstock-outputs map). Output: ``conda_name``, ``feedstock_name``.\"\"\"\n    src = core_feedstock_outputs_raw\n    if src is None or src.empty or not {\"conda_name\", \"feedstocks\"} <= set(src.columns):\n        return pd.DataFrame(columns=[\"conda_name\", \"feedstock_name\"])\n    out = src.copy()\n    out[\"feedstock_name\"] = [\n        _pick_feedstock(name, fs)\n        for name, fs in zip(out[\"conda_name\"], out[\"feedstocks\"])\n    ]\n    return out[[\"conda_name\", \"feedstock_name\"]].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='attribute_feedstocks'",
+  "inputs": [
+    "core_feedstock_outputs_raw"
+  ],
+  "outputs": [
+    "core_feedstock_attribution"
+  ],
+  "preview": null
+}

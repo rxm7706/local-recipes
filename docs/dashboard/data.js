@@ -3312,7 +3312,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 14:56 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 15:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3968,7 +3968,7 @@ window.DASHBOARD_DATA = {
       "title": "consolidated: 2026-08-02 — this Spec also carries spec-unity-data-stack and",
       "caps": 31,
       "companions": 5,
-      "updated": "2026-08-08",
+      "updated": "2026-08-09",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
@@ -5324,7 +5324,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-08",
+          "spec": "2026-08-09T15:20",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -5407,7 +5407,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-08",
+            "at": "2026-08-09T15:20",
             "other": "2026-08-01"
           }
         ],
@@ -8522,7 +8522,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-09",
           "deck": "",
-          "spec": "2026-08-08T19:38",
+          "spec": "2026-08-09T15:20",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -14555,15 +14555,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "steward",
-      "story": "6.3",
-      "epoch": 1786276032,
-      "sha": "2f7436026",
-      "subject": "Merge bmad-loop/20260809-034341-2f9c/6-3-partial-install-is-a-named-failure into loop/pyforge-steward (bmad-loop)"
+      "station": "atlas",
+      "story": "12.1",
+      "epoch": 1786287124,
+      "sha": "6ffdf8822",
+      "subject": "Merge bmad-loop/20260809-034342-8683/12-1-kedro-skills-audit-then-adopt into loop/pyforge-atlas (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 14:56 UTC",
-    "generatedEpoch": 1786287364
+    "generatedAt": "2026-08-09 15:11 UTC",
+    "generatedEpoch": 1786288273
   },
   "storySpecs": [
     {

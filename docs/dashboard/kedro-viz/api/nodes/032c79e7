@@ -1,0 +1,14 @@
+{
+  "code": "def detect_latest_status(\n    core_repodata_raw: pd.DataFrame,\n    core_channeldata_raw: pd.DataFrame,\n) -> pd.DataFrame:\n    # legacy: Phase B.6  (phase_b6_yanked_detection CFA:1665)\n    \"\"\"LITE semantics (AC-6): a package present in the current repodata is\n    ``latest_status='active'``. Full per-version yanked detection is an explicit\n    follow-on, NOT part of this story (spec § 12). Output: ``conda_name``,\n    ``latest_status``.\"\"\"\n    repo = core_repodata_raw\n    if repo is None or repo.empty:\n        return pd.DataFrame(columns=[\"conda_name\", \"latest_status\"])\n    names = pd.Index(repo[\"conda_name\"].dropna().unique(), name=\"conda_name\")\n    return pd.DataFrame({\"conda_name\": names, \"latest_status\": \"active\"}).reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='detect_latest_status'",
+  "inputs": [
+    "core_repodata_raw",
+    "core_channeldata_raw"
+  ],
+  "outputs": [
+    "core_latest_status"
+  ],
+  "preview": null
+}

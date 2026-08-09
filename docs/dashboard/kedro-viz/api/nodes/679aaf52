@@ -1,0 +1,8 @@
+{
+  "type": "datasets.sbom_intake.SbomIntakeDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/raw/sbom_intake_entry/intake.json",
+  "run_command": null,
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

@@ -1,0 +1,14 @@
+{
+  "code": "def report_license_map_gap(\n    seed_spdx_schema: Any,\n    pypi_intelligence_enriched: Any,\n) -> pd.DataFrame:\n    \"\"\"§ 3.4 ``report_license_map_gap`` — propose ``_LICENSE_TO_SPDX`` entries by\n    ranking raw PyPI license strings that currently normalize to nothing (legacy\n    ``license_map_gap.py``). READ-ONLY report; git review decides. Candidates\n    come from the vendored SPDX enum (``seed_spdx_schema['enum']``).\n\n    NOTE (license-map wiring): the seed exclusion (``_LICENSE_TO_SPDX``) defaults\n    to the EMPTY dict — a deliberate no-op belt-and-braces. ``license_spdx IS\n    NULL`` upstream ALREADY encodes the in-code map's verdict (its misses), so\n    the map is honored transitively and re-importing it from ``.claude/**`` (HARD\n    read-only) would be redundant AND off-package. ``candidates`` is serialized\n    as a comma-joined string (ParquetDataset needs serializable cells).\"\"\"\n    # graceful on a malformed/enum-less schema (AD-13/AD-15) — .get, not [].\n    enum = set(seed_spdx_schema.get(\"enum\") or []) if isinstance(seed_spdx_schema, dict) else set()\n    unmapped = _unmapped_licenses(pypi_intelligence_enriched)\n    if not unmapped:\n        return pd.DataFrame(columns=_LICMAP_COLS)\n    seed: dict[str, str] = {}  # documented no-op (see docstring)\n    proposals = _classify_licmap(unmapped, enum, seed)\n    records = [\n        {\n            \"license_raw\": p[\"license_raw\"],\n            \"packages\": p[\"packages\"],\n            \"candidates\": \",\".join(p[\"candidates\"]),\n            \"confidence\": p[\"confidence\"],\n            \"suggested_spdx\": p[\"suggested_spdx\"],\n        }\n        for p in proposals\n    ]\n    return pd.DataFrame(records, columns=_LICMAP_COLS).reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/seed_gaps/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='report_license_map_gap'",
+  "inputs": [
+    "seed_spdx_schema",
+    "pypi_intelligence_enriched"
+  ],
+  "outputs": [
+    "seed_gaps_license_map_report"
+  ],
+  "preview": null
+}

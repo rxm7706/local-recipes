@@ -1,0 +1,8 @@
+{
+  "type": "json.json_dataset.JSONDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/.claude/skills/conda-forge-expert/data/cwe_categories_seed.json",
+  "run_command": null,
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

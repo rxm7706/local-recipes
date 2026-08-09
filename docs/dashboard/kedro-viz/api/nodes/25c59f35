@@ -1,0 +1,13 @@
+{
+  "code": "def fetch_pypi_downloads(pypi_bigquery_downloads_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase P  (phase_p_pypi_downloads CFA:7352)\n    \"\"\"Normalize the already-fetched monthly-download frame. **The node stays PURE**:\n    the two-layer BigQuery cost gate (dry-run preflight above cap + ``maximum_bytes_billed``\n    + ``PHASE_P_JOB_TIMEOUT_MS`` + literal-TIMESTAMP bounds, D1) lives in the request\n    DATASET (``BigQueryDownloadsDataset``, THE CRUX). If ``PHASE_P_ENABLED`` is unset OR\n    the dry-run aborts above cap, the dataset yields no rows and this node no-ops\n    (mode-machine ``_phase_p_skip`` CFA:7342). AD-6: never a default schedule.\n\n    ``INSERT OR IGNORE`` idempotency → drop duplicate ``(pypi_name, month)`` rows.\n    Input: ``pypi_name``, ``month``, ``downloads``. Output ``pypi_downloads_monthly``:\n    same columns, deduped.\"\"\"\n    cols = [\"pypi_name\", \"month\", \"downloads\"]\n    df = pypi_bigquery_downloads_raw\n    if df is None or getattr(df, \"empty\", True) or \"pypi_name\" not in getattr(df, \"columns\", []):\n        return pd.DataFrame(columns=cols)\n    out = df.copy()\n    for c in (\"month\", \"downloads\"):\n        if c not in out.columns:\n            out[c] = pd.NA\n    # INSERT OR IGNORE idempotency (CFA): first write per (pypi_name, month) wins.\n    out = out.drop_duplicates(subset=[\"pypi_name\", \"month\"], keep=\"first\")\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='fetch_pypi_downloads'",
+  "inputs": [
+    "pypi_bigquery_downloads_raw"
+  ],
+  "outputs": [
+    "pypi_downloads_monthly"
+  ],
+  "preview": null
+}

@@ -8,7 +8,14 @@
 # ignore all local configuration
 conf/local/**
 !conf/local/.gitkeep
+
+# kedro_telemetry defaults to implicit/silent opt-in consent; this project
+# tracks an explicit `consent: false` opt-out at the project root, so
+# un-ignore (anchored to THIS directory, not any `.telemetry` at any depth --
+# an unanchored `!.telemetry` would un-ignore every matching filename under
+# here) just that one file.
 .telemetry
+!/.telemetry
 
 # ignore potentially sensitive credentials files
 conf/**/*credentials*

@@ -1,0 +1,8 @@
+{
+  "type": "datasets.sbom_intake.TransitiveResolverDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/raw/sbom_resolution_entry/intake.json",
+  "run_command": null,
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

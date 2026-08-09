@@ -1,0 +1,13 @@
+{
+  "code": "def ingest_cisa_kev(vulnerability_cisa_kev_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: cisa_kev_fetcher  (upsert_kev_rows cisa_kev_fetcher.py:103)\n    \"\"\"Normalize the CISA KEV feed to the 13 stored columns; ``INSERT OR REPLACE`` by\n    ``cve_id`` → keep the LAST occurrence per key (replace-by-key in Parquet). Input:\n    the KEV catalog frame. Output ``vulnerability_cisa_kev``: the 13 columns.\"\"\"\n    df = vulnerability_cisa_kev_raw\n    if df is None or df.empty or \"cve_id\" not in getattr(df, \"columns\", []):\n        return pd.DataFrame(columns=_KEV_COLS)\n    out = df.copy()\n    for c in _KEV_COLS:\n        if c not in out.columns:\n            out[c] = pd.NA\n    # INSERT OR REPLACE by cve_id: last write wins.\n    out = out.drop_duplicates(subset=[\"cve_id\"], keep=\"last\")\n    return out[_KEV_COLS].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='ingest_cisa_kev'",
+  "inputs": [
+    "vulnerability_cisa_kev_raw"
+  ],
+  "outputs": [
+    "vulnerability_cisa_kev"
+  ],
+  "preview": null
+}

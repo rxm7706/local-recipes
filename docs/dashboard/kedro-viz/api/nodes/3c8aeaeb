@@ -1,0 +1,13 @@
+{
+  "code": "def ingest_cwe_catalog(vulnerability_cwe_catalog_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: cwe_catalog_fetcher  (upsert_cwe_rows cwe_catalog_fetcher.py:126)\n    \"\"\"Normalize the MITRE CWE catalog into the 7-category classification; ``INSERT OR\n    REPLACE`` by ``cwe_id``; seed-miss → ``Other``. Input: ``cwe_id``, ``cwe_name``.\n    Output ``vulnerability_cwe_categories``: ``cwe_id``, ``cwe_name``, ``category``.\"\"\"\n    cols = [\"cwe_id\", \"cwe_name\", \"category\"]\n    df = vulnerability_cwe_catalog_raw\n    if df is None or df.empty or \"cwe_id\" not in getattr(df, \"columns\", []):\n        return pd.DataFrame(columns=cols)\n    out = df.copy()\n    if \"cwe_name\" not in out.columns:\n        out[\"cwe_name\"] = pd.NA\n    out[\"category\"] = [_classify_cwe(n) for n in out[\"cwe_name\"]]\n    out = out.drop_duplicates(subset=[\"cwe_id\"], keep=\"last\")\n    return out[cols].reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='ingest_cwe_catalog'",
+  "inputs": [
+    "vulnerability_cwe_catalog_raw"
+  ],
+  "outputs": [
+    "vulnerability_cwe_categories"
+  ],
+  "preview": null
+}

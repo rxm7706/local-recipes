@@ -1,0 +1,626 @@
+{
+  "nodes": [
+    {
+      "id": "6a656fea",
+      "name": "enrich_pypi_intelligence",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "enrich_pypi_intelligence"
+    },
+    {
+      "id": "549e358c",
+      "name": "pypi_json_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.request_datasets.PyPIJsonRequestDataset"
+    },
+    {
+      "id": "f27d8057",
+      "name": "pypi_intelligence_enriched",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence",
+        "seed_gaps"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "18664949",
+      "name": "core_packages_enumerated",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vulnerability",
+        "vcs_health",
+        "seed_gaps",
+        "core",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "83133318",
+      "name": "enumerate_pypi_universe",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "enumerate_pypi_universe"
+    },
+    {
+      "id": "a4f8a66e",
+      "name": "pypi_simple_index_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "27bdea9a",
+      "name": "pypi_universe",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "25c59f35",
+      "name": "fetch_pypi_downloads",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "fetch_pypi_downloads"
+    },
+    {
+      "id": "97c05f9c",
+      "name": "pypi_bigquery_downloads_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "1b109574",
+      "name": "pypi_downloads_monthly",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "6d4dd7cb",
+      "name": "flag_cross_channel",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "flag_cross_channel"
+    },
+    {
+      "id": "d65b3a03",
+      "name": "pypi_cross_channel_repodata_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "3bb91274",
+      "name": "pypi_cross_channel_flags",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "b29d34ce",
+      "name": "snapshot_pypi_serials",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "snapshot_pypi_serials"
+    },
+    {
+      "id": "c7eec88f",
+      "name": "pypi_universe_serial_snapshots",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "8b756b66",
+      "name": "fetch_pypi_current_versions",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "fetch_pypi_current_versions"
+    },
+    {
+      "id": "2018ad37",
+      "name": "pypi_current_versions",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "45ea5d06",
+      "name": "map_pypi_conda",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "map_pypi_conda"
+    },
+    {
+      "id": "a1a32663",
+      "name": "pypi_parselmouth_mapping_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "220d26b2",
+      "name": "pypi_conda_mapping_base",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "io.memory_dataset.MemoryDataset"
+    },
+    {
+      "id": "f5f9cc68",
+      "name": "score_pypi_readiness",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "score_pypi_readiness"
+    },
+    {
+      "id": "7123a6cf",
+      "name": "pypi_intelligence_scored",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "037a6e05",
+      "name": "match_source_urls",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "match_source_urls"
+    },
+    {
+      "id": "984bc0c0",
+      "name": "pypi_conda_mapping",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vcs_health",
+        "seed_gaps",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "9034208e",
+      "name": "export_pypi_conda_map",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "export_pypi_conda_map"
+    },
+    {
+      "id": "9b3e4830",
+      "name": "pypi_conda_map_store",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.refresh.MappingCacheDataset"
+    }
+  ],
+  "edges": [
+    {
+      "source": "8b756b66",
+      "target": "2018ad37"
+    },
+    {
+      "source": "a4f8a66e",
+      "target": "83133318"
+    },
+    {
+      "source": "549e358c",
+      "target": "8b756b66"
+    },
+    {
+      "source": "220d26b2",
+      "target": "037a6e05"
+    },
+    {
+      "source": "a4f8a66e",
+      "target": "b29d34ce"
+    },
+    {
+      "source": "b29d34ce",
+      "target": "c7eec88f"
+    },
+    {
+      "source": "549e358c",
+      "target": "037a6e05"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "8b756b66"
+    },
+    {
+      "source": "6a656fea",
+      "target": "f27d8057"
+    },
+    {
+      "source": "a1a32663",
+      "target": "45ea5d06"
+    },
+    {
+      "source": "9034208e",
+      "target": "9b3e4830"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "9034208e"
+    },
+    {
+      "source": "f5f9cc68",
+      "target": "7123a6cf"
+    },
+    {
+      "source": "97c05f9c",
+      "target": "25c59f35"
+    },
+    {
+      "source": "18664949",
+      "target": "45ea5d06"
+    },
+    {
+      "source": "6d4dd7cb",
+      "target": "3bb91274"
+    },
+    {
+      "source": "d65b3a03",
+      "target": "6d4dd7cb"
+    },
+    {
+      "source": "037a6e05",
+      "target": "984bc0c0"
+    },
+    {
+      "source": "25c59f35",
+      "target": "1b109574"
+    },
+    {
+      "source": "83133318",
+      "target": "27bdea9a"
+    },
+    {
+      "source": "45ea5d06",
+      "target": "220d26b2"
+    },
+    {
+      "source": "f27d8057",
+      "target": "f5f9cc68"
+    },
+    {
+      "source": "549e358c",
+      "target": "6a656fea"
+    }
+  ],
+  "layers": [],
+  "tags": [],
+  "pipelines": [
+    {
+      "id": "__default__",
+      "name": "__default__"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
+      "id": "core",
+      "name": "core"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "universal_sbom",
+      "name": "universal_sbom"
+    },
+    {
+      "id": "vcs_health",
+      "name": "vcs_health"
+    }
+  ],
+  "modular_pipelines": {
+    "__root__": {
+      "id": "__root__",
+      "name": "__root__",
+      "inputs": [],
+      "outputs": [],
+      "children": [
+        {
+          "id": "f5f9cc68",
+          "type": "task"
+        },
+        {
+          "id": "a1a32663",
+          "type": "data"
+        },
+        {
+          "id": "1b109574",
+          "type": "data"
+        },
+        {
+          "id": "2018ad37",
+          "type": "data"
+        },
+        {
+          "id": "984bc0c0",
+          "type": "data"
+        },
+        {
+          "id": "220d26b2",
+          "type": "data"
+        },
+        {
+          "id": "25c59f35",
+          "type": "task"
+        },
+        {
+          "id": "18664949",
+          "type": "data"
+        },
+        {
+          "id": "549e358c",
+          "type": "data"
+        },
+        {
+          "id": "7123a6cf",
+          "type": "data"
+        },
+        {
+          "id": "b29d34ce",
+          "type": "task"
+        },
+        {
+          "id": "83133318",
+          "type": "task"
+        },
+        {
+          "id": "9b3e4830",
+          "type": "data"
+        },
+        {
+          "id": "6d4dd7cb",
+          "type": "task"
+        },
+        {
+          "id": "45ea5d06",
+          "type": "task"
+        },
+        {
+          "id": "3bb91274",
+          "type": "data"
+        },
+        {
+          "id": "a4f8a66e",
+          "type": "data"
+        },
+        {
+          "id": "037a6e05",
+          "type": "task"
+        },
+        {
+          "id": "f27d8057",
+          "type": "data"
+        },
+        {
+          "id": "d65b3a03",
+          "type": "data"
+        },
+        {
+          "id": "97c05f9c",
+          "type": "data"
+        },
+        {
+          "id": "27bdea9a",
+          "type": "data"
+        },
+        {
+          "id": "6a656fea",
+          "type": "task"
+        },
+        {
+          "id": "8b756b66",
+          "type": "task"
+        },
+        {
+          "id": "c7eec88f",
+          "type": "data"
+        },
+        {
+          "id": "9034208e",
+          "type": "task"
+        }
+      ]
+    }
+  },
+  "selected_pipeline": "pypi_intelligence"
+}

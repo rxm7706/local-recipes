@@ -1,0 +1,8 @@
+{
+  "type": "pandas.parquet_dataset.ParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/intermediate/vcs_archived_feedstocks/vcs_archived_feedstocks.parquet",
+  "run_command": "kedro run --to-outputs=vcs_archived_feedstocks",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

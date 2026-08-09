@@ -1,0 +1,8 @@
+{
+  "type": "datasets.incremental_parquet.IncrementalParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/primary/core_version_download_history/core_version_download_history.parquet",
+  "run_command": "kedro run --to-outputs=core_version_download_history",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

@@ -1,0 +1,13 @@
+{
+  "code": "def enrich_pypi_intelligence(pypi_json_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase R  (phase_r_pypi_json_enrich CFA:8330)\n    \"\"\"Enrich the top-N candidate slice (bounded at dataset level) through the shared\n    single-write-path helpers (``phase_r_fetch_one`` + ``phase_r_upsert_one``, CFA:8146/8198).\n    Input ``pypi_json_raw`` (candidate slice). Output ``pypi_intelligence_enriched``:\n    ``pypi_name``, ``packaging_shape``, ``license_spdx``, ``license_raw``, ``notes``.\"\"\"\n    cols = [\"pypi_name\", \"packaging_shape\", \"license_spdx\", \"license_raw\", \"notes\"]\n    df = pypi_json_raw\n    if df is None or df.empty or \"pypi_name\" not in getattr(df, \"columns\", []):\n        return pd.DataFrame(columns=cols)\n    out = pd.DataFrame(columns=cols)\n    for _, r in df.iterrows():\n        enriched = phase_r_fetch_one(r.to_dict())\n        out = phase_r_upsert_one(out, enriched)\n    return out.reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='enrich_pypi_intelligence'",
+  "inputs": [
+    "pypi_json_raw"
+  ],
+  "outputs": [
+    "pypi_intelligence_enriched"
+  ],
+  "preview": null
+}
