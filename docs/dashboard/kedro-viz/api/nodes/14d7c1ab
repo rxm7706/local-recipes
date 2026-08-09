@@ -1,0 +1,13 @@
+{
+  "code": "def compute_feedstock_health(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase M  (phase_m_feedstock_health CFA:6263)\n    \"\"\"Compute per-feedstock health rows, applying the same archived-feedstock scope\n    filter at the write SELECT (v7.9.0). Input: ``feedstock_name`` + health signals\n    (``ci_status``, ``open_prs``, ``open_issues`` …) + ``feedstock_archived``. Output:\n    one row per ACTIVE feedstock with its health signals.\"\"\"\n    g = core_cf_graph_raw\n    if g is None or g.empty or \"feedstock_name\" not in getattr(g, \"columns\", []):\n        return pd.DataFrame(columns=[\"feedstock_name\", \"ci_status\", \"open_prs\", \"open_issues\"])\n    skip = _inactive_feedstocks(g)\n    active = g[~g[\"feedstock_name\"].isin(skip)]\n    cols = [c for c in (\"feedstock_name\", \"ci_status\", \"open_prs\", \"open_issues\") if c in active.columns]\n    health = active[cols].drop_duplicates(\"feedstock_name\")\n    return health.reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='compute_feedstock_health'",
+  "inputs": [
+    "core_cf_graph_raw"
+  ],
+  "outputs": [
+    "core_feedstock_health"
+  ],
+  "preview": null
+}

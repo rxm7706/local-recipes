@@ -1,0 +1,13 @@
+{
+  "code": "def build_dependency_graph(core_cf_graph_raw: pd.DataFrame) -> pd.DataFrame:\n    # legacy: Phase J  (phase_j_dependency_graph CFA:6067)\n    \"\"\"Build the dependency edge list from the cf-graph, filtering the archived-\n    feedstock skip-set at the write site (v7.9.0). Input: ``feedstock_name``,\n    ``conda_name``, ``depends_on``, ``dep_type`` (+ ``feedstock_archived``). Output:\n    ``conda_name``, ``depends_on``, ``dep_type`` for active feedstocks only.\"\"\"\n    g = core_cf_graph_raw\n    _req = {\"feedstock_name\", \"conda_name\", \"depends_on\", \"dep_type\"}\n    if g is None or g.empty or not _req <= set(g.columns):\n        return pd.DataFrame(columns=[\"conda_name\", \"depends_on\", \"dep_type\"])\n    skip = _inactive_feedstocks(g)\n    active = g[~g[\"feedstock_name\"].isin(skip)]\n    edges = active[[\"conda_name\", \"depends_on\", \"dep_type\"]].dropna(subset=[\"depends_on\"])\n    return edges.drop_duplicates().reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/core/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='build_dependency_graph'",
+  "inputs": [
+    "core_cf_graph_raw"
+  ],
+  "outputs": [
+    "core_dependencies"
+  ],
+  "preview": null
+}

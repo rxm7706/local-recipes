@@ -1,0 +1,48 @@
+{
+  "code": "def normalize_intake_to_cyclonedx(\n    sbom_intake_entry: dict[str, Any],\n    sbom_resolution_entry: dict[str, Any],\n    parameters: dict[str, Any] | None = None,\n) -> dict[str, Any]:\n    \"\"\"Merge the § 4.10 base inventory + the transitive resolution into a CycloneDX\n    BOM, preserving ``cfe:*`` + ``?channel`` (AD-10) and recording resolution\n    depth/fan-out as ``cfe:*`` metadata (FR-17 / AC-1).\"\"\"\n    base_deps = list((sbom_intake_entry or {}).get(\"deps\") or [])\n    resolution = sbom_resolution_entry or {\"resolution\": \"unresolved\"}\n\n    deps = list(base_deps)\n    seen = {(d.get(\"ecosystem\"), fold_name(d.get(\"name\", \"\"))) for d in deps}\n    meta_props: list[dict[str, str]] = [{\"name\": \"cfe:resolution\", \"value\": str(resolution.get(\"resolution\", \"unresolved\"))}]\n\n    if resolution.get(\"resolution\") == \"resolved\":\n        for td in resolution.get(\"deps\") or []:\n            if not td.get(\"name\"):  # a malformed injected resolution dep never crashes the run (AD-13)\n                continue\n            key = (td.get(\"ecosystem\"), fold_name(td.get(\"name\", \"\")))\n            if key in seen:\n                continue\n            seen.add(key)\n            deps.append(td)\n        if resolution.get(\"depth\") is not None:\n            meta_props.append({\"name\": \"cfe:resolution_depth\", \"value\": str(resolution[\"depth\"])})\n        if resolution.get(\"fanout\") is not None:\n            meta_props.append({\"name\": \"cfe:resolution_fanout\", \"value\": str(resolution[\"fanout\"])})\n    elif resolution.get(\"reason\"):\n        meta_props.append({\"name\": \"cfe:resolution_reason\", \"value\": str(resolution[\"reason\"])})\n\n    # A malformed row (base OR injected transitive) missing a name never crashes the\n    # run (AD-13) — _component would KeyError on dep[\"name\"] (Edge-MEDIUM).\n    components = [_component(d) for d in deps if d.get(\"name\")]\n    project = (parameters or {}).get(\"sbom\", {}).get(\"project_name\", \"user-inventory\")\n    return _cyclonedx_envelope(components, project, meta_props)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/universal_sbom/nodes.py",
+  "parameters": {
+    "ttls": {
+      "core_downloads": 604800,
+      "core_downloads_platform_breakdown": 604800,
+      "core_downloads_pyver_breakdown": 604800,
+      "core_downloads_channel_breakdown": 604800,
+      "core_version_download_history": 604800,
+      "core_cf_graph_raw": 86400,
+      "pypi_universe": 604800,
+      "pypi_current_versions": 604800,
+      "pypi_downloads_monthly": 2592000,
+      "pypi_cross_channel_flags": 604800,
+      "pypi_intelligence_enriched": 604800,
+      "pypi_conda_map_store": 604800,
+      "pypi_endoflife_raw": 604800,
+      "vulnerability_cisa_kev_raw": 86400,
+      "vulnerability_package_rollup": 604800,
+      "vulnerability_package_version_vulns": 2592000,
+      "vulnerability_epss_raw": 86400,
+      "vulnerability_cwe_catalog_raw": 7776000,
+      "vulnerability_osv_offline_store": 604800,
+      "vcs_upstream_versions": 604800,
+      "vcs_registry_versions": 604800,
+      "vcs_live_health": 86400
+    },
+    "freshness": {
+      "stale_after_days": 14
+    },
+    "refresh_cadences": {
+      "vulnerability_vdb_store": 604800,
+      "vulnerability_osv_offline_store": 604800,
+      "pypi_conda_map_store": 604800
+    }
+  },
+  "run_command": "kedro run --to-nodes='normalize_intake_to_cyclonedx'",
+  "inputs": [
+    "sbom_intake_entry",
+    "sbom_resolution_entry",
+    "parameters"
+  ],
+  "outputs": [
+    "sbom_normalized_bom_entry"
+  ],
+  "preview": null
+}

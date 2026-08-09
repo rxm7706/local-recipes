@@ -1,0 +1,557 @@
+{
+  "nodes": [
+    {
+      "id": "58d2a753",
+      "name": "attribute_feedstocks",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "attribute_feedstocks"
+    },
+    {
+      "id": "7f27c40a",
+      "name": "core_feedstock_outputs_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "e3ada3b4",
+      "name": "core_feedstock_attribution",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "3b14dfa6",
+      "name": "build_dependency_graph",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "build_dependency_graph"
+    },
+    {
+      "id": "f7f89bdf",
+      "name": "core_cf_graph_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "4ef251bc",
+      "name": "core_dependencies",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "8cd71bf4",
+      "name": "compute_downloads",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "compute_downloads"
+    },
+    {
+      "id": "359db7ba",
+      "name": "core_anaconda_downloads_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.request_datasets.AnacondaDownloadsDataset"
+    },
+    {
+      "id": "5a66560e",
+      "name": "core_s3_download_stats_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "a4fbfe20",
+      "name": "core_downloads",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "a6dd3f01",
+      "name": "core_downloads_platform_breakdown",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "b17968ef",
+      "name": "core_downloads_pyver_breakdown",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "f6c7654f",
+      "name": "core_downloads_channel_breakdown",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "14d7c1ab",
+      "name": "compute_feedstock_health",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "compute_feedstock_health"
+    },
+    {
+      "id": "f5eb96a7",
+      "name": "core_feedstock_health",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "32a01973",
+      "name": "compute_version_download_history",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "compute_version_download_history"
+    },
+    {
+      "id": "9b9da8f7",
+      "name": "core_version_download_history",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core",
+        "vulnerability"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "032c79e7",
+      "name": "detect_latest_status",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "detect_latest_status"
+    },
+    {
+      "id": "1b6f0119",
+      "name": "core_repodata_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core",
+        "vcs_health"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "cb9777f9",
+      "name": "core_channeldata_raw",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "api.api_dataset.APIDataset"
+    },
+    {
+      "id": "eda40cd0",
+      "name": "core_latest_status",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "9c31efba",
+      "name": "enumerate_conda_packages",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "core"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "enumerate_conda_packages"
+    },
+    {
+      "id": "18664949",
+      "name": "core_packages_enumerated",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vulnerability",
+        "vcs_health",
+        "seed_gaps",
+        "core",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    }
+  ],
+  "edges": [
+    {
+      "source": "359db7ba",
+      "target": "8cd71bf4"
+    },
+    {
+      "source": "1b6f0119",
+      "target": "9c31efba"
+    },
+    {
+      "source": "f7f89bdf",
+      "target": "3b14dfa6"
+    },
+    {
+      "source": "032c79e7",
+      "target": "eda40cd0"
+    },
+    {
+      "source": "359db7ba",
+      "target": "32a01973"
+    },
+    {
+      "source": "32a01973",
+      "target": "9b9da8f7"
+    },
+    {
+      "source": "3b14dfa6",
+      "target": "4ef251bc"
+    },
+    {
+      "source": "58d2a753",
+      "target": "e3ada3b4"
+    },
+    {
+      "source": "8cd71bf4",
+      "target": "a4fbfe20"
+    },
+    {
+      "source": "cb9777f9",
+      "target": "032c79e7"
+    },
+    {
+      "source": "8cd71bf4",
+      "target": "b17968ef"
+    },
+    {
+      "source": "1b6f0119",
+      "target": "032c79e7"
+    },
+    {
+      "source": "14d7c1ab",
+      "target": "f5eb96a7"
+    },
+    {
+      "source": "8cd71bf4",
+      "target": "f6c7654f"
+    },
+    {
+      "source": "8cd71bf4",
+      "target": "a6dd3f01"
+    },
+    {
+      "source": "cb9777f9",
+      "target": "9c31efba"
+    },
+    {
+      "source": "7f27c40a",
+      "target": "58d2a753"
+    },
+    {
+      "source": "5a66560e",
+      "target": "8cd71bf4"
+    },
+    {
+      "source": "9c31efba",
+      "target": "18664949"
+    },
+    {
+      "source": "f7f89bdf",
+      "target": "14d7c1ab"
+    }
+  ],
+  "layers": [],
+  "tags": [],
+  "pipelines": [
+    {
+      "id": "__default__",
+      "name": "__default__"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
+      "id": "core",
+      "name": "core"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "universal_sbom",
+      "name": "universal_sbom"
+    },
+    {
+      "id": "vcs_health",
+      "name": "vcs_health"
+    }
+  ],
+  "modular_pipelines": {
+    "__root__": {
+      "id": "__root__",
+      "name": "__root__",
+      "inputs": [],
+      "outputs": [],
+      "children": [
+        {
+          "id": "58d2a753",
+          "type": "task"
+        },
+        {
+          "id": "b17968ef",
+          "type": "data"
+        },
+        {
+          "id": "e3ada3b4",
+          "type": "data"
+        },
+        {
+          "id": "8cd71bf4",
+          "type": "task"
+        },
+        {
+          "id": "18664949",
+          "type": "data"
+        },
+        {
+          "id": "5a66560e",
+          "type": "data"
+        },
+        {
+          "id": "3b14dfa6",
+          "type": "task"
+        },
+        {
+          "id": "eda40cd0",
+          "type": "data"
+        },
+        {
+          "id": "7f27c40a",
+          "type": "data"
+        },
+        {
+          "id": "cb9777f9",
+          "type": "data"
+        },
+        {
+          "id": "359db7ba",
+          "type": "data"
+        },
+        {
+          "id": "f7f89bdf",
+          "type": "data"
+        },
+        {
+          "id": "f6c7654f",
+          "type": "data"
+        },
+        {
+          "id": "4ef251bc",
+          "type": "data"
+        },
+        {
+          "id": "032c79e7",
+          "type": "task"
+        },
+        {
+          "id": "9b9da8f7",
+          "type": "data"
+        },
+        {
+          "id": "1b6f0119",
+          "type": "data"
+        },
+        {
+          "id": "a6dd3f01",
+          "type": "data"
+        },
+        {
+          "id": "9c31efba",
+          "type": "task"
+        },
+        {
+          "id": "f5eb96a7",
+          "type": "data"
+        },
+        {
+          "id": "a4fbfe20",
+          "type": "data"
+        },
+        {
+          "id": "14d7c1ab",
+          "type": "task"
+        },
+        {
+          "id": "32a01973",
+          "type": "task"
+        }
+      ]
+    }
+  },
+  "selected_pipeline": "core"
+}

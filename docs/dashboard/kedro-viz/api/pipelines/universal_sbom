@@ -1,0 +1,544 @@
+{
+  "nodes": [
+    {
+      "id": "18664949",
+      "name": "core_packages_enumerated",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vulnerability",
+        "vcs_health",
+        "seed_gaps",
+        "core",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "27bdea9a",
+      "name": "pypi_universe",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "pypi_intelligence",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "04746af5",
+      "name": "normalize_intake_to_cyclonedx",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "ttls": {
+          "core_downloads": 604800,
+          "core_downloads_platform_breakdown": 604800,
+          "core_downloads_pyver_breakdown": 604800,
+          "core_downloads_channel_breakdown": 604800,
+          "core_version_download_history": 604800,
+          "core_cf_graph_raw": 86400,
+          "pypi_universe": 604800,
+          "pypi_current_versions": 604800,
+          "pypi_downloads_monthly": 2592000,
+          "pypi_cross_channel_flags": 604800,
+          "pypi_intelligence_enriched": 604800,
+          "pypi_conda_map_store": 604800,
+          "pypi_endoflife_raw": 604800,
+          "vulnerability_cisa_kev_raw": 86400,
+          "vulnerability_package_rollup": 604800,
+          "vulnerability_package_version_vulns": 2592000,
+          "vulnerability_epss_raw": 86400,
+          "vulnerability_cwe_catalog_raw": 7776000,
+          "vulnerability_osv_offline_store": 604800,
+          "vcs_upstream_versions": 604800,
+          "vcs_registry_versions": 604800,
+          "vcs_live_health": 86400
+        },
+        "freshness": {
+          "stale_after_days": 14
+        },
+        "refresh_cadences": {
+          "vulnerability_vdb_store": 604800,
+          "vulnerability_osv_offline_store": 604800,
+          "pypi_conda_map_store": 604800
+        }
+      },
+      "full_name": "normalize_intake_to_cyclonedx"
+    },
+    {
+      "id": "679aaf52",
+      "name": "sbom_intake_entry",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.sbom_intake.SbomIntakeDataset"
+    },
+    {
+      "id": "847d0f5d",
+      "name": "sbom_resolution_entry",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.sbom_intake.TransitiveResolverDataset"
+    },
+    {
+      "id": "f1f1425b",
+      "name": "parameters",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "derived_artifacts"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "eb7bf388",
+      "name": "sbom_normalized_bom_entry",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "json.json_dataset.JSONDataset"
+    },
+    {
+      "id": "2bd50436",
+      "name": "run_dependency_hygiene",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "ttls": {
+          "core_downloads": 604800,
+          "core_downloads_platform_breakdown": 604800,
+          "core_downloads_pyver_breakdown": 604800,
+          "core_downloads_channel_breakdown": 604800,
+          "core_version_download_history": 604800,
+          "core_cf_graph_raw": 86400,
+          "pypi_universe": 604800,
+          "pypi_current_versions": 604800,
+          "pypi_downloads_monthly": 2592000,
+          "pypi_cross_channel_flags": 604800,
+          "pypi_intelligence_enriched": 604800,
+          "pypi_conda_map_store": 604800,
+          "pypi_endoflife_raw": 604800,
+          "vulnerability_cisa_kev_raw": 86400,
+          "vulnerability_package_rollup": 604800,
+          "vulnerability_package_version_vulns": 2592000,
+          "vulnerability_epss_raw": 86400,
+          "vulnerability_cwe_catalog_raw": 7776000,
+          "vulnerability_osv_offline_store": 604800,
+          "vcs_upstream_versions": 604800,
+          "vcs_registry_versions": 604800,
+          "vcs_live_health": 86400
+        },
+        "freshness": {
+          "stale_after_days": 14
+        },
+        "refresh_cadences": {
+          "vulnerability_vdb_store": 604800,
+          "vulnerability_osv_offline_store": 604800,
+          "pypi_conda_map_store": 604800
+        }
+      },
+      "full_name": "run_dependency_hygiene"
+    },
+    {
+      "id": "8a33e83a",
+      "name": "sbom_hygiene_entry",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "json.json_dataset.JSONDataset"
+    },
+    {
+      "id": "984bc0c0",
+      "name": "pypi_conda_mapping",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vcs_health",
+        "seed_gaps",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "ff48367d",
+      "name": "derived_universe_sbom",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "json.json_dataset.JSONDataset"
+    },
+    {
+      "id": "1444471b",
+      "name": "match_against_universe",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "ttls": {
+          "core_downloads": 604800,
+          "core_downloads_platform_breakdown": 604800,
+          "core_downloads_pyver_breakdown": 604800,
+          "core_downloads_channel_breakdown": 604800,
+          "core_version_download_history": 604800,
+          "core_cf_graph_raw": 86400,
+          "pypi_universe": 604800,
+          "pypi_current_versions": 604800,
+          "pypi_downloads_monthly": 2592000,
+          "pypi_cross_channel_flags": 604800,
+          "pypi_intelligence_enriched": 604800,
+          "pypi_conda_map_store": 604800,
+          "pypi_endoflife_raw": 604800,
+          "vulnerability_cisa_kev_raw": 86400,
+          "vulnerability_package_rollup": 604800,
+          "vulnerability_package_version_vulns": 2592000,
+          "vulnerability_epss_raw": 86400,
+          "vulnerability_cwe_catalog_raw": 7776000,
+          "vulnerability_osv_offline_store": 604800,
+          "vcs_upstream_versions": 604800,
+          "vcs_registry_versions": 604800,
+          "vcs_live_health": 86400
+        },
+        "freshness": {
+          "stale_after_days": 14
+        },
+        "refresh_cadences": {
+          "vulnerability_vdb_store": 604800,
+          "vulnerability_osv_offline_store": 604800,
+          "pypi_conda_map_store": 604800
+        }
+      },
+      "full_name": "match_against_universe"
+    },
+    {
+      "id": "b17ed9ba",
+      "name": "sbom_match_report_entry",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "json.json_dataset.JSONDataset"
+    },
+    {
+      "id": "29c855e7",
+      "name": "assemble_and_gate",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "ttls": {
+          "core_downloads": 604800,
+          "core_downloads_platform_breakdown": 604800,
+          "core_downloads_pyver_breakdown": 604800,
+          "core_downloads_channel_breakdown": 604800,
+          "core_version_download_history": 604800,
+          "core_cf_graph_raw": 86400,
+          "pypi_universe": 604800,
+          "pypi_current_versions": 604800,
+          "pypi_downloads_monthly": 2592000,
+          "pypi_cross_channel_flags": 604800,
+          "pypi_intelligence_enriched": 604800,
+          "pypi_conda_map_store": 604800,
+          "pypi_endoflife_raw": 604800,
+          "vulnerability_cisa_kev_raw": 86400,
+          "vulnerability_package_rollup": 604800,
+          "vulnerability_package_version_vulns": 2592000,
+          "vulnerability_epss_raw": 86400,
+          "vulnerability_cwe_catalog_raw": 7776000,
+          "vulnerability_osv_offline_store": 604800,
+          "vcs_upstream_versions": 604800,
+          "vcs_registry_versions": 604800,
+          "vcs_live_health": 86400
+        },
+        "freshness": {
+          "stale_after_days": 14
+        },
+        "refresh_cadences": {
+          "vulnerability_vdb_store": 604800,
+          "vulnerability_osv_offline_store": 604800,
+          "pypi_conda_map_store": 604800
+        }
+      },
+      "full_name": "assemble_and_gate"
+    },
+    {
+      "id": "8d949009",
+      "name": "sbom_compliance_report_entry",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "json.json_dataset.JSONDataset"
+    }
+  ],
+  "edges": [
+    {
+      "source": "eb7bf388",
+      "target": "1444471b"
+    },
+    {
+      "source": "8a33e83a",
+      "target": "29c855e7"
+    },
+    {
+      "source": "f1f1425b",
+      "target": "29c855e7"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "1444471b"
+    },
+    {
+      "source": "f1f1425b",
+      "target": "04746af5"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "1444471b"
+    },
+    {
+      "source": "1444471b",
+      "target": "b17ed9ba"
+    },
+    {
+      "source": "18664949",
+      "target": "1444471b"
+    },
+    {
+      "source": "f1f1425b",
+      "target": "2bd50436"
+    },
+    {
+      "source": "29c855e7",
+      "target": "8d949009"
+    },
+    {
+      "source": "f1f1425b",
+      "target": "1444471b"
+    },
+    {
+      "source": "04746af5",
+      "target": "eb7bf388"
+    },
+    {
+      "source": "2bd50436",
+      "target": "8a33e83a"
+    },
+    {
+      "source": "b17ed9ba",
+      "target": "29c855e7"
+    },
+    {
+      "source": "847d0f5d",
+      "target": "04746af5"
+    },
+    {
+      "source": "ff48367d",
+      "target": "1444471b"
+    },
+    {
+      "source": "679aaf52",
+      "target": "04746af5"
+    },
+    {
+      "source": "679aaf52",
+      "target": "2bd50436"
+    }
+  ],
+  "layers": [],
+  "tags": [],
+  "pipelines": [
+    {
+      "id": "__default__",
+      "name": "__default__"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
+      "id": "core",
+      "name": "core"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "universal_sbom",
+      "name": "universal_sbom"
+    },
+    {
+      "id": "vcs_health",
+      "name": "vcs_health"
+    }
+  ],
+  "modular_pipelines": {
+    "__root__": {
+      "id": "__root__",
+      "name": "__root__",
+      "inputs": [],
+      "outputs": [],
+      "children": [
+        {
+          "id": "984bc0c0",
+          "type": "data"
+        },
+        {
+          "id": "b17ed9ba",
+          "type": "data"
+        },
+        {
+          "id": "8a33e83a",
+          "type": "data"
+        },
+        {
+          "id": "18664949",
+          "type": "data"
+        },
+        {
+          "id": "27bdea9a",
+          "type": "data"
+        },
+        {
+          "id": "8d949009",
+          "type": "data"
+        },
+        {
+          "id": "f1f1425b",
+          "type": "data"
+        },
+        {
+          "id": "1444471b",
+          "type": "task"
+        },
+        {
+          "id": "04746af5",
+          "type": "task"
+        },
+        {
+          "id": "ff48367d",
+          "type": "data"
+        },
+        {
+          "id": "f1f1425b",
+          "type": "parameters"
+        },
+        {
+          "id": "847d0f5d",
+          "type": "data"
+        },
+        {
+          "id": "29c855e7",
+          "type": "task"
+        },
+        {
+          "id": "eb7bf388",
+          "type": "data"
+        },
+        {
+          "id": "2bd50436",
+          "type": "task"
+        },
+        {
+          "id": "679aaf52",
+          "type": "data"
+        }
+      ]
+    }
+  },
+  "selected_pipeline": "universal_sbom"
+}

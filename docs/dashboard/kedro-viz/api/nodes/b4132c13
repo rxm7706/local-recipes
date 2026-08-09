@@ -1,0 +1,14 @@
+{
+  "code": "def fetch_basilisk_details(\n    vulnerability_basilisk_detail_raw,\n    vulnerability_basilisk_advisories: pd.DataFrame,\n) -> pd.DataFrame:\n    # legacy: Basilisk /v1/vulns/{id}  (FR-19, Story B8; spec §13.1)\n    \"\"\"Derive the per-advisory tri-state ``fix_available`` from the bounded ``GET /v1/vulns/{id}``\n    detail payload (AC-3). ``vulnerability_basilisk_detail_raw`` is what ``BasiliskDetailDataset``\n    resolves: a list of OSV detail records ``{\"advisory_id\"/\"id\", \"affected\": [...], \"severity\"}``\n    (offline -> ``[]``). ``fix_available`` is TRI-STATE — a record carrying ONLY an enumerated\n    ``versions`` list yields ``\"unknown\"``, NEVER ``\"false\"`` (:func:`_derive_fix_available`).\n    Pure — no IO.\n\n    Output ``vulnerability_basilisk_details`` (intermediate; NOT a parity/new-signal primary):\n    ``advisory_id``, ``fix_available``, ``severity``.\n    \"\"\"\n    cols = [\"advisory_id\", \"fix_available\", \"severity\"]\n    records = (\n        vulnerability_basilisk_detail_raw\n        if isinstance(vulnerability_basilisk_detail_raw, list)\n        else []\n    )\n    rows: list[dict[str, Any]] = []\n    for detail in records:\n        if not isinstance(detail, dict):\n            continue\n        # OSV detail records key the advisory as `id`; a `None`-valued `advisory_id`\n        # key must fall back to `id` (`.get(k, default)` returns None when k is present).\n        advisory_id = detail.get(\"advisory_id\") or detail.get(\"id\")\n        if advisory_id is None:\n            continue\n        rows.append(\n            {\n                \"advisory_id\": str(advisory_id),\n                \"fix_available\": _derive_fix_available(detail),\n                \"severity\": detail.get(\"severity\"),\n            }\n        )\n    if not rows:\n        return pd.DataFrame(columns=cols)\n    # object dtype keeps fix_available the literal tri-state string — never a bool coercion.\n    out = pd.DataFrame(rows, columns=cols).drop_duplicates(\n        subset=[\"advisory_id\"], keep=\"last\"\n    ).reset_index(drop=True)\n    out[\"fix_available\"] = out[\"fix_available\"].astype(\"object\")\n    return out\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='fetch_basilisk_details'",
+  "inputs": [
+    "vulnerability_basilisk_detail_raw",
+    "vulnerability_basilisk_advisories"
+  ],
+  "outputs": [
+    "vulnerability_basilisk_details"
+  ],
+  "preview": null
+}

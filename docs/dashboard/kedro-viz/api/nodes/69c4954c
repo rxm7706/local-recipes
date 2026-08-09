@@ -1,0 +1,14 @@
+{
+  "code": "def report_cwe_seed_gap(\n    seed_cwe_categories: Any,\n    vulnerability_cwe_categories: Any,\n) -> pd.DataFrame:\n    \"\"\"§ 3.4 ``report_cwe_seed_gap`` — propose ``cwe_categories_seed.json``\n    entries by keyword-classifying MITRE CWEs currently bucketed ``'Other'``\n    (legacy ``cwe_seed_gap.py``). READ-ONLY report; git review decides.\n    Candidates = ``vulnerability_cwe_categories`` rows where ``category ==\n    'Other'`` → ``(cwe_id, cwe_name)``; ``seed_cwe_categories`` (``_doc`` key\n    stripped) → the ``{cwe_id: category}`` belt-and-braces exclusion.\n    ``packages_with_other_bucket`` is deferred (DW-B6-2 — no migrated per-package\n    CWE-rollup dataset yet), so the report ships the proposal rows only.\"\"\"\n    seed: dict[str, str] = {}\n    if isinstance(seed_cwe_categories, dict):\n        seed = {k: v for k, v in seed_cwe_categories.items() if not str(k).startswith(\"_\")}\n    df = vulnerability_cwe_categories\n    if df is None or getattr(df, \"empty\", True) or not {\"cwe_id\", \"category\"} <= set(getattr(df, \"columns\", [])):\n        return pd.DataFrame(columns=_CWE_COLS)\n    others = df[df[\"category\"] == \"Other\"]\n    candidates: list[tuple[str, str]] = []\n    for cwe_id, cwe_name in zip(others[\"cwe_id\"], others.get(\"cwe_name\", [\"\"] * len(others))):\n        name = \"\" if cwe_name is None or (isinstance(cwe_name, float) and pd.isna(cwe_name)) else str(cwe_name)\n        candidates.append((cwe_id, name))\n    candidates.sort(key=lambda r: str(r[0]))\n    proposals = _classify_cwe_candidates(candidates, seed)\n    return pd.DataFrame(proposals, columns=_CWE_COLS).reset_index(drop=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/seed_gaps/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='report_cwe_seed_gap'",
+  "inputs": [
+    "seed_cwe_categories",
+    "vulnerability_cwe_categories"
+  ],
+  "outputs": [
+    "seed_gaps_cwe_report"
+  ],
+  "preview": null
+}

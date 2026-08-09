@@ -1,0 +1,8 @@
+{
+  "type": "datasets.refresh.MappingCacheDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/.claude/data/conda-forge-expert/pypi_conda_map.json",
+  "run_command": "kedro run --to-outputs=pypi_conda_map_store",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

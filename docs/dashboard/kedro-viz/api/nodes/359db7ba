@@ -1,0 +1,8 @@
+{
+  "type": "datasets.request_datasets.AnacondaDownloadsDataset",
+  "filepath": null,
+  "run_command": null,
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

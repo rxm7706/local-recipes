@@ -1,0 +1,8 @@
+{
+  "type": "pandas.parquet_dataset.ParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/intermediate/vulnerability_cisa_kev/vulnerability_cisa_kev.parquet",
+  "run_command": "kedro run --to-outputs=vulnerability_cisa_kev",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

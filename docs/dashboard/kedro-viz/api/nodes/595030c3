@@ -1,0 +1,20 @@
+{
+  "code": "def track_registry_versions(\n    vcs_registry_npm_raw: pd.DataFrame,\n    vcs_registry_cran_raw: pd.DataFrame,\n    vcs_registry_cpan_raw: pd.DataFrame,\n    vcs_registry_luarocks_raw: pd.DataFrame,\n    vcs_registry_crates_raw: pd.DataFrame,\n    vcs_registry_rubygems_raw: pd.DataFrame,\n    vcs_registry_maven_raw: pd.DataFrame,\n    vcs_registry_nuget_raw: pd.DataFrame,\n) -> pd.DataFrame:\n    # legacy: Phase L  (phase_l_extra_registries CFA:5841)\n    \"\"\"Merge upstream versions across the 8 cross-ecosystem registries into one frame.\n    Per-registry concurrency caps + per-source TTL treatment are DATASET-owned (AD-2);\n    this node only tags each frame with its ``registry`` and concatenates. Input per\n    registry: ``conda_name``, ``upstream_version``. Output: ``conda_name``,\n    ``registry``, ``upstream_version``.\"\"\"\n    cols = [\"conda_name\", \"registry\", \"upstream_version\"]\n    frames = []\n    per_registry = zip(\n        _REGISTRY_INPUTS,\n        (\n            vcs_registry_npm_raw, vcs_registry_cran_raw, vcs_registry_cpan_raw,\n            vcs_registry_luarocks_raw, vcs_registry_crates_raw, vcs_registry_rubygems_raw,\n            vcs_registry_maven_raw, vcs_registry_nuget_raw,\n        ),\n    )\n    for registry, df in per_registry:\n        if df is None or df.empty:\n            continue\n        part = df.copy()\n        part[\"registry\"] = registry\n        for c in (\"conda_name\", \"upstream_version\"):\n            if c not in part.columns:\n                part[c] = pd.NA\n        frames.append(part[cols])\n    if not frames:\n        return pd.DataFrame(columns=cols)\n    return pd.concat(frames, ignore_index=True)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='track_registry_versions'",
+  "inputs": [
+    "vcs_registry_npm_raw",
+    "vcs_registry_cran_raw",
+    "vcs_registry_cpan_raw",
+    "vcs_registry_luarocks_raw",
+    "vcs_registry_crates_raw",
+    "vcs_registry_rubygems_raw",
+    "vcs_registry_maven_raw",
+    "vcs_registry_nuget_raw"
+  ],
+  "outputs": [
+    "vcs_registry_versions"
+  ],
+  "preview": null
+}

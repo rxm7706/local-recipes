@@ -1,0 +1,19 @@
+{
+  "code": "def refresh_vdb_store(refresh_cadences: dict) -> RefreshRequest:\n    # legacy: vdb-refresh  (vuln-db env, appthreat-vulnerability-db; spec §3.4/§5.4)\n    \"\"\"External-refresh asset for the AppThreat vdb. PURE: emits the ``RefreshRequest``\n    trigger the ``VDBStoreDataset`` consumes (which HONORS its cadence/force and invokes the\n    dataset-owned injected refresher); the vuln-db-env build is dataset-owned IO (NO\n    ``subprocess`` here — the vuln-db env is a *declared resource requirement*, AC-3).\n    Cadence weekly (== the legacy vdb-refresh TTL, schedule-as-fixture AC-1). Single writer\n    of ``vulnerability_vdb_store``.\"\"\"\n    return RefreshRequest(\n        store=\"vulnerability_vdb_store\",\n        cadence_seconds=_coerce_cadence(refresh_cadences, \"vulnerability_vdb_store\"),\n        resource=VULN_DB_ENV_RESOURCE,\n    )\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/vulnerability/nodes.py",
+  "parameters": {
+    "refresh_cadences": {
+      "vulnerability_vdb_store": 604800,
+      "vulnerability_osv_offline_store": 604800,
+      "pypi_conda_map_store": 604800
+    }
+  },
+  "run_command": "kedro run --to-nodes='refresh_vdb_store'",
+  "inputs": [
+    "params:refresh_cadences"
+  ],
+  "outputs": [
+    "vulnerability_vdb_store"
+  ],
+  "preview": null
+}

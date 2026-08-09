@@ -1,0 +1,80 @@
+name: Kedro-Viz publish (real atlas DAG)
+
+# Epic 12/FR-62: build the REAL pyforge-atlas Kedro DAG's static kedro-viz
+# export on every push touching its pipelines, and publish it -- without
+# Atlas standing up a second bespoke publishing path.
+#
+# Why `steward deploy dashboard` and not a bespoke commit step, and why not
+# the third-party `publish-kedro-viz` Action: `publish-kedro-viz` has been
+# dormant ~8.5 months and pins a kedro-viz major a future release could
+# strand. A bespoke commit step here would duplicate Steward's own,
+# already-reviewed reconciled-push logic (detached-HEAD refusal, pathspec-
+# scoped commit, stuck-push retry -- see `pyforge-steward/src/pyforge/
+# steward/deploy.py`). Calling the existing `steward deploy dashboard` CLI
+# gets all of that for free and keeps this workflow a thin caller, never a
+# reimplementation.
+#
+# `viz-publish-stage` (pixi.toml) builds with `PYTHONHASHSEED=0` pinned and
+# normalizes the checkout-anchored absolute paths + build timestamp OUT of
+# the export (see `pyforge-atlas/tools/normalize_viz_build.py`) before
+# staging to `docs/dashboard/kedro-viz/` -- without that, `steward deploy
+# dashboard`'s diff-gate would see spurious churn on every run (a different
+# checkout path every time) and never report "nothing to deploy".
+#
+# The already-existing `dashboard.yml` Pages workflow (unconditional
+# push-to-main trigger, uploads the whole `docs/dashboard/` tree) republishes
+# automatically once this workflow's commit lands on `main` -- zero changes
+# made to it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kedro-viz-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # `actions/checkout` leaves HEAD detached even on a push-to-branch
+      # trigger. `steward deploy dashboard`'s `commit_and_push_dashboard`
+      # resolves `git symbolic-ref --short HEAD` first and refuses cleanly
+      # (never commits) on a detached HEAD -- re-attach to a real local
+      # `main` tracking `origin/main` before ever invoking it. Hardcoded to
+      # `main` (not a templated ref), matching this workflow's own single
+      # trigger branch and `dashboard.yml`'s identical hardcoding.
+      - name: Re-attach to main (undo checkout's detached HEAD)
+        run: |
+          git checkout -B main
+          git branch --set-upstream-to=origin/main main
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.75.0
+          environments: >-
+            pyforge-atlas
+            pyforge-steward
+          locked: true
+          cache: true
+
+      - name: Build + normalize + stage the real DAG's kedro-viz export
+        run: pixi run -e pyforge-atlas viz-publish-stage
+
+      - name: Reconciled commit + push (no-op if no real diff)
+        run: pixi run -e pyforge-steward steward deploy dashboard
