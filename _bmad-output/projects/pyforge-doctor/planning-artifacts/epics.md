@@ -565,7 +565,28 @@ not a bigger constant. Epic 6's remaining stories are unblocked.
 enumerable with its scope, subject station and owning station
 **And** a source with no declared subject is a startup error, not a default
 
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-08-08).** `sources/__init__.py` (was empty) now holds a validated
+`SourceRegistration` registry (scope + subject station + owning station per current
+`Source` member, `__post_init__` raising loud on an empty subject/owner or an invalid
+scope — including a whitespace-only value) covering all 9 sources that existed before
+this story; a coherence test enforces exact set-equality between `Source` and the
+registry in both directions. `scripts/detectors.py` gained a `_doctor_sources()` helper
+that reads this registry directly (never AST-scanning Doctor's package) and reports a
+`doctor_sources_available` flag alongside the rows, so "zero sources" is never confused
+with "the package isn't importable here" — verified true in both the dedicated
+`pyforge-doctor` env (9 rows) and the default `local-recipes` env / `detectors.yml` CI
+workflow (neither installs `pyforge-doctor`; the flag reads `false` there, not a silent
+empty list). This story is the registry MECHANISM only: no `scripts/*_check.py` logic
+moved, and none of the 10 not-yet-implemented detector identities (`ledger_regression`
+etc.) were added — those land with their own `gather()` in Stories 6.4-6.9, each
+registering its own entry against the coherence test built here. One pre-existing gap
+surfaced incidentally: `Source.BEHIND_UPSTREAM` has no backing `gather()` anywhere in
+`pyforge.doctor` (only 4 of the 5 named atlas axes were ever wired) — logged as deferred
+work, not fixed here (outside this story's surface). 435 doctor tests pass
+(`pyforge-doctor-test`), plus 4 new stdlib-only tests under the lean `pyforge-ci` env
+(`pyforge-doctor-scripts-test`, new task).
 
 ### Story 6.3: The repo/runtime split survives the move
 
@@ -577,7 +598,29 @@ enumerable with its scope, subject station and owning station
 **Then** those sources report `WARN`/unknown — never `OK`, never an exception
 **And** a CI-only invocation can select the repo-scope set explicitly
 
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-08-09).** Mechanism-only, like Story 6.2: no real `scope="runtime"`
+source exists yet (Story 6.5's `dashboard_drift` is still the first), so this story
+built the two pieces every later story needs. `sources.scope_for(source)` is the one
+canonical per-source scope lookup, and `sources.degrade_on_exception(source, check,
+gather)` is the reusable "cannot evaluate here" wrapper a future `scope="runtime"`
+gather calls around its own host-state reads — deliberately NOT wired into today's
+three existing (`scope="repo"`) dispatch calls, whose own gather functions already
+promise never to raise. `doctor check` gained `--scope {repo,runtime,all}` (default
+`all`, unchanged behavior), filtering `run_engines`/`run_env`/`run_durability` by
+each category's `sources.REGISTRY`-declared scope — proving the CI-selection half of
+the AC today (`--scope runtime` yields 0 findings/exit 0, since all 9 registered
+sources are still `scope="repo"`). Adversarial review (Blind Hunter + Edge Case
+Hunter, independently, both) caught one real gap: an EXPLICIT category flag
+(`--engines`/`--env`/`--durability`) contradicting `--scope` used to silently drop to
+a zero-finding, exit-0 report indistinguishable from "ran clean" for an automated
+`--json` consumer — fixed with a usage-error guard (`_validate_scope_against_
+explicit_categories`) before dispatch, so only the implicit default-run's "narrow to
+zero" stays silent (the documented, intentional CI-selection behavior). 449 doctor
+tests pass (10 new this story). One pre-existing `__all__`-sort lint finding
+(ruff RUF022, confirmed via `git show <baseline> | ruff check`) logged to
+`deferred-work.md`, not fixed here.
 
 ### Story 6.4: The ledger verdicts come home
 

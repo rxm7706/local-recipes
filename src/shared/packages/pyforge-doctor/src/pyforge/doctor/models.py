@@ -45,7 +45,10 @@ class Source(StrEnum):
     """The wrapped instruments (closed) — one member per gather filter the
     architecture spine names (AD-1 warden-doctor; AD-6 the five atlas Watch
     axes; AD-3/FR-3 env-hygiene; AD-9/FR-12 adoption, Story 4.3 — the closed
-    taxonomy EXTENDED, never opened)."""
+    taxonomy EXTENDED, never opened).
+
+    Each member's scope, subject station, and owning station are declared in
+    ``doctor.sources.REGISTRY`` (Story 6.2)."""
 
     WARDEN_DOCTOR = "warden-doctor"
     STALENESS_REPORT = "staleness-report"
@@ -60,6 +63,14 @@ class Source(StrEnum):
     # all three guards written in response lived in Marshal's own surface.
     MARSHAL_DURABILITY = "marshal-durability"
     ADOPTION = "adoption"
+    # Story 6.4 (FR-15): the closed taxonomy EXTENDED again -- Doctor's
+    # verdict on the tracked sprint ledger's own regression-freedom (ported
+    # from scripts/ledger_regression_check.py) and on the Tier-3 sprint-status
+    # feed's false-green stories (ported from scripts/story_status_check.py).
+    # Both judge a Marshal-produced artifact; see sources/ledger.py and
+    # sources/marshal.py's gather_story_status for the independence rationale.
+    LEDGER_REGRESSION = "ledger-regression"
+    STORY_STATUS = "story-status"
 
 
 class Partition(StrEnum):
