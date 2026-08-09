@@ -34,7 +34,7 @@ source_pin: 'conda-forge-expert v8.81.0'
 | Build engine | Pixi + rattler-build (NOT conda-build, except for legacy v0 maintenance); hatchling for the PyForge distributions |
 | Target platforms | linux-64, linux-aarch64, osx-64, osx-arm64, win-64 |
 | Default pixi env | `local-recipes` (declared via `# default-env:` directive in `pixi.toml`) |
-| Total pixi envs | 19 pixi envs across 17 features — **9 factory** (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`) + **6 product** (`pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`, all `no-default-feature = true`) |
+| Total pixi envs | 20 pixi envs across 17 features — **9 factory** (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`) + **11 product** (`pyforge-ci`, `pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `pyforge-mason`, `pyforge-steward`, `pyforge-marshal`, `bmad-ui`, `pyforge-container`, all `no-default-feature = true`) |
 | Default channel | conda-forge |
 | License | BSD-3-Clause (LICENSE.txt) |
 | Maintainer of new recipes | `rxm7706` (in `extra.recipe-maintainers`) |

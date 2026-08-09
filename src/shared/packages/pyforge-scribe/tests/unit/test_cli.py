@@ -45,6 +45,15 @@ def _combined_output(result) -> str:
     return text
 
 
+def test_version_flag_prints_version_and_exits_0() -> None:
+    result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == 0
+    from pyforge.scribe import __version__
+
+    assert f"scribe {__version__}" in _combined_output(result)
+
+
 def test_capture_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)

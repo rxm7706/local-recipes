@@ -1,0 +1,181 @@
+# Story 7.1: the Containerfile's builder stage COPYs the full repo checkout
+# (stations locate their repo root by marker-file walk-up, so a partial
+# checkout breaks that) -- this file only strips VCS metadata, local caches,
+# and build artifacts that are never needed inside the image.
+#
+# PATTERN SEMANTICS -- .dockerignore is NOT .gitignore. Docker matches each
+# pattern against the whole context-relative path, so a bare `__pycache__/`
+# matches ONLY a root-level one and silently misses all 67 nested under
+# src/**. Anything that can occur at any depth therefore needs an explicit
+# `**/` prefix. Entries WITHOUT one are root-anchored ON PURPOSE, and each
+# such case was checked against `git ls-files` -- a root-anchored rule that
+# guesses wrong ships the thing it meant to strip (`.idea/` did: this repo
+# tracks `recipes/.idea/`, 10 files, which the root-anchored rule missed
+# until it was widened below).
+#
+# TRACKED FILES ARE THE HAZARD, not untracked ones. A rule that swallows a
+# git-tracked file makes the image quietly unlike the checkout, and nothing
+# reports it -- the same failure class `.gitignore` hit on 2026-08-09, where
+# a blanket `*.log` emptied `tests/fixtures/error_logs/` and turned the
+# failure-analyzer's two unmatched-log cases into false greens. `.gitignore`
+# fixed that with a narrow negation rather than by weakening `*.log`; all four
+# negations below are that same fix, one per broad rule that would otherwise
+# take a tracked file (`.pixi/config.toml`, `.bmad-loop/bmad_loop_hook.py`,
+# the two `conf/local/.gitkeep`s, `error_logs/unmatched.log`). Audit any new
+# broad rule with: git ls-files | <match against this file>.
+#
+# UNTRACKED FILES ARE THE OTHER HALF, and only for one class: anything
+# secret-shaped. The tracked-file audit above cannot see them by
+# construction, so the secrets block below is maintained by cross-checking
+# .gitignore's own secret-shaped entries -- see `conf/local/` there, which is
+# exactly the case a tracked-file-only audit misses.
+
+.git/
+
+# The root `.pixi/` env is multi-GB and the builder stage materializes its
+# own -- but `.pixi/config.toml` is GIT-TRACKED and load-bearing: it carries
+# `run-post-link-scripts = "insecure"`, without which `pixi install` skips
+# the post-link scripts that gdk-pixbuf (loaders.cache), gtk3, librsvg and
+# graphviz all ship. Stripping it makes the image's install silently unlike
+# every host install (verified: the host's pyforge-container env has
+# `lib/gdk-pixbuf-2.0/2.10.0/loaders.cache`; a post-link-less install does
+# not). `.pixi/*` rather than `.pixi/` so Docker drops each child wholesale
+# instead of walking the whole env to honour the exception.
+.pixi/*
+!.pixi/config.toml
+# Nested pixi workspaces materialize their own envs (recipes/insightforge/
+# and each src/shared/packages/* member declares its own manifest).
+recipes/*/.pixi/
+src/**/.pixi/
+
+# BMAD Tier-3 runtime scratch -- gitignored, local-only, never git-tracked.
+# `_bmad-output/implementation-artifacts` is only a SYMLINK into the active
+# project; the real per-project trees (run state, transcripts, patches,
+# logs) live under projects/*/ and need their own pattern, or they ride
+# along on any checkout where more than one station has run.
+_bmad-output/implementation-artifacts/
+_bmad-output/projects/*/implementation-artifacts
+_bmad-output/projects/*/_root-fallback-fork-*
+
+# bmad-loop run state -- a loop home is itself a full repo checkout (this
+# story was developed in one), so `docker build .` from a loop home would
+# otherwise ship every run's transcripts, patches and logs: 11GB in the
+# steward home at the time of writing, and agent transcripts are exactly the
+# kind of thing that carries a pasted credential. This is BROADER than
+# .gitignore's four `.bmad-loop/*` entries (`runs/`, `cache/`, `policy.toml`,
+# `skill-projection.json`), which are narrow precisely so that
+# `bmad_loop_hook.py` stays TRACKED -- so the blanket rule needs the negation
+# below, or it swallows a tracked file and trips this file's own hazard.
+.bmad-loop/
+!.bmad-loop/bmad_loop_hook.py
+
+# Build-host BMAD identity -- which project the marker/symlink point at is a
+# property of the machine that built the image, not of the image. Baking it
+# in makes two hosts produce two different images from one commit.
+_bmad-output/planning-artifacts
+_bmad/custom/.active-project
+_bmad/config.user.toml
+_bmad/_memory/
+
+# Deprecated/historical content, not needed at runtime.
+archive/
+
+# Herald deck output -- large (84MB in this checkout) and not needed to run
+# any station CLI. NOTE the real trade-off: herald's deck duty IS rooted
+# here (`deck_pipeline.py`: `repo_root / "presentations" / slug`), so
+# `herald deck` subcommands are host-only in this image by design. Story
+# 7.4's volume mount is the seam if they ever need to run in-container.
+presentations/
+
+# Local secrets/credentials/state -- must never enter an image layer (these
+# mirror entries .gitignore already treats as secret- or host-state-shaped:
+# .env, .env.github, .secrets, .private, SDKs/). `.steward/` is the steward
+# station's own repo-root state dir -- keys-inventory.yaml carries
+# identity_path pointers, provenance and rotation history, budget.yaml the
+# spend ceilings; neither belongs to whoever pulls the image. `/.herald/` is
+# its exact analogue (AD-5's repo-local bridge/etag store, root-anchored in
+# .gitignore for the same reason). `.claude/data/` is the gitignored mutable
+# runtime cache (cf_atlas.db, vdb/, cve/, mapping caches) that Story 7.4
+# mounts as a volume -- baking today's snapshot in would both leak whatever
+# is locally cached and freeze stale state; `.claude/skills/data/` is its
+# skill-scoped sibling.
+#
+# `conf/local/` is Kedro's canonical local-credentials path, and it is the one
+# rule here that guards a file which ACTUALLY EXISTS in a normal checkout:
+# `src/shared/packages/pyforge-atlas/tests/orchestration/conftest.py`
+# auto-generates `conf/local/credentials.yml` (keys `bigquery_adc`,
+# `github_token`) on any checkout that has run atlas's orchestration gates,
+# and its own header says "Replace with real values for live runs". Atlas's
+# `.gitignore` declares the path secret TWICE (`conf/local/**` and
+# `conf/**/*credentials*`); without a counterpart here the stub -- or a
+# maintainer's real token, once they follow that instruction -- lands in a
+# shareable image layer with nothing reporting it. `**/` because there are
+# three `conf/` trees (root, pyforge-atlas, pyforge-atlas-kedro-viz) and two
+# of them have a `local/`. The `.gitkeep` negations are mandatory: both are
+# git-tracked.
+.env
+.env.github
+.secrets
+.private
+SDKs/
+.steward/
+.herald/
+.claude/settings.local.json
+.claude/data/
+.claude/skills/data/
+**/conf/local/*
+!**/conf/local/.gitkeep
+**/conf/**/*credentials*
+
+# Python build/test artifacts -- all occur at any depth (each package under
+# src/shared/packages/ grows its own), hence `**/`. Every tool listed here
+# is installed by this workspace's pixi features, so every one of these can
+# exist in a developer's checkout.
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+**/.pytest_cache/
+**/.import_linter_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.hypothesis/
+**/htmlcov/
+**/.coverage
+**/.venv/
+**/build/
+**/dist/
+**/dist-conda/
+**/build_artifacts/
+
+# Atlas run-admission locks -- `data.locks/*.lock` + `*.holder.json`, written
+# by `admission.py` on every `kedro run` and gitignored (atlas's .gitignore
+# line 32; its own test says "Gitignored, but not hermetic"). Same reasoning
+# as `.claude/data/` above: baking today's snapshot in freezes whatever the
+# build host happened to be running -- an image built while atlas's tests
+# were running ships ~90 of them, each recording a build-host pid and run id.
+# Harmless by luck rather than design (exclusion is a live `flock`, which no
+# image can carry, and a dead holder is reclaimed), but the image should not
+# be a function of what was running on the machine that built it.
+**/data.locks/
+
+# conda/rattler-build leavings -- this is a packaging factory, so a checkout
+# that has run a local recipe build carries these (none are git-tracked).
+conda-bld/
+miniforge3/
+**/*.conda
+**/*.tar.bz2
+
+# Node artifacts (present under some presentations/* subprojects)
+**/node_modules/
+
+# Editor/IDE metadata -- `**/` because `recipes/.idea/` is tracked too.
+**/.idea/
+**/.vscode/
+**/.junie/
+
+# Misc local noise. The `*.log` negation mirrors .gitignore's: the
+# failure-analyzer's fixture tree holds the repo's only tracked `.log`, and
+# its absence turns two tests into false greens rather than failures.
+**/.DS_Store
+**/*.log
+!.claude/skills/conda-forge-expert/tests/fixtures/error_logs/**/*.log
