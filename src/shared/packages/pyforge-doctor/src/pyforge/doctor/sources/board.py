@@ -131,8 +131,31 @@ def _frontmatter(path: Path) -> dict[str, str]:
             continue  # nested list/continuation line -- not a top-level key
         key, sep, value = line.partition(":")
         if sep and key.strip():
-            out[key.strip()] = value.strip()
+            out[key.strip()] = _scalar(value)
     return out
+
+
+def _scalar(raw: str) -> str:
+    """A frontmatter scalar's VALUE, with the two bits of YAML syntax that
+    would otherwise silently change a status: an inline ``  # comment`` and
+    surrounding quotes.
+
+    The parser this replaced was ``yaml.safe_load``, which decoded both. Left
+    raw, ``status: 'draft'`` reads as ``"'draft'"``, misses the
+    ``OPEN_SPEC_STATUSES`` membership test, and silently EXEMPTS an open,
+    undecomposed Spec -- a false negative in the one check whose whole purpose
+    is making "we chose not to" distinguishable from "nobody noticed". Same
+    hazard for ``epics_role: "canonical"``, where the miss skips INV-B/INV-D
+    entirely. Latent today (no consumed file is quoted) but one line to close,
+    and this repo demonstrably writes quoted statuses elsewhere.
+    """
+    value = raw.strip()
+    head, hash_, _ = value.partition(" #")
+    if hash_:
+        value = head.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        value = value[1:-1]
+    return value
 
 
 def _norm_id(token: str) -> str:
@@ -217,16 +240,38 @@ def _board_lines(data_js: Path) -> dict[str, tuple[int, int]] | None:
         # the one thing this function promises to degrade on, mirroring the
         # original script's own broad except.
         return None
+    projects = data.get("projects") if isinstance(data, dict) else None
+    if not isinstance(projects, dict):
+        # A structurally-wrong-but-valid-JSON board (`projects` a list, a
+        # string, or absent) is "cannot read the generated board" -- the one
+        # thing this function promises to degrade on -- NOT an AttributeError
+        # raised from outside the caller's per-project try. INV-C treats None
+        # and {} identically (`board is not None and station in board`), so
+        # this only changes which failure mode a broken file produces.
+        return None
     out: dict[str, tuple[int, int]] = {}
-    for key, proj in (data.get("projects") or {}).items():
+    for key, proj in projects.items():
         if not isinstance(proj, dict):
             continue  # a malformed data.js entry for ONE station must not
             # take down every other station's INV-C comparison
         epics = proj.get("epics")
-        if not epics:
-            continue
-        stories = [s for e in epics for s in (e.get("stories") or [])
-                   if isinstance(e, dict) and isinstance(s, (list, tuple)) and s]
+        if not isinstance(epics, (list, tuple)):
+            continue  # ditto: `epics` as a string/mapping is not an epic list
+        stories = [
+            s
+            for e in epics
+            # This guard MUST precede the second `for`, not trail it: a
+            # comprehension evaluates the inner iterable BEFORE any trailing
+            # `if`, so `e.get(...)` runs on a non-dict `e` regardless. As a
+            # trailing filter it silently did nothing -- and because `board`
+            # is computed OUTSIDE the per-project try, the resulting
+            # AttributeError escaped to the whole-gather `degrade_on_exception`
+            # and collapsed EVERY project's real FAIL into one vacuous WARN
+            # (exit 0). Adversarial-review regression, reproduced live.
+            if isinstance(e, dict)
+            for s in (e.get("stories") or [])
+            if isinstance(s, (list, tuple)) and s
+        ]
         done = sum(1 for s in stories if len(s) > 1 and s[1] == "done")
         out[key] = (done, len(stories))
     return out
@@ -267,7 +312,11 @@ def _check_chain_completeness(target: Path) -> list[dict]:
         except Exception as exc:  # noqa: BLE001 -- one project's failure must
             # not discard every other project's already-computed findings.
             findings.append({
-                "inv": "INV-A", "kind": "chain-completeness-unevaluable",
+                # NOT "INV-A": this catch wraps the whole INV-A/B/C/D
+                # evaluation, so stamping one invariant would point an
+                # operator (or an --inv filter) at Spec decomposition when the
+                # broken input was, say, the ledger INV-B reads.
+                "inv": "", "kind": "chain-completeness-unevaluable",
                 "project": project, "subject": project, "status": "",
                 "detail": (f"could not be evaluated here — "
                            f"{exc.__class__.__name__}: {exc}"),
@@ -464,7 +513,20 @@ def _load_dashboard_generate(target: Path):
         raise ImportError(f"cannot load a module spec for {path}")
     mod = importlib.util.module_from_spec(spec)
     sys.modules["_doctor_board_dashboard_generate"] = mod
-    spec.loader.exec_module(mod)
+    # generate.py does an unguarded `sys.path.insert(0, REPO_ROOT/"scripts")`
+    # at import time. Harmless in the one-shot script this was ported from;
+    # here it permanently prepends an ARBITRARY `target`'s scripts/ to the
+    # Doctor process's import path (and grows it on every call), so a later
+    # import inside Doctor could resolve against a foreign tree. Snapshot and
+    # restore -- the module object we return is unaffected.
+    saved_path = list(sys.path)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop("_doctor_board_dashboard_generate", None)
+        raise
+    finally:
+        sys.path[:] = saved_path
     return mod
 
 
@@ -503,7 +565,12 @@ def _check_dashboard_drift(target: Path, gen, data: dict) -> list[dict]:
     checks (tracked twin vs. Tier-3 feed, committed baseline vs. feed,
     epics.md vs. board), producing structured dicts instead of printed lines.
     ``kind``/message text is unchanged from the original."""
-    projects = data.get("projects", {})
+    # `.get(k, default)` does NOT coerce a present-but-null key, so a
+    # `{"projects": null}` data.js yielded None and raised AttributeError
+    # from OUTSIDE the per-station try (mirrors _board_lines' own `or {}`).
+    projects = data.get("projects") or {}
+    if not isinstance(projects, dict):
+        projects = {}
     findings: list[dict] = []
 
     for key, proj in sorted(projects.items()):
@@ -528,13 +595,19 @@ def _check_project_dashboard_drift(target: Path, gen, key: str, proj: object) ->
     findings: list[dict] = []
     if not isinstance(proj, dict):
         return findings  # a malformed data.js entry has no epics to compare
-    stories = [
+    all_stories = [
         s for e in proj.get("epics", []) or []
         if isinstance(e, dict)
         for s in e.get("stories", []) or []
-        if isinstance(s, (list, tuple)) and len(s) >= 2
+        if isinstance(s, (list, tuple)) and s
     ]
-    board_ids = {s[0] for s in stories}
+    # `stories` is the (id, status) unpacking set -- it needs >= 2 elements.
+    # `board_ids` is a pure MEMBERSHIP set and needs only s[0], so it must be
+    # built from the unfiltered list: filtering a 1-element `["1.1"]` out of
+    # board_ids made a story that IS on the board look absent, emitting a
+    # false `missing-story` FAIL.
+    stories = [s for s in all_stories if len(s) >= 2]
+    board_ids = {s[0] for s in all_stories}
 
     # --- twin vs the Tier-3 feed --------------------------------------
     rel_feed = gen.PROJECT_SOURCES.get(key)
@@ -634,7 +707,6 @@ def _check_project_dashboard_drift(target: Path, gen, key: str, proj: object) ->
             ),
         })
     return findings
-    return findings
 
 
 def gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
@@ -663,7 +735,12 @@ def gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
 def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
     gen = _load_dashboard_generate(target)
     data = _load_data_js(target)
-    projects = data.get("projects", {})
+    # `.get(k, default)` does NOT coerce a present-but-null key, so a
+    # `{"projects": null}` data.js yielded None and raised AttributeError
+    # from OUTSIDE the per-station try (mirrors _board_lines' own `or {}`).
+    projects = data.get("projects") or {}
+    if not isinstance(projects, dict):
+        projects = {}
     raw = _check_dashboard_drift(target, gen, data)
     if not raw:
         return (
@@ -763,14 +840,26 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
             target,
         )
 
-    data_js = target / "docs" / "dashboard" / "data.js"
-    if not data_js.is_file():
-        return _layout_warn(f"{data_js} is absent — run `dashboard-gen` first", target)
+    try:
+        data_js = target / "docs" / "dashboard" / "data.js"
+        if not data_js.is_file():
+            return _layout_warn(f"{data_js} is absent — run `dashboard-gen` first", target)
+    except OSError as exc:  # a permission/loop error on the stat itself
+        return _layout_warn(
+            f"data.js could not be stat'd — {exc.__class__.__name__}: {exc}", target
+        )
 
     try:
         from playwright.sync_api import sync_playwright
-    except ImportError:
-        return _layout_warn("playwright is not importable — cannot measure layout", target)
+    except Exception as exc:  # noqa: BLE001 -- an INSTALLED-but-broken
+        # playwright raises far more than ImportError (an ABI RuntimeError, an
+        # OSError for a missing libnss3.so). This import sits OUTSIDE the
+        # degrade_on_exception wrap below, so a narrow `except ImportError`
+        # let those escape the gather entirely -- breaking this function's own
+        # documented "never a raised exception" contract.
+        return _layout_warn(
+            f"playwright is not usable — {exc.__class__.__name__}: {exc}", target
+        )
 
     return degrade_on_exception(
         Source.CHECK_LAYOUT,
@@ -804,29 +893,48 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
                     )
             try:
                 for width in (*clm.WIDE, *clm.NARROW):
-                    page = browser.new_page(viewport={"width": width, "height": 900})
+                    # Per-width isolation: a `networkidle` goto with a 20s
+                    # timeout makes a single width's flake the EXPECTED failure
+                    # mode. Without this guard one late failure unwound the
+                    # whole loop and discarded every already-measured FAIL,
+                    # reporting a genuinely broken bar as "could not evaluate"
+                    # -- the same finding-masking class fixed per-project in
+                    # _check_chain_completeness.
                     try:
-                        page.goto(url, wait_until="networkidle", timeout=20000)
-                        page.wait_for_timeout(250)
-                        for fs in clm.PRESSURES:
-                            name = f"{fs}px"
-                            page.evaluate(clm.APPLY, fs)
-                            page.wait_for_timeout(60)
-                            m = page.evaluate(clm.PROBE)
-                            if not m:
-                                raw_findings.append(
-                                    f"w={width} [{name}]: .cbstatus not found — "
-                                    f"the bar did not render"
-                                )
-                                continue
-                            measured += 1
-                            raw_findings += clm.check(width, m, name)
-                    finally:
-                        page.close()
+                        page = browser.new_page(viewport={"width": width, "height": 900})
+                        try:
+                            page.goto(url, wait_until="networkidle", timeout=20000)
+                            page.wait_for_timeout(250)
+                            for fs in clm.PRESSURES:
+                                name = f"{fs}px"
+                                page.evaluate(clm.APPLY, fs)
+                                page.wait_for_timeout(60)
+                                m = page.evaluate(clm.PROBE)
+                                if not m:
+                                    raw_findings.append(
+                                        f"w={width} [{name}]: .cbstatus not found — "
+                                        f"the bar did not render"
+                                    )
+                                    continue
+                                measured += 1
+                                raw_findings += clm.check(width, m, name)
+                        finally:
+                            page.close()
+                    except Exception as exc:  # noqa: BLE001, PERF203
+                        raw_findings.append(
+                            f"w={width}: could not be measured — "
+                            f"{exc.__class__.__name__}: {exc}"
+                        )
+                        continue
             finally:
                 browser.close()
     finally:
+        # shutdown() only stops serve_forever's loop; without server_close()
+        # the listening socket stays open, leaking one fd (and one held
+        # ephemeral port) per call. Harmless in the one-shot CLI this was
+        # ported from, unbounded in a long-lived library caller.
         httpd.shutdown()
+        httpd.server_close()
 
     if not measured:
         return _layout_warn("the bar never rendered at any width", target)

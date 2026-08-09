@@ -285,17 +285,19 @@ def test_no_projects_directory_reports_ok_with_zero_projects(tmp_path: Path) -> 
 
 
 def test_multiple_projects_are_all_reported_independently(tmp_path: Path) -> None:
+    """BOTH projects must be dirty: with one dirty and one clean, a bug that
+    dropped every project after the first would still pass."""
     pa_a = _pa(tmp_path, "pyforge-alpha")
     _write_spec(pa_a / "specs" / "spec-foo" / "SPEC.md", "draft")
 
     pa_b = _pa(tmp_path, "pyforge-beta")
-    _write_epics_md(pa_b / "epics.md", ["2.1"])
-    _write_ledger(pa_b / "sprint-status-ledger.yaml", {"2-1-x": "done"})  # clean
+    _write_spec(pa_b / "specs" / "spec-bar" / "SPEC.md", "draft")
 
     findings = board.gather_chain_completeness(tmp_path)
 
-    assert len(findings) == 1
-    assert findings[0].evidence["project"] == "pyforge-alpha"
+    assert {f.evidence["project"] for f in findings} == {"pyforge-alpha", "pyforge-beta"}
+    assert all(f.check == "spec-not-decomposed" for f in findings)
+    assert all(f.status is DoctorStatus.FAIL for f in findings)
 
 
 # --- one project's malformed input must not swallow another's real finding --
@@ -304,12 +306,17 @@ def test_multiple_projects_are_all_reported_independently(tmp_path: Path) -> Non
 def test_unreadable_spec_in_one_project_does_not_hide_a_real_finding_in_another(
     tmp_path: Path,
 ) -> None:
-    """Adversarial-review regression: a non-UTF-8 byte in ONE project's
-    SPEC.md used to escape as an uncaught UnicodeDecodeError, get caught by
-    the whole-function ``degrade_on_exception`` wrap, and convert a
-    DIFFERENT, well-formed project's real ``spec-not-decomposed`` FAIL into a
-    single vacuous WARN -- silently turning a real compliance violation into
-    exit-0. Reproduced live before the fix; this pins the fix."""
+    """A non-UTF-8 byte in ONE project's SPEC.md must not disturb a
+    DIFFERENT, well-formed project's real ``spec-not-decomposed`` FAIL.
+
+    NOTE on what this does and does NOT pin: ``_frontmatter`` catches the
+    ``UnicodeDecodeError`` itself and returns ``{}``, so this fixture never
+    reaches the per-project ``try/except`` in ``_check_chain_completeness``
+    -- it passes with that isolation deleted. (An earlier revision of this
+    docstring claimed otherwise; a follow-up review disproved it.) It is kept
+    as an end-to-end guard on the degradation contract; the tests that
+    genuinely exercise per-project isolation are the ``_board_lines`` ones
+    below, whose triggers really do escape from outside the try."""
     pa_alpha = _pa(tmp_path, "pyforge-alpha")
     _write_spec(pa_alpha / "specs" / "spec-foo" / "SPEC.md", "draft")  # real FAIL
 
@@ -345,3 +352,111 @@ def test_non_dict_data_js_project_entry_does_not_crash_or_hide_other_findings(
     finding = findings[0]
     assert finding.check == "board-diverges-from-ledger"
     assert finding.evidence["subject"] == "herald"
+
+
+# --- follow-up review regressions: masking via _board_lines ------------------
+#
+# These are the tests that genuinely exercise the per-project isolation. Each
+# trigger below raised from INSIDE `_board_lines`, which is called at the top
+# of `_check_chain_completeness` OUTSIDE the per-project try -- so the error
+# reached the whole-gather `degrade_on_exception` and replaced every project's
+# real FAIL with one vacuous WARN (exit 2 -> exit 0). All three reproduced
+# live before the fix.
+
+
+def _alpha_with_real_fail(tmp_path: Path) -> None:
+    """One well-formed project owning a genuine INV-A violation."""
+    _write_spec(_pa(tmp_path, "pyforge-alpha") / "specs" / "spec-foo" / "SPEC.md", "draft")
+
+
+def _assert_alpha_fail_survives(tmp_path: Path) -> None:
+    findings = board.gather_chain_completeness(tmp_path)
+    assert [f.check for f in findings] == ["spec-not-decomposed"], (
+        f"the real FAIL was masked: {[(f.check, f.status.value) for f in findings]}"
+    )
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].evidence["project"] == "pyforge-alpha"
+
+
+def test_null_epic_entry_does_not_mask_another_projects_real_fail(tmp_path: Path) -> None:
+    """A `null` in a station's `epics` list. The `isinstance(e, dict)` guard
+    used to TRAIL the second `for`, where a comprehension never consults it
+    before evaluating `e.get("stories")`."""
+    _alpha_with_real_fail(tmp_path)
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {"beta": {"epics": [None]}})
+
+    _assert_alpha_fail_survives(tmp_path)
+
+
+def test_non_list_epics_value_does_not_mask_another_projects_real_fail(
+    tmp_path: Path,
+) -> None:
+    """`epics` as a string: iterating it yields characters, not epic dicts."""
+    _alpha_with_real_fail(tmp_path)
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {"beta": {"epics": "nope"}})
+
+    _assert_alpha_fail_survives(tmp_path)
+
+
+def test_non_mapping_projects_does_not_mask_another_projects_real_fail(
+    tmp_path: Path,
+) -> None:
+    """`projects` as a list -- valid JSON, wrong shape, `.items()` explodes
+    after `_board_lines`' own try/except has already closed."""
+    data_js = tmp_path / "docs" / "dashboard" / "data.js"
+    data_js.parent.mkdir(parents=True, exist_ok=True)
+    data_js.write_text('window.DASHBOARD_DATA = {"projects": [1, 2, 3]};\n', encoding="utf-8")
+    _alpha_with_real_fail(tmp_path)
+
+    _assert_alpha_fail_survives(tmp_path)
+
+
+# --- follow-up review regression: frontmatter scalar decoding ----------------
+
+
+def test_quoted_open_status_is_still_treated_as_open(tmp_path: Path) -> None:
+    """`status: 'draft'` must not silently exempt an undecomposed Spec. The
+    hand-rolled parser replaced `yaml.safe_load`, which decoded the quotes."""
+    _write_spec(_pa(tmp_path, "pyforge-alpha") / "specs" / "spec-foo" / "SPEC.md", "'draft'")
+
+    _assert_alpha_fail_survives(tmp_path)
+
+
+def test_inline_commented_open_status_is_still_treated_as_open(tmp_path: Path) -> None:
+    """`status: draft  # still open` -- YAML reads the comment off; so must we."""
+    _write_spec(
+        _pa(tmp_path, "pyforge-alpha") / "specs" / "spec-foo" / "SPEC.md",
+        "draft  # still open",
+    )
+
+    _assert_alpha_fail_survives(tmp_path)
+
+
+def test_quoted_epics_role_still_selects_the_canonical_epics_doc(tmp_path: Path) -> None:
+    """A quoted `epics_role: "canonical"` used to miss, dropping the doc and
+    skipping INV-B/INV-D entirely."""
+    pa = _pa(tmp_path, "pyforge-alpha")
+    path = pa / "epics-v2.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        '---\nepics_role: "canonical"\n---\n\n## Epic 1: E\n### Story 1.1: title\n',
+        encoding="utf-8",
+    )
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"9-9-orphan": "done"})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "ledger-key-without-story" in {f.check for f in findings}, (
+        f"INV-B was skipped: {[f.check for f in findings]}"
+    )
+
+
+def test_scalar_decoding_does_not_over_strip_an_ordinary_value() -> None:
+    """Only surrounding quotes and a real ` #` inline comment come off."""
+    assert board._scalar("  draft  ") == "draft"
+    assert board._scalar("'draft'") == "draft"
+    assert board._scalar('"draft"') == "draft"
+    assert board._scalar("draft # note") == "draft"
+    assert board._scalar("issue#12") == "issue#12"  # no space -> not a comment
+    assert board._scalar("it's") == "it's"  # unbalanced quote left alone
+    assert board._scalar("") == ""

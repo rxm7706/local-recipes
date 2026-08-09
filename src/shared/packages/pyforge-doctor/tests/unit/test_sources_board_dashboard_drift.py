@@ -254,7 +254,7 @@ def test_missing_generate_py_degrades_to_warn(tmp_path: Path) -> None:
     finding = findings[0]
     assert finding.source is Source.DASHBOARD_DRIFT
     assert finding.status is DoctorStatus.WARN
-    assert "dashboard-drift" in finding.check or finding.check == "dashboard-drift"
+    assert finding.check == "dashboard-drift"
 
 
 def test_missing_data_js_degrades_to_warn(tmp_path: Path) -> None:
@@ -370,3 +370,63 @@ def test_real_generate_py_loads_and_exposes_the_expected_attribute_surface() -> 
     # dashboard_id_to_status("1.1", {"1-1-x": "done"}) -> "done": the exact
     # feed-key -> board-id contract gather_dashboard_drift depends on.
     assert gen.dashboard_id_to_status("1.1", {"1-1-x": "done"}) == "done"
+
+
+# --- follow-up review regressions -------------------------------------------
+
+
+def test_single_element_board_story_is_not_reported_as_missing(tmp_path: Path) -> None:
+    """A 1-element board entry `["1.1"]` IS on the board. Filtering it out of
+    `board_ids` (a pure membership set that only needs s[0]) made it look
+    absent and emitted a false `missing-story` FAIL. The >=2 filter belongs
+    only on the (id, status) unpacking set."""
+    _seed(tmp_path, project_sources={})
+    epics = tmp_path / _EPICS_REL
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text("## Epic 1: E\n### Story 1.1: title\n", encoding="utf-8")
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {
+        "testproj": {"epics": [{"stories": [["1.1"]]}]},
+    })
+
+    findings = board.gather_dashboard_drift(tmp_path)
+
+    assert "missing-story" not in {f.check for f in findings}, (
+        f"false missing-story for a story that IS on the board: "
+        f"{[(f.check, f.message) for f in findings]}"
+    )
+
+
+def test_null_projects_key_degrades_to_warn_rather_than_raising(tmp_path: Path) -> None:
+    """`.get(k, default)` does not coerce a present-but-null key, so
+    `{"projects": null}` yielded None and raised AttributeError from outside
+    the per-station try."""
+    _seed(tmp_path)
+    data_js = tmp_path / "docs" / "dashboard" / "data.js"
+    data_js.parent.mkdir(parents=True, exist_ok=True)
+    data_js.write_text('window.DASHBOARD_DATA = {"projects": null};\n', encoding="utf-8")
+
+    findings = board.gather_dashboard_drift(tmp_path)
+
+    assert all(f.source is Source.DASHBOARD_DRIFT for f in findings)
+    assert all(f.status in (DoctorStatus.OK, DoctorStatus.WARN) for f in findings)
+
+
+def test_loading_generate_does_not_leak_sys_path_entries(tmp_path: Path) -> None:
+    """generate.py does an unguarded `sys.path.insert` at import time; the
+    loader must snapshot and restore so an arbitrary target's scripts/ does
+    not stay on the Doctor process's import path (and grow per call)."""
+    import sys
+
+    path = tmp_path / "docs" / "dashboard" / "generate.py"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "import sys\nsys.path.insert(0, '/tmp/doctor-board-sys-path-probe')\nX = 1\n",
+        encoding="utf-8",
+    )
+
+    before = list(sys.path)
+    mod = board._load_dashboard_generate(tmp_path)
+    board._load_dashboard_generate(tmp_path)  # a second call must not stack
+
+    assert mod.X == 1  # the module still ran its own body
+    assert sys.path == before
