@@ -81,7 +81,9 @@ graph TD
 
 - **Binds:** provision
 - **Prevents:** two owners of one entity — Steward re-implementing or diverging from `scripts/bmad-loop-worktree` or pixi's own `[environments]` resolution (which the Ecosystem Crew Dream assigns to Marshal)
-- **Rule:** `steward provision` subcommands shell out to `pixi install -e <name>` and `scripts/bmad-loop-worktree` verbatim. Steward's own code reads pixi.toml's `[environments]` table (FR-14 inventory) but never writes to it and never re-implements pixi's dependency-resolution logic.
+- **Rule:** `steward provision` subcommands shell out to `pixi install -e <name>` verbatim. Steward's own code reads pixi.toml's `[environments]` table (FR-14 inventory) but never writes to it and never re-implements pixi's dependency-resolution logic.
+- **AMENDED 2026-08-09 (Story 5.1).** The `scripts/bmad-loop-worktree` half is **retired**, not merely unused. This AD always called that machinery "Marshal-owned", and wrapping it was the compromise available before `marshal init` existed; `marshal init` is now a strict superset (the same worktree **plus** the marker/symlink agreement invariant, the AD-11 never-write proof, and an idempotent `done | skipped | failed` step report), so the wrap left two stations shipping two ways to make the same thing — one of them the weaker one. `provision --runner bmad-loop` now **reports** and names `marshal init <slug>`; it never provisions. `run_bmad_loop_worktree` and its stdout parser are **deleted**, because a retirement that leaves the old path importable is a deprecation, not a removal.
+- **Why report rather than delegate.** Steward imports nothing from `pyforge.marshal` and shells to no `marshal` binary. Proxying the front door would create this station's first cross-station coupling and re-wrap exactly the machinery being removed. The Marshal/Steward seam puts judgment with the owning station and the front door with Marshal — so Steward points at it. `--env <name>` (pixi environments, genuinely Steward's) is untouched.
 
 ### AD-6 — Budget v1 is declared-not-enforced; honest signal over fabricated number (FR-16-18, PRD D1)
 

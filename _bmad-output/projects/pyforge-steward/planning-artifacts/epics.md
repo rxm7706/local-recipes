@@ -525,7 +525,17 @@ script
 **And** `--env <name>` (pixi environments, genuinely Steward's) is unaffected
 **And** the removal is recorded in this station's own architecture, not only in Marshal's
 
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-08-09).** Retired by REPORTING, not delegating. Steward imports nothing
+from `pyforge.marshal` and shells to no `marshal` binary; proxying the front door would
+create this station's first cross-station coupling and re-wrap the very machinery the
+story removes. `run_bmad_loop_worktree` and its stdout parser are **deleted** — a
+retirement that leaves the old path importable is a deprecation, not a removal.
+`_BMAD_LOOP_WORKTREE_RELATIVE_PATH` survives because `repo_root()` locates the monorepo
+by finding that script, which is unrelated to running it. AD-5 amended in **Steward's
+own** ARCHITECTURE-SPINE (the AC's explicit requirement), not only in Marshal's chain.
+Suite 197 → 198.
 
 ### Story 5.2: Consume the sprint ledger; never derive story status
 

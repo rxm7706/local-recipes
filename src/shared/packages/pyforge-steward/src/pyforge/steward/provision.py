@@ -14,14 +14,16 @@ both the shorthand list form and the explicit `{ features = [...] }` table
 form) and `materialize_environment` (a `pixi install -e <name>` subprocess
 wrap). Wired as `steward provision --env <name>`.
 
-Story 3.2 slice: `run_bmad_loop_worktree` (a `scripts/bmad-loop-worktree
-<name>` subprocess wrap, parsing the provisioned worktree's path from the
-script's own first stdout line) composed with Story 3.1's
-`materialize_environment`, run against the worktree instead of the repo
-root. Wired as `steward provision --runner bmad-loop --env <name>`. `<name>`
-doubles as BOTH the pixi environment name AND the `bmad-loop-worktree` BMAD
-project slug — see this story's spec, "Design Notes", for why there is no
-separate `--slug` flag.
+Story 5.1 RETIRED the Story 3.2 slice. `provision --runner bmad-loop` used to
+wrap the LEGACY `scripts/bmad-loop-worktree`; `marshal init` is a strict
+superset (worktree + marker/symlink agreement + the AD-11 never-write proof +
+an idempotent step report), so two stations were shipping two ways to make the
+same thing, one of them the weaker one. `--runner` now REPORTS and points at
+`marshal init <slug>`; it never provisions. `run_bmad_loop_worktree` and its
+stdout parser are deleted rather than left importable — a retirement that
+leaves the old path callable is a deprecation, not a removal.
+`_BMAD_LOOP_WORKTREE_RELATIVE_PATH` survives: `repo_root()` locates the
+monorepo by finding that script, which is unrelated to running it.
 
 Story 3.3 slice: `format_environments` — read-only text/`--json` rendering
 of `load_pixi_environments`'s own output. Wired as `steward provision
@@ -158,50 +160,6 @@ def materialize_environment(name: str, *, cwd: str | Path) -> subprocess.Complet
 
 # ── Runner provisioning (FR-13, Story 3.2) ──────────────────────────────────
 
-_WORKTREE_STDOUT_PATTERN = re.compile(
-    r"^worktree:\s+(?P<path>.+?)(?:\s+\[.*\]|\s+\(reused\))?\s*$"
-)
-
-
-def run_bmad_loop_worktree(name: str, *, root: Path) -> Path:
-    """`scripts/bmad-loop-worktree <name>` as a subprocess (AD-1/AD-5) —
-    Steward never reimplements or forks worktree-provisioning logic.
-
-    `name` doubles as the BMAD project slug `bmad-loop-worktree` expects —
-    every `pyforge-*` pixi environment this repo defines is named
-    identically to its BMAD project slug (see this story's spec, "Design
-    Notes"), so there is no separate `--slug` flag.
-
-    Returns the provisioned worktree's path, parsed from the script's own
-    first stdout line (`worktree: <path> [<branch>]` or `worktree: <path>
-    (reused)`).
-
-    Raises `subprocess.CalledProcessError` on a non-zero exit — propagated,
-    not swallowed, so the underlying script's own stderr (e.g. "no such BMAD
-    project") reaches the operator verbatim via `ProvisionDuty`'s boundary —
-    and `RuntimeError` if the script exits 0 but its stdout does not start
-    with the expected `worktree: <path> ...` line, an unexpected shape this
-    wrapper does not silently tolerate.
-    """
-    script = root / _BMAD_LOOP_WORKTREE_RELATIVE_PATH
-    result = subprocess.run(
-        [sys.executable, str(script), name],
-        cwd=str(root),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    first_line = result.stdout.splitlines()[0] if result.stdout else ""
-    match = _WORKTREE_STDOUT_PATTERN.match(first_line)
-    if not match:
-        raise RuntimeError(
-            "provision --runner bmad-loop: bmad-loop-worktree exited 0 but its "
-            "first stdout line did not match the expected 'worktree: <path> "
-            f"...' shape (got {first_line!r})"
-        )
-    return Path(match.group("path"))
-
-
 def _run_list(ns: argparse.Namespace) -> DutyResult:
     """`provision --list [--json]` (Story 3.3)."""
     root = repo_root()
@@ -300,15 +258,22 @@ def _run_env(ns: argparse.Namespace) -> DutyResult:
 
 
 def _run_runner(ns: argparse.Namespace) -> DutyResult:
-    """`provision --runner bmad-loop --env <name>` (Story 3.2).
+    """`provision --runner bmad-loop` — RETIRED (Story 5.1, AD-5).
 
-    Review finding: an env-name failure inside `materialize_environment`
-    (run AFTER the worktree already exists) is caught HERE, not left to
-    `ProvisionDuty.run`'s generic outer handler -- the outer handler would
-    report only the failing `pixi install` command, silently omitting that a
-    worktree WAS already provisioned at a specific path. Naming that path
-    explicitly is what the AC's "no partial/orphaned worktree state is left
-    silently unreported" requires.
+    This wrapped the *legacy* `scripts/bmad-loop-worktree` while `marshal init`
+    (Marshal Epic 1, 10 shipped stories) is a strict superset: the same worktree
+    plus the marker/symlink agreement invariant, the AD-11 never-write proof, and
+    an idempotent `done | skipped | failed` step report. Two stations shipping
+    two ways to make the same thing, one of them the weaker one.
+
+    It REPORTS rather than DELEGATES, deliberately. This station imports nothing
+    from `pyforge.marshal` and shells to no `marshal` binary; proxying the front
+    door would create the first cross-station coupling and re-wrap exactly the
+    machinery this story removes. The Marshal/Steward seam puts judgment with the
+    owning station and the front door with Marshal, so Steward points at it.
+
+    Never silently provisions: the legacy path is gone, not deprecated-but-live.
+    `--env <name>` alone (pixi environments, genuinely Steward's) is untouched.
     """
     runner = ns.runner
     if runner != "bmad-loop":
@@ -316,39 +281,17 @@ def _run_runner(ns: argparse.Namespace) -> DutyResult:
             ok=False,
             summary=f"provision --runner: unknown runner {runner!r} (only 'bmad-loop' is supported)",
         )
-    name = ns.env
-    if not name:
-        return DutyResult(ok=False, summary="provision --runner bmad-loop: --env is required")
-
-    root = repo_root()
-    environments = load_pixi_environments(cwd=root)
-    if name not in environments:
-        valid = ", ".join(sorted(environments))
-        return DutyResult(
-            ok=False,
-            summary=(
-                f"provision --runner bmad-loop: {name!r} is not a valid pixi "
-                f"environment. Valid environments: {valid}"
-            ),
-        )
-
-    worktree = run_bmad_loop_worktree(name, root=root)
-    try:
-        materialize_environment(name, cwd=worktree)
-    except subprocess.CalledProcessError as exc:
-        stderr = (exc.stderr or "").strip()
-        return DutyResult(
-            ok=False,
-            summary=(
-                f"provision --runner bmad-loop: worktree {worktree} provisioned, "
-                f"but `pixi install -e {name}` inside it exited {exc.returncode}: {stderr}"
-            ),
-        )
+    slug = ns.env or "<slug>"
     return DutyResult(
-        ok=True,
+        ok=False,
         summary=(
-            f"provision --runner bmad-loop: worktree {worktree} + env {name!r} "
-            "materialized together"
+            f"provision --runner bmad-loop is RETIRED (Story 5.1). Use "
+            f"`marshal init {slug}` — it provisions the same worktree plus the "
+            f"marker/symlink agreement check, the never-write proof and an "
+            f"idempotent step report, none of which the legacy "
+            f"scripts/bmad-loop-worktree this wrapped provides. "
+            f"`steward provision --env {slug}` still materializes the pixi "
+            f"environment, which remains Steward's."
         ),
     )
 

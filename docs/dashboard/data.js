@@ -2304,12 +2304,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "18/33",
+            "19/33",
             "stories complete",
             "var(--done)"
           ],
           [
-            "15",
+            "14",
             "remaining",
             ""
           ]
@@ -2332,7 +2332,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "5.1"
+        "at": "5.2"
       },
       "epics": [
         {
@@ -2455,7 +2455,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "5.1",
-              "pending",
+              "done",
               "Retire `provision --runner bmad-loop` in favour of `marshal init`"
             ],
             [
@@ -3155,7 +3155,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 00:39 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 00:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3981,7 +3981,7 @@ window.DASHBOARD_DATA = {
       "title": "durable-runs — retirement record",
       "caps": 6,
       "companions": 0,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "durable-runs",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-durable-runs"
     },
@@ -3991,7 +3991,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-01",
+      "updated": "2026-08-08",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
     },
@@ -4001,7 +4001,7 @@ window.DASHBOARD_DATA = {
       "title": "fidelity-enforcement — retirement record",
       "caps": 9,
       "companions": 3,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "fidelity-enforcement",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fidelity-enforcement"
     },
@@ -4241,7 +4241,7 @@ window.DASHBOARD_DATA = {
       "title": "team-memory — retirement record",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-02",
+      "updated": "2026-08-08",
       "dream": "team-memory",
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-team-memory"
     },
@@ -4281,7 +4281,7 @@ window.DASHBOARD_DATA = {
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-01",
+      "updated": "2026-08-08",
       "dream": "pyforge-steward",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
     },
@@ -5063,7 +5063,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "running",
           "note": "next free slot",
-          "done": 18,
+          "done": 19,
           "total": 33
         },
         {
@@ -6002,7 +6002,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "18/33",
+        "progress": "19/33",
         "complete": 14,
         "of": 14
       },
@@ -12014,9 +12014,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 3,
+        "verdict": "FINDINGS (3):",
         "runbook": ""
       },
       {
@@ -12669,7 +12669,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 1
         },
-        "line": "paused 5.1",
+        "line": "paused 5.2",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -14356,8 +14356,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: split Story 5.1 — the source shipped, the wiring did not"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 00:39 UTC",
-    "generatedEpoch": 1786235976
+    "generatedAt": "2026-08-09 00:48 UTC",
+    "generatedEpoch": 1786236513
   },
   "storySpecs": [
     {
@@ -14404,9 +14404,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 18,
+      "done": 19,
       "tracked": 18,
-      "gap": 0
+      "gap": 1
     },
     {
       "station": "pyforge-warden",
@@ -14522,6 +14522,31 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 19,
+        "backlog": 9,
+        "blocked": 0,
+        "total": 28,
+        "next": "6-10-independence-is-structural-for-every-source",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "6-10-independence-is-structural-for-every-source",
+          "6-2-a-source-registry-doctor-owns",
+          "6-3-the-repo-runtime-split-survives-the-move",
+          "6-4-the-ledger-verdicts-come-home",
+          "6-5-the-board-verdicts-come-home",
+          "6-6-the-chain-verdicts-come-home",
+          "6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided",
+          "6-8-bmad-drift-comes-home-without-breaking-the-board"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "steward",
         "project": "pyforge-steward",
         "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
@@ -14544,11 +14569,11 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container/SPEC.md"
           }
         ],
-        "done": 18,
-        "backlog": 10,
+        "done": 19,
+        "backlog": 9,
         "blocked": 5,
         "total": 33,
-        "next": "5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init",
+        "next": "5-2-consume-the-sprint-ledger-never-derive-story-status",
         "blockedKeys": [
           "8-1-bidirectional-propagation",
           "8-2-zero-loop-guarantee",
@@ -14557,39 +14582,14 @@ window.DASHBOARD_DATA = {
           "8-5-explicit-status-vocabulary-translation"
         ],
         "backlogKeys": [
-          "5-1-retire-provision-runner-bmad-loop-in-favour-of-marshal-init",
           "5-2-consume-the-sprint-ledger-never-derive-story-status",
           "6-1-provision-module-name",
           "6-2-provision-list-modules",
           "6-3-partial-install-is-a-named-failure",
           "7-1-one-build-whole-guild",
           "7-2-the-repo-at-a-fixed-short-path",
-          "7-3-credentials-never-enter-image-layers"
-        ],
-        "state": "ready"
-      },
-      {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [],
-        "done": 19,
-        "backlog": 9,
-        "blocked": 0,
-        "total": 28,
-        "next": "6-10-independence-is-structural-for-every-source",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "6-10-independence-is-structural-for-every-source",
-          "6-2-a-source-registry-doctor-owns",
-          "6-3-the-repo-runtime-split-survives-the-move",
-          "6-4-the-ledger-verdicts-come-home",
-          "6-5-the-board-verdicts-come-home",
-          "6-6-the-chain-verdicts-come-home",
-          "6-7-forward-dependency-comes-home-and-the-harness-coupling-is-decided",
-          "6-8-bmad-drift-comes-home-without-breaking-the-board"
+          "7-3-credentials-never-enter-image-layers",
+          "7-4-state-outlives-the-container"
         ],
         "state": "ready"
       },
@@ -14685,8 +14685,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 220,
-      "backlog": 96,
+      "done": 221,
+      "backlog": 95,
       "blocked": 6,
       "total": 322
     }
