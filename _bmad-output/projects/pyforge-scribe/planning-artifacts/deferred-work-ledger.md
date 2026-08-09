@@ -67,3 +67,11 @@ sibling ledgers and the detector both use.
   summary: A future `MEMORY.md` entry containing a bare `@`-token (npm scope, GitHub handle) would be treated as a nested import attempt by Claude Code, since imports recurse into imported files — the scribe writer/README needs a backtick-all-`@`-tokens authoring rule.
   evidence: Raised by Edge Case Hunter in Story 1.2 review pass 2. Claude Code evaluates `@path` references recursively in imported files but not inside code spans; team-memory entries about npm packages plausibly contain `@scope/pkg` tokens. Guard belongs in `.claude/memory/README.md`'s entry schema and/or Story 1.3's `scribe capture` writer (backtick or escape `@`-tokens on write), both outside Story 1.2's edit-only-`CLAUDE.md` boundary.
   status: open
+
+### DW-2-1-3
+
+- source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/SPEC.md`
+  summary: 87 of Scribe's 88 `memlog` graph nodes are titled `---` — every memlog with YAML frontmatter is effectively unidentifiable in the knowledge graph Scribe exists to build.
+  evidence: Measured 2026-08-09 against the live repo: `compile.py::_node_from_text_file` derives `title` as the first non-empty line (`next((line.strip("# ").strip() for line in text.splitlines() if line.strip()), relpath)`). For a `.memlog.md` that first line is the frontmatter delimiter `---`, so the title is literally `---`. `_read_memlog_surface(Path("."))` returns 88 nodes, of which **87 are titled `---`**; the single exception (`spec: herald-pitch`) is a memlog with no frontmatter. The fix is small — skip frontmatter, or prefer the `topic:` field memlogs already carry — but it is a real defect in the graph's primary human-readable field, not a cosmetic one, since a graph of 87 identically-named nodes cannot be navigated.
+  related: 17 memlogs additionally carry unparseable YAML frontmatter (an unquoted `:` inside `topic:`). That is latent today precisely BECAUSE nothing parses memlog frontmatter as YAML — if this defect is fixed by reading `topic:`, those 17 must be quoted in the same change or the fix will fail on them.
+  status: open

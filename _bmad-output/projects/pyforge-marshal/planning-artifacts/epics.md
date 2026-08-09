@@ -334,6 +334,33 @@ So that the wrap decision pays off at the point of use.
 
 ---
 
+### Story 1.11: A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — FR-178)*
+
+As the operator,
+I want isolation to cover the shared git directory, not just the working tree,
+So that one dev session cannot silently change what every other worktree can see.
+
+**Type:** feature • **Effort:** S • **Deps:** S-1.6 • **FR/AD:** FR-178
+
+**Why now.** Every loop home and per-story worktree resolves `--git-common-dir` to the same
+`local-recipes/.git`. Measured 2026-08-09: `/.claude/skills` was re-added to
+`.git/info/exclude` **three times**, most recently *while a run was live* — hiding new files
+from `git status` and `git add -A` in every worktree simultaneously.
+
+**Acceptance Criteria:**
+
+**Given** a provisioned loop home
+**When** `marshal preflight` (or `homes`) runs
+**Then** a mutation of the **shared** git directory — `info/exclude` at minimum — is reported
+against a recorded baseline, naming the rule and what it hides
+**And** the report distinguishes shared-state mutation from ordinary worktree state: FR-8's
+isolation check covers worktrees and branches and does **not** see this
+**And** the filesystem-walking guard `test_skill_files_tracked.py` is left in place — it walks
+the tree instead of asking git, so it is the only signal that survives the rule, and it is what
+caught the third recurrence
+**And** a test proves the detection on a fixture whose `info/exclude` carries a rule the tracked
+tree would otherwise match
+
 ## Epic 2: Gates you can run
 
 **Goal:** the gate stops being a configuration line inside somebody else's orchestrator and becomes a first-class object a human or CI can invoke. After this epic the operator can, at any moment, ask "would this pass?" and get a deterministic answer that can never be a false green.
@@ -935,6 +962,125 @@ So that saving work does not leave a permanently growing pile of branches nobody
 **And** a branch FR-59/AD-40 already retired at landing time is never re-proposed here — the two mechanisms share evidence but never disagree
 
 ---
+
+### Story 4.11: `marshal land` refuses while a run is in flight *(added 2026-08-09 — FR-172)*
+
+As the operator,
+I want landing to know whether a run is still using the branch it is about to retire,
+So that the last mile cannot destroy a running fleet.
+
+**Type:** change • **Effort:** S • **Deps:** S-4.8 • **FR/AD:** FR-172
+
+**Why now.** `land` resolves its head branch to the loop-home **station branch** and
+`landing_branch_retirement` defaults to `True`. Invoked on 2026-08-09 during a live 9-story run
+it would have merged and then deleted `loop/pyforge-doctor` — the branch bmad-loop was actively
+merging stories into. It was avoided only because a human read `cli/land.py` first.
+
+**Acceptance Criteria:**
+
+**Given** a slug whose supervisor/engine is live (the same liveness `marshal status` reads)
+**When** `marshal land <slug>` runs
+**Then** it **refuses by name**, identifying the run and the branch it would have retired
+**And** the refusal is overridable by an **explicit** flag whose help states what it accepts —
+landing mid-run is legitimate between stories; it must never be the silent default
+**And** what is refused is the **branch retirement**, not the merge: `--no-retire` style landing
+of a wave during a run stays supported
+**And** a test proves both directions: live run → refusal, no live run → unchanged behaviour
+
+### Story 4.12: A landing leaves the loop home current with `main` *(added 2026-08-09 — FR-173)*
+
+As the operator,
+I want landing to return the station branch to `main`,
+So that "resync" means the home is current, not merely that the feed is.
+
+**Type:** change • **Effort:** M • **Deps:** S-4.8 • **FR/AD:** FR-173
+
+**Why now.** `landing_resync` resyncs the **feed**; `landing_resync_commands` is empty by
+default. Nothing returns the loop home to `main`, so it drifts from the first merge onward —
+measured 5 commits behind minutes after its own stories landed, and 8 PRs behind on origin
+between runs, reported clean by every detector.
+
+**Acceptance Criteria:**
+
+**Given** a landing that merged a wave to `main`
+**When** the resync step runs
+**Then** the station branch is brought current with `main` (fast-forward where possible)
+**And** where it cannot be, the reason is reported precisely — never silently left behind
+**And** a home with **no live run** is in scope: between-runs is exactly where drift accumulates
+unobserved
+**And** the resync never rewrites history and never force-pushes
+**And** a test covers the fast-forwardable case, the non-fast-forwardable case, and the
+live-run case (which must interact correctly with S-4.11's refusal)
+
+### Story 4.13: The loop's deferred work reaches the tracked ledger *(added 2026-08-09 — FR-175)*
+
+As the operator,
+I want a follow-up the loop defers to land in the tracked ledger with a non-colliding id,
+So that a deferral is a decision of record rather than a note on one disk.
+
+**Type:** change • **Effort:** S • **Deps:** S-4.8 • **FR/AD:** FR-175
+
+**Why now.** Measured 2026-08-09: `DW-1`/`DW-2` were promoted by hand as `DW-FU-1-1`/`DW-FU-1-3`;
+**`DW-3`…`DW-7` never were** and stand today as five `tier3-only-deferral` findings. The loop
+writes generic `DW-<n>` ids into gitignored Tier-3.
+
+**Acceptance Criteria:**
+
+**Given** a story whose damping cap was spent and which filed a Tier-3 deferral
+**When** that story lands
+**Then** the deferral is promoted into `planning-artifacts/deferred-work-ledger.md` under the
+`DW-<story>-<n>` convention, so the next damped story cannot collide with it
+**And** `deferred-work-check` reports **zero** `tier3-only-deferral` findings for that story
+**And** the five standing entries (`DW-3`…`DW-7`) are promoted or dispositioned with a reason —
+never deleted to clear the count
+**And** promotion is idempotent: re-running it does not duplicate an already-promoted entry
+
+### Story 4.14: The failed-story safety net is reported *(added 2026-08-09 — FR-176)*
+
+As the operator,
+I want a killed story's preserved patch surfaced,
+So that a patch holding unlanded work cannot sit unnoticed on one disk.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** FR-176
+
+**Why now.** A session-timeout kill preserves work at `<run>/failed/<story>/changes.patch` and
+**nothing in the repo reads that path**. Measured 2026-08-09: **7 patches, 26 KB–205 KB**, across
+five stations. All seven belong to stories that later reached `done` — nothing is lost today,
+which is exactly why it went unnoticed.
+
+**Acceptance Criteria:**
+
+**Given** one or more `failed/<story>/changes.patch` files under any loop home
+**When** the durability check runs
+**Then** each is reported with its story key, size, and whether that story has since landed
+**And** a patch whose story is `done` is reported as **spent** — informational, never gating,
+since the work demonstrably landed
+**And** a patch whose story is **not** `done` is a real finding: pending work on one disk
+**And** the check is silent when no such patch exists — an empty safety net is not a finding
+
+### Story 4.15: One pusher, not two *(added 2026-08-09 — FR-177)*
+
+As the operator,
+I want `loop_push_watch.py`'s role reconciled with the supervisor that now subsumes it,
+So that the durability story has one owner and its documentation is true.
+
+**Type:** change • **Effort:** S • **Deps:** S-3.8 • **FR/AD:** FR-177
+
+**Why now.** FR-61 gave the supervisor its own `boundary: "interval"` push, so during a run the
+standalone watcher duplicates it. Its pixi description still calls itself "a STOPGAP — the
+durable fix is for the loop to push at its own stage boundaries" — a statement **Marshal made
+false when FR-61 shipped**, and the reason an operator on 2026-08-09 concluded nothing was
+pushing at all.
+
+**Acceptance Criteria:**
+
+**Given** the supervisor's interval push exists
+**When** the watcher's role is decided
+**Then** it is either **retired**, or **re-scoped to the one case the supervisor structurally
+cannot cover** — a home with no live run — and its pixi description says which
+**And** no description anywhere still claims stage-boundary push is unbuilt
+**And** if retired, `unpushed-work-check` (S-3.10's tip comparison) is confirmed as the standing
+signal for between-runs staleness, so retiring the watcher removes a duplicate rather than a net
 
 ## Epic 5: Fleet visibility
 
@@ -2361,6 +2507,32 @@ matcher and records nothing
 own baseline key
 **And** `spec-surface-check` reports **0 findings and 0 `[drift-presumed]`**, with a
 before/after diff proving no gating `[drift]` was absorbed
+
+### Story 13.7: The producer reconciles the surface it drifts *(added 2026-08-09 — FR-174)*
+
+As the operator,
+I want bmad-loop to name the governed paths it changed in the owning Spec's memlog,
+So that the spec-surface gate stops being a tax paid by whoever lands the work.
+
+**Type:** feature • **Effort:** M • **Deps:** S-13.2 • **FR/AD:** FR-174
+
+**Why now.** The first three loop-produced stories to be landed (doctor 6.2–6.4, 2026-08-09)
+drifted **14 governed paths** across `spec-pyforge-doctor`, plus `pixi.toml` against two further
+surfaces — every one named by hand at landing. S-13.2's rule is correct; the machine writing
+most of this repo's code has no idea it exists.
+
+**Acceptance Criteria:**
+
+**Given** a loop-produced story that changed governed files
+**When** the story completes
+**Then** the owning Spec's `.memlog.md` names **each** changed governed path, written as part of
+the story rather than at landing
+**And** `spec-surface-check` is green on the station branch with no human editing a memlog
+**And** a story that changed **no** governed file writes nothing — silence is not a finding, and
+an entry per story would be noise
+**And** the loop is **never** handed `--write-baseline`: a producer that can stamp its own
+baseline is precisely the laundering S-13.2 exists to end
+**And** matching stays per-file naming under S-13.2's literal rule — no blanket claim
 
 ---
 

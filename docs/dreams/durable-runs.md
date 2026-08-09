@@ -2,7 +2,7 @@
 title: Durable runs — work survives the machine that made it
 type: dream
 owner: marshal
-status: archived
+status: realized
 archived-reason: absorbed
 ---
 
