@@ -490,7 +490,7 @@ window.DASHBOARD_DATA = {
         "median": 80,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-09 08:15 UTC"
+        "phaseAsOf": "2026-08-09 08:29 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1275,12 +1275,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "58/101",
+            "59/101",
             "stories complete",
             "var(--done)"
           ],
           [
-            "43",
+            "42",
             "remaining",
             ""
           ]
@@ -1324,7 +1324,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "1.11"
+        "at": "4.11"
       },
       "epics": [
         {
@@ -1383,7 +1383,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.11",
-              "pending",
+              "done",
               "A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — FR-178)*"
             ]
           ]
@@ -3241,7 +3241,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 08:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 08:29 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5163,7 +5163,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 58,
+          "done": 59,
           "total": 101
         },
         {
@@ -5713,7 +5713,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "58/101",
+        "progress": "59/101",
         "complete": 13,
         "of": 13
       },
@@ -12299,7 +12299,7 @@ window.DASHBOARD_DATA = {
           "archived": 16,
           "practice": 4
         },
-        "line": "paused 1.11",
+        "line": "paused 4.11",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -14474,14 +14474,14 @@ window.DASHBOARD_DATA = {
     ],
     "lastShipped": {
       "station": "doctor",
-      "story": "6.4",
-      "epoch": 1786253523,
-      "sha": "88a6548bf",
-      "subject": "Merge bmad-loop/20260808-210255-c88b/6-4-the-ledger-verdicts-come-home into loop/pyforge-doctor (bmad-loop)"
+      "story": "6.5",
+      "epoch": 1786262280,
+      "sha": "5dcb64299",
+      "subject": "Merge bmad-loop/20260808-210255-c88b/6-5-the-board-verdicts-come-home into loop/pyforge-doctor (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 08:15 UTC",
-    "generatedEpoch": 1786263342
+    "generatedAt": "2026-08-09 08:29 UTC",
+    "generatedEpoch": 1786264166
   },
   "storySpecs": [
     {
@@ -14510,9 +14510,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 58,
+      "done": 59,
       "tracked": 51,
-      "gap": 7
+      "gap": 8
     },
     {
       "station": "pyforge-mason",
@@ -14594,23 +14594,23 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 58,
-        "backlog": 42,
+        "done": 59,
+        "backlog": 41,
         "blocked": 1,
         "total": 101,
-        "next": "1-11-a-loop-agent-cannot-mutate-repo-wide-git-state",
+        "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
         ],
         "backlogKeys": [
-          "1-11-a-loop-agent-cannot-mutate-repo-wide-git-state",
           "10-1-copier-engine-wrapper-the-single-seam",
           "10-2-state-schema-and-the-atomic-store",
           "10-3-the-apply-runner-transactional-guarded",
           "10-4-preconditions-refusals-and-skips",
           "10-5-marshal-seed-check",
           "10-6-marshal-seed-adopt",
-          "10-7-marshal-seed-init"
+          "10-7-marshal-seed-init",
+          "11-1-neutral-contract-and-agent-adapter-fan-out"
         ],
         "state": "ready"
       },
@@ -14806,8 +14806,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 229,
-      "backlog": 98,
+      "done": 230,
+      "backlog": 97,
       "blocked": 6,
       "total": 333
     }
