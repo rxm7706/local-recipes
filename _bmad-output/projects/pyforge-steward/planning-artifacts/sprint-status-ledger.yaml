@@ -37,8 +37,8 @@ development_status:
   6-1-provision-module-name: done
   6-2-provision-list-modules: done
   6-3-partial-install-is-a-named-failure: done
-  7-1-one-build-whole-guild: backlog
-  7-2-the-repo-at-a-fixed-short-path: backlog
+  7-1-one-build-whole-guild: done
+  7-2-the-repo-at-a-fixed-short-path: done
   7-3-credentials-never-enter-image-layers: backlog
   7-4-state-outlives-the-container: backlog
   7-5-the-image-proves-itself-at-build-time: backlog
