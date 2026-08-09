@@ -5,12 +5,15 @@ feeds present.
 
 Both ``target`` and ``loop_root`` are ``tmp_path`` fixtures -- no real
 ``~/.bmad-loops`` or real git history dependency. ``target`` is still
-``git init``-ed (with no commits naming any story) because
-``gather_story_status`` routes its merge-commit-grep and main-subject-log
-calls through ``cli_bridge.run_git``, which needs a real (even if trivial)
-repository to not error -- this test file is not subject to the package's
-sole-subprocess restriction (only ``pyforge/doctor/cli_bridge.py`` is), so
-driving real ``git`` here to build fixtures is fine.
+``git init``-ed, and carries one baseline commit on ``main`` (see
+``_init_repo``) so that both landing-evidence routes can actually RUN and
+find nothing, rather than failing to run at all -- ``gather_story_status``
+routes its merge-commit-grep and main-subject-log calls through
+``cli_bridge.run_git``, which needs a real (even if trivial) repository, and
+a query that could not run is deliberately not treated as a query that found
+nothing. This test file is not subject to the package's sole-subprocess
+restriction (only ``pyforge/doctor/cli_bridge.py`` is), so driving real
+``git`` here to build fixtures is fine.
 """
 
 from __future__ import annotations
@@ -66,6 +69,15 @@ def _init_repo(target: Path) -> None:
     _git(target, "config", "user.name", "Doctor Test")
     _git(target, "config", "commit.gpgsign", "false")
     _git(target, "config", "core.hooksPath", "/dev/null")
+    # A baseline commit, so the ref `main` actually EXISTS. A commitless repo
+    # makes Route 3's `git log --format=%s main` exit 128, which the gather now
+    # (correctly) treats as "could not query" rather than "queried and found
+    # nothing" -- so every false-green assertion here would have been reached
+    # via an unqueried route, which is precisely the false conviction the
+    # inconclusive branch exists to prevent. Committing once makes these
+    # fixtures exercise the real path: Route 3 runs, finds no matching subject,
+    # and the story falls through to the harness verdict on its merits.
+    _git(target, "commit", "-q", "--allow-empty", "-m", "chore: initialize fixture")
 
 
 def _commit(target: Path, subject: str) -> str:
@@ -569,7 +581,9 @@ def test_unreadable_run_records_are_counted_not_silently_dropped(
 
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.OK
-    assert "1 run record(s) unreadable" in findings[0].message
+    assert "1 with an unreadable run record" in findings[0].message
+    # And NOT counted as "no run record": the record existed, it was unusable.
+    assert "no run record" not in findings[0].message
 
 
 def test_a_fully_evidenced_audit_reports_no_caveats(tmp_path: Path) -> None:
@@ -593,3 +607,252 @@ def test_a_fully_evidenced_audit_reports_no_caveats(tmp_path: Path) -> None:
     )
     # Evidence shape is pinned by the spec's I/O matrix -- unchanged.
     assert findings[0].evidence == {"audited": 1}
+
+
+# --- Cannot-evaluate is never a conviction ---------------------------------
+
+
+def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
+    tmp_path: Path,
+) -> None:
+    """Route 3 queries the literal ref ``main``. On a PR checkout, a shallow
+    clone, or a repo whose default branch is named otherwise, that query FAILS
+    -- and a failed query used to be indistinguishable from "queried `main`,
+    found nothing", so a genuinely hand-landed story fell through to the
+    harness verdict and was accused of being a false green.
+
+    The repo-level ``rev-parse --git-dir`` probe does not cover this: the repo
+    is perfectly valid, it just has no ``main``."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+    _commit(target, "warden: Story 1.1 - foo, landed by hand")
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "warden", "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    # Control: with `main` present, Route 3 finds the subject and stays quiet.
+    assert marshal.gather_story_status(
+        target, loop_root=loop_root
+    )[0].status is DoctorStatus.OK
+
+    _git(target, "branch", "-m", "main", "pr-branch")
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert "1 whose git landing evidence could not be queried" in findings[0].message
+
+
+def test_a_story_with_a_record_but_no_evidence_is_not_vouched_for(
+    tmp_path: Path,
+) -> None:
+    """A story whose harness phase is neither a landing signal nor one of the
+    NOT_LANDED verdicts (``review-running``, ``in-progress``, ...) reaches the
+    end of every route with nothing found. It is not an accusation -- but it is
+    not a verified landing either, and counting it silently into ``audited``
+    made the green vouch for a story it never established anything about."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "warden", "run1",
+        {"1-1-foo": {"phase": "review-running", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert (
+        "1 with no landing evidence and no harness verdict" in findings[0].message
+    )
+
+
+# --- Malformed harness state, revisited ------------------------------------
+
+
+def test_a_non_scalar_phase_value_does_not_crash_the_gather(
+    tmp_path: Path,
+) -> None:
+    """``phase in NOT_LANDED`` HASHES ``phase``, so a JSON record giving it a
+    list or a dict raised ``TypeError: unhashable type`` straight out of the
+    gather. ``_harness_tasks``'s ``isinstance(task, dict)`` guard validates the
+    CONTAINER and never the values inside it, and ``phase`` is the only value
+    fed to a hash-requiring operation."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    for phase in (["deferred"], {"was": "deferred"}, 7):
+        _write_state(
+            loop_root, "warden", "run1",
+            {"1-1-foo": {"phase": phase, "commit_sha": None}},
+        )
+
+        findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+        assert [f.status for f in findings] == [DoctorStatus.OK]
+
+
+def test_a_truncated_run_record_file_is_counted_not_silently_dropped(
+    tmp_path: Path,
+) -> None:
+    """A truncated ``state.json`` is the likeliest corruption a killed loop run
+    leaves behind, and it fails at ``json.loads`` -- the WHOLE-FILE branch,
+    which the per-entry counter never touched. Its story then read as "no run
+    record (unchecked)", indistinguishable from a genuinely hand-landed one:
+    corrupt harness state passing as a clean audit, which is the exact
+    conflation the counter exists to prevent."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    state = loop_root / "pyforge-warden" / ".bmad-loop" / "runs" / "r1" / "state.json"
+    state.parent.mkdir(parents=True)
+    state.write_text('{"tasks": {"1-1-foo": {"phase": "defe', encoding="utf-8")
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert "1 run record file(s) unreadable" in findings[0].message
+
+
+def test_malformed_records_for_unaudited_keys_do_not_inflate_the_caveat(
+    tmp_path: Path,
+) -> None:
+    """The caveat qualifies the AUDIT, so it must count audited stories -- not
+    every malformed entry found anywhere under the station's run history. An
+    accumulator that counted all of them could print "1 audited, 3 run
+    record(s) unreadable": a count exceeding its own denominator, qualifying a
+    result whose evidence was in fact complete."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    for i in (1, 2, 3):
+        _write_state(loop_root, "warden", f"r{i}", {f"9-{i}-not-in-any-feed": "bad"})
+    _write_state(
+        loop_root, "warden", "r9",
+        {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert findings[0].message == (
+        "no `done` story contradicts its landing evidence (1 audited)"
+    )
+
+
+def test_a_superseded_malformed_record_is_not_counted(tmp_path: Path) -> None:
+    """A key malformed in one run and valid in a later one is fully evidenced
+    -- ``_harness_tasks`` already prefers the record carrying a ``commit_sha``
+    -- so the caveat must not report it as unreadable."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(loop_root, "warden", "run1", {"1-1-foo": "malformed"})
+    _write_state(
+        loop_root, "warden", "run2",
+        {"1-1-foo": {"phase": "done", "commit_sha": "abc123"}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert findings[0].message == (
+        "no `done` story contradicts its landing evidence (1 audited)"
+    )
+
+
+def test_an_unreadable_feed_is_named_rather_than_silently_dropped(
+    tmp_path: Path,
+) -> None:
+    """A feed that cannot be decoded drops a WHOLE station from the audit. The
+    OK Finding must not then read as a confident green over a station it never
+    opened. (Escalating to WARN and putting the count in ``evidence`` would
+    change the OK Finding's evidence shape, which the spec's I/O matrix pins --
+    that decision stays deferred; the message caveat does not need it.)"""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+    _write_feed(target, "atlas", ["2-1-bar"])
+
+    broken = (
+        target / "_bmad-output" / "projects" / "pyforge-warden"
+        / "implementation-artifacts" / "sprint-status.yaml"
+    )
+    broken.write_bytes(b"development_status:\n  1-1-f\xe9o: done\n")
+
+    findings = marshal.gather_story_status(target, loop_root=tmp_path / "loop_root")
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    assert "1 sprint feed(s) unreadable" in findings[0].message
+    assert findings[0].evidence == {"audited": 1}  # only atlas's key was audited
+
+
+# --- The documented loop_root default --------------------------------------
+
+
+def test_loop_root_defaults_to_the_bmad_loops_dir_under_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every other test here passes ``loop_root`` explicitly, so the documented
+    default (``Path.home() / ".bmad-loops"``, matching the source script's own
+    hardcoded ``LOOP_ROOT``) had no coverage at all -- ``".bmad-loop"`` for
+    ``".bmad-loops"`` would have shipped green."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    home = tmp_path / "home"
+    _write_state(
+        home / ".bmad-loops", "warden", "run1",
+        {"1-1-foo": {"phase": "deferred", "commit_sha": None}},
+    )
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+
+    findings = marshal.gather_story_status(target)
+
+    assert [f.status for f in findings] == [DoctorStatus.FAIL]
+    assert findings[0].evidence["key"] == "1-1-foo"
+
+
+def test_an_unresolvable_home_degrades_instead_of_raising(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``Path.home()`` RAISES ``RuntimeError`` when ``HOME`` is unset and the
+    uid has no passwd entry -- the ordinary rootless-container shape. It
+    escaped before any Finding could be built, including for the no-feeds case
+    the spec documents as a vacuous OK."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _write_feed(target, "warden", ["1-1-foo"])
+
+    def _no_home(cls: type[Path]) -> Path:
+        raise RuntimeError("Could not determine home directory.")
+
+    monkeypatch.setattr(Path, "home", classmethod(_no_home))
+
+    findings = marshal.gather_story_status(target)
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+    # No harness records visible, so every audited story is "no run record".
+    assert "1 with no run record (unchecked)" in findings[0].message
