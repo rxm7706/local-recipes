@@ -1,4 +1,5 @@
-"""The CFE-root resolution chain (AD-5, FR-2).
+"""The CFE-root resolution chain (AD-5, FR-2), and the interpreter-selection
+chain (AD-5, FR-3, D-7) that picks a Python capable of running CFE scripts.
 
 Nothing in Mason yet locates a conda-forge-expert installation; `resolve.py`
 is the one pure, independently-testable place that answers "where is CFE,
@@ -32,10 +33,27 @@ inward-only (AD-2) -- `resolve.py` cannot import a name from `cli.py` --
 so this module owns its own copy for the actual env-var lookup: two copies
 of one string literal, in exactly two places, both changed together if the
 name ever changes.
+
+`resolve_cfe_interpreter` (Story 1.6) is a second, independent pure chain in
+this same file: `--cfe-python` flag -> `MASON_CFE_PYTHON` environment
+variable -> `sys.executable`. It exists because the process's own
+interpreter is wrong for running CFE scripts inside a lean, `mason`-only
+environment (D-7) -- CFE needs its own import floor (`pyyaml`, `requests`,
+`packaging`, `truststore`, `ruamel.yaml`, `conda-forge-metadata`), which a
+`no-default-feature` Mason environment does not carry. Unlike the root
+chain, this chain has no not-found case: `sys.executable` always exists and
+is always a valid terminal fallback, so `resolve_cfe_interpreter` always
+returns a match. Whether that interpreter actually satisfies CFE's import
+floor is a *separate*, subprocess-based question answered by
+`cfe.py::probe_import_floor` -- AD-5 forbids process spawns here, so that
+check cannot live in this module (see `cfe.py`'s module docstring).
+`_ENV_CFE_PYTHON` mirrors the `_ENV_CFE_ROOT` duplication pattern above, for
+the same inward-only dependency-direction reason.
 """
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -109,3 +127,46 @@ def resolve_cfe_root(
         candidate = parent
 
     return ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND)
+
+
+@dataclass(frozen=True)
+class ResolvedCfeInterpreter:
+    """The outcome of `resolve_cfe_interpreter`: the selected interpreter
+    path, plus which chain step produced it (AD-5).
+
+    `path` is `str`, not `Path` -- unlike `ResolvedCfeRoot.root`, it mirrors
+    `sys.executable`'s own type and is passed straight through to
+    `subprocess.run`'s argv (`cfe.py`), never filesystem-joined."""
+
+    path: str
+    step: str
+
+
+STEP_RUNNING_INTERPRETER = "running-interpreter"
+"""Neither the flag nor the environment variable matched: fell through to
+`sys.executable`, the guaranteed-match terminal step of this chain."""
+
+_ENV_CFE_PYTHON = "MASON_CFE_PYTHON"
+
+
+def resolve_cfe_interpreter(
+    explicit: str | None,
+    environ: Mapping[str, str],
+) -> ResolvedCfeInterpreter:
+    """Resolve the interpreter used to run CFE scripts: flag -> environment
+    -> `sys.executable` (FR-3, D-7).
+
+    First-match-wins, mirroring `resolve_cfe_root`'s whitespace convention:
+    `explicit` and `environ[_ENV_CFE_PYTHON]` match on the presence of a
+    non-whitespace value alone. Unlike `resolve_cfe_root`, this chain has no
+    not-found terminal state -- `sys.executable` always exists, so the
+    fallback always matches and this function never raises.
+    """
+    if explicit is not None and explicit.strip():
+        return ResolvedCfeInterpreter(path=explicit.strip(), step=STEP_FLAG)
+
+    env_value = environ.get(_ENV_CFE_PYTHON)
+    if env_value is not None and env_value.strip():
+        return ResolvedCfeInterpreter(path=env_value.strip(), step=STEP_ENVIRONMENT)
+
+    return ResolvedCfeInterpreter(path=sys.executable, step=STEP_RUNNING_INTERPRETER)
