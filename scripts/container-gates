@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""
+Container build-time gates -- proves nothing secret-shaped ships in an image
+layer (Story 7.3, "Credentials never enter image layers").
+
+`secrets-scan <root> [<root> ...]` delegates to the existing
+`steward keys audit --secrets <path>` primitive (AD-2 -- no second
+scanner): this script contains no regex or scanning logic of its own, only
+path selection and subprocess dispatch onto `steward`. Wired as a
+Containerfile `RUN` step (final stage), so a finding fails the
+`docker build`/`podman build` command itself.
+
+Why `.pixi/` is skipped when a root is a directory: it is the builder
+stage's materialized `pyforge-container` env, which ships the
+`age`/`age-keygen` binaries the `keys` duty needs to function at all.
+Confirmed live, not assumed: `pixi run -e pyforge-steward steward keys
+audit --secrets .pixi/envs/pyforge-steward/bin` produces exactly one
+finding, `age-keygen:2204 matches the 'age-identity' plaintext-secret
+pattern`, and `strings .pixi/envs/pyforge-steward/bin/age-keygen | grep
+AGE-SECRET-KEY-1` shows a literal `AGE-SECRET-KEY-1...` string compiled
+into the binary -- an upstream test vector, not anything this repo or
+image produced. `age`/`age-keygen` ship in every build of this image, so
+this finding is unavoidable and permanent; excluding `.pixi/` from the
+scan target is the only way this gate is ever green on a clean build (see
+the story spec's Design Notes for the full evidence trail).
+
+A file root is scanned directly -- the `.pixi/`-exclusion logic only
+applies when a root is a directory.
+
+Why top-level-only exclusion is enough (not recursion-aware): a `.pixi/`
+nested BELOW a scanned root's direct child never actually reaches `/pyforge`
+in the first place. `.dockerignore` already strips every nested pixi
+workspace's own `.pixi/` from the build context (`recipes/*/.pixi/` for
+`recipes/insightforge/`, `src/**/.pixi/` for each of the 8
+`src/shared/packages/*` members -- confirmed the full set via `find . -iname
+pixi.toml`, 9 total, all covered) -- those rules predate this story (Story
+7.1) and are unrelated to it. The only `.pixi/` that ever lands in `/pyforge`
+is the one top-level dir the builder stage's own `pixi install` creates.
+
+Usage:
+    container-gates secrets-scan <root> [<root> ...]
+"""
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+_PIXI_DIRNAME = ".pixi"
+# Generous on purpose: real scans of this repo's full checkout complete in
+# low single-digit seconds (measured live: the whole gate, all three roots,
+# `DONE 4.5s`). This bounds worst-case (a hang, not a slow-but-real scan)
+# rather than a normal upper bound.
+_SCAN_TIMEOUT_SECONDS = 300
+
+
+def _scan_target(target: Path) -> bool:
+    """Delegate one scan to `steward keys audit --secrets <target>`.
+
+    stdout/stderr are inherited (not captured), so the caller sees the
+    real `steward` output directly -- a "clean:" line on success or the
+    finding message(s) on failure. Returns True iff `steward` exited 0.
+
+    `steward` missing from PATH or hanging past `_SCAN_TIMEOUT_SECONDS` are
+    both reported as a clean, attributable gate failure here rather than an
+    unhandled traceback -- the failure mode a build-time gate must never
+    have (an opaque crash is a worse outcome than "the gate failed" for
+    whoever is reading the build log).
+    """
+    try:
+        result = subprocess.run(
+            ["steward", "keys", "audit", "--secrets", str(target)],
+            timeout=_SCAN_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        print("container-gates: secrets-scan: `steward` not found on PATH", file=sys.stderr)
+        return False
+    except subprocess.TimeoutExpired:
+        print(
+            f"container-gates: secrets-scan: steward timed out scanning {target} "
+            f"(> {_SCAN_TIMEOUT_SECONDS}s)",
+            file=sys.stderr,
+        )
+        return False
+    return result.returncode == 0
+
+
+def _scan_root(root_str: str) -> bool:
+    """Scan one root per the story spec's I/O & Edge-Case Matrix.
+
+    A missing root is a failure reported here (never silently treated as
+    clean, never delegated to `steward`, which would only ever see a
+    target we chose under it). A directory root scans every top-level
+    child except `.pixi/`, which is skipped entirely -- never recursed
+    into. A file root is scanned directly.
+    """
+    root = Path(root_str)
+    if not root.exists():
+        print(f"container-gates: secrets-scan: root does not exist: {root}", file=sys.stderr)
+        return False
+    if not root.is_dir():
+        return _scan_target(root)
+    ok = True
+    try:
+        children = sorted(root.iterdir())
+    except OSError as exc:
+        print(f"container-gates: secrets-scan: cannot list {root}: {exc}", file=sys.stderr)
+        return False
+    for child in children:
+        if child.name == _PIXI_DIRNAME:
+            continue
+        if not _scan_target(child):
+            ok = False
+    return ok
+
+
+def cmd_secrets_scan(roots: list[str]) -> int:
+    """Scan every root; never short-circuit; fail if any root was dirty."""
+    ok = True
+    for root in roots:
+        if not _scan_root(root):
+            ok = False
+    if ok:
+        print(f"container-gates: secrets-scan: clean ({len(roots)} root(s))")
+    else:
+        print("container-gates: secrets-scan: FAILED -- see findings above", file=sys.stderr)
+    return 0 if ok else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="container-gates", description="Container build-time gates."
+    )
+    subs = parser.add_subparsers(dest="command", required=True)
+    secrets_scan = subs.add_parser(
+        "secrets-scan",
+        help="scan one or more roots for plaintext-secret-shaped content "
+        "via `steward keys audit --secrets` (`.pixi/` skipped for directory roots)",
+    )
+    secrets_scan.add_argument("roots", nargs="+", metavar="ROOT")
+    args = parser.parse_args(argv)
+    if args.command == "secrets-scan":
+        return cmd_secrets_scan(args.roots)
+    parser.print_help(sys.stderr)  # pragma: no cover -- unreachable, `required=True` above
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
