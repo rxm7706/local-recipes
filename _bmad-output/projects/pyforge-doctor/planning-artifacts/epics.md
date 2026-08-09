@@ -598,7 +598,29 @@ work, not fixed here (outside this story's surface). 435 doctor tests pass
 **Then** those sources report `WARN`/unknown — never `OK`, never an exception
 **And** a CI-only invocation can select the repo-scope set explicitly
 
-**Status:** backlog
+**Status:** done
+
+**Outcome (2026-08-09).** Mechanism-only, like Story 6.2: no real `scope="runtime"`
+source exists yet (Story 6.5's `dashboard_drift` is still the first), so this story
+built the two pieces every later story needs. `sources.scope_for(source)` is the one
+canonical per-source scope lookup, and `sources.degrade_on_exception(source, check,
+gather)` is the reusable "cannot evaluate here" wrapper a future `scope="runtime"`
+gather calls around its own host-state reads — deliberately NOT wired into today's
+three existing (`scope="repo"`) dispatch calls, whose own gather functions already
+promise never to raise. `doctor check` gained `--scope {repo,runtime,all}` (default
+`all`, unchanged behavior), filtering `run_engines`/`run_env`/`run_durability` by
+each category's `sources.REGISTRY`-declared scope — proving the CI-selection half of
+the AC today (`--scope runtime` yields 0 findings/exit 0, since all 9 registered
+sources are still `scope="repo"`). Adversarial review (Blind Hunter + Edge Case
+Hunter, independently, both) caught one real gap: an EXPLICIT category flag
+(`--engines`/`--env`/`--durability`) contradicting `--scope` used to silently drop to
+a zero-finding, exit-0 report indistinguishable from "ran clean" for an automated
+`--json` consumer — fixed with a usage-error guard (`_validate_scope_against_
+explicit_categories`) before dispatch, so only the implicit default-run's "narrow to
+zero" stays silent (the documented, intentional CI-selection behavior). 449 doctor
+tests pass (10 new this story). One pre-existing `__all__`-sort lint finding
+(ruff RUF022, confirmed via `git show <baseline> | ruff check`) logged to
+`deferred-work.md`, not fixed here.
 
 ### Story 6.4: The ledger verdicts come home
 
