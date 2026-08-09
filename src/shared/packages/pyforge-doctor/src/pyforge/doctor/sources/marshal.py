@@ -35,6 +35,13 @@ mirroring ``test_no_warden_import.py`` in the opposite direction.
 **Degrades, never crashes** — the house rule for every Doctor source. A repo with no
 ledgers, no git, or an unreadable tree yields a WARN Finding, never a traceback:
 Doctor's whole purpose is to survive and report on a broken environment.
+
+One known exception, recorded rather than quietly implied: ``gather``'s
+WORKING-TREE read (``ledger.read_text``) catches ``OSError`` only, so a ledger
+holding a non-UTF-8 byte on disk still raises ``UnicodeDecodeError``. Every git-side
+read in this module is guarded (see ``_git``); this one line pre-dates Story 6.4 and
+sits inside the shipped ``MARSHAL_DURABILITY`` check that 6.4's spec puts off-limits,
+so the fix is recorded in ``deferred-work.md`` rather than taken here.
 """
 
 from __future__ import annotations
@@ -182,6 +189,26 @@ def gather(target: Path) -> tuple[Finding, ...]:
 
         committed = _git(target, "show", f"HEAD:{rel}")
         if committed is None:
+            # `_git` collapses EVERY failure to None, so "HEAD does not track
+            # this path" and "HEAD tracks it but the blob would not decode"
+            # arrive identically — and reporting the second as the first tells
+            # the operator to commit a file that IS committed, while the
+            # regression comparison is skipped in silence. Ask git which it is;
+            # only on this already-failing path, so the healthy case pays
+            # nothing.
+            listed = _git(target, "ls-tree", "--name-only", "HEAD", "--", rel)
+            if listed and listed.strip():
+                findings.append(Finding(
+                    source=Source.MARSHAL_DURABILITY,
+                    check="ledger-unreadable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: sprint ledger is committed but its blob at HEAD "
+                        f"could not be read — regression cannot be evaluated"
+                    ),
+                    evidence={"project": project, "path": rel},
+                ))
+                continue
             findings.append(Finding(
                 source=Source.MARSHAL_DURABILITY,
                 check="ledger-untracked",
@@ -254,17 +281,33 @@ def gather(target: Path) -> tuple[Finding, ...]:
 
 
 def _harness_tasks(
-    loop_root: Path, slug: str, *, skipped: list[str] | None = None
+    loop_root: Path | None,
+    slug: str,
+    *,
+    skipped: set[str] | None = None,
+    unreadable: list[str] | None = None,
 ) -> dict[str, dict]:
     """Most-advanced run record per story key, across every run of a station.
 
-    ``skipped``, when given, accumulates the keys whose run record was
-    malformed and therefore dropped. A dropped record is indistinguishable
-    downstream from "this story has no run record at all" -- which is the
-    detector's SILENT branch -- so without this the corrupt-harness case (the
-    exact state a broken loop run leaves behind) turns a potential false-green
-    into a clean pass with nothing to show for it. The parameter is optional so
-    the plain two-arg call keeps working unchanged.
+    Two optional out-parameters record what was DROPPED, because a dropped
+    record is indistinguishable downstream from "this story has no run record
+    at all" -- the detector's SILENT branch -- so without them the
+    corrupt-harness case (the exact state a broken loop run leaves behind)
+    turns a potential false-green into a clean pass with nothing to show for
+    it. They are separate because they support different claims:
+
+    * ``skipped`` collects the story KEYS whose entry was malformed. The caller
+      intersects it with the keys it actually audited, so the count it reports
+      is precisely "audited stories whose record was unusable".
+    * ``unreadable`` collects the ``state.json`` PATHS that could not be read or
+      parsed at all -- a truncated file, the likeliest corruption a killed loop
+      run leaves, has no keys to attribute, so it can only be counted as a
+      file. Counting it nowhere was the gap: the whole-file branch was the one
+      the counter was written for and the one it missed.
+
+    Both are optional so the plain two-arg call keeps working unchanged.
+    ``loop_root=None`` means the harness root could not be determined at all
+    (see ``gather_story_status``) and yields no records rather than raising.
 
     'Most advanced' = prefer a record carrying a ``commit_sha``, since a
     later run can re-drive a story an earlier run deferred. Port of
@@ -274,6 +317,8 @@ def _harness_tasks(
     raising, mirroring the script's own broad try/except-and-continue.
     """
     out: dict[str, dict] = {}
+    if loop_root is None:
+        return out
     home = loop_root / f"pyforge-{slug}"
     for state in sorted(home.glob(".bmad-loop/runs/*/state.json")):
         # Only the READ+PARSE is guarded by try/except: an unreadable file or
@@ -283,7 +328,9 @@ def _harness_tasks(
         # (mirrors the source script's own try/except-and-continue).
         try:
             payload = json.loads(state.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001, S112 -- corrupt/unreadable run record
+        except Exception:  # noqa: BLE001 -- corrupt/unreadable run record
+            if unreadable is not None:
+                unreadable.append(str(state))
             continue
 
         # SHAPE guards are per-entry and OUTSIDE the try, deliberately. Folding
@@ -299,11 +346,13 @@ def _harness_tasks(
         # the honest guard: skip exactly the malformed entry, keep the rest.
         tasks = payload.get("tasks") if isinstance(payload, dict) else None
         if not isinstance(tasks, dict):
+            if unreadable is not None:
+                unreadable.append(str(state))
             continue
         for key, task in tasks.items():
             if not isinstance(task, dict):
                 if skipped is not None:
-                    skipped.append(key)
+                    skipped.add(key)
                 continue  # malformed entry -- skip it, keep its neighbours
             prev = out.get(key)
             if prev is None or (task.get("commit_sha") and not prev.get("commit_sha")):
@@ -329,7 +378,11 @@ def gather_story_status(
     is not evidence of absence.
 
     ``loop_root`` defaults to ``Path.home() / ".bmad-loops"``, matching the
-    script's own hardcoded ``LOOP_ROOT``. Tier-3 feeds
+    script's own hardcoded ``LOOP_ROOT``. ``Path.home()`` itself RAISES
+    ``RuntimeError`` when ``HOME`` is unset and the uid has no passwd entry
+    (the ordinary rootless-container shape), which would escape this gather
+    before any Finding could be built, so it degrades to "no harness records
+    visible" instead. Tier-3 feeds
     (``_bmad-output/projects/pyforge-*/implementation-artifacts/
     sprint-status.yaml``) are gitignored, so in a bare CI checkout this glob
     finds nothing and the gather degrades to a vacuous ``audited=0`` OK
@@ -341,7 +394,10 @@ def gather_story_status(
     That case returns a single WARN instead — cannot-evaluate is never a FAIL.
     """
     if loop_root is None:
-        loop_root = Path.home() / ".bmad-loops"
+        try:
+            loop_root = Path.home() / ".bmad-loops"
+        except RuntimeError:
+            loop_root = None  # no resolvable home -- no harness records to read
 
     feeds = sorted(target.glob(SPRINT_STATUS_GLOB))
 
@@ -372,35 +428,70 @@ def gather_story_status(
     # identical for every key in every feed (`target` never changes mid-gather).
     # Computed once, lazily, on the first key that actually reaches Route 3 --
     # a full history walk per candidate key would be O(keys x history) shell-outs
-    # against Doctor's own NFR-4 wall-clock budget.
+    # against Doctor's own NFR-4 wall-clock budget. `None` means "not computed
+    # yet"; the separate `_unavailable` flag means "computed, and the query
+    # FAILED" -- an empty list is a legitimate answer (a repo with no subjects)
+    # and must not be confused with either.
     main_subjects: list[str] | None = None
+    main_subjects_unavailable = False
 
     false_greens: list[dict] = []
     audited = 0
     no_record = 0
-    malformed: list[str] = []
+    unreadable_records = 0
+    inconclusive = 0
+    unverified = 0
+    unreadable_run_files: list[str] = []
+    unreadable_feeds = 0
     for feed in feeds:
         slug = feed.parent.parent.name.removeprefix("pyforge-")
-        tasks = _harness_tasks(loop_root, slug, skipped=malformed)
+        # Per-station, not shared across feeds: story keys are only unique
+        # WITHIN a station, so a global set would let one station's malformed
+        # `1-1-foo` be charged to another station's healthy `1-1-foo`.
+        station_skipped: set[str] = set()
+        tasks = _harness_tasks(
+            loop_root, slug, skipped=station_skipped, unreadable=unreadable_run_files
+        )
         try:
             text = feed.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
+            # This drops a whole station from the audit. The OK Finding must
+            # not then read as a confident green over a station it never
+            # opened, so the caveat below names it. (Escalating to WARN and
+            # putting the count in `evidence` would change the OK Finding's
+            # evidence shape, which the spec's I/O matrix pins -- that decision
+            # stays recorded in `deferred-work.md`.)
+            unreadable_feeds += 1
             continue
 
         for key in DONE_RE.findall(text):
             audited += 1
             task = tasks.get(key)
-            # No run record at all -> pre-loop or hand-implemented. Stay silent.
             if task is None:
-                no_record += 1
+                # Two different absences, and the caveat must not merge them: a
+                # story whose record was DROPPED as malformed was not "never
+                # recorded", it was recorded and unreadable.
+                if key in station_skipped:
+                    unreadable_records += 1
+                else:
+                    no_record += 1  # pre-loop or hand-implemented. Stay silent.
                 continue
             if task.get("commit_sha"):
                 continue  # harness recorded a commit
 
-            if _git(
+            # `_git` returns None on FAILURE and "" on "ran, found nothing".
+            # Collapsing the two would convict a story on evidence that was
+            # never gathered -- the one outcome this detector must never
+            # produce (the same rule the git-dir probe above enforces, applied
+            # per query rather than once).
+            merged = _git(
                 target, "log", "--oneline", "--all", "-F", f"--grep=/{key} into",
                 timeout=60.0,
-            ):
+            )
+            if merged is None:
+                inconclusive += 1
+                continue
+            if merged:
                 continue  # merge commit found
 
             # Route 3: landed BY HAND, reachable from main -- see the source
@@ -410,25 +501,48 @@ def gather_story_status(
             m = re.match(r"^(\d+)-(\d+)-", key)
             if m:
                 needle = f"story {m.group(1)}.{m.group(2)}"
-                if main_subjects is None:
-                    main_subjects = (
-                        _git(target, "log", "--format=%s", "main", timeout=60.0) or ""
-                    ).lower().splitlines()
-                if any(slug in s and needle in s for s in main_subjects):
+                if main_subjects is None and not main_subjects_unavailable:
+                    raw = _git(target, "log", "--format=%s", "main", timeout=60.0)
+                    if raw is None:
+                        # No local `main` (a PR checkout, a shallow clone, a
+                        # differently-named default branch) or a failed query.
+                        # Route 3 cannot run, so this key cannot be judged.
+                        main_subjects_unavailable = True
+                    else:
+                        main_subjects = raw.lower().splitlines()
+                if main_subjects_unavailable:
+                    inconclusive += 1
+                    continue
+                if any(slug in s and needle in s for s in main_subjects or ()):
                     continue  # hand-landed; named in a commit subject on main
 
             phase = task.get("phase", "")
-            if phase in NOT_LANDED:
+            # `phase in NOT_LANDED` HASHES `phase`, so a JSON record giving it a
+            # list or dict value raised TypeError straight out of the gather --
+            # the container guard in `_harness_tasks` validates the task dict,
+            # never the values inside it.
+            if isinstance(phase, str) and phase in NOT_LANDED:
                 false_greens.append({
                     "slug": slug, "key": key, "phase": phase,
                     "defer_reason": task.get("defer_reason") or "",
                 })
+            else:
+                # A record exists, no landing evidence was found, and the
+                # harness does not say the story failed either. Not an
+                # accusation -- but not a verified landing, so it must not be
+                # counted into the green's silent majority.
+                unverified += 1
 
     # Findings are constructed AFTER the loop, not appended during it, so
     # every one -- FAIL or OK -- carries the FINAL `audited` total in its
     # evidence: an automated `--json` consumer reading a FAIL finding must
     # be able to tell "3 of 50 audited" from "3 of 3 audited" without a
     # separate summary finding.
+    #
+    # The unverified-population caveats below ride on the OK Finding only. A
+    # FAIL is a specific accusation about one named story, not a claim about
+    # the audit's completeness, so it needs no qualifier -- and widening the
+    # FAIL evidence to carry them would put the same counts in two shapes.
     if false_greens:
         return tuple(
             Finding(
@@ -462,11 +576,24 @@ def gather_story_status(
     # `{"audited": 0}` for the no-feeds row, so widening the shape here would
     # be a spec deviation. Enriching it stays recorded in `deferred-work.md`
     # for the story that owns the contract.
+    # Every clause names a population the audit did NOT verify, and each is
+    # counted exactly once against `audited` (or, for the two input-level
+    # clauses, reported as inputs rather than as stories) -- an earlier form
+    # could print "1 audited, 3 run record(s) unreadable" by charging records
+    # for keys no feed ever listed.
     detail = f"{audited} audited"
     if no_record:
         detail += f", {no_record} with no run record (unchecked)"
-    if malformed:
-        detail += f", {len(malformed)} run record(s) unreadable"
+    if unreadable_records:
+        detail += f", {unreadable_records} with an unreadable run record"
+    if inconclusive:
+        detail += f", {inconclusive} whose git landing evidence could not be queried"
+    if unverified:
+        detail += f", {unverified} with no landing evidence and no harness verdict"
+    if unreadable_run_files:
+        detail += f", {len(unreadable_run_files)} run record file(s) unreadable"
+    if unreadable_feeds:
+        detail += f", {unreadable_feeds} sprint feed(s) unreadable"
     return (
         Finding(
             source=Source.STORY_STATUS,

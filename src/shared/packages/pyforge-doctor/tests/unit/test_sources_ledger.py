@@ -377,13 +377,21 @@ def test_no_substitution_flag_when_base_is_used_as_requested(tmp_path: Path) -> 
 # --- Never raises, even on a non-UTF-8 committed blob -----------------------
 
 
-def test_non_utf8_ledger_blob_degrades_instead_of_raising(tmp_path: Path) -> None:
+def test_non_utf8_ledger_blob_at_head_warns_and_never_accuses(
+    tmp_path: Path,
+) -> None:
     """The spec's Always boundary is "degrade to a WARN/OK Finding on any
     unreadable/missing input, never raise". ``cli_bridge.run_git`` decodes with
     ``text=True`` and catches only TimeoutExpired/OSError, so a tracked ledger
     holding a non-UTF-8 byte used to raise UnicodeDecodeError straight out of
-    ``gather``. The blob is unreadable, so the ledger reads as absent at head --
-    a FAIL is an acceptable verdict here; an exception is not."""
+    ``gather``.
+
+    Not raising is only half of it: ``_git`` maps the decode failure to None,
+    which reads identically to "absent at head" -- so a purely COSMETIC edit
+    that happened to introduce a non-UTF-8 byte was reported as a
+    ``ledger-deleted`` FAIL, carrying a ``git checkout <base> -- <path>``
+    remedy that would discard the head ledger. Nothing un-finished here, so a
+    FAIL is not an acceptable verdict; a cannot-evaluate WARN is."""
     repo = tmp_path / "repo"
     _init_repo(repo)
     _write_ledger(repo, "doctor", {"1-1-foo": "done"})
@@ -399,8 +407,69 @@ def test_non_utf8_ledger_blob_degrades_instead_of_raising(tmp_path: Path) -> Non
 
     findings = ledger.gather(repo, base="origin/main", head="HEAD")
 
-    assert findings  # the point is that it RETURNED rather than raised
+    assert findings  # it RETURNED rather than raised
     assert all(f.source is Source.LEDGER_REGRESSION for f in findings)
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert findings[0].check == "ledger-unreadable"
+    # A cannot-evaluate must never hand out a destructive remedy.
+    assert "remedy" not in findings[0].evidence
+
+
+def test_an_unreadable_base_blob_is_not_mistaken_for_a_new_ledger(
+    tmp_path: Path,
+) -> None:
+    """The mirror-image of the case above, and the more dangerous direction.
+    An unreadable blob at BASE looks exactly like "this ledger did not exist at
+    base" -- which ``_check`` skips as "nothing to regress" -- so a ledger that
+    un-finished two stories between the two revisions was reported as a clean
+    OK, with ``ledgers_compared`` positively asserting the ledger HAD been
+    compared. The listings distinguish the two cases; nothing else does."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    path = _write_ledger(repo, "doctor", {"1-1-foo": "done", "1-2-bar": "done"})
+    path.write_bytes(
+        b"development_status:\n  # caf\xe9\n  1-1-foo: done\n  1-2-bar: done\n"
+    )
+    base_sha = _commit_all(repo, "seed ledger with a non-utf8 comment")
+    _branch_at(repo, "origin/main", base_sha)
+
+    path.write_bytes(
+        b"development_status:\n  # caf\xe9\n  1-1-foo: backlog\n  1-2-bar: backlog\n"
+    )
+    _commit_all(repo, "un-finish both stories")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert findings[0].check == "ledger-unreadable"
+    # The green that used to be reported here claimed a comparison that never
+    # happened; a ledger whose blob was never read is not a ledger compared.
+    assert findings[0].evidence["ledgers_compared"] == 0
+
+
+def test_gather_uses_origin_main_and_head_when_no_range_is_given(
+    tmp_path: Path,
+) -> None:
+    """The spec's Design Notes make the defaults a contract ("exactly match
+    each original script's own hardcoded behavior"), and every other test in
+    this file passes ``base``/``head`` explicitly -- so ``"main"`` for
+    ``"origin/main"`` would have shipped green. Called with neither argument,
+    against a repo whose only resolvable base ref is ``origin/main``."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", {"1-1-foo": "done"})
+    base_sha = _commit_all(repo, "seed ledger")
+    _branch_at(repo, "origin/main", base_sha)
+
+    _write_ledger(repo, "doctor", {"1-1-foo": "in-progress"})
+    _commit_all(repo, "un-finish the story")
+
+    findings = ledger.gather(repo)
+
+    assert [f.status for f in findings] == [DoctorStatus.FAIL]
+    assert findings[0].check == "done-key-regressed"
+    assert findings[0].evidence["base"] == "origin/main"
+    assert findings[0].evidence["head"] == "HEAD"
 
 
 # --- Evidence shape is uniform across both cannot-evaluate WARNs -----------

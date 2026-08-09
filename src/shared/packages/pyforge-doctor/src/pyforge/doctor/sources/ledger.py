@@ -95,6 +95,12 @@ def _git(target: Path, *args: str) -> str | None:
     ``gather``). The one-catch fix for EVERY ``run_git`` caller belongs in
     ``cli_bridge`` itself and stays recorded in ``deferred-work.md``; this
     local guard keeps THIS module's own documented contract true meanwhile.
+
+    Not raising is only half the contract, though: ``None`` here means "could
+    not evaluate", and every caller must keep that distinct from the ordinary
+    absence it would otherwise look identical to. ``_check`` does that by
+    consulting the ``ls-tree`` listings before interpreting a ``git show``
+    failure — see its own docstring.
     """
     try:
         return run_git(target, list(args))
@@ -146,24 +152,69 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
     rationale (a renamed-but-still-``done`` key, id prefix changed but kebab
     tail surviving, is continuity, not regression).
 
-    Returns the findings AND how many ledger paths were actually compared:
-    "clean" and "found nothing to look at" are the same empty finding list, and
-    the caller reports both as OK today (recorded in ``deferred-work.md``, where
-    the OK-vs-WARN verdict for an empty measurement is owned). Carrying the
-    count means that decision is at least visible in the report meanwhile,
-    instead of a green with nothing behind it."""
+    Returns the findings AND how many ledgers were actually COMPARED — both
+    blobs fetched and parsed, not merely listed. "clean" and "found nothing to
+    look at" are the same empty finding list, and the caller reports both as OK
+    today (recorded in ``deferred-work.md``, where the OK-vs-WARN verdict for an
+    empty measurement is owned). Carrying the count means that decision is at
+    least visible in the report meanwhile, instead of a green with nothing
+    behind it — which is only true if the count excludes a ledger whose blob
+    never got read.
+
+    ``_git`` collapses EVERY failure to ``None``, so "this path does not exist
+    at that revision" and "this path exists there but its blob would not
+    decode" arrive here identically. They mean opposite things — the first is
+    ordinary history, the second is an unevaluated ledger — so the two ``ls-tree``
+    listings (already in hand) decide which happened, and an unreadable blob
+    becomes a cannot-evaluate WARN rather than being silently absorbed into
+    "new ledger" (a green over an unmeasured ledger) or "ledger deleted" (a FAIL,
+    with a destructive ``git checkout`` remedy, for a ledger that is still
+    there)."""
     findings: list[dict] = []
-    paths = sorted(set(_ledger_paths(target, base)) | set(_ledger_paths(target, head)))
-    for path in paths:
-        before_text = _git(target, "show", f"{base}:{path}")
-        after_text = _git(target, "show", f"{head}:{path}")
+    base_paths = set(_ledger_paths(target, base))
+    head_paths = set(_ledger_paths(target, head))
+    compared = 0
+    for path in sorted(base_paths | head_paths):
         project = path.split("/")[2]
 
+        before_text = (
+            _git(target, "show", f"{base}:{path}") if path in base_paths else None
+        )
         if before_text is None:
-            continue  # new ledger: nothing to regress
+            if path in base_paths:
+                findings.append(
+                    {
+                        "kind": "ledger-unreadable",
+                        "warn": True,
+                        "project": project,
+                        "path": path,
+                        "detail": (
+                            f"ledger is tracked at {base} but its blob could not "
+                            f"be read — this ledger's regression status is unknown"
+                        ),
+                    }
+                )
+            continue  # otherwise: absent at base, i.e. a new ledger — nothing to regress
         before = _parse_statuses(before_text)
 
+        after_text = (
+            _git(target, "show", f"{head}:{path}") if path in head_paths else None
+        )
         if after_text is None:
+            if path in head_paths:
+                findings.append(
+                    {
+                        "kind": "ledger-unreadable",
+                        "warn": True,
+                        "project": project,
+                        "path": path,
+                        "detail": (
+                            f"ledger is tracked at {head} but its blob could not "
+                            f"be read — this ledger's regression status is unknown"
+                        ),
+                    }
+                )
+                continue
             done = sorted(k for k, v in before.items() if v in TERMINAL)
             if done:
                 findings.append(
@@ -177,6 +228,8 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     }
                 )
             continue
+
+        compared += 1
 
         after = _parse_statuses(after_text)
         surviving_tails = {_tail(k) for k, v in after.items() if v in TERMINAL}
@@ -205,7 +258,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     "detail": f"{len(lost)} story key(s) moved out of `done`",
                 }
             )
-    return findings, len(paths)
+    return findings, compared
 
 
 def gather(
@@ -308,6 +361,25 @@ def gather(
 
     findings: list[Finding] = []
     for item in raw_findings:
+        # A ledger whose blob would not decode is a cannot-evaluate, not a
+        # verdict: WARN, and NO `remedy` — the FAIL branch's remedy is a
+        # `git checkout <base> -- <path>`, which would discard the head ledger
+        # over what may be a purely cosmetic edit.
+        if item.get("warn"):
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_REGRESSION,
+                    check=item["kind"],
+                    status=DoctorStatus.WARN,
+                    message=f"{item['project']}: {item['detail']}",
+                    evidence={
+                        "project": item["project"],
+                        "path": item["path"],
+                        **range_evidence,
+                    },
+                )
+            )
+            continue
         findings.append(
             Finding(
                 source=Source.LEDGER_REGRESSION,
