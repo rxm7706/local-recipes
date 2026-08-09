@@ -151,8 +151,12 @@ description = "Build BOTH pyforge-mason artifacts (conda + wheel/sdist) from one
 depends-on = ["pyforge-mason-build-conda", "pyforge-mason-build-dist"]
 
 [feature.pyforge-mason.tasks.pyforge-mason-test]
-description = "Run the pyforge-mason test suite (unit + meta)."
-cmd = "pytest src/shared/packages/pyforge-mason/tests -q"
+description = "Run the pyforge-mason test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
+cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m \"not slow\""
+
+[feature.pyforge-mason.tasks.pyforge-mason-test-slow]
+description = "Run the slow, real-CFE-dependent tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-marshal-test-slow's split; collects zero tests until Story 5.3 lands FR-46's delegation-fidelity test)."
+cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m slow"
 
 # --- pyforge-steward (Steward): pixi build workspace member (warden mirror, Story 1.1) --
 # Task names mirror pyforge-warden's verbatim, per the story's acceptance criteria.
