@@ -1,6 +1,8 @@
-"""AD-6 -- capability tiers are structural, not conventional: `package.py`
-and `environment.py` must never carry a *module-level* `cfe` import (Story
-1.7's Design Notes).
+"""AD-6 -- capability tiers are structural, not conventional: `package.py`,
+`environment.py`, and `doctor.py` must never carry a *module-level* `cfe`
+import (Story 1.7's Design Notes; Story 1.8 adds `doctor.py` to the guard,
+since AD-6's own text names it alongside the other two CFE-independent
+modules and this story is what gives the file real content to scan).
 
 "Module-level" here means "still eager at import time" -- not merely "a
 direct child of `tree.body`". A `cfe` import nested inside a top-level
@@ -34,7 +36,7 @@ from pathlib import Path
 
 PKG_ROOT = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "mason"
 
-_GUARDED_FILENAMES = ("package.py", "environment.py")
+_GUARDED_FILENAMES = ("package.py", "environment.py", "doctor.py")
 
 
 def _import_matches_cfe(node: ast.Import) -> bool:
@@ -129,8 +131,8 @@ def test_package_and_environment_carry_no_module_level_cfe_import():
     )
     violators = _find_violators(PKG_ROOT, _GUARDED_FILENAMES)
     assert not violators, (
-        "AD-6: package.py/environment.py must never carry a module-level "
-        f"`cfe` import; found one in: {violators}"
+        "AD-6: package.py/environment.py/doctor.py must never carry a "
+        f"module-level `cfe` import; found one in: {violators}"
     )
 
 
@@ -253,6 +255,39 @@ def test_detector_permits_a_module_with_no_cfe_import_at_all(tmp_path):
     root.mkdir()
     (root / "package.py").write_text('"""Docstring only."""\n', encoding="utf-8")
     (root / "environment.py").write_text('"""Docstring only."""\n', encoding="utf-8")
+
+    violators = _find_violators(root, _GUARDED_FILENAMES)
+
+    assert violators == []
+
+
+# --- Story 1.8: doctor.py joins the guard --------------------------------
+
+def test_detector_fires_on_a_module_level_cfe_import_in_doctor(tmp_path):
+    """Story 1.8 adds `doctor.py` to `_GUARDED_FILENAMES` -- a module-level
+    `cfe` import there must be flagged exactly like `package.py`/
+    `environment.py`."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "doctor.py").write_text("from . import cfe\n", encoding="utf-8")
+
+    violators = {p.resolve() for p in _find_violators(root, _GUARDED_FILENAMES)}
+
+    assert (root / "doctor.py").resolve() in violators
+
+
+def test_detector_permits_a_lazy_function_body_cfe_import_in_doctor(tmp_path):
+    """`doctor.py`'s real `build_report` imports `cfe` lazily, inside its own
+    function body (see the module's docstring) -- the detector must permit
+    that shape for `doctor.py` exactly as it already does for `package.py`."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "doctor.py").write_text(
+        "def build_report():\n"
+        "    from . import cfe\n"
+        "    return cfe\n",
+        encoding="utf-8",
+    )
 
     violators = _find_violators(root, _GUARDED_FILENAMES)
 
