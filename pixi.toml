@@ -7,7 +7,7 @@ preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/p
 # NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
 # (through 0.72.2) has no such key — workspace members are declared via path
 # dependencies (see [feature.pyforge-warden.dependencies]).
-requires-pixi = ">=0.75.0"  # single pixi floor for the workspace — matches feature.python/local-recipes/build `pixi = ">=0.75.0"`, environment.yaml, the CI pixi-version pin in .github/workflows/dashboard.yml, and the micromamba create-arg in .github/workflows/staged-recipes-linter.yml. Keep all five in step: the dashboard pin is an EXACT version, so leaving it below this floor makes setup-pixi install a pixi that refuses the manifest (the `pixi update` of 2026-07-30 raised this to 0.75.0 and left the other four at 0.74.0). 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it.
+requires-pixi = ">=0.75.0"  # single pixi floor for the workspace — matches feature.python/local-recipes/build `pixi = ">=0.75.0"`, environment.yaml, the CI pixi-version pin in .github/workflows/dashboard.yml, the micromamba create-arg in .github/workflows/staged-recipes-linter.yml, and the Containerfile's builder-stage `ghcr.io/prefix-dev/pixi:0.76.1` tag (Story 7.1). Keep all six in step: the dashboard pin is an EXACT version, so leaving it below this floor makes setup-pixi install a pixi that refuses the manifest (the `pixi update` of 2026-07-30 raised this to 0.75.0 and left the other four at 0.74.0). 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it.
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
@@ -380,6 +380,14 @@ pyforge-steward = { features = ["pyforge-steward"], no-default-feature = true }
 # so it carries only the built pyforge-marshal package + its conda
 # run-deps + pytest + import-linter.
 pyforge-marshal = { features = ["pyforge-marshal"], no-default-feature = true }
+# pyforge-container (Story 7.1, "one build, whole Guild"): the whole-Guild
+# image env -- composes all eight lean per-station features into ONE
+# environment, same no-default-feature shape as pyforge-ci, so the
+# Containerfile's builder stage materializes every station CLI in a single
+# `pixi install -e pyforge-container`. Features are referenced BY NAME (not
+# copied pins), so this tracks each station's deps automatically; it does
+# not curate or split any feature -- it only composes what already exists.
+pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]

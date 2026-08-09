@@ -1,0 +1,51 @@
+# Story 7.1: the Containerfile's builder stage COPYs the full repo checkout
+# (stations locate their repo root by marker-file walk-up, so a partial
+# checkout breaks that) -- this file only strips VCS metadata, local caches,
+# and build artifacts that are never needed inside the image.
+
+.git/
+.pixi/
+
+# BMAD Tier-3 runtime scratch -- gitignored, local-only, never git-tracked.
+_bmad-output/implementation-artifacts/
+
+# Deprecated/historical content, not needed at runtime.
+archive/
+
+# Herald deck output -- large, irrelevant to any station CLI (~659MB measured
+# on a real checkout); no marker-file walk-up ever looks here.
+presentations/
+
+# Local secrets/credentials -- must never enter an image layer (mirrors the
+# same patterns .gitignore already treats as secret-shaped). .claude/data/ is
+# also the gitignored mutable runtime cache (cf_atlas.db, vdb/, cve/, mapping
+# caches) that Story 7.4 mounts as a volume -- baking today's snapshot in
+# would both leak whatever is locally cached and freeze stale state.
+.env
+.env.github
+.secrets
+.claude/settings.local.json
+.claude/data/
+
+# Python build/test artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.import_linter_cache/
+build/
+dist/
+dist-conda/
+build_artifacts/
+
+# Node artifacts (present under some presentations/* subprojects)
+node_modules/
+
+# Editor/IDE metadata
+.idea/
+.vscode/
+.junie/
+
+# Misc local noise
+.DS_Store
+*.log
