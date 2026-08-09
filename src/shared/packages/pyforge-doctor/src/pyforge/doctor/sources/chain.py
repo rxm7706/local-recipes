@@ -147,6 +147,20 @@ def _expected_spec_dir(owner: str, slug: str) -> str:
     return f"{project}/planning-artifacts/specs/spec-{slug}/"
 
 
+def _listdir(d: Path) -> list[Path]:
+    """A directory's entries, sorted, RAISING on an unreadable directory.
+
+    ``Path.glob`` swallows ``OSError`` mid-traversal and simply yields
+    nothing, so an unreadable input directory is indistinguishable from an
+    empty one -- and "empty" reads as a clean chain, i.e. a confident OK for
+    a question that could not actually be asked (reproduced live during
+    review: ``chmod 000 docs/dreams/`` turned a real ``dream-without-spec``
+    FAIL into ``dream-chain ok``). ``iterdir`` raises instead, so every
+    collection site below lists through here and lets the module's own
+    per-unit isolation turn the failure into an honest WARN."""
+    return sorted(d.iterdir())
+
+
 def _collect_dreams(target: Path) -> dict[str, dict]:
     """``{slug: {owner, status, title}}`` for every tracked Dream -- verbatim
     from the original's own ``collect()``, except every value is COERCED to
@@ -169,8 +183,8 @@ def _collect_dreams(target: Path) -> dict[str, dict]:
     dreams_dir = target / "docs" / "dreams"
     if not dreams_dir.is_dir():
         return dreams
-    for p in sorted(dreams_dir.glob("*.md")):
-        if p.name == "README.md":
+    for p in _listdir(dreams_dir):
+        if p.suffix != ".md" or p.name == "README.md":
             continue
         fm = _frontmatter(p)
         dreams[p.stem] = {
@@ -221,14 +235,43 @@ def _collect_specs(target: Path, findings: list[dict]) -> list[dict]:
     specs: list[dict] = []
     projects_dir = target / "_bmad-output" / "projects"
     if projects_dir.is_dir():
-        for sp in sorted(projects_dir.glob("*/planning-artifacts/specs/*/SPEC.md")):
-            project = sp.relative_to(projects_dir).parts[0]
-            _append_spec_entry(sp, project, target, specs, findings)
+        for pdir in _listdir(projects_dir):
+            specs_dir = pdir / "planning-artifacts" / "specs"
+            if not specs_dir.is_dir():
+                continue
+            try:
+                spec_dirs = _listdir(specs_dir)
+            except OSError as exc:
+                # One project's unreadable specs/ directory must not silently
+                # read as "this project has no Specs" (which INV-1 would then
+                # report as every one of its Dreams being spec-less).
+                findings.append(_unreadable_specs_dir(pdir.name, specs_dir, exc))
+                continue
+            for sd in spec_dirs:
+                sp = sd / "SPEC.md"
+                if sp.is_file():
+                    _append_spec_entry(sp, pdir.name, target, specs, findings)
     governance_dir = target / "docs" / "governance"
     if governance_dir.is_dir():
-        for sp in sorted(governance_dir.glob("spec-*/SPEC.md")):
-            _append_spec_entry(sp, GOVERNANCE_PROJECT, target, specs, findings)
+        for sd in _listdir(governance_dir):
+            sp = sd / "SPEC.md"
+            if sd.name.startswith("spec-") and sp.is_file():
+                _append_spec_entry(sp, GOVERNANCE_PROJECT, target, specs, findings)
     return specs
+
+
+def _unreadable_specs_dir(project: str, specs_dir: Path, exc: Exception) -> dict:
+    """The WARN item for one project whose ``planning-artifacts/specs/``
+    could not be listed -- same shape as ``_append_spec_entry``'s own
+    per-spec WARN, one level up."""
+    return {
+        "inv": "INV-0", "kind": "dream-chain-unevaluable",
+        "subject": specs_dir.name, "owner": "", "status": f"in {project}",
+        "remedy": "make the project's planning-artifacts/specs/ readable, then re-check",
+        "detail": (f"{project}: planning-artifacts/specs/ could not be listed "
+                   f"here — {exc.__class__.__name__}: {exc}"),
+        "warn": True,
+    }
 
 
 def _append_spec_entry(
@@ -306,7 +349,10 @@ def _sharded_findings(target: Path, findings: list[dict]) -> None:
     projects_dir = target / "_bmad-output" / "projects"
     if not projects_dir.is_dir():
         return
-    for pdir in sorted(projects_dir.glob("*/planning-artifacts")):
+    for proj in _listdir(projects_dir):
+        pdir = proj / "planning-artifacts"
+        if not pdir.is_dir():
+            continue
         try:
             _check_project_sharded(pdir, findings)
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
@@ -440,7 +486,14 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
         # "every Dream has a Spec" for a target holding no Dreams at all --
         # a clean bill of health for a question never asked. Mirrors
         # `sources/ledger.py`'s own honest "cannot be evaluated" WARN.
-        if not (target / "docs" / "dreams").is_dir() and not (
+        #
+        # Tested on what was actually COLLECTED, not merely on whether the
+        # two directories exist: `docs/dreams/` present-but-empty (or holding
+        # only its README) alongside no projects tree passed the old
+        # both-must-be-missing test and still produced the confident OK --
+        # asserting "every project uses the sharded planning tree" about zero
+        # projects.
+        if not dreams and not specs and not (
             target / "_bmad-output" / "projects"
         ).is_dir():
             return (
@@ -449,9 +502,9 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
                     check="dream-chain-unevaluable",
                     status=DoctorStatus.WARN,
                     message=(
-                        f"neither docs/dreams/ nor _bmad-output/projects/ "
-                        f"exists under {target} — the Dream-to-Code chain "
-                        f"cannot be evaluated here"
+                        f"no Dreams, no Specs and no _bmad-output/projects/ "
+                        f"under {target} — the Dream-to-Code chain cannot be "
+                        f"evaluated here"
                     ),
                     evidence={"target": str(target)},
                 ),
@@ -632,13 +685,31 @@ def _contract_hash(target: Path, s: dict) -> str:
     """The memlog (+ optional sentinel) hash a spec's drift is measured
     against -- verbatim logic from the original's own ``contract_hash()``,
     using the ``_sha1`` above that degrades to ``None`` rather than raising."""
-    h = _sha1(s["memlog"]) if s["memlog"].exists() else None
-    h = h or ""
+    h = ""
+    if s["memlog"].exists():
+        # PRESENT but unhashable is not the same as ABSENT. Collapsing it to
+        # "" (the absent hash) makes the contract hash unconditionally differ
+        # from the baseline, so `spec_moved` is always True and every gating
+        # `drift` FAIL silently becomes a non-gating `drift-presumed` WARN --
+        # the run then reports OK. Raise instead; `_spec_current_state`'s own
+        # per-spec try/except turns it into a named unevaluable WARN.
+        h = _sha1(s["memlog"]) or _unhashable(s["memlog"])
     if s["drift"].startswith("sentinel:"):
         sentinel = target / s["drift"].split(":", 1)[1].strip()
-        sh = _sha1(sentinel) if sentinel.is_file() else None
-        h += "+" + (sh if sh is not None else "missing")
+        if sentinel.is_file():
+            # Same distinction as the memlog above: an unreadable sentinel is
+            # not a missing one.
+            h += "+" + (_sha1(sentinel) or _unhashable(sentinel))
+        else:
+            h += "+missing"
     return h
+
+
+def _unhashable(path: Path) -> str:
+    """Raise for a file that exists but could not be read -- the honest
+    alternative to substituting a hash that silently means something else.
+    Never returns (typed ``str`` so it composes with ``or`` above)."""
+    raise OSError(f"{path.name} is present but could not be read")
 
 
 def _tracked_files(target: Path) -> list[str] | None:
@@ -698,12 +769,23 @@ def _spec_current_state(
     warns: list[dict] = []
     for name, s in specs.items():
         try:
-            files = {} if s["drift"] == "exempt" else {
-                f: sha
-                for f in sorted(governed.get(name, []))
-                if f not in s["exclude"]
-                and (sha := _sha1(target / f)) is not None
-            }
+            files: dict[str, str] = {}
+            if s["drift"] != "exempt":
+                for f in sorted(governed.get(name, [])):
+                    if f in s["exclude"]:
+                        continue
+                    sha = _sha1(target / f)
+                    if sha is not None:
+                        files[f] = sha
+                    elif (target / f).exists():
+                        # Dropping a PRESENT-but-unreadable governed file from
+                        # the state is indistinguishable from the file being
+                        # deleted -- the baseline diff then reports it FAIL
+                        # `drift ... removed`, a confidently wrong finding
+                        # about a file that is still right there. Only a file
+                        # that is genuinely GONE may drop out silently (that
+                        # `removed` is the true answer).
+                        _unhashable(target / f)
             current[name] = {"memlog": _contract_hash(target, s), "files": files}
         except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
             # input must not discard another spec's already-computed state.
@@ -751,7 +833,13 @@ def _drift_findings(
         # and the `b.get("files")` guard below already cover. Unguarded, the
         # AttributeError escapes to `degrade_on_exception` and discards every
         # OTHER spec's already-computed coverage/drift finding.
-        if not isinstance(b, dict):
+        # ... and `memlog`'s own value has the same wrong-shape exposure the
+        # `files` guard below already covers: a hand-edited entry missing the
+        # key, or carrying a list/null, compares unequal to every real
+        # contract hash, so `spec_moved` is unconditionally True and every
+        # gating `drift` FAIL silently degrades to a `drift-presumed` WARN.
+        # The original indexed `b["memlog"]` and raised loudly instead.
+        if not isinstance(b, dict) or not isinstance(b.get("memlog"), str):
             b = None
         if b is None:
             findings.append({
@@ -784,6 +872,69 @@ def _drift_findings(
     return findings, presumed
 
 
+def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
+    """(spec -> parsed surface state, WARN items for the specs that went
+    dark). Split out of ``_check_spec_surface`` so the caller can tell an
+    unknown SURFACE from an unknown EXEMPTION list.
+
+    Listed through ``_listdir`` rather than ``target.glob(SPEC_GLOB)``: glob
+    swallows ``OSError`` mid-traversal, so an unlistable
+    ``planning-artifacts/specs/`` would read as "this project governs
+    nothing" and un-govern every file it owns -- the same silent-
+    governance-loss defect ``_parse_surface``'s own docstring refuses to
+    reintroduce, one directory level up."""
+    specs: dict[str, dict] = {}
+    unsound: list[dict] = []
+    projects_dir = target / "_bmad-output" / "projects"
+    if not projects_dir.is_dir():
+        return specs, unsound
+    for proj in _listdir(projects_dir):
+        specs_dir = proj / "planning-artifacts" / "specs"
+        if not specs_dir.is_dir():
+            continue
+        try:
+            spec_dirs = _listdir(specs_dir)
+        except OSError as exc:
+            unsound.append({
+                "kind": "spec-surface-unevaluable",
+                "path": f"{proj.name}/planning-artifacts/specs",
+                "detail": (f"{proj.name}: planning-artifacts/specs/ could not "
+                           f"be listed here — {exc.__class__.__name__}: {exc}; "
+                           f"its surfaces are unknown, so coverage is not "
+                           f"evaluable"),
+                "warn": True,
+            })
+            continue
+        for sd in spec_dirs:
+            spec_md = sd / "SPEC.md"
+            if not sd.name.startswith("spec-") or not spec_md.is_file():
+                continue
+            # Key by <project>/<spec-dir>, never the bare dir name -- the same
+            # slug can legitimately exist in two projects, and a bare-name key
+            # would silently drop one surface (verbatim rationale from the
+            # original).
+            name = f"{proj.name}/{sd.name}"
+            try:
+                globs, excludes, drift = _parse_surface(spec_md)
+            except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
+                # SPEC.md must degrade to a named WARN, never to a silently
+                # empty surface (see `_parse_surface`'s own docstring).
+                unsound.append({
+                    "kind": "spec-surface-unevaluable", "path": name,
+                    "detail": (f"{name}: SPEC.md could not be read here — "
+                               f"{exc.__class__.__name__}: {exc}; its surface "
+                               f"is unknown, so coverage is not evaluable"),
+                    "warn": True,
+                })
+                continue
+            specs[name] = {
+                "globs": globs, "drift": drift, "exclude": set(excludes),
+                "res": [_glob_to_re(g) for g in globs],
+                "memlog": spec_md.parent / ".memlog.md",
+            }
+    return specs, unsound
+
+
 def _check_spec_surface(
     target: Path, files: list[str]
 ) -> tuple[list[dict], list[dict]]:
@@ -795,40 +946,11 @@ def _check_spec_surface(
     failure to an empty list via ``or []`` instead of surfacing the correct
     unevaluable WARN -- the caller's single successful fetch is the only one
     this gather is allowed to trust)."""
-    specs: dict[str, dict] = {}
-    # Coverage ("is every tracked file governed?") is a GLOBAL computation
-    # over every surface plus the allowlist -- unlike drift, which is
-    # per-spec. So a single unknown surface makes only the coverage half
-    # unsound, and these WARNs suppress exactly that half below while every
-    # readable spec's own drift finding still lands.
-    unsound: list[dict] = []
-    for spec_md in sorted(target.glob(SPEC_GLOB)):
-        # Key by <project>/<spec-dir>, never the bare dir name -- the same
-        # slug can legitimately exist in two projects, and a bare-name key
-        # would silently drop one surface (verbatim rationale from the
-        # original).
-        project = spec_md.relative_to(target).parts[2]
-        name = f"{project}/{spec_md.parent.name}"
-        try:
-            globs, excludes, drift = _parse_surface(spec_md)
-        except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
-            # SPEC.md must degrade to a named WARN, never to a silently
-            # empty surface (see `_parse_surface`'s own docstring).
-            unsound.append({
-                "kind": "spec-surface-unevaluable", "path": name,
-                "detail": (f"{name}: SPEC.md could not be read here — "
-                           f"{exc.__class__.__name__}: {exc}; its surface is "
-                           f"unknown, so coverage is not evaluable"),
-                "warn": True,
-            })
-            continue
-        specs[name] = {
-            "globs": globs, "drift": drift, "exclude": set(excludes),
-            "res": [_glob_to_re(g) for g in globs],
-            "memlog": spec_md.parent / ".memlog.md",
-        }
+    specs, unsound = _collect_surfaces(target)
+    surface_unknown = bool(unsound)
 
     allow = _load_allowlist(target / ALLOWLIST_REL)
+    allowlist_unknown = allow is None
     if allow is None:
         unsound.append({
             "kind": "spec-surface-unevaluable", "path": str(ALLOWLIST_REL),
@@ -841,12 +963,38 @@ def _check_spec_surface(
     governed, ungoverned, allow_hits = _governed_and_ungoverned(files, specs, allow)
 
     findings: list[dict] = list(unsound)
-    if not unsound:
+    # Coverage ("is every tracked file governed?") is a GLOBAL computation
+    # over every surface plus the allowlist -- unlike drift, which is
+    # per-spec -- so an unknown surface or unknown exemption set does make
+    # part of it unsound. But the two halves are NOT equally unsound, and
+    # suppressing both wholesale (the shape review found here) lets ONE
+    # unreadable SPEC.md discard every unrelated file's real coverage FAIL:
+    #
+    # * `ungoverned` IS unsound under an unknown surface -- a file the dark
+    #   spec really owns would be reported "no spec surface".
+    # * `stale-allowlist` is NOT. An unknown surface can only ADD candidates
+    #   to the allowlist matching loop (the dark spec claims nothing), so it
+    #   can only ever INFLATE a pattern's hit count. A pattern at zero hits
+    #   here is therefore still at zero with every surface known -- no false
+    #   positive is possible, only a missed one. It stays live.
+    if not (surface_unknown or allowlist_unknown):
         for f in ungoverned:
             findings.append({
                 "kind": "ungoverned", "path": f,
                 "detail": f"{f}: no spec surface and no allowlist entry",
             })
+    elif ungoverned:
+        # Never suppress silently: a WARN nobody can see is how "we could not
+        # evaluate coverage" gets mistaken for "coverage is clean".
+        findings.append({
+            "kind": "spec-surface-unevaluable", "path": "",
+            "detail": (f"coverage suppressed: {len(ungoverned)} candidate "
+                       f"ungoverned file(s) not reported because a surface or "
+                       f"the exemption list could not be read (see the "
+                       f"spec-surface-unevaluable finding(s) naming it)"),
+            "warn": True,
+        })
+    if not allowlist_unknown:
         for pat, n in allow_hits.items():
             if n == 0:
                 findings.append({
@@ -899,6 +1047,16 @@ def gather_spec_surface(target: Path) -> tuple[Finding, ...]:
 
 
 def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
+    # NOTE: deliberately NO "target is not a monorepo root" guard here, unlike
+    # `_gather_dream_chain`/`_gather_deferred_work`. Review proposed one (a
+    # run from a subdirectory reports every file in that subtree FAIL
+    # `ungoverned`), but the two cases are not symmetric: those guards
+    # replace a false OK -- a SILENT wrong answer -- whereas one here would
+    # replace a false FAIL, which is loud and self-evident, with a WARN that
+    # also silences the legitimate "this repo governs nothing yet" FAIL an
+    # unconfigured root should report (an empty repo and a subdirectory are
+    # indistinguishable from the filesystem alone). Trading a loud wrong
+    # answer for a quiet one is the defect class this module exists to avoid.
     files = _tracked_files(target)
     if files is None:
         return (

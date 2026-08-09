@@ -509,3 +509,84 @@ def test_one_malformed_spec_does_not_hide_another_specs_real_fail(
     warn = by_check["dream-chain-unevaluable"]
     assert warn.status is DoctorStatus.WARN
     assert warn.evidence["subject"] == "spec-malformed"
+
+
+# --- Unreadable input directories ------------------------------------------------
+#
+# `Path.glob` swallows `OSError` mid-traversal and yields nothing, so an
+# unreadable input directory used to be indistinguishable from an empty one --
+# and "empty" reads as a clean chain. These pin the honest degradation.
+
+
+def test_unreadable_dreams_dir_is_unevaluable_not_a_clean_chain(
+    tmp_path: Path,
+) -> None:
+    """``chmod 000 docs/dreams/`` must not read as "there are no Dreams", which
+    the confident OK would then report as a clean chain. Reproduced during
+    review: a real ``dream-without-spec`` FAIL vanished behind ``dream-chain
+    ok``."""
+    _write_dream(tmp_path, "orphan", "doctor")
+    _write_sharded_project(tmp_path, "pyforge-doctor")
+    dreams_dir = tmp_path / "docs" / "dreams"
+    dreams_dir.chmod(0o000)
+    try:
+        findings = chain.gather_dream_chain(tmp_path)
+    finally:
+        dreams_dir.chmod(0o755)
+
+    # The whole-gather `degrade_on_exception` fallback keeps `check` at the
+    # source's own label, so the OK is told apart by STATUS, not by name.
+    assert not any(f.status is DoctorStatus.OK for f in findings), (
+        f"an unreadable dreams/ was reported as a clean chain: {findings}"
+    )
+    assert [f.status for f in findings] == [DoctorStatus.WARN]
+    assert "PermissionError" in findings[0].message
+
+
+def test_one_projects_unlistable_specs_dir_does_not_hide_another_projects_finding(
+    tmp_path: Path,
+) -> None:
+    """An unreadable ``planning-artifacts/specs/`` degrades to a WARN naming
+    THAT project only -- it must neither silently read as "this project has no
+    Specs" (which INV-1 would report as its Dreams being spec-less) nor
+    discard another project's real finding."""
+    _write_dream(tmp_path, "orphan", "doctor")
+    _write_sharded_project(tmp_path, "pyforge-doctor")
+    _write_sharded_project(tmp_path, "pyforge-mason")
+    blind = (
+        tmp_path / "_bmad-output" / "projects" / "pyforge-mason"
+        / "planning-artifacts" / "specs"
+    )
+    blind.mkdir(parents=True, exist_ok=True)
+    blind.chmod(0o000)
+    try:
+        findings = chain.gather_dream_chain(tmp_path)
+    finally:
+        blind.chmod(0o755)
+
+    by_check = {f.check: f for f in findings}
+    assert "dream-without-spec" in by_check, (
+        f"one project's unreadable specs/ hid an unrelated real FAIL: "
+        f"{[f.check for f in findings]}"
+    )
+    warn = by_check["dream-chain-unevaluable"]
+    assert warn.status is DoctorStatus.WARN
+    assert "pyforge-mason" in warn.message
+
+
+def test_empty_dreams_dir_with_no_project_tree_is_unevaluable(
+    tmp_path: Path,
+) -> None:
+    """The unevaluable guard tests what was COLLECTED, not merely whether both
+    directories exist: a present-but-empty ``docs/dreams/`` alongside no
+    projects tree passed the old both-must-be-missing test and still produced
+    the confident OK, asserting "every project uses the sharded planning tree"
+    about zero projects."""
+    (tmp_path / "docs" / "dreams").mkdir(parents=True)
+    (tmp_path / "docs" / "dreams" / "README.md").write_text("x\n", encoding="utf-8")
+
+    findings = chain.gather_dream_chain(tmp_path)
+
+    assert [f.check for f in findings] == ["dream-chain-unevaluable"]
+    assert findings[0].status is DoctorStatus.WARN
+    assert findings[0].source is Source.DREAM_CHAIN
