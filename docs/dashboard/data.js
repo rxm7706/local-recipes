@@ -21,7 +21,7 @@ window.DASHBOARD_DATA = {
         "median": 29,
         "lo": 4,
         "hi": 227,
-        "phaseAsOf": "2026-08-09 11:19 UTC"
+        "phaseAsOf": "2026-08-09 11:26 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1950,16 +1950,16 @@ window.DASHBOARD_DATA = {
         "key": "1.9",
         "title": "Fake CFE root fixture and test harness",
         "phase": "dev",
-        "attempt": "1",
+        "attempt": "2",
         "startEpoch": 1786272934,
         "median": 36,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-09 11:19 UTC"
+        "phaseAsOf": "2026-08-09 11:26 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 7 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 8 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -1988,6 +1988,10 @@ window.DASHBOARD_DATA = {
           [
             "1.8",
             46
+          ],
+          [
+            "1.9",
+            31
           ]
         ],
         "foot": [
@@ -2002,12 +2006,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "8/38",
+            "9/38",
             "stories complete",
             "var(--done)"
           ],
           [
-            "30",
+            "29",
             "remaining",
             ""
           ]
@@ -2016,9 +2020,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 661,
-        "totalLabel": "~11.0 h active compute",
-        "note": "Derived from 7 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 692,
+        "totalLabel": "~11.5 h active compute",
+        "note": "Derived from 8 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
           "1.3": 402,
@@ -2026,15 +2030,16 @@ window.DASHBOARD_DATA = {
           "1.5": 16,
           "1.6": 36,
           "1.7": 34,
-          "1.8": 46
+          "1.8": 46,
+          "1.9": 31
         },
         "epicMin": {
-          "E1": 661
+          "E1": 692
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "1.9"
+        "state": "paused",
+        "at": "1.10"
       },
       "epics": [
         {
@@ -2083,7 +2088,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.9",
-              "active",
+              "done",
               "Fake CFE root fixture and test harness"
             ],
             [
@@ -2419,7 +2424,7 @@ window.DASHBOARD_DATA = {
         "median": 64,
         "lo": 37,
         "hi": 360,
-        "phaseAsOf": "2026-08-09 11:19 UTC"
+        "phaseAsOf": "2026-08-09 11:26 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3318,7 +3323,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-09 11:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-09 11:27 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5221,7 +5226,7 @@ window.DASHBOARD_DATA = {
           "stories": 38,
           "state": "running",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 8,
+          "done": 9,
           "total": 38
         },
         {
@@ -5471,8 +5476,8 @@ window.DASHBOARD_DATA = {
           "sprint": "2026-08-09",
           "tea": "2026-08-09",
           "gates": "2026-08-01",
-          "code": "2026-08-07",
-          "verify": "2026-08-07",
+          "code": "2026-08-09",
+          "verify": "2026-08-09",
           "retro": "2026-08-08"
         },
         "sub": {
@@ -5912,7 +5917,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "8/38",
+        "progress": "9/38",
         "complete": 13,
         "of": 13
       },
@@ -12173,8 +12178,8 @@ window.DASHBOARD_DATA = {
         "task": "llms-full-check",
         "guards": "library catalog freshness",
         "state": "drift",
-        "findings": 13,
-        "verdict": "DRIFT: 13 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "findings": 14,
+        "verdict": "DRIFT: 14 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
         "runbook": ""
       }
     ],
@@ -12658,7 +12663,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "in flight 1.9",
+        "line": "paused 1.10",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -14569,15 +14574,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "mason",
-      "story": "1.8",
-      "epoch": 1786272928,
-      "sha": "e0ba45630",
-      "subject": "Merge bmad-loop/20260809-034344-8063/1-8-mason-doctor into loop/pyforge-mason (bmad-loop)"
+      "station": "steward",
+      "story": "6.2",
+      "epoch": 1786273319,
+      "sha": "538ffa0d2",
+      "subject": "Merge bmad-loop/20260809-034341-2f9c/6-2-provision-list-modules into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-09 11:19 UTC",
-    "generatedEpoch": 1786274345
+    "generatedAt": "2026-08-09 11:27 UTC",
+    "generatedEpoch": 1786274820
   },
   "storySpecs": [
     {
@@ -14612,9 +14617,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 8,
+      "done": 9,
       "tracked": 4,
-      "gap": 4
+      "gap": 5
     },
     {
       "station": "pyforge-scribe",
@@ -14723,21 +14728,21 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
           }
         ],
-        "done": 8,
-        "backlog": 30,
+        "done": 9,
+        "backlog": 29,
         "blocked": 0,
         "total": 38,
         "next": "1-10-configuration-surface-logging-and-child-output-streaming",
         "blockedKeys": [],
         "backlogKeys": [
           "1-10-configuration-surface-logging-and-child-output-streaming",
-          "1-9-fake-cfe-root-fixture-and-test-harness",
           "2-1-the-cfe-port",
           "2-10-mason-recipe-update",
           "2-2-the-seam-guard",
           "2-3-credential-isolation",
           "2-4-mason-recipe-new",
-          "2-5-mason-recipe-validate"
+          "2-5-mason-recipe-validate",
+          "2-6-mason-recipe-build"
         ],
         "state": "ready"
       },
@@ -14898,8 +14903,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 241,
-      "backlog": 86,
+      "done": 242,
+      "backlog": 85,
       "blocked": 6,
       "total": 333
     }
