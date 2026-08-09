@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry) and 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry), 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3) and 2026-08-09 (`kedro-skills` documented — pyforge-atlas-only, exact-pinned `==0.1.1`, Story 12-1). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -309,6 +309,12 @@ All in `local-recipes`.
 - **kedro-dagster** (>=0.7.0) — deploy Kedro pipelines onto Dagster.
 - **kedro-viz** (>=12.4.0) — interactive browser visualization of Kedro pipelines.
 - **kedro-mcp** (>=0.1.2, PyPI) — MCP server exposing Kedro prompts/tools to agents.
+- **kedro-skills** (==0.1.1, PyPI) — `kedro skills` CLI: distributes AI coding-agent
+  guidance (Markdown) into a Kedro project's `.claude/skills/` / `.agents/skills/`
+  trees + an `AGENTS.md` block; ships one skill, `catalog-config`. **pyforge-atlas
+  env only** (dev/tooling, never a package run-dep); exact-pinned to the audited
+  version (no floor) — see the audit at
+  `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
 - **great-expectations** (>=1.19.1) — data-quality contracts: expectations suites,
   validation, data docs (used inside Kedro nodes).
 - **pandera** (>=0.32.1) — lightweight statistical dataframe validation via typed
