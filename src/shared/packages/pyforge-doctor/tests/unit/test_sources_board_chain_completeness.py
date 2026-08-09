@@ -18,8 +18,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import board
+from pyforge.doctor.verdict import exit_code_for
 
 # --- fixture helpers ---------------------------------------------------------
 
@@ -281,7 +283,9 @@ def test_no_projects_directory_reports_ok_with_zero_projects(tmp_path: Path) -> 
     assert finding.source is Source.CHAIN_COMPLETENESS
     assert finding.check == "chain-completeness"
     assert finding.status is DoctorStatus.OK
-    assert finding.evidence == {"projects": 0}
+    # `board_read` is False here: with no docs/dashboard/data.js there is no
+    # board to compare, and the OK must say so rather than assert agreement.
+    assert finding.evidence == {"projects": 0, "board_read": False}
 
 
 def test_multiple_projects_are_all_reported_independently(tmp_path: Path) -> None:
@@ -313,10 +317,13 @@ def test_unreadable_spec_in_one_project_does_not_hide_a_real_finding_in_another(
     ``UnicodeDecodeError`` itself and returns ``{}``, so this fixture never
     reaches the per-project ``try/except`` in ``_check_chain_completeness``
     -- it passes with that isolation deleted. (An earlier revision of this
-    docstring claimed otherwise; a follow-up review disproved it.) It is kept
-    as an end-to-end guard on the degradation contract; the tests that
-    genuinely exercise per-project isolation are the ``_board_lines`` ones
-    below, whose triggers really do escape from outside the try."""
+    docstring claimed otherwise; a follow-up review disproved it.) A LATER
+    revision then redirected to the ``_board_lines`` tests below, which is also
+    no longer true -- those triggers are caught per-station inside
+    ``_board_lines`` itself now. This test is kept as an end-to-end guard on
+    the degradation contract; the per-project catch-all is pinned directly by
+    ``test_a_project_that_cannot_be_evaluated_at_all_warns_without_hiding_others``.
+    """
     pa_alpha = _pa(tmp_path, "pyforge-alpha")
     _write_spec(pa_alpha / "specs" / "spec-foo" / "SPEC.md", "draft")  # real FAIL
 
@@ -592,3 +599,193 @@ def test_scalar_keeps_a_hash_that_lives_inside_quotes() -> None:
     assert board._scalar("'draft # x'") == "draft # x"
     assert board._scalar("'draft' # trailing note") == "draft"
     assert board._scalar('"draft"  # trailing note') == "draft"
+
+
+# --- adversarial-review regressions (2026-08-09, fourth pass) ----------------
+
+
+def test_non_utf8_ledger_does_not_discard_the_same_projects_own_finding(
+    tmp_path: Path,
+) -> None:
+    """The per-project isolation protected every project EXCEPT the one that
+    failed: `_check_project_chain_completeness` accumulated into a local list
+    and returned it at the end, so a raise part-way through threw away the
+    INV-A FAILs it had already computed for that very project.
+
+    Trigger: `_ledger_rows` caught only `OSError`, but a non-UTF-8 byte raises
+    `UnicodeDecodeError` -- a `ValueError`. Reproduced live: exit 2 -> exit 0.
+    """
+    pa = _pa(tmp_path, "pyforge-alpha")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft")  # real INV-A FAIL
+    (pa / "sprint-status-ledger.yaml").write_bytes(
+        b"development_status:\n  1-1-a: done\n  \xe9bad: todo\n"
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "spec-not-decomposed" in {f.check for f in findings}, (
+        f"the project's own real FAIL was discarded: "
+        f"{[(f.check, f.status.value) for f in findings]}"
+    )
+    assert exit_code_for(findings) == 2
+
+
+def test_non_utf8_epics_doc_does_not_discard_the_same_projects_own_finding(
+    tmp_path: Path,
+) -> None:
+    """The same class through INV-A's own prose loop and
+    `_story_ids_from_epics`, which also caught only `OSError`."""
+    pa = _pa(tmp_path, "pyforge-alpha")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft")
+    (pa / "epics.md").write_bytes(b"---\nepics_role: canonical\n---\n\n\xe9 bad\n")
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done"})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "spec-not-decomposed" in {f.check for f in findings}, (
+        f"the project's own real FAIL was discarded: {[f.check for f in findings]}"
+    )
+
+
+def test_a_project_that_cannot_be_evaluated_at_all_warns_without_hiding_others(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The per-project catch-all itself, pinned. Every NATURAL trigger a
+    previous pass reached for is now swallowed further in (`_frontmatter`,
+    `_ledger_rows` and `_story_ids_from_epics` all degrade on their own, and
+    `_board_lines` guards per station), so the branch was reachable but
+    exercised by nothing -- deleting it kept the whole suite green, which is
+    how the isolation could silently regress. This drives it directly."""
+    _write_spec(_pa(tmp_path, "pyforge-alpha") / "specs" / "spec-foo" / "SPEC.md", "draft")
+    _pa(tmp_path, "pyforge-zbroken").mkdir(parents=True, exist_ok=True)
+
+    real = board._check_project_chain_completeness
+
+    def _explode(project_dir, board_lines, findings):
+        if project_dir.name == "pyforge-zbroken":
+            raise RuntimeError("unanticipated shape")
+        return real(project_dir, board_lines, findings)
+
+    monkeypatch.setattr(board, "_check_project_chain_completeness", _explode)
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    by_check = {f.check: f for f in findings}
+    assert "spec-not-decomposed" in by_check, (
+        f"one project's failure hid another's real FAIL: {[f.check for f in findings]}"
+    )
+    assert by_check["spec-not-decomposed"].status is DoctorStatus.FAIL
+    warn = by_check["chain-completeness-unevaluable"]
+    assert warn.status is DoctorStatus.WARN
+    assert warn.evidence["project"] == "pyforge-zbroken"
+    assert warn.evidence["inv"] == ""  # the catch wraps all four invariants
+    assert exit_code_for(findings) == 2
+
+
+def test_a_malformed_epic_entry_does_not_fabricate_a_zero_of_zero_divergence(
+    tmp_path: Path,
+) -> None:
+    """A `null` epic entry used to be FILTERED out of the story comprehension,
+    which quietly recorded `(0, 0)` for the station and fired a false
+    `board-diverges-from-ledger` reading "board 0/0 vs ledger 1/2". A line
+    this reader cannot interpret is "cannot compare this station", not a
+    measured zero -- the same rule the empty-`epics` guard already encodes.
+    """
+    pa = _pa(tmp_path, "pyforge-good")
+    _write_epics_md(pa / "epics.md", ["1.1", "1.2"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done", "1-2-b": "todo"})
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {"good": {"epics": [None]}})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "board-diverges-from-ledger" not in {f.check for f in findings}, (
+        f"a malformed board line produced a fabricated INV-C FAIL: "
+        f"{[(f.check, f.evidence.get('status')) for f in findings]}"
+    )
+
+
+def test_a_non_list_stories_value_does_not_fabricate_a_zero_of_zero_divergence(
+    tmp_path: Path,
+) -> None:
+    """The same fabrication one shape over: `"stories": "1.1"` iterates to
+    characters, every one of which the old `isinstance` filter dropped."""
+    pa = _pa(tmp_path, "pyforge-good")
+    _write_epics_md(pa / "epics.md", ["1.1", "1.2"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done", "1-2-b": "todo"})
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {"good": {"epics": [{"stories": "1.1"}]}},
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert "board-diverges-from-ledger" not in {f.check for f in findings}, (
+        f"a malformed board line produced a fabricated INV-C FAIL: {findings}"
+    )
+
+
+def test_an_unreadable_board_is_never_reported_as_agreement(tmp_path: Path) -> None:
+    """`projects` present but not a mapping makes `_board_lines` return None,
+    so INV-C is skipped for EVERY station -- and the OK finding still claimed
+    "...and board agree" over a board it had never read, with nothing in
+    `evidence` to tell a consumer apart. The sibling `_board_projects` refuses
+    the identical bytes, so one data.js produced a confident OK here and an
+    honest WARN in `gather_dashboard_drift`."""
+    pa = _pa(tmp_path, "pyforge-good")
+    _write_epics_md(pa / "epics.md", ["1.1"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done"})
+    data_js = tmp_path / "docs" / "dashboard" / "data.js"
+    data_js.parent.mkdir(parents=True, exist_ok=True)
+    data_js.write_text('window.DASHBOARD_DATA = {"projects": [1, 2, 3]};\n', encoding="utf-8")
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.OK  # INV-A/B/D really did pass
+    assert finding.evidence["board_read"] is False
+    assert "INV-C was NOT evaluated" in finding.message
+    assert "board agree" not in finding.message
+
+
+def test_a_readable_board_still_says_so(tmp_path: Path) -> None:
+    """The other side of the same flag -- it must not report every clean run
+    as unread."""
+    pa = _pa(tmp_path, "pyforge-good")
+    _write_epics_md(pa / "epics.md", ["1.1"])
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done"})
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {"good": {"epics": [{"stories": [["1.1", "done"]]}]}},
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].evidence["board_read"] is True
+    assert "board agree" in findings[0].message
+
+
+def test_a_status_written_on_the_next_line_is_still_an_open_spec(tmp_path: Path) -> None:
+    """`status:` with its value on the following indented line is valid YAML
+    that `yaml.safe_load` decodes to "draft". The hand-rolled parser stored the
+    value-less key as `""`, which fails the `OPEN_SPEC_STATUSES` test and
+    silently EXEMPTS an open, undecomposed Spec -- the same false negative
+    `_scalar` was added to close, through a different bit of YAML syntax."""
+    path = _pa(tmp_path, "pyforge-alpha") / "specs" / "spec-foo" / "SPEC.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("---\nstatus:\n  draft\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
+                     encoding="utf-8")
+
+    _assert_alpha_fail_survives(tmp_path)
+
+
+def test_frontmatter_still_skips_real_block_openers() -> None:
+    """The continuation read must not turn a list or a nested mapping into a
+    scalar -- those are the shapes `_frontmatter` has always skipped."""
+    assert board._continuation_scalar(["surface:", "  - src/a.py"], 0) is None
+    assert board._continuation_scalar(["sources:", "  a: b"], 0) is None
+    assert board._continuation_scalar(["status:", "next: x"], 0) is None
+    assert board._continuation_scalar(["status:"], 0) is None
+    assert board._continuation_scalar(["status:", "  draft"], 0) == "draft"
+    assert board._continuation_scalar(["status:", "", "  'draft'"], 0) == "draft"

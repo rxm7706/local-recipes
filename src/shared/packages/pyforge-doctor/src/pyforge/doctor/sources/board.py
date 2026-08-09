@@ -102,8 +102,16 @@ def _frontmatter(path: Path) -> dict[str, str]:
     scalar keys off the result (``status``, ``epics_role``), so a nested
     list/mapping value (``surface:``, ``sources:``, ``open_questions:``) is a
     multi-line block this parser does not need to understand -- a value-less
-    ``key:`` line and every indented/``-``-prefixed continuation line under it
-    are simply skipped rather than parsed.
+    ``key:`` opening a list or a nested mapping, and every indented/``-``-
+    prefixed continuation line under it, are simply skipped rather than parsed.
+
+    The ONE value-less shape that is NOT skipped is a plain scalar written on
+    the following line (``status:\\n  draft``): ``yaml.safe_load`` -- the parser
+    this replaced -- decodes that to ``"draft"``, while storing the key as
+    ``""`` (what this reader did before) fails the ``OPEN_SPEC_STATUSES``
+    membership test and silently EXEMPTS an open, undecomposed Spec. That is
+    the same false-negative class ``_scalar`` exists to close, reached through
+    a different bit of YAML syntax; see ``_continuation_scalar``.
 
     Never raises: a missing file, an unreadable one, or a file with no
     frontmatter fence all degrade to ``{}``, mirroring the original script's
@@ -119,7 +127,8 @@ def _frontmatter(path: Path) -> dict[str, str]:
         return {}
     out: dict[str, str] = {}
     in_block = False
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
         if line.strip() == "---":
             if in_block:
                 break
@@ -130,9 +139,35 @@ def _frontmatter(path: Path) -> dict[str, str]:
         if not line or line[0].isspace() or line.startswith("-"):
             continue  # nested list/continuation line -- not a top-level key
         key, sep, value = line.partition(":")
-        if sep and key.strip():
-            out[key.strip()] = _scalar(value)
+        if not (sep and key.strip()):
+            continue
+        scalar = _scalar(value)
+        if not scalar:
+            scalar = _continuation_scalar(lines, idx)
+            if scalar is None:
+                continue  # a real block opener -- skipped, as documented above
+        out[key.strip()] = scalar
     return out
+
+
+def _continuation_scalar(lines: list[str], idx: int) -> str | None:
+    """The scalar a value-less ``key:`` at ``lines[idx]`` carries on its next
+    indented line, or ``None`` when that key really opens a block.
+
+    ``None`` for a list (``- item``), a nested mapping (a line containing
+    ``:``), or nothing at all -- exactly the shapes ``_frontmatter``'s two
+    consumed keys never take, and which it has always skipped.
+    """
+    for nxt in lines[idx + 1:]:
+        if not nxt.strip():
+            continue
+        if not nxt[0].isspace():
+            return None  # the block was empty; this is the next top-level key
+        body = nxt.strip()
+        if body.startswith("-") or ":" in body:
+            return None  # a list or a nested mapping, not a plain scalar
+        return _scalar(body)
+    return None
 
 
 def _scalar(raw: str) -> str:
@@ -180,7 +215,10 @@ def _story_ids_from_epics(path: Path) -> list[set[str]]:
     now-retired dual-id rationale)."""
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError:
+    except Exception:  # noqa: BLE001 -- NOT `except OSError`: a non-UTF-8 byte
+        # raises UnicodeDecodeError, which is a ValueError, so the narrower
+        # catch let it escape into the per-project handler and discard that
+        # project's OWN already-computed INV-A findings (reproduced live).
         return []
     out: list[set[str]] = []
     for m in re.finditer(r"^###\s+Story\s+(\d+\.\d+[a-z]?)", text, re.MULTILINE):
@@ -196,7 +234,8 @@ def _ledger_rows(path: Path) -> dict[str, str]:
     in_block = False
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError:
+    except Exception:  # noqa: BLE001 -- see _story_ids_from_epics: a non-UTF-8
+        # ledger raises UnicodeDecodeError (a ValueError), not an OSError.
         return out
     for raw in text.splitlines():
         if raw.startswith("development_status:"):
@@ -274,41 +313,68 @@ def _board_lines(data_js: Path) -> dict[str, tuple[int, int]] | None:
         # simply absent from the result, which is already how INV-C spells
         # "cannot compare this station" (`station in board`).
         try:
-            if not isinstance(proj, dict):
-                continue
-            epics = proj.get("epics")
-            # `if not epics` FIRST, mirroring the original's own guard: an
-            # empty-but-well-formed `"epics": []` is a station the original
-            # deliberately SKIPS. Letting it through recorded (0, 0) and fired
-            # a false INV-C `board-diverges-from-ledger` -- a divergence on
-            # input the original handled cleanly, not one where it crashed.
-            if not epics or not isinstance(epics, (list, tuple)):
-                continue
-            stories = [
-                s
-                # This guard MUST precede the second `for`, not trail it: a
-                # comprehension evaluates the inner iterable BEFORE any
-                # trailing `if`, so `e.get(...)` runs on a non-dict `e`
-                # regardless.
-                for e in epics
-                if isinstance(e, dict)
-                for s in (e.get("stories") or ())
-                # NO `and s`: an EMPTY story slot `[]` counts toward the total
-                # in the original (`len(s) > 1` already guards the done-count),
-                # and dropping it shrank INV-C's denominator until a 3-slot
-                # board read as matching a 2-row ledger -- a false NEGATIVE in
-                # the check, reproduced live.
-                if isinstance(s, (list, tuple))
-            ]
-            done = sum(1 for s in stories if len(s) > 1 and s[1] == "done")
-            out[key] = (done, len(stories))
+            line = _station_board_line(proj)
         except Exception:  # noqa: BLE001, S112 -- see the block comment above;
             # one station's malformed board line must not take down the rest.
             continue
+        if line is not None:
+            out[key] = line
     return out
 
 
-def _check_chain_completeness(target: Path) -> list[dict]:
+def _station_board_line(proj: object) -> tuple[int, int] | None:
+    """One station's ``(done, total)``, ``None`` for a station the original
+    deliberately SKIPS, or a raised ``ValueError`` for a line this reader
+    cannot interpret.
+
+    THE THREE STATES ARE KEPT APART ON PURPOSE, because collapsing any two of
+    them produces a wrong INV-C verdict in one direction or the other:
+
+    * ``None`` -- a well-formed ``"epics": []``. The original guards this with
+      its own ``if not epics: continue``; recording ``(0, 0)`` instead fired a
+      false ``board-diverges-from-ledger`` on input the original handled
+      cleanly.
+    * ``ValueError`` -- a shape this reader cannot make sense of (a non-mapping
+      station or epic, a non-list ``stories``, a non-list story slot). The
+      previous cut FILTERED those entries out of the comprehension instead,
+      which quietly produced ``(0, 0)`` and fired the same false FAIL, this
+      time with a fabricated count: ``{"epics": [None]}`` against a 2-row
+      ledger reported *"board 0/0 vs ledger 1/2"*. Raising routes it to the
+      caller's per-station skip, which is already how INV-C spells "cannot
+      compare this station".
+    * ``(done, total)`` -- a line that was actually read.
+
+    A FALSY ``stories`` (``None``, ``[]``, ``0``) stays an empty list, matching
+    the original's own ``e.get("stories") or []``; an EMPTY story slot ``[]``
+    still counts toward the total (``len(s) > 1`` already guards the
+    done-count), which a previous pass established as a real false negative
+    when dropped.
+    """
+    if not isinstance(proj, dict):
+        raise ValueError(f"station entry is {type(proj).__name__}, not a mapping")
+    epics = proj.get("epics")
+    if not epics:
+        return None
+    if not isinstance(epics, (list, tuple)):
+        raise ValueError(f"'epics' is {type(epics).__name__}, not a list")
+    stories: list = []
+    for epic in epics:
+        if not isinstance(epic, dict):
+            raise ValueError(f"epic entry is {type(epic).__name__}, not a mapping")
+        raw = epic.get("stories") or ()
+        if not isinstance(raw, (list, tuple)):
+            raise ValueError(f"'stories' is {type(raw).__name__}, not a list")
+        for story in raw:
+            if not isinstance(story, (list, tuple)):
+                raise ValueError(f"story entry is {type(story).__name__}, not a list")
+            stories.append(story)
+    done = sum(1 for s in stories if len(s) > 1 and s[1] == "done")
+    return done, len(stories)
+
+
+def _check_chain_completeness(
+    target: Path, board: dict[str, tuple[int, int]] | None
+) -> list[dict]:
     """Port of the original script's own ``check()`` -- see this module's own
     header and the original's for the full INV-A/B/C/D rationale. Findings
     are structured dicts here rather than printed lines; ``kind``/``detail``/
@@ -327,19 +393,26 @@ def _check_chain_completeness(target: Path) -> list[dict]:
     compliance violation into an exit-0 "all clear" -- confirmed by adversarial
     review and reproduced live (non-UTF-8 byte in one project's SPEC.md hid a
     genuine ``spec-not-decomposed`` FAIL in an unrelated, well-formed project).
+
+    ``findings`` is owned HERE and appended to in place by the per-project
+    helper, not returned by it. With the helper accumulating into a local list
+    and returning it at the end, a raise part-way through discarded that
+    project's OWN already-computed FAILs -- so a non-UTF-8 ledger in the very
+    project that owned a real ``spec-not-decomposed`` violation still turned
+    exit 2 into exit 0 (reproduced live). The per-project isolation protected
+    every project except the one that failed.
     """
     projects_dir = target / "_bmad-output" / "projects"
     findings: list[dict] = []
     if not projects_dir.is_dir():
         return findings
-    board = _board_lines(target / "docs" / "dashboard" / "data.js")
 
     for project_dir in sorted(projects_dir.iterdir()):
         if not (project_dir / "planning-artifacts").is_dir():
             continue
         project = project_dir.name
         try:
-            findings.extend(_check_project_chain_completeness(project_dir, board))
+            _check_project_chain_completeness(project_dir, board, findings)
         except Exception as exc:  # noqa: BLE001 -- one project's failure must
             # not discard every other project's already-computed findings.
             findings.append({
@@ -358,12 +431,15 @@ def _check_chain_completeness(target: Path) -> list[dict]:
 
 
 def _check_project_chain_completeness(
-    project_dir: Path, board: dict[str, tuple[int, int]] | None
-) -> list[dict]:
-    """One project's INV-A/B/C/D findings -- split out of
-    ``_check_chain_completeness`` so its caller can isolate one project's
-    failure from the rest (see that function's own docstring)."""
-    findings: list[dict] = []
+    project_dir: Path,
+    board: dict[str, tuple[int, int]] | None,
+    findings: list[dict],
+) -> None:
+    """Append one project's INV-A/B/C/D findings to the CALLER's ``findings``
+    list -- split out of ``_check_chain_completeness`` so its caller can
+    isolate one project's failure from the rest (see that function's own
+    docstring for why the list is the caller's rather than a local return
+    value)."""
     project = project_dir.name
     station = project.removeprefix("pyforge-")
     pa = project_dir / "planning-artifacts"
@@ -459,7 +535,6 @@ def _check_project_chain_completeness(
                            "line, so this cannot self-heal"),
                 "remedy": "rebuild the station's data.js epics array from its ledger",
             })
-    return findings
 
 
 def gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
@@ -478,7 +553,13 @@ def gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
 
 
 def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
-    raw = _check_chain_completeness(target)
+    # Derived ONCE here rather than inside `_check_chain_completeness`, so the
+    # OK Finding below can say whether INV-C was actually evaluated. It cannot
+    # be recomputed there and here independently for the same reason
+    # `_gather_dashboard_drift` derives `projects` once: two copies can
+    # silently disagree the moment either is edited.
+    board = _board_lines(target / "docs" / "dashboard" / "data.js")
+    raw = _check_chain_completeness(target, board)
     if not raw:
         projects_dir = target / "_bmad-output" / "projects"
         n = (
@@ -486,13 +567,27 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
             if projects_dir.is_dir()
             else 0
         )
+        # NEVER ASSERT AN INVARIANT THAT WAS NOT EVALUATED. An unreadable or
+        # structurally-wrong `data.js` makes `_board_lines` return None, which
+        # is the spec's own "INV-C silently skipped; INV-A/B/D unaffected" row
+        # -- but the message still claimed "...and board agree" over a board
+        # this gather had never read, and nothing in `evidence` let a consumer
+        # tell the two apart. The sibling `_board_projects` refuses exactly
+        # this coercion for `gather_dashboard_drift`, so the same bytes
+        # produced a confident OK here and an honest WARN there.
         return (
             Finding(
                 source=Source.CHAIN_COMPLETENESS,
                 check="chain-completeness",
                 status=DoctorStatus.OK,
-                message="every open Spec is decomposed, and epics, ledger and board agree",
-                evidence={"projects": n},
+                message=(
+                    "every open Spec is decomposed, and epics, ledger and board agree"
+                    if board is not None
+                    else "every open Spec is decomposed and epics and ledger agree; "
+                         "the board (data.js) could not be read, so INV-C was NOT "
+                         "evaluated"
+                ),
+                evidence={"projects": n, "board_read": board is not None},
             ),
         )
     return tuple(
@@ -613,7 +708,14 @@ def _drift_epics_md_ids(path: Path) -> list[tuple[str, str | None]]:
     the original (the second tuple slot is a retired dual-id accommodation;
     see the original's own docstring)."""
     out: list[tuple[str, str | None]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001 -- an unreadable/non-UTF-8 epics.md is
+        # "nothing to compare", not a reason to discard the twin findings this
+        # station's caller has ALREADY computed (reproduced live: one 0xe9 byte
+        # turned a real `twin-missing` FAIL into a WARN, exit 2 -> exit 0).
+        return out
+    for line in text.splitlines():
         m = _DRIFT_STORY_HEADING.match(line)
         if m:
             out.append((m.group(1), None))
@@ -651,16 +753,25 @@ def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
     """Port of ``dashboard_drift_check.py``'s own ``main()`` body -- the three
     checks (tracked twin vs. Tier-3 feed, committed baseline vs. feed,
     epics.md vs. board), producing structured dicts instead of printed lines.
-    ``kind``/message text is unchanged from the original."""
+    ``kind``/message text is unchanged from the original.
+
+    ``findings`` is the CALLER's list, appended to in place by the per-station
+    helper -- see ``_check_chain_completeness``'s own docstring for why: a
+    helper that accumulates locally and returns at the end throws away its own
+    station's already-computed FAILs the moment anything downstream raises."""
     findings: list[dict] = []
 
     for key, proj in sorted(projects.items()):
         try:
-            findings.extend(_check_project_dashboard_drift(target, gen, key, proj))
-        except Exception as exc:  # noqa: BLE001 -- one station's malformed
-            # data.js entry or feed must not discard every other station's
-            # already-computed drift findings (mirrors
+            _check_project_dashboard_drift(target, gen, key, proj, findings)
+        except (Exception, SystemExit) as exc:  # noqa: BLE001 -- one station's
+            # malformed data.js entry or feed must not discard every other
+            # station's already-computed drift findings (mirrors
             # _check_chain_completeness's own per-project isolation).
+            # SystemExit is in the tuple because this body CALLS functions off
+            # a dynamically exec'd, Marshal-owned file, which is free to
+            # sys.exit() at call time as well as at import; KeyboardInterrupt
+            # is deliberately left out.
             findings.append({
                 "kind": "dashboard-drift-unevaluable", "project": key,
                 "detail": (f"{key}: could not be evaluated here — "
@@ -670,12 +781,15 @@ def _check_dashboard_drift(target: Path, gen, projects: dict) -> list[dict]:
     return findings
 
 
-def _check_project_dashboard_drift(target: Path, gen, key: str, proj: object) -> list[dict]:
-    """One station's drift findings -- split out of ``_check_dashboard_drift``
-    so its caller can isolate one station's failure from the rest."""
-    findings: list[dict] = []
+def _check_project_dashboard_drift(
+    target: Path, gen, key: str, proj: object, findings: list[dict]
+) -> None:
+    """Append one station's drift findings to the CALLER's ``findings`` list --
+    split out of ``_check_dashboard_drift`` so its caller can isolate one
+    station's failure from the rest (and so a late raise cannot discard the
+    findings this station has already produced)."""
     if not isinstance(proj, dict):
-        return findings  # a malformed data.js entry has no epics to compare
+        return  # a malformed data.js entry has no epics to compare
     all_stories = [
         s for e in proj.get("epics", []) or []
         if isinstance(e, dict)
@@ -770,10 +884,10 @@ def _check_project_dashboard_drift(target: Path, gen, key: str, proj: object) ->
     epics_md = (target / "_bmad-output" / "projects" / slug
                 / "planning-artifacts" / "epics.md")
     if not epics_md.is_file() or key in getattr(gen, "_DERIVE_EXCLUDE", set()):
-        return findings
+        return
     heading_ids = _drift_epics_md_ids(epics_md)
     if not heading_ids:
-        return findings
+        return
     for lead, alt in heading_ids:
         if lead in board_ids or (alt and alt in board_ids):
             continue
@@ -787,7 +901,28 @@ def _check_project_dashboard_drift(target: Path, gen, key: str, proj: object) ->
                 f"data.js by hand."
             ),
         })
-    return findings
+
+
+def _no_system_exit(fn):
+    """Run ``fn``, converting a ``SystemExit`` it raises into a plain
+    ``RuntimeError`` so ``degrade_on_exception`` can see it.
+
+    Both ``gather_dashboard_drift`` and ``gather_check_layout`` CALL functions
+    off a dynamically ``exec_module``'d file owned by another station, and such
+    a file is free to ``sys.exit()`` from inside a function, not only at import
+    time. ``_load_foreign_module`` already makes this conversion for the import
+    itself; without the same guard at the call sites a ``SystemExit`` (a
+    ``BaseException``, which ``degrade_on_exception`` documents that it
+    deliberately never catches) escaped both gathers and broke their own
+    "never a raised exception" contract. ``KeyboardInterrupt`` is NOT
+    converted.
+    """
+    try:
+        return fn()
+    except SystemExit as exc:
+        raise RuntimeError(
+            f"a dynamically loaded file called sys.exit({exc.code!r}) at call time"
+        ) from exc
 
 
 def gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
@@ -809,7 +944,7 @@ def gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
     return degrade_on_exception(
         Source.DASHBOARD_DRIFT,
         "dashboard-drift",
-        lambda: _gather_dashboard_drift(target),
+        lambda: _no_system_exit(lambda: _gather_dashboard_drift(target)),
     )
 
 
@@ -957,7 +1092,7 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
     return degrade_on_exception(
         Source.CHECK_LAYOUT,
         _LAYOUT_CHECK,
-        lambda: _run_check_layout(target, clm, sync_playwright),
+        lambda: _no_system_exit(lambda: _run_check_layout(target, clm, sync_playwright)),
     )
 
 
@@ -982,7 +1117,14 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
     FAIL, because that one IS the original's own finding text for a bar that
     loaded and did not render.
     """
-    httpd, port = clm._serve(clm.HERE)
+    # `target/docs/dashboard`, NOT `clm.HERE`. `HERE` is check_layout.py's own
+    # `Path(__file__).resolve().parent`, which is only the same directory when
+    # the loaded file happens to live beside the board this gather was ASKED
+    # about -- a symlinked or shared `check_layout.py` made the gather validate
+    # `target`'s data.js and then measure a DIFFERENT repo's dashboard
+    # (reproduced live). The original script had no `target` parameter and so
+    # could not hit this; the seam is new to the port.
+    httpd, port = clm._serve(target / "docs" / "dashboard")
     url = f"http://127.0.0.1:{port}/index.html"
     raw_findings: list[str] = []
     unmeasured: list[str] = []
@@ -1022,11 +1164,30 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
                                         f"the bar did not render"
                                     )
                                     continue
-                                measured += 1
+                                # AFTER check(), not before. `measured` gates
+                                # the OK message's "console bar edges held, no
+                                # overlap" -- so counting a probe whose
+                                # assertions never actually RAN asserted a
+                                # clean grid over an evaluation that failed. A
+                                # `check()` raising at every width produced a
+                                # confident OK alongside the per-width WARNs.
                                 raw_findings += clm.check(width, m, name)
+                                measured += 1
                         finally:
-                            page.close()
-                    except Exception as exc:  # noqa: BLE001
+                            # A page that fails to CLOSE is not a failed
+                            # measurement. Left bare, a raising `page.close()`
+                            # put a fully-measured width into `unmeasured` --
+                            # so the gather emitted a spurious cannot-measure
+                            # WARN alongside an OK reading "6 measurement(s):
+                            # 3 width(s) x 2 steps; 3 width(s) could not be
+                            # measured", counting every width in both lists.
+                            # Its two sibling teardowns below were already
+                            # suppressed for exactly this reason.
+                            _suppress_close(page.close)
+                    except (Exception, SystemExit) as exc:  # noqa: BLE001 --
+                        # SystemExit: `clm` is a dynamically exec'd file owned
+                        # by another station and may sys.exit() from inside
+                        # check()/evaluate(); KeyboardInterrupt stays out.
                         unmeasured.append(
                             f"w={width}: could not be measured — "
                             f"{exc.__class__.__name__}: {exc}"

@@ -30,9 +30,19 @@ from pathlib import Path
 import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import board
+from pyforge.doctor.verdict import exit_code_for
 
-_REPO_ROOT = Path(__file__).resolve().parents[6]
-_HAVE_REAL_DASHBOARD = (_REPO_ROOT / "docs" / "dashboard" / "generate.py").is_file()
+# Guarded, like `test_check_speed_budget.py`'s own (review finding): at module
+# scope a bare `parents[6]` IndexError from a shallower-than-7-levels layout
+# (e.g. an extracted sdist) is a COLLECTION error for this whole file instead
+# of the skip `_HAVE_REAL_DASHBOARD` promises.
+try:
+    _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
+except IndexError:
+    _REPO_ROOT = None
+_HAVE_REAL_DASHBOARD = bool(
+    _REPO_ROOT and (_REPO_ROOT / "docs" / "dashboard" / "generate.py").is_file()
+)
 
 # --- fixture helpers ---------------------------------------------------------
 
@@ -527,3 +537,92 @@ def test_a_failed_generate_py_import_leaves_no_module_and_no_path_entry(
 
     assert _sys.path == before
     assert "_doctor_board_dashboard_generate" not in _sys.modules
+
+
+# --- adversarial-review regressions (2026-08-09, fourth pass) ----------------
+
+
+def test_non_utf8_epics_md_does_not_discard_the_same_stations_own_finding(
+    tmp_path: Path,
+) -> None:
+    """The per-station isolation protected every station EXCEPT the one that
+    failed: `_check_project_dashboard_drift` accumulated into a local list and
+    returned it at the end, so the unguarded `epics.md` read at the bottom
+    threw away the `twin-missing` FAIL already computed at the top.
+
+    Reproduced live: one 0xe9 byte turned exit 2 into exit 0.
+    """
+    _seed(tmp_path)
+    _write_sprint_file(tmp_path / _FEED_REL, {"1-1-a": "done"})  # feed, no twin
+    epics = tmp_path / _EPICS_REL
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_bytes(b"## Epic 1: E\n### Story 1.1: \xe9 bad\n")
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {"testproj": {"epics": []}})
+
+    findings = board.gather_dashboard_drift(tmp_path)
+
+    assert "twin-missing" in {f.check for f in findings}, (
+        f"the station's own real FAIL was discarded: "
+        f"{[(f.check, f.status.value) for f in findings]}"
+    )
+    assert exit_code_for(findings) == 2
+
+
+def test_one_station_failing_does_not_discard_another_stations_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The per-station catch-all itself, pinned directly -- every natural
+    trigger is now swallowed further in, so deleting the branch kept the suite
+    green."""
+    _seed(tmp_path, project_sources={"testproj": _FEED_REL, "zbroken": _FEED_REL})
+    _write_sprint_file(tmp_path / _FEED_REL, {"1-1-a": "done"})  # feed, no twin
+    _write_data_js(
+        tmp_path / "docs" / "dashboard" / "data.js",
+        {"testproj": {"epics": []}, "zbroken": {"epics": []}},
+    )
+
+    real = board._check_project_dashboard_drift
+
+    def _explode(target, gen, key, proj, findings):
+        if key == "zbroken":
+            raise RuntimeError("unanticipated shape")
+        return real(target, gen, key, proj, findings)
+
+    monkeypatch.setattr(board, "_check_project_dashboard_drift", _explode)
+
+    findings = board.gather_dashboard_drift(tmp_path)
+
+    by_check = {f.check: f for f in findings}
+    assert "twin-missing" in by_check, (
+        f"one station's failure hid another's real FAIL: {[f.check for f in findings]}"
+    )
+    assert by_check["dashboard-drift-unevaluable"].status is DoctorStatus.WARN
+    assert exit_code_for(findings) == 2
+
+
+def test_a_generate_py_that_exits_at_CALL_time_degrades_to_warn(tmp_path: Path) -> None:
+    """`_load_foreign_module` converts a `SystemExit` raised at IMPORT time,
+    but the same foreign file's FUNCTIONS were then invoked with no such
+    guard -- and neither the per-station `except Exception` nor
+    `degrade_on_exception` catches a `BaseException`. Reproduced live:
+    `gather_dashboard_drift` raised `SystemExit` straight out to the caller."""
+    gen = tmp_path / "docs" / "dashboard" / "generate.py"
+    gen.parent.mkdir(parents=True, exist_ok=True)
+    gen.write_text(
+        "import sys\n\n\n"
+        "def parse_sprint_status(path):\n    sys.exit('boom from a call')\n\n\n"
+        "def dashboard_id_to_status(story_id, sprint):\n    return None\n\n\n"
+        f"PROJECT_SOURCES = {{'testproj': {_FEED_REL!r}}}\n"
+        "_KEY_SLUG_OVERRIDE = {}\n_DERIVE_EXCLUDE = set()\n",
+        encoding="utf-8",
+    )
+    _write_sprint_file(tmp_path / _FEED_REL, {"1-1-a": "done"})
+    _write_sprint_file(tmp_path / _TWIN_REL, {"1-1-a": "done"})
+    _write_data_js(tmp_path / "docs" / "dashboard" / "data.js", {"testproj": {"epics": []}})
+
+    findings = board.gather_dashboard_drift(tmp_path)  # must not raise
+
+    assert all(f.status is not DoctorStatus.OK for f in findings), (
+        f"a sys.exit() at call time was reported as clean: {findings}"
+    )
+    assert any("boom from a call" in f.message for f in findings), findings

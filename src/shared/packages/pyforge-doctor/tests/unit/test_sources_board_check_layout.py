@@ -30,8 +30,17 @@ from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import board
 from pyforge.doctor.verdict import exit_code_for
 
-_REPO_ROOT = Path(__file__).resolve().parents[6]
-_HAVE_REAL_DASHBOARD = (_REPO_ROOT / "docs" / "dashboard" / "check_layout.py").is_file()
+# Guarded, like `test_check_speed_budget.py`'s own (review finding): at module
+# scope a bare `parents[6]` IndexError from a shallower-than-7-levels layout
+# (e.g. an extracted sdist) is a COLLECTION error for this whole file instead
+# of the skip this module's docstring promises.
+try:
+    _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
+except IndexError:
+    _REPO_ROOT = None
+_HAVE_REAL_DASHBOARD = bool(
+    _REPO_ROOT and (_REPO_ROOT / "docs" / "dashboard" / "check_layout.py").is_file()
+)
 
 
 def _write_minimal_check_layout(target: Path) -> None:
@@ -558,3 +567,102 @@ def test_a_check_layout_that_exits_at_import_degrades_to_warn(tmp_path: Path) ->
 
     assert [f.status for f in findings] == [DoctorStatus.WARN]
     assert "sys.exit" in findings[0].message
+
+
+# --- adversarial-review regressions (2026-08-09, fourth pass) ----------------
+
+
+class _FakePageThatDiesOnClose(_FakePage):
+    def close(self) -> None:
+        raise RuntimeError("page close blew up")
+
+
+def test_a_page_that_dies_on_close_is_not_reported_as_unmeasured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`page.close()` sat INSIDE the per-width `try`, whose `except` appends to
+    `unmeasured` -- so a fully-measured width was reported "could not be
+    measured" AND counted in `measured`, producing a self-contradictory OK
+    ("6 measurement(s): 3 width(s) x 2 steps; 3 width(s) could not be
+    measured"). Its two sibling teardowns were already suppressed. Reproduced
+    live."""
+    monkeypatch.setattr(
+        _FakeBrowser,
+        "new_page",
+        lambda self, viewport: _FakePageThatDiesOnClose(viewport["width"], self.script),
+    )
+
+    findings = _run(_StubLayoutModule(), _Script())
+
+    assert [f.status for f in findings] == [DoctorStatus.OK], (
+        f"a failed page teardown was reported as a failed measurement: "
+        f"{[(f.status.value, f.message) for f in findings]}"
+    )
+    assert "could not be measured" not in findings[0].message
+    assert findings[0].evidence["measured"] == 6
+
+
+def test_the_served_directory_is_the_target_not_the_layout_scripts_own_home() -> None:
+    """`clm.HERE` is `check_layout.py`'s own `__file__` parent, which is a
+    DIFFERENT directory than `target/docs/dashboard` whenever the file is
+    symlinked or shared -- the gather then validated one repo's data.js and
+    measured another's board. The original had no `target` parameter, so this
+    seam is new to the port."""
+    clm = _StubLayoutModule()
+    served: list[Path] = []
+    clm._serve = lambda here: (served.append(here), (clm.httpd, 9999))[1]
+    clm.HERE = Path("/somewhere/else/entirely")
+
+    _run(clm, _Script())
+
+    assert served == [Path("/t") / "docs" / "dashboard"], (
+        f"the gather measured a directory other than its target: {served}"
+    )
+
+
+def test_a_check_layout_that_exits_at_CALL_time_degrades_to_warn() -> None:
+    """`SystemExit` from the dynamically-loaded file's own `check()` is a
+    `BaseException`: neither the per-width `except Exception` nor
+    `degrade_on_exception` saw it, so it escaped the gather.
+
+    Doubles as the pin on `measured`'s meaning: it is incremented AFTER
+    `check()` returns, so a `check()` that never completes cannot be counted
+    toward the OK message's "console bar edges held, no overlap" claim.
+    """
+    clm = _StubLayoutModule()
+
+    def _exit(*_a, **_k):
+        raise SystemExit("boom from check()")
+
+    clm.check = _exit
+
+    findings = _run(clm, _Script())  # must not raise
+
+    assert [f.status for f in findings] == [DoctorStatus.WARN], (
+        f"an evaluation that never ran was reported as a clean grid: "
+        f"{[(f.status.value, f.message) for f in findings]}"
+    )
+    assert "boom from check()" in findings[0].message
+
+
+@pytest.mark.skipif(not _HAVE_REAL_DASHBOARD,
+                     reason="real docs/dashboard/check_layout.py not present in this checkout")
+def test_real_check_layout_exposes_the_attribute_surface_the_orchestration_uses() -> None:
+    """`_run_check_layout` reads `_serve`, `WIDE`, `NARROW`, `PRESSURES`,
+    `APPLY`, `PROBE` and `check` off the dynamically loaded module, but every
+    test above drives it through `_StubLayoutModule`, which DEFINES those names
+    rather than verifying them. A rename in the real file would make the gather
+    raise `AttributeError`, degrade to WARN, and become a permanently green
+    no-op with a fully green suite. This is the mirror of the sibling
+    `test_real_generate_py_loads_and_exposes_the_expected_attribute_surface`.
+    """
+    clm = board._load_check_layout(_REPO_ROOT)
+
+    assert callable(clm._serve)
+    assert callable(clm.check)
+    assert callable(clm._rows)
+    assert isinstance(clm.WIDE, tuple) and clm.WIDE
+    assert isinstance(clm.NARROW, tuple) and clm.NARROW
+    assert isinstance(clm.PRESSURES, tuple) and clm.PRESSURES
+    assert isinstance(clm.APPLY, str) and isinstance(clm.PROBE, str)
+    assert isinstance(clm.DESIGN_SIZE, int)
