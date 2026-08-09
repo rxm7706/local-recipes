@@ -3463,9 +3463,9 @@
   "files": {
    ".dockerignore": "fa7ef26fb451869a17858d658e5238e837912aa5",
    "Containerfile": "afdc20855cba5357564e22bc302a2dc0be1ff8b2",
-   "pixi.toml": "7781a404b02bcf913444d18ebfcf91066c0a5e40"
+   "pixi.toml": "431e9abc0e08645e229ed05ec830a70584c18450"
   },
-  "memlog": "42691ad09b7af9e58ce0e04eb83d1fdcf8834f98"
+  "memlog": "ca7de44d73feaa1e5123557befa3e0a20a7c4031"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {
