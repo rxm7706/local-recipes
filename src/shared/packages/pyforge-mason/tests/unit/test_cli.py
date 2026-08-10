@@ -32,6 +32,7 @@ import dataclasses
 import json
 import logging
 import os
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
@@ -39,8 +40,9 @@ import pytest
 
 from pyforge.mason import __version__
 from pyforge.mason.cli import (
-    _configure_logging, _resolve_bool, _resolve_optional_float, _resolve_str,
-    build_parser, main,
+    _ENV_CFE_PYTHON, _ENV_CFE_ROOT, _ENV_CFE_TIMEOUT, _ENV_FORMAT, _ENV_QUIET,
+    _ENV_VERBOSE, _configure_logging, _resolve_bool, _resolve_optional_float,
+    _resolve_str, build_parser, main,
 )
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
@@ -361,22 +363,92 @@ def test_cfe_timeout_flag_rejects_non_positive_values(bad_value, capsys):
     assert "must be a finite, positive number" in err
 
 
-def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form():
+def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form(monkeypatch):
     """AD-13/FR-48: the v1 knob set is closed and fully enumerated -- each of
-    the six has both a flag and an environment-variable form, both of which
-    must appear in --help output."""
+    the six has both a flag and an environment-variable form, and each
+    resolves flag -> environment -> default. One test, all six (the spec's
+    own AC wording).
+
+    The three resolution assertions per knob were added in the 2026-08-10
+    (third) review pass. This test previously only checked that six flag
+    names and six variable names appear in `format_help()` -- which would
+    still pass with `_resolve_optional_float` deleted outright, and asserts
+    nothing whatsoever about the precedence the AC actually names. Each
+    knob's environment value is chosen so no sub-assertion is vacuous: the
+    flag-wins case uses an environment value that would produce a *different*
+    answer if the flag were ignored, and the environment case uses one that
+    differs from the default.
+    """
+    knobs = (
+        {
+            "flag": "--cfe-root", "env_var": _ENV_CFE_ROOT, "dest": "cfe_root",
+            "argv": ["--cfe-root", "/from/flag"], "flag_wins": "/from/flag",
+            "env_raw": "/from/env", "env_wins": "/from/env", "default": "auto",
+            "resolve": lambda v: _resolve_str(v, _ENV_CFE_ROOT, "auto"),
+        },
+        {
+            "flag": "--cfe-python", "env_var": _ENV_CFE_PYTHON, "dest": "cfe_python",
+            "argv": ["--cfe-python", "/from/flag/python"], "flag_wins": "/from/flag/python",
+            "env_raw": "/from/env/python", "env_wins": "/from/env/python", "default": "auto",
+            "resolve": lambda v: _resolve_str(v, _ENV_CFE_PYTHON, "auto"),
+        },
+        {
+            "flag": "--cfe-timeout", "env_var": _ENV_CFE_TIMEOUT, "dest": "cfe_timeout",
+            "argv": ["--cfe-timeout", "30"], "flag_wins": 30.0,
+            "env_raw": "45", "env_wins": 45.0, "default": None,
+            "resolve": lambda v: _resolve_optional_float(v, _ENV_CFE_TIMEOUT),
+        },
+        {
+            # --format's default is one of its own two choices, so the flag
+            # form deliberately asks for the default value while the
+            # environment asks for the other one: if the flag were ignored,
+            # the flag-wins case would come back "json".
+            "flag": "--format", "env_var": _ENV_FORMAT, "dest": "format",
+            "argv": ["--format", "text"], "flag_wins": "text",
+            "env_raw": "json", "env_wins": "json", "default": "text",
+            "resolve": lambda v: _resolve_str(v, _ENV_FORMAT, "text"),
+        },
+        {
+            # Same shape for the two booleans, whose default is also one of
+            # only two possible values: the flag-wins case pairs `--verbose`
+            # with a falsy environment value, the environment case with a
+            # truthy one.
+            "flag": "--verbose", "env_var": _ENV_VERBOSE, "dest": "verbose",
+            "argv": ["--verbose"], "flag_wins": True,
+            "env_raw": "1", "env_wins": True, "default": False,
+            "conflict_env_raw": "0",
+            "resolve": lambda v: _resolve_bool(v, _ENV_VERBOSE, False),
+        },
+        {
+            "flag": "--quiet", "env_var": _ENV_QUIET, "dest": "quiet",
+            "argv": ["--quiet"], "flag_wins": True,
+            "env_raw": "1", "env_wins": True, "default": False,
+            "conflict_env_raw": "0",
+            "resolve": lambda v: _resolve_bool(v, _ENV_QUIET, False),
+        },
+    )
+    assert len(knobs) == 6, "AD-13's v1 knob set is closed at six"
+
     help_text = build_parser().format_help()
-    pairs = [
-        ("--cfe-root", "MASON_CFE_ROOT"),
-        ("--cfe-python", "MASON_CFE_PYTHON"),
-        ("--cfe-timeout", "MASON_CFE_TIMEOUT"),
-        ("--format", "MASON_FORMAT"),
-        ("--verbose", "MASON_VERBOSE"),
-        ("--quiet", "MASON_QUIET"),
-    ]
-    for flag, env_var in pairs:
+    for knob in knobs:
+        flag, env_var, dest, resolve = knob["flag"], knob["env_var"], knob["dest"], knob["resolve"]
         assert flag in help_text, f"{flag} missing from --help output"
         assert env_var in help_text, f"{env_var} missing from --help output"
+
+        # 1. Flag beats a conflicting environment value.
+        monkeypatch.setenv(env_var, knob.get("conflict_env_raw", knob["env_raw"]))
+        ns = build_parser().parse_args(knob["argv"])
+        assert resolve(getattr(ns, dest, None)) == knob["flag_wins"], f"{flag}: flag must win"
+
+        # 2. Environment is read when the flag is absent.
+        monkeypatch.setenv(env_var, knob["env_raw"])
+        ns = build_parser().parse_args([])
+        assert resolve(getattr(ns, dest, None)) == knob["env_wins"], f"{env_var}: env must apply"
+
+        # 3. Default when neither is given.
+        monkeypatch.delenv(env_var)
+        ns = build_parser().parse_args([])
+        assert resolve(getattr(ns, dest, None)) == knob["default"], f"{flag}: default must apply"
 
 
 def test_keyboard_interrupt_projects_to_130(monkeypatch):
@@ -559,6 +631,25 @@ class TestResolveOptionalFloat:
         other value that fails the same standard."""
         monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
         assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") == 45.0
+
+    @pytest.mark.parametrize("not_a_number", ["30", "", Decimal("30"), object()])
+    def test_non_numeric_flag_value_falls_through_instead_of_raising(
+        self, monkeypatch, not_a_number,
+    ):
+        """A flag value that is not a real number at all reached
+        `math.isfinite` and raised its bare "must be real number, not str" --
+        naming neither this function nor the parameter (review pass,
+        2026-08-10, third). `cfe.run_streamed`'s `timeout` guard was given an
+        isinstance check for exactly this message; its sibling resolver was
+        left without one. Treated as unusable and fallen through, like every
+        other value that fails this resolver's standard -- this function is
+        documented as never raising."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(not_a_number, "MASON_CFE_TIMEOUT") == 45.0
+
+    def test_non_numeric_flag_value_with_no_env_resolves_to_none(self, monkeypatch):
+        monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+        assert _resolve_optional_float("30", "MASON_CFE_TIMEOUT") is None
 
     def test_env_wins_over_none_default(self, monkeypatch):
         monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")

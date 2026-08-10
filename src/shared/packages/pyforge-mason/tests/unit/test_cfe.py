@@ -779,3 +779,233 @@ def test_run_streamed_rejects_a_non_numeric_timeout(bad_timeout):
     forever" to subprocess's own API, and this function has no such mode."""
     with pytest.raises(TypeError, match=r"run_streamed\(timeout=\.\.\.\)"):
         run_streamed([sys.executable, "-c", "pass"], timeout=bad_timeout)
+
+
+# --- Review pass (2026-08-10, third): stderr must stream as PRODUCED, not ---
+# --- per newline; decoding is pinned; a busy sink is not a dead sink. -------
+
+class _TimestampingSink:
+    """Records `(seconds since t0, text)` for every write, so a test can
+    assert *when* output arrived, not just that it eventually did."""
+
+    def __init__(self, t0: float) -> None:
+        self._t0 = t0
+        self.events: list[tuple[float, str]] = []
+
+    def write(self, text: str) -> int:
+        self.events.append((time.monotonic() - self._t0, text))
+        return len(text)
+
+    def flush(self) -> None:
+        pass
+
+    @property
+    def text(self) -> str:
+        return "".join(text for _, text in self.events)
+
+
+def test_run_streamed_forwards_stderr_without_waiting_for_a_line_terminator():
+    """The AC is "child stderr reaches the sink as produced, not buffered to
+    completion" -- but the reader iterated `proc.stderr` line by line, so it
+    blocked until the child emitted a `\\n` (review pass, 2026-08-10, third).
+    A child that writes a status line *without* a terminator and then works
+    silently -- a spinner, a progress bar, `Building... ` before a long
+    compile -- delivered nothing at all for the whole pause. Reproduced
+    against the pre-fix reader: 200 bytes written at t=0 first reached the
+    sink at t=3.01s, together with the terminator that finally released them.
+
+    Every other streaming test in this file uses `print(..., file=sys.stderr)`,
+    which always terminates its line -- which is exactly why this path was
+    invisible to the suite.
+    """
+    child_sleep = 3.0
+    script = (
+        "import sys, time\n"
+        "sys.stderr.write('working-no-terminator')\n"
+        "sys.stderr.flush()\n"
+        f"time.sleep({child_sleep})\n"
+        "sys.stderr.write('\\ndone\\n')\n"
+    )
+    started_at = time.monotonic()
+    sink = _TimestampingSink(started_at)
+
+    rc, _ = run_streamed([sys.executable, "-c", script], timeout=30.0, stderr_sink=sink)
+
+    assert rc == 0
+    arrivals = [at for at, text in sink.events if "working-no-terminator" in text]
+    assert arrivals, "the unterminated status text never reached the sink at all"
+    # Deliberately strict: the pre-fix reader delivered this at ~child_sleep.
+    # A correct reader delivers it within milliseconds of the child's write.
+    assert arrivals[0] < child_sleep / 2, (
+        f"unterminated stderr was buffered for {arrivals[0]:.2f}s of a "
+        f"{child_sleep}s pause -- it must stream as produced"
+    )
+
+
+def test_run_streamed_preserves_carriage_returns_in_child_stderr():
+    """Text-mode universal-newline translation rewrote every `\\r` the child
+    emitted into `\\n` (review pass, 2026-08-10, third), turning a build
+    tool's single in-place progress line into one scrolling line per update.
+    The child's bytes must reach the sink unrewritten."""
+    script = (
+        "import sys\n"
+        "sys.stderr.write('progress 0%\\rprogress 50%\\rprogress 100%\\n')\n"
+        "sys.stderr.flush()\n"
+    )
+    sink = _TimestampingSink(time.monotonic())
+
+    rc, _ = run_streamed([sys.executable, "-c", script], timeout=15.0, stderr_sink=sink)
+
+    assert rc == 0
+    assert sink.text == "progress 0%\rprogress 50%\rprogress 100%\n"
+
+
+def test_run_streamed_decodes_utf8_regardless_of_the_ambient_locale(tmp_path):
+    """`Popen` inherited the locale's encoding, so under `LC_ALL=C` -- routine
+    in CI containers and `docker run` without `LANG` -- every non-ASCII byte
+    of an otherwise valid UTF-8 document came back as replacement characters
+    (review pass, 2026-08-10, third). The corruption is silent: the mangled
+    text is still valid JSON, so Story 2.1's AD-4 extraction would return a
+    quietly wrong answer rather than an error. The encoding is now pinned.
+
+    The locale that matters is the *caller's*, not the child's, so this test
+    calls `run_streamed` from a grandparent interpreter launched under
+    `LC_ALL=C` rather than setting the child's `env=` -- the latter proves
+    nothing, since the decode happens on this side of the pipe. Both scripts
+    are written as pure ASCII: CPython cannot even decode a `-c`/source file
+    containing non-ASCII text under that locale.
+    """
+    child = tmp_path / "utf8_child.py"
+    child.write_text(
+        "import sys\n"
+        "sys.stdout.buffer.write(b'{\"n\": \"caf\\xc3\\xa9-na\\xc3\\xafve\"}\\n')\n",
+        encoding="ascii",
+    )
+    host = tmp_path / "utf8_host.py"
+    host.write_text(
+        "import json, sys\n"
+        "from pyforge.mason.cfe import run_streamed\n"
+        "rc, out = run_streamed([sys.executable, sys.argv[1]], timeout=30.0)\n"
+        # ensure_ascii=True (the default) keeps this report readable back
+        # here no matter how badly the grandparent's own stdout is encoded.
+        "sys.stdout.write(json.dumps({'rc': rc, 'out': out}))\n",
+        encoding="ascii",
+    )
+    c_locale_env = {
+        **os.environ,
+        "LC_ALL": "C", "LANG": "C", "LC_CTYPE": "C",
+        "PYTHONUTF8": "0", "PYTHONCOERCECLOCALE": "0",
+        "PYTHONPATH": os.pathsep.join(p for p in sys.path if p),
+    }
+    c_locale_env.pop("PYTHONIOENCODING", None)
+
+    completed = subprocess.run(
+        [sys.executable, str(host), str(child)],
+        env=c_locale_env, capture_output=True, text=True, timeout=60, check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    report = json.loads(completed.stdout)
+    assert report["rc"] == 0
+    assert "�" not in report["out"], (
+        f"stdout was mangled by the caller's locale: {report['out']!r}"
+    )
+    assert json.loads(report["out"]) == {"n": "café-naïve"}
+
+
+def test_run_streamed_keeps_forwarding_after_a_transient_blocking_io_error():
+    """A one-off `BlockingIOError` means the sink is *busy*, not gone -- what
+    a non-blocking `sys.stderr` under tmux or some CI runners raises when the
+    downstream pipe is momentarily full, and it accepts the very next write.
+    Latching the sink dead on it silently discarded every remaining line
+    (review pass, 2026-08-10, third): reproduced at 1 write attempt and 0 of
+    5 lines delivered. The adjacent `flush` handler already reasoned this way
+    about the identical exception.
+
+    A genuinely broken sink still latches, via its failing *write* -- pinned
+    by `test_run_streamed_broken_stderr_sink_does_not_deadlock_a_noisy_child`.
+    """
+
+    class _FirstWriteIsBusySink:
+        def __init__(self) -> None:
+            self.attempts = 0
+            self.chunks: list[str] = []
+
+        def write(self, text: str) -> int:
+            self.attempts += 1
+            if self.attempts == 1:
+                raise BlockingIOError(11, "Resource temporarily unavailable")
+            self.chunks.append(text)
+            return len(text)
+
+        def flush(self) -> None:
+            pass
+
+    # One line per write attempt: the child flushes and pauses between lines
+    # so each arrives as its own read, making the dropped-vs-delivered count
+    # deterministic rather than dependent on chunk coalescing.
+    script = (
+        "import sys, time\n"
+        "for i in range(5):\n"
+        "    sys.stderr.write('line-%d\\n' % i)\n"
+        "    sys.stderr.flush()\n"
+        "    time.sleep(0.05)\n"
+    )
+    sink = _FirstWriteIsBusySink()
+
+    rc, _ = run_streamed([sys.executable, "-c", script], timeout=15.0, stderr_sink=sink)
+
+    assert rc == 0
+    assert sink.attempts > 1, "the sink was latched dead by a transient error"
+    delivered = "".join(sink.chunks)
+    # The busy chunk is genuinely lost (retrying would block or spin); every
+    # line after it must survive.
+    assert "line-4" in delivered
+    assert delivered.count("line-") >= 4
+
+
+def test_run_streamed_rejects_a_none_argv():
+    """`list(None)` reported a bare "'NoneType' object is not iterable",
+    naming neither the function nor the parameter (review pass, 2026-08-10,
+    third) -- the same defect `timeout=None` was already guarded against."""
+    with pytest.raises(TypeError, match=r"run_streamed\(argv=\.\.\.\)"):
+        run_streamed(None, timeout=15.0)
+
+
+@pytest.mark.parametrize("bad_sink", [object(), 42, None])
+def test_run_streamed_rejects_a_sink_without_a_callable_write(bad_sink, monkeypatch):
+    """A sink with no `write` -- or a `sys.stderr` that is `None`, which a
+    `pythonw`/detached host hands us -- was silently swallowed by the
+    forwarding thread's degrade-don't-crash handling: every line the child
+    produced vanished, indistinguishable to the caller from a quiet child
+    (review pass, 2026-08-10, third). `flush` stays optional.
+
+    `None` is passed via `sys.stderr` rather than the parameter, since
+    `stderr_sink=None` means "use the default" by design.
+    """
+    if bad_sink is None:
+        monkeypatch.setattr(sys, "stderr", None)
+        kwargs = {}
+    else:
+        kwargs = {"stderr_sink": bad_sink}
+
+    with pytest.raises(TypeError, match=r"run_streamed\(stderr_sink=\.\.\.\)"):
+        run_streamed([sys.executable, "-c", "pass"], timeout=15.0, **kwargs)
+
+
+def test_run_streamed_rejects_a_bad_sink_before_spawning_a_child(monkeypatch):
+    """The sink guard runs ahead of `Popen`, so a caller's mistake costs no
+    process -- and cannot leave one behind."""
+    spawned: list[object] = []
+    real_popen = subprocess.Popen
+
+    def _recording_popen(*args, **kwargs):
+        spawned.append(args)
+        return real_popen(*args, **kwargs)
+
+    monkeypatch.setattr(cfe_module.subprocess, "Popen", _recording_popen)
+
+    with pytest.raises(TypeError):
+        run_streamed([sys.executable, "-c", "pass"], timeout=15.0, stderr_sink=object())
+
+    assert spawned == []

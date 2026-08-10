@@ -170,16 +170,25 @@ def _resolve_optional_float(flag_value: float | None, env_var_name: str) -> floa
     the resolver is the wrong place to launder it. An unusable flag value
     falls *through* to the environment rather than short-circuiting to
     `None` -- the same "absent at whichever step supplied it" rule
-    `_resolve_str` applies to a whitespace-only flag value.
+    `_resolve_str` applies to a whitespace-only flag value. A flag value
+    that is not a real number at all (a `str` that never went through
+    `_parse_finite_float`, a `Decimal`) falls through the same way rather
+    than reaching `math.isfinite` and raising its bare "must be real number,
+    not str" -- a message naming neither this function nor the parameter,
+    and exactly the defect `cfe.run_streamed`'s own `timeout` guard was
+    given an isinstance check for (review pass, 2026-08-10, third).
     """
     if (
         flag_value is not None
-        # `bool` is a subclass of `int`, so `True` clears both checks below
-        # and would be returned verbatim -- and `cfe.run_streamed` rejects a
-        # bool `timeout` outright, which is exactly the disagreement between
-        # this resolver and its consumer that the paragraph above claims to
-        # have closed (review pass, 2026-08-10, second).
+        # `bool` is a subclass of `int`, so `True` clears both numeric checks
+        # below and would be returned verbatim -- and `cfe.run_streamed`
+        # rejects a bool `timeout` outright, which is exactly the
+        # disagreement between this resolver and its consumer that the
+        # paragraph above claims to have closed (review pass, 2026-08-10,
+        # second). The `(int, float)` check must likewise precede
+        # `math.isfinite`, which raises on anything else.
         and not isinstance(flag_value, bool)
+        and isinstance(flag_value, (int, float))
         and math.isfinite(flag_value)
         and flag_value > 0
     ):
@@ -235,10 +244,16 @@ def _configure_logging(verbose: bool, quiet: bool) -> None:
     *removes* every existing root handler, including the one pytest's
     `caplog` fixture installs -- so records emitted after a `main()` call in
     the same test do not reach `caplog.text` (they reach stderr, where
-    `capsys` sees them). Assert via `capsys`, or re-enter
-    `caplog.at_level(...)` after the `main()` call. `tests/conftest.py`'s
-    `_restore_root_logging` fixture keeps this from leaking between tests
-    (review pass, 2026-08-10).
+    `capsys` sees them). Assert via `capsys`. Re-entering
+    `caplog.at_level(...)` after the `main()` call does NOT restore capture
+    and was wrong advice (review pass, 2026-08-10, third): `at_level` only
+    adjusts levels, and the handler itself is gone, so `caplog.text` stays
+    empty while the record is plainly visible on stderr. Re-attaching it by
+    hand (`logging.getLogger().addHandler(caplog.handler)`) does work, and
+    only because `caplog`'s handler wraps a `StringIO` whose `close()` is a
+    no-op -- which is not true of every handler `force` closes (see below).
+    `tests/conftest.py`'s `_restore_root_logging` fixture keeps this from
+    leaking between tests (review pass, 2026-08-10).
 
     `force` also `close()`s each handler it removes, not merely detaches it,
     and that is not undoable (review pass, 2026-08-10, second). Two

@@ -151,8 +151,13 @@ def test_no_module_imports_a_config_file_parser():
     )
     violators = _find_config_file_parser_imports(PKG_ROOT)
     assert not violators, (
+        # Derived from _BANNED_MODULES, never re-typed (review pass,
+        # 2026-08-10, third): the hand-written list here named 5 of the 9
+        # banned modules, so a developer who tripped the guard with `import
+        # dotenv` read a message that did not mention dotenv and could
+        # reasonably conclude the guard had misfired.
         "AD-13: no module under pyforge/mason/ may import a config-file "
-        f"parser (configparser/tomllib/tomli/yaml/ruamel.yaml); found: {violators}"
+        f"parser ({'/'.join(_BANNED_MODULES)}); found: {violators}"
     )
 
 

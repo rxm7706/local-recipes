@@ -64,6 +64,7 @@ same outcome without a second error type.
 
 from __future__ import annotations
 
+import codecs
 import functools
 import math
 import subprocess
@@ -203,8 +204,8 @@ pipe file descriptors (common for build tooling that shells out further),
 in which case the pipes never see EOF and an unbounded `.join()` would hang
 `run_streamed` forever even though the direct child is gone. A bounded join
 converts that into a prompt return instead of an indefinite hang -- but each
-reader is a single blocking call (`proc.stdout.read()`, the `for line in
-proc.stderr` iterator), so the timeout cannot interrupt it mid-read: in this
+reader is parked in a blocking read (`proc.stdout.read()`, the stderr
+reader's `read1()`), so the timeout cannot interrupt it mid-read: in this
 rare scenario `run_streamed` returns with `stdout=""` (not a true partial
 capture) while the still-blocked daemon thread(s) keep running in the
 background until their pipe eventually closes on its own -- which is also
@@ -215,6 +216,13 @@ file's existing `probe_import_floor` precedent of degrading to a
 best-effort result rather than raising a new error type for a rare,
 hard-to-fully-solve edge case -- applied honestly here rather than claimed
 as a full partial-capture guarantee."""
+
+_STDERR_CHUNK_BYTES = 65536
+"""Upper bound on one stderr read in `run_streamed` (review pass,
+2026-08-10, third). Only a cap: `BufferedReader.read1` returns whatever the
+one raw read it performs delivered, so a single byte is forwarded the moment
+it arrives rather than waiting for this many. Sized to keep the syscall
+count low on a build that floods stderr, not to batch output for latency."""
 
 
 def run_streamed(
@@ -243,7 +251,10 @@ def run_streamed(
     argv elements, producing a confusing `FileNotFoundError` instead of a
     clear error naming the mistake, so that shape is rejected immediately.
     `argv` must also be non-empty -- `Popen([])` raises an unhelpful
-    `IndexError` rather than naming the mistake.
+    `IndexError` rather than naming the mistake -- and not `None`, which
+    `list(argv)` would report as a bare "'NoneType' object is not iterable"
+    naming neither this function nor the parameter (review pass, 2026-08-10,
+    third).
 
     `timeout` must be a finite, positive number: `nan` never compares as
     expired, `inf` never expires at all, and zero/negative values expire
@@ -260,30 +271,61 @@ def run_streamed(
     `stderr_sink` defaults to `sys.stderr`, resolved *inside* this function
     body -- never as a `= sys.stderr` default parameter, which would bind
     the module-import-time stream object once and never see a test's
-    per-call `capsys`/monkeypatch replacement of `sys.stderr`.
+    per-call `capsys`/monkeypatch replacement of `sys.stderr`. Whatever it
+    resolves to must have a callable `write`; a sink that does not (or a
+    `sys.stderr` that is `None`, as under `pythonw`/a detached host) is
+    rejected up front rather than silently discarding every line the child
+    produces, which a caller cannot tell apart from a quiet child (review
+    pass, 2026-08-10, third). `flush` remains optional.
 
     Two daemon threads run concurrently for the life of the child process:
-    one reads `proc.stderr` line by line, writing (and flushing) each line
-    to `sink` as it arrives; the other reads `proc.stdout` to completion
-    into the string this function returns. They must run concurrently, not
+    one reads `proc.stderr` in chunks, writing (and flushing) each chunk to
+    `sink` as it arrives; the other reads `proc.stdout` to completion into
+    the string this function returns. They must run concurrently, not
     sequentially -- draining only one pipe at a time risks the child
     blocking on a full OS pipe buffer on the *other* stream while nothing is
-    reading it, deadlocking both the child and this function. Both are
-    started with `errors="replace"` decoding (via `Popen`'s `text=True`
-    pairing below) so a child that emits a byte sequence that isn't valid
-    text under the platform's default encoding degrades to replacement
-    characters in the affected spot rather than crashing the reader thread
-    outright and silently truncating everything after it.
+    reading it, deadlocking both the child and this function. Both decode
+    UTF-8 with `errors="replace"` so a child that emits a byte sequence that
+    isn't valid UTF-8 degrades to replacement characters in the affected
+    spot rather than crashing the reader thread outright and silently
+    truncating everything after it. The encoding is pinned, not inherited
+    from the locale (review pass, 2026-08-10, third): under `LC_ALL=C` --
+    routine in CI containers and `docker run` without `LANG` -- the platform
+    default would mangle every non-ASCII byte of an otherwise valid UTF-8
+    JSON document into replacement characters that still parse as JSON, so
+    Story 2.1's AD-4 extraction would return a quietly wrong answer instead
+    of an error.
 
-    For the same anti-deadlock reason, a `stderr_sink` that raises (the
-    common real case: `mason ... 2>&1 | head -5`, where the downstream
-    reader exits and every later write is a `BrokenPipeError`) does NOT stop
-    the reader -- it keeps consuming the pipe to EOF and discards what it
-    can no longer deliver. Abandoning the pipe on the first sink failure
-    would leave nothing draining stderr, so the child would block on its
-    next write once the ~64KB pipe buffer filled and then be SIGKILLed when
-    `timeout` expired: a healthy process destroyed by a broken *output*
-    destination.
+    stderr is forwarded in chunks, NOT line by line (review pass,
+    2026-08-10, third). A line-iterating reader blocks until it sees `\\n`,
+    so a child that writes a status line without a terminator and then works
+    silently -- a spinner, a progress bar, `Building... ` followed by a
+    three-minute compile -- delivers nothing at all until it finally
+    terminates that line, which is precisely the "buffered to completion"
+    behavior AD-25 forbids and this primitive exists to prevent. Reading the
+    binary pipe and decoding incrementally also leaves the child's bytes
+    intact: text-mode universal-newline translation rewrote every `\\r` into
+    `\\n`, turning a build tool's single in-place progress line into hundreds
+    of scrolling ones. Chunk boundaries never split a multi-byte character,
+    because the incremental decoder carries the partial sequence over to the
+    next chunk.
+
+    For anti-deadlock reasons, a `stderr_sink` that raises (the common real
+    case: `mason ... 2>&1 | head -5`, where the downstream reader exits and
+    every later write is a `BrokenPipeError`) does NOT stop the reader -- it
+    keeps consuming the pipe to EOF and discards what it can no longer
+    deliver. Abandoning the pipe on the first sink failure would leave
+    nothing draining stderr, so the child would block on its next write once
+    the ~64KB pipe buffer filled and then be SIGKILLed when `timeout`
+    expired: a healthy process destroyed by a broken *output* destination.
+    A `BlockingIOError` is the one write failure that does not mark the sink
+    dead (review pass, 2026-08-10, third): it means "busy," not "gone" --
+    what a non-blocking `sys.stderr` under tmux or some CI runners raises
+    when the downstream pipe is momentarily full -- and latching on it
+    silently dropped every remaining line of a sink that would have accepted
+    the very next write. That one chunk is still lost (retrying would either
+    block or spin), but the sink stays live; the same reasoning the `flush`
+    handler below already applied.
 
     On any exception after the child is spawned -- `subprocess.
     TimeoutExpired` from `proc.wait()`, a `KeyboardInterrupt` raised while
@@ -318,6 +360,12 @@ def run_streamed(
 
     Always a list argv, never `shell=True` (AD-2/AD-4).
     """
+    if argv is None:
+        # Checked before list(argv), which would otherwise report a bare
+        # "'NoneType' object is not iterable" naming neither this function
+        # nor the parameter -- the same treatment `timeout=None` already
+        # gets below (review pass, 2026-08-10, third).
+        raise TypeError("run_streamed(argv=...) must be a sequence of arguments, not None")
     if isinstance(argv, (str, bytes)):
         raise TypeError(
             f"run_streamed(argv=...) must be a sequence of arguments, not a bare "
@@ -349,6 +397,19 @@ def run_streamed(
         )
 
     sink = stderr_sink if stderr_sink is not None else sys.stderr
+    if not callable(getattr(sink, "write", None)):
+        # Checked before Popen, so a bad sink costs no child process (review
+        # pass, 2026-08-10, third). Without this, an unwritable sink -- or a
+        # `sys.stderr` that is `None`, which is what a `pythonw`/detached
+        # host hands us -- silently swallowed every line the child produced:
+        # the forwarding thread's own degrade-don't-crash handling turned the
+        # `AttributeError` into "sink is dead," indistinguishable to the
+        # caller from a child that simply said nothing.
+        raise TypeError(
+            "run_streamed(stderr_sink=...) must have a callable write(); got "
+            f"{type(sink).__name__}"
+            + (" (sys.stderr is None -- pass an explicit sink)" if sink is None else "")
+        )
 
     proc = subprocess.Popen(
         args,
@@ -356,13 +417,17 @@ def run_streamed(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        errors="replace",  # a child emitting non-decodable bytes degrades text, never crashes a reader thread
+        # Pinned, not locale-derived: see the docstring's encoding paragraph.
+        # `errors="replace"` keeps a child emitting non-decodable bytes from
+        # crashing a reader thread; it degrades that spot instead.
+        encoding="utf-8",
+        errors="replace",
         # bufsize=1 is documented as "line buffered", but `subprocess` only
         # applies line buffering to a *writable* text stream: these two read
         # pipes come back with `line_buffering=False` either way (review
-        # pass, 2026-08-10, second). Live streaming below does not depend on
-        # it -- `readline()` returns whatever the raw read delivered -- so do
-        # not reach for this parameter to tune streaming latency.
+        # pass, 2026-08-10, second). Neither reader below depends on it --
+        # stdout reads to EOF, stderr reads raw chunks -- so do not reach for
+        # this parameter to tune streaming latency.
         bufsize=1,
         env=dict(env) if env is not None else None,
     )
@@ -383,40 +448,62 @@ def run_streamed(
         # anyway.
         sink_flush = getattr(sink, "flush", None)
         try:
-            for line in proc.stderr:
-                if not sink_alive:
-                    # The sink is gone, but this loop MUST keep reading to
-                    # EOF anyway (review pass, 2026-08-10). Abandoning the
-                    # pipe here is what a naive `except: return` around the
-                    # whole loop did, and it deadlocked the child: nothing
-                    # drains stderr, the OS pipe buffer fills (~64KB), the
-                    # child blocks forever on its next write, and a
-                    # perfectly healthy process is eventually SIGKILLed by
-                    # `timeout` -- the exact failure mode this function
-                    # exists to prevent. Reading and discarding costs
-                    # nothing and keeps the child running.
-                    continue
-                try:
-                    sink.write(line)
-                except Exception:
-                    # A broken/closed stderr_sink -- e.g. `mason ... 2>&1 |
-                    # head -5`, where the downstream reader exits and every
-                    # subsequent write raises BrokenPipeError. Degrade:
-                    # whatever reached the sink before the failure stays
-                    # there, the rest is discarded, and the child still runs
-                    # to completion.
-                    sink_alive = False
-                    continue
-                if sink_flush is not None:
+            # The raw pipe under the text wrapper, decoded here instead of by
+            # the wrapper (review pass, 2026-08-10, third). Two reasons, both
+            # in the docstring: `read1` returns as soon as any bytes arrive,
+            # where the wrapper's line iterator waits for `\n` and so buffers
+            # a terminator-free progress line for as long as the child keeps
+            # working; and the wrapper's universal-newline translation
+            # rewrites the child's `\r` into `\n`. Only this thread ever
+            # reads stderr, and it never touches the text layer, so nothing
+            # is stranded between the two.
+            raw = proc.stderr.buffer
+            decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+            while True:
+                chunk = raw.read1(_STDERR_CHUNK_BYTES)
+                # final=True on the empty (EOF) read flushes any trailing
+                # partial multi-byte sequence as replacement characters.
+                text = decoder.decode(chunk, final=not chunk)
+                # Even with the sink gone, this loop MUST keep reading to EOF
+                # (review pass, 2026-08-10). Abandoning the pipe here is what
+                # a naive `except: return` around the whole loop did, and it
+                # deadlocked the child: nothing drains stderr, the OS pipe
+                # buffer fills (~64KB), the child blocks forever on its next
+                # write, and a perfectly healthy process is eventually
+                # SIGKILLed by `timeout` -- the exact failure mode this
+                # function exists to prevent. Reading and discarding costs
+                # nothing and keeps the child running.
+                if text and sink_alive:
                     try:
-                        sink_flush()
-                    except Exception:
+                        sink.write(text)
+                    except BlockingIOError:
+                        # "Busy," not "gone" (review pass, 2026-08-10,
+                        # third): a non-blocking stderr whose downstream pipe
+                        # is momentarily full raises this and accepts the
+                        # very next write. This chunk is lost -- retrying
+                        # would block or spin -- but the sink stays live,
+                        # matching the flush handler's existing reasoning.
                         pass
+                    except Exception:
+                        # A broken/closed stderr_sink -- e.g. `mason ... 2>&1
+                        # | head -5`, where the downstream reader exits and
+                        # every subsequent write raises BrokenPipeError.
+                        # Degrade: whatever reached the sink before the
+                        # failure stays there, the rest is discarded, and the
+                        # child still runs to completion.
+                        sink_alive = False
+                    else:
+                        if sink_flush is not None:
+                            try:
+                                sink_flush()
+                            except Exception:
+                                pass
+                if not chunk:
+                    break
         except Exception:
             # The pipe itself failed (closed underneath us during a bounded
-            # join, a decode error `errors="replace"` could not absorb).
-            # Degrade rather than crashing this daemon thread via Python's
-            # default excepthook.
+            # join, for instance). Degrade rather than crashing this daemon
+            # thread via Python's default excepthook.
             pass
 
     def _capture_stdout() -> None:
