@@ -11,7 +11,7 @@ sources:
 open_questions:
   - "Q1 — delivery shape undecided: a `marshal` CLI verb (new `marshal refresh`, or folded into `marshal homes`), a scheduled CI/cron job, or both (verb as the primitive, schedule as the trigger). The 2026-08-08 technical research recommends folding the push half into an existing supervisor duty (classify_push_triggers already fires on the done-phase boundary) rather than a new product."
   - "Q2 — durable record for the 'already verified redundant' divergence verdict: where does it live (journal entry, ledger, marker file in the loop-home) so the same stale-history archaeology (doctor/herald/mason/scribe/steward, re-derived twice on 2026-08-03) is never re-run for the same commit set?"
-  - "Q3 — overlap with FR-61 stage-boundary push and loop-push-watch: does this Spec's push step subsume the existing watcher for the refresh path, or only complement it?"
+  - "Q3 — RESOLVED (Story 4.15, 2026-08-10): overlap with FR-61 stage-boundary push and loop-push-watch: does this Spec's push step subsume the existing watcher for the refresh path, or only complement it? Answer: there is no watcher left to overlap with — `loop-push-watch` is retired, so this Spec's own future CAP-2 push step (when built) is not a duplicate of anything."
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -94,9 +94,11 @@ every time, all judgment-free in the common case.
   repos, and knows nothing about trees outside the fleet.
 - **Not `marshal land`.** Opening/merging a story's landing PR into `main` is Story 4.8's
   contract; this Spec is the opposite direction (main → loop-home) plus the fleet push.
-- **Not the upstream fix.** Making bmad-loop itself push at its own stage boundaries is named
-  by `loop_push_watch.py`'s docstring as the durable upstream fix — out of this repo's hands
-  and out of this contract.
+- **Not the upstream fix.** Making bmad-loop itself push at its own stage boundaries is now the
+  supervisor's own shipped mechanism (FR-61/Story 3.8), not out-of-repo — the standalone
+  `loop_push_watch.py` that once named it "out of this repo's hands" was retired 2026-08-10
+  (Story 4.15/FR-177; see Q3's resolution above). Still out of this contract's scope: this
+  Spec's own CAP-2 push is the main→loop-home direction, unrelated to during-run durability.
 - **Not an unattended force-pusher.** No mode, flag, or schedule ever makes the
   stale-redundant-divergence force-push automatic.
 
@@ -120,5 +122,8 @@ last of their kind.
   live (journal entry, ledger, marker file in the loop-home) so the same stale-history
   archaeology (doctor/herald/mason/scribe/steward, re-derived twice on 2026-08-03) is never
   re-run for the same commit set?
-- Q3 — overlap with FR-61 stage-boundary push and `loop-push-watch`: does this Spec's push
-  step subsume the existing watcher for the refresh path, or only complement it?
+- Q3 — RESOLVED (Story 4.15, 2026-08-10): overlap with FR-61 stage-boundary push and
+  `loop-push-watch`: does this Spec's push step subsume the existing watcher for the refresh
+  path, or only complement it? Answer: there is no watcher left to overlap with —
+  `loop-push-watch` is retired, so this Spec's own future CAP-2 push step (when built) is not a
+  duplicate of anything.
