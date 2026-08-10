@@ -1764,7 +1764,7 @@ window.DASHBOARD_DATA = {
             [
               "7.1",
               "pending",
-              "Package skeleton as a pixi workspace member"
+              "The seed module tree inside pyforge-marshal"
             ],
             [
               "7.2",
@@ -3460,7 +3460,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 23:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 23:39 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5908,12 +5908,12 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-10T11:05",
+          "spec": "2026-08-10T18:28",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-09",
           "ux": "",
-          "arch": "2026-08-08",
+          "arch": "2026-08-10",
           "context": "2026-06-20",
           "epics": "2026-08-10",
           "sprint": "2026-08-10",
@@ -6023,7 +6023,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T17:57",
+          "spec": "2026-08-10T18:12",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6105,7 +6105,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T17:57",
+            "at": "2026-08-10T18:12",
             "other": "2026-08-01"
           },
           {
@@ -8109,7 +8109,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T17:57",
+          "spec": "2026-08-10T18:28",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9382,7 +9382,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-10T11:03",
+          "spec": "2026-08-10T18:39",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10551,7 +10551,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-07",
+          "dream": "2026-08-10",
           "deck": "",
           "spec": "2026-08-10T17:55",
           "research": "2026-08-08",
@@ -15171,8 +15171,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 23:10 UTC",
-    "generatedEpoch": 1786403455
+    "generatedAt": "2026-08-10 23:39 UTC",
+    "generatedEpoch": 1786405195
   },
   "storySpecs": [
     {
