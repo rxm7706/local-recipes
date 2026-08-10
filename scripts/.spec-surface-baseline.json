@@ -3459,6 +3459,10 @@
   "files": {},
   "memlog": ""
  },
+ "pyforge-steward/spec-secure-live-dashboards": {
+  "files": {},
+  "memlog": "e7eeec864ca70bdc66ff44f451ffcd23fd55543e"
+ },
  "pyforge-steward/spec-unified-container": {
   "files": {
    ".dockerignore": "fa7ef26fb451869a17858d658e5238e837912aa5",
