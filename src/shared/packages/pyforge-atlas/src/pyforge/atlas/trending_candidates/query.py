@@ -39,6 +39,12 @@ _VALID_PERIODS = frozenset({"daily", "weekly", "monthly", "all"})
 
 
 def _validate_period(period: str) -> str:
+    # Stripped for the same reason `_validate_tier` strips (review finding, Story
+    # 13.3): a whitespace-padded value reaching either flag through shell quoting or
+    # an MCP client should behave the same way in both, and the tier sentinel already
+    # accepts `" all "`. Without this, `--period " weekly "` raised while
+    # `--tier " all "` succeeded — the same padding, two different outcomes.
+    period = str(period).strip()
     if period not in _VALID_PERIODS:
         raise ValueError(
             f"invalid --period {period!r}: must be one of {sorted(_VALID_PERIODS)}"
@@ -140,14 +146,32 @@ def query_trending_candidates(
 
     df = value if isinstance(value, pd.DataFrame) else pd.DataFrame(value)
 
-    if not df.empty and period != "all" and "period" in df.columns:
-        df = df[df["period"] == period]
+    # Each filter applies only when its backing column exists — but when the column is
+    # ABSENT and the filter was actually REQUESTED, the result is EMPTIED rather than
+    # silently returned unfiltered (review finding, Story 13.3: verified live — a frame
+    # with no `period` column returned every period's rows while `filters.period` still
+    # reported "weekly", and one with no `reason` column returned an
+    # already-on-conda-forge row under the default `--not-on-cf`, which is exactly the
+    # row CAP-5's Mason handoff must never be given). Mirrors the `stars_total` branch
+    # below and the Boundaries & Constraints rule it already states: never silently
+    # pass a filter it cannot actually satisfy. A filter that was NOT requested
+    # (`period="all"`, `tier="all"`, `not_on_cf=False`) needs no column and is skipped.
+    if not df.empty and period != "all":
+        df = df[df["period"] == period] if "period" in df.columns else df.iloc[0:0]
 
-    if not df.empty and tier != "all" and "tier" in df.columns:
-        df = df[df["tier"].isin(_tier_tokens(tier))]
+    if not df.empty and tier != "all":
+        df = (
+            df[df["tier"].isin(_tier_tokens(tier))]
+            if "tier" in df.columns
+            else df.iloc[0:0]
+        )
 
-    if not df.empty and not_on_cf and "reason" in df.columns:
-        df = df[df["reason"] != REASON_ALREADY_ON_CF]
+    if not df.empty and not_on_cf:
+        df = (
+            df[df["reason"] != REASON_ALREADY_ON_CF]
+            if "reason" in df.columns
+            else df.iloc[0:0]
+        )
 
     if not df.empty:
         if "stars_total" in df.columns:
@@ -161,7 +185,19 @@ def query_trending_candidates(
             # the column itself keeps the filter and the sort looking at the exact
             # same numeric values, and also fixes the NaN-vs-None JSON-safety
             # concern below for this specific column.
-            df = df.assign(stars_total=pd.to_numeric(df["stars_total"], errors="coerce"))
+            numeric = pd.to_numeric(df["stars_total"], errors="coerce")
+            # Keep whole-number star counts INTEGRAL (review finding, Story 13.3):
+            # `to_numeric` widens to float64 the moment ANY row's value is null, so a
+            # single unrelated null flipped every OTHER row's rendered value from
+            # `1200` to `1200.0` — in the operator table and in the machine-readable
+            # envelope alike, making the emitted JSON type of a star count depend on
+            # unrelated rows. The nullable `Int64` dtype carries integers and nulls
+            # together; masking with it treats NA as False, which is exactly the
+            # contracted "a null stars_total fails the --min-stars floor".
+            non_null = numeric.dropna()
+            if non_null.eq(non_null.round()).all():
+                numeric = numeric.astype("Int64")
+            df = df.assign(stars_total=numeric)
             df = df[df["stars_total"] >= min_stars]
         else:
             # No stars_total column at all: no row can actually satisfy the floor —
@@ -178,11 +214,21 @@ def query_trending_candidates(
 
     capped = df.head(top)
     # NaN survives to_dict() as the Python float `nan`, which `json.dumps` renders as
-    # the bare, non-RFC-8259-conformant token `NaN` (review finding, Story 13.3:
-    # verified live) — breaking CAP-3's own literal success signal ("JSON output
-    # validates against a documented schema", SPEC.md). `where(notna, None)` maps
-    # every NaN/NaT cell to a JSON-safe `null` before the dict conversion.
-    candidates = capped.where(pd.notna(capped), None).to_dict(orient="records")
+    # the bare, non-RFC-8259-conformant token `NaN` — breaking CAP-3's own literal
+    # success signal ("JSON output validates against a documented schema", SPEC.md).
+    #
+    # `.astype(object)` FIRST is what makes the replacement actually take effect
+    # (review finding, Story 13.3: verified live). On a float64 column,
+    # `where(cond, None)` does NOT upcast — pandas casts the `None` straight back to
+    # NaN and the cell survives unchanged, so the previous `capped.where(...)` alone
+    # was a silent no-op for every float column. It only ever worked for an
+    # all-null OBJECT column, which is precisely the single-row shape the test meant
+    # to guard it used — a false green. Any real frame carrying BOTH a null and a
+    # value in one optional column (e.g. `stars_today`, null whenever a row lacks a
+    # daily delta) is float64, and leaked `NaN` into the emitted JSON.
+    candidates = capped.astype(object).where(pd.notna(capped), None).to_dict(
+        orient="records"
+    )
 
     return {
         "schema_version": _provenance.SCHEMA_VERSION,

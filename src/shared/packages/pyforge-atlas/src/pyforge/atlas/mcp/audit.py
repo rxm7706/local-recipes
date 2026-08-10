@@ -83,6 +83,17 @@ PIPELINE_TRIGGER_TOOLS = (
 # stays AD-7-thin, delegating to the pyforge.atlas.nl seam.
 NL_INTERFACE_TOOLS = ("query_vizro_ai",)
 
+# The read-side operator surface CAP-3 adds (no legacy equivalent): the trending-
+# candidate query over the CAP-2 classified set (Story 13.3, FR-66). Recorded here
+# rather than in ATLAS_TOOL_AUDIT because that dict is pinned to exactly THE_23 legacy
+# tools; this mirrors NL_INTERFACE_TOOLS' shape for the same reason it exists — a new
+# capability still belongs in the module that is this package's declared record of its
+# MCP surface (review finding, Story 13.3: the tool shipped registered on the server
+# but absent from every bucket here, the same omission Story 13.1 avoided by adding
+# run_upstream_discovery_pipeline to PIPELINE_TRIGGER_TOOLS). Its body stays AD-7-thin,
+# delegating to the pyforge.atlas.trending_candidates seam.
+TRENDING_SURFACE_TOOLS = ("query_trending_candidates",)
+
 
 def read_dataset_targets() -> set[str]:
     """The catalog dataset names referenced by ``read_dataset:`` verdicts."""

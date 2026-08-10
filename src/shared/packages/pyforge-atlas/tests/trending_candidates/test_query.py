@@ -285,29 +285,53 @@ def test_mixed_numeric_string_and_int_stars_total_does_not_crash_the_sort(seed_c
     assert [c["repo_full_name"] for c in result["candidates"]] == [
         "b/real-int", "a/numeric-string",
     ]
-    assert [c["stars_total"] for c in result["candidates"]] == [2000.0, 1500.0]
+    # Integral star counts stay ints (follow-up review finding, Story 13.3): the
+    # numeric coercion must not render a whole-number count as `1500.0`.
+    assert [c["stars_total"] for c in result["candidates"]] == [2000, 1500]
 
 
 def test_null_optional_column_serializes_to_json_safe_none(seed_catalog):
     """Regression (review finding, Story 13.3, verified live): a null `stars_today`
     (plausible whenever a row lacks a daily-delta signal) forces that column to
-    float64 with NaN cells; `to_dict(orient="records")` used to carry the raw NaN
-    through, which `json.dumps` renders as the invalid, non-RFC-8259 `NaN` token
-    instead of `null`."""
+    float64 with NaN cells; `to_dict(orient="records")` carries the raw NaN through,
+    which `json.dumps` renders as the invalid, non-RFC-8259 `NaN` token instead of
+    `null`.
+
+    TWO rows, deliberately (follow-up review finding, Story 13.3): the earlier
+    single-all-None-row version of this test was a FALSE GREEN. One all-None row makes
+    `stars_today` an **object** column — the one dtype where the original
+    `capped.where(pd.notna(capped), None)` actually replaced anything. A column
+    carrying BOTH a value and a null is **float64**, where `where(..., None)` casts
+    the None straight back to NaN and is a silent no-op. This shape is what any real
+    multi-row frame produces, and it must serialize strictly.
+    """
     import json
 
     df = pd.DataFrame(
         [
             _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
-                 reason=_TIER1_REASON, stars_total=1200, stars_today=None),
+                 reason=_TIER1_REASON, stars_total=1200, stars_today=7),
+            _row(repo_full_name="bob/libbar", period="weekly", tier="1",
+                 reason=_TIER1_REASON, stars_total=900, stars_today=None),
         ]
     )
+    # The dtype this test exists to cover -- pin it, so a future fixture edit that
+    # collapses it back to `object` fails here instead of silently re-greening.
+    assert df["stars_today"].dtype == "float64"
     seed_catalog(df)
 
     result = query.query_trending_candidates()
 
-    assert result["candidates"][0]["stars_today"] is None
-    json.dumps(result)  # must not raise, and must not emit a bare NaN token
+    assert result["candidates"][0]["stars_today"] == 7
+    assert result["candidates"][1]["stars_today"] is None
+
+    # Strict: `json.dumps` happily EMITS the bare `NaN` token, so dumping alone proves
+    # nothing. Re-parse rejecting the non-RFC-8259 constants is what actually pins
+    # CAP-3's "JSON output validates" success signal.
+    def _reject(token):
+        raise AssertionError(f"non-RFC-8259 token in envelope: {token}")
+
+    json.loads(json.dumps(result), parse_constant=_reject)
 
 
 @pytest.mark.parametrize(
@@ -348,3 +372,103 @@ def test_whitespace_padded_all_tier_is_accepted(seed_catalog):
     result = query.query_trending_candidates(tier=" all ")  # must not raise
 
     assert result["count"] == 1
+
+
+def test_whitespace_padded_period_is_accepted(seed_catalog):
+    """Follow-up review finding, Story 13.3: `_validate_tier` stripped but
+    `_validate_period` did not, so the SAME padding was accepted on one flag and
+    rejected on the other (`--tier " all "` worked, `--period " weekly "` raised)."""
+    df = pd.DataFrame(
+        [
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
+                 reason=_TIER1_REASON, stars_total=1200),
+        ]
+    )
+    seed_catalog(df)
+
+    result = query.query_trending_candidates(period=" weekly ")  # must not raise
+
+    assert result["count"] == 1
+    assert result["filters"]["period"] == "weekly"  # normalized, not echoed padded
+
+
+def test_missing_period_column_empties_rather_than_ignoring_the_filter(seed_catalog):
+    """Follow-up review finding, Story 13.3 (verified live): the period filter was
+    guarded by `and "period" in df.columns`, so a frame WITHOUT that column silently
+    skipped the filter entirely and returned every row — while `filters.period` still
+    reported the value the caller asked for. A filter that cannot be evaluated must
+    never be reported as satisfied (Boundaries & Constraints), which is exactly what
+    the `stars_total` branch already did."""
+    df = pd.DataFrame(
+        [
+            {"repo_full_name": "a/x", "tier": "1", "reason": _TIER1_REASON,
+             "stars_total": 1000},
+            {"repo_full_name": "b/y", "tier": "1", "reason": _TIER1_REASON,
+             "stars_total": 900},
+        ]
+    )
+    seed_catalog(df)
+
+    result = query.query_trending_candidates()
+
+    assert result["count"] == 0
+    # ...but an explicit opt-out of the filter needs no column and still works.
+    assert query.query_trending_candidates(period="all")["count"] == 2
+
+
+def test_missing_reason_column_never_leaks_an_already_on_cf_row(seed_catalog):
+    """Follow-up review finding, Story 13.3 (verified live): with no `reason` column
+    the `--not-on-cf` filter was skipped silently, so an already-on-conda-forge repo
+    could be returned under the DEFAULT filters — the one row CAP-5's Mason handoff
+    must never be handed."""
+    df = pd.DataFrame(
+        [
+            {"repo_full_name": "carol/onconda", "tier": "skip", "period": "weekly",
+             "stars_total": 5000},
+        ]
+    )
+    seed_catalog(df)
+
+    result = query.query_trending_candidates(tier="skip")
+
+    assert result["count"] == 0
+    # `--all` asks for no on-cf filtering at all, so it needs no `reason` column.
+    assert query.query_trending_candidates(tier="skip", not_on_cf=False)["count"] == 1
+
+
+def test_missing_tier_column_empties_rather_than_ignoring_the_filter(seed_catalog):
+    """Follow-up review finding, Story 13.3: same silent-skip shape as the period and
+    reason filters."""
+    df = pd.DataFrame(
+        [
+            {"repo_full_name": "a/x", "period": "weekly", "reason": _TIER1_REASON,
+             "stars_total": 1000},
+        ]
+    )
+    seed_catalog(df)
+
+    assert query.query_trending_candidates()["count"] == 0
+    assert query.query_trending_candidates(tier="all")["count"] == 1
+
+
+def test_integral_stars_total_survives_an_unrelated_null_row(seed_catalog):
+    """Follow-up review finding, Story 13.3 (verified live): `pd.to_numeric` widens the
+    column to float64 as soon as ANY row is null, so one unrelated null flipped every
+    OTHER row's emitted `stars_total` from `1200` to `1200.0` — a machine-readable
+    type that depended on unrelated rows, and `1200.0` in the operator's table."""
+    df = pd.DataFrame(
+        [
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
+                 reason=_TIER1_REASON, stars_total=1200),
+            _row(repo_full_name="erin/nostar", period="weekly", tier="1",
+                 reason=_TIER1_REASON, stars_total=None),  # excluded, but widens dtype
+        ]
+    )
+    seed_catalog(df)
+
+    result = query.query_trending_candidates()
+
+    assert result["count"] == 1
+    stars = result["candidates"][0]["stars_total"]
+    assert stars == 1200
+    assert isinstance(stars, int) and not isinstance(stars, bool)
