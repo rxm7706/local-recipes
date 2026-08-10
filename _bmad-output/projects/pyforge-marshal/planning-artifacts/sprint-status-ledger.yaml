@@ -117,7 +117,7 @@ development_status:
   9-4-legacy-convention-detection: backlog
   9-5-manifest-coverage-check: backlog
   9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: backlog
-  epic-1: backlog
+  epic-1: done
   epic-1-retrospective: optional
   epic-10: backlog
   epic-10-retrospective: optional

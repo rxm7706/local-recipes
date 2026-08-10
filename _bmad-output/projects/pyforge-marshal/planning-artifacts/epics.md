@@ -87,11 +87,11 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 
 | Epic | Title | User value delivered | Stories | Effort |
 |---|---|---|---|---|
-| **E1** | Provisioned, verified loop homes | The operator can create an isolated, policy-composed, preflight-verified place for a loop to run — and prove two of them are isolated | 10 | ~15 days |
+| **E1** | Provisioned, verified loop homes | The operator can create an isolated, policy-composed, preflight-verified place for a loop to run — and prove two of them are isolated | 12 | ~15 days |
 | **E2** | Gates you can run | The operator or CI can evaluate the gate standalone and get a verdict that never false-greens | 7 | ~9 days |
-| **E3** | Supervised unattended runs | The operator can launch a gated run detached and have it watched — idle strands caught, budgets enforced, escalations surfaced | 8 | ~14 days |
-| **E4** | Landing with a durable paper trail | The operator can land a wave and have every merged story's spec survive teardown, automatically | 10 | ~10 days |
-| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 6 | ~5 days |
+| **E3** | Supervised unattended runs | The operator can launch a gated run detached and have it watched — idle strands caught, budgets enforced, escalations surfaced | 10 | ~14 days |
+| **E4** | Landing with a durable paper trail | The operator can land a wave and have every merged story's spec survive teardown, automatically | 15 | ~10 days |
+| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 7 | ~5 days |
 | **E6** | Portability proven | The operator can run the method on another agent and hold a dated artifact proving it | 9 | ~12 days |
 | **E7** | Foundation & the write guard | The seed installer has a package, an error taxonomy, and a write primitive nothing can route around | 6 | ~7 days |
 | **E8** | The managed-region engine | A team's own file can carry a tool-owned span that upgrades without touching the rest | 5 | ~8 days |
@@ -99,11 +99,14 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E10** | Materialize & the core verbs | `marshal seed check` / `adopt` / `init` work, each the previous plus one capability | 7 | ~12 days |
 | **E11** | Derive, migrate & update | An installed repo takes a later model version with no hand edits | 6 | ~10 days |
 | **E12** | Packaging, oracle & hardening | The installer ships, runs offline, and proves it never writes where it must not | 6 | ~8 days |
-| **Total** | | | **86** | **~119 days ≈ 24 weeks single-builder** |
+| **E13** | Surface drift reconciliation | The spec-surface gate can be cleared honestly, one spec at a time, and its signal trusted | 7 | (shipped) |
+| **Total** | | | **103** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
-*Story counts are ground truth as of 2026-08-08, verified three ways: this document's own
-`### Story` headings, `sprint-status-ledger.yaml`'s story keys, and the per-epic totals — all
-three agree at 86 (E1-E6 = 50, E7-E12 = 36). **Effort is NOT re-estimated**; E1-E6 figures
+*Story counts re-verified 2026-08-10 (Phase 1 audit): this document's `### Story` headings
+and `sprint-status-ledger.yaml`'s story keys agree at **103** (E1-E6 = 60, E7-E12 = 36,
+E13 = 7). The 2026-08-08 note claiming "all three agree at 86" was false when written —
+E1/E3/E4/E5 counts and the E13 row were stale in this table while the headings and ledger
+already carried the larger truth. **Effort is NOT re-estimated**; E1-E6 figures
 still reflect the original per-epic scope and E7-E12 carry the installer's own estimates.
 Treat the day figures as understated pending a full re-estimate.*
 
@@ -1434,6 +1437,21 @@ never-write guard, the manifest schema and loader, the actual V1 model manifest,
 Copier fit spike. **Nothing else can be built safely until the guard exists** — every
 subsequent component assumes writes are already policed.
 
+**Audit note (Phase 1 backlog-truth, 2026-08-10, amended post-blind-review —
+`planning-artifacts/implementation-readiness-report-2026-08-10.md`).** All E7-E12 FR/AD
+citations were mechanically re-issued this date from the architecture's recorded 2026-08-08
+mapping (satellite `FR1..FR62` → `FR-66..FR-127`, `AD-01..15` → `AD-51..65`; 195 references;
+the retired `NFR-O1` → `NFR-12` per the PRD's own retirement row; S-12.5's typer/rich AC
+re-issued to the *amended* AD-51, which forbids what the original ordered). **The `genesis`
+naming contradiction is architecture-INTERNAL, not story-vs-spec**: Part II's preamble
+retires the name and AD-70 mandates one argparse tree — but **AD-64 and FR-118 still
+mandate `pyforge-genesis` / `genesis = pyforge.genesis.cli:main` verbatim**, and Story 7.1
+faithfully transcribes AD-64. Do not dispatch 7.1 (or any story binding the
+package/module/CLI name) until `bmad-correct-course` resolves the architecture's own
+split — the session must re-issue **AD-64, FR-118, and Part II's body text** along with the
+story ACs; re-issuing the stories against the current upstream would re-transcribe the name
+being removed. 8-5 stays correctly blocked on its cross-epic dep (S-10.2).
+
 ### Story 7.1: Package skeleton as a pixi workspace member
 
 As the Genesis builder,
@@ -1441,7 +1459,7 @@ I want a buildable `pyforge-genesis` package at `src/shared/packages/pyforge-gen
 So that every later story has a stable, importable home that matches the repo's existing
 pyforge packaging convention.
 
-**Type:** infra • **Effort:** S • **Deps:** none • **FR/AD:** AD-14, NFR-C1, NFR-C4
+**Type:** infra • **Effort:** S • **Deps:** none • **FR/AD:** AD-64, NFR-C1, NFR-C4
 
 **Acceptance Criteria:**
 
@@ -1468,7 +1486,7 @@ I want distinct, documented exit codes per failure mode,
 So that automation can distinguish "repo is non-conformant" from "you gave me bad arguments"
 from "Genesis broke."
 
-**Type:** foundation • **Effort:** XS • **Deps:** S-7.1 • **FR/AD:** FR61, P-10
+**Type:** foundation • **Effort:** XS • **Deps:** S-7.1 • **FR/AD:** FR-126, P-10
 
 **Acceptance Criteria:**
 
@@ -1490,7 +1508,7 @@ I want every byte written to a target repo to pass through one guarded primitive
 So that the never-write set (Tier-0 Dreams, Tier-2 planning artifacts, Tier-3, legacy specs,
 BMAD installer files) is structurally unreachable rather than merely policy.
 
-**Type:** foundation • **Effort:** M • **Deps:** S-7.2 • **FR/AD/P:** FR6, FR35, AD-11,
+**Type:** foundation • **Effort:** M • **Deps:** S-7.2 • **FR/AD/P:** FR-71, FR-100, AD-61,
 NFR-R4, P-01
 
 **Acceptance Criteria:**
@@ -1515,8 +1533,8 @@ As the Genesis engine,
 I want the model declared as validated data addressed by stable artifact ids,
 So that adding a model artifact never requires an engine code change.
 
-**Type:** foundation • **Effort:** M • **Deps:** S-7.2 • **FR/AD/P:** FR1, FR2, FR3, FR5,
-FR6, AD-05, A-02, A-05, NFR-M1, P-11
+**Type:** foundation • **Effort:** M • **Deps:** S-7.2 • **FR/AD/P:** FR-66, FR-67, FR-68, FR-70,
+FR-71, AD-55, A-02, A-05, NFR-M1, P-11
 
 **Acceptance Criteria:**
 
@@ -1543,7 +1561,7 @@ As an adopting repository,
 I want the operating model declared completely and correctly,
 So that what Genesis installs is exactly the model this repo proved.
 
-**Type:** content • **Effort:** L • **Deps:** S-7.4 • **FR/AD:** FR1, FR6, FR53, PRD
+**Type:** content • **Effort:** L • **Deps:** S-7.4 • **FR/AD:** FR-66, FR-71, FR-118, PRD
 § Extraction Manifest
 
 **Acceptance Criteria:**
@@ -1575,7 +1593,7 @@ As the Genesis architect,
 I want the five load-bearing Copier behaviors proven on 9.17 before E10 is built,
 So that a wrong assumption changes the design now rather than after seven stories depend on it.
 
-**Type:** spike • **Effort:** S • **Deps:** S-7.1 • **FR/AD:** AD-02, AD-04, A-04, FR55
+**Type:** spike • **Effort:** S • **Deps:** S-7.1 • **FR/AD:** AD-52, AD-54, A-04, FR-120
 
 **Acceptance Criteria:**
 
@@ -1585,7 +1603,7 @@ So that a wrong assumption changes the design now rather than after seven storie
 **And** `skip_if_exists` preserves a pre-existing file while creating its siblings
 **And** `data=` combined with `defaults=True` fully suppresses interactive prompting
 **And** the answers-file path is template-configurable to `.genesis/.copier-answers.yml`
-(**if not**, AD-02's fallback triggers and the finding is recorded in the story's dev notes)
+(**if not**, AD-52's fallback triggers and the finding is recorded in the story's dev notes)
 **And** `run_update` with `vcs_ref` orders correctly against PEP 440 tags
 **And** the spike's findings are written into the story record; any failure raises a
 `correct-course` before E10 begins
@@ -1606,7 +1624,7 @@ As a model artifact in any file format,
 I want one canonical marker grammar rendered in the right comment syntax,
 So that regions are unambiguous, greppable, and self-describing.
 
-**Type:** foundation • **Effort:** S • **Deps:** S-7.4 • **FR/AD:** FR43, FR45, AD-03
+**Type:** foundation • **Effort:** S • **Deps:** S-7.4 • **FR/AD:** FR-108, FR-110, AD-53
 
 **Acceptance Criteria:**
 
@@ -1629,7 +1647,7 @@ As the detect stage,
 I want to locate every managed region in a file precisely and refuse malformed ones,
 So that substitution operates on a span that is provably correct.
 
-**Type:** foundation • **Effort:** M • **Deps:** S-8.1 • **FR/AD/P:** FR48, AD-03, P-06
+**Type:** foundation • **Effort:** M • **Deps:** S-8.1 • **FR/AD/P:** FR-113, AD-53, P-06
 
 **Acceptance Criteria:**
 
@@ -1653,7 +1671,7 @@ As `marshal seed update`,
 I want to replace a region's body by pure byte-span substitution,
 So that a half-merged or conflict-marked file is not representable.
 
-**Type:** foundation • **Effort:** M • **Deps:** S-8.2, S-7.3 • **FR/AD/P:** FR44, NFR-R3,
+**Type:** foundation • **Effort:** M • **Deps:** S-8.2, S-7.3 • **FR/AD/P:** FR-109, NFR-R3,
 P-06, P-01
 
 **Acceptance Criteria:**
@@ -1678,7 +1696,7 @@ As `marshal seed adopt`,
 I want to insert a region into a pre-existing file at a declared anchor,
 So that a team's `CLAUDE.md` gains the model content without Genesis guessing at structure.
 
-**Type:** feature • **Effort:** M • **Deps:** S-8.2, S-8.3 • **FR/AD:** FR46, AD-06
+**Type:** feature • **Effort:** M • **Deps:** S-8.2, S-8.3 • **FR/AD:** FR-111, AD-56
 
 **Acceptance Criteria:**
 
@@ -1694,7 +1712,7 @@ there is none
 **And** the chosen anchor (or the append fallback) is **named in the plan** so a reviewer can
 veto placement before apply
 **And** inserting into a file that already has the region is a no-op that reports
-`already-present` (idempotence, AD-10)
+`already-present` (idempotence, AD-60)
 **And** insertion into an absent file creates it with only the region and a minimal header
 
 ### Story 8.5: Marker deletion as a sanctioned opt-out
@@ -1703,7 +1721,7 @@ As a repo maintainer who rejects a model convention,
 I want deleting the markers to be a permanent, greppable opt-out,
 So that I can diverge deliberately without fighting the tool every update.
 
-**Type:** feature • **Effort:** S • **Deps:** S-8.4, S-10.2 • **FR/AD:** FR47, AD-08
+**Type:** feature • **Effort:** S • **Deps:** S-8.4, S-10.2 • **FR/AD:** FR-112, AD-58
 
 **Acceptance Criteria:**
 
@@ -1730,7 +1748,7 @@ As a CI pipeline,
 I want every conformance problem expressed as a typed finding with a documented remedy,
 So that failures are actionable without reading Genesis's source.
 
-**Type:** foundation • **Effort:** S • **Deps:** S-7.2 • **FR/AD/P:** FR25, AD-04, NFR-M3, P-10
+**Type:** foundation • **Effort:** S • **Deps:** S-7.2 • **FR/AD/P:** FR-90, AD-54, NFR-M3, P-10
 
 **Acceptance Criteria:**
 
@@ -1738,7 +1756,7 @@ So that failures are actionable without reading Genesis's source.
 **When** any check produces a finding
 **Then** it is a `Finding(severity, type, path, message, remedy)` with severity from the ladder
 `HARD` / `DRIFT` / `INFO` (design borrowed from `bmad_drift_check.py`, **not imported or
-vendored** — AD-04)
+vendored** — AD-54)
 **And** finding types are a closed enum covering at minimum: `artifact-missing`,
 `managed-file-modified`, `managed-region-modified`, `managed-region-missing`, `derived-stale`,
 `model-behind`, `state-invalid`, `never-write-violation`, `referenced-dep-missing`,
@@ -1754,7 +1772,7 @@ As `marshal seed adopt`,
 I want each manifest artifact classified against the target repo,
 So that the plan reflects what is actually there rather than what the model assumes.
 
-**Type:** feature • **Effort:** M • **Deps:** S-7.4, S-8.2, S-9.1 • **FR/AD/P:** FR15, P-03
+**Type:** feature • **Effort:** M • **Deps:** S-7.4, S-8.2, S-9.1 • **FR/AD/P:** FR-80, P-03
 
 **Acceptance Criteria:**
 
@@ -1777,7 +1795,7 @@ As the update path,
 I want a precise signal that a tool-owned artifact was hand-edited,
 So that Genesis refuses rather than silently overwriting a human's change.
 
-**Type:** feature • **Effort:** S • **Deps:** S-9.2, S-8.2 • **FR/AD/P:** FR41, FR21, P-07
+**Type:** feature • **Effort:** S • **Deps:** S-9.2, S-8.2 • **FR/AD/P:** FR-106, FR-86, P-07
 
 **Acceptance Criteria:**
 
@@ -1797,7 +1815,7 @@ As a repo with a superseded-but-live convention,
 I want it recognized, recorded, and left completely alone,
 So that adopting the model never destroys work still in flight.
 
-**Type:** feature • **Effort:** S • **Deps:** S-9.2 • **FR/AD:** FR16, AD-09
+**Type:** feature • **Effort:** S • **Deps:** S-9.2 • **FR/AD:** FR-81, AD-59
 
 **Acceptance Criteria:**
 
@@ -1816,7 +1834,7 @@ As the Genesis maintainer,
 I want an unclassified artifact to be a build failure,
 So that the model's coverage cannot silently lapse the way undocumented conventions do.
 
-**Type:** feature • **Effort:** S • **Deps:** S-7.5, S-9.1 • **FR/AD:** FR4, SC-10
+**Type:** feature • **Effort:** S • **Deps:** S-7.5, S-9.1 • **FR/AD:** FR-69, SC-10
 
 **Acceptance Criteria:**
 
@@ -1838,8 +1856,8 @@ As a human reviewing a change before it happens,
 I want the plan to be a complete, serializable, self-validating artifact,
 So that "review then apply" is a real gate rather than a printed summary.
 
-**Type:** feature • **Effort:** M • **Deps:** S-9.2, S-9.3, S-9.4 • **FR/AD/P:** FR17, AD-07,
-NFR-O1, P-04, P-05
+**Type:** feature • **Effort:** M • **Deps:** S-9.2, S-9.3, S-9.4 • **FR/AD/P:** FR-82, AD-57,
+NFR-12, P-04, P-05
 
 **Acceptance Criteria:**
 
@@ -1851,7 +1869,7 @@ chosen anchor (where applicable), and a rationale string (P-05)
 **And** the plan carries a `repo_fingerprint` = git HEAD + dirty flag + per-artifact content
 hashes for every artifact it names
 **And** an empty plan (zero actions) is a first-class, valid result — the idempotence signal
-(AD-10)
+(AD-60)
 **And** the plan is round-trippable: serialize → load → identical
 **And** the plan file is written to `.genesis/plan.json` and is covered by the model's own
 `.gitignore` region; `--plan-out <path>` redirects it
@@ -1873,8 +1891,8 @@ I want exactly one module that knows Copier exists,
 So that the engine can be version-bumped or replaced behind one boundary and the
 public-API-only rule is enforceable.
 
-**Type:** foundation • **Effort:** M • **Deps:** S-7.6, S-7.3 • **FR/AD/P:** FR53, FR54, FR55,
-FR56, FR36, NFR-S1, NFR-S3, A-04, P-02
+**Type:** foundation • **Effort:** M • **Deps:** S-7.6, S-7.3 • **FR/AD/P:** FR-118, FR-119, FR-120,
+FR-121, FR-101, NFR-S1, NFR-S3, A-04, P-02
 
 **Acceptance Criteria:**
 
@@ -1885,10 +1903,10 @@ see Copier types
 **And** it calls only `run_copy`, `run_update`, `run_recopy` with documented kwargs — no
 `Worker` attribute access, no private-module imports (asserted by S-12.4's import test)
 **And** `copier` is imported in **this module only** (P-02)
-**And** in-package templates are the default source; `--template <path|url>` overrides (FR54)
-**And** Copier's code-executing template features are reachable only with `--unsafe` (FR56,
+**And** in-package templates are the default source; `--template <path|url>` overrides (FR-119)
+**And** Copier's code-executing template features are reachable only with `--unsafe` (FR-121,
 NFR-S1)
-**And** `--force` maps to `run_recopy` and requires explicit confirmation (FR36)
+**And** `--force` maps to `run_recopy` and requires explicit confirmation (FR-101)
 **And** a template that attempts to write outside its manifest-declared paths is rejected
 (NFR-S3) — Copier's output is reconciled against the plan before any byte is committed
 **And** all writes still route through `fs` (P-01), not Copier's own filesystem access, or the
@@ -1902,8 +1920,8 @@ I want a schema-validated, tool-owned state file written last and atomically,
 So that the repo and its state can never disagree — the failure mode that cost this repo ten
 hours with the `bmad-switch` marker.
 
-**Type:** foundation • **Effort:** M • **Deps:** S-7.3 • **FR/AD/P:** FR37, FR38, FR39, FR40,
-FR41, FR42, AD-02, AD-08, P-08
+**Type:** foundation • **Effort:** M • **Deps:** S-7.3 • **FR/AD/P:** FR-102, FR-103, FR-104, FR-105,
+FR-106, FR-107, AD-52, AD-58, P-08
 
 **Acceptance Criteria:**
 
@@ -1914,13 +1932,13 @@ FR41, FR42, AD-02, AD-08, P-08
 `legacy[]`, `migrations_applied[]`, `opted_out[]`
 **And** it carries a prominent do-not-hand-edit header
 **And** it validates against `state/schema.json` on every read; an invalid file produces
-`state-invalid` (exit 5), **never a traceback** (FR39)
-**And** it is git-tracked (FR42) and **not** in the model's gitignore region
+`state-invalid` (exit 5), **never a traceback** (FR-104)
+**And** it is git-tracked (FR-107) and **not** in the model's gitignore region
 **And** it is written **last**, after all file writes succeed, in one atomic replace (P-08) —
 asserted by a fault-injection test that fails a mid-apply write and confirms state is unchanged
 **And** Copier's answers file is treated as opaque: Genesis never reads or hand-edits it
-(FR40), and answers are re-supplied from Genesis state via `data=` on every Copier call
-**And** `managed[]` records enough for a future `eject` (AD-08) — asserted by a test that
+(FR-105), and answers are re-supplied from Genesis state via `data=` on every Copier call
+**And** `managed[]` records enough for a future `eject` (AD-58) — asserted by a test that
 reconstructs the removal set from state alone
 
 ### Story 10.3: The apply runner — transactional, guarded
@@ -1929,7 +1947,7 @@ As a repo owner,
 I want apply to either complete or leave nothing behind,
 So that an interrupted install never leaves a half-configured repo.
 
-**Type:** feature • **Effort:** M • **Deps:** S-10.1, S-10.2, S-8.3, S-9.6 • **FR/AD/P:** FR18,
+**Type:** feature • **Effort:** M • **Deps:** S-10.1, S-10.2, S-8.3, S-9.6 • **FR/AD/P:** FR-83,
 NFR-R1, NFR-S3, P-04, P-07
 
 **Acceptance Criteria:**
@@ -1937,7 +1955,7 @@ NFR-R1, NFR-S3, P-04, P-07
 **Given** a `Plan` and a matching repo
 **When** apply runs
 **Then** it consumes **only** the plan and never re-derives state (P-04)
-**And** it refuses a plan whose `repo_fingerprint` no longer matches the repo (AD-07) with a
+**And** it refuses a plan whose `repo_fingerprint` no longer matches the repo (AD-57) with a
 `stale-plan` precondition error (exit 3)
 **And** every write goes through `fs` (P-01)
 **And** apply performs **no** hash comparisons — it trusts detect (P-07)
@@ -1952,7 +1970,7 @@ As a repo owner,
 I want Genesis to refuse loudly in the situations where it could do harm,
 So that git remains a complete undo and no hand-edit is ever silently discarded.
 
-**Type:** feature • **Effort:** S • **Deps:** S-10.3, S-9.3 • **FR/AD:** FR20, FR21, FR22,
+**Type:** feature • **Effort:** S • **Deps:** S-10.3, S-9.3 • **FR/AD:** FR-85, FR-86, FR-87,
 NFR-R2, SC-04, SC-05
 
 **Acceptance Criteria:**
@@ -1964,7 +1982,7 @@ NFR-R2, SC-04, SC-05
 **And** a hand-edited managed file or managed region causes refusal with the specific artifact
 and region named, unless `--force` (exit 3) — SC-04
 **And** `--skip <glob>` records the pattern in `state.skips[]` and is honored on every
-subsequent run (FR22)
+subsequent run (FR-87)
 **And** skipped artifacts appear in the plan as `skipped` actions with the matching pattern
 named, so a skip is visible rather than invisible
 **And** dry-run invocations bypass the clean-worktree requirement (reading is always safe)
@@ -1976,20 +1994,20 @@ As a CI pipeline,
 I want a read-only conformance verb with a non-zero exit,
 So that a repo cannot silently drift from the model it installed.
 
-**Type:** feature • **Effort:** M • **Deps:** S-9.6, S-9.1, S-10.2 • **FR/AD:** FR23, FR24,
-FR25, FR26, FR27, FR28, NFR-P1
+**Type:** feature • **Effort:** M • **Deps:** S-9.6, S-9.1, S-10.2 • **FR/AD:** FR-88, FR-89,
+FR-90, FR-91, FR-92, FR-93, NFR-P1
 
 **Acceptance Criteria:**
 
 **Given** an adopted repo
 **When** `marshal seed check` runs
 **Then** it performs detect + plan and **never writes** — including not writing state, not
-writing `plan.json`, and not creating `.genesis/` (FR23), asserted against a write-blocking
+writing `plan.json`, and not creating `.genesis/` (FR-88), asserted against a write-blocking
 fixture
-**And** it exits non-zero on any HARD finding; `--strict` additionally fails on DRIFT (FR24)
-**And** `--json` emits the full findings report, stable and CI-annotatable (FR26)
+**And** it exits non-zero on any HARD finding; `--strict` additionally fails on DRIFT (FR-89)
+**And** `--json` emits the full findings report, stable and CI-annotatable (FR-91)
 **And** it reports the repo's `model_version` against the bundled model version as
-`model-behind` / current / ahead (FR27)
+`model-behind` / current / ahead (FR-92)
 **And** it completes in **< 5 s** on a `local-recipes`-sized repo (NFR-P1), asserted by a timed
 test
 **And** it runs correctly on a repo that has never been adopted (reports every artifact absent
@@ -2003,22 +2021,22 @@ As a team with a working repository,
 I want the model layered on without disturbing what already runs,
 So that adoption is a reviewable, revertible, and repeatable operation.
 
-**Type:** feature • **Effort:** L • **Deps:** S-10.3, S-10.4, S-10.5, S-8.4 • **FR/AD:** FR14,
-FR15, FR16, FR17, FR18, FR19, FR22, AD-10
+**Type:** feature • **Effort:** L • **Deps:** S-10.3, S-10.4, S-10.5, S-8.4 • **FR/AD:** FR-79,
+FR-80, FR-81, FR-82, FR-83, FR-84, FR-87, AD-60
 
 **Acceptance Criteria:**
 
 **Given** an existing repository
 **When** `marshal seed adopt` runs with no flags
-**Then** it is **dry-run**: a plan is written and printed, and no repo file changes (FR14)
+**Then** it is **dry-run**: a plan is written and printed, and no repo file changes (FR-79)
 **And** `--apply` executes the plan; `--yes` executes without interactive confirmation
 (unattended/CI use)
 **And** artifacts already present are preserved unless their class is `copied-managed` or
-`generated-derived` (FR18)
-**And** `present-legacy` artifacts are preserved and recorded, never modified (FR16)
+`generated-derived` (FR-83)
+**And** `present-legacy` artifacts are preserved and recorded, never modified (FR-81)
 **And** a **second** `adopt` on an unchanged repo produces an **empty plan and writes nothing**
-(FR19, SC-03, AD-10)
-**And** `--agents <list>` adds adapters idempotently on a repo already adopted (FR51 support)
+(FR-84, SC-03, AD-60)
+**And** `--agents <list>` adds adapters idempotently on a repo already adopted (FR-116 support)
 **And** the end-to-end journey from PRD J2 is covered by an integration test: a repo with an
 existing `CLAUDE.md` and a legacy convention adopts cleanly, its build-relevant files
 untouched
@@ -2029,8 +2047,8 @@ As a maintainer starting a new project,
 I want a complete Dream-first repository in one command,
 So that day zero already has the tiers, the contract, the wiring, and a Dream to write into.
 
-**Type:** feature • **Effort:** M • **Deps:** S-10.6 • **FR/AD:** FR7, FR8, FR9, FR10, FR11,
-FR12, FR13
+**Type:** feature • **Effort:** M • **Deps:** S-10.6 • **FR/AD:** FR-72, FR-73, FR-74, FR-75, FR-76,
+FR-77, FR-78
 
 **Acceptance Criteria:**
 
@@ -2038,16 +2056,16 @@ FR12, FR13
 **When** `marshal seed init <path> --slug <slug> --agents claude,cursor` runs
 **Then** every manifest artifact whose `applies_to` includes `init` is materialized
 **And** `docs/dreams/<slug>.md` is seeded with valid Tier-0 frontmatter (`title`, `type: dream`,
-`owner`, `status: seeded`) — and it is the **only** Dream written (FR9)
+`owner`, `status: seeded`) — and it is the **only** Dream written (FR-74)
 **And** `_bmad-output/projects/<slug>/{planning-artifacts,implementation-artifacts}`,
 `.bmad-config.toml`, `planning-artifacts/specs/README.md`, and `PROJECTS.md` with the first row
-are created (FR10)
+are created (FR-75)
 **And** the `.gitignore` model region covers `_bmad-output/projects/*/implementation-artifacts/`,
 the two `_bmad-output` compatibility symlinks, `_bmad/custom/.active-project`,
-`.bmad-loop/{runs,cache}/`, and `_bmad-output/projects/*/.bmad-config.user.toml` (FR11)
-**And** state records `mode: init` plus both versions, agents, and per-artifact hashes (FR12)
+`.bmad-loop/{runs,cache}/`, and `_bmad-output/projects/*/.bmad-config.user.toml` (FR-76)
+**And** state records `mode: init` plus both versions, agents, and per-artifact hashes (FR-77)
 **And** init into a **non-empty** directory is refused unless `--force`, with the message
-directing the user to `adopt` (FR13)
+directing the user to `adopt` (FR-78)
 **And** `marshal seed check` on the fresh repo is green
 **And** init runs the same `resolve → detect → plan → apply` pipeline as adopt — asserted by a
 test that init produces a plan artifact identical in shape
@@ -2066,8 +2084,8 @@ As four different coding agents,
 I want one contract rendered into whichever entry file I read,
 So that the four adapter files cannot drift from each other or from `AGENTS.md`.
 
-**Type:** feature • **Effort:** M • **Deps:** S-7.5, S-8.4 • **FR/AD:** FR49, FR50, FR51, FR52,
-AD-13, NFR-M1
+**Type:** feature • **Effort:** M • **Deps:** S-7.5, S-8.4 • **FR/AD:** FR-114, FR-115, FR-116, FR-117,
+AD-63, NFR-M1
 
 **Acceptance Criteria:**
 
@@ -2076,14 +2094,14 @@ Dream-first workflow)
 **When** the derive stage runs
 **Then** `.cursor/rules/specs.mdc`, `GEMINI.md`, and `.github/copilot-instructions.md` are
 generated as **whole files** (`generated-derived`), each wrapping the same contract in its
-tool-specific framing (FR50)
+tool-specific framing (FR-115)
 **And** `AGENTS.md` and `CLAUDE.md` receive the contract as **managed regions**, never by
-overwrite (FR52)
-**And** the contract has exactly one source in the manifest (FR49) — asserted by a test that
+overwrite (FR-117)
+**And** the contract has exactly one source in the manifest (FR-114) — asserted by a test that
 mutates the source and confirms all four outputs change
 **And** derived output is deterministic: two runs produce byte-identical files
 **And** adapter selection is per-repo, recorded in `state.agents[]`, and extensible by adding a
-manifest entry plus a wrapper template with **no engine change** (FR51, NFR-M1) — asserted by
+manifest entry plus a wrapper template with **no engine change** (FR-116, NFR-M1) — asserted by
 adding a fifth dummy adapter in a test
 **And** the tier table rendered into `GEMINI.md` matches the tier table rendered into
 `AGENTS.md` semantically (same tiers, same paths, same git dispositions)
@@ -2095,7 +2113,7 @@ I want the project index and the two BMAD artifact symlinks derived from what ac
 So that the index cannot go stale and the marker/symlink desync cannot recur.
 
 **Type:** feature • **Effort:** S • **Deps:** S-11.1 • **FR/AD:** FR (generated-derived class),
-AD-13
+AD-63
 
 **Acceptance Criteria:**
 
@@ -2118,7 +2136,7 @@ As an installed repo,
 I want breaking model changes absorbed by ordered, once-only migrations,
 So that a model upgrade is a scripted operation rather than a manual chore in every repo.
 
-**Type:** feature • **Effort:** M • **Deps:** S-10.3, S-10.2 • **FR/AD/P:** FR31, FR32, AD-12,
+**Type:** feature • **Effort:** M • **Deps:** S-10.3, S-10.2 • **FR/AD/P:** FR-96, FR-97, AD-62,
 SC-07, P-12
 
 **Acceptance Criteria:**
@@ -2129,9 +2147,9 @@ SC-07, P-12
 **And** each migration is a **pure function** `(RepoView, State) -> Plan` that performs no
 writes (P-12) — asserted against a write-blocking fixture
 **And** applied migrations are appended to `state.migrations_applied[]` and **never re-run**
-(FR31) — asserted by running update twice
+(FR-96) — asserted by running update twice
 **And** a migration targeting a `copied-seeded` artifact emits an **offer** action that apply
-skips unless `--include-seeded` is passed (FR32)
+skips unless `--include-seeded` is passed (FR-97)
 **And** a migration targeting a never-write path fails at plan time, not apply time
 **And** **SC-07 is proven**: a simulated model v1 → v2 breaking change (a tier-table rule
 change plus a renamed managed artifact) is absorbed in a fixture repo with **zero manual
@@ -2145,23 +2163,23 @@ As a maintainer taking a model upgrade,
 I want a plan I can review and then apply,
 So that an upgrade to my repo's governance is never a surprise.
 
-**Type:** feature • **Effort:** M • **Deps:** S-11.3, S-11.1, S-8.3 • **FR/AD:** FR29, FR33,
-FR34, FR35, FR36, SC-01
+**Type:** feature • **Effort:** M • **Deps:** S-11.3, S-11.1, S-8.3 • **FR/AD:** FR-94, FR-98,
+FR-99, FR-100, FR-101, SC-01
 
 **Acceptance Criteria:**
 
 **Given** a repo behind the bundled model version
 **When** `marshal seed update` runs with no flags
 **Then** a plan is written naming every migration and every file action, and **nothing is
-changed** (FR29)
+changed** (FR-94)
 **And** `--run` applies the plan
 **And** `copied-managed` files are regenerated wholesale and `generated-derived` files are
-recomputed, after detect's hash guards pass (FR33)
-**And** only the marked span of `hybrid-managed-region` files is replaced (FR34)
+recomputed, after detect's hash guards pass (FR-98)
+**And** only the marked span of `hybrid-managed-region` files is replaced (FR-99)
 **And** `copied-seeded` artifacts are untouched unless `--include-seeded`
-**And** an attempted write to the never-write set is a hard error (FR35) — see S-12.4 for the
+**And** an attempted write to the never-write set is a hard error (FR-100) — see S-12.4 for the
 standing proof
-**And** `--force` maps to `run_recopy` with explicit confirmation (FR36)
+**And** `--force` maps to `run_recopy` with explicit confirmation (FR-101)
 **And** the PRD J3 journey is covered end to end: `check` reports `model-behind` → `update`
 plans → `--run` applies → Dreams/PRDs/epics byte-identical before and after → `check` green
 (this is **SC-01**'s mechanical half)
@@ -2172,7 +2190,7 @@ As an adopting repo,
 I want Genesis to tell me which required tools are missing or below floor,
 So that the model's machinery is not installed into an environment that cannot run it.
 
-**Type:** feature • **Effort:** S • **Deps:** S-10.5 • **FR/AD:** FR30, PRD § Boundaries
+**Type:** feature • **Effort:** S • **Deps:** S-10.5 • **FR/AD:** FR-95, PRD § Boundaries
 
 **Acceptance Criteria:**
 
@@ -2182,7 +2200,7 @@ So that the model's machinery is not installed into an environment that cannot r
 bmad-loop ≥0.8.1, copier ≥9.17<10, pixi ≥0.72.2, tmux ≥3.7b)
 **And** a missing or below-floor dependency yields `referenced-dep-missing` at **DRIFT**
 severity (not HARD — the repo is still conformant, the machine is not ready)
-**And** Genesis **never installs** any referenced dependency (FR30)
+**And** Genesis **never installs** any referenced dependency (FR-95)
 **And** the probe is minimal and self-contained — it works in a repo that has **not** adopted
 `pyforge-doctor`
 **And** when `doctor` is available on PATH, Genesis delegates and reports Doctor's findings
@@ -2195,7 +2213,7 @@ As an agent reading this repo,
 I want the model to describe its own rules,
 So that the conventions are queryable rather than only narrated in prose.
 
-**Type:** feature • **Effort:** S • **Deps:** S-7.4, S-10.2 • **FR/AD:** FR60, FR62, D1
+**Type:** feature • **Effort:** S • **Deps:** S-7.4, S-10.2 • **FR/AD:** FR-125, FR-127, D1
 
 **Acceptance Criteria:**
 
@@ -2207,7 +2225,7 @@ and (for hybrid) its regions and anchors
 **And** an unknown artifact yields a helpful message listing near matches
 **And** `--json` emits the same data structurally
 **And** `marshal seed version` prints **both** the CLI version and the bundled model version, plus
-the adopted repo's model version when run inside one (FR60)
+the adopted repo's model version when run inside one (FR-125)
 **And** both verbs are read-only
 
 ---
@@ -2224,7 +2242,7 @@ As the repo,
 I want Genesis wired into the workspace exactly like `pyforge-warden`,
 So that it builds as a conda package and its landing does not red the always-on PR gates.
 
-**Type:** infra • **Effort:** M • **Deps:** S-7.1, S-11.6 • **FR/AD:** FR57, AD-14, NFR-C1,
+**Type:** infra • **Effort:** M • **Deps:** S-7.1, S-11.6 • **FR/AD:** FR-122, AD-64, NFR-C1,
 NFR-C2, NFR-C3, D3
 
 **Acceptance Criteria:**
@@ -2239,7 +2257,7 @@ no-default-feature = true }` — the lean env bmad-loop worktrees materialize
 **And** `pyforge-genesis-test` and `genesis` tasks exist
 **And** a version-range sync test asserts the `copier` pin in `pixi.toml` matches the constant
 in `engine/copier.py` (NFR-C2, warden's established pattern)
-**And** the package builds as a conda package **and** as wheel + sdist (FR57)
+**And** the package builds as a conda package **and** as wheel + sdist (FR-122)
 **And** **`environment.yaml` is regenerated and committed**
 (`pixi project export conda-environment -e build > environment.yaml`) — the ungated repo gate
 **And** the PR carries the **`maintenance` label** (change outside `recipes/`)
@@ -2256,7 +2274,7 @@ So that any divergence between the model and the repo it was extracted from fail
 the day it appears.
 
 **Type:** test • **Effort:** M • **Deps:** S-10.6, S-11.1, S-11.2 • **FR/AD:** SC-02, NFR-M2,
-AD-10
+AD-60
 
 **Acceptance Criteria:**
 
@@ -2280,13 +2298,13 @@ I want proof that Genesis makes no network calls,
 So that the model can be installed behind a firewall with confidence rather than hope.
 
 **Type:** test • **Effort:** S • **Deps:** S-10.7, S-10.5 • **FR/AD:** NFR-A1, NFR-A2, NFR-S2,
-AD-15, P-09, SC-06
+AD-65, P-09, SC-06
 
 **Acceptance Criteria:**
 
 **Given** the package with in-package templates
 **When** the meta-test inspects imports
-**Then** no module imports `requests`, `httpx`, `urllib.request`, or `socket` (AD-15, P-09)
+**Then** no module imports `requests`, `httpx`, `urllib.request`, or `socket` (AD-65, P-09)
 **And** an egress-counter test asserts **zero** network calls across `init`,
 `adopt --dry-run`, `adopt --apply`, `check`, and `update --run` (SC-06, NFR-A1)
 **And** the suite additionally runs the same set under `unshare -n` (Linux) and passes
@@ -2303,7 +2321,7 @@ As the Genesis architecture,
 I want the twelve conflict-prevention patterns enforced by executable tests,
 So that a future story cannot quietly violate an invariant the whole design rests on.
 
-**Type:** test • **Effort:** M • **Deps:** S-10.3, S-11.4 • **FR/AD/P:** P-01–P-12, FR35, SC-08,
+**Type:** test • **Effort:** M • **Deps:** S-10.3, S-11.4 • **FR/AD/P:** P-01–P-12, FR-100, SC-08,
 NFR-R4
 
 **Acceptance Criteria:**
@@ -2330,20 +2348,20 @@ As a machine and as a human,
 I want consistent flags, stable JSON, correct exit codes, and bounded runtimes,
 So that Genesis is usable unattended and predictable interactively.
 
-**Type:** test • **Effort:** M • **Deps:** S-10.7, S-11.6 • **FR/AD:** FR58, FR59, FR61, NFR-P1,
-NFR-P2, NFR-P3, NFR-O1, AD-01, AD-10, SC-03, SC-09
+**Type:** test • **Effort:** M • **Deps:** S-10.7, S-11.6 • **FR/AD:** FR-123, FR-124, FR-126, NFR-P1,
+NFR-P2, NFR-P3, NFR-12, AD-51, AD-60, SC-03, SC-09
 
 **Acceptance Criteria:**
 
 **Given** every verb
 **When** the contract suite runs
 **Then** all verbs accept `--json` and `--quiet`, and `--json` output is schema-stable across
-verbs (FR58, NFR-O1)
+verbs (FR-123, NFR-12)
 **And** all mutating verbs accept `--dry-run` explicitly, and `adopt` / `update` default to it
-(FR59)
-**And** exit codes match S-7.2's taxonomy for every failure mode, asserted case by case (FR61)
-**And** `rich` and `typer` are imported **only** in `cli.py` (AD-01), asserted by an import test
-**And** the **idempotence harness** applies AD-10's universal shape to every verb: run, then
+(FR-124)
+**And** exit codes match S-7.2's taxonomy for every failure mode, asserted case by case (FR-126)
+**And** the CLI stays argparse-only per the amended AD-51 (2026-08-08): an import test asserts **zero** `typer`/`rich` imports anywhere under `src/` — the superseded typer+rich rule is never reintroduced
+**And** the **idempotence harness** applies AD-60's universal shape to every verb: run, then
 detect+plan, assert zero actions — covering `init`, `adopt` (SC-03), and `update`
 **And** performance gates: `check` < 5 s (NFR-P1) and `adopt --dry-run` < 10 s (NFR-P2) on a
 `local-recipes`-sized fixture; `init` end-to-end < 5 min (NFR-P3, SC-09)
@@ -2742,7 +2760,7 @@ back half.
 | Story | Why it is special |
 |---|---|
 | **S-7.3** | The write guard. Everything downstream assumes it. Build it before anything writes. |
-| **S-7.6** | Spike-0 — **gates E10**. A failure changes AD-02 or promotes a bespoke materializer. |
+| **S-7.6** | Spike-0 — **gates E10**. A failure changes AD-52 or promotes a bespoke materializer. |
 | **S-8.3** | The one algorithm that cannot be delegated to Copier; AR-1 and kill criterion K-01 live here. |
 | **S-12.2** | The oracle. A non-empty plan that needs special-casing to fix triggers **K-02**. |
 | **S-12.4** | Proves SC-08 — the structural guarantee that the update path cannot touch Tier-0/Tier-2. |
@@ -2760,7 +2778,7 @@ future story adds anything under `recipes/`, both rules apply to that story.
 
 ### Functional Requirements covered
 
-All 62 FRs (FR1–FR62). No FR is deferred out of V1; the deferrals named in architecture § 7
+All 62 FRs (FR-66–FR-127). No FR is deferred out of V1; the deferrals named in architecture § 7
 (feature modules, `check --fix`, `eject`, model-as-separate-artifact, Windows parity beyond
 `init`/`check`) are all outside the FR set.
 
@@ -2771,38 +2789,38 @@ in E12, but NFR-R4 (guard at the primitive) is E7 by necessity.
 
 ### Architecture Decisions covered
 
-All 15 ADs (AD-01–AD-15) flow into specific stories. The 12 conflict-prevention patterns
+All 15 ADs (AD-51–AD-65) flow into specific stories. The 12 conflict-prevention patterns
 (P-01–P-12) are implemented throughout E7–E11 and enforced as executable tests by S-12.4.
 
 ### FR / Story Coverage Matrix
 
 | FR Range | Capability | Owning Story/Stories |
 |---|---|---|
-| FR1–FR3, FR5 | Manifest as data, five classes, deferred state | S-7.4, S-7.5 |
-| FR4 | Coverage check (no unclassified artifact) | S-9.5 |
-| FR6 | Never-write path set declared | S-7.4, S-7.5 |
-| FR7–FR13 | `marshal seed init` | S-10.7 |
-| FR14–FR19 | `marshal seed adopt` detect→plan→apply, idempotent | S-10.6, S-9.6, S-12.5 |
-| FR15–FR16 | Classification incl. `present-legacy` | S-9.2, S-9.4 |
-| FR17 | Machine-readable plan artifact | S-9.6 |
-| FR20–FR22 | Preconditions, refusals, skips | S-10.4 |
-| FR23–FR28 | `marshal seed check` | S-10.5, S-9.1 |
-| FR29 | Two-phase update | S-11.4 |
-| FR30 | Referenced-dependency verification | S-11.5 |
-| FR31–FR32 | Migration ordering, applied-once, seeded opt-in | S-11.3 |
-| FR33–FR34 | Regenerate managed / recompute derived / replace regions | S-11.4, S-8.3, S-11.1 |
-| FR35 | Never-write enforcement on update | S-7.3, S-12.4 |
-| FR36 | `--force` → `run_recopy` | S-10.1, S-11.4 |
-| FR37–FR42 | State file | S-10.2 |
-| FR43–FR48 | Managed regions | S-8.1, S-8.2, S-8.3, S-8.4, S-8.5 |
-| FR49–FR52 | Agent adapter fan-out | S-11.1 |
-| FR53–FR54 | In-package templates + `--template` override | S-7.5, S-10.1 |
-| FR55–FR56 | Copier public API only; `--unsafe` gate | S-10.1 |
-| FR57 | Distribution (conda + wheel/sdist) | S-12.1 |
-| FR58–FR59 | `--json` / `--quiet` / `--dry-run` | S-12.5 |
-| FR60 | `marshal seed version` (both versions) | S-11.6 |
-| FR61 | Distinct documented exit codes | S-7.2, S-12.5 |
-| FR62 | `marshal seed explain <artifact>` | S-11.6 |
+| FR-66–FR-68, FR-70 | Manifest as data, five classes, deferred state | S-7.4, S-7.5 |
+| FR-69 | Coverage check (no unclassified artifact) | S-9.5 |
+| FR-71 | Never-write path set declared | S-7.4, S-7.5 |
+| FR-72–FR-78 | `marshal seed init` | S-10.7 |
+| FR-79–FR-84 | `marshal seed adopt` detect→plan→apply, idempotent | S-10.6, S-9.6, S-12.5 |
+| FR-80–FR-81 | Classification incl. `present-legacy` | S-9.2, S-9.4 |
+| FR-82 | Machine-readable plan artifact | S-9.6 |
+| FR-85–FR-87 | Preconditions, refusals, skips | S-10.4 |
+| FR-88–FR-93 | `marshal seed check` | S-10.5, S-9.1 |
+| FR-94 | Two-phase update | S-11.4 |
+| FR-95 | Referenced-dependency verification | S-11.5 |
+| FR-96–FR-97 | Migration ordering, applied-once, seeded opt-in | S-11.3 |
+| FR-98–FR-99 | Regenerate managed / recompute derived / replace regions | S-11.4, S-8.3, S-11.1 |
+| FR-100 | Never-write enforcement on update | S-7.3, S-12.4 |
+| FR-101 | `--force` → `run_recopy` | S-10.1, S-11.4 |
+| FR-102–FR-107 | State file | S-10.2 |
+| FR-108–FR-113 | Managed regions | S-8.1, S-8.2, S-8.3, S-8.4, S-8.5 |
+| FR-114–FR-117 | Agent adapter fan-out | S-11.1 |
+| FR-118–FR-119 | In-package templates + `--template` override | S-7.5, S-10.1 |
+| FR-120–FR-121 | Copier public API only; `--unsafe` gate | S-10.1 |
+| FR-122 | Distribution (conda + wheel/sdist) | S-12.1 |
+| FR-123–FR-124 | `--json` / `--quiet` / `--dry-run` | S-12.5 |
+| FR-125 | `marshal seed version` (both versions) | S-11.6 |
+| FR-126 | Distinct documented exit codes | S-7.2, S-12.5 |
+| FR-127 | `marshal seed explain <artifact>` | S-11.6 |
 
 ### NFR / Story Coverage Matrix
 
@@ -2821,7 +2839,7 @@ All 15 ADs (AD-01–AD-15) flow into specific stories. The 12 conflict-preventio
 | NFR-M1 | Manifest is the single source of truth | S-7.4, S-11.1 |
 | NFR-M2 | Oracle in Genesis's own CI | S-12.2 |
 | NFR-M3 | Every finding documented with a remedy | S-9.1, S-12.6 |
-| NFR-O1 | Machine-readable plans and reports | S-9.6, S-12.5 |
+| NFR-12 | Machine-readable plans and reports | S-9.6, S-12.5 |
 
 ### Success-criteria ownership
 
