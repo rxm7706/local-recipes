@@ -2,7 +2,7 @@
 title: Atlas's own Kedro tooling gap — skills, viz publishing, IDE integration
 type: dream
 owner: atlas
-status: dreamt
+status: realized
 ---
 
 # Atlas's own Kedro tooling gap — skills, viz publishing, IDE integration
@@ -98,3 +98,9 @@ instance of that Dream's own problem statement).
   resolved as owner `atlas` (the domain knowledge these tools need is Atlas's own) with
   Steward named as the mechanism dependency for two of the three (provisioning, deployment)
   rather than the owner.
+
+- **2026-08-10** — Realized, recorded by the fleet audit (Phase 2b): atlas Epic 12
+  (12-1 kedro-skills audit-then-adopt, 12-2 publish-the-real-DAG continuously,
+  12-3 the vscode-kedro verdict) shipped its decomposition and the Spec moved
+  `draft → shipped` in the Phase 2 landing; the surviving open questions ride the
+  Phase 3 atlas chain.

@@ -2,7 +2,7 @@
 title: A deferral that nobody can see is a deferral that never happened
 type: dream
 owner: doctor
-status: dreamt
+status: specified
 ---
 
 # A deferral that nobody can see is a deferral that never happened
@@ -135,3 +135,7 @@ landing. That is a contract, not a patch.
   `_anonymous()` parser (470 anonymous vs 33 identified) after an initial grep estimate was
   identified as an upper bound and discarded. Operator asked for the Dream explicitly, on the
   grounds that repo tooling deserves a chain rather than a patch smuggled into a landing pass.
+
+- **2026-08-10** — Specified, recorded by the fleet audit (Phase 2b): the Spec's four
+  open questions were closed (`377611d5e4`) and it stands at `ready`; doctor 6-9 (the
+  sequencing dependency) landed via PRs #394/#395. Decomposition-ready.
