@@ -11,8 +11,10 @@ achievable guarantee is a **closed loop**:
 
 1. **Baseline** — `.sync-baseline.json` records the exact factory surface + git HEAD the artifacts
    were last reconciled against.
-2. **Detector** — `scripts/bmad_drift_check.py` fires on *any* divergence from that baseline, so
-   out-of-band work can never *silently* leave the docs stale; the canary always trips.
+2. **Detector** — `pyforge.doctor.sources.factory::gather` fires on *any* divergence from that
+   baseline, so out-of-band work can never *silently* leave the docs stale; the canary always
+   trips. (Story 6.9 ported the read-only verdict off `scripts/bmad_drift_check.py` into that
+   Doctor source; the script survives only as a mutation-only residual — see Step 0 and Step 3.)
 3. **Reconciler** — the **BMAD skills themselves** re-ground the artifacts against the live repo;
    then you re-stamp the baseline.
 
@@ -44,8 +46,12 @@ detector trips).
 ```bash
 pixi run -e local-recipes bmad-drift-check          # full report (exits non-zero on drift)
 pixi run -e local-recipes bmad-groundtruth          # live facts as JSON
-pixi run -e local-recipes bmad-drift-check -- --fix # auto-remediate the mechanical classes
+python scripts/bmad_drift_check.py --fix            # auto-remediate the mechanical classes
 ```
+
+The first two route through `python -m pyforge.doctor.sources bmad-drift` (the ported, read-only
+verdict). `--fix` is a mutation, not a verdict, so it never moved into Doctor (Charter §6) — it
+survives directly on `scripts/bmad_drift_check.py`, run with plain `python`, not a pixi task.
 
 If `surface-changed` appears, see what moved out-of-band since the last reconciliation:
 
@@ -58,7 +64,7 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
 
 | Detector finding | Doc(s) | Reconciler |
 |---|---|---|
-| `archive-misplaced`, `stray-file` | planning / impl | `bmad-drift-check -- --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch`) |
+| `archive-misplaced`, `stray-file` | planning / impl | `python scripts/bmad_drift_check.py --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch`) |
 | `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's an **intake spec**, `git mv` it to `docs/specs/` (Tier 1); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see CLAUDE.md "three tiers" + `AGENTS.md`.) |
 | `docs-specs-nonmd` | docs/specs | `docs/specs/` holds Tier-1 markdown intake specs only — move the non-`.md` file out. |
 | `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`; for `project-context.md` regenerate with **`bmad-generate-project-context`** |
@@ -66,11 +72,11 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
 | `pin-behind` (context) | `project-context.md` | **`bmad-generate-project-context`** |
 | `pin-behind` (plan) | `PRD.md`, `epics.md` | **`bmad-correct-course`** → **`bmad-edit-prd`** / **`bmad-create-epics-and-stories`** (structural: new epics/stories for net-new capabilities, not a number swap) |
 | `pin-behind` (snapshot) | `validation-report-PRD.md`, `implementation-readiness-report.md` | regenerate fresh: **`bmad-validate-prd`**, **`bmad-check-implementation-readiness`** (a gate is only meaningful re-run against current artifacts — never number-patch a dated snapshot) |
-| `stale-rule` | any | hand-fix the rule, then add the bad pattern to `STALE_RULE_PATTERNS` in `bmad_drift_check.py` so it can never silently return |
+| `stale-rule` | any | hand-fix the rule, then add the bad pattern to `STALE_RULE_PATTERNS` in `sources/factory.py` (the ported verdict's own copy — `scripts/bmad_drift_check.py` no longer carries this constant) so it can never silently return |
 | `spec-status-stale` | `implementation-artifacts/spec-*.md` | flip the spec's `status:` to its terminal value (it shipped — a matching retro exists) |
 | `deferred-stale` | `implementation-artifacts/deferred-work.md` | reconcile each item vs the CHANGELOG / live code, then refresh the `**Last reconciled:** … vX.Y.Z` stamp |
 | `index.md` after any move/refresh | `index.md` | **`bmad-index-docs`** |
-| `uncovered` | a new file | add a classification rule in `bmad_drift_check.py` (`TRACKED` or `classify()`) so coverage stays complete |
+| `uncovered` | a new file | add a classification rule in `sources/factory.py` (`TRACKED` or `classify()` — the ported verdict's own copy; `scripts/bmad_drift_check.py` keeps an unused reference copy of `classify()` only, documented there as the extension pointer for anyone editing the script directly) so coverage stays complete |
 
 The index (`index.md`) is regenerated **last**, after all moves and refreshes, via `bmad-index-docs`.
 
@@ -94,13 +100,15 @@ doc's claims against live code — the same method used in the 2026-06-20 audit.
 Once the docs are reconciled and `bmad-drift-check` shows only acceptable findings:
 
 ```bash
-pixi run -e local-recipes bmad-drift-check -- --write-baseline
+python scripts/bmad_drift_check.py --write-baseline
 git add _bmad-output/projects/local-recipes -- ':!*/implementation-artifacts/*'   # impl-artifacts is gitignored
 git commit -m "docs(bmad): reconcile local-recipes artifacts to <skill version>"
 ```
 
-`--write-baseline` records the current factory fingerprint + git HEAD into `.sync-baseline.json`.
-The next out-of-band change will diff against this new anchor.
+`--write-baseline` is a mutation, not a verdict, so — same as `--fix` — it survives only on
+`scripts/bmad_drift_check.py` (plain `python`, no pixi task); it records the current factory
+fingerprint + git HEAD into `.sync-baseline.json`. The next out-of-band change will diff against
+this new anchor via the read-only verdict (`pixi run -e local-recipes bmad-drift-check`).
 
 ---
 
@@ -110,7 +118,7 @@ The next out-of-band change will diff against this new anchor.
 it can't classify — so a new doc can never silently escape the sync loop. Classes: `tracked:*`
 (pin-synced living/plan/context/deferred/spec), `archive:*` (frozen change-history + retros),
 `snapshot` (dated gate outputs), `config`, `baseline`, `runbook`. Add new files to `TRACKED` /
-`classify()` when the `uncovered` finding appears.
+`classify()` in `sources/factory.py` when the `uncovered` finding appears.
 
 ## Issue classes from the 2026-06-20 audit (now all detector-covered)
 
