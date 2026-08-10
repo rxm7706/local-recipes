@@ -1543,3 +1543,25 @@ evidence rather than specs. Listed here with paths; read them in place.
 
 Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` contextual skill) under the implementation-artifacts dir.
 
+
+## DW-FU-13-3 — 13.3 finalized on a spent follow-up-review budget (LOW) — DEFERRED
+
+- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  found_by: bmad-loop's own damping output, run `20260809-184330-203b`, 2026-08-10
+  summary: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with
+    the story finalized (status `done`, verify green) while the review pass still recommended
+    an independent follow-up. The work was committed by that run; this entry preserves the
+    lingering recommendation for a deliberate later review.
+  context: 13.3 ran to the ceiling on both axes — dev attempt 2/2 and review cycle 3/3 — and
+    cleared on its LAST cycle rather than escalating, which is the same profile doctor's 6.8
+    showed earlier the same night. A story that finishes with zero budget left is exactly the
+    one an independent pass is worth spending on.
+  promoted: 2026-08-10 — promoted from Tier-3 `implementation-artifacts/deferred-work.md`
+    (id `DW-3` there) under the repo-wide `DW-FU-<story>` convention already used by doctor
+    (`DW-FU-6-5`/`6-6`/`6-8`), marshal (`DW-FU-1-1`) and warden (`DW-FU-6-3`/`5-1`), and
+    already cross-referenced from this ledger. A generic `DW-3` would collide with the next
+    damped story. Tier-3 is gitignored, so an entry only there does not survive a clone —
+    Marshal FR-175 / Story 4.13 (in flight now) exists to make this promotion an obligation of
+    the story rather than archaeology someone performs later.
+  severity: low
+  status: open

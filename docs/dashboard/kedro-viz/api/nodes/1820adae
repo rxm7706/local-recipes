@@ -1,0 +1,8 @@
+{
+  "type": "pandas.parquet_dataset.ParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/derived/org_audit_candidates_classified/org_audit_candidates_classified.parquet",
+  "run_command": "kedro run --to-outputs=org_audit_candidates_classified",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

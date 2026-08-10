@@ -659,6 +659,21 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # already-computed verdict. `binary_present is False` registers NO finding
 # at all -- the SAME "unavailable, exits 0" tier `adapters probe` already
 # established.
+# Story 4.12 (a landing leaves the loop home current with `main`, FR-173)
+# adds a NINTH MRS-LAND-* code, MRS-LAND-009 (the post-merge/no-op resync
+# step's `VcsPort.fetch`/`VcsPort.fast_forward` attempt to advance the
+# loop-home's own station branch to `origin/<base>` failed -- a diverged
+# branch, a fetch failure, a dirty tree, or a held lock). Classifies WARN,
+# the same tier as MRS-LAND-003/008: reported, never blocking -- the wave's
+# own landing already succeeded (or there was nothing new to land this run)
+# by the time this best-effort resync step runs.
+# Story 4.13 (the loop's deferred work reaches the tracked ledger, FR-175)
+# adds a TENTH MRS-LAND-* code, MRS-LAND-010 (`_promote_deferred_work`'s own
+# advisory-lock contention on the tracked deferred-work ledger, or a
+# `VcsPort.commit_paths` failure committing a promoted entry). Classifies
+# WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
+# a landing story's Tier-3 followup deferral simply stays unpromoted for
+# this run, re-attempted on the next.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -831,6 +846,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-PREFLIGHT-013": Verdict.WARN,
     "MRS-PREFLIGHT-014": Verdict.ERROR,
     "MRS-PREFLIGHT-012": Verdict.ERROR,
+    "MRS-LAND-009": Verdict.WARN,
+    "MRS-LAND-010": Verdict.WARN,
 }
 
 

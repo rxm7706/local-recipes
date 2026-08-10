@@ -1103,6 +1103,41 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # probe reads ONLY the home's own rendered `.mcp.json` plus `PATH`/disk
 # state -- never `~/.claude.json` or any other user-scoped registry (AD-43's
 # own hard constraint).
+#
+# Story 4.12 (a landing leaves the loop home current with `main`, FR-173)
+# adds a NINTH `MRS-LAND-*` code, `MRS-LAND-009`: after a landing (or a
+# clean no-op `land` invocation that finds nothing new to land -- between-
+# runs drift is this story's own primary scenario), `VcsPort.fetch` plus
+# `VcsPort.fast_forward` attempt to advance the loop-home's own checked-out
+# station branch to `origin/<base>`. `MRS-LAND-009` names ANY failure of
+# that attempt -- a diverged branch (e.g. a live run that kept committing
+# past the landed wave, making the fast-forward impossible), a fetch
+# failure (no network/remote), a dirty working tree, or a held lock --
+# never fired when `landing_resync` is `False` or `landing_merge_strategy`
+# is `"squash"`/`"rebase"` (a fast-forward is impossible BY CONSTRUCTION
+# under either of those two strategies, every single landing, so the resync
+# step is skipped entirely rather than firing a WARN that can never clear).
+# Deliberately a NEW code, not a reuse of `MRS-LAND-008`: that code is
+# reserved by Story 4.11 (`is_run_live`/`--retire-live-branch`), a sibling
+# effort against the same `MRS-LAND-*` area.
+#
+# Story 4.13 (the loop's deferred work reaches the tracked ledger, FR-175)
+# adds a TENTH `MRS-LAND-*` code, `MRS-LAND-010`: once a wave is confirmed
+# landed (the already-landed shortcut, or immediately after `forge.merge_pr`
+# succeeds), `cli/land.py::_promote_deferred_work` promotes each landing
+# story's Tier-3 `review-budget-followup` deferral (bmad-loop's own
+# follow-up-review damping safety valve, written to the gitignored
+# `implementation-artifacts/deferred-work.md`) into the tracked
+# `planning-artifacts/deferred-work-ledger.md`, mirroring `cli/deploy.py`'s
+# own spec-promotion lock/write/commit shape (AD-42). `MRS-LAND-010` names
+# EITHER failure this best-effort step can have -- the ledger's own
+# advisory lock could not be acquired, or `VcsPort.commit_paths` raised
+# after the ledger was rewritten locally -- never fired for the ordinary
+# "nothing to promote" case (silent, no finding, per the story's own Never
+# bullet). Classifies WARN, the same tier as `MRS-LAND-003`/`008`/`009`:
+# reported, never blocking -- the wave's own landing already succeeded (or
+# there was nothing new to land this run) by the time this best-effort step
+# runs.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1253,6 +1288,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-012",
         "MRS-PREFLIGHT-013",
         "MRS-PREFLIGHT-014",
+        "MRS-LAND-009",
+        "MRS-LAND-010",
     }
 )
 

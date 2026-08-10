@@ -53,3 +53,11 @@ sibling ledgers and the detector both use.
   summary: `render_json`/`render_text` have no defensive handling for a `data`/`errors` value `json.dumps` can't serialize (e.g. a `Path` or `datetime`) — `render_json` would raise an unhandled `TypeError` instead of a clean, actionable failure.
   evidence: Confirmed by direct inspection — no `default=` fallback or type-normalization exists before the `json.dumps` call. Not triggered by any current caller (`doctor`'s stub only ever passes a plain string `message`), so it is not a defect in this story's own delivered scope; it will matter once `recipe.py`/`package.py`/`environment.py` land in later epics and start returning richer data shapes (paths, versions, timestamps) through `render.write`.
   status: open
+
+### DW-1-10-1
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-10-configuration-surface-logging-and-child-output-streaming.md`
+  summary: follow-up review still recommended for 1-10 after the damping cap was spent — an independent pass is owed on the configuration surface, logging, and child-output streaming.
+  evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260809-231234-a3cb`. 1-10 also ran to both ceilings — dev attempt 2/2 and review cycle 3/3 — and cleared on its LAST cycle rather than escalating, which is exactly the profile where an independent pass is worth spending.
+  promoted: 2026-08-10 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there) under THIS ledger's own `DW-<story>-<n>` convention (`DW-1-3-1`, `DW-1-4-1`, `DW-1-4-2`), which differs from doctor's and atlas's `DW-FU-<story>`; the station's own precedent wins. A generic `DW-1` would collide with the next damped story, and Tier-3 is gitignored so the entry would not survive a clone. Marshal Story 4.13 — landed earlier today in PR #381 — exists to make this promotion an obligation of the story rather than archaeology someone performs later.
+  status: open

@@ -83,6 +83,40 @@ PIPELINE_TRIGGER_TOOLS = (
 # stays AD-7-thin, delegating to the pyforge.atlas.nl seam.
 NL_INTERFACE_TOOLS = ("query_vizro_ai",)
 
+# The read-side operator surface CAP-3 adds (no legacy equivalent): the trending-
+# candidate query over the CAP-2 classified set (Story 13.3, FR-66). Recorded here
+# rather than in ATLAS_TOOL_AUDIT because that dict is pinned to exactly THE_23 legacy
+# tools; this mirrors NL_INTERFACE_TOOLS' shape for the same reason it exists — a new
+# capability still belongs in the module that is this package's declared record of its
+# MCP surface (review finding, Story 13.3: the tool shipped registered on the server
+# but absent from every bucket here, the same omission Story 13.1 avoided by adding
+# run_upstream_discovery_pipeline to PIPELINE_TRIGGER_TOOLS). Its body stays AD-7-thin,
+# delegating to the pyforge.atlas.trending_candidates seam.
+TRENDING_SURFACE_TOOLS = ("query_trending_candidates",)
+
+# The GENERIC surface (B3): not a legacy tool each, but the structural read/list
+# primitives THE_23's `read_dataset:<name>` verdicts above are served BY. Recorded
+# (follow-up review finding, Story 13.3) so this module can state the WHOLE MCP surface
+# and `test_every_registered_server_tool_is_recorded_in_the_audit_surface` can assert the
+# direction that actually catches the omission: a tool registered on the server and
+# recorded NOWHERE — which is precisely how `query_trending_candidates` shipped, with
+# every test green.
+GENERIC_SURFACE_TOOLS = (
+    "read_atlas_dataset",
+    "list_atlas_pipelines",
+    "list_atlas_datasets",
+)
+
+
+def registered_surface_tools() -> set[str]:
+    """Every MCP tool name this module records as part of the live server surface."""
+    return {
+        *PIPELINE_TRIGGER_TOOLS,
+        *NL_INTERFACE_TOOLS,
+        *TRENDING_SURFACE_TOOLS,
+        *GENERIC_SURFACE_TOOLS,
+    }
+
 
 def read_dataset_targets() -> set[str]:
     """The catalog dataset names referenced by ``read_dataset:`` verdicts."""

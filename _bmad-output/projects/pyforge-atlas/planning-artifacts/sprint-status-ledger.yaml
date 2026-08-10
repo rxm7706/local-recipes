@@ -26,8 +26,8 @@ development_status:
   12-3-record-the-vscode-kedro-verdict: done
   13-1-trending-ingest: done
   13-2-tier-classification: done
-  13-3-trending-candidates-operator-surface: backlog
-  13-4-fixed-source-audit-track: backlog
+  13-3-trending-candidates-operator-surface: done
+  13-4-fixed-source-audit-track: done
   13-5-downstream-handoff-to-mason: backlog
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done

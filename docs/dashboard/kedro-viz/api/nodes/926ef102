@@ -1,0 +1,33 @@
+{
+  "parameters": {
+    "org_audit_candidates": [
+      {
+        "repo_full_name": "microsoft/edit"
+      },
+      {
+        "repo_full_name": "microsoft/agent-framework"
+      },
+      {
+        "repo_full_name": "microsoft/qlib"
+      },
+      {
+        "repo_full_name": "microsoft/PyRIT"
+      },
+      {
+        "repo_full_name": "microsoft/promptflow"
+      },
+      {
+        "repo_full_name": "microsoft/semantic-kernel"
+      },
+      {
+        "repo_full_name": "microsoft/torchscale"
+      },
+      {
+        "repo_full_name": "microsoft/SEAL"
+      },
+      {
+        "repo_full_name": "microsoft/DiskANN"
+      }
+    ]
+  }
+}

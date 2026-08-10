@@ -1523,6 +1523,10 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
 description = "Wave A gate 2 (Story A2, AD-11): catalog resolves offline w/ stub creds + no-inline-IO + AD-1 import-direction meta-tests + naming/layer/TTL/path conventions + 20 override points + per-host credential scoping (FR-1)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/catalog -q"
 
+[feature.pyforge-atlas.tasks.trending-candidates]
+description = "Story 13.3 (CAP-3, FR-66): query the CAP-2 tiered/classified GitHub-trending candidate list read-side, offline-safe — filterable by period/tier/top/not-on-cf/min-stars (tier-taxonomy.md's Operator-surface parameters table). Reads ONLY the already-materialized trending_candidates_classified dataset (no fetch here); mirrors the query_trending_candidates MCP tool byte-for-byte for identical filters, since both delegate to the SAME pyforge.atlas.trending_candidates.query.query_trending_candidates function. `--json` for machine-readable output, a formatted table otherwise."
+cmd = "python -m pyforge.atlas.trending_candidates"
+
 [feature.pyforge-atlas.tasks.parity-diff]
 description = "Wave B verify gate (Story B1, AC-7): fixture-mode parity diff — each migrated node's output DataFrame vs its captured legacy snapshot (offline, non-credentialed, --frozen; B1 seeds Core/VCS fixtures, B4 consumes it at the attended credentialed event)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/parity -q"

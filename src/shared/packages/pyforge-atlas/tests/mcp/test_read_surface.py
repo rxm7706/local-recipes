@@ -87,6 +87,47 @@ def test_list_datasets_lists_the_catalog_keys(real_catalog_session):
     assert tools.list_datasets() == ["demo_ds"]
 
 
+def test_query_trending_candidates_delegates_to_trending_seam(monkeypatch):
+    """Story 13.3 (CAP-3, AD-7) — ``tools.query_trending_candidates`` is a single
+    delegate call to ``pyforge.atlas.trending_candidates.query.query_trending_candidates``:
+    the CLI and the MCP tool both call the SAME function, so identical filters yield
+    identical output BY CONSTRUCTION (Design Notes) — proven here by monkeypatching the
+    seam and asserting the tool returns EXACTLY what the seam returns, with every kwarg
+    forwarded unchanged."""
+    from pyforge.atlas.trending_candidates import query as _trending_mod
+
+    calls = []
+    sentinel_envelope = {
+        "schema_version": "1",
+        "dataset": "trending_candidates_classified",
+        "count": 0,
+        "candidates": [],
+    }
+
+    def fake_query(**kwargs):
+        calls.append(kwargs)
+        return sentinel_envelope
+
+    monkeypatch.setattr(_trending_mod, "query_trending_candidates", fake_query)
+
+    result = tools.query_trending_candidates(
+        period="daily", tier="2", top=10, not_on_cf=False, min_stars=100,
+    )
+
+    assert result is sentinel_envelope  # byte-for-byte: the exact object came back
+    assert calls == [
+        {
+            "period": "daily",
+            "tier": "2",
+            "top": 10,
+            "not_on_cf": False,
+            "min_stars": 100,
+            "project_path": None,
+            "env": None,
+        }
+    ]
+
+
 def test_read_dataset_coerces_a_dataframe_to_json_serializable(monkeypatch):
     """Gemini PR-76 (HIGH): a Parquet-backed dataset loads as a pandas
     DataFrame, which FastMCP cannot serialize — read_dataset must coerce it

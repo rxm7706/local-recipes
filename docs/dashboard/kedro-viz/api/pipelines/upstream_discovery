@@ -33,6 +33,78 @@
       "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
     },
     {
+      "id": "4054ea75",
+      "name": "load_org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
+      },
+      "full_name": "load_org_audit_candidates"
+    },
+    {
+      "id": "926ef102",
+      "name": "params:org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "8d76eab7",
+      "name": "org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
       "id": "517e5e70",
       "name": "refresh_trending_candidates",
       "tags": [],
@@ -120,6 +192,34 @@
       "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     },
     {
+      "id": "015741d1",
+      "name": "classify_org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_org_audit_candidates"
+    },
+    {
+      "id": "1820adae",
+      "name": "org_audit_candidates_classified",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
       "id": "437ccc69",
       "name": "classify_trending_candidates",
       "tags": [],
@@ -158,20 +258,48 @@
       "target": "437ccc69"
     },
     {
+      "source": "984bc0c0",
+      "target": "015741d1"
+    },
+    {
       "source": "437ccc69",
       "target": "b17d345f"
+    },
+    {
+      "source": "8d76eab7",
+      "target": "015741d1"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "015741d1"
+    },
+    {
+      "source": "4054ea75",
+      "target": "8d76eab7"
     },
     {
       "source": "f27d8057",
       "target": "437ccc69"
     },
     {
+      "source": "f27d8057",
+      "target": "015741d1"
+    },
+    {
       "source": "6d0063d1",
       "target": "517e5e70"
     },
     {
+      "source": "015741d1",
+      "target": "1820adae"
+    },
+    {
       "source": "984bc0c0",
       "target": "437ccc69"
+    },
+    {
+      "source": "926ef102",
+      "target": "4054ea75"
     },
     {
       "source": "c10a63b1",
@@ -234,6 +362,18 @@
           "type": "task"
         },
         {
+          "id": "4054ea75",
+          "type": "task"
+        },
+        {
+          "id": "8d76eab7",
+          "type": "data"
+        },
+        {
+          "id": "015741d1",
+          "type": "task"
+        },
+        {
           "id": "27bdea9a",
           "type": "data"
         },
@@ -246,11 +386,23 @@
           "type": "data"
         },
         {
+          "id": "926ef102",
+          "type": "parameters"
+        },
+        {
           "id": "517e5e70",
           "type": "task"
         },
         {
           "id": "f27d8057",
+          "type": "data"
+        },
+        {
+          "id": "1820adae",
+          "type": "data"
+        },
+        {
+          "id": "926ef102",
           "type": "data"
         },
         {
