@@ -1,0 +1,828 @@
+"""Unit tests for ``pyforge.doctor.sources.factory.gather`` (Story 6.8) --
+covers every row of the spec's I/O & Edge-Case Matrix, all 18 origin finding
+kinds, and the per-check isolation the module's own docstring describes,
+against REAL tmp git repositories (mirrors ``test_sources_ledger.py``'s own
+real-git-fixture style; this test file is not restricted to
+``cli_bridge.py`` -- only the package source under ``pyforge/doctor/`` is).
+
+Fixture shape: ``_bootstrap`` builds a fully self-consistent, CLEAN
+``pyforge-marshal`` project -- every one of the 17 ``TRACKED`` docs pinned at
+the live skill version, a sync baseline matching the live fingerprint exactly,
+no dreams, no intake specs, no implementation-artifacts -- and commits it.
+``gather`` against that fixture returns exactly one aggregate OK Finding
+(``test_clean_project_reports_a_single_ok_finding``); every other test starts
+from this same clean commit and layers ONE mutation on top, UNCOMMITTED, so a
+mutation under ``implementation-artifacts/`` does not also trip
+``check_tier_alignment`` (which only flags GIT-TRACKED files) -- see
+``_bootstrap``'s own docstring.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from pyforge.doctor.models import DoctorStatus, Source
+from pyforge.doctor.sources import factory
+
+# Mirrors test_sources_ledger.py's own scrub: a contributor's own git config
+# must not decide whether this suite passes (GIT_DIR leakage, commit signing,
+# a global core.hooksPath). See that file's own comment for the verified
+# regression this fixture prevents.
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+# --------------------------------------------------------------- fixture helpers
+
+
+def _git(repo: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+    )
+    return result.stdout
+
+
+def _init_repo(repo: Path) -> None:
+    repo.mkdir(parents=True, exist_ok=True)
+    _git(repo, "init", "-q", "--initial-branch=main")
+    _git(repo, "config", "user.email", "doctor-test@example.com")
+    _git(repo, "config", "user.name", "Doctor Test")
+    _git(repo, "config", "commit.gpgsign", "false")
+    _git(repo, "config", "core.hooksPath", "/dev/null")
+
+
+def _commit_all(repo: Path, message: str) -> None:
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", message)
+
+
+def _pinned_md(repo: Path, rel: str, version: str, body: str = "body\n") -> Path:
+    path = factory._proj(repo) / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"---\nsource_pin: conda-forge-expert v{version}\n---\n{body}", encoding="utf-8")
+    return path
+
+
+def _pinned_json(repo: Path, rel: str, version: str) -> Path:
+    path = factory._proj(repo) / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f'{{"source_pin": "conda-forge-expert v{version}"}}\n', encoding="utf-8")
+    return path
+
+
+def _seed_ground_truth(repo: Path, version: str = "1.0.0") -> None:
+    """The live-factory scaffolding ``_ground_truth``/``_fingerprint`` read:
+    a skill CHANGELOG.md pin, an atlas phase registry (``B``/``C``/``D``/
+    ``E`` -> ``atlas_phases=4``, ``max_single_phase="E"``), a SKILL.md
+    gotcha range (``G1``/``G3``/``G5`` -> ``gotcha_max=5``), an MCP server
+    stub (2 ``@mcp.tool`` markers), a pixi.toml ``[environments]`` block (3
+    envs), and the governance roster Part 1 consolidated."""
+    skill = repo / ".claude" / "skills" / "conda-forge-expert"
+    (skill / "scripts").mkdir(parents=True, exist_ok=True)
+    (skill / "CHANGELOG.md").write_text(f"## Changelog\n\n**v{version}**\n", encoding="utf-8")
+    (skill / "scripts" / "conda_forge_atlas.py").write_text(
+        'SCHEMA_VERSION = 1\n\n'
+        'PHASES = [\n'
+        '    ("B", "desc"),\n'
+        '    ("C", "desc"),\n'
+        '    ("D", "desc"),\n'
+        '    ("E", "desc"),\n'
+        ']\n',
+        encoding="utf-8",
+    )
+    (skill / "SKILL.md").write_text("### G1\nfoo\n### G3\nbar\n### G5\nbaz\n", encoding="utf-8")
+    tools = repo / ".claude" / "tools"
+    tools.mkdir(parents=True, exist_ok=True)
+    (tools / "conda_forge_server.py").write_text(
+        "@mcp.tool\ndef foo(): ...\n\n@mcp.tool\ndef bar(): ...\n", encoding="utf-8"
+    )
+    (repo / "pixi.toml").write_text(
+        '[environments]\ndefault = ["a"]\nbuild = ["b"]\ndocs = ["c"]\n', encoding="utf-8"
+    )
+    gov = repo / "docs" / "governance"
+    gov.mkdir(parents=True, exist_ok=True)
+    (gov / "guild-roster.json").write_text(
+        json.dumps({
+            "stations": ["marshal", "doctor"],
+            "guild_dreams": ["pyforge-charter"],
+            "dream_statuses": ["dreamt", "pitched", "specified", "realized", "archived"],
+            "dream_types": ["dream", "practice"],
+        }),
+        encoding="utf-8",
+    )
+
+
+def _seed_all_tracked(repo: Path, version: str = "1.0.0") -> None:
+    for rel, _cat in factory.TRACKED:
+        if rel.endswith(".json"):
+            _pinned_json(repo, rel, version)
+        else:
+            _pinned_md(repo, rel, version)
+
+
+def _write_baseline(repo: Path) -> None:
+    fingerprint = factory._fingerprint(repo)
+    baseline = factory._proj(repo) / ".sync-baseline.json"
+    baseline.parent.mkdir(parents=True, exist_ok=True)
+    baseline.write_text(json.dumps(fingerprint), encoding="utf-8")
+
+
+def _bootstrap(repo: Path, version: str = "1.0.0") -> None:
+    """Build + commit a fully clean ``pyforge-marshal`` project: every
+    TRACKED doc pinned at ``version``, a baseline matching the live
+    fingerprint exactly, no dreams/specs/implementation-artifacts.
+    ``gather`` against the result is exactly one aggregate OK Finding.
+
+    Callers apply their own mutation AFTER this returns and deliberately do
+    NOT commit it again: ``check_tier_alignment`` only flags GIT-TRACKED
+    files under ``implementation-artifacts/``, so an uncommitted mutation
+    there cannot cross-contaminate a test that is not about tier alignment.
+    A test that specifically wants a tracked artifact commits its own
+    mutation explicitly (see ``test_git_tracked_impl_artifact_is_flagged``).
+    """
+    _init_repo(repo)
+    _seed_ground_truth(repo, version)
+    _seed_all_tracked(repo, version)
+    _write_baseline(repo)
+    _commit_all(repo, "seed clean pyforge-marshal project")
+
+
+def _only(findings: tuple, check: str):
+    matches = [f for f in findings if f.check == check]
+    assert len(matches) == 1, f"expected exactly one {check!r} finding, got {findings!r}"
+    return matches[0]
+
+
+# ------------------------------------------------------------- happy path / OK
+
+
+def test_clean_project_reports_a_single_ok_finding(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.BMAD_DRIFT
+    assert finding.check == "bmad-drift"
+    assert finding.status is DoctorStatus.OK
+
+
+# ------------------------------------------------------------------ pin-missing
+
+
+def test_pin_missing_reports_fail(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._proj(repo) / "planning-artifacts" / "index.md").unlink()
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.BMAD_DRIFT
+    assert finding.check == "pin-missing"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["subject"] == "planning-artifacts/index.md"
+    assert finding.evidence["severity"] == "HARD"
+
+
+def test_pin_missing_is_not_reported_for_a_snapshot_category_doc(tmp_path: Path) -> None:
+    """Verbatim from the original: a missing pin on a ``snapshot`` doc is
+    not gated -- it is a frozen, dated record, not expected to carry a
+    live-tracking pin."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._proj(repo) / "planning-artifacts" / "validation-report-PRD.md").unlink()
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
+# ------------------------------------------------------------------- pin-behind
+
+
+def test_pin_behind_on_a_living_doc_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    _pinned_md(repo, "planning-artifacts/index.md", "0.9.0")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "pin-behind"
+    assert finding.status is DoctorStatus.WARN
+    assert "0.9.0" in finding.message and "1.0.0" in finding.message
+
+
+def test_pin_behind_on_a_snapshot_doc_reports_ok(tmp_path: Path) -> None:
+    """Verbatim from the original: ``sev = INFO if cat == "snapshot" else
+    DRIFT`` -- a behind pin on a frozen snapshot doc is worth noting but
+    never gates."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    _pinned_md(repo, "planning-artifacts/validation-report-PRD.md", "0.9.0")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "pin-behind"
+    assert finding.status is DoctorStatus.OK
+    assert finding.evidence["severity"] == "INFO"
+
+
+# ---------------------------------------------------------- archive hygiene
+
+
+def test_archive_misplaced_and_stray_file_are_flagged(tmp_path: Path) -> None:
+    """A sprint-change-proposal at the planning-artifacts TOP LEVEL (not
+    change-history/), a retro at the implementation-artifacts TOP LEVEL (not
+    retros/), and a stray .bak file all report HARD/fixable -- verbatim from
+    the original. Both misplaced files are simultaneously ``uncovered``
+    (``classify()`` has no rule for the WRONG location, only the right one)
+    -- a real, deterministic cross-check the original script also exhibits,
+    asserted here rather than hidden."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._plan(repo) / "sprint-change-proposal-x.md").write_text("x\n", encoding="utf-8")
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "retro-x.md").write_text("x\n", encoding="utf-8")
+    (impl / "scratch.bak").write_text("x\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    by_check = {(f.check, f.evidence.get("subject")) for f in findings}
+    assert ("archive-misplaced", "planning-artifacts/sprint-change-proposal-x.md") in by_check
+    assert ("archive-misplaced", "implementation-artifacts/retro-x.md") in by_check
+    assert ("stray-file", "implementation-artifacts/scratch.bak") in by_check
+    # The cross-check the docstring claims: both misfiled .md files are ALSO
+    # `uncovered` (classify() has no rule for the wrong location), while the
+    # stray .bak is exempted (STRAY_SUFFIXES). Review pass (Story 6.8) found
+    # this claimed but unasserted.
+    assert ("uncovered", "planning-artifacts/sprint-change-proposal-x.md") in by_check
+    assert ("uncovered", "implementation-artifacts/retro-x.md") in by_check
+    assert ("uncovered", "implementation-artifacts/scratch.bak") not in by_check
+    for f in findings:
+        if f.check in ("archive-misplaced", "stray-file"):
+            assert f.status is DoctorStatus.FAIL
+            assert f.evidence["fixable"] is True
+
+
+# --------------------------------------------------------------- spec-status
+
+
+def test_spec_status_stale_reports_warn_when_a_matching_retro_exists(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "spec-foo.md").write_text("---\nstatus: in-progress\n---\nbody\n", encoding="utf-8")
+    (impl / "retros").mkdir(parents=True, exist_ok=True)
+    (impl / "retros" / "retro-foo-2026-01-01.md").write_text("retro\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "spec-status-stale"
+    assert finding.status is DoctorStatus.WARN
+    assert "shipped" in finding.message
+
+
+def test_spec_status_still_in_flight_with_no_retro_is_not_flagged(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "spec-foo.md").write_text("---\nstatus: in-progress\n---\nbody\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+
+
+# ------------------------------------------------------------- deferred-work
+
+
+def test_deferred_work_with_no_reconciliation_stamp_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "deferred-work.md").write_text("nothing here\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "deferred-stale"
+    assert finding.status is DoctorStatus.WARN
+    assert "no 'Last reconciled" in finding.message
+
+
+def test_deferred_work_reconciled_behind_live_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "deferred-work.md").write_text("Last reconciled: v0.9.0\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "deferred-stale"
+    assert finding.status is DoctorStatus.WARN
+    assert "0.9.0" in finding.message
+
+
+def test_deferred_work_reconciled_at_live_is_clean(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "deferred-work.md").write_text("Last reconciled: v1.0.0\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+
+
+# ------------------------------------------------------------------ count-stale
+
+
+def test_count_stale_reports_ok(tmp_path: Path) -> None:
+    """INFO -> OK (the module's own severity mapping): non-gating,
+    review-only."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    _pinned_md(repo, "planning-artifacts/index.md", "1.0.0", body="the schema v0 is old\n")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "count-stale"
+    assert finding.status is DoctorStatus.OK
+    assert "schema" in finding.message
+
+
+# -------------------------------------------------------------------- stale-rule
+
+
+def test_stale_rule_content_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    _pinned_md(repo, "planning-artifacts/index.md", "1.0.0",
+               body="branch naming: <recipe-name>-<version>\n")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "stale-rule"
+    assert finding.status is DoctorStatus.WARN
+
+
+# --------------------------------------------------------------- phase-list-stale
+
+
+def test_phase_list_stale_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    _pinned_md(repo, "planning-artifacts/index.md", "1.0.0", body="phases: B/C/D/F/G\n")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "phase-list-stale"
+    assert finding.status is DoctorStatus.WARN
+    assert "E" in finding.message
+
+
+# ------------------------------------------------------------------------ baseline
+
+
+def test_no_baseline_reports_ok(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _seed_ground_truth(repo)
+    _seed_all_tracked(repo)
+    _commit_all(repo, "no baseline yet")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "no-baseline"
+    assert finding.status is DoctorStatus.OK
+
+
+def test_baseline_corrupt_reports_fail(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _seed_ground_truth(repo)
+    _seed_all_tracked(repo)
+    baseline = factory._proj(repo) / ".sync-baseline.json"
+    baseline.parent.mkdir(parents=True, exist_ok=True)
+    baseline.write_text("{not json", encoding="utf-8")
+    _commit_all(repo, "corrupt baseline")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "baseline-corrupt"
+    assert finding.status is DoctorStatus.FAIL
+
+
+def test_baseline_corrupt_does_not_blank_an_unrelated_real_finding(tmp_path: Path) -> None:
+    """The spec's own malformed-input example: a corrupt baseline must not
+    discard another check's real finding produced in the same run."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _seed_ground_truth(repo)
+    _seed_all_tracked(repo)
+    (factory._proj(repo) / "planning-artifacts" / "index.md").unlink()
+    baseline = factory._proj(repo) / ".sync-baseline.json"
+    baseline.parent.mkdir(parents=True, exist_ok=True)
+    baseline.write_text("{not json", encoding="utf-8")
+    _commit_all(repo, "corrupt baseline + missing pin")
+
+    findings = factory.gather(repo)
+
+    checks = {f.check for f in findings}
+    assert "baseline-corrupt" in checks
+    assert "pin-missing" in checks
+
+
+def test_surface_changed_reports_warn(tmp_path: Path) -> None:
+    """Mutating the live MCP-tool count after the baseline was written (not
+    a doc pin, which would also cascade into ``pin-behind`` findings) --
+    isolates ``surface-changed`` cleanly."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    server = repo / ".claude" / "tools" / "conda_forge_server.py"
+    server.write_text(
+        server.read_text(encoding="utf-8") + "\n@mcp.tool\ndef baz(): ...\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "surface-changed"
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence["subject"] == "mcp_tools"
+
+
+# ------------------------------------------------------------------------- coverage
+
+
+def test_uncovered_file_reports_fail(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._proj(repo) / "randomfile.txt").write_text("x\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "uncovered"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["subject"] == "randomfile.txt"
+
+
+# -------------------------------------------------------------------- tier alignment
+
+
+def test_git_tracked_impl_artifact_is_flagged(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    # Spec-shaped name: matches classify()'s own `tracked:spec` rule, so this
+    # test isolates tier-alignment's own finding without also tripping
+    # check_coverage's `uncovered`.
+    (impl / "spec-tracked-test.md").write_text("body\n", encoding="utf-8")
+    _commit_all(repo, "accidentally track a Tier-3 spec")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "tracked-impl-artifact"
+    assert finding.status is DoctorStatus.FAIL
+    assert "git mv to docs/specs" in finding.message
+
+
+def test_docs_specs_nonmd_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    docs_specs = repo / "docs" / "specs"
+    docs_specs.mkdir(parents=True, exist_ok=True)
+    (docs_specs / "foo.txt").write_text("x\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "docs-specs-nonmd"
+    assert finding.status is DoctorStatus.WARN
+
+
+def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(tmp_path: Path) -> None:
+    """The spec's own row: git unavailable / target not a repository --
+    ``check_tier_alignment`` names the cause instead of silently reporting a
+    confident-clean "nothing tracked". An unrelated real finding
+    (pin-missing) and an unrelated clean-OK finding (no-baseline) both
+    survive alongside it -- proving the degradation is isolated to the one
+    check that actually needs git."""
+    repo = tmp_path / "repo"
+    repo.mkdir(parents=True, exist_ok=True)
+    _seed_ground_truth(repo)
+    _seed_all_tracked(repo)
+    (factory._proj(repo) / "planning-artifacts" / "index.md").unlink()
+    # deliberately never `git init` here
+
+    findings = factory.gather(repo)
+
+    by_check = {f.check: f for f in findings}
+    assert by_check["pin-missing"].status is DoctorStatus.FAIL
+    assert by_check["no-baseline"].status is DoctorStatus.OK
+    unevaluable = by_check["bmad-drift-unevaluable"]
+    assert unevaluable.status is DoctorStatus.WARN
+    assert "check_tier_alignment" in unevaluable.message
+    assert unevaluable.evidence == {"check": "check_tier_alignment"}
+
+
+# --------------------------------------------------------------------- spec index
+
+
+def test_spec_unindexed_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    docs_specs = repo / "docs" / "specs"
+    docs_specs.mkdir(parents=True, exist_ok=True)
+    (docs_specs / "bar.md").write_text("x\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "spec-unindexed"
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence["subject"] == "docs/specs/bar.md"
+
+
+def test_spec_indexed_in_claude_md_is_not_flagged(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    docs_specs = repo / "docs" / "specs"
+    docs_specs.mkdir(parents=True, exist_ok=True)
+    (docs_specs / "bar.md").write_text("x\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("See docs/specs/bar.md for details.\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+
+
+# ------------------------------------------------------------------- Dream vocab
+
+
+def test_dream_vocab_invalid_status_and_type_report_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text(
+        "---\nstatus: bogus\ntype: bogus\nowner: marshal\n---\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 2
+    assert all(f.check == "dream-vocab" and f.status is DoctorStatus.WARN for f in findings)
+    messages = " ".join(f.message for f in findings)
+    assert "status" in messages and "type" in messages
+
+
+def test_dream_with_no_status_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text("---\nowner: marshal\n---\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "dream-vocab"
+    assert "no status:" in finding.message
+
+
+def test_dream_readme_is_never_evaluated(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "README.md").write_text("not a dream\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+
+
+# ------------------------------------------------------------------ Dream owners
+
+
+def test_dream_with_no_owner_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text("---\nstatus: dreamt\n---\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "dream-unowned"
+    assert "no owner:" in finding.message
+
+
+def test_dream_owned_by_guild_but_not_a_reserved_dream_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text("---\nstatus: dreamt\nowner: guild\n---\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "dream-unowned"
+    assert "reserved" in finding.message
+
+
+def test_dream_owned_by_an_unknown_station_reports_warn(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text("---\nstatus: dreamt\nowner: nonexistent\n---\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "dream-unowned"
+    assert "eight Smiths" in finding.message
+
+
+def test_dream_owned_by_a_known_station_is_clean(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text("---\nstatus: dreamt\nowner: marshal\n---\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+
+
+def test_a_malformed_roster_degrades_only_the_two_checks_that_read_it(tmp_path: Path) -> None:
+    """The spec's own malformed-input row: a broken
+    ``docs/governance/guild-roster.json`` must degrade ONLY
+    ``check_dream_vocab``/``check_dream_owners`` -- an unrelated real
+    finding (pin-missing) must survive in the same run."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text("---\nstatus: dreamt\nowner: marshal\n---\n", encoding="utf-8")
+    (repo / "docs" / "governance" / "guild-roster.json").write_text("{not json", encoding="utf-8")
+    (factory._proj(repo) / "planning-artifacts" / "index.md").unlink()
+
+    findings = factory.gather(repo)
+
+    checks = [f.check for f in findings]
+    assert checks.count("bmad-drift-unevaluable") == 2
+    assert "pin-missing" in checks
+    unevaluable_names = {
+        f.evidence["check"] for f in findings if f.check == "bmad-drift-unevaluable"
+    }
+    assert unevaluable_names == {"check_dream_vocab", "check_dream_owners"}
+
+
+# --------------------------------------------------------------- project dir absent
+
+
+def test_project_dir_absent_reports_warn_not_a_confident_ok(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir(parents=True, exist_ok=True)
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.BMAD_DRIFT
+    assert finding.check == "bmad-drift-unevaluable"
+    assert finding.status is DoctorStatus.WARN
+    assert "pyforge-marshal" in finding.message
+
+
+# -------------------------------------------------------- per-check isolation (mutation)
+
+
+def test_one_check_raising_does_not_discard_the_others_real_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The story's own core acceptance criterion: one ported check's
+    exception degrades to exactly one named ``bmad-drift-unevaluable`` WARN,
+    while every OTHER check's real finding in the same run survives.
+    ``check_pins`` is monkeypatched to raise; ``check_pins`` itself would
+    otherwise have reported nothing (the fixture's pins are all clean), so a
+    second mutation (a missing pin would BE what check_pins reports, which
+    is exactly what's being suppressed) is intentionally avoided -- instead
+    an unrelated check (dream ownership) is given a real finding to prove
+    survival."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "foo.md").write_text("---\nstatus: dreamt\n---\n", encoding="utf-8")
+
+    def _boom(_target: Path) -> list:
+        raise RuntimeError("simulated check_pins failure")
+
+    monkeypatch.setattr(factory, "check_pins", _boom)
+
+    findings = factory.gather(repo)
+
+    checks = {f.check for f in findings}
+    assert "dream-unowned" in checks
+    unevaluable = [f for f in findings if f.check == "bmad-drift-unevaluable"]
+    assert len(unevaluable) == 1
+    assert unevaluable[0].status is DoctorStatus.WARN
+    assert unevaluable[0].evidence == {"check": "check_pins"}
+    assert "check_pins" in unevaluable[0].message
+    assert "RuntimeError" in unevaluable[0].message
+    assert "simulated check_pins failure" in unevaluable[0].message
+
+
+def test_gather_wraps_an_unanticipated_gather_level_exception(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The outer ``degrade_on_exception`` net: an exception _gather itself
+    cannot anticipate (here, simulated by making ``_proj`` explode) still
+    degrades to one WARN rather than propagating."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+
+    def _boom(_target: Path) -> Path:
+        raise RuntimeError("simulated catastrophic failure")
+
+    monkeypatch.setattr(factory, "_proj", _boom)
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.BMAD_DRIFT
+    assert finding.check == "bmad-drift"
+    assert finding.status is DoctorStatus.WARN
+    assert "RuntimeError" in finding.message

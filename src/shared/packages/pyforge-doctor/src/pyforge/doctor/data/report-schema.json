@@ -71,7 +71,8 @@
             "dream-chain",
             "spec-surface",
             "deferred-work",
-            "forward-dependency"
+            "forward-dependency",
+            "bmad-drift"
           ]
         },
         "check": { "type": "string" },

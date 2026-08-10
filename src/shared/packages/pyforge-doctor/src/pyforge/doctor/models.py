@@ -106,6 +106,17 @@ class Source(StrEnum):
     # independence rationale and AD-13 for why it restates the harness's
     # ACTIONABLE_STATUSES rather than importing it.
     FORWARD_DEPENDENCY = "forward-dependency"
+    # Story 6.8 (FR-15): the closed taxonomy EXTENDED a final time -- Doctor's
+    # verdict on the pyforge-marshal project docs' own currency: a tracked
+    # doc's missing/behind source_pin, misfiled archive artifacts and stray
+    # files, stale spec status, a stale deferred-work reconciliation stamp,
+    # stale counts/atlas-phase lists, stale rule content, sync-baseline
+    # drift, project coverage completeness, Tier-1/Tier-3 filing alignment,
+    # unindexed intake specs, and Dream vocabulary/ownership drift (ported
+    # from scripts/bmad_drift_check.py, the tenth and last of Epic 6's
+    # Charter §6 sweep). Judges a Marshal-produced artifact; see
+    # sources/factory.py for the independence rationale.
+    BMAD_DRIFT = "bmad-drift"
 
 
 class Partition(StrEnum):
