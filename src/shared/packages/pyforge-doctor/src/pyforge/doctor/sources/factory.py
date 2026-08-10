@@ -116,7 +116,11 @@ script's own blanket ``except OSError: return ""``, which survived two review
 passes here because it hides in every check rather than at any one gate, and
 which fabricated FALSE ``pin-missing`` HARD findings as readily as it hid real
 ones. Each raise lands in ``_gather``'s per-check try/except and surfaces as
-that ONE check's ``bmad-drift-unevaluable`` WARN. Likewise for GROUND TRUTH:
+that ONE check's ``bmad-drift-unevaluable`` WARN -- except where the check
+ITERATES over many files, where that boundary is too coarse: one unreadable
+doc would take its readable siblings' real findings down with it, so the
+seven looping checks read through ``_read_item``, which narrows the blast
+radius to the one file and names it in the WARN. Likewise for GROUND TRUTH:
 ``_live_version`` and ``_max_single_phase`` raise when the live skill version
 or the atlas phase registry cannot be read, rather than substituting the
 origin CLI's own ``(0, 0, 0)``/``"N"`` placeholders -- those were safe only
@@ -368,6 +372,34 @@ def _read(path: Path) -> str:
         return ""
 
 
+def _read_item(path: Path, check_name: str, target: Path,
+               out: list[Finding]) -> str | None:
+    """``_read`` for one file among MANY in the same check -- appending one
+    WARN that names THAT FILE and returning ``None``, instead of letting the
+    raise escape and take the whole check with it.
+
+    ``_read`` raises on an unreadable file precisely so "cannot evaluate" is
+    never reported as "clean" -- but ``_gather``'s isolation boundary is the
+    CHECK, so inside a loop that raise costs every readable SIBLING's real
+    finding too. Reproduced by the third review pass: three project docs
+    each carrying a stale branch-naming rule produced three ``stale-rule``
+    findings; ``chmod 000`` on the middle one produced ZERO, and one WARN in
+    their place. That is the same argument ``_read``'s own U+FFFD decode
+    rests on ("discards every OTHER real finding the same check had already
+    computed"), applied at the granularity these checks actually iterate at.
+
+    Single-input checks (``check_deferred_work``, ``check_baseline``,
+    ``check_spec_indexed``'s ``CLAUDE.md``) deliberately keep the bare
+    ``_read``: there is no sibling to save, so the whole check genuinely is
+    unevaluable and ``_gather``'s per-check net is the right boundary."""
+    try:
+        return _read(path)
+    except OSError as exc:
+        out.append(_unevaluable(
+            check_name, f"{_rel(path, target)}: {exc.__class__.__name__}", target))
+        return None
+
+
 def _rel(path: Path, target: Path) -> str:
     for base in (_proj(target), target):
         try:
@@ -485,8 +517,18 @@ def _live_version(target: Path) -> Ver:
     pinned two minor versions back, leaving a run that looked clean. Raising
     routes it to ``check_pins``'/``check_deferred_work``'s own
     ``bmad-drift-unevaluable`` WARN instead -- the honest answer for a
-    comparison whose right-hand side is unknown."""
-    version = _ground_truth(target)["skill_version"]
+    comparison whose right-hand side is unknown.
+
+    Reads ``_skill_version`` DIRECTLY rather than through ``_ground_truth``:
+    that dict eagerly computes all six surface facts, so routing the live
+    version through it coupled every pin comparison to five files it does
+    not need. Once ``_read`` was narrowed to raise on an unreadable file
+    (second follow-up pass), that coupling became a live regression --
+    reproduced by the third pass: ``chmod 000`` on ``pixi.toml``, which only
+    ``_env_count`` reads, raised ``PermissionError`` past ``check_pins``'
+    ``except ValueError`` and erased a real ``pin-missing`` HARD finding,
+    the exact outcome that check's own docstring promises cannot happen."""
+    version = _skill_version(target)
     if version is None:
         raise ValueError(
             "no live conda-forge-expert version in "
@@ -536,10 +578,12 @@ def _fingerprint(target: Path) -> dict:
 
 
 # ----------------------------------------------------------------- doc parsing
-def _doc_pin(path: Path) -> Ver | None:
+def _doc_pin(path: Path, text: str) -> Ver | None:
     """Return (major, minor, patch) from the frontmatter pin, or ``None`` if
-    absent/corrupt -- verbatim from the original's own ``doc_pin``."""
-    text = _read(path)
+    absent/corrupt -- verbatim from the original's own ``doc_pin``, except
+    that the caller supplies the already-read text: an unreadable doc must
+    reach ``check_pins``' own per-file WARN rather than being read here as
+    ``""`` (i.e. "this doc states no pin") and slandered as ``pin-missing``."""
     if not text:
         return None
     if path.suffix == ".json":
@@ -609,16 +653,27 @@ def check_pins(target: Path) -> list[Finding]:
     So that half degrades to one honest ``bmad-drift-unevaluable`` WARN and
     the ``pin-missing`` half still runs, mirroring ``check_tier_alignment``'s
     own git-unavailable shape one screen down rather than discarding a real
-    HARD finding over an unrelated missing file."""
+    HARD finding over an unrelated missing file.
+
+    Catching ``OSError`` beside ``ValueError`` is what makes that promise
+    true rather than merely stated: ``_live_version`` reads ``CHANGELOG.md``
+    through ``_read``, which raises ``PermissionError`` on an unreadable
+    one, and the bare ``except ValueError`` let it past (third review pass,
+    reproduced). Each tracked doc is likewise read through ``_read_item``,
+    so ONE unreadable doc costs that doc's verdict only, not the other
+    seventeen's."""
     proj = _proj(target)
     out: list[Finding] = []
     try:
         live: Ver | None = _live_version(target)
-    except ValueError as exc:
+    except (ValueError, OSError) as exc:
         live = None
         out.append(_unevaluable("check_pins", str(exc), target))
     for rel, cat in TRACKED:
-        pin = _doc_pin(proj / rel)
+        text = _read_item(proj / rel, "check_pins", target, out)
+        if text is None:
+            continue
+        pin = _doc_pin(proj / rel, text)
         if pin is None:
             if cat != "snapshot":
                 out.append(_finding(HARD, "pin-missing", rel,
@@ -683,7 +738,10 @@ def check_spec_status(target: Path) -> list[Finding]:
     if _is_dir(retros_dir):
         retro_slugs = [_slug(p.name) for p in _listdir_match(retros_dir, "retro-*.md")]
     for spec in _listdir_match(impl, "spec-*.md"):
-        status = _spec_status(_read(spec))
+        text = _read_item(spec, "check_spec_status", target, out)
+        if text is None:
+            continue
+        status = _spec_status(text)
         if not status or TERMINAL_STATUS.search(status) or not NONTERMINAL_STATUS.search(status):
             continue
         sslug = _slug(spec.name)
@@ -729,7 +787,9 @@ def check_counts(target: Path) -> list[Finding]:
     for rel, cat in TRACKED:
         if cat != "living":
             continue
-        text = _read(proj / rel)
+        text = _read_item(proj / rel, "check_counts", target, out)
+        if text is None:
+            continue
         for pat, live_val, label in probes:
             if live_val is None:
                 continue
@@ -751,7 +811,9 @@ def check_stale_rules(target: Path) -> list[Finding]:
             continue
         if any(p in IGNORE_PARTS for p in path.parts):
             continue
-        text = _read(path)
+        text = _read_item(path, "check_stale_rules", target, out)
+        if text is None:
+            continue
         for pat, why in STALE_RULE_PATTERNS:
             if re.search(pat, text):
                 out.append(_finding(DRIFT, "stale-rule", _rel(path, target), why))
@@ -771,7 +833,10 @@ def check_phase_lists(target: Path) -> list[Finding]:
     for rel, cat in TRACKED:
         if cat == "snapshot":
             continue
-        for m in re.finditer(r"\bB(?:/[A-Z](?:\.\d)?'?){4,}", _read(proj / rel)):
+        text = _read_item(proj / rel, "check_phase_lists", target, out)
+        if text is None:
+            continue
+        for m in re.finditer(r"\bB(?:/[A-Z](?:\.\d)?'?){4,}", text):
             seg = m.group(0)
             if "/C/" not in seg or "/D" not in seg:
                 continue
@@ -797,9 +862,17 @@ def check_baseline(target: Path) -> list[Finding]:
     if not _is_file(baseline):
         return [_finding(INFO, "no-baseline", ".sync-baseline.json",
                           "no reconciliation baseline — run `bmad-drift-check -- --write-baseline` after a sync")]
+    # `_read` is deliberately OUTSIDE the try: it now raises on a file that
+    # exists but cannot be read, and the origin's blanket `except OSError`
+    # here turned that into a `baseline-corrupt` HARD accusation against a
+    # byte-for-byte VALID baseline (third review pass, reproduced live with
+    # `chmod 000`). "I could not read it" is not "it is corrupt"; the raise
+    # belongs in `_gather`'s per-check net as an honest WARN. Only a genuine
+    # parse failure -- `ValueError` from `json.loads` -- is corruption.
+    text = _read(baseline)
     try:
-        base = json.loads(_read(baseline))
-    except (ValueError, OSError):
+        base = json.loads(text)
+    except ValueError:
         return [_finding(HARD, "baseline-corrupt", ".sync-baseline.json", "cannot parse baseline JSON")]
     if not isinstance(base, dict):
         # Syntactically valid JSON that isn't an object (`[]`, `"oops"`, `42`)
@@ -1068,7 +1141,9 @@ def check_dream_vocab(target: Path) -> list[Finding]:
     for f in _listdir_match(dreams_dir, "*.md"):
         if f.name == "README.md":
             continue
-        text = _read(f)
+        text = _read_item(f, "check_dream_vocab", target, out)
+        if text is None:
+            continue
         m = re.search(r"^status:\s*(\S+)\s*$", text, re.M)
         if not m:
             out.append(_finding(DRIFT, "dream-vocab", _rel(f, target), "no status: in frontmatter"))
@@ -1097,7 +1172,10 @@ def check_dream_owners(target: Path) -> list[Finding]:
     for f in _listdir_match(dreams_dir, "*.md"):
         if f.name == "README.md":
             continue
-        m = re.search(r"^owner:\s*(\S+)\s*$", _read(f), re.M)
+        text = _read_item(f, "check_dream_owners", target, out)
+        if text is None:
+            continue
+        m = re.search(r"^owner:\s*(\S+)\s*$", text, re.M)
         owner = m.group(1) if m else ""
         if not owner:
             out.append(_finding(DRIFT, "dream-unowned", _rel(f, target),

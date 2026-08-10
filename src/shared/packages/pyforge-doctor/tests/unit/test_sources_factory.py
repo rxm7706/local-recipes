@@ -1195,3 +1195,144 @@ def test_finding_order_is_stable_across_readdir_order(tmp_path: Path) -> None:
 
     assert subjects == sorted(subjects)
     assert len(subjects) == 3
+
+
+@_needs_unprivileged
+def test_unreadable_unrelated_ground_truth_leaves_check_pins_untouched(
+    tmp_path: Path,
+) -> None:
+    """``_live_version`` resolved the live skill version through
+    ``_ground_truth``, which eagerly reads all SIX surface facts -- so every
+    pin comparison was coupled to five files it does not need. Once ``_read``
+    was narrowed to raise (prior pass), that coupling became a live
+    regression: ``chmod 000`` on ``pixi.toml``, read only by ``_env_count``,
+    raised ``PermissionError`` past ``check_pins``' ``except ValueError`` and
+    erased a real ``pin-missing`` HARD finding -- the exact outcome
+    ``check_pins``' own docstring promises cannot happen.
+
+    ``pixi.toml`` is genuinely nothing to do with pins, so the fix is not
+    merely that the finding survives: ``check_pins`` must not degrade at
+    all."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    # A real, unambiguous pin-missing HARD finding to protect.
+    (factory._proj(repo) / "planning-artifacts" / "PRD.md").write_text(
+        "# PRD\nno frontmatter pin here\n", encoding="utf-8"
+    )
+    assert "pin-missing" in {f.check for f in factory.gather(repo)}
+
+    (repo / "pixi.toml").chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        (repo / "pixi.toml").chmod(0o644)
+
+    assert "pin-missing" in {f.check for f in after}, (
+        f"an unreadable pixi.toml erased a real pin-missing finding: {after}"
+    )
+    assert "check_pins" not in _unevaluable_checks(after), (
+        f"check_pins degraded over a file it never needed: {after}"
+    )
+
+
+@_needs_unprivileged
+def test_unreadable_changelog_degrades_only_the_behind_half_of_check_pins(
+    tmp_path: Path,
+) -> None:
+    """The companion to the test above, for the file ``_live_version``
+    genuinely DOES need. ``_read`` raises ``PermissionError`` on an
+    unreadable ``CHANGELOG.md``, and ``check_pins``' ``except ValueError``
+    caught only the absent case -- so the readable-but-denied case took the
+    whole check with it, ``pin-missing`` included.
+
+    Only the behind-ness comparison is unanswerable here; a doc with no pin
+    at all is still definitively broken, so that half must still report."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._proj(repo) / "planning-artifacts" / "PRD.md").write_text(
+        "# PRD\nno frontmatter pin here\n", encoding="utf-8"
+    )
+    changelog = repo / ".claude" / "skills" / "conda-forge-expert" / "CHANGELOG.md"
+
+    changelog.chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        changelog.chmod(0o644)
+
+    assert "pin-missing" in {f.check for f in after}, (
+        f"an unreadable CHANGELOG.md discarded a real HARD finding: {after}"
+    )
+    assert "check_pins" in _unevaluable_checks(after), (
+        f"the unanswerable behind-ness half went silently clean: {after}"
+    )
+
+
+@_needs_unprivileged
+def test_unreadable_baseline_is_not_reported_as_corrupt(tmp_path: Path) -> None:
+    """``check_baseline`` wrapped ``json.loads(_read(...))`` in ``except
+    (ValueError, OSError)``, inherited from the origin -- and ``_read`` now
+    raises ``PermissionError`` (an ``OSError``) for a file that exists but
+    cannot be read. So a byte-for-byte VALID baseline was reported as a
+    ``baseline-corrupt`` HARD finding: "cannot parse baseline JSON" about a
+    file that was never parsed.
+
+    "I could not read it" is not "it is corrupt". Genuine corruption is
+    still a HARD finding (``test_baseline_corrupt_reports_fail``)."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    baseline = factory._proj(repo) / ".sync-baseline.json"
+    assert json.loads(baseline.read_text(encoding="utf-8"))  # intact before the chmod
+
+    baseline.chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        baseline.chmod(0o644)
+
+    assert not any(f.check == "baseline-corrupt" for f in after), (
+        f"an intact baseline was accused of being corrupt: {after}"
+    )
+    assert "check_baseline" in _unevaluable_checks(after), (
+        f"an unreadable baseline went silently clean: {after}"
+    )
+
+
+@_needs_unprivileged
+def test_one_unreadable_doc_keeps_its_readable_siblings_findings(
+    tmp_path: Path,
+) -> None:
+    """``_read`` raises so "cannot evaluate" is never "clean", but
+    ``_gather``'s isolation boundary is the CHECK -- so inside a loop that
+    raise discarded every readable SIBLING's real finding too.
+
+    Reproduced: three docs each carrying the stale branch-naming rule
+    produce three ``stale-rule`` findings; ``chmod 000`` on the middle one
+    produced ZERO, and one WARN in their place. The WARN must name the file
+    it lost, not just the check."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    plan = factory._proj(repo) / "planning-artifacts"
+    for name in ("a-note.md", "b-note.md", "c-note.md"):
+        (plan / name).write_text("use <recipe-name>-<version>\n", encoding="utf-8")
+
+    assert len([f for f in factory.gather(repo) if f.check == "stale-rule"]) == 3
+
+    (plan / "b-note.md").chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        (plan / "b-note.md").chmod(0o644)
+
+    survivors = {f.evidence["subject"] for f in after if f.check == "stale-rule"}
+    assert survivors == {
+        "planning-artifacts/a-note.md",
+        "planning-artifacts/c-note.md",
+    }, f"one unreadable doc discarded its readable siblings' findings: {after}"
+
+    lost = [f for f in after if f.check == "bmad-drift-unevaluable"
+            and f.evidence["check"] == "check_stale_rules"]
+    assert len(lost) == 1, after
+    assert "b-note.md" in lost[0].message, (
+        f"the WARN does not name the file it lost: {lost[0].message}"
+    )
