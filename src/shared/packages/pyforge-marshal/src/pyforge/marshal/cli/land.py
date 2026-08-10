@@ -5,7 +5,9 @@ sibling to ``deploy``/``gate``/``init`` -- NOT nested under ``deploy``,
 per the story's own Code Map).
 
 **Three already-shipped primitives, reused, never reimplemented, plus ONE
-new one.** Wave discovery, the hygiene preflight, and PR open/update+labels
+new one (plus two more, Story 4.12's own ``fetch``/``fast_forward`` -- see
+``_resync_home_branch``'s own docstring below).** Wave discovery, the
+hygiene preflight, and PR open/update+labels
 are the SAME sequence ``cli/deploy.py::run_batch_pr`` already performs,
 calling the SAME private helpers that function itself calls
 (``_evaluate_hygiene``/``_gather_gate_verdicts``/``_batch_pr_title``/
@@ -73,7 +75,23 @@ _gather_home_facts``) and checks them with ``core/status.py::is_run_live``
 -- a live run downgrades ``delete_branch`` to ``False`` for THIS
 invocation's ``merge_pr`` call only (never writing back to policy) and
 raises ``MRS-LAND-008``, overridable with ``--retire-live-branch``. The
-merge itself is never blocked by this gate -- only retirement is."""
+merge itself is never blocked by this gate -- only retirement is.
+
+**A landing leaves the loop home current with `main` (Story 4.12, FR-173).**
+``home`` shares the SAME ``.git`` as ``repo_root``, so a GitHub-side
+``gh pr merge`` never updates any LOCAL ref there -- ``loop/<slug>`` goes
+stale immediately, even between runs when nothing new lands. Gated by the
+SAME ``landing_resync`` toggle ``_run_resync_if_enabled`` already uses, and
+applicable ONLY when ``landing_merge_strategy == "merge"`` (a fast-forward
+is impossible BY CONSTRUCTION under ``"squash"``/``"rebase"``, see
+``_resync_home_branch``'s own docstring), ``_resync_home_branch`` runs
+``VcsPort.fetch`` then ``VcsPort.fast_forward`` against ``origin/<base>``
+from ALL THREE of this function's own wave-outcome exits -- the ``if not
+wave_keys`` no-op (this story's own primary scenario: between-runs drift),
+the already-landed shortcut, and the full-merge path -- setting
+``data["home_current"]``. Any failure (a diverged branch, no network, a
+dirty tree, a held lock) is a new WARN finding (``MRS-LAND-009``), never
+escalated and never affecting this command's own exit."""
 
 from __future__ import annotations
 
@@ -132,6 +150,7 @@ _MRS_LAND_005 = "MRS-LAND-005"
 _MRS_LAND_006 = "MRS-LAND-006"
 _MRS_LAND_007 = "MRS-LAND-007"
 _MRS_LAND_008 = "MRS-LAND-008"
+_MRS_LAND_009 = "MRS-LAND-009"
 
 # This module's own journal kinds (AD-28: distinct writer namespaces, never
 # conflated with `cli/deploy.py`'s `_LAND_MERGE_KIND`/`_BATCH_PR_WRITE_KIND`
@@ -483,7 +502,16 @@ def run_land(
     data["wave"] = [str(key) for key in wave_keys]
 
     if not wave_keys:
-        # Clean no-op -- nothing merged since the last landing.
+        # Clean no-op -- nothing merged since the last landing. Still
+        # resyncs the loop-home's own station branch to origin/<base>
+        # (FR-173, Story 4.12) -- this is the story's own PRIMARY scenario:
+        # between-runs drift accumulates unobserved exactly here, whether
+        # or not this invocation finds anything new to land.
+        home_current = _resync_home_branch(
+            vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
+        )
+        if home_current is not None:
+            data["home_current"] = home_current
         return _emit(args, data, findings)
 
     try:
@@ -556,6 +584,11 @@ def run_land(
             harness=harness,
             process=process,
         )
+        home_current = _resync_home_branch(
+            vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
+        )
+        if home_current is not None:
+            data["home_current"] = home_current
         return _emit(args, data, findings)
 
     # --- PR open/update+labels (byte-for-byte batch-pr's own sequence) --
@@ -981,8 +1014,107 @@ def run_land(
         harness=harness,
         process=process,
     )
+    home_current = _resync_home_branch(
+        vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
+    )
+    if home_current is not None:
+        data["home_current"] = home_current
 
     return _emit(args, data, findings)
+
+
+def _resync_home_branch(
+    vcs: VcsPort,
+    resync_enabled: bool,
+    merge_strategy: str,
+    git_repo_root: Path,
+    home: Path,
+    base: str,
+    head_branch: str,
+    findings: list[Finding],
+) -> bool | None:
+    """FR-173 (Story 4.12): fast-forwards the loop-home's own checked-out
+    station branch (``head_branch``, at ``home``) to ``origin/<base>`` --
+    ``home`` shares the SAME ``.git`` as ``repo_root``, so a GitHub-side
+    ``gh pr merge`` never updates any LOCAL ref there, and ``head_branch``
+    goes stale immediately (even between runs when nothing new lands --
+    this story's own named primary scenario). Called from ALL THREE of
+    ``run_land``'s own wave-outcome exits (the ``if not wave_keys`` no-op,
+    the already-landed shortcut, and the full-merge path), always gated on
+    the SAME ``landing_resync`` toggle ``_run_resync_if_enabled`` already
+    uses (no new policy key).
+
+    Returns ``None`` -- meaning ``data["home_current"]`` stays ABSENT,
+    byte-identical to ``resync_enabled=False`` -- when either
+    ``resync_enabled`` is ``False`` or ``merge_strategy`` is not
+    ``"merge"``: under ``"squash"``/``"rebase"`` the landed commits are
+    never ancestors of ``origin/<base>``, so ``fast_forward`` is impossible
+    BY CONSTRUCTION, on every invocation, permanently -- firing a WARN that
+    can never clear would be noise, not signal, so this resync capability
+    is deliberately restricted to the ``"merge"`` strategy only (Boundaries
+    & Constraints, corrected 2026-08-09).
+
+    Before touching anything, reconfirms ``home`` is still checked out at
+    ``head_branch``'s own tip (``VcsPort.worktree_head_sha`` vs
+    ``VcsPort.resolve_ref``, the SAME pair the full-merge path above already
+    uses for the identical reason at ``MRS-DEPLOY-017``) -- ``fast_forward``
+    itself only ever asks "is this a fast-forward from whatever HEAD
+    currently is," so without this guard a `home` that had drifted onto a
+    different ref (or a detached HEAD) would get THAT ref silently advanced
+    while ``head_branch`` stayed stale and ``home_current`` still reported
+    ``True`` (code review, 2026-08-10). A mismatch is reported exactly like
+    any other resync failure -- one ``MRS-LAND-009`` WARN, no fast-forward
+    attempted.
+
+    Otherwise runs ``VcsPort.fetch`` (updates ONLY ``refs/remotes/origin/
+    <base>``, a network read) then ``VcsPort.fast_forward`` (``git merge
+    --ff-only``, never a forced merge/``--no-ff``/rebase/``reset --hard``)
+    against ``home``, each in its own ``try`` so the WARN names the step
+    that actually failed (code review, 2026-08-10). Success -- fast-forwarded
+    OR already current, both of which ``--ff-only`` treats identically --
+    returns ``True`` with no finding. Any failure (a diverged branch, e.g. a
+    live bmad-loop run that kept committing past the landed wave; no
+    network; a dirty working tree; a held lock) fires ONE new
+    ``MRS-LAND-009`` WARN naming ``head_branch`` and git's own precise
+    reason, and returns ``False`` -- never escalated, never affecting
+    ``land``'s own exit code (AD-7: only the verdict STRING may move to
+    ``warn``; the merge that matters, the wave landing on ``base``, already
+    succeeded by the time this best-effort step runs). Never pushes the
+    fast-forwarded branch to any remote -- Story 3.8's own stage-boundary
+    push watcher already keeps a LIVE run's branch current; out of this
+    story's scope."""
+    if not resync_enabled or merge_strategy != "merge":
+        return None
+
+    def _warn(message: str) -> bool:
+        findings.append(Finding(code=_MRS_LAND_009, severity=Severity.WARN, message=message))
+        return False
+
+    try:
+        expected_sha = vcs.resolve_ref(git_repo_root, head_branch)
+        home_sha = vcs.worktree_head_sha(home)
+    except VcsCommandError as exc:
+        return _warn(
+            f"could not confirm {home}'s own checked-out commit before "
+            f"resyncing {head_branch!r} with origin/{base}: {exc}"
+        )
+    if home_sha != expected_sha:
+        return _warn(
+            f"{home}'s checked-out commit ({home_sha!r}) no longer matches "
+            f"{head_branch!r}'s own tip ({expected_sha!r}) -- skipping resync "
+            "rather than fast-forwarding whatever is actually checked out"
+        )
+
+    try:
+        vcs.fetch(git_repo_root, "origin", base)
+    except VcsCommandError as exc:
+        return _warn(f"could not fetch {base!r} from origin for {head_branch!r}: {exc}")
+
+    try:
+        vcs.fast_forward(home, f"origin/{base}")
+    except VcsCommandError as exc:
+        return _warn(f"could not fast-forward {head_branch!r} in {home} to 'origin/{base}': {exc}")
+    return True
 
 
 def _run_resync_if_enabled(
@@ -1063,6 +1195,8 @@ def _render_text_land(data: Mapping[str, object], findings: tuple[Finding, ...])
         lines.append(f"branch retired: {data.get('branch_retired')}")
     if "resynced" in data:
         lines.append(f"resynced: {data.get('resynced')}")
+    if "home_current" in data:
+        lines.append(f"home current with {data.get('base')!r}: {data.get('home_current')}")
     if findings:
         lines.append("findings:")
         for finding in findings:
