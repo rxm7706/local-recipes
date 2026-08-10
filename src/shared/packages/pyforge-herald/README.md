@@ -4,11 +4,10 @@ Dream-to-deck bridge CLI (`herald`) that seeds, pulls, and syncs [Claude
 Design](https://claude.ai/design) decks against this repo's `docs/dreams/`
 and `presentations/` trees via the `herald deck` subcommands.
 
-**Status:** build skeleton — this is the Option B pixi *workspace member*
-wiring only. The transport/bridge-core/state/error-hierarchy/registry
-implementation is specified in
-[`_bmad-output/projects/pyforge-herald/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-herald/planning-artifacts/)
-and delivered via later stories.
+**Status:** all 47 stories shipped (12 epics) — transport, bridge core,
+state, error hierarchy, registry, the deck pipeline and the Four Moments
+dashboard are live. Specified in
+[`_bmad-output/projects/pyforge-herald/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-herald/planning-artifacts/).
 
 ## Develop
 

@@ -1,7 +1,7 @@
 ---
 id: SPEC-kedro-org-tooling-adoption
 spec: kedro-org-tooling-adoption
-status: draft
+status: shipped
 owner-dream: docs/dreams/kedro-org-tooling-adoption.md
 surface:
   - "kedro-skills audit report (generated guidance vs Atlas AD-invariants) + conditional, version-pinned install into .claude/skills/ if the audit passes"

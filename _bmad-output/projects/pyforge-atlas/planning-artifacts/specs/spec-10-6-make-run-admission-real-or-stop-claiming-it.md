@@ -2,7 +2,7 @@
 title: 'Make run admission real, or stop claiming it'
 type: 'feature'
 created: '2026-07-29'
-status: 'done'
+status: shipped
 review_loop_iteration: 0
 followup_review_recommended: false  # discharged 2026-07-30 by review pass 5 (independent, adversarial-mutation lens): 8 mutants over pass 4's surfaces, 7 caught, 1 survived (release()'s malformed-ticket padding — a third vacuity) and is now fixed by a new test; mutation score 8/8, kedro-test 902 passed. 0 behavioural defects, so the find-rate pass 4 wanted to see fall has fallen. DW-AD23-3 independently corroborated and left open.
 context: []

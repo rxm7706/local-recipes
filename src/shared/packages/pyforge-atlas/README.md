@@ -11,10 +11,10 @@ edge between them points the other way: atlas optionally imports warden's
 (consumed at the Wave-F F4 gate node). No `warden -> atlas` import exists; both
 tools stay independently installable.
 
-**Status:** Story A1 scaffold — pixi build workspace member wiring (warden
-mirror), Kedro skeleton, lean env, and the `kedro-test` gate. Pipelines land
-wave-by-wave per
-[`docs/specs/cfe-atlas-datapipeline-kedro-migration.md`](../../../../docs/specs/cfe-atlas-datapipeline-kedro-migration.md).
+**Status:** all 46 stories shipped (12 epics) — 8 Kedro pipelines live
+(core, derived_artifacts, pypi_intelligence, seed_gaps, universal_sbom,
+upstream_discovery, vcs_health, vulnerability), plus the MCP read surface
+and the trending-candidates engine.
 
 ## Develop
 

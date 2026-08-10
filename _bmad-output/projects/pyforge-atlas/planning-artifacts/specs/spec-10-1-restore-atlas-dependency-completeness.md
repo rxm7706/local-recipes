@@ -3,7 +3,7 @@
 title: "Story 10-1: Restore atlas dependency completeness"
 type: "feature"
 created: "2026-07-27"
-status: "done"
+status: shipped
 recovery_tier: 3
 recovery_source: "epics.md"
 recovery_date: "2026-08-04"

@@ -2,7 +2,7 @@
 title: 'Stamp advisory data with its build provenance (AD-17)'
 type: 'feature'
 created: '2026-07-28'
-status: 'done'
+status: shipped
 review_loop_iteration: 0
 followup_review_recommended: false  # discharged 2026-07-30 by review pass 5 (independent, adversarial-mutation lens over pass 4's surfaces): 7 mutants, 5 caught, 2 survived — N3 (the numeric guard) proved a genuine no-op, unreachable by construction, so NOT a gap; N7 (resolve_for_file's non-ENOENT reason) was a real vacuity reporting an existing file as missing, now fixed by test_resolve_for_file_says_unreadable_not_missing. kedro-test 902 -> 903 passed, catalog-check 47/47. 0 behavioural defects.
 context: []

@@ -3,7 +3,7 @@
 BMAD Tier-2 output for this project, and the repo's **reference layout** for what a complete
 planning-artifacts tree looks like under bmad-method ≥ 6.10 with bmad-loop.
 
-Status: **shipped** — 32 of 32 stories across Waves 0 and A–H, merged through PRs #69–#102
+Status: **shipped** — 46 of 46 stories (32 kedro-migration via PRs #69-#102, plus Epics 11-13 since; re-verified 2026-08-10)
 (2026-07-17/18). These artifacts describe what Atlas *is*, in the present tense, not a plan for
 building it.
 
@@ -19,15 +19,15 @@ planning-artifacts/
 │   │   ├── degradation-contract.md  #   companion: the 3 markers, the exit projection
 │   │   └── gate-contract.md         #   companion: the 7 gates
 │   ├── spec-upstream-discovery/     # a second Spec kernel — trending / org-audit ingestion
-│   └── spec-<story>.md × 32         # per-story specs (tracked, durable — never Tier-3)
+│   └── spec-<story>.md × 47         # per-story specs (tracked, durable — never Tier-3)
 ├── prds/prd-pyforge-atlas-2026-07-17/
 │   ├── prd.md, addendum.md, .memlog.md, review-*.md, validation-report.{md,html}
 ├── architecture/architecture-pyforge-atlas-2026-07-17/
 │   ├── ARCHITECTURE-SPINE.md, .memlog.md, reviews/
 ├── briefs/brief-pyforge-atlas-2026-07-25/brief.md
 ├── research/                        # domain + technical currency research
-├── retros/                          # 8 per-epic retros + SYNTHESIS.md
-├── epics.md                         # 9 epics / 32 stories, each with its delivery record
+├── retros/                          # 10 per-epic retros + SYNTHESIS.md
+├── epics.md                         # 12 epics / 46 stories, each with its delivery record
 ├── deferred-work-ledger.md          # all 52 deferrals, tracked (Tier-3 copy was truncated)
 └── *-2026-07-17.md                  # readiness, groundtruth, closeout, sprint-change proposal
 ```
@@ -65,7 +65,7 @@ that never emitted story files.
 Each rebuilt spec carries a `## Delivery Record` derived exactly from its merged PR (`gh`), and
 says plainly that no original existed. Nothing in them is invented.
 
-**All 32 carry uniform `status: shipped` YAML frontmatter** (operator decision 2026-07-27,
+**All carry uniform `status: shipped` (46 shipped + 1 superseded as of 2026-08-10; 3 spec-10-x files still lack frontmatter — re-plan item) YAML frontmatter** (operator decision 2026-07-27,
 `AUD-ATLAS-045`; applied 2026-07-28).
 
 This reverses an earlier convention recorded here, and the trade is worth stating rather than
@@ -81,11 +81,11 @@ nothing below it was touched, and each added block says so in a `frontmatter_not
 provenance claim survives — narrowed from "this file is the recovered original" to "this file's
 body is the recovered original."
 
-**Verify by class, not uniformly.** Frontmatter must parse on all 32; the `<!-- RECOVERED -->`
-banner must survive on the 12. Both are checked — 32/32 and 12/12 as of 2026-07-28.
+**Verify by class, not uniformly.** Frontmatter must parse on all; the `<!-- RECOVERED -->`
+banner must survive on the 12. Both are checked — 32/32 and 12/12 as of 2026-07-28 (46-spec set re-swept 2026-08-10: 46 shipped + 1 superseded, 3 spec-10-x lack frontmatter).
 
 ## Regenerating
 
-Read `../../../CLAUDE.md` § *Keeping BMAD artifacts in sync* first. Address this project by
+Read `../../../../CLAUDE.md` § *Keeping BMAD artifacts in sync* first. Address this project by
 **physical path** (`_bmad-output/projects/pyforge-atlas/…`) or `BMAD_ACTIVE_PROJECT=pyforge-atlas`
 — never let a parallel agent touch `scripts/bmad-switch`, which is per-working-tree global state.

@@ -7,10 +7,8 @@ teammate and every agent session from then on (fixing the duplicated
 -rediscovery pain that motivated this project; see
 `d43899c1cb`).
 
-**Status:** build skeleton + Wave 1 (Story 1.1) — package scaffold and
-direct capture only. `scribe graph compile` and `scribe recall` exist as
-harmless stub subcommands so the CLI's top-level shape never changes
-between epics; their real implementation is Epic 2 (Story 2.1+). See
+**Status:** all 9 stories shipped (2 epics) — capture, `scribe graph
+compile`, and `scribe recall` are fully implemented (Epic 2 done). See
 [`_bmad-output/projects/pyforge-scribe/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-scribe/planning-artifacts/)
 for the full spec.
 

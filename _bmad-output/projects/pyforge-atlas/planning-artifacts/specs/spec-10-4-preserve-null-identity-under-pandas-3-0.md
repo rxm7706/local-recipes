@@ -2,7 +2,7 @@
 title: 'Preserve NULL identity under pandas 3.0'
 type: 'bugfix'
 created: '2026-07-28'
-status: 'done'
+status: shipped
 review_loop_iteration: 0
 followup_review_recommended: false  # pass 2 (fresh reviewers): 7 patches, but 5 are comment/doc/registry wording and the 2 medium are a warning on a today-unreachable fallback + a new canary test — no reachable production behavior changed; gates green (788/19, 47/47)
 context: []

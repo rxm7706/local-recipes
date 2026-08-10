@@ -3408,7 +3408,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 16:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 16:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4324,7 +4324,7 @@ window.DASHBOARD_DATA = {
       "title": "genesis-installer-name-retirement",
       "caps": 8,
       "companions": 1,
-      "updated": "2026-08-08",
+      "updated": "2026-08-10",
       "dream": "genesis-installer-name-retirement",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer-name-retirement"
     },
@@ -5451,7 +5451,7 @@ window.DASHBOARD_DATA = {
     "live": 30,
     "reached": 8,
     "gaps": 28,
-    "findings": 17,
+    "findings": 18,
     "rows": [
       {
         "label": "atlas",
@@ -5480,17 +5480,17 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T09:39",
+          "spec": "2026-08-10T11:28",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-04",
-          "epics": "2026-08-02",
+          "epics": "2026-08-10",
           "sprint": "2026-08-10",
           "tea": "2026-08-10",
-          "gates": "2026-08-02",
+          "gates": "2026-08-10",
           "code": "2026-08-09",
           "verify": "2026-08-09",
           "retro": "2026-08-02"
@@ -5563,7 +5563,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T09:39",
+            "at": "2026-08-10T11:28",
             "other": "2026-08-01"
           },
           {
@@ -5610,17 +5610,17 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T06:54",
+          "spec": "2026-08-10T11:28",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-01",
-          "epics": "2026-08-02",
+          "epics": "2026-08-10",
           "sprint": "2026-08-10",
           "tea": "2026-08-10",
-          "gates": "2026-08-01",
+          "gates": "2026-08-10",
           "code": "2026-08-09",
           "verify": "2026-08-09",
           "retro": "2026-08-08"
@@ -5693,7 +5693,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T06:54",
+            "at": "2026-08-10T11:28",
             "other": "2026-08-02"
           }
         ],
@@ -5733,7 +5733,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-08",
+          "spec": "2026-08-10T11:28",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-02",
@@ -5743,7 +5743,7 @@ window.DASHBOARD_DATA = {
           "epics": "2026-08-08",
           "sprint": "2026-08-08",
           "tea": "2026-08-08",
-          "gates": "2026-08-01",
+          "gates": "2026-08-10",
           "code": "2026-08-07",
           "verify": "2026-08-07",
           "retro": "2026-08-08"
@@ -5816,7 +5816,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-08",
+            "at": "2026-08-10T11:28",
             "other": "2026-08-02"
           }
         ],
@@ -5856,17 +5856,17 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-10T11:03",
+          "spec": "2026-08-10T11:05",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-09",
           "ux": "",
           "arch": "2026-08-08",
           "context": "2026-06-20",
-          "epics": "2026-08-09",
+          "epics": "2026-08-10",
           "sprint": "2026-08-10",
           "tea": "2026-08-10",
-          "gates": "2026-08-02",
+          "gates": "2026-08-10",
           "code": "2026-08-03",
           "verify": "2026-08-03",
           "retro": ""
@@ -6105,7 +6105,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-09T18:44",
+          "spec": "2026-08-10T11:28",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6115,7 +6115,7 @@ window.DASHBOARD_DATA = {
           "epics": "2026-08-02",
           "sprint": "2026-08-08",
           "tea": "2026-08-09",
-          "gates": "2026-08-01",
+          "gates": "2026-08-10",
           "code": "2026-07-25",
           "verify": "2026-07-25",
           "retro": "2026-08-08"
@@ -6188,7 +6188,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-09T18:44",
+            "at": "2026-08-10T11:28",
             "other": "2026-08-01"
           }
         ],
@@ -6351,7 +6351,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "2026-07-24",
-          "spec": "2026-07-29",
+          "spec": "2026-08-10T11:28",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6361,7 +6361,7 @@ window.DASHBOARD_DATA = {
           "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-24",
-          "gates": "2026-07-16",
+          "gates": "2026-08-10",
           "code": "2026-07-24",
           "verify": "2026-07-24",
           "retro": "2026-08-08"
@@ -6429,6 +6429,13 @@ window.DASHBOARD_DATA = {
             "than": "brief",
             "at": "2026-08-08",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-10T11:28",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "retro",
@@ -8050,7 +8057,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T11:03",
+          "spec": "2026-08-10T11:28",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12656,7 +12663,7 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "drift",
+        "state": "green",
         "findings": 0,
         "verdict": "",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
@@ -15134,15 +15141,15 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 16:03 UTC",
-    "generatedEpoch": 1786377832
+    "generatedAt": "2026-08-10 16:28 UTC",
+    "generatedEpoch": 1786379336
   },
   "storySpecs": [
     {
       "station": "pyforge-atlas",
       "done": 46,
-      "tracked": 39,
-      "gap": 7
+      "tracked": 47,
+      "gap": 0
     },
     {
       "station": "pyforge-doctor",
@@ -15341,18 +15348,7 @@ window.DASHBOARD_DATA = {
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
         "ledgerPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
         "specsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-kedro-org-tooling-adoption",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/SPEC.md"
-          },
-          {
-            "slug": "spec-upstream-discovery",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/SPEC.md"
-          }
-        ],
+        "openSpecs": [],
         "done": 46,
         "backlog": 0,
         "blocked": 0,
