@@ -2468,17 +2468,7 @@ window.DASHBOARD_DATA = {
         "E3",
         "E4"
       ],
-      "inflight": {
-        "key": "8.2",
-        "title": "Zero-loop guarantee",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786365518,
-        "median": 64,
-        "lo": 10,
-        "hi": 360,
-        "phaseAsOf": "2026-08-10 12:48 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 33 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -2594,7 +2584,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "in flight",
+        "state": "paused",
         "at": "8.2"
       },
       "epics": [
@@ -2791,7 +2781,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.2",
-              "active",
+              "pending",
               "Zero-loop guarantee"
             ],
             [
@@ -3418,7 +3408,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 12:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 15:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3451,6 +3441,16 @@ window.DASHBOARD_DATA = {
       "chain": {
         "deck": "presentations/agentic-sdlc",
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agentic-sdlc-autonomy"
+      }
+    },
+    {
+      "slug": "artifact-chain-reconciliation",
+      "title": "A backlog authored before the code existed is a plan for a different codebase",
+      "status": "specified",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation"
       }
     },
     {
@@ -4207,6 +4207,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-29",
       "dream": "agentic-sdlc-autonomy",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agentic-sdlc-autonomy"
+    },
+    {
+      "slug": "artifact-chain-reconciliation",
+      "project": "pyforge-marshal",
+      "title": "Artifact-Chain Reconciliation — the pause-and-audit",
+      "caps": 8,
+      "companions": 1,
+      "updated": "2026-08-10",
+      "dream": "artifact-chain-reconciliation",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation"
     },
     {
       "slug": "artifact-console",
@@ -5438,9 +5448,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 29,
+    "live": 30,
     "reached": 8,
-    "gaps": 27,
+    "gaps": 28,
     "findings": 18,
     "rows": [
       {
@@ -5470,7 +5480,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-09T23:17",
+          "spec": "2026-08-10T09:39",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -5553,7 +5563,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-09T23:17",
+            "at": "2026-08-10T09:39",
             "other": "2026-08-01"
           },
           {
@@ -6224,14 +6234,14 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T05:13",
+          "spec": "2026-08-10T10:10",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-01",
-          "epics": "2026-08-02",
+          "epics": "2026-08-10",
           "sprint": "2026-08-10",
           "tea": "2026-08-10",
           "gates": "2026-08-01",
@@ -6307,7 +6317,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T05:13",
+            "at": "2026-08-10T10:10",
             "other": "2026-08-01"
           }
         ],
@@ -8020,6 +8030,112 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "artifact-chain-reconciliation",
+        "slug": "artifact-chain-reconciliation",
+        "project": "pyforge-marshal",
+        "dream": "artifact-chain-reconciliation",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-10",
+          "deck": "",
+          "spec": "2026-08-10",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-10",
+          "deck": "",
+          "spec": "2026-08-10T10:10",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "artifact-chain-reconciliation",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 2,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-10",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
         "label": "artifact-console",
         "slug": "artifact-console",
         "project": "pyforge-marshal",
@@ -8788,7 +8904,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-09",
           "deck": "",
-          "spec": "2026-08-09T23:30",
+          "spec": "2026-08-10T09:42",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10384,7 +10500,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "2026-08-09T23:30",
+          "spec": "2026-08-10T09:40",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12620,6 +12736,16 @@ window.DASHBOARD_DATA = {
         }
       },
       {
+        "slug": "artifact-chain-reconciliation",
+        "title": "A backlog authored before the code existed is a plan for a different codebase",
+        "status": "specified",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation"
+        }
+      },
+      {
         "slug": "jira-github-projects-sync",
         "title": "A ticket moves once, both boards know",
         "status": "specified",
@@ -12646,6 +12772,7 @@ window.DASHBOARD_DATA = {
       "doctor": 1,
       "herald": 1,
       "atlas": 1,
+      "marshal": 1,
       "steward": 2
     },
     "practices": [
@@ -12760,17 +12887,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 24,
+        "total": 25,
         "counts": {
           "dreamt": 0,
           "pitched": 0,
-          "specified": 0,
+          "specified": 1,
           "realized": 5,
           "archived": 15,
           "practice": 4
         },
         "line": "paused 7.1",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -12938,6 +13065,13 @@ window.DASHBOARD_DATA = {
             "slug": "surface-drift-reconciliation",
             "title": "A drift gate nobody can clear, and a drift signal anyone can launder",
             "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "artifact-chain-reconciliation",
+            "title": "A backlog authored before the code existed is a plan for a different codebase",
+            "status": "specified",
             "type": "dream",
             "blockedOn": ""
           }
@@ -13207,7 +13341,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 1
         },
-        "line": "in flight 8.2",
+        "line": "paused 8.2",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -14997,24 +15131,17 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [
-      {
-        "station": "Steward",
-        "story": "8.2",
-        "phase": "dev",
-        "startEpoch": 1786365518
-      }
-    ],
+    "running": [],
     "lastShipped": {
-      "station": "steward",
-      "story": "8.1",
-      "epoch": 1786365517,
-      "sha": "fa86f1f0d",
-      "subject": "Merge bmad-loop/20260810-063828-0c71/8-1-bidirectional-propagation into loop/pyforge-steward (bmad-loop)"
+      "station": "doctor",
+      "story": "6.9",
+      "epoch": 1786373192,
+      "sha": "78b285fa7",
+      "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 12:48 UTC",
-    "generatedEpoch": 1786366127
+    "generatedAt": "2026-08-10 15:10 UTC",
+    "generatedEpoch": 1786374645
   },
   "storySpecs": [
     {
@@ -15079,6 +15206,11 @@ window.DASHBOARD_DATA = {
             "slug": "spec-agent-tool-surface",
             "status": "in-progress",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md"
+          },
+          {
+            "slug": "spec-artifact-chain-reconciliation",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation/SPEC.md"
           },
           {
             "slug": "spec-dashboard-project-path-derivation",
