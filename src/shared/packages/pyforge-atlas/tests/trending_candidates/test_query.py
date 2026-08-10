@@ -259,6 +259,10 @@ def test_top_actually_truncates(seed_catalog):
 
     assert result["count"] == 5
     assert result["filters"]["top"] == 5
+    # Truncation is VISIBLE (second follow-up review finding, Story 13.3): with `count`
+    # alone, "5 of 30" and an exhaustive 5 were the same response.
+    assert result["rows"] == 30
+    assert result["matched"] == 30
     # highest stars_total first: repo29 (1029) down to repo25 (1025)
     assert [c["repo_full_name"] for c in result["candidates"]] == [
         "user29/repo29", "user28/repo28", "user27/repo27", "user26/repo26", "user25/repo25",
@@ -573,3 +577,63 @@ def test_period_all_truncation_does_not_depend_on_physical_row_order(seed_catalo
         )
 
     assert len(seen) == 1, f"truncation varied with input order: {seen}"
+
+
+def test_a_fallback_shaped_table_is_reported_present_not_silently_empty(seed_catalog):
+    """Second follow-up review finding, Story 13.3.
+
+    `datasets/upstream_discovery.py` falls back to the GitHub Search API when the HTML
+    scrape yields zero rows across ALL THREE windows, and stamps every fallback row
+    `period="all"` — so a fully-populated, freshly-refreshed table can consist entirely
+    of rows the DEFAULT `--period weekly` cannot match. With `count` as the only count in
+    the envelope, that degraded state was byte-identical to a healthy table nothing
+    qualified in: `count: 0` under a fresh `build_stamp`. `rows` distinguishes them."""
+    df = pd.DataFrame(
+        [
+            _row(repo_full_name="alice/libfoo", period="all", tier="1",
+                 reason=_TIER1_REASON, stars_total=1200, source="search_api_fallback"),
+            _row(repo_full_name="bob/rustcli", period="all", tier="2",
+                 reason=_TIER2_REASON, stars_total=900, source="search_api_fallback"),
+        ]
+    )
+    seed_catalog(df)
+
+    default = query.query_trending_candidates()
+    assert default["count"] == 0 and default["candidates"] == []
+    assert default["rows"] == 2, "the data IS there — only the period filter excluded it"
+    assert default["matched"] == 0
+
+    # The same table, seen through the explicit opt-in the Design Notes document.
+    opted_in = query.query_trending_candidates(period="all")
+    assert opted_in["rows"] == 2 and opted_in["matched"] == 2 and opted_in["count"] == 2
+
+
+def test_an_empty_dataset_reports_zero_rows_not_just_zero_count(seed_catalog):
+    """The other side of the same signal: nothing ingested reports `rows: 0`, which is
+    what makes a nonzero `rows` with `matched: 0` mean "your filters", not "no data"."""
+    seed_catalog(pd.DataFrame())
+
+    result = query.query_trending_candidates()
+
+    assert result["rows"] == 0 and result["matched"] == 0 and result["count"] == 0
+
+
+def test_a_whitespace_padded_tier_list_is_echoed_normalized(seed_catalog):
+    """Second follow-up review finding, Story 13.3: `_validate_period` returns its
+    fully-stripped value (pinned by `test_whitespace_padded_period_is_accepted`'s
+    "normalized, not echoed padded"), but `_validate_tier` echoed `" 1 , 2 "` back as
+    `"1 , 2"` — so two callers sending the same tier set got byte-different envelopes
+    for an identical candidate list."""
+    df = pd.DataFrame(
+        [
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
+                 reason=_TIER1_REASON, stars_total=1200),
+        ]
+    )
+    seed_catalog(df)
+
+    padded = query.query_trending_candidates(tier=" 1 , 2 ")
+    plain = query.query_trending_candidates(tier="1,2")
+
+    assert padded["filters"]["tier"] == "1,2"
+    assert padded == plain

@@ -90,12 +90,18 @@ def _print_table(envelope: dict) -> None:
         # `[Errno 2] ...` line sat between the header and the rows.
         for line in str(envelope["reason"]).splitlines():
             print(f"# {line}")
-    # `shown`, not `matched` (follow-up review finding, Story 13.3): `count` is the
-    # POST-cap row count, so labelling it "matched" was simply false whenever `--top`
-    # truncated — 25 shown of 400 matched read as "25 matched". The header's purpose
-    # (telling "never ingested" apart from "your filters matched nothing") is served
-    # either way by the provenance/reason lines above.
-    print(f"# filters={envelope['filters']}  shown={envelope['count']}")
+    # rows -> matched -> shown (second follow-up review finding, Story 13.3). `shown`
+    # alone (the post-cap count) left the two states an operator most needs to tell
+    # apart byte-identical: a table whose rows are ALL tagged period="all" — what CAP-1
+    # writes when the HTML scrape breaks and it falls back to the Search API — answers
+    # the DEFAULT `--period weekly` with the same `shown=0  (no candidates)` as a
+    # healthy table nothing qualified in, under a fresh build_stamp that says all is
+    # well. `rows=N  matched=0` says "the data is here, your filters excluded all of
+    # it"; `matched=400  shown=25` is also the only place truncation is visible.
+    print(
+        f"# filters={envelope['filters']}  rows={envelope['rows']}"
+        f"  matched={envelope['matched']}  shown={envelope['count']}"
+    )
 
     candidates = envelope["candidates"]
     if not candidates:
@@ -182,14 +188,37 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(envelope))
             else:
                 _print_table(envelope)
+            # FLUSHED HERE, inside the guard (second follow-up review finding, Story
+            # 13.3): stdout is BLOCK-buffered whenever it is a pipe, and no realistic
+            # envelope fills that buffer — so `print` returned cleanly and the
+            # BrokenPipeError surfaced only in the interpreter's SHUTDOWN flush, i.e.
+            # outside this `try`, as "Exception ignored while flushing sys.stdout" +
+            # exit 120. The previous pass verified its fix in a shell exporting
+            # PYTHONUNBUFFERED=1 (ambient here, set by neither pixi.toml nor the
+            # Containerfile) — which is precisely the setting that hid it: with
+            # `env -u PYTHONUNBUFFERED … --json | head`, the guard never ran.
+            sys.stdout.flush()
         except BrokenPipeError:
             # The reader (`| head`, `| less` quit early) is gone: nothing can be
             # reported to it, and leaving the interpreter to flush stdout at shutdown
             # prints "Exception ignored in: <_io.TextIOWrapper name='<stdout>'>" to
             # stderr. Detach stdout first, then exit quietly on the standard 1.
-            with contextlib.suppress(OSError):
-                devnull = os.open(os.devnull, os.O_WRONLY)
-                os.dup2(devnull, sys.stdout.fileno())
+            #
+            # ONLY when this process owns the real stdout (second follow-up review
+            # finding, Story 13.3): `dup2` retargets the descriptor for the WHOLE
+            # process and nothing ever undoes it, so an in-process `main()` caller —
+            # the same callable API `test_json_restores_the_callers_own_logging_floor`
+            # exists for — came back with its own stdout permanently pointed at
+            # /dev/null. A host that redirected `sys.stdout` has no shutdown flush of
+            # the real stdout to silence anyway, so the detach is unnecessary there as
+            # well as destructive. The devnull fd is closed rather than leaked.
+            if sys.stdout is sys.__stdout__:
+                with contextlib.suppress(OSError):
+                    devnull = os.open(os.devnull, os.O_WRONLY)
+                    try:
+                        os.dup2(devnull, sys.stdout.fileno())
+                    finally:
+                        os.close(devnull)
             return 1
         except Exception as exc:
             # Broad on purpose: a bad filter value is `ValueError` (the documented
