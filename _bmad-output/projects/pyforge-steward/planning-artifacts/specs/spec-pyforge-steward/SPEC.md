@@ -7,6 +7,16 @@ surface:
   # not sit with the chain detectors under regenerable-factory.
   - scripts/llms_full_check.py
   - docs/reference/library-llms-full.md
+  # Story 8.1 (2026-08-09): .steward/sync-config.example.yaml is the first tracked file to
+  # land under the repo-root .steward/ dotdir the Constraints section's "Config file
+  # location" rule already claims. Per-kind, not a directory-level catch-all — this repo
+  # already learned that lesson once (see the scripts/** split recorded in
+  # scripts/spec_surface_allowlist.txt): a blanket .steward/** would silently absorb any
+  # stray file dropped into the one directory this Spec designates for credential material.
+  - .steward/budget.yaml
+  - .steward/keys-inventory.yaml
+  - .steward/*.age
+  - .steward/sync-config.example.yaml
 id: SPEC-steward
 owner-dream: docs/dreams/pyforge-steward.md
 companions:
@@ -55,7 +65,7 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **Credential provenance convention:** `steward keys list` entries carry a `provenance` field, `issued` (an `age` identity Steward itself minted) or `observed` (a pre-existing repo credential Steward's audit discovered but did not create). Both are listed for drift-audit visibility; only `issued` entries are rotatable via `steward keys rotate` in v1.
 - **Credential values are never printed:** `steward keys list`/`audit` output never contains a raw secret value under any flag combination — enforced by a dedicated invariant test.
 - **Provision's pixi invocations are explicit, user-triggered CLI actions only** — never an import-time or build-time side effect.
-- **Config file location:** repo-root `.steward/` dotdir, tracked (not gitignored, not under `_bmad-output/`) — `budget.yaml`, `keys-inventory.yaml`, and `*.age` payloads all live here, surviving a `bmad-switch` to a different active BMAD project, since a durable operational fact does not belong under a per-project planning-artifacts tree.
+- **Config file location:** repo-root `.steward/` dotdir, tracked (not gitignored, not under `_bmad-output/`) — `budget.yaml`, `keys-inventory.yaml`, `*.age` payloads, and `sync-config.example.yaml` all live here, surviving a `bmad-switch` to a different active BMAD project, since a durable operational fact does not belong under a per-project planning-artifacts tree.
 
 ## Non-goals
 
