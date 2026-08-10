@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
 from pyforge.marshal.cli import land as land_module
@@ -50,6 +50,10 @@ class _FakeVcs:
         worktree_head_sha_raises: bool = False,
         changed_paths: tuple[str, ...] = (),
         changed_files_raises: bool = False,
+        fetch_raises: bool = False,
+        fast_forward_sha: str = "ff-sha",
+        fast_forward_raises: bool = False,
+        commit_paths_raises: bool = False,
     ) -> None:
         self.existing_branches = existing_branches
         self.branch_exists_raises = branch_exists_raises
@@ -66,6 +70,13 @@ class _FakeVcs:
         self.worktree_head_sha_raises = worktree_head_sha_raises
         self.changed_paths = changed_paths
         self.changed_files_raises = changed_files_raises
+        self.fetch_raises = fetch_raises
+        self.fetch_calls: list[tuple[object, str, str]] = []
+        self.fast_forward_sha = fast_forward_sha
+        self.fast_forward_raises = fast_forward_raises
+        self.fast_forward_calls: list[tuple[object, str]] = []
+        self.commit_paths_raises = commit_paths_raises
+        self.commit_paths_calls: list[tuple[object, tuple[Path, ...], str]] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -106,6 +117,25 @@ class _FakeVcs:
         if self.changed_files_raises:
             raise VcsCommandError("git diff --name-status failed")
         return self.changed_paths
+
+    def fetch(self, repo_root, remote, ref):
+        self.fetch_calls.append((repo_root, remote, ref))
+        if self.fetch_raises:
+            raise VcsCommandError("git fetch failed: could not read from remote")
+
+    def fast_forward(self, worktree_path, ref):
+        self.fast_forward_calls.append((worktree_path, ref))
+        if self.fast_forward_raises:
+            raise VcsCommandError(
+                "git merge --ff-only failed: not possible to fast-forward, aborting"
+            )
+        return self.fast_forward_sha
+
+    def commit_paths(self, repo_root, paths, message):
+        self.commit_paths_calls.append((repo_root, tuple(paths), message))
+        if self.commit_paths_raises:
+            raise VcsCommandError("git commit failed: nothing to commit (test double)")
+        return "deferred-work-commit-sha"
 
 
 class _FakeForge:
@@ -663,6 +693,340 @@ def test_landing_resync_true_calls_refresh_feed_once(tmp_path, capsys, monkeypat
     assert payload["data"]["resynced"] is True
     assert len(calls) == 1
     assert calls[0].project == "acme"
+
+
+# =====================================================================
+# Story 4.12 (FR-173): a landing leaves the loop home current with `main`.
+# `_resync_home_branch` runs from ALL THREE of `run_land`'s own
+# wave-outcome exits (the `if not wave_keys` no-op, the already-landed
+# shortcut, and the full-merge path) -- `git_repo_root` for every `_FakeVcs`
+# call is the fixed `Path("/fake-repo-root")` `repo_common_root` always
+# returns, regardless of which exit is under test.
+# =====================================================================
+
+
+def test_resync_home_branch_no_op_wave_still_fast_forwards_home(tmp_path, capsys, monkeypatch):
+    """The story's own PRIMARY scenario: `if not wave_keys` is a clean
+    no-op (nothing merged since the last landing), but between-runs drift
+    accumulates exactly here, whether or not anything new landed this
+    invocation -- FR-173's resync must still run."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["wave"] == []
+    assert payload["data"]["home_current"] is True
+    assert exit_code == 0
+    assert vcs.fetch_calls == [(Path("/fake-repo-root"), "origin", "main")]
+    assert len(vcs.fast_forward_calls) == 1
+    assert vcs.fast_forward_calls[0][1] == "origin/main"
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" not in codes
+
+
+def test_resync_home_branch_already_landed_wave_still_fast_forwards_home(
+    tmp_path, capsys, monkeypatch
+):
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["already_landed"] is True
+    assert payload["data"]["home_current"] is True
+    assert exit_code == 0
+    assert len(vcs.fast_forward_calls) == 1
+
+
+def test_resync_home_branch_full_merge_path_sets_home_current_true(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["home_current"] is True
+    assert exit_code == 0
+    assert len(vcs.fast_forward_calls) == 1
+    assert vcs.fast_forward_calls[0][1] == "origin/main"
+
+
+def test_resync_home_branch_diverged_reports_warn_and_home_current_false(
+    tmp_path, capsys, monkeypatch
+):
+    """`fast_forward` refuses whenever `loop/<slug>` is not an ancestor of
+    the fetched `origin/<base>` -- the exact shape a LIVE bmad-loop run that
+    kept committing to the branch past the landed wave produces (this
+    story's own Design Notes: safety comes from `--ff-only`'s own atomicity
+    alone, with no dependency on Story 4.11's `is_run_live` predicate). The
+    fake exercises the one failure branch `_resync_home_branch` has for
+    this condition; a real, diverged git branch is proven separately by
+    `tests/unit/test_vcs_git.py::test_fast_forward_refuses_a_diverged_branch`."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+        fast_forward_raises=True,
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    message = payload["findings"][codes.index("MRS-LAND-009")]["message"]
+    assert "loop/acme" in message
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["home_current"] is False
+    assert payload["verdict"] == "warn"
+    # MRS-LAND-009 is WARN-tier -- reported, never blocking: the wave's own
+    # landing already succeeded by the time this best-effort step runs.
+    assert exit_code == 0
+
+
+def test_resync_home_branch_fetch_failure_reports_warn(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+        fetch_raises=True,
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    # fast_forward is never attempted once fetch has already failed.
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_skips_fast_forward_when_home_has_drifted_off_head_branch(
+    tmp_path, capsys, monkeypatch
+):
+    """Code review (2026-08-10): `fast_forward` itself only asks "is this a
+    fast-forward from whatever HEAD currently is" -- without a prior
+    identity check, a `home` that drifted onto a different ref (or a
+    detached HEAD) would get THAT ref silently advanced while `head_branch`
+    stayed stale, yet `home_current` would still report `True`. Reusing
+    `worktree_head_sha` != `resolve_ref(head_branch)` (the SAME pair
+    `MRS-DEPLOY-017` already uses in the full-merge path) catches this
+    before any fetch/fast-forward is attempted. Exercised via the no-op
+    (`if not wave_keys`) exit -- the full-merge path (a THIRD call site, not
+    exercised here) already runs its own, earlier `MRS-DEPLOY-017` identity
+    check before ever reaching `_resync_home_branch`, which would mask this
+    guard's own independent failure mode there; the already-landed shortcut
+    has no such pre-check of its own and is covered separately below
+    (`test_resync_home_branch_already_landed_reports_warn_when_home_has_drifted`)."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+        worktree_head_sha="some-other-checked-out-sha",
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["wave"] == []
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    message = payload["findings"][codes.index("MRS-LAND-009")]["message"]
+    assert "some-other-checked-out-sha" in message
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    # Neither fetch nor fast_forward is attempted once the identity check
+    # itself has already failed.
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_skipped_when_resync_disabled(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(
+        tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None)
+    )
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "home_current" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" not in codes
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_skipped_when_merge_strategy_is_not_merge(
+    tmp_path, capsys, monkeypatch
+):
+    """Boundaries & Constraints (corrected 2026-08-09): this resync
+    capability applies ONLY when `landing_merge_strategy == "merge"` --
+    under `"squash"`/`"rebase"` the landed commits are never ancestors of
+    `origin/<base>`, so a fast-forward is impossible BY CONSTRUCTION, on
+    every invocation, permanently. The skip is silent by design: no fetch,
+    no fast_forward attempt, no MRS-LAND-009, and `data["home_current"]` is
+    ABSENT -- byte-identical in shape to `resync_enabled=False`."""
+    policy_path = _write_project_policy(
+        tmp_path,
+        'landing_merge_strategy = "squash"\n' + _rule_policy(required_check=None),
+    )
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "home_current" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" not in codes
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_already_landed_reports_warn_when_home_has_drifted(
+    tmp_path, capsys, monkeypatch
+):
+    """Code review (this pass): the already-landed shortcut has no
+    `MRS-DEPLOY-017`-style pre-check of its own before reaching
+    `_resync_home_branch` -- unlike the full-merge path, ITS identity-drift
+    detection is exercised ONLY by this guard. The existing already-landed
+    test (`test_resync_home_branch_already_landed_wave_still_fast_forwards_
+    home`) only covers the matching-identity success path; this covers the
+    mismatch."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        worktree_head_sha="some-other-checked-out-sha",
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["already_landed"] is True
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_reports_warn_when_head_branch_cannot_be_resolved(
+    tmp_path, capsys, monkeypatch
+):
+    """The identity guard's two lookups now run in separate `try` blocks
+    (code review, this pass) so the WARN names which one actually failed --
+    this covers `resolve_ref` raising; `worktree_head_sha` raising is
+    covered by the sibling test below."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+        resolve_ref_raises=True,
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    message = payload["findings"][codes.index("MRS-LAND-009")]["message"]
+    assert "resolve" in message
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_reports_warn_when_home_head_sha_cannot_be_read(
+    tmp_path, capsys, monkeypatch
+):
+    """`worktree_head_sha` raising -- the sibling half of the identity
+    guard's now-separate `try` blocks (see the `resolve_ref` case above)."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+        worktree_head_sha_raises=True,
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    message = payload["findings"][codes.index("MRS-LAND-009")]["message"]
+    assert "checked-out commit" in message
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_render_text_land_reports_home_current_line(tmp_path, capsys, monkeypatch):
+    """Tasks & Acceptance: `_render_text_land` gains one line reporting
+    `home_current` when the key is present -- untested by every other Story
+    4.12 test, which all parse the JSON envelope via `_payload`."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(format="text"), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    rendered = capsys.readouterr().out
+    assert exit_code == 0
+    assert "home current with 'main': True" in rendered
 
 
 # =====================================================================
@@ -1346,3 +1710,465 @@ def test_deploy_run_write_never_touches_the_new_advisory_lock(tmp_path):
     )
     assert outcome_id is not None
     assert findings == []
+
+
+# --- deferred-work promotion (Story 4.13, FR-175) -------------------------
+#
+# ``_BMADLOOP_WAVE_SUBJECT`` names story key ``4-4`` (see the module-level
+# constant above) -- every fixture below names its Tier-3 deferral for that
+# same story, so the wave discovered from ``wave_subjects``/``base_subjects``
+# always matches.
+
+_TIER3_DEFERRAL_TEXT = """\
+### DW-8: Follow-up review still recommended for 4-4-batch after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-4-4-batch.md`
+severity: low
+reason: The follow-up-review damping cap was spent with the story finalized while the review pass still recommended an independent follow-up.
+status: open
+"""
+
+_TIER3_DEFERRAL_FOR_A_DIFFERENT_STORY = """\
+### DW-9: Follow-up review still recommended for 5-1-unrelated after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-5-1-unrelated.md`
+severity: low
+reason: Belongs to a story that is not part of this wave.
+status: open
+"""
+
+_TRACKED_LEDGER_HEADER = (
+    "---\ndoc_type: deferred-work-ledger\nproject: acme\n---\n\n"
+    "# acme — deferred-work ledger (TRACKED)\n\nsome pre-existing prose.\n"
+)
+
+
+def _write_deferred_work_fixtures(
+    tmp_path: Path, slug: str, *, tier3_text: str | None, tracked_text: str | None
+) -> tuple[Path, Path]:
+    tier3_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "deferred-work.md"
+    )
+    tracked_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    )
+    if tier3_text is not None:
+        tier3_path.parent.mkdir(parents=True, exist_ok=True)
+        tier3_path.write_text(tier3_text, encoding="utf-8")
+    if tracked_text is not None:
+        tracked_path.parent.mkdir(parents=True, exist_ok=True)
+        tracked_path.write_text(tracked_text, encoding="utf-8")
+    return tier3_path, tracked_path
+
+
+def test_promote_on_merge_appends_and_commits_ledger_entry(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    assert exit_code == 0
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert "### DW-FU-4-4:" in ledger_text
+    # The bare Tier-3 id must survive into the promoted entry -- the exact
+    # substring scripts/deferred_work_check.py looks for to confirm the
+    # Tier-3 id now has a tracked twin.
+    assert "DW-8" in ledger_text
+    assert len(vcs.commit_paths_calls) == 1
+    called_root, called_paths, called_message = vcs.commit_paths_calls[0]
+    assert called_paths == (tracked_path,)
+    assert "deferred-work" in called_message
+
+
+def test_promote_on_already_landed_shortcut(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["already_landed"] is True
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    assert exit_code == 0
+    assert "### DW-FU-4-4:" in tracked_path.read_text(encoding="utf-8")
+    assert len(vcs.commit_paths_calls) == 1
+
+
+def test_promote_deferred_work_idempotent_rerun_no_duplicate_no_commit(
+    tmp_path, capsys, monkeypatch
+):
+    """The already-promoted case (Boundaries: "an id already present
+    anywhere in the tracked ledger's text is never re-appended;
+    idempotent -- a fully-idempotent run acquires no lock and writes
+    nothing"). Simulates a SECOND ``land`` run against a ledger that
+    already carries the promoted entry from a prior run."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    already_promoted_ledger = _TRACKED_LEDGER_HEADER + (
+        "\n### DW-FU-4-4: Follow-up review still recommended for "
+        "4-4-batch after the damping cap was spent\n\n"
+        "- source_spec: `spec-4-4-batch.md`\n"
+        "  summary: Follow-up review still recommended for 4-4-batch "
+        "after the damping cap was spent\n"
+        "  evidence: already promoted by a prior run\n"
+        "  promoted: 2026-08-09 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-8` there) "
+        "under the ledger's `DW-FU-<story>` convention, so the next "
+        "damped story cannot collide with a generic `DW-8`.\n"
+        "  severity: low\n"
+        "  status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=already_promoted_ledger
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    assert vcs.commit_paths_calls == []
+    final_text = tracked_path.read_text(encoding="utf-8")
+    assert final_text == already_promoted_ledger
+    assert final_text.count("DW-FU-4-4") == 1
+
+
+def test_promote_deferred_work_lock_contention_reports_warn(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+
+    class _AlwaysLockContendedFs(LocalFs):
+        def acquire_advisory_lock(self, path, *, timeout_s):
+            raise FsError(f"lock contended on {path} (test double)")
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=_AlwaysLockContendedFs(), forge=forge
+    )
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0  # MRS-LAND-010 is WARN-tier -- reported, never blocking
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" in codes
+    assert "deferred_work_promoted" not in payload["data"]
+    assert len(vcs.commit_paths_calls) == 0
+    # Nothing was written -- the lock refusal happens before any write.
+    assert tracked_path.read_text(encoding="utf-8") == _TRACKED_LEDGER_HEADER
+
+
+def test_promote_deferred_work_no_matching_tier3_entry_is_silent(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_deferred_work_fixtures(
+        tmp_path,
+        "acme",
+        tier3_text=_TIER3_DEFERRAL_FOR_A_DIFFERENT_STORY,
+        tracked_text=_TRACKED_LEDGER_HEADER,
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    assert vcs.commit_paths_calls == []
+
+
+def test_promote_deferred_work_no_tier3_file_is_silent(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+
+
+def test_render_text_land_reports_deferred_work_promoted_line(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(format="text"), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "deferred work promoted: DW-FU-4-4" in out
+
+
+def test_promote_deferred_work_bootstraps_a_missing_tracked_ledger(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (2026-08-10): a project with NO tracked ledger file
+    at all must still get its first promotion -- not a silent, permanent
+    no-op -- and the bootstrapped file must not carry leading blank lines."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=None
+    )
+    assert not tracked_path.exists()
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert ledger_text.startswith("### DW-FU-4-4:")
+    assert len(vcs.commit_paths_calls) == 1
+
+
+def test_promote_deferred_work_dedupes_two_tier3_entries_for_the_same_story(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (2026-08-10): two Tier-3 review-budget-followup
+    blocks resolving to the SAME story key in one wave must never produce
+    two identical ``### DW-FU-<story>:`` headings in a single write."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    duplicate_tier3_text = _TIER3_DEFERRAL_TEXT + (
+        "\n### DW-20: Follow-up review still recommended for 4-4-batch "
+        "after the damping cap was spent\n"
+        "origin: review-budget-followup\n"
+        "source_spec: `spec-4-4-batch.md`\n"
+        "severity: low\n"
+        "reason: A second, distinct followup entry for the same story key.\n"
+        "status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=duplicate_tier3_text, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert ledger_text.count("### DW-FU-4-4:") == 1
+    assert len(vcs.commit_paths_calls) == 1
+
+
+def test_promote_deferred_work_ledger_deleted_between_reads_reports_warn(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (2026-08-10): a tracked ledger that existed at the
+    first, unlocked read but is gone by the time the lock is held is a
+    genuine anomaly (concurrent deletion) -- it must be reported, never
+    silently resurrected from stale pre-lock content."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+
+    class _DeletesLedgerAfterFirstReadFs(LocalFs):
+        def __init__(self, tracked_path: Path) -> None:
+            self._tracked_path = tracked_path
+            self._tracked_reads = 0
+
+        def read_text(self, path):
+            if path == self._tracked_path:
+                self._tracked_reads += 1
+                if self._tracked_reads >= 2:
+                    return None
+            return super().read_text(path)
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=_DeletesLedgerAfterFirstReadFs(tracked_path), forge=forge
+    )
+
+    payload = _payload(capsys)
+    assert exit_code == 0  # MRS-LAND-010 is WARN-tier -- reported, never blocking
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" in codes
+    assert "deferred_work_promoted" not in payload["data"]
+    assert vcs.commit_paths_calls == []
+
+
+def test_promote_on_already_landed_shortcut_idempotent_rerun_no_duplicate(
+    tmp_path, capsys, monkeypatch
+):
+    """The already-landed-shortcut call site's own idempotency (Blind
+    Hunter review finding, 2026-08-10: only the full-merge path had a
+    dedicated idempotent-rerun regression test before this one)."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    already_promoted_ledger = _TRACKED_LEDGER_HEADER + (
+        "\n### DW-FU-4-4: Follow-up review still recommended for "
+        "4-4-batch after the damping cap was spent\n\n"
+        "- source_spec: `spec-4-4-batch.md`\n"
+        "  summary: Follow-up review still recommended for 4-4-batch "
+        "after the damping cap was spent\n"
+        "  evidence: already promoted by a prior run\n"
+        "  promoted: 2026-08-09 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-8` there) "
+        "under the ledger's `DW-FU-<story>` convention, so the next "
+        "damped story cannot collide with a generic `DW-8`.\n"
+        "  severity: low\n"
+        "  status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=already_promoted_ledger
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["already_landed"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    assert vcs.commit_paths_calls == []
+    final_text = tracked_path.read_text(encoding="utf-8")
+    assert final_text == already_promoted_ledger
+    assert final_text.count("DW-FU-4-4") == 1
+
+
+def test_promote_deferred_work_multiple_stories_in_one_wave(tmp_path, capsys, monkeypatch):
+    """Blind Hunter review finding (2026-08-10): multi-candidate promotion
+    (>1 distinct story promoted in one wave/commit) was previously
+    completely untested, including the commit-message pluralization
+    branch."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    two_story_tier3_text = _TIER3_DEFERRAL_TEXT + (
+        "\n### DW-21: Follow-up review still recommended for 4-5-other "
+        "after the damping cap was spent\n"
+        "origin: review-budget-followup\n"
+        "source_spec: `spec-4-5-other.md`\n"
+        "severity: low\n"
+        "reason: A distinct followup entry for a second story in the same wave.\n"
+        "status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=two_story_tier3_text, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    second_subject = "Merge bmad-loop/run-1/4-5-other into loop/acme (bmad-loop)"
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT, second_subject),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert sorted(payload["data"]["deferred_work_promoted"]) == ["DW-FU-4-4", "DW-FU-4-5"]
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert "### DW-FU-4-4:" in ledger_text
+    assert "### DW-FU-4-5:" in ledger_text
+    assert len(vcs.commit_paths_calls) == 1
+    _called_root, _called_paths, called_message = vcs.commit_paths_calls[0]
+    assert "entries" in called_message
+    assert "2 deferred-work" in called_message

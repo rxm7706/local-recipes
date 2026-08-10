@@ -415,6 +415,7 @@
       "name": "pypi_intelligence_enriched",
       "tags": [],
       "pipelines": [
+        "upstream_discovery",
         "__default__",
         "pypi_intelligence",
         "seed_gaps"
@@ -492,6 +493,7 @@
       "name": "pypi_universe",
       "tags": [],
       "pipelines": [
+        "upstream_discovery",
         "__default__",
         "pypi_intelligence",
         "universal_sbom"
@@ -742,6 +744,78 @@
       "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     },
     {
+      "id": "4054ea75",
+      "name": "load_org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
+      },
+      "full_name": "load_org_audit_candidates"
+    },
+    {
+      "id": "926ef102",
+      "name": "params:org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "8d76eab7",
+      "name": "org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
       "id": "04746af5",
       "name": "normalize_intake_to_cyclonedx",
       "tags": [],
@@ -775,7 +849,8 @@
           "vulnerability_osv_offline_store": 604800,
           "vcs_upstream_versions": 604800,
           "vcs_registry_versions": 604800,
-          "vcs_live_health": 86400
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
         },
         "freshness": {
           "stale_after_days": 14
@@ -784,7 +859,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "normalize_intake_to_cyclonedx"
     },
@@ -894,6 +998,74 @@
       "dataset_type": "datasets.refresh.OSVOfflineStoreDataset"
     },
     {
+      "id": "517e5e70",
+      "name": "refresh_trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "ttls": {
+          "core_downloads": 604800,
+          "core_downloads_platform_breakdown": 604800,
+          "core_downloads_pyver_breakdown": 604800,
+          "core_downloads_channel_breakdown": 604800,
+          "core_version_download_history": 604800,
+          "core_cf_graph_raw": 86400,
+          "pypi_universe": 604800,
+          "pypi_current_versions": 604800,
+          "pypi_downloads_monthly": 2592000,
+          "pypi_cross_channel_flags": 604800,
+          "pypi_intelligence_enriched": 604800,
+          "pypi_conda_map_store": 604800,
+          "pypi_endoflife_raw": 604800,
+          "vulnerability_cisa_kev_raw": 86400,
+          "vulnerability_package_rollup": 604800,
+          "vulnerability_package_version_vulns": 2592000,
+          "vulnerability_epss_raw": 86400,
+          "vulnerability_cwe_catalog_raw": 7776000,
+          "vulnerability_osv_offline_store": 604800,
+          "vcs_upstream_versions": 604800,
+          "vcs_registry_versions": 604800,
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
+        }
+      },
+      "full_name": "refresh_trending_candidates"
+    },
+    {
+      "id": "6d0063d1",
+      "name": "params:ttls",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "c10a63b1",
+      "name": "trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.upstream_discovery.TrendingSnapshotDataset"
+    },
+    {
       "id": "352d660b",
       "name": "refresh_vdb_store",
       "tags": [],
@@ -961,7 +1133,8 @@
           "vulnerability_osv_offline_store": 604800,
           "vcs_upstream_versions": 604800,
           "vcs_registry_versions": 604800,
-          "vcs_live_health": 86400
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
         },
         "freshness": {
           "stale_after_days": 14
@@ -970,7 +1143,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "run_dependency_hygiene"
     },
@@ -1642,6 +1844,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
       ],
@@ -1685,7 +1888,8 @@
           "vulnerability_osv_offline_store": 604800,
           "vcs_upstream_versions": 604800,
           "vcs_registry_versions": 604800,
-          "vcs_live_health": 86400
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
         },
         "freshness": {
           "stale_after_days": 14
@@ -1694,7 +1898,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "build_universe_sbom"
     },
@@ -1712,6 +1945,62 @@
       "node_extras": null,
       "layer": null,
       "dataset_type": "json.json_dataset.JSONDataset"
+    },
+    {
+      "id": "015741d1",
+      "name": "classify_org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_org_audit_candidates"
+    },
+    {
+      "id": "1820adae",
+      "name": "org_audit_candidates_classified",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "437ccc69",
+      "name": "classify_trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_trending_candidates"
+    },
+    {
+      "id": "b17d345f",
+      "name": "trending_candidates_classified",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     },
     {
       "id": "50d783ee",
@@ -1859,7 +2148,8 @@
           "vulnerability_osv_offline_store": 604800,
           "vcs_upstream_versions": 604800,
           "vcs_registry_versions": 604800,
-          "vcs_live_health": 86400
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
         },
         "freshness": {
           "stale_after_days": 14
@@ -1868,7 +2158,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "match_against_universe"
     },
@@ -1920,7 +2239,8 @@
           "vulnerability_osv_offline_store": 604800,
           "vcs_upstream_versions": 604800,
           "vcs_registry_versions": 604800,
-          "vcs_live_health": 86400
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
         },
         "freshness": {
           "stale_after_days": 14
@@ -1929,7 +2249,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "assemble_and_gate"
     },
@@ -1962,6 +2311,10 @@
       "target": "8cd71bf4"
     },
     {
+      "source": "8d76eab7",
+      "target": "015741d1"
+    },
+    {
       "source": "f7f89bdf",
       "target": "3b14dfa6"
     },
@@ -1984,6 +2337,10 @@
     {
       "source": "847d0f5d",
       "target": "04746af5"
+    },
+    {
+      "source": "c10a63b1",
+      "target": "437ccc69"
     },
     {
       "source": "d142eb2a",
@@ -2050,12 +2407,12 @@
       "target": "b4132c13"
     },
     {
-      "source": "8cd71bf4",
-      "target": "f6c7654f"
-    },
-    {
       "source": "13c0b666",
       "target": "595030c3"
+    },
+    {
+      "source": "8cd71bf4",
+      "target": "f6c7654f"
     },
     {
       "source": "25c59f35",
@@ -2064,6 +2421,10 @@
     {
       "source": "9005f53d",
       "target": "8405d07e"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "015741d1"
     },
     {
       "source": "f1f1425b",
@@ -2076,6 +2437,10 @@
     {
       "source": "90c4349a",
       "target": "595030c3"
+    },
+    {
+      "source": "437ccc69",
+      "target": "b17d345f"
     },
     {
       "source": "27bdea9a",
@@ -2130,6 +2495,10 @@
       "target": "0e32d244"
     },
     {
+      "source": "27bdea9a",
+      "target": "437ccc69"
+    },
+    {
       "source": "8cd71bf4",
       "target": "b17968ef"
     },
@@ -2150,16 +2519,24 @@
       "target": "45ea5d06"
     },
     {
-      "source": "3f87425c",
-      "target": "d43cb0fa"
+      "source": "6d0063d1",
+      "target": "517e5e70"
     },
     {
       "source": "9d7067f9",
       "target": "595030c3"
     },
     {
+      "source": "3f87425c",
+      "target": "d43cb0fa"
+    },
+    {
       "source": "ff48367d",
       "target": "1444471b"
+    },
+    {
+      "source": "926ef102",
+      "target": "4054ea75"
     },
     {
       "source": "14d7c1ab",
@@ -2176,6 +2553,10 @@
     {
       "source": "7d428ada",
       "target": "1239af3a"
+    },
+    {
+      "source": "4054ea75",
+      "target": "8d76eab7"
     },
     {
       "source": "7f27c40a",
@@ -2302,6 +2683,10 @@
       "target": "1444471b"
     },
     {
+      "source": "f27d8057",
+      "target": "015741d1"
+    },
+    {
       "source": "3db02b39",
       "target": "595030c3"
     },
@@ -2316,6 +2701,10 @@
     {
       "source": "1b6f0119",
       "target": "032c79e7"
+    },
+    {
+      "source": "517e5e70",
+      "target": "c10a63b1"
     },
     {
       "source": "037a6e05",
@@ -2370,6 +2759,10 @@
       "target": "eda40cd0"
     },
     {
+      "source": "015741d1",
+      "target": "1820adae"
+    },
+    {
       "source": "54bd4fd5",
       "target": "19426718"
     },
@@ -2390,6 +2783,10 @@
       "target": "80a889cb"
     },
     {
+      "source": "984bc0c0",
+      "target": "015741d1"
+    },
+    {
       "source": "595030c3",
       "target": "6356b2aa"
     },
@@ -2404,6 +2801,10 @@
     {
       "source": "d5dd2817",
       "target": "80624468"
+    },
+    {
+      "source": "f27d8057",
+      "target": "437ccc69"
     },
     {
       "source": "8405d07e",
@@ -2446,16 +2847,16 @@
       "target": "595030c3"
     },
     {
+      "source": "679aaf52",
+      "target": "2bd50436"
+    },
+    {
       "source": "6d4dd7cb",
       "target": "3bb91274"
     },
     {
       "source": "352d660b",
       "target": "4b62bbad"
-    },
-    {
-      "source": "679aaf52",
-      "target": "2bd50436"
     },
     {
       "source": "61d06077",
@@ -2478,6 +2879,10 @@
       "target": "8a33e83a"
     },
     {
+      "source": "984bc0c0",
+      "target": "437ccc69"
+    },
+    {
       "source": "9005f53d",
       "target": "8cbe5033"
     },
@@ -2494,32 +2899,36 @@
       "name": "__default__"
     },
     {
-      "id": "vulnerability",
-      "name": "vulnerability"
-    },
-    {
-      "id": "derived_artifacts",
-      "name": "derived_artifacts"
-    },
-    {
       "id": "pypi_intelligence",
       "name": "pypi_intelligence"
-    },
-    {
-      "id": "core",
-      "name": "core"
-    },
-    {
-      "id": "seed_gaps",
-      "name": "seed_gaps"
     },
     {
       "id": "universal_sbom",
       "name": "universal_sbom"
     },
     {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
       "id": "vcs_health",
       "name": "vcs_health"
+    },
+    {
+      "id": "upstream_discovery",
+      "name": "upstream_discovery"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "core",
+      "name": "core"
     }
   ],
   "modular_pipelines": {
@@ -2654,6 +3063,10 @@
           "type": "data"
         },
         {
+          "id": "015741d1",
+          "type": "task"
+        },
+        {
           "id": "8cbe5033",
           "type": "task"
         },
@@ -2682,6 +3095,10 @@
           "type": "data"
         },
         {
+          "id": "8d76eab7",
+          "type": "data"
+        },
+        {
           "id": "c1510f9d",
           "type": "data"
         },
@@ -2696,6 +3113,10 @@
         {
           "id": "9ba4ba72",
           "type": "data"
+        },
+        {
+          "id": "437ccc69",
+          "type": "task"
         },
         {
           "id": "d51007a2",
@@ -2720,6 +3141,10 @@
         {
           "id": "83133318",
           "type": "task"
+        },
+        {
+          "id": "1820adae",
+          "type": "data"
         },
         {
           "id": "ff48367d",
@@ -2754,8 +3179,16 @@
           "type": "data"
         },
         {
+          "id": "b17d345f",
+          "type": "data"
+        },
+        {
           "id": "b2942a56",
           "type": "data"
+        },
+        {
+          "id": "517e5e70",
+          "type": "task"
         },
         {
           "id": "bfabcd4d",
@@ -2810,12 +3243,20 @@
           "type": "data"
         },
         {
+          "id": "926ef102",
+          "type": "data"
+        },
+        {
           "id": "69c4954c",
           "type": "task"
         },
         {
           "id": "c50fd2f8",
           "type": "data"
+        },
+        {
+          "id": "926ef102",
+          "type": "parameters"
         },
         {
           "id": "5a055bdf",
@@ -2883,6 +3324,10 @@
         },
         {
           "id": "2967fde9",
+          "type": "data"
+        },
+        {
+          "id": "6d0063d1",
           "type": "data"
         },
         {
@@ -2978,6 +3423,14 @@
           "type": "data"
         },
         {
+          "id": "c10a63b1",
+          "type": "data"
+        },
+        {
+          "id": "4054ea75",
+          "type": "task"
+        },
+        {
           "id": "d5dd2817",
           "type": "task"
         },
@@ -2988,6 +3441,10 @@
         {
           "id": "1b6f0119",
           "type": "data"
+        },
+        {
+          "id": "6d0063d1",
+          "type": "parameters"
         },
         {
           "id": "006fbf33",

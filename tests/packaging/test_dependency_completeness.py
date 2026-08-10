@@ -82,6 +82,7 @@ PACKAGES = _discover()
 MODULE_ALIASES: dict[str, frozenset[str]] = {
     "a2a": frozenset({"a2a-sdk"}),
     "attr": frozenset({"attrs"}),
+    "bs4": frozenset({"beautifulsoup4"}),
     "cyclonedx": frozenset({"cyclonedx-python-lib"}),
     "google": frozenset({"protobuf"}),
     "ibis": frozenset({"ibis-framework"}),

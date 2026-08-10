@@ -1,0 +1,43 @@
+{
+  "code": "def load_org_audit_candidates(org_audit_candidates: list | None) -> pd.DataFrame:\n    # CAP-4 — fixed-source audit track ingest (Story 13.4, FR-67; spec-upstream-discovery)\n    \"\"\"PURE ``params:org_audit_candidates -> pd.DataFrame`` loader: builds a\n    ``repo_full_name``-column frame from the git-tracked, hand-curated declared list\n    (``conf/base/parameters.yml``). No HTTP/parse import — the source is config, not a\n    live fetch, so there is no dataset-owned IO seam to inject (Boundaries &\n    Constraints).\n\n    Every list entry produces exactly one row — never a silent drop (review finding,\n    Story 13.4: matches :func:`classify_trending_candidates`'s own stated \"never a\n    silent drop\" invariant, which this loader must not violate one step upstream). A\n    non-dict entry, a missing ``repo_full_name`` key, or a non-string value degrades\n    that row's ``repo_full_name`` to ``None`` rather than being excluded — the\n    downstream classifier already resolves a ``None``/non-string ``repo_full_name`` to\n    a visible ``skip``/``no-pypi-artifact`` (or ``unclassified-needs-human``) row via\n    its existing ``_repo_segment`` guard, so a hand-edit typo in ``parameters.yml``\n    surfaces as a reasoned skip instead of vanishing. A resolved ``repo_full_name``\n    that repeats an earlier one (case-insensitively) is deduped, keeping the first\n    occurrence's original casing — a literal or case-variant duplicate in the\n    hand-curated list must not double-count in ``org_audit_candidates_classified``. A\n    ``None``/non-list ``org_audit_candidates`` (or an empty list) degrades to an empty\n    frame carrying the ``repo_full_name`` column, matching\n    :func:`classify_trending_candidates`'s own empty-input schema so the downstream\n    classify node's empty-input guard fires cleanly rather than KeyError-ing on a\n    missing column.\"\"\"\n    rows: list[dict] = []\n    seen: set[str] = set()\n    if isinstance(org_audit_candidates, list):\n        for entry in org_audit_candidates:\n            repo_full_name = entry.get(\"repo_full_name\") if isinstance(entry, dict) else None\n            if not isinstance(repo_full_name, str):\n                repo_full_name = None\n            if repo_full_name is not None:\n                key = repo_full_name.casefold()\n                if key in seen:\n                    continue\n                seen.add(key)\n            rows.append({\"repo_full_name\": repo_full_name})\n    return pd.DataFrame(rows, columns=_ORG_AUDIT_COLS)\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py",
+  "parameters": {
+    "org_audit_candidates": [
+      {
+        "repo_full_name": "microsoft/edit"
+      },
+      {
+        "repo_full_name": "microsoft/agent-framework"
+      },
+      {
+        "repo_full_name": "microsoft/qlib"
+      },
+      {
+        "repo_full_name": "microsoft/PyRIT"
+      },
+      {
+        "repo_full_name": "microsoft/promptflow"
+      },
+      {
+        "repo_full_name": "microsoft/semantic-kernel"
+      },
+      {
+        "repo_full_name": "microsoft/torchscale"
+      },
+      {
+        "repo_full_name": "microsoft/SEAL"
+      },
+      {
+        "repo_full_name": "microsoft/DiskANN"
+      }
+    ]
+  },
+  "run_command": "kedro run --to-nodes='load_org_audit_candidates'",
+  "inputs": [
+    "params:org_audit_candidates"
+  ],
+  "outputs": [
+    "org_audit_candidates"
+  ],
+  "preview": null
+}

@@ -6,7 +6,7 @@ import pytest
 
 from pyforge.steward import __version__
 from pyforge.steward.cli import (
-    DUTIES, EXIT_FAILED, EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_OK,
+    _HELP, DUTIES, EXIT_FAILED, EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_OK,
     build_parser, main, resolve_duty,
 )
 from pyforge.steward.interfaces import DutyResult
@@ -19,7 +19,7 @@ def test_version_exits_zero(capsys):
     assert __version__ in capsys.readouterr().out
 
 
-def test_help_lists_all_four_duties(capsys):
+def test_help_lists_all_five_duties(capsys):
     with pytest.raises(SystemExit):
         build_parser().parse_args(["--help"])
     out = capsys.readouterr().out
@@ -27,8 +27,17 @@ def test_help_lists_all_four_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_four_duties():
-    assert DUTIES == ("keys", "deploy", "provision", "budget")
+def test_there_are_exactly_five_duties():
+    assert DUTIES == ("keys", "deploy", "provision", "budget", "sync")
+
+
+def test_sync_is_wired_into_help():
+    """Story 8.1 AC: `sync` is a fifth duty, dispatched exactly like the
+    other four (structural conformance itself is already covered generically
+    by `test_duty_protocol.py::test_every_declared_duty_resolves_to_a_
+    conforming_implementation`)."""
+    assert "sync" in DUTIES
+    assert "sync" in _HELP
 
 
 @pytest.mark.parametrize("duty", DUTIES)

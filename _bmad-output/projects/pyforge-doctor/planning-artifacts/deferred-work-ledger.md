@@ -95,3 +95,24 @@ Durability first; curation is owned follow-up work.
     archaeology someone performs later.
   severity: low
   status: open
+
+### DW-FU-6-8: Follow-up review still recommended for 6-8-bmad-drift-comes-home-without-breaking-the-board after the damping cap was spent
+
+- source_spec: `spec-6-8-bmad-drift-comes-home-without-breaking-the-board.md`
+  summary: Follow-up review still recommended for 6-8-bmad-drift-comes-home-without-breaking-the-board after the damping cap was spent
+  evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the
+    story finalized (status: done, verify green) while the review pass still recommended an
+    independent follow-up. The work was committed by bmad-loop run 20260809-195207-7471; this
+    entry preserves the lingering recommendation for a deliberate later review.
+  context: this story ran to every ceiling at once — dev attempt 2/2, review cycle 3/3,
+    follow-ups 2/2 — and cleared its LAST review rather than escalating. It is also the
+    largest single deliverable in Epic 6 (`sources/factory.py`, 1,197 lines, porting
+    `scripts/bmad_drift_check.py`'s judgements), which is why an independent follow-up is
+    worth more here than on a routine story.
+  promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md`
+    (id `DW-4` there) under the ledger's `DW-FU-<story>` convention, so the next damped story
+    cannot collide with a generic `DW-4`. Same act as DW-FU-6-5 / DW-FU-6-6; Marshal FR-175 /
+    Story 4.13 exists to make this promotion an obligation of the story rather than
+    archaeology someone performs later.
+  severity: low
+  status: open

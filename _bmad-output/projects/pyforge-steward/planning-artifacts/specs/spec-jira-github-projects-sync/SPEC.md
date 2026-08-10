@@ -1,16 +1,47 @@
 ---
 spec: jira-github-projects-sync
-status: draft
+status: ready
 owner-dream: docs/dreams/jira-github-projects-sync.md
-surface: []          # frontier — no sync code, workflow, or Jira/Projects integration exists anywhere in this repo yet (verified by grep 2026-08-08)
-companions: []
+surface: []          # Governs nothing, DELIBERATELY — and no longer because the frontier is
+                     # empty. CORRECTED 2026-08-10: steward Story 8.1 landed `steward/sync.py`
+                     # (874 lines), a `sync` duty on the CLI, three conformance suites, and the
+                     # `docs/reference/sync-jira-github-workflow-templates/` set. Those files are
+                     # governed by `spec-pyforge-steward`'s surface (the station owns its package
+                     # tree), not by this Spec, so an empty `surface:` here is correct governance
+                     # rather than a stale claim — a glob matching nothing is silent by design.
+                     # The original note ("no sync code exists anywhere in this repo yet, verified
+                     # by grep 2026-08-08") was true when written and is now false; it was flagged
+                     # by 8.1's own review pass as a deferred finding.
+companions:
+  # The architecture that answers Q2/Q3/Q4 below. Load-bearing: its ADs are the
+  # build contract Epic 8's stories are written against.
+  - ../../architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/jira-github-projects-sync.md
   - ../../../../../../docs/intake/jira-github-projects-sync/jira-github-projects-sync-prd-and-architecture.md
-open_questions:
-  - "Q2 — no authoritative side is named. The Dream demands zero-loop bidirectional propagation but never says which system wins when the two boards disagree at sync time (simultaneous conflicting moves); the intake document's per-field sync-direction config is a mechanism for expressing an answer, not the answer itself."
-  - "Q3 — Mode A (real-time serverless: GitHub Actions + Jira Automations) vs Mode B (scheduled batch: dlt + PostgreSQL) vs a deliberate combination is an architecture-phase decision the Dream refuses to pre-commit."
-  - "Q4 — Mode B's data-model shape is unreconciled on purpose: flat single-table (direct custom_status column) vs normalized EAV schema + three-table control-plane bridge, and whether the bridge's entity-linking table replaces or coexists with the simpler custom-field linking."
+# All three open questions were ANSWERED by the architecture run on 2026-08-09 and by the
+# operator's Q3 direction; status moved draft -> ready on that basis. Resolutions, kept here
+# rather than deleted so the contract records what was decided and where:
+#   Q2 (which side is authoritative on a conflicting simultaneous edit)
+#       -> AD-4: GitHub Projects V2 is authoritative, per-field overridable; AD-5 keeps the
+#          time-based zero-loop guard SEPARATE from the conflict rule, so neither masks the other.
+#   Q3 (Mode A vs Mode B vs a combination)  [operator direction, 2026-08-09]
+#       -> AD-1/AD-2/AD-3: trigger is decoupled from transport. The DEFAULT is Mode A's
+#          mechanism on a schedule trigger — batch cadence at zero infrastructure, no database —
+#          with control state stored in the synced systems themselves. Mode B stays opt-in for
+#          queryable sync history and uniform arbitrary-custom-field handling.
+#          NEAR-REAL-TIME IS OPT-IN, NOT THE DEFAULT, and the reason is a verified fact rather
+#          than a preference: there is NO `project_v2_item` / `projects_v2_item` event usable in
+#          a GitHub Actions `on:` block (checked against GitHub's docs 2026-08-09, after steward
+#          story 8-1 raised it as an intent_gap). The webhook reaches a workflow only via an
+#          EXTERNAL RECEIVER — a GitHub App with org-level Projects read access, or a webhook
+#          endpoint — that then calls `repository_dispatch`. A webhook default would therefore
+#          have silently mandated hosting and credentials for every adopter. The Jira→GitHub
+#          direction already used `repository_dispatch` correctly and is unchanged.
+#   Q4 (Mode B's data-model shape)
+#       -> AD-7: Mode B ships the NORMALIZED schema together with its three-table control plane,
+#          which is what makes the join tractable; the flat single-table variant is rejected.
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -28,9 +59,11 @@ Two boards, one truth. When a developer drags a GitHub Projects V2 item to "Done
 transitions the linked Jira issue from a Cloud dashboard, the other board should reflect it
 without a human re-typing anything, without a third-party SaaS bridge (Unito, Exalate) in the
 loop, and without the two systems chasing their own tail. Today nothing does this: this repo
-has no Jira integration and no GitHub Projects integration of any kind (verified 2026-08-08 —
-the only matches for either term are the Dream, its intake document, and unrelated
-recipe-fixture names); story status lives in per-project `sprint-status-ledger.yaml` files and
+had no Jira integration and no GitHub Projects integration of any kind when this Spec was
+written (verified 2026-08-08). **That changed on 2026-08-10**: Story 8.1 landed the reconcile
+core — `steward/sync.py`, the `sync` duty, and both workflow templates — so this Spec is now
+partly realized rather than pure frontier. Story status still lives in per-project
+`sprint-status-ledger.yaml` files and
 GitHub is driven directly via `gh` Issues/PRs. The complete technical write-up already exists
 as intake material; what does not exist is a contracted, buildable sync engine that is boring
 in exactly the way infrastructure should be — cheap to run, idempotent, and impossible to

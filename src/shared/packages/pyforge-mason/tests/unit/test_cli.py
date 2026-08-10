@@ -30,14 +30,20 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import logging
 import os
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from pyforge.mason import __version__
-from pyforge.mason.cli import _resolve_bool, _resolve_str, build_parser, main
+from pyforge.mason.cli import (
+    _ENV_CFE_PYTHON, _ENV_CFE_ROOT, _ENV_CFE_TIMEOUT, _ENV_FORMAT, _ENV_QUIET,
+    _ENV_VERBOSE, _configure_logging, _resolve_bool, _resolve_optional_float,
+    _resolve_str, build_parser, main,
+)
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
 from pyforge.mason.errors import CfeUnresolvedError, MasonError
@@ -273,6 +279,178 @@ def test_global_boolean_flags_accepted_at_either_position(flag, attr):
     assert getattr(after, attr) is True
 
 
+def test_cfe_timeout_flag_accepted_at_either_position_and_parses_as_float():
+    before = build_parser().parse_args(["--cfe-timeout", "30", "package"])
+    after = build_parser().parse_args(["package", "--cfe-timeout", "30"])
+    assert before.noun == after.noun == "package"
+    assert before.cfe_timeout == after.cfe_timeout == 30.0
+    assert isinstance(before.cfe_timeout, float)
+    assert isinstance(after.cfe_timeout, float)
+
+
+def test_cfe_timeout_flag_rejects_a_non_numeric_value(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout", "not-a-number"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    # Review pass (2026-08-10): letting float()'s bare ValueError escape
+    # made argparse name the private `type=` callable instead of the flag --
+    # "invalid _parse_finite_float value: 'not-a-number'". The message a
+    # user sees must not leak a helper's identifier.
+    assert "_parse_finite_float" not in err
+    assert "must be a number of seconds" in err
+
+
+@pytest.mark.parametrize("bad_value", ["nan", "inf", "Infinity"])
+def test_cfe_timeout_flag_rejects_nan_and_infinite_values(bad_value, capsys):
+    """Review pass (2026-08-09): `float()` parses `nan`/`inf`/`-inf` as
+    well-formed, but neither is a usable subprocess timeout -- `nan` never
+    compares as expired, `inf` never expires at all. Must be rejected the
+    same way a non-numeric value is.
+
+    `-inf` is deliberately excluded from this parametrize list -- see
+    `test_cfe_timeout_flag_rejects_negative_infinity_via_equals_form` below,
+    which exercises it correctly."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout", bad_value])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    # Asserted on the validator's own wording, not just exit code 2 + the
+    # flag name (review pass, 2026-08-10, second): that weaker pair is
+    # exactly what let the `-inf` case pass while argparse -- not
+    # `_parse_finite_float` -- was doing the rejecting.
+    assert "must be a finite, positive number" in err
+
+
+def test_cfe_timeout_flag_rejects_negative_infinity_via_equals_form(capsys):
+    """`-inf` as a separate argv token looks like another option string to
+    argparse's own parser (leading `-`), so `--cfe-timeout -inf` is rejected
+    by argparse's own "expected one argument" error *before*
+    `_parse_finite_float` ever runs -- both forms exit 2 with `--cfe-timeout`
+    in the message, so a naive two-token test for `-inf` passes without
+    actually proving the isfinite guard rejects it (edge-case-hunter
+    finding, review pass 2026-08-10). The `--cfe-timeout=-inf` single-token
+    form bypasses that ambiguity and genuinely reaches the custom
+    validator."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout=-inf"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    # The whole point of the equals form: prove `_parse_finite_float` did the
+    # rejecting, not argparse's own "expected one argument".
+    assert "must be a finite, positive number" in err
+
+
+@pytest.mark.parametrize("bad_value", ["0", "-1", "-0.5"])
+def test_cfe_timeout_flag_rejects_non_positive_values(bad_value, capsys):
+    """Review pass (2026-08-10): zero and negative timeouts are equally
+    unusable as nan/inf, just via the opposite failure mode -- they expire
+    before the delegated operation has any chance to run.
+
+    `-1`/`-0.5` reach the validator rather than being read as option strings
+    because argparse treats a leading-`-` token as a negative number when the
+    parser has no option that looks like one; the wording assertion below
+    pins that, instead of accepting any exit-2 path (review pass,
+    2026-08-10, second)."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout", bad_value])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    assert "must be a finite, positive number" in err
+
+
+def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form(monkeypatch):
+    """AD-13/FR-48: the v1 knob set is closed and fully enumerated -- each of
+    the six has both a flag and an environment-variable form, and each
+    resolves flag -> environment -> default. One test, all six (the spec's
+    own AC wording).
+
+    The three resolution assertions per knob were added in the 2026-08-10
+    (third) review pass. This test previously only checked that six flag
+    names and six variable names appear in `format_help()` -- which would
+    still pass with `_resolve_optional_float` deleted outright, and asserts
+    nothing whatsoever about the precedence the AC actually names. Each
+    knob's environment value is chosen so no sub-assertion is vacuous: the
+    flag-wins case uses an environment value that would produce a *different*
+    answer if the flag were ignored, and the environment case uses one that
+    differs from the default.
+    """
+    knobs = (
+        {
+            "flag": "--cfe-root", "env_var": _ENV_CFE_ROOT, "dest": "cfe_root",
+            "argv": ["--cfe-root", "/from/flag"], "flag_wins": "/from/flag",
+            "env_raw": "/from/env", "env_wins": "/from/env", "default": "auto",
+            "resolve": lambda v: _resolve_str(v, _ENV_CFE_ROOT, "auto"),
+        },
+        {
+            "flag": "--cfe-python", "env_var": _ENV_CFE_PYTHON, "dest": "cfe_python",
+            "argv": ["--cfe-python", "/from/flag/python"], "flag_wins": "/from/flag/python",
+            "env_raw": "/from/env/python", "env_wins": "/from/env/python", "default": "auto",
+            "resolve": lambda v: _resolve_str(v, _ENV_CFE_PYTHON, "auto"),
+        },
+        {
+            "flag": "--cfe-timeout", "env_var": _ENV_CFE_TIMEOUT, "dest": "cfe_timeout",
+            "argv": ["--cfe-timeout", "30"], "flag_wins": 30.0,
+            "env_raw": "45", "env_wins": 45.0, "default": None,
+            "resolve": lambda v: _resolve_optional_float(v, _ENV_CFE_TIMEOUT),
+        },
+        {
+            # --format's default is one of its own two choices, so the flag
+            # form deliberately asks for the default value while the
+            # environment asks for the other one: if the flag were ignored,
+            # the flag-wins case would come back "json".
+            "flag": "--format", "env_var": _ENV_FORMAT, "dest": "format",
+            "argv": ["--format", "text"], "flag_wins": "text",
+            "env_raw": "json", "env_wins": "json", "default": "text",
+            "resolve": lambda v: _resolve_str(v, _ENV_FORMAT, "text"),
+        },
+        {
+            # Same shape for the two booleans, whose default is also one of
+            # only two possible values: the flag-wins case pairs `--verbose`
+            # with a falsy environment value, the environment case with a
+            # truthy one.
+            "flag": "--verbose", "env_var": _ENV_VERBOSE, "dest": "verbose",
+            "argv": ["--verbose"], "flag_wins": True,
+            "env_raw": "1", "env_wins": True, "default": False,
+            "conflict_env_raw": "0",
+            "resolve": lambda v: _resolve_bool(v, _ENV_VERBOSE, False),
+        },
+        {
+            "flag": "--quiet", "env_var": _ENV_QUIET, "dest": "quiet",
+            "argv": ["--quiet"], "flag_wins": True,
+            "env_raw": "1", "env_wins": True, "default": False,
+            "conflict_env_raw": "0",
+            "resolve": lambda v: _resolve_bool(v, _ENV_QUIET, False),
+        },
+    )
+    assert len(knobs) == 6, "AD-13's v1 knob set is closed at six"
+
+    help_text = build_parser().format_help()
+    for knob in knobs:
+        flag, env_var, dest, resolve = knob["flag"], knob["env_var"], knob["dest"], knob["resolve"]
+        assert flag in help_text, f"{flag} missing from --help output"
+        assert env_var in help_text, f"{env_var} missing from --help output"
+
+        # 1. Flag beats a conflicting environment value.
+        monkeypatch.setenv(env_var, knob.get("conflict_env_raw", knob["env_raw"]))
+        ns = build_parser().parse_args(knob["argv"])
+        assert resolve(getattr(ns, dest, None)) == knob["flag_wins"], f"{flag}: flag must win"
+
+        # 2. Environment is read when the flag is absent.
+        monkeypatch.setenv(env_var, knob["env_raw"])
+        ns = build_parser().parse_args([])
+        assert resolve(getattr(ns, dest, None)) == knob["env_wins"], f"{env_var}: env must apply"
+
+        # 3. Default when neither is given.
+        monkeypatch.delenv(env_var)
+        ns = build_parser().parse_args([])
+        assert resolve(getattr(ns, dest, None)) == knob["default"], f"{flag}: default must apply"
+
+
 def test_keyboard_interrupt_projects_to_130(monkeypatch):
     monkeypatch.setattr("pyforge.mason.cli.build_parser",
                         lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
@@ -401,3 +579,181 @@ class TestResolveBool:
     def test_truthy_env_spellings(self, raw, monkeypatch):
         monkeypatch.setenv("MASON_VERBOSE", raw)
         assert _resolve_bool(None, "MASON_VERBOSE", False) is True
+
+
+class TestResolveOptionalFloat:
+    """`_resolve_optional_float` has no Mason-wide `default` parameter --
+    unlike `_resolve_str`/`_resolve_bool` above, its terminal fallback is
+    always `None` (spec Intent: FR-4's "per-operation default" lives at a
+    future call site, not in this resolver)."""
+
+    def test_flag_wins_over_env(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "99")
+        assert _resolve_optional_float(30.0, "MASON_CFE_TIMEOUT") == 30.0
+
+    def test_small_fractional_flag_value_still_wins_over_env(self, monkeypatch):
+        """Not a truthiness check -- an unusual but *usable* timeout must
+        still win over the environment."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(0.001, "MASON_CFE_TIMEOUT") == 0.001
+
+    @pytest.mark.parametrize(
+        "unusable", [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
+    )
+    def test_unusable_flag_value_falls_through_to_env(self, monkeypatch, unusable):
+        """Review pass (2026-08-10): this resolver used to validate only its
+        environment half, so `nan`/`inf`/`0`/negative passed straight
+        through from the flag parameter -- handing a caller exactly the
+        value `_parse_finite_float` and `cfe.run_streamed` both reject. A
+        flag value that fails the same finite-and-positive test is treated
+        as "absent at the step that supplied it" and resolution falls
+        through to the environment, mirroring `_resolve_str`'s handling of a
+        whitespace-only flag value."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") == 45.0
+
+    @pytest.mark.parametrize(
+        "unusable", [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
+    )
+    def test_unusable_flag_value_with_no_env_resolves_to_none(self, monkeypatch, unusable):
+        """...and with nothing to fall through to, the resolver returns
+        `None` -- never a value its own siblings reject as unusable."""
+        monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+        assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") is None
+
+    @pytest.mark.parametrize("unusable", [True, False])
+    def test_bool_flag_value_falls_through_to_env(self, monkeypatch, unusable):
+        """`bool` is a subclass of `int`, so `True` cleared both the
+        `isfinite` and `> 0` checks and was returned verbatim -- and
+        `cfe.run_streamed` rejects a bool `timeout` outright, so the resolver
+        was still handing out a value its documented consumer refuses
+        (review pass, 2026-08-10, second). Treated as unusable, like every
+        other value that fails the same standard."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") == 45.0
+
+    @pytest.mark.parametrize("not_a_number", ["30", "", Decimal("30"), object()])
+    def test_non_numeric_flag_value_falls_through_instead_of_raising(
+        self, monkeypatch, not_a_number,
+    ):
+        """A flag value that is not a real number at all reached
+        `math.isfinite` and raised its bare "must be real number, not str" --
+        naming neither this function nor the parameter (review pass,
+        2026-08-10, third). `cfe.run_streamed`'s `timeout` guard was given an
+        isinstance check for exactly this message; its sibling resolver was
+        left without one. Treated as unusable and fallen through, like every
+        other value that fails this resolver's standard -- this function is
+        documented as never raising."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(not_a_number, "MASON_CFE_TIMEOUT") == 45.0
+
+    def test_non_numeric_flag_value_with_no_env_resolves_to_none(self, monkeypatch):
+        monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+        assert _resolve_optional_float("30", "MASON_CFE_TIMEOUT") is None
+
+    def test_env_wins_over_none_default(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") == 45.0
+
+    def test_padded_env_value_is_parsed_after_stripping(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "  12.5  ")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") == 12.5
+
+    def test_neither_set_falls_back_to_none(self, monkeypatch):
+        monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    def test_malformed_env_value_falls_back_to_none(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "not-a-number")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    def test_whitespace_only_env_value_falls_back_to_none(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "   ")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    @pytest.mark.parametrize("raw", ["nan", "inf", "-inf", "Infinity"])
+    def test_non_finite_env_value_falls_back_to_none(self, raw, monkeypatch):
+        """Review pass (2026-08-09): `float()` parses these as well-formed,
+        but a `nan`/`inf` timeout is unusable -- must degrade to `None`
+        exactly like a genuinely malformed value, mirroring
+        `_parse_finite_float`'s flag-side guard."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", raw)
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    @pytest.mark.parametrize("raw", ["0", "-1", "-0.5"])
+    def test_non_positive_env_value_falls_back_to_none(self, raw, monkeypatch):
+        """Review pass (2026-08-10): zero and negative timeouts are equally
+        unusable as nan/inf -- must degrade to `None` the same way,
+        mirroring `_parse_finite_float`'s flag-side guard."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", raw)
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+
+# --- Story 1.10: `_configure_logging` -- verbosity -> root logger level, ---
+# ------------------------------------- always stderr, never stdout --------
+
+class TestConfigureLogging:
+    def test_default_level_is_warning_and_info_is_swallowed(self, capsys):
+        _configure_logging(verbose=False, quiet=False)
+        assert logging.getLogger().getEffectiveLevel() == logging.WARNING
+        logger = logging.getLogger("pyforge.mason.test.default")
+        logger.info("swallowed-info")
+        logger.warning("shown-warning")
+        out = capsys.readouterr()
+        assert out.out == ""
+        assert "swallowed-info" not in out.err
+        assert "shown-warning" in out.err
+
+    def test_verbose_sets_level_info(self, capsys):
+        _configure_logging(verbose=True, quiet=False)
+        assert logging.getLogger().getEffectiveLevel() == logging.INFO
+        logger = logging.getLogger("pyforge.mason.test.verbose")
+        logger.info("shown-info")
+        out = capsys.readouterr()
+        assert out.out == ""
+        assert "shown-info" in out.err
+
+    def test_quiet_sets_level_error(self, capsys):
+        _configure_logging(verbose=False, quiet=True)
+        assert logging.getLogger().getEffectiveLevel() == logging.ERROR
+        logger = logging.getLogger("pyforge.mason.test.quiet")
+        logger.warning("swallowed-warning")
+        logger.error("shown-error")
+        out = capsys.readouterr()
+        assert out.out == ""
+        assert "swallowed-warning" not in out.err
+        assert "shown-error" in out.err
+
+    def test_quiet_wins_when_both_verbose_and_quiet_are_given(self, capsys):
+        """Documented tie-break (spec Boundaries & Constraints): the ACs
+        don't specify one, so `--quiet` (the more conservative choice) wins."""
+        _configure_logging(verbose=True, quiet=True)
+        assert logging.getLogger().getEffectiveLevel() == logging.ERROR
+
+
+def test_quiet_env_var_beats_an_explicit_verbose_flag(monkeypatch):
+    """Review pass (2026-08-10): the tie-break is applied to the two
+    *resolved* values, after each knob independently ran AD-13's
+    flag -> environment -> default chain -- so a stale `MASON_QUIET=1` in a
+    shell profile silently mutes an explicit `--verbose` run. This follows
+    from AD-13's per-knob precedence rather than contradicting it, but it is
+    surprising, so it is pinned here rather than left to be rediscovered."""
+    monkeypatch.setenv("MASON_QUIET", "1")
+    monkeypatch.delenv("MASON_VERBOSE", raising=False)
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
+        assert main(["doctor", "--verbose"]) == EXIT_OK
+    assert logging.getLogger().getEffectiveLevel() == logging.ERROR
+
+
+def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, capsys):
+    """Regression guard for the spec's env-value-leak row: a distinctive
+    marker set via a resolved env var must never appear in stderr (the log
+    stream), even at --verbose. `doctor.build_report` is mocked to a fixed
+    report (existing doctor-test pattern) -- its own stdout report may
+    legitimately echo a resolved value; only the log stream is constrained."""
+    marker = "MASON-ENV-LEAK-MARKER-3f9a7c"
+    monkeypatch.setenv("MASON_CFE_ROOT", marker)
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
+        assert main(["doctor", "--verbose"]) == EXIT_OK
+    err = capsys.readouterr().err
+    assert marker not in err

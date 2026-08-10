@@ -44,6 +44,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
       ],
@@ -87,7 +88,8 @@
           "vulnerability_osv_offline_store": 604800,
           "vcs_upstream_versions": 604800,
           "vcs_registry_versions": 604800,
-          "vcs_live_health": 86400
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
         },
         "freshness": {
           "stale_after_days": 14
@@ -96,7 +98,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "build_universe_sbom"
     },
@@ -142,32 +173,36 @@
       "name": "__default__"
     },
     {
-      "id": "vulnerability",
-      "name": "vulnerability"
-    },
-    {
-      "id": "derived_artifacts",
-      "name": "derived_artifacts"
-    },
-    {
       "id": "pypi_intelligence",
       "name": "pypi_intelligence"
-    },
-    {
-      "id": "core",
-      "name": "core"
-    },
-    {
-      "id": "seed_gaps",
-      "name": "seed_gaps"
     },
     {
       "id": "universal_sbom",
       "name": "universal_sbom"
     },
     {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
       "id": "vcs_health",
       "name": "vcs_health"
+    },
+    {
+      "id": "upstream_discovery",
+      "name": "upstream_discovery"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "core",
+      "name": "core"
     }
   ],
   "modular_pipelines": {

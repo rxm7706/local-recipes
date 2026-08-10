@@ -5,6 +5,7 @@
       "name": "pypi_intelligence_enriched",
       "tags": [],
       "pipelines": [
+        "upstream_discovery",
         "__default__",
         "pypi_intelligence",
         "seed_gaps"
@@ -185,6 +186,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
       ],
@@ -321,32 +323,36 @@
       "name": "__default__"
     },
     {
-      "id": "vulnerability",
-      "name": "vulnerability"
-    },
-    {
-      "id": "derived_artifacts",
-      "name": "derived_artifacts"
-    },
-    {
       "id": "pypi_intelligence",
       "name": "pypi_intelligence"
-    },
-    {
-      "id": "core",
-      "name": "core"
-    },
-    {
-      "id": "seed_gaps",
-      "name": "seed_gaps"
     },
     {
       "id": "universal_sbom",
       "name": "universal_sbom"
     },
     {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
       "id": "vcs_health",
       "name": "vcs_health"
+    },
+    {
+      "id": "upstream_discovery",
+      "name": "upstream_discovery"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "core",
+      "name": "core"
     }
   ],
   "modular_pipelines": {

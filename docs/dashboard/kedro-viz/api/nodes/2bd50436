@@ -24,7 +24,8 @@
       "vulnerability_osv_offline_store": 604800,
       "vcs_upstream_versions": 604800,
       "vcs_registry_versions": 604800,
-      "vcs_live_health": 86400
+      "vcs_live_health": 86400,
+      "trending_candidates": 86400
     },
     "freshness": {
       "stale_after_days": 14
@@ -33,7 +34,36 @@
       "vulnerability_vdb_store": 604800,
       "vulnerability_osv_offline_store": 604800,
       "pypi_conda_map_store": 604800
-    }
+    },
+    "org_audit_candidates": [
+      {
+        "repo_full_name": "microsoft/edit"
+      },
+      {
+        "repo_full_name": "microsoft/agent-framework"
+      },
+      {
+        "repo_full_name": "microsoft/qlib"
+      },
+      {
+        "repo_full_name": "microsoft/PyRIT"
+      },
+      {
+        "repo_full_name": "microsoft/promptflow"
+      },
+      {
+        "repo_full_name": "microsoft/semantic-kernel"
+      },
+      {
+        "repo_full_name": "microsoft/torchscale"
+      },
+      {
+        "repo_full_name": "microsoft/SEAL"
+      },
+      {
+        "repo_full_name": "microsoft/DiskANN"
+      }
+    ]
   },
   "run_command": "kedro run --to-nodes='run_dependency_hygiene'",
   "inputs": [
