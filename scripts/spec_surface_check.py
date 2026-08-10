@@ -1,41 +1,38 @@
 #!/usr/bin/env python3
-"""Detector: every tracked file is governed by a spec surface or explicitly allowlisted.
+"""Mutation-only residual: stamp the spec-surface drift baseline.
 
-The regenerable-factory contract (spec-regenerable-factory CAP-3): specs declare
-the code they govern via `surface:` globs in SPEC.md frontmatter; this checker
-enforces two properties over `git ls-files`:
+Story 6.9 ("the `scripts/` shims retire") ported this script's own
+read-only VERDICT — coverage (every tracked file governed by a spec
+surface or explicitly allowlisted) and drift (a governed file changed
+without its spec's `.memlog.md` moving) — into
+`pyforge.doctor.sources.chain::gather_spec_surface`
+(`python -m pyforge.doctor.sources spec-surface`). That port is the one
+place the verdict lives now; this file is NOT a detector any more (no
+`DETECTOR = {...}` marker, and `scripts/detectors.py`'s AST scan correctly
+no longer discovers it).
 
-  coverage — every tracked file matches >=1 spec surface OR an allowlist entry
-             (scripts/spec_surface_allowlist.txt, every entry reason-tagged and
-             printed — no silent exemptions).
-  drift    — a governed file's content changed (vs the committed baseline
-             scripts/.spec-surface-baseline.json) while its spec's .memlog.md
-             did NOT move: code drifted out from under its contract. Reconcile
-             by updating the spec (bmad-spec re-derive) then
-             --write-baseline --spec <name>.
+What survives here, and why it could not simply move with the rest: Doctor
+sources are deliberately READ-ONLY gathers (Charter §6 — the producing
+station keeps the operational guard; only Doctor holds the verdict), so
+`gather_spec_surface` never got a `--write-baseline`/`--spec NAME`
+mutation path, and nothing else in the repo has one either. That capability
+is live and depended on today — `_bmad-output/projects/pyforge-marshal/
+SYNC-RUNBOOK.md` Step 3, `CLAUDE.md`'s own Sync-loop section, and
+`spec-surface-drift-reconciliation` (an ACTIVE, `in-progress` Marshal
+spec) all instruct or require `--write-baseline --spec NAME` as a real,
+working command. So it stays here, reduced to exactly that: compute the
+same live "what does every governed spec's contract + file set look like
+right now" state the read-only port also computes internally, and (only
+when asked) merge it into the committed `scripts/.spec-surface-baseline.json`.
 
-             A memlog reconciles the paths it NAMES (S-13.2). When the contract
-             moved but never mentions a changed file, that file reports
-             [drift-presumed] — informational, never gating: unproven rather
-             than wrong. Before this, ANY memlog entry presumed every governed
-             file in the surface reconciled, so unrelated activity silently
-             laundered pending drift.
-
-  blindness — a spec governs files but has NO .memlog.md, so its contract hash
-             is "" and can never move: every governed change reports [drift]
-             whose printed remedy ("reconcile the spec") is unreachable, there
-             being no contract to move. Reported as [drift-blind] (S-13.5).
-
-Exit non-zero on any finding (never false-green). Glob dialect: `**` spans
-path separators, `*`/`?` do not; a pattern with no glob chars matches exactly.
-
-Usage:  python scripts/spec_surface_check.py [--write-baseline [--spec NAME]] [--json]
-Pixi:   pixi run -e local-recipes spec-surface-check
+Usage (plain `python`, no pixi task -- the `spec-surface-check` pixi task
+invokes the dispatcher below instead, which does not understand this flag):
+        python scripts/spec_surface_check.py --write-baseline [--spec NAME ...]
+Verdict (coverage/drift/blindness, unchanged behavior):
+        pixi run -e local-recipes spec-surface-check
+        python -m pyforge.doctor.sources spec-surface
 """
 from __future__ import annotations
-
-# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
-DETECTOR = {"scope": "repo"}
 
 import argparse
 import hashlib
@@ -45,9 +42,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Explicit opt-out: this file still matches detectors.py's `*_check.py` glob
+# by name (kept for doc/CLI continuity), but Story 6.9 reduced it to a
+# mutation-only residual -- it is not a detector and must not trip the
+# registry's "looks like one but declares nothing" gap.
+DETECTOR = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SPEC_GLOB = "_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md"
-ALLOWLIST = REPO_ROOT / "scripts" / "spec_surface_allowlist.txt"
 BASELINE = REPO_ROOT / "scripts" / ".spec-surface-baseline.json"
 
 
@@ -70,14 +72,11 @@ def glob_to_re(pattern: str) -> re.Pattern:
     return re.compile("^" + "".join(out) + "$")
 
 
-def parse_surface(spec_md: Path) -> tuple[list[str], str]:
-    """(`surface:` globs, drift mode) from SPEC.md frontmatter.
-
-    Drift modes (`surface-drift:`): "memlog" (default — governed change must
-    move .memlog.md), "sentinel:<path>" (…or the named repo file, e.g. a
-    CHANGELOG the surface's own process maintains), "exempt" (coverage-only;
-    for product-churn surfaces — always printed, never silent).
-    """
+def parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
+    """(`surface:` globs, `surface-drift-exclude:` globs, drift mode) from
+    SPEC.md frontmatter -- verbatim from the pre-reduction script (still the
+    ground truth `--write-baseline` stamps against, so it must read the
+    contract identically to the read-only port)."""
     globs, excludes, drift = [], [], "memlog"
     in_fm, section = False, None
     for line in spec_md.read_text(encoding="utf-8").splitlines():
@@ -92,35 +91,16 @@ def parse_surface(spec_md: Path) -> tuple[list[str], str]:
             (globs if section == "surface" else excludes).append(
                 line[4:].split("#", 1)[0].strip())
             continue
-        # A comment or blank line INSIDE a block sequence is valid YAML and must not
-        # end the section. Before 2026-07-28 any such line reset `section`, silently
-        # dropping every glob after it — so adding an explanatory comment under
-        # `surface:` UN-GOVERNED the whole spec, and the checker reported the files as
-        # "removed" rather than erroring. Silent governance loss, caught only because
-        # the removal looked impossible (the file was plainly still there).
         if section and (not line.strip() or line.lstrip().startswith("#")):
             continue
         section = None
         if line.startswith("surface:"):
             section = "surface"
         elif line.startswith("surface-drift-exclude:"):
-            # generated artifacts inside a governed surface: still covered,
-            # but excluded from the drift hash (regenerate-at-will).
             section = "exclude"
         elif line.startswith("surface-drift:"):
             drift = line.split(":", 1)[1].split("#", 1)[0].strip()
     return globs, excludes, drift
-
-
-def load_allowlist() -> list[tuple[str, str]]:
-    entries = []
-    for raw in ALLOWLIST.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        pattern, _, reason = line.partition("#")
-        entries.append((pattern.strip(), reason.strip() or "(no reason given)"))
-    return entries
 
 
 def tracked_files() -> list[str]:
@@ -133,36 +113,27 @@ def sha1(path: Path) -> str:
     return hashlib.sha1(path.read_bytes()).hexdigest()
 
 
-def memlog_text(memlog: Path) -> str:
-    """The memlog's raw text, for per-file reconciliation claims (S-13.2).
-
-    A governed path counts as reconciled when the memlog NAMES it — a literal
-    substring match on the repo-relative path, which is the form these entries
-    already cite files in. Deliberately literal: inferring reconciliation intent
-    from prose would rebuild the "presumed reconciled" blanket this replaces.
-    """
-    if not memlog.is_file():
-        return ""
-    return memlog.read_text(encoding="utf-8", errors="replace")
+def contract_hash(s: dict) -> str:
+    h = sha1(s["memlog"]) if s["memlog"].exists() else ""
+    if s["drift"].startswith("sentinel:"):
+        sentinel = REPO_ROOT / s["drift"].split(":", 1)[1].strip()
+        h += "+" + (sha1(sentinel) if sentinel.is_file() else "missing")
+    return h
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--write-baseline", action="store_true",
-                    help="stamp the drift baseline after a spec reconciliation")
-    ap.add_argument("--spec", action="append", metavar="NAME", default=None,
-                    help=("limit --write-baseline to this spec (repeatable). "
-                          "WITHOUT it the stamp covers EVERY spec, which accepts "
-                          "every other spec's pending drift as correct."))
-    ap.add_argument("--json", action="store_true", help="machine output")
-    args = ap.parse_args()
-
+def _live_state() -> dict[str, dict]:
+    """Every spec's CURRENT `{memlog, files}` baseline entry -- the ground
+    truth `--write-baseline` merges into the committed file. Mirrors
+    `gather_spec_surface`'s own internal computation (Doctor's read-only
+    port), which is a deliberate, unavoidable duplication: the verdict and
+    the stamp must agree on what "current" means, and Doctor's own gather
+    cannot write, so this is not one function two ways -- it is the one
+    remaining mutation caller of the same read."""
     specs: dict[str, dict] = {}
     for spec_md in sorted(REPO_ROOT.glob(SPEC_GLOB)):
-        # Key by <project>/<spec-dir>, never the bare dir name: the same slug can
-        # legitimately exist in two projects (e.g. the marshal governance Spec in
-        # local-recipes vs. the marshal CLI product Spec), and a bare-name key
-        # silently DROPS one surface — a governance hole with no finding emitted.
+        # Key by <project>/<spec-dir>, never the bare dir name -- the same
+        # slug can legitimately exist in two projects, and a bare-name key
+        # would silently drop one surface.
         project = spec_md.relative_to(REPO_ROOT).parts[2]
         name = f"{project}/{spec_md.parent.name}"
         globs, excludes, drift = parse_surface(spec_md)
@@ -175,73 +146,14 @@ def main() -> int:
             "memlog": spec_md.parent / ".memlog.md",
         }
 
-    allow = load_allowlist()
-    allow_res = [(glob_to_re(p), p, r) for p, r, in allow]
-
     files = tracked_files()
-    governed: dict[str, list[str]] = {}  # spec -> files
-    ungoverned: list[str] = []
-    allow_hits: dict[str, int] = {p: 0 for p, _ in allow}
+    governed: dict[str, list[str]] = {}
     for f in files:
-        owners = [n for n, s in specs.items() if any(r.match(f) for r in s["res"])]
-        if owners:
-            for n in owners:
+        for n, s in specs.items():
+            if any(r.match(f) for r in s["res"]):
                 governed.setdefault(n, []).append(f)
-            continue
-        for rx, pat, _ in allow_res:
-            if rx.match(f):
-                allow_hits[pat] += 1
-                break
-        else:
-            ungoverned.append(f)
 
-    findings: list[str] = []
-    # S-13.2: informational, NEVER gating — see the report block below.
-    presumed: list[str] = []
-    for f in ungoverned:
-        findings.append(f"[ungoverned] {f}: no spec surface and no allowlist entry")
-    for pat, n in allow_hits.items():
-        if n == 0:
-            findings.append(f"[stale-allowlist] {pat!r} matches nothing — remove or fix")
-
-    # S-13.5 — a governed surface with no contract behind it. contract_hash()
-    # returns "" for such a spec, and "" != "" is never true, so `spec_moved` is
-    # permanently False: every governed change reports a hard [drift] whose
-    # printed remedy ("reconcile the spec") is UNREACHABLE, there being no
-    # contract to move. Only the stamp clears it, which is the laundering S-13.2
-    # exists to end. Two specs shipped this way two days apart and nothing said so.
-    #
-    # This GATES, unlike [drift-presumed], and the asymmetry is deliberate:
-    # presumed reconciliation is UNPROVEN over historical entries nobody can
-    # retro-name (gating it recreates the unclearable red), while blindness is
-    # STRUCTURALLY IMPOSSIBLE reconciliation and clears by creating one file.
-    #
-    # Silent for a spec governing zero files (cannot drift), for `exempt` (records
-    # no file hashes at all) and for `sentinel:` (a second hash that CAN move) —
-    # none of the three can go blind. And the check never CREATES the memlog: a
-    # self-clearing finding is not a finding, and it would author a decision
-    # record nobody decided.
-    for name, s in sorted(specs.items()):
-        if (s["drift"] == "memlog" and governed.get(name)
-                and not s["memlog"].is_file()):
-            findings.append(
-                f"[drift-blind] {name}: governs {len(governed[name])} file(s) with no "
-                f"{s['memlog'].relative_to(REPO_ROOT)} — the contract hash is empty, so "
-                f"it can never move and no governed change is reconcilable. Create the "
-                f"memlog, then --write-baseline --spec {name} in the SAME change")
-
-    # drift: governed content moved while the spec's contract did not.
-    # The contract hash is the memlog, plus any sentinel file (a repo file
-    # whose movement counts as the contract moving — e.g. a CHANGELOG the
-    # surface's own process maintains). Exempt specs record no file hashes.
-    def contract_hash(s: dict) -> str:
-        h = sha1(s["memlog"]) if s["memlog"].exists() else ""
-        if s["drift"].startswith("sentinel:"):
-            sentinel = REPO_ROOT / s["drift"].split(":", 1)[1].strip()
-            h += "+" + (sha1(sentinel) if sentinel.is_file() else "missing")
-        return h
-
-    current = {
+    return {
         name: {
             "memlog": contract_hash(s),
             "files": {} if s["drift"] == "exempt" else
@@ -250,122 +162,57 @@ def main() -> int:
         }
         for name, s in specs.items()
     }
-    if args.write_baseline:
-        # S-13.1 — SCOPED stamping. Stamping every spec in one write made the
-        # sanctioned fix for a single `[no-baseline]` unusable: it necessarily
-        # accepted every OTHER spec's pending drift as correct, so the honest
-        # move was to leave the finding standing. That is why this detector
-        # carried a large red for weeks — a gate nobody can safely clear stops
-        # being a gate. With --spec, one spec reconciles in isolation.
-        if args.spec:
-            unknown = sorted(set(args.spec) - set(current))
-            if unknown:
-                print(f"unknown spec(s): {', '.join(unknown)}\n"
-                      f"known: {', '.join(sorted(current))}", file=sys.stderr)
-                return 2
-            # MERGE, never rewrite: building from `current` alone would silently
-            # drop every spec this invocation did not name.
-            merged = (json.loads(BASELINE.read_text(encoding="utf-8"))
-                      if BASELINE.exists() else {})
-            for name in args.spec:
-                merged[name] = current[name]
-            scope = f"{len(set(args.spec))} spec(s): {', '.join(sorted(set(args.spec)))}"
-        else:
-            merged = current
-            scope = f"{len(specs)} spec(s) — ALL (accepts every spec's pending drift)"
-        BASELINE.write_text(json.dumps(merged, indent=1, sort_keys=True) + "\n",
-                            encoding="utf-8")
-        print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} — {scope}")
-    elif BASELINE.exists():
-        base = json.loads(BASELINE.read_text(encoding="utf-8"))
-        for name, cur in current.items():
-            b = base.get(name)
-            if b is None:
-                findings.append(f"[no-baseline] {name}: run "
-                                f"--write-baseline --spec {name}")
-                continue
-            # S-13.2 — the reconciliation claim is PER-FILE, not per-spec.
-            # Short-circuiting the whole spec here meant appending ANY memlog
-            # entry marked every governed file in that surface reconciled,
-            # including files the author never touched: the drift half was
-            # defeatable by unrelated activity, silently, and indistinguishably
-            # from a real fix in the count the dashboard renders. Live: one
-            # unrelated note took findings 63 -> 61, clearing two detectors
-            # nobody had reconciled. A memlog reconciles the paths it NAMES.
-            spec_moved = b["memlog"] != cur["memlog"]
-            named = memlog_text(specs[name]["memlog"]) if spec_moved else ""
-            for f in sorted(set(b["files"]) | set(cur["files"])):
-                old, new = b["files"].get(f), cur["files"].get(f)
-                if old == new:
-                    continue
-                what = "changed" if old and new else ("added" if new else "removed")
-                if not spec_moved:
-                    findings.append(f"[drift] {name}: {f} {what} but the spec's "
-                                    f"memlog did not move — reconcile the spec, "
-                                    f"then --write-baseline --spec {name}")
-                elif f not in named:
-                    # INFORMATIONAL, never gating (see `presumed` below): most
-                    # existing memlog entries predate any naming convention, so a
-                    # hard failure here would red the gate for every historical
-                    # entry — the same unclearable red in a new shape.
-                    presumed.append(f"[drift-presumed] {name}: {f} {what}; the "
-                                    f"memlog moved but does not name this path — "
-                                    f"confirm it was reconciled, then "
-                                    f"--write-baseline --spec {name}")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--write-baseline", action="store_true",
+                    help="stamp the drift baseline after a spec reconciliation")
+    ap.add_argument("--spec", action="append", metavar="NAME", default=None,
+                    help=("limit --write-baseline to this spec (repeatable). "
+                          "WITHOUT it the stamp covers EVERY spec, which accepts "
+                          "every other spec's pending drift as correct."))
+    args = ap.parse_args()
+
+    if args.spec and not args.write_baseline:
+        ap.error("--spec only makes sense with --write-baseline")
+
+    if not args.write_baseline:
+        print(
+            "this script no longer computes the coverage/drift verdict -- run "
+            "`python -m pyforge.doctor.sources spec-surface` for that. Pass "
+            "--write-baseline [--spec NAME ...] to stamp the baseline after a "
+            "spec reconciliation.",
+            file=sys.stderr,
+        )
+        return 2
+
+    current = _live_state()
+
+    # S-13.1 -- SCOPED stamping. Stamping every spec in one write made the
+    # sanctioned fix for a single `[no-baseline]` unusable: it necessarily
+    # accepted every OTHER spec's pending drift as correct, so the honest
+    # move was to leave the finding standing. With --spec, one spec
+    # reconciles in isolation.
+    if args.spec:
+        unknown = sorted(set(args.spec) - set(current))
+        if unknown:
+            print(f"unknown spec(s): {', '.join(unknown)}\n"
+                  f"known: {', '.join(sorted(current))}", file=sys.stderr)
+            return 2
+        # MERGE, never rewrite: building from `current` alone would silently
+        # drop every spec this invocation did not name.
+        merged = (json.loads(BASELINE.read_text(encoding="utf-8"))
+                  if BASELINE.exists() else {})
+        for name in args.spec:
+            merged[name] = current[name]
+        scope = f"{len(set(args.spec))} spec(s): {', '.join(sorted(set(args.spec)))}"
     else:
-        findings.append("[no-baseline] baseline missing: run --write-baseline")
-
-    if args.json:
-        print(json.dumps({
-            "specs": {n: s["globs"] for n, s in specs.items()},
-            "governed": {n: len(v) for n, v in governed.items()},
-            "allowlisted": allow_hits, "findings": findings,
-            "drift_presumed": presumed,
-        }, indent=1))
-        return 1 if findings else 0
-
-    print(f"specs: {len(specs)}  ·  tracked files: {len(files)}  ·  "
-          f"governed: {sum(len(v) for v in governed.values())}  ·  "
-          f"allowlisted: {sum(allow_hits.values())}")
-    for name, s in sorted(specs.items()):
-        mode = "" if s["drift"] == "memlog" else f"  [drift: {s['drift']}]"
-        print(f"  {name}: {len(governed.get(name, []))} file(s) "
-              f"via {len(s['globs'])} surface glob(s){mode}")
-    print("  allowlist (explicit, reason-tagged):")
-    for pat, reason in allow:
-        print(f"    {allow_hits[pat]:>5}  {pat}  # {reason}")
-    if presumed:
-        # Printed BEFORE findings and excluded from the exit code: this set is
-        # "the memlog moved but never named this path", which is unproven rather
-        # than wrong. Making it visible is the whole point — the alternative is
-        # the silent per-spec clearing this replaces.
-        #
-        # SUMMARIZED per spec, not listed per file. The first run surfaced 995
-        # entries (834 of them one station's whole surface), which would bury the
-        # gating findings underneath them — a signal nobody reads is barely
-        # better than the silence it replaced. `--json` carries the full set for
-        # anything that wants to work through it.
-        by_spec: dict[str, list[str]] = {}
-        for line in presumed:
-            spec_name, _, rest = line.partition(": ")
-            by_spec.setdefault(spec_name.removeprefix("[drift-presumed] "),
-                               []).append(rest.split(";")[0])
-        print(f"\nDRIFT-PRESUMED ({len(presumed)} across {len(by_spec)} spec(s)) "
-              f"— informational, not gating; full set in --json:")
-        for spec_name, items in sorted(by_spec.items(),
-                                       key=lambda kv: (-len(kv[1]), kv[0])):
-            print(f"  ~ {spec_name}: {len(items)} governed file(s) changed while "
-                  f"the memlog moved without naming them")
-            for item in items[:2]:
-                print(f"      e.g. {item}")
-            if len(items) > 2:
-                print(f"      … {len(items) - 2} more")
-    if findings:
-        print(f"\nFINDINGS ({len(findings)}):")
-        for f in findings:
-            print(f"  ✗ {f}")
-        return 1
-    print("\nOK: every tracked file governed or allowlisted; no drift.")
+        merged = current
+        scope = f"{len(current)} spec(s) — ALL (accepts every spec's pending drift)"
+    BASELINE.write_text(json.dumps(merged, indent=1, sort_keys=True) + "\n",
+                        encoding="utf-8")
+    print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} — {scope}")
     return 0
 
 

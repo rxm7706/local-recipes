@@ -3,8 +3,9 @@ id: SPEC-bmad-loop-forward-dependency-blindness
 spec: bmad-loop-forward-dependency-blindness
 status: shipped
 owner-dream: docs/dreams/bmad-loop-forward-dependency-blindness.md
-surface:
-  - scripts/forward_dependency_check.py
+surface: []          # retired 2026-08-09 (Story 6.9) — scripts/forward_dependency_check.py
+  # moved into src/shared/packages/pyforge-doctor/** (sources/deps.py), already governed
+  # by spec-pyforge-doctor's own blanket glob; see this spec's memlog for the hand-off.
 sources:
   - ../../../../../docs/dreams/bmad-loop-forward-dependency-blindness.md
 open_questions: []

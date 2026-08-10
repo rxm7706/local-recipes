@@ -67,14 +67,22 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          # pyforge-doctor's own requires-python floor (Story 6.9) -- ten of
+          # the repo-scope detectors are now that package's sources.
+          python-version: '3.14'
 
       # Deliberately NOT pixi. The repo-scope detectors are stdlib + PyYAML and
       # shell out to git alone — the same property that lets generate.py run them
       # directly at deploy time. The `local-recipes` env is ~1102 packages /
       # ~9.8 GB, which is a poor trade for a suite that finishes in ten seconds.
+      # Story 6.9: ten of those detectors are now `pyforge.doctor.sources`
+      # library gathers with no `scripts/*_check.py` file left to run directly
+      # -- a plain (non-editable) `pip install` of the package is enough
+      # (jsonschema/mcp/PyYAML all resolve from PyPI; no conda/pixi needed).
       - name: Install detector dependencies
-        run: python -m pip install --quiet pyyaml playwright
+        run: |
+          python -m pip install --quiet pyyaml playwright
+          python -m pip install --quiet ./src/shared/packages/pyforge-doctor
 
       # check_layout drives headless Chrome. ubuntu-latest ships google-chrome,
       # which the detector prefers via channel="chrome" before falling back to a

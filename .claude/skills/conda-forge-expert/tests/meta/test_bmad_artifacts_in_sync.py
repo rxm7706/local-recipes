@@ -11,36 +11,43 @@ skill) — that is expected between syncs and is surfaced on demand by
 ``pixi run -e local-recipes bmad-drift-check``. The full reconciliation procedure (BMAD skills +
 baseline re-stamp) lives in ``_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md``.
 
-Portable: skips cleanly when the BMAD project is absent (the skill ships without it).
+Story 6.9: `scripts/bmad_drift_check.py` retired into
+`pyforge.doctor.sources.factory` (ported verbatim in behavior, Story 6.8) —
+this test now exercises `factory.gather` directly (in-process, no
+subprocess: there is no script left to shell out to) rather than running the
+deleted script's own `--integrity-only` flag. HARD (the origin's own
+severity) maps 1:1 onto `DoctorStatus.FAIL` (`factory.py`'s own
+`_SEVERITY_TO_STATUS`), so "integrity clean" is "no FAIL-status finding" --
+the equivalent of the origin's `--integrity-only` filter, expressed against
+the port's own Finding stream instead of a second parsed exit code.
+
+Portable: skips cleanly when the BMAD project or the `pyforge.doctor`
+package is absent (the skill ships without either).
 """
 from __future__ import annotations
 
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
-SCRIPT = REPO_ROOT / "scripts" / "bmad_drift_check.py"
 PROJECT = REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal"
+
+try:
+    from pyforge.doctor.models import DoctorStatus
+    from pyforge.doctor.sources import factory as bmad_drift_factory
+except ImportError:
+    bmad_drift_factory = None  # type: ignore[assignment]
 
 
 @pytest.mark.skipif(
-    not PROJECT.is_dir() or not SCRIPT.is_file(),
-    reason="pyforge-marshal BMAD project / drift-check script not present (skill used standalone)",
+    not PROJECT.is_dir() or bmad_drift_factory is None,
+    reason="pyforge-marshal BMAD project / pyforge.doctor not present (skill used standalone)",
 )
 def test_bmad_artifacts_integrity():
-    result = subprocess.run(
-        [sys.executable, str(SCRIPT), "--integrity-only"],
-        capture_output=True,
-        text=True,
-        cwd=str(REPO_ROOT),
-        timeout=120,
-    )
-    assert result.returncode == 0, (
-        "BMAD artifact integrity drift detected. Reconcile via SYNC-RUNBOOK.md "
-        "(some issues auto-fix: `pixi run -e local-recipes bmad-drift-check -- --fix`).\n\n"
-        + result.stdout
-        + result.stderr
+    findings = bmad_drift_factory.gather(REPO_ROOT)
+    hard = [f for f in findings if f.status is DoctorStatus.FAIL]
+    assert not hard, (
+        "BMAD artifact integrity drift detected. Reconcile via SYNC-RUNBOOK.md.\n\n"
+        + "\n".join(f"[{f.check}] {f.message}" for f in hard)
     )

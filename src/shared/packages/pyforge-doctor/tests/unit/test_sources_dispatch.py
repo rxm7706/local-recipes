@@ -1,0 +1,171 @@
+"""Unit tests for ``pyforge.doctor.sources.__main__`` (Story 6.9) -- the
+target-less ``python -m pyforge.doctor.sources <name> [--json]
+[--groundtruth]`` dispatcher every re-pointed pixi task invokes.
+
+Covers the spec's I/O & Edge-Case Matrix: dispatch-by-name (all ten,
+parametrized -- "one test per dispatch entry"), the unknown-source usage
+error, the ``--groundtruth`` scoping error, JSON output shape, and
+``verdict.exit_code_for`` exit-code mapping.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+from pyforge.doctor.models import DoctorStatus, Finding, Source
+from pyforge.doctor.sources import __main__ as dispatch
+from pyforge.doctor.sources import board, chain, deps, factory, ledger, marshal
+
+# --- DISPATCH: name -> the exact function the Code Map names ----------------
+
+_EXPECTED_DISPATCH = {
+    "ledger-regression": ledger.gather,
+    "story-status": marshal.gather_story_status,
+    "chain-completeness": board.gather_chain_completeness,
+    "dashboard-drift": board.gather_dashboard_drift,
+    "check-layout": board.gather_check_layout,
+    "dream-chain": chain.gather_dream_chain,
+    "spec-surface": chain.gather_spec_surface,
+    "deferred-work": chain.gather_deferred_work,
+    "forward-dependency": deps.gather_forward_dependency,
+    "bmad-drift": factory.gather,
+}
+
+
+def test_dispatch_covers_exactly_the_ten_retiring_sources():
+    assert set(dispatch.DISPATCH) == set(_EXPECTED_DISPATCH)
+
+
+@pytest.mark.parametrize("name", sorted(_EXPECTED_DISPATCH))
+def test_dispatch_entry_resolves_to_the_documented_function(name: str):
+    assert dispatch.DISPATCH[name] is _EXPECTED_DISPATCH[name]
+
+
+_STUB_OK = (
+    Finding(
+        source=Source.LEDGER_REGRESSION,
+        check="stub-ok",
+        status=DoctorStatus.OK,
+        message="stub clean",
+        evidence={},
+    ),
+)
+_STUB_FAIL = (
+    Finding(
+        source=Source.LEDGER_REGRESSION,
+        check="stub-fail",
+        status=DoctorStatus.FAIL,
+        message="stub broken",
+        evidence={},
+    ),
+)
+
+
+@pytest.mark.parametrize("name", sorted(_EXPECTED_DISPATCH))
+def test_main_calls_through_the_dispatch_entry_by_name(
+    name: str, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """A stub swapped into ``DISPATCH[name]`` proves ``main`` actually
+    invokes the mapped callable for THIS name, not merely that the dict
+    entry exists (the previous two tests already cover that)."""
+    calls: list[Path] = []
+
+    def _stub(target: Path) -> tuple[Finding, ...]:
+        calls.append(target)
+        return _STUB_OK
+
+    monkeypatch.setitem(dispatch.DISPATCH, name, _stub)
+
+    exit_code = dispatch.main([name])
+
+    assert calls == [Path(".")]
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "stub clean" in out
+
+
+# --- unknown source name -------------------------------------------------------
+
+
+def test_unknown_source_name_is_a_usage_error_naming_valid_choices(
+    capsys: pytest.CaptureFixture[str],
+):
+    with pytest.raises(SystemExit) as exc:
+        dispatch.main(["bogus-name"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "bogus-name" in err
+    # argparse's own "invalid choice" message names the valid choices.
+    assert "bmad-drift" in err
+
+
+# --- --groundtruth scoping -----------------------------------------------------
+
+
+def test_groundtruth_on_bmad_drift_prints_the_ground_truth_dict(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    stub_gt = {
+        "skill_version": "8.81.0",
+        "schema_version": 29,
+        "mcp_tools": 46,
+        "atlas_phases": 22,
+        "gotcha_max": 107,
+        "pixi_envs": 20,
+    }
+    monkeypatch.setattr(factory, "ground_truth", lambda target: stub_gt)
+
+    exit_code = dispatch.main(["bmad-drift", "--groundtruth"])
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert json.loads(out) == stub_gt
+
+
+def test_groundtruth_on_a_non_bmad_drift_source_is_a_usage_error(
+    capsys: pytest.CaptureFixture[str],
+):
+    with pytest.raises(SystemExit) as exc:
+        dispatch.main(["ledger-regression", "--groundtruth"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--groundtruth" in err
+    assert "bmad-drift" in err
+
+
+# --- --json output shape --------------------------------------------------------
+
+
+def test_json_flag_emits_finding_to_json_dict_shape(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    monkeypatch.setitem(dispatch.DISPATCH, "ledger-regression", lambda target: _STUB_OK)
+
+    exit_code = dispatch.main(["ledger-regression", "--json"])
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert json.loads(out) == [f.to_json_dict() for f in _STUB_OK]
+
+
+# --- exit-code mapping via verdict.exit_code_for --------------------------------
+
+
+def test_a_fail_finding_exits_non_zero(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setitem(dispatch.DISPATCH, "ledger-regression", lambda target: _STUB_FAIL)
+
+    assert dispatch.main(["ledger-regression"]) == 2
+
+
+def test_only_ok_findings_exit_zero(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setitem(dispatch.DISPATCH, "ledger-regression", lambda target: _STUB_OK)
+
+    assert dispatch.main(["ledger-regression"]) == 0
+
+
+def test_no_findings_exits_zero(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setitem(dispatch.DISPATCH, "ledger-regression", lambda target: ())
+
+    assert dispatch.main(["ledger-regression"]) == 0

@@ -1,49 +1,74 @@
 #!/usr/bin/env python3
-"""bmad_drift_check.py — keep the local-recipes BMAD project docs in sync with the live factory.
+"""Mutation-only residual: ground-truth facts, the `--specs` status report,
+`--fix`, and `--write-baseline` for the local-recipes BMAD project docs.
 
-The `_bmad-output/projects/pyforge-marshal/` factory-doc artifacts (planning AND implementation) hard-code
-volatile facts about the conda-forge-expert factory (skill version, cf_atlas schema, MCP tool
-count, atlas phase count, pixi env count, gotcha range) and follow filing conventions
-(sprint-change-proposals in change-history/, retros in retros/). The factory ships a release
-every few days, so these drift. This tool makes the drift visible instead of silent, and can
-auto-fix the safe mechanical classes.
+Story 6.9 ("the `scripts/` shims retire") ported this script's own
+read-only VERDICT — the 18 finding kinds across pin currency, archive
+hygiene, spec/deferred-work staleness, count/phase-list staleness, stale
+rule content, sync-baseline drift, project coverage, Tier-1/Tier-3
+alignment, spec indexing, and Dream vocabulary/ownership — into
+`pyforge.doctor.sources.factory::gather`
+(`python -m pyforge.doctor.sources bmad-drift`). That port is the one
+place the verdict lives now; this file is NOT a detector any more (no
+`DETECTOR = {...}` marker, and `scripts/detectors.py`'s AST scan correctly
+no longer discovers it).
 
-Checks (across planning-artifacts/ + implementation-artifacts/):
-  pin-missing      a tracked doc has a missing/corrupt source_pin (breaks the drift contract)   [HARD]
-  archive-misplaced a sprint-change-proposal / retro sits at the dir top level, not its subdir   [HARD, fixable]
-  stray-file       a throwaway artifact (.patch/.diff/.bak/.orig/.tmp) in implementation-artifacts [HARD, fixable]
-  spec-status-stale a spec-*.md still marked in-flight though a matching retro exists (it shipped) [DRIFT]
-  pin-behind       a tracked doc's pinned skill MINOR is behind the live skill MINOR             [DRIFT]
-  deferred-stale   deferred-work.md has no / a behind "Last reconciled" stamp                    [DRIFT]
-  count-stale      a living doc states a schema/tool/phase count below the live value            [INFO]
+What survives here, and why it could not simply move with the rest: Doctor
+sources are deliberately READ-ONLY gathers (Charter §6 — the producing
+station keeps the operational guard; only Doctor holds the verdict), so
+`factory.gather` never got a `--fix`/`--write-baseline` mutation path or
+the `--specs`/`--json` reporting modes, and nothing else in the repo has
+them either. All four are live and depended on today —
+`_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`, `CLAUDE.md`'s own
+Sync-loop section (which documents `bmad-drift-check --specs` by name),
+and the `pixi run -e local-recipes bmad-drift-check -- --fix`/
+`-- --write-baseline` workflow all instruct real, working commands. So
+they stay here:
 
-Modes:
-  --json / --groundtruth   print live ground-truth facts (machine-readable)
-  --integrity-only         exit non-zero only on HARD findings (used by the meta-test; tolerates
-                           docs that are merely a few releases behind between syncs)
-  --fix                    perform the safe mechanical remediations (archive moves), then re-report
-  (default)                full report; exit non-zero on any HARD or DRIFT finding
+  --json / --groundtruth   print live ground-truth facts (unchanged)
+  --specs                  report each docs/specs intake spec's status +
+                            whether CLAUDE.md indexes it (unchanged)
+  --fix                    apply the safe mechanical remediations (archive
+                            moves, stray-file removal) (unchanged)
+  --write-baseline         stamp .sync-baseline.json to the current state,
+                            for `run_checks()`'s successor
+                            (`factory.gather`) to compare against next time
+                            (unchanged)
 
-Pin gate = the repo's drift-detection contract: a doc re-syncs when the skill CHANGELOG MINOR
-exceeds the doc's pin; PATCH bumps do not count as drift.
+`classify()` (the filing-convention classifier) and the `TRACKED`
+doc-category table are also carried over verbatim, even though nothing in
+THIS reduced file still calls them: `sources/factory.py` ported an
+identical copy for its own coverage/pin checks, and SYNC-RUNBOOK.md's
+extension pointers (a new artifact shape needs a new `classify()` rule)
+name this file as the reference copy. Kept in sync by hand; there is no
+mechanism enforcing the two agree.
 
-Usage:
+Usage (plain `python`, no pixi task -- the `bmad-drift-check`/`bmad-groundtruth`
+pixi tasks invoke the dispatcher below instead, which does not understand any of
+these flags):
+  python scripts/bmad_drift_check.py --fix
+  python scripts/bmad_drift_check.py --write-baseline
+  python scripts/bmad_drift_check.py --json    # or --groundtruth, same output
+  python scripts/bmad_drift_check.py --specs
+Verdict (the 18 finding kinds, unchanged behavior):
   pixi run -e local-recipes bmad-drift-check
-  pixi run -e local-recipes bmad-drift-check -- --fix
-  pixi run -e local-recipes bmad-groundtruth
+  python -m pyforge.doctor.sources bmad-drift
 See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md for the full re-sync procedure.
 """
 from __future__ import annotations
 
-# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
-DETECTOR = {"scope": "repo"}
-
-import argparse
 import json
 import re
 import subprocess
 import sys
+import argparse
 from pathlib import Path
+
+# Explicit opt-out: this file still matches detectors.py's `*_check.py` glob
+# by name (kept for doc/CLI continuity), but Story 6.9 reduced it to a
+# mutation-only residual -- it is not a detector and must not trip the
+# registry's "looks like one but declares nothing" gap.
+DETECTOR = None
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILL = REPO_ROOT / ".claude" / "skills" / "conda-forge-expert"
@@ -56,15 +81,11 @@ PLAN = PROJ / "planning-artifacts"
 IMPL = PROJ / "implementation-artifacts"
 BASELINE = PROJ / ".sync-baseline.json"  # records the repo state artifacts were last reconciled against
 DOCS_SPECS = REPO_ROOT / "docs" / "specs"  # Tier-1: BMAD-consumable intake specs (bmad-quick-dev entry points)
-IMPL_REL = "_bmad-output/projects/pyforge-marshal/implementation-artifacts"
 
 Ver = tuple[int, int, int]
 
-# Tracked pinned docs and their sync category:
-#   living   — must track the live factory; re-sync mechanically (counts) + bmad-index-docs.
-#   context  — the agent spawn rulebook; re-sync via bmad-generate-project-context.
-#   plan     — PRD/epics/readiness; structural re-sync via the bmad-correct-course chain.
-#   snapshot — frozen dated record (e.g. a validation run); pin intentionally NOT current.
+# Tracked pinned docs and their sync category -- kept for `classify()` below (its own
+# `tracked:<category>` branch), not read by anything else in this reduced file.
 TRACKED: list[tuple[str, str]] = [
     ("planning-artifacts/index.md", "living"),
     ("planning-artifacts/architecture.md", "living"),
@@ -90,30 +111,9 @@ CONFIG_FILES = {".bmad-config.toml",            # config, not pin-synced — but
                 ".bmad-config.user.toml"}       # layer 6 of the config merge; gitignored, per-user
 IGNORE_PARTS = {"__pycache__"}
 
-# Known-stale CONTENT patterns: claims wrong regardless of version, seeded by the deep agent
-# audit (see SYNC-RUNBOOK.md). Grows like tests/meta/test_no_thirty_gb_lie.py over time.
-STALE_RULE_PATTERNS: list[tuple[str, str]] = [
-    (r"<recipe-name>-<version>",
-     "stale branch-naming rule — CFE convention is add-recipe-<name> (auto-memory)"),
-]
-
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
-NONTERMINAL_STATUS = re.compile(r"\b(in[-\s]?flight|in[-\s]?progress|wip|pending|draft)\b", re.I)
-TERMINAL_STATUS = re.compile(r"\b(done|shipped|complete|completed|cancelled|canceled|merged)\b", re.I)
 
-HARD, DRIFT, INFO = "HARD", "DRIFT", "INFO"
-
-_PIN_RE = re.compile(
-    r"(?:source_pin|last_synced_skill_version)[\"']?\s*:\s*"  # tolerate JSON's quoted key
-    r"['\"]?(?:conda-forge-expert\s+)?v?(\d+)\.(\d+)\.(\d+)",
-)
 _VER_RE = re.compile(r"\*\*v(\d+)\.(\d+)\.(\d+)\*\*")
-
-
-class Finding:
-    def __init__(self, severity: str, kind: str, target: str, detail: str, fixable: bool = False):
-        self.severity, self.kind, self.target, self.detail, self.fixable = (
-            severity, kind, target, detail, fixable)
 
 
 def _read(path: Path) -> str:
@@ -130,11 +130,6 @@ def _rel(path: Path) -> str:
         except ValueError:
             continue
     return str(path)
-
-
-def _parse_ver(s: str | None) -> Ver:
-    m = re.search(r"(\d+)\.(\d+)\.(\d+)", s or "")
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0, 0, 0)
 
 
 # ---------------------------------------------------------------- ground truth
@@ -160,19 +155,7 @@ def phase_ids() -> list[str]:
 
 
 def phase_count() -> int:
-    """Executable pipeline phases — from the PHASES registry, the authoritative list.
-
-    Was `len(re.findall(r"^\\s*def phase_", ...))`, which also matched
-    `phase_r_upsert_one` — a PER-ROW HELPER inside Phase R — so ground truth
-    reported 23 where 22 phases actually run. That number is pinned in the
-    baseline fingerprint and restated by every living doc, so the off-by-one
-    propagated through each reconciliation (caught 2026-07-25 by the reconciler
-    agent, which refused to restate 23 without evidence).
-
-    The registry is self-maintaining: a new phase must be registered to run.
-    (Separately, `atlas-phases-overview.md` catalogs a runner-less conceptual
-    "Phase I" — hence 22 executable vs 23 cataloged; the docs now say both.)
-    """
+    """Executable pipeline phases — from the PHASES registry, the authoritative list."""
     return len(phase_ids())
 
 
@@ -226,8 +209,8 @@ def ground_truth() -> dict:
 
 # -------------------------------------------------------------- sync baseline
 # The baseline is the closed-loop anchor: it records the source-of-truth SURFACE the artifacts
-# were last reconciled against, so the detector trips on ANY out-of-band change (BMAD or not),
-# not just the specific counts the checks hardcode.
+# were last reconciled against, so the detector (now `factory.gather`) trips on ANY
+# out-of-band change (BMAD or not), not just the specific counts the checks hardcode.
 FINGERPRINT_KEYS = ("skill_version", "schema_version", "mcp_tools", "atlas_phases",
                     "gotcha_max", "pixi_envs", "phase_ids")
 
@@ -241,16 +224,6 @@ def git_head() -> str | None:
         return None
 
 
-def git_tracked(relpath: str) -> list[str]:
-    """Files git is tracking under relpath (repo-relative). Empty on error."""
-    try:
-        r = subprocess.run(["git", "-C", str(REPO_ROOT), "ls-files", "--", relpath],
-                           capture_output=True, text=True, timeout=15)
-        return [ln for ln in r.stdout.splitlines() if ln.strip()]
-    except Exception:
-        return []
-
-
 def fingerprint() -> dict:
     gt = ground_truth()
     fp = {k: gt[k] for k in FINGERPRINT_KEYS if k in gt}
@@ -259,46 +232,7 @@ def fingerprint() -> dict:
     return fp
 
 
-def check_baseline() -> list[Finding]:
-    if not BASELINE.is_file():
-        return [Finding(INFO, "no-baseline", ".sync-baseline.json",
-                        "no reconciliation baseline — run `bmad-drift-check -- --write-baseline` after a sync")]
-    try:
-        base = json.loads(_read(BASELINE))
-    except (ValueError, OSError):
-        return [Finding(HARD, "baseline-corrupt", ".sync-baseline.json", "cannot parse baseline JSON")]
-    live, out = fingerprint(), []
-    for k in FINGERPRINT_KEYS:
-        if base.get(k) != live.get(k):
-            out.append(Finding(DRIFT, "surface-changed", k,
-                               f"{k}: baseline {base.get(k)} -> live {live.get(k)} "
-                               f"(out-of-band change since git {base.get('git_head')})"))
-    return out
-
-
 # ----------------------------------------------------------------- doc parsing
-def doc_pin(path: Path) -> Ver | None:
-    """Return (major, minor, patch) from the frontmatter pin, or None if absent/corrupt."""
-    text = _read(path)
-    if not text:
-        return None
-    if path.suffix == ".json":
-        scope = text  # JSON has no frontmatter fence; scan the whole (small) file.
-    else:
-        parts = text.split("---", 2)  # only the frontmatter, so we skip pins quoted in prose
-        scope = parts[1] if len(parts) >= 3 and text.lstrip().startswith("---") else text[:1500]
-    m = _PIN_RE.search(scope)
-    return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
-
-
-def _spec_status(text: str) -> str | None:
-    # frontmatter `status:` or a `**Status:**` line near the top
-    m = re.search(r"^status\s*:\s*(.+)$", text[:2000], re.M | re.I)
-    if not m:
-        m = re.search(r"\*\*status\*\*\s*:?\s*(.+)$", text[:2000], re.M | re.I)
-    return m.group(1).strip() if m else None
-
-
 def frontmatter_status(path: Path) -> str | None:
     """The neutral `status:` from a spec's YAML frontmatter (framework-agnostic source of truth)."""
     text = _read(path)
@@ -308,140 +242,10 @@ def frontmatter_status(path: Path) -> str | None:
     return m.group(1).lower() if m else None
 
 
-def _slug(name: str) -> str:
-    s = re.sub(r"\.md$", "", name)
-    s = re.sub(r"^(spec|retro)-", "", s)
-    s = re.sub(r"-v?\d+\.\d+\.\d+", "", s)
-    s = re.sub(r"-\d{4}-\d{2}-\d{2}", "", s)
-    return s.strip("-")
-
-
-# --------------------------------------------------------------------- checks
-def check_pins(live: Ver) -> list[Finding]:
-    out = []
-    for rel, cat in TRACKED:
-        pin = doc_pin(PROJ / rel)
-        if pin is None:
-            if cat != "snapshot":
-                out.append(Finding(HARD, "pin-missing", rel,
-                                   "missing/corrupt source_pin — breaks the drift contract"))
-        elif (pin[0], pin[1]) < (live[0], live[1]):
-            sev = INFO if cat == "snapshot" else DRIFT
-            out.append(Finding(sev, "pin-behind", rel,
-                               f"pinned v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]} [{cat}]"))
-    return out
-
-
-def check_archive_hygiene() -> list[Finding]:
-    out = []
-    if PLAN.is_dir():
-        for p in PLAN.glob("sprint-change-proposal-*.md"):
-            out.append(Finding(HARD, "archive-misplaced", f"planning-artifacts/{p.name}",
-                               "sprint-change-proposal belongs in change-history/", fixable=True))
-    if IMPL.is_dir():
-        for p in IMPL.glob("retro-*.md"):
-            out.append(Finding(HARD, "archive-misplaced", f"implementation-artifacts/{p.name}",
-                               "retro belongs in retros/", fixable=True))
-        for p in IMPL.iterdir():
-            if p.is_file() and p.suffix in STRAY_SUFFIXES:
-                out.append(Finding(HARD, "stray-file", f"implementation-artifacts/{p.name}",
-                                   "throwaway artifact (already in git history) — remove", fixable=True))
-    return out
-
-
-def check_spec_status() -> list[Finding]:
-    out = []
-    if not IMPL.is_dir():
-        return out
-    retro_slugs = []
-    retros_dir = IMPL / "retros"
-    if retros_dir.is_dir():
-        retro_slugs = [_slug(p.name) for p in retros_dir.glob("retro-*.md")]
-    for spec in IMPL.glob("spec-*.md"):
-        status = _spec_status(_read(spec))
-        if not status or TERMINAL_STATUS.search(status) or not NONTERMINAL_STATUS.search(status):
-            continue
-        sslug = _slug(spec.name)
-        shipped = any(sslug and (sslug in rs or rs in sslug) for rs in retro_slugs)
-        if shipped:
-            out.append(Finding(DRIFT, "spec-status-stale", f"implementation-artifacts/{spec.name}",
-                               f"status '{status}' but a matching retro exists — it shipped"))
-    return out
-
-
-def check_deferred_work(live: Ver) -> list[Finding]:
-    df = IMPL / "deferred-work.md"
-    if not df.is_file():
-        return []
-    text = _read(df)
-    m = re.search(r"last\s+reconciled[^\n]*?v(\d+)\.(\d+)\.(\d+)", text, re.I)
-    if not m:
-        return [Finding(DRIFT, "deferred-stale", "implementation-artifacts/deferred-work.md",
-                        "no 'Last reconciled: ... vX.Y.Z' stamp — cannot tell if it is current")]
-    pin = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
-    if (pin[0], pin[1]) < (live[0], live[1]):
-        return [Finding(DRIFT, "deferred-stale", "implementation-artifacts/deferred-work.md",
-                        f"reconciled at v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]}")]
-    return []
-
-
-def check_counts(gt: dict) -> list[Finding]:
-    # Heuristic, INFO only: flag a living doc that states a schema/tool/phase number below live.
-    out = []
-    probes = [
-        (r"schema v(\d+)\b", gt["schema_version"], "schema"),
-        (r"(\d+)\s+MCP tools", gt["mcp_tools"], "MCP tools"),
-        (r"G1[–-]G(\d+)", gt["gotcha_max"], "gotcha range"),
-        (r"(\d+)\s+pixi envs", gt["pixi_envs"], "pixi envs"),
-    ]
-    for rel, cat in TRACKED:
-        if cat != "living":
-            continue
-        text = _read(PROJ / rel)
-        for pat, live_val, label in probes:
-            if live_val is None:
-                continue
-            for mm in re.finditer(pat, text):
-                if int(mm.group(1)) < live_val:
-                    out.append(Finding(INFO, "count-stale", rel,
-                                       f"states {label} {mm.group(1)} < live {live_val} (review in context)"))
-                    break
-    return out
-
-
-def check_stale_rules() -> list[Finding]:
-    # Known-wrong content strings (branch convention, etc.) anywhere in the project docs.
-    out = []
-    if not PROJ.is_dir():
-        return out
-    for path in PROJ.rglob("*.md"):
-        if any(p in IGNORE_PARTS for p in path.parts):
-            continue
-        text = _read(path)
-        for pat, why in STALE_RULE_PATTERNS:
-            if re.search(pat, text):
-                out.append(Finding(DRIFT, "stale-rule", _rel(path), why))
-    return out
-
-
-def check_phase_lists() -> list[Finding]:
-    # A doc that enumerates atlas phases as a B/.../N slash-list must extend to the live max phase.
-    out, hi = [], max_single_phase()
-    for rel, cat in TRACKED:
-        if cat == "snapshot":
-            continue
-        for m in re.finditer(r"\bB(?:/[A-Z](?:\.\d)?'?){4,}", _read(PROJ / rel)):
-            seg = m.group(0)
-            if "/C/" not in seg or "/D" not in seg:
-                continue  # illustrative subset (e.g. "B/F/H/K/N/..."), not the full enumeration
-            if f"/{hi}" not in seg and not seg.endswith(hi):
-                out.append(Finding(DRIFT, "phase-list-stale", rel,
-                                   f"atlas-phase list '{seg[:32]}…' omits phases through {hi}"))
-                break
-    return out
-
-
 def classify(path: Path) -> str:
+    """Filing-convention classifier -- carried verbatim, uncalled within
+    this reduced file (its sole caller, `check_coverage`, moved to
+    `sources/factory.py`). See the module docstring."""
     rel = _rel(path)
     if any(part in IGNORE_PARTS for part in path.parts):
         return "ignored"
@@ -550,11 +354,10 @@ def classify(path: Path) -> str:
         return "tracked:deferred"
     if rel == "planning-artifacts/deferred-work-ledger.md":
         # The DURABLE twin of the Tier-3 ledger above, promoted 2026-07-29 because
-        # bmad-loop's follow-up-review damping refiles into the gitignored one (see
-        # scripts/deferred_work_check.py). Hand-authored and not pin-gated: entries
-        # are dated in their own bodies, and the file is deliberately a copy whose
-        # curation lags — a version pin would report drift on every skill bump for a
-        # document that tracks stories, not the skill surface.
+        # bmad-loop's follow-up-review damping refiles into the gitignored one. Hand-authored
+        # and not pin-gated: entries are dated in their own bodies, and the file is
+        # deliberately a copy whose curation lags — a version pin would report drift on
+        # every skill bump for a document that tracks stories, not the skill surface.
         return "tracked:deferred"
     if re.fullmatch(r"implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", rel):
         # Tier-3 sprint feed (gitignored, local-only) — the program console's
@@ -579,171 +382,30 @@ def classify(path: Path) -> str:
         # merging left a bmad-loop merge subject unreachable from main.
         # GENERATED by scripts/promote_sprint_status.py (`sprint-ledger-sync`) and
         # read by docs/dashboard/generate.py:apply_tracked_ledger; freshness is
-        # enforced against the Tier-3 feed by scripts/dashboard_drift_check.py, not
-        # by a version pin — it tracks stories, not the skill surface.
+        # enforced against the Tier-3 feed by the drift verdict, not by a version
+        # pin — it tracks stories, not the skill surface.
         return "tracked:sprint-ledger"
     if re.fullmatch(r"implementation-artifacts/spec-.*\.md", rel):
         return "tracked:spec"
     return "UNKNOWN"
 
 
-def check_coverage() -> tuple[list[Finding], dict[str, int]]:
-    """Walk the whole project; HARD-fail any file no rule classifies — so coverage can't lapse."""
-    findings: list[Finding] = []
-    summary: dict[str, int] = {}
-    if not PROJ.is_dir():
-        return findings, summary
-    for path in sorted(PROJ.rglob("*")):
-        if not path.is_file():
-            continue
-        cls = classify(path)
-        if cls == "ignored":
-            continue
-        summary[cls] = summary.get(cls, 0) + 1
-        if cls == "UNKNOWN" and path.suffix not in STRAY_SUFFIXES:  # strays handled elsewhere
-            findings.append(Finding(HARD, "uncovered", _rel(path),
-                                   "not covered by drift-check — add a classification rule"))
-    if DOCS_SPECS.is_dir():  # Tier-1 intake specs (repo-root, outside the project tree)
-        summary["intake:docs-specs"] = len(list(DOCS_SPECS.glob("*.md")))
-    return findings, summary
-
-
-def check_tier_alignment() -> list[Finding]:
-    """Enforce the BMAD-method tier model:
-      Tier-1 intake specs -> docs/specs/ (neutral, tracked)
-      Tier-3 execution    -> implementation-artifacts/ (gitignored, local-only)
-    So a git-tracked file under implementation-artifacts/ is misfiled (an intake spec that
-    belongs in docs/specs/, or a Tier-3 output that should not be committed)."""
-    out = []
-    for f in git_tracked(IMPL_REL):
-        name = f.rsplit("/", 1)[-1]
-        remedy = ("intake spec -> git mv to docs/specs/" if name.startswith("spec-")
-                  else "Tier-3 output -> keep local (git rm --cached)")
-        out.append(Finding(HARD, "tracked-impl-artifact", f,
-                           f"implementation-artifacts is gitignored/local-only; this file is "
-                           f"git-tracked ({remedy})"))
-    if DOCS_SPECS.is_dir():
-        for p in sorted(DOCS_SPECS.iterdir()):
-            if p.is_file() and p.suffix != ".md":
-                out.append(Finding(DRIFT, "docs-specs-nonmd", f"docs/specs/{p.name}",
-                                   "docs/specs holds BMAD intake specs (markdown) — non-.md is misfiled"))
-    return out
-
-
-def check_spec_indexed() -> list[Finding]:
-    """Every Tier-1 intake spec must be referenced in CLAUDE.md's Project Documentation Reference,
-    so the human/agent index stays complete as specs are added."""
-    if not DOCS_SPECS.is_dir():
-        return []
-    claude = _read(REPO_ROOT / "CLAUDE.md")
-    return [Finding(DRIFT, "spec-unindexed", f"docs/specs/{p.name}",
-                    "not referenced in CLAUDE.md Project Documentation Reference")
-            for p in sorted(DOCS_SPECS.glob("*.md")) if p.name not in claude]
-
-
-# The Guild's own vocabulary — the eight Smiths, the Dreams that may name no
-# station, and the Dream lifecycle. READ from docs/governance/guild-roster.json,
-# never restated here (Doctor Story 6-8).
-#
-# Until 2026-08-09 two of these four were hand-mirrored in
-# docs/dashboard/generate.py: identical by luck, not by construction, and
-# labelled "Mirrored in ..." as though that were the design rather than the
-# defect. The other two were already imported from this module, after a mirrored
-# copy of GUILD_DREAMS drifted on 2026-07-28 and the board warned on a Dream the
-# Charter explicitly permits. All four now have one home, and it is neither this
-# file nor the board's: `stations` is Charter §§1-8 membership and `guild_dreams`
-# is the Charter itself, so the data is CONSTITUTIVE and lives beside the
-# governance kernel rather than inside a tool that happens to read it.
-#
-# Read as a plain dict rather than re-exported through a shim, so there is
-# exactly one definition and one reader per consumer.
-_ROSTER = json.loads(
-    (REPO_ROOT / "docs" / "governance" / "guild-roster.json").read_text(encoding="utf-8")
-)
-STATIONS = tuple(_ROSTER["stations"])
-GUILD_DREAMS = tuple(_ROSTER["guild_dreams"])
-DREAM_STATUSES = tuple(_ROSTER["dream_statuses"])
-DREAM_TYPES = tuple(_ROSTER["dream_types"])
-
-
-def check_dream_vocab() -> list[Finding]:
-    """Dream `status:`/`type:` must use the canonical vocabulary.
-
-    Statuses are hand-maintained and therefore rot: on 2026-07-25 pyforge-warden
-    read `in-spec` while shipped 31/31, and deckcraft read `dreamt` while holding
-    both a deck and a Spec. This catches the vocabulary half (a retired or
-    invented value); the consistency half — status vs what actually exists on
-    disk — is a separate check worth adding once the board settles.
-    """
-    out: list[Finding] = []
-    dreams_dir = REPO_ROOT / "docs" / "dreams"
-    if not dreams_dir.is_dir():
-        return out
-    for f in sorted(dreams_dir.glob("*.md")):
-        if f.name == "README.md":
-            continue
-        text = _read(f)
-        m = re.search(r"^status:\s*(\S+)\s*$", text, re.M)
-        if not m:
-            out.append(Finding(DRIFT, "dream-vocab", _rel(f), "no status: in frontmatter"))
-        elif m.group(1) not in DREAM_STATUSES:
-            out.append(Finding(DRIFT, "dream-vocab", _rel(f),
-                               f"status {m.group(1)!r} is not one of "
-                               f"{'/'.join(DREAM_STATUSES)}"))
-        m = re.search(r"^type:\s*(\S+)\s*$", text, re.M)
-        if m and m.group(1) not in DREAM_TYPES:
-            out.append(Finding(DRIFT, "dream-vocab", _rel(f),
-                               f"type {m.group(1)!r} is not one of "
-                               f"{'/'.join(DREAM_TYPES)}"))
-    return out
-
-
-def check_dream_owners() -> list[Finding]:
-    """Every Dream must name the station accountable for carrying it to code.
-
-    The Charter's model is that a Dream becomes code THROUGH a Smith, so an
-    unowned Dream is work with no accountable post — and because the Guildhall
-    now propagates `owner:` onto every downstream row (Fleet, In Build,
-    Realized, Pitch, Archived), a missing or bogus owner silently blanks the
-    station on all of them. `guild` is reserved for the two constitutive
-    Dreams; using it elsewhere is how an unassigned Dream hides.
-    """
-    out: list[Finding] = []
-    dreams_dir = REPO_ROOT / "docs" / "dreams"
-    if not dreams_dir.is_dir():
-        return out
-    for f in sorted(dreams_dir.glob("*.md")):
-        if f.name == "README.md":
-            continue
-        m = re.search(r"^owner:\s*(\S+)\s*$", _read(f), re.M)
-        owner = m.group(1) if m else ""
-        if not owner:
-            out.append(Finding(DRIFT, "dream-unowned", _rel(f),
-                               "no owner: in frontmatter — name one of "
-                               f"{', '.join(STATIONS)}"))
-        elif owner == "guild" and f.stem not in GUILD_DREAMS:
-            out.append(Finding(DRIFT, "dream-unowned", _rel(f),
-                               "owner 'guild' is reserved for "
-                               f"{'/'.join(GUILD_DREAMS)} — assign a station"))
-        elif owner not in STATIONS and owner != "guild":
-            out.append(Finding(DRIFT, "dream-unowned", _rel(f),
-                               f"owner {owner!r} is not one of the eight Smiths"))
-    return out
-
-
-def run_checks() -> tuple[list[Finding], dict, dict[str, int]]:
-    gt = ground_truth()
-    live = _parse_ver(gt["skill_version"])
-    cov_findings, coverage = check_coverage()
-    findings = (check_pins(live) + check_archive_hygiene() + check_spec_status()
-                + check_deferred_work(live) + check_counts(gt) + check_stale_rules()
-                + check_phase_lists() + check_baseline() + check_tier_alignment()
-                + check_spec_indexed() + check_dream_owners()
-                + check_dream_vocab() + cov_findings)
-    return findings, gt, coverage
-
-
 # ----------------------------------------------------------------------- fix
+def _remaining_after_fix() -> list | None:
+    """Re-gather the verdict install-free, for `--fix` to report what it
+    couldn't auto-remediate. Returns `None` if `pyforge.doctor` can't be
+    reached (never a silent 0 or a raw traceback)."""
+    try:
+        doctor_src = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
+        if str(doctor_src) not in sys.path:
+            sys.path.insert(0, str(doctor_src))
+        from pyforge.doctor.models import DoctorStatus
+        from pyforge.doctor.sources.factory import gather
+    except ImportError:
+        return None
+    return [f for f in gather(REPO_ROOT) if f.status is DoctorStatus.FAIL]
+
+
 def do_fix() -> list[str]:
     actions = []
     if PLAN.is_dir():
@@ -793,66 +455,11 @@ def cmd_specs() -> int:
     return 0
 
 
-def _print_report(findings: list[Finding], gt: dict, coverage: dict[str, int]) -> None:
-    live = gt["skill_version"]
-    rc = gt["recipes_churny"]
-    print(f"BMAD project drift — live conda-forge-expert v{live}\n")
-    print(f"  schema v{gt['schema_version']} | {gt['mcp_tools']} MCP tools | "
-          f"{gt['atlas_phases']} phases | {gt['pixi_envs']} pixi envs | G1-G{gt['gotcha_max']}")
-    print(f"  recipes (churny, not gated): {rc['dirs']} dirs = "
-          f"{rc['recipe_yaml']} recipe.yaml + {rc['meta_yaml']} meta.yaml")
-    total = sum(coverage.values())
-    cov = "  ".join(f"{k}={v}" for k, v in sorted(coverage.items()))
-    print(f"\n  coverage: {total} files classified — {cov}\n")
-    if not findings:
-        print("  (no findings)")
-        return
-    for sev in (HARD, DRIFT, INFO):
-        group = [f for f in findings if f.severity == sev]
-        if not group:
-            continue
-        print(f"  {sev} ({len(group)}):")
-        for f in group:
-            tag = " [auto-fixable]" if f.fixable else ""
-            print(f"    - [{f.kind}] {f.target}: {f.detail}{tag}")
-        print()
-
-
-def cmd_check(integrity_only: bool, fix: bool) -> int:
-    if fix:
-        actions = do_fix()
-        print("FIX applied:" if actions else "FIX: nothing to remediate.")
-        for a in actions:
-            print(f"  - {a}")
-        print()
-    findings, gt, coverage = run_checks()
-    _print_report(findings, gt, coverage)
-    hard = [f for f in findings if f.severity == HARD]
-    drift = [f for f in findings if f.severity == DRIFT]
-    if integrity_only:
-        if hard:
-            print(f"FAIL: {len(hard)} integrity issue(s). See SYNC-RUNBOOK.md "
-                  f"(some are auto-fixable: bmad-drift-check -- --fix).")
-            return 1
-        print("OK: integrity clean (every tracked doc has a pin; filing conventions respected).")
-        return 0
-    if hard or drift:
-        fixable = [f for f in findings if f.fixable]
-        hint = "  (run with --fix to auto-remediate the mechanical ones)" if fixable else ""
-        print(f"DRIFT: {len(hard)} integrity + {len(drift)} currency finding(s). "
-              f"Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.{hint}")
-        return 1
-    print("OK: all tracked BMAD artifacts are in sync with the live factory MINOR.")
-    return 0
-
-
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Check BMAD project-doc drift vs the live factory.")
+    ap = argparse.ArgumentParser(description=__doc__)
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--json", "--groundtruth", action="store_true", dest="json",
                    help="print live ground-truth facts as JSON")
-    g.add_argument("--integrity-only", action="store_true",
-                   help="fail only on HARD findings (for the meta-test)")
     g.add_argument("--specs", action="store_true",
                    help="report each docs/specs intake spec's status + CLAUDE.md index state")
     ap.add_argument("--fix", action="store_true",
@@ -861,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="stamp .sync-baseline.json to the current state (run after a reconciliation)")
     args = ap.parse_args(argv)
     if not PROJ.is_dir():
-        print(f"BMAD project not found at {PROJ} — nothing to check.", file=sys.stderr)
+        print(f"BMAD project not found at {PROJ} — nothing to do.", file=sys.stderr)
         return 0
     if args.json:
         return cmd_json()
@@ -872,7 +479,37 @@ def main(argv: list[str] | None = None) -> int:
         fp = fingerprint()
         print(f"baseline written: {_rel(BASELINE)} @ git {fp.get('git_head')} / skill v{fp.get('skill_version')}")
         return 0
-    return cmd_check(integrity_only=args.integrity_only, fix=args.fix)
+    if args.fix:
+        actions = do_fix()
+        print("FIX applied:" if actions else "FIX: nothing to remediate.")
+        for a in actions:
+            print(f"  - {a}")
+        # do_fix() only remediates the mechanical classes (archive moves,
+        # stray-file removal) -- pin drift, coverage gaps, etc. still need
+        # human/spec action. Re-check afterward instead of unconditionally
+        # returning 0, matching the pre-Story-6.9 behavior of `cmd_check`.
+        remaining = _remaining_after_fix()
+        if remaining is None:
+            print("\ncould not re-check after fix (pyforge.doctor unavailable); "
+                  "run `python -m pyforge.doctor.sources bmad-drift` separately.",
+                  file=sys.stderr)
+            return 2
+        if remaining:
+            print(f"\n{len(remaining)} finding(s) remain after fix — not "
+                  f"auto-fixable. See SYNC-RUNBOOK.md.")
+            for f in remaining:
+                print(f"  - [{f.check}] {f.message}")
+            return 1
+        print("\nOK: no findings remain after fix.")
+        return 0
+    print(
+        "this script no longer computes the drift verdict -- run "
+        "`python -m pyforge.doctor.sources bmad-drift` for that. Pass --json/"
+        "--groundtruth, --specs, --fix, or --write-baseline for this script's "
+        "remaining mutation/reporting surface.",
+        file=sys.stderr,
+    )
+    return 2
 
 
 if __name__ == "__main__":
