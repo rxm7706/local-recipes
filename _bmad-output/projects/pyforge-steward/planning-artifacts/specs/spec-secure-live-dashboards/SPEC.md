@@ -1,20 +1,48 @@
 ---
 spec: secure-live-dashboards
-status: draft
+status: ready
 owner-dream: docs/dreams/secure-live-dashboards.md
 surface: []          # frontier — no implementation exists (verified 2026-08-09: zero hits for dashboard_audit_trail, ROLE_HEADER, USER_ID_HEADER, allowed_roles, SECURITY_WEBHOOK_URL, ENCRYPT_EXPORT_FILE outside docs/dreams+docs/intake; the Flask-Caching hits are conda recipes and warden fixtures, not code)
-companions: []
+companions:
+  # The architecture that answers every open question this Spec was holding.
+  # Load-bearing: its AD-1..AD-14 are the build contract any decomposition binds to.
+  - ../../architecture/architecture-secure-live-dashboards-2026-08-09/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/secure-live-dashboards.md
   - ../../../../../../docs/intake/secure-live-dashboards/role-based-live-dashboard-blueprint.md
   - ../../../../../../docs/intake/secure-live-dashboards/vizro-static-github-pages-workaround.md
-open_questions:
-  - "Where the pattern lives: a `steward` subcommand that scaffolds and verifies, a library the dashboard imports, or a template repository. Each implies a different upgrade story when the pattern improves, and an adopter that has diverged is the case that decides it."
-  - "Whether the pattern PROVIDES the RLS pipeline and audit writer or VERIFIES that an adopter has an acceptable one. Provide is reusable and rigid; verify tolerates dashboards that already made their own choices. This bounds every capability below."
-  - "Proxy headers are trusted implicitly — anything able to reach the app directly can forge the role header. The blueprint makes header NAMES configurable but never defends the trust boundary. Needs either a defence (mTLS, a shared secret, network policy) or an explicitly recorded assumption that the network path is the control."
-  - "Whether Redis is mandated or one pluggable cache backend. The blueprint's own sample uses `FileSystemCache`, which contradicts its Compose stack: under Gunicorn `--workers 4` a filesystem cache does not deliver the shared-cache guarantee Redis is provisioned to provide. Mandating Redis raises the floor for a small adopter."
-  - "Whether the audit trail has a retention and access policy. It accumulates per-user activity, making it simultaneously a compliance asset and a privacy liability; the blueprint is silent."
-  - "What ENFORCES that search runs after role filtering. The blueprint's sample orders it correctly, but nothing binds the order, and reversing it leaks across roles."
+# All six open questions were ANSWERED by the architecture run of 2026-08-09 and by
+# the operator's Django/ASGI and static-mode direction; status moved draft -> ready on
+# that basis. Resolutions kept here rather than deleted, so the contract records what
+# was decided and which AD decided it:
+#   Q1 where the pattern lives (subcommand vs library vs template repo)
+#       -> AD-1: BOTH, split on the process boundary. In-process concerns ship as the
+#          library, out-of-process concerns as a `steward deploy` subcommand. Template
+#          rejected: no upgrade path for a diverged adopter.
+#   Q2 whether the pattern PROVIDES the pipeline or VERIFIES an acceptable one
+#       -> AD-2: both, split by half. The library provides so nobody reimplements
+#          isolation; the subcommand verifies so a diverged adopter is still caught.
+#   Q3 proxy headers trusted implicitly / the undefended trust boundary
+#       -> AD-4: the trusted ingress is DECLARED, and the app refuses to start when
+#          identity headers arrive from outside it. AD-9 carves out machine callers,
+#          which authenticate by HMAC proof and never receive a human role.
+#   Q4 Redis mandated or one pluggable cache backend
+#       -> AD-5: pluggable, but the SHARING PROPERTY is mandatory — any cross-worker
+#          state (response cache AND Channels channel layer) that cannot be shared is
+#          refused when workers > 1.
+#   Q5 audit trail retention and access policy
+#       -> AD-7: retention is declared by the adopter and has NO default; a deployment
+#          without one is refused. The trail is itself role-isolated data, so reading
+#          it is a recorded act.
+#   Q6 what ENFORCES that search runs after role filtering
+#       -> AD-6: the API shape. The library exposes no entry point that can search the
+#          master set, so the ordering is not a matter of caller discipline.
+# Later ADs from the same run bind the host and delivery: AD-8 (binds at the ASGI
+# boundary, never to a dashboard framework), AD-10 (static export and role isolation
+# are mutually exclusive), AD-11/AD-12 (protocol-specific identity; per-message
+# isolation and audit), AD-13 (ships as a reusable Django app), AD-14 (SQLite dev /
+# PostgreSQL deploy, contention proven not inferred).
+open_questions: []
 ---
 
 ## Why
@@ -80,9 +108,12 @@ Steward provisions the engines, deploys the services, and holds the keys.
 
 - **CAP-6 — the deployment perimeter ships with the pattern.**
   - **intent:** An adopter receives a production-shaped runtime rather than assembling one:
-    a multi-worker WSGI topology, a container stack whose cache state is shared across
-    workers, and an edge that terminates TLS and enforces network policy — all driven by
-    configuration.
+    a multi-worker **ASGI** topology, a container stack whose cross-worker state is shared,
+    and an edge that terminates TLS and enforces network policy — all driven by
+    configuration. *(Was "WSGI" as first written, from the blueprint's Gunicorn `gthread`
+    sample; superseded by AD-8 once the host was fixed as Django + Channels on ASGI. A
+    WSGI-native dashboard is mounted through a WSGI→ASGI adapter rather than the host being
+    forced to WSGI.)*
   - **success:** the same artifact runs on a laptop against a file-backed database and in
     production against a clustered one by changing connection configuration only, so the
     security boundaries are exercised in development rather than first met in production.
