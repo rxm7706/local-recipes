@@ -61,6 +61,11 @@ def build_server(name: str = "pyforge-atlas-atlas"):
         return tools.run_pipeline("derived_artifacts")
 
     @mcp.tool()
+    def run_upstream_discovery_pipeline() -> dict:
+        """Trigger the `upstream_discovery` pipeline (GitHub-trending discovery ingest, CAP-1) run."""
+        return tools.run_pipeline("upstream_discovery")
+
+    @mcp.tool()
     def read_atlas_dataset(name: str):
         """Read a catalog dataset, stamped with its own build provenance (AD-17):
         returns ``{schema_version, dataset, provenance_kind, build_stamp,

@@ -105,6 +105,7 @@ def test_cadence_table_is_encoded(defs):
         "phase_ejm_cfgraph": "6h",
         "phase_n_live_health": "hourly",
         "refresh_assets": "weekly",
+        "upstream_discovery_trending": "daily",
     }
     assert set(by_job) == set(expected_cadence), "cadence job set drifted from the table"
     for job_name, cadence in expected_cadence.items():
