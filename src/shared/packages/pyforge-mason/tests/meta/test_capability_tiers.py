@@ -129,6 +129,17 @@ def test_package_and_environment_carry_no_module_level_cfe_import():
     assert PKG_ROOT.is_dir(), (
         f"AD-6 guard is scanning nothing -- package root moved? {PKG_ROOT}"
     )
+    # Second vacuity mode (Phase 1 audit, 2026-08-10): `_find_violators`
+    # SKIPS a guarded filename that no longer exists, so renaming or
+    # splitting package.py/environment.py/doctor.py (e.g. into a package/
+    # subpackage in Epic 3) would silently drop it from the guard while the
+    # suite stays green. Every guarded name must resolve to a real file; a
+    # rename must update _GUARDED_FILENAMES in the same change.
+    missing = [f for f in _GUARDED_FILENAMES if not (PKG_ROOT / f).is_file()]
+    assert not missing, (
+        "AD-6 guard lost sight of a guarded module -- renamed or split "
+        f"without updating _GUARDED_FILENAMES? missing: {missing}"
+    )
     violators = _find_violators(PKG_ROOT, _GUARDED_FILENAMES)
     assert not violators, (
         "AD-6: package.py/environment.py/doctor.py must never carry a "

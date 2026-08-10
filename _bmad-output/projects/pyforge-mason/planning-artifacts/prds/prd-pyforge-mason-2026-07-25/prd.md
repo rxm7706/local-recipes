@@ -6,7 +6,7 @@ updated: 2026-08-01
 project: pyforge-mason
 currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 dream: docs/dreams/packaging-factory.md
-adopted_kernel: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md
+adopted_kernel: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:
   - ../../briefs/brief-pyforge-mason-2026-07-25/brief.md
   - ../../briefs/brief-pyforge-mason-2026-07-25/addendum.md
