@@ -74,6 +74,7 @@ PIPELINE_TRIGGER_TOOLS = (
     "run_seed_gaps_pipeline",
     "run_universal_sbom_pipeline",  # B7: SBOM intake -> match pipeline trigger
     "run_derived_artifacts_pipeline",  # B7: universe-BOM pipeline trigger
+    "run_upstream_discovery_pipeline",  # Story 13.1: GitHub-trending ingest trigger (CAP-1)
 )
 
 # The NL capability D3 adds (no legacy equivalent): the Vizro-AI natural-language interface

@@ -172,6 +172,13 @@ SCHEDULED_JOBS: tuple[tuple[str, list[str], str, str, str], ...] = (
         "weekly",
         "refresh assets (vdb-refresh / update-cve-db / update-mapping-cache)",
     ),
+    (
+        "upstream_discovery_trending",
+        ["refresh_trending_candidates"],
+        "0 5 * * *",
+        "daily",
+        "CAP-1 (GitHub-trending discovery ingest — Story 13.1, FR-64)",
+    ),
 )
 
 # Weekly "everything" bootstrap = the whole migrated DAG EXCEPT Phase P.
@@ -250,6 +257,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     "report_cwe_seed_gap": 120,
     "report_spdx_schema_gap": 120,
     "report_license_map_gap": 120,
+    # -- upstream_discovery -------------------------------------------------- #
+    "refresh_trending_candidates": 600,  # CAP-1 (3 HTML pages + Search API fallback)
 }
 
 # Fallback for kedro-dagster's synthetic pipeline-run hook ops (they are cheap
