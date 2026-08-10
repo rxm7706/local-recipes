@@ -719,6 +719,27 @@ crashing the sweep or, worse, silently reading as "confirmed clean" -- the
 exact false-green the detector's own module docstring names as the
 2026-07-31 incident's root cause.
 
+Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
+codes to that same fleet-summary path, folding a SECOND durability signal
+onto every home's row beside ``unpushed_work``: the
+``.bmad-loop/runs/*/failed/*/changes.patch`` a session-timeout kill
+preserves. ``MRS-STATUS-010`` (a found patch whose story is NOT CONFIRMED
+landed -- either no conforming merge subject for its key on ``main``, or a
+story-directory name that never parsed as a story key at all) classifies
+``Verdict.WARN``, this area's own "reported, never blocks progression"
+tier: the check is a best-effort read and must never change ``marshal
+status``'s exit code. It states the UNCONFIRMED direction rather than
+asserting "has not landed", because an ABSENCE of a match proves nothing
+(the squash-merge blind spot ``core/status.py``'s own
+``CONFIDENCE_UNCONFIRMED`` block documents in full). ``MRS-STATUS-011`` (a
+patch's landed-status could not be determined at all) is ``Verdict.WARN``
+for the same reason and has TWO distinct causes: ``main``'s commit history
+could not be read -- ONCE for the whole sweep, since that read is attempted
+at most once -- OR resolving one project's own merge-subject policy raised
+an exit-code-changing finding, which is withheld and re-reported at this
+tier, once per affected home. Both name the patches they degraded; every
+degraded entry reports ``done: null``, never a fabricated ``false``.
+
 Story 6.1 (profile-driven adapter selection, project-scoped, FR-48/FR-51/
 AD-19) adds two more codes to ``cli/spin.py``'s own ``MRS-SPIN-*`` area:
 ``MRS-SPIN-013`` (a resolved in-scope story's own tracked spec declares a
@@ -1138,6 +1159,47 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # reported, never blocking -- the wave's own landing already succeeded (or
 # there was nothing new to land this run) by the time this best-effort step
 # runs.
+#
+# Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
+# codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a
+# bare `Path.glob` over every currently-attached home's own
+# `.bmad-loop/runs/*/failed/*/changes.patch` files -- bmad-loop's own
+# on-disk shape (external to this repo) for a session-timeout-killed
+# story's preserved diff, previously read by nothing in this repo.
+#
+# `MRS-STATUS-010` names ONE such patch whose story is NOT CONFIRMED
+# durably merged into `main` (per `core.promotion.merged_story_keys`,
+# AD-33 -- never the harness's own journal/`state.json`) -- reported per
+# matching patch, never silently absorbed; a patch whose own story-dir
+# name does not even parse as a story key reports the same code (it
+# cannot be confirmed landed either). It states an UNCONFIRMED direction,
+# never "has not landed" as established fact: the absence of a match is
+# exactly the direction `core/status.py`'s own `CONFIDENCE_UNCONFIRMED`
+# block documents as proving nothing (squash-merge prose and
+# `land/<station>-<epic>-<seq>` merge subjects are both unparseable), and
+# 2 of the 3 WARNs the first implementation emitted against the real
+# 12-patch fleet were false positives for exactly that reason. Every
+# reported entry carries the matching `confidence` value.
+#
+# `MRS-STATUS-011` names that a patch's landed-status could not be
+# determined AT ALL, and has TWO distinct causes:
+#   1. `main`'s own commit history could not be read -- that read is
+#      attempted at most ONCE, lazily, for the whole sweep, so this arm
+#      fires at most once per invocation and degrades EVERY patch found
+#      this run to `done: null`.
+#   2. One project slug's own merge-subject policy could not be resolved
+#      (a malformed project-policy TOML, i.e. an ERROR-severity
+#      `MRS-POLICY-004`) -- this arm is PER-SLUG, so it can fire once per
+#      affected home, and degrades only THAT project's patches. It exists
+#      because a raw `MRS-POLICY-004` (`Verdict.ERROR`) in the DEFAULT
+#      `marshal status` sweep would change that command's exit code over a
+#      best-effort durability read, which Story 4.14's own Boundaries
+#      forbid.
+# Either way the affected patches report `done: null` (landed-status
+# unavailable), never fabricated as landed or unlanded. Also
+# `Verdict.WARN`, mirroring `MRS-STATUS-009`'s identical "the read failed,
+# degrade every affected value to unknown, never a hard failure"
+# reasoning.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1290,6 +1352,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-014",
         "MRS-LAND-009",
         "MRS-LAND-010",
+        "MRS-STATUS-010",
+        "MRS-STATUS-011",
     }
 )
 
