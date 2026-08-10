@@ -1057,14 +1057,16 @@ def _resync_home_branch(
     Before touching anything, reconfirms ``home`` is still checked out at
     ``head_branch``'s own tip (``VcsPort.worktree_head_sha`` vs
     ``VcsPort.resolve_ref``, the SAME pair the full-merge path above already
-    uses for the identical reason at ``MRS-DEPLOY-017``) -- ``fast_forward``
-    itself only ever asks "is this a fast-forward from whatever HEAD
-    currently is," so without this guard a `home` that had drifted onto a
-    different ref (or a detached HEAD) would get THAT ref silently advanced
-    while ``head_branch`` stayed stale and ``home_current`` still reported
-    ``True`` (code review, 2026-08-10). A mismatch is reported exactly like
-    any other resync failure -- one ``MRS-LAND-009`` WARN, no fast-forward
-    attempted.
+    uses for the identical reason at ``MRS-DEPLOY-017``) -- for the no-op and
+    already-landed call sites this IS the only identity check ever reached,
+    since neither has an earlier ``MRS-DEPLOY-017``-style pre-check of its
+    own. ``fast_forward`` itself only ever asks "is this a fast-forward from
+    whatever HEAD currently is," so without this guard a `home` that had
+    drifted onto a different ref (or a detached HEAD) would get THAT ref
+    silently advanced while ``head_branch`` stayed stale and ``home_current``
+    still reported ``True`` (code review, 2026-08-10). A mismatch is reported
+    exactly like any other resync failure -- one ``MRS-LAND-009`` WARN, no
+    fast-forward attempted.
 
     Otherwise runs ``VcsPort.fetch`` (updates ONLY ``refs/remotes/origin/
     <base>``, a network read) then ``VcsPort.fast_forward`` (``git merge
@@ -1092,11 +1094,17 @@ def _resync_home_branch(
 
     try:
         expected_sha = vcs.resolve_ref(git_repo_root, head_branch)
+    except VcsCommandError as exc:
+        return _warn(
+            f"could not resolve {head_branch!r}'s own tip before resyncing "
+            f"with 'origin/{base}': {exc}"
+        )
+    try:
         home_sha = vcs.worktree_head_sha(home)
     except VcsCommandError as exc:
         return _warn(
             f"could not confirm {home}'s own checked-out commit before "
-            f"resyncing {head_branch!r} with origin/{base}: {exc}"
+            f"resyncing {head_branch!r} with 'origin/{base}': {exc}"
         )
     if home_sha != expected_sha:
         return _warn(

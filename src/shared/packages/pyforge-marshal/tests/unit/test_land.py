@@ -831,10 +831,12 @@ def test_resync_home_branch_skips_fast_forward_when_home_has_drifted_off_head_br
     `worktree_head_sha` != `resolve_ref(head_branch)` (the SAME pair
     `MRS-DEPLOY-017` already uses in the full-merge path) catches this
     before any fetch/fast-forward is attempted. Exercised via the no-op
-    (`if not wave_keys`) exit -- the two OTHER call sites already run their
-    own, earlier `MRS-DEPLOY-017` identity check on the same fake value
-    before ever reaching `_resync_home_branch`, which would mask this
-    guard's own independent failure mode."""
+    (`if not wave_keys`) exit -- the full-merge path (a THIRD call site, not
+    exercised here) already runs its own, earlier `MRS-DEPLOY-017` identity
+    check before ever reaching `_resync_home_branch`, which would mask this
+    guard's own independent failure mode there; the already-landed shortcut
+    has no such pre-check of its own and is covered separately below
+    (`test_resync_home_branch_already_landed_reports_warn_when_home_has_drifted`)."""
     _patch_repo(monkeypatch, tmp_path)
     vcs = _FakeVcs(
         existing_branches=frozenset({"loop/acme"}),
@@ -913,6 +915,109 @@ def test_resync_home_branch_skipped_when_merge_strategy_is_not_merge(
     assert "MRS-LAND-009" not in codes
     assert vcs.fetch_calls == []
     assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_already_landed_reports_warn_when_home_has_drifted(
+    tmp_path, capsys, monkeypatch
+):
+    """Code review (this pass): the already-landed shortcut has no
+    `MRS-DEPLOY-017`-style pre-check of its own before reaching
+    `_resync_home_branch` -- unlike the full-merge path, ITS identity-drift
+    detection is exercised ONLY by this guard. The existing already-landed
+    test (`test_resync_home_branch_already_landed_wave_still_fast_forwards_
+    home`) only covers the matching-identity success path; this covers the
+    mismatch."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        worktree_head_sha="some-other-checked-out-sha",
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["already_landed"] is True
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_reports_warn_when_head_branch_cannot_be_resolved(
+    tmp_path, capsys, monkeypatch
+):
+    """The identity guard's two lookups now run in separate `try` blocks
+    (code review, this pass) so the WARN names which one actually failed --
+    this covers `resolve_ref` raising; `worktree_head_sha` raising is
+    covered by the sibling test below."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+        resolve_ref_raises=True,
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    message = payload["findings"][codes.index("MRS-LAND-009")]["message"]
+    assert "resolve" in message
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_home_branch_reports_warn_when_home_head_sha_cannot_be_read(
+    tmp_path, capsys, monkeypatch
+):
+    """`worktree_head_sha` raising -- the sibling half of the identity
+    guard's now-separate `try` blocks (see the `resolve_ref` case above)."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+        worktree_head_sha_raises=True,
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" in codes
+    message = payload["findings"][codes.index("MRS-LAND-009")]["message"]
+    assert "checked-out commit" in message
+    assert payload["data"]["home_current"] is False
+    assert exit_code == 0
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_render_text_land_reports_home_current_line(tmp_path, capsys, monkeypatch):
+    """Tasks & Acceptance: `_render_text_land` gains one line reporting
+    `home_current` when the key is present -- untested by every other Story
+    4.12 test, which all parse the JSON envelope via `_payload`."""
+    _patch_repo(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=("an ordinary commit, not a story merge",),
+    )
+    forge = _FakeForge()
+
+    exit_code = land_module.run_land(_args(format="text"), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    rendered = capsys.readouterr().out
+    assert exit_code == 0
+    assert "home current with 'main': True" in rendered
 
 
 # =====================================================================
