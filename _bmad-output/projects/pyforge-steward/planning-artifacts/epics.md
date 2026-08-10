@@ -640,40 +640,50 @@ station CLI is missing, unimportable, or over its documented start-up budget.
 **Value delivered.** A card moved once shows up on the other board, with no SaaS bridge
 and no human re-typing. **Greenfield** — nothing exists today.
 
-**Blocked on decisions, not on engineering.** Three open questions remain in the Spec:
-which side is authoritative on a simultaneous conflicting edit, Mode A (real-time
-serverless) vs Mode B (scheduled batch), and Mode B's schema shape. `Q1`/`Q5` were
-resolved 2026-08-08 — an **external** board pair, which is what makes this Steward's at
-all. **Do not start 8.1 before the remaining three are answered**; the Spec says so and
-this epic repeats it because an epic is what gets picked up.
+**UNBLOCKED 2026-08-10.** Every decision this epic was waiting on is answered and the Spec
+carries `open_questions: []`. `Q1`/`Q5` (an **external** board pair, which is what makes this
+Steward's at all) resolved 2026-08-08; `Q2`/`Q3`/`Q4` resolved by
+`architecture-jira-github-projects-sync-2026-08-09` (`status: final`) — GitHub authoritative
+per-field-overridable, serverless transport on a `schedule` trigger with webhook opt-in, and
+Mode B's normalized schema with its three-table control plane.
+
+**One thing happened after that and it changes how 8.1 must be built.** Story 8.1 ran, found a
+real correctness defect in AD-5's original time-based zero-loop guard, and correctly HALTed
+rather than ship it: the sync point was stored as a field *on the item*, so writing it advanced
+the same item's `updated_at` past the value just recorded — permanently, not for a tunable
+window. AD-5 was amended (PR #390) to a **value comparison against a per-field baseline**, and
+**AD-10** was added for the baseline's storage contract and lifecycle. 8.1's frozen
+intent-contract was re-issued from that amendment on 2026-08-10. **Never reintroduce a timestamp
+comparison on the correctness path** — `updated_at` may only select candidates under
+`trigger=schedule`, never decide.
 
 ### Story 8.1: Bidirectional propagation
 **FR/AD:** FR-27 • **Effort:** L • **Deps:** the three open questions
 **Given** a status/assignee/link change on either board **Then** it reaches the other with
 no human action on the receiving side, demonstrated against a live pair.
-**Status:** blocked
+**Status:** backlog
 
 ### Story 8.2: Zero-loop guarantee
 **FR/AD:** FR-28 • **Effort:** M • **Deps:** S-8.1
 **Given** one human change **Then** N round-trips produce exactly ONE propagation, not N —
 demonstrated by test, never asserted.
-**Status:** blocked
+**Status:** backlog
 
 ### Story 8.3: Idempotent update processing
 **FR/AD:** FR-29 • **Effort:** S • **Deps:** S-8.1
 **Given** an identical payload delivered twice **Then** both systems are byte-identical to
 a single delivery.
-**Status:** blocked
+**Status:** backlog
 
 ### Story 8.4: Fail loud, fail alone
 **FR/AD:** FR-30 • **Effort:** XS • **Deps:** S-8.1
 **Given** a batch containing one unlinked item **Then** every other item completes and the
 unlinked one emits a named, greppable error.
-**Status:** blocked
+**Status:** backlog
 
 ### Story 8.5: Explicit status-vocabulary translation
 **FR/AD:** FR-31 • **Effort:** S • **Deps:** S-8.1
 **Given** any status crossing the boundary **Then** it passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through inventing a state.
-**Status:** blocked
+**Status:** backlog
 

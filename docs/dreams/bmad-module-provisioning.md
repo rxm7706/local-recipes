@@ -2,7 +2,7 @@
 title: BMAD Method modules are provisioned, not hand-installed
 type: dream
 owner: steward
-status: dreamt
+status: realized
 ---
 
 # BMAD Method modules are provisioned, not hand-installed
@@ -108,3 +108,11 @@ own/route/triage line this Dream's ownership reasoning relies on) · [[genesis-i
   line, and genesis-installer's actual FR coverage being file/region templating, not module
   provisioning) ruled Marshal out on its own documented boundaries. Assigned to Steward,
   whose Epic 3 provisioning duty (just merged) is structurally the same shape this needs.
+
+- **2026-08-10** — **Realized.** Steward Epic 6, "Module provisioning", is **3/3 done and
+  merged**. The Dream's frontmatter had been left at `dreamt` throughout — same rot as
+  [[unified-container]], found in the same 2026-08-10 sweep. What the Dream asked for is what
+  landed: the hand-installed modules are now provisioned through Steward's own `provision` duty,
+  the way it already wraps pixi and the bmad-loop worktree, rather than through a one-off npm
+  Installer invocation nobody could reproduce. Evidence: steward's `sprint-status-ledger.yaml`
+  Epic 6.

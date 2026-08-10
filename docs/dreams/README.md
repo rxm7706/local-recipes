@@ -68,6 +68,25 @@ contract; the Dream is the "why" behind it.
   a state, and "in the deck" reads as *shuffled in, queued*, near the opposite of
   "the case has been made".)*
 
+  **`specified` requires a Spec at `ready` or beyond, not merely a Spec that
+  exists.** `dream_chain_check`'s INV-1 forces every Dream to carry a Spec from
+  birth, so "a Spec exists" cannot by itself separate `dreamt` from `specified` —
+  it is true of every Dream in the repo. A Spec still at `draft` establishes the
+  *chain*, not the *contract*: its open questions are unanswered, so nothing
+  downstream can bind to it. `dreamt` therefore stays reachable and means
+  "captured, chain started, contract not settled". *(Clarified 2026-08-10 after
+  four Dreams were found understating or overstating their state at once.)*
+
+  **Status is NOT a proxy for work remaining, in either direction — the ledger
+  is.** Two live cases make the point. `bmad-module-provisioning` and
+  `unified-container` both read `dreamt` while their epics were 3/3 and 5/5 done
+  and merged. And the largest single block of unbuilt work in the fleet —
+  marshal's E7–E12, **36 backlog stories** — sits under `genesis-installer`,
+  which reads `archived` because it was correctly consolidated into
+  `pyforge-marshal` (`realized`, and it does run). Neither status is wrong under
+  the definitions above; both are useless for "what is left". For that, read
+  `sprint-status-ledger.yaml` or run `pixi run -e local-recipes fleet-picture`.
+
   **There is deliberately no `building` state.** Status declares what *exists*;
   the console *derives* what is happening from live build lines. Hand-maintained
   activity-tracking rots: `pyforge-warden` read `in-spec` while shipped 31/31,
@@ -104,11 +123,15 @@ contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-25 Dreams as of 2026-07-23 (3 born Dream-first — the regenerable factory among
+60 Dream files as of 2026-08-10, of which 41 are mapped below — the 19 omitted are
+archived per-station satellites folded into their parent Dream on 2026-08-08 (see
+**Dream-level-only consolidation**). The **frontmatter is the source of truth**; this table is a
+curated map, and its Status column is now synced from frontmatter rather than hand-copied.
+*(Historical: 25 Dreams as of 2026-07-23 — 3 born Dream-first — the regenerable factory among
 them; 17 retro-seeded from a complete
 repo + Design-workspace audit — the factory console among them; 3 persona
 dreams added by ownership audits — Scribe + Steward when the crew grew 6 → 8,
-Herald's charter when the ownership review re-scoped it; 2 recovered from the gist audit (a third, local-ai hardware, was judged out-of-repo scope and archived)). **No-straggler policy:** every BMAD project, deck, Design
+Herald's charter when the ownership review re-scoped it; 2 recovered from the gist audit (a third, local-ai hardware, was judged out-of-repo scope and archived).)* **No-straggler policy:** every BMAD project, deck, Design
 project, and spec maps to exactly one Dream; the herald CLI's status capability
 (CAP-3) flags any unlinked Design project permanently.
 
@@ -117,9 +140,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | Dream | Status | What it is |
 |---|---|---|
 | [`pyforge-charter.md`](pyforge-charter.md) | pitched | **The founding Dream** — the PyForge Guild: eight Smiths, one "Dream to Code" pipeline. Master vision deck: `presentations/pyforge-genesis/`. |
-| [`pyforge-genesis.md`](pyforge-genesis.md) | pitched | Genesis as master idea + **the seed**: init a new repo / adopt brownfield with the whole operating model (origin: `archive/docs/bmad-setup-plan.md`). |
-| [`sentinel.md`](sentinel.md) | dreamt | **The ancestor** (2026-04): the AI Software Factory — "the graph is the product"; unbuilt core, stranded artifacts to repatriate; descendants credited. |
-| [`design-code-bridge.md`](design-code-bridge.md) | realized | Design + Code as one surface — seed/design/pull, zero downloads; herald CLI specced (5 CAPs). |
+| [`sentinel.md`](sentinel.md) | archived | **The ancestor** (2026-04): the AI Software Factory — "the graph is the product"; unbuilt core, stranded artifacts to repatriate; descendants credited. |
 
 **Persona products**
 
@@ -127,55 +148,55 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 |---|---|---|
 | [`packaging-factory.md`](packaging-factory.md) | realized · perpetual | The origin dream: the AI-assisted conda-forge factory (Mason) — CFE skill, 769 feedstocks, campaigns; frontier: multi-ecosystem autotick, smart test extractor. |
 | [`pyforge-atlas.md`](pyforge-atlas.md) | realized | The intelligence layer reborn as Kedro/Dagster/DuckDB dataflow an agent workforce maintains (waves 0–H shipped, PRs #58–#105). |
-| [`pyforge-warden.md`](pyforge-warden.md) | specified | The compliance gate that never false-greens — six axes of dependency trust (25/31 built). |
+| [`pyforge-warden.md`](pyforge-warden.md) | realized | The compliance gate that never false-greens — six axes of dependency trust (25/31 built). |
 | [`pyforge-marshal.md`](pyforge-marshal.md) | realized | Graduated autonomy a human can trust — bmad-loop/dev-auto + gates + escalation; proved on atlas + warden. |
 | [`pyforge-mason.md`](pyforge-mason.md) | specified | **Mason** — the Artisan Builder's station: the `mason` CLI (recipe / package / environment), seam-by-capability over the CFE craft; distinct from [`packaging-factory.md`](packaging-factory.md), the practice he tends. |
-| [`pyforge-doctor.md`](pyforge-doctor.md) | pitched | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
-| [`pyforge-herald.md`](pyforge-herald.md) | pitched | The outward voice + design surface — decks, bridge, telemetry imagery, proclamations (charter re-scoped 2026-07-23: infrastructure → Marshal). |
-| [`pyforge-scribe.md`](pyforge-scribe.md) | pitched | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
-| [`pyforge-steward.md`](pyforge-steward.md) | pitched | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
+| [`pyforge-doctor.md`](pyforge-doctor.md) | realized | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
+| [`pyforge-herald.md`](pyforge-herald.md) | realized | The outward voice + design surface — decks, bridge, telemetry imagery, proclamations (charter re-scoped 2026-07-23: infrastructure → Marshal). |
+| [`pyforge-scribe.md`](pyforge-scribe.md) | realized | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
+| [`pyforge-steward.md`](pyforge-steward.md) | realized | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**
 
 | Dream | Status | What it is |
 |---|---|---|
 | [`fleet-stewardship.md`](fleet-stewardship.md) | realized · perpetual | Tend every touchable feedstock: refresh tracks, platform expansion, failure remediation — recurring waves, never finished. |
-| [`upstream-discovery.md`](upstream-discovery.md) | dreamt | Sense what the world is building (trending + org audits, atlas Phase T) and package it before it's asked for. |
+| [`upstream-discovery.md`](upstream-discovery.md) | archived | Sense what the world is building (trending + org audits, atlas Phase T) and package it before it's asked for. |
 | [`regenerable-factory.md`](regenerable-factory.md) | realized | Backfill Dream→PRD→spec chains under every realized surface (BMAD brownfield) so the factory can change any code through the pipeline; drift checks on all code; the regeneration drill as proof. |
 
 **Capabilities**
 
 | Dream | Status | What it is |
 |---|---|---|
-| [`agent-portability.md`](agent-portability.md) | dreamt | BMAD on any agent (Devin/Copilot/Claude/Cursor); planning on flat-rate subscriptions; the Portability contract enforced. |
-| [`team-memory.md`](team-memory.md) | dreamt | Shared, version-controlled team memory — what the team knows, every agent knows. |
+| [`agent-portability.md`](agent-portability.md) | archived | BMAD on any agent (Devin/Copilot/Claude/Cursor); planning on flat-rate subscriptions; the Portability contract enforced. |
+| [`team-memory.md`](team-memory.md) | archived | Shared, version-controlled team memory — what the team knows, every agent knows. |
 | [`enterprise-airgap.md`](enterprise-airgap.md) | realized | The factory behind the firewall — JFrog routing + air-gap-by-design; frontier: presenton, deckcraft, warden's registry perimeter. |
-| [`modernist-identity.md`](modernist-identity.md) | realized | One visual language for everything PyForge — the Modernist DS across 7 decks; frontier: the design-tokens round-trip (Figma↔JSON↔POTX). |
 | [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) | pitched | The four views of agentic autonomy (taxonomy/process/architecture/environment) — the white paper + the 45-slide deck + our live L3 evidence. |
 | [`factory-console.md`](factory-console.md) | realized | The whole pipeline on one public page — every Dream + lifecycle stage (Dreamscape board), live epic/story progress, nothing hand-maintained (GitHub Pages). |
-| [`fidelity-enforcement.md`](fidelity-enforcement.md) | dreamt | A contract is only a contract if something fails against it — every tier boundary gated in both directions; generalizes §7's law from the Guildhall to the whole chain. |
-| [`durable-runs.md`](durable-runs.md) | dreamt | Work survives the machine that made it — no commit, spec or verdict exists only on one disk; the loop pushes at its own stage boundaries. |
-| [`pr-lifecycle.md`](pr-lifecycle.md) | dreamt | A story lands itself — open, label, wait for checks, merge, resync; landing rules declared as policy instead of remembered. Resolves marshal open question #10. |
-| [`one-front-door.md`](one-front-door.md) | dreamt | Marshal drives everything BMAD installs — one composed surface over 11 packages, 51 skills, 10 detectors and the engine; the runtime half of [`genesis-installer`](genesis-installer.md). **Draft for refinement.** |
-| [`unified-container.md`](unified-container.md) | dreamt | All 8 stations in one Docker/Podman image — one boot, the whole Guild available; motivated by the 2026-08-02 per-station architecture consolidation. |
-| [`bmad-output-hygiene.md`](bmad-output-hygiene.md) | dreamt | One fabricated bulk commit stamped dead test scaffolding, a hollow sprint-status template, and (in places) fake test-architecture/README content across all 8 stations, inconsistently fixed since — a 5-agent audit mapped exactly what's real vs. debris. |
-| [`dashboard-project-path-derivation.md`](dashboard-project-path-derivation.md) | dreamt | The dashboard builds links/`have` checks by gluing a roster slug straight onto a project directory — broke twice already for absorbed/dissolved satellites; wants one derivation helper instead of one override dict per occurrence. |
-| [`genesis-installer-name-retirement.md`](genesis-installer-name-retirement.md) | dreamt | genesis-installer should retire completely — not just renumbered, but a full PRD/architecture/epics rewrite that actually decides the CLI framework contradiction (argparse vs typer+rich) and the `init`/`check` verb collisions the mechanical fold-in left open. |
-| [`bmad-loop-forward-dependency-blindness.md`](bmad-loop-forward-dependency-blindness.md) | realized | `bmad-loop`'s picker has no `depends_on` concept and will dispatch a story whose own documented `**Deps:**` names a later epic — 3 instances fixed in marshal (the only affected station); `forward_dependency_check.py` closes the gap for good. |
-| [`sprint-status-auto-promote.md`](sprint-status-auto-promote.md) | dreamt | A landed story doesn't reach the dashboard/tracked ledger until someone remembers to run `promote_sprint_status.py` + regenerate — bit the same session 3 times; wants the promotion triggered by landing itself, not a periodic human check. |
-| [`loop-home-fleet-refresh.md`](loop-home-fleet-refresh.md) | dreamt | Refreshing every loop-home from `main` is a hand-run ritual with real judgment calls; the during-run push side is now the supervisor's own automatic push (FR-61) — `loop-push-watch` was retired 2026-08-10, `dashboard-watch` still requires manual start. |
-| [`dream-to-code-model-self-verification.md`](dream-to-code-model-self-verification.md) | dreamt | Two follow-ups named at the 2026-07-23 Dream-to-Code restructure were never built: a `dream_chain_check.py --dreams` mode, and dogfooding `bmad-spec` against the model's own governing docs — both confirmed still genuinely missing. |
-| [`jira-github-projects-sync.md`](jira-github-projects-sync.md) | dreamt | Bidirectional GitHub Projects V2 ↔ Jira Cloud sync, no third-party SaaS, zero-loop + idempotent — full v1 draft spec handed in whole, staged at `docs/intake/jira-github-projects-sync/`. |
+| [`fidelity-enforcement.md`](fidelity-enforcement.md) | archived | A contract is only a contract if something fails against it — every tier boundary gated in both directions; generalizes §7's law from the Guildhall to the whole chain. |
+| [`durable-runs.md`](durable-runs.md) | realized | Work survives the machine that made it — no commit, spec or verdict exists only on one disk; the loop pushes at its own stage boundaries. |
+| [`pr-lifecycle.md`](pr-lifecycle.md) | realized | A story lands itself — open, label, wait for checks, merge, resync; landing rules declared as policy instead of remembered. Resolves marshal open question #10. |
+| [`one-front-door.md`](one-front-door.md) | archived | Marshal drives everything BMAD installs — one composed surface over 11 packages, 51 skills, 10 detectors and the engine; the runtime half of [`genesis-installer`](genesis-installer.md). **Draft for refinement.** |
+| [`unified-container.md`](unified-container.md) | realized | All 8 stations in one Docker/Podman image — one boot, the whole Guild available; motivated by the 2026-08-02 per-station architecture consolidation. |
+| [`bmad-output-hygiene.md`](bmad-output-hygiene.md) | archived | One fabricated bulk commit stamped dead test scaffolding, a hollow sprint-status template, and (in places) fake test-architecture/README content across all 8 stations, inconsistently fixed since — a 5-agent audit mapped exactly what's real vs. debris. |
+| [`dashboard-project-path-derivation.md`](dashboard-project-path-derivation.md) | archived | The dashboard builds links/`have` checks by gluing a roster slug straight onto a project directory — broke twice already for absorbed/dissolved satellites; wants one derivation helper instead of one override dict per occurrence. |
+| [`genesis-installer-name-retirement.md`](genesis-installer-name-retirement.md) | archived | genesis-installer should retire completely — not just renumbered, but a full PRD/architecture/epics rewrite that actually decides the CLI framework contradiction (argparse vs typer+rich) and the `init`/`check` verb collisions the mechanical fold-in left open. |
+| [`bmad-loop-forward-dependency-blindness.md`](bmad-loop-forward-dependency-blindness.md) | archived | `bmad-loop`'s picker has no `depends_on` concept and will dispatch a story whose own documented `**Deps:**` names a later epic — 3 instances fixed in marshal (the only affected station); `forward_dependency_check.py` closes the gap for good. |
+| [`sprint-status-auto-promote.md`](sprint-status-auto-promote.md) | archived | A landed story doesn't reach the dashboard/tracked ledger until someone remembers to run `promote_sprint_status.py` + regenerate — bit the same session 3 times; wants the promotion triggered by landing itself, not a periodic human check. |
+| [`loop-home-fleet-refresh.md`](loop-home-fleet-refresh.md) | archived | Refreshing every loop-home from `main` is a hand-run ritual with real judgment calls; the during-run push side is now the supervisor's own automatic push (FR-61) — `loop-push-watch` was retired 2026-08-10, `dashboard-watch` still requires manual start. |
+| [`dream-to-code-model-self-verification.md`](dream-to-code-model-self-verification.md) | archived | Two follow-ups named at the 2026-07-23 Dream-to-Code restructure were never built: a `dream_chain_check.py --dreams` mode, and dogfooding `bmad-spec` against the model's own governing docs — both confirmed still genuinely missing. |
+| [`jira-github-projects-sync.md`](jira-github-projects-sync.md) | specified | Bidirectional GitHub Projects V2 ↔ Jira Cloud sync, no third-party SaaS, zero-loop + idempotent — full v1 draft spec handed in whole, staged at `docs/intake/jira-github-projects-sync/`. |
 | [`conda-forge-expert-rebuild.md`](conda-forge-expert-rebuild.md) | dreamt | Reopens Mason's D-1 (wrap, never fork) for CFE itself only — Skill-Forge-authored rebuild, sliced along CFE's own 3 tiers, hard cutover per slice so it doesn't repeat atlas's ~29,000-unused-lines outcome. |
-| [`bmad-module-provisioning.md`](bmad-module-provisioning.md) | dreamt | Skill Forge/`bmad-builder` were hand-installed once (a 2026-07-17 ad-hoc commit driving an npm Installer class), not reproducibly — Steward's own `provision` duty (Epic 3) should wrap this the way it already wraps pixi/bmad-loop-worktree. |
+| [`bmad-module-provisioning.md`](bmad-module-provisioning.md) | realized | Skill Forge/`bmad-builder` were hand-installed once (a 2026-07-17 ad-hoc commit driving an npm Installer class), not reproducibly — Steward's own `provision` duty (Epic 3) should wrap this the way it already wraps pixi/bmad-loop-worktree. |
 | [`kedro-org-tooling-adoption.md`](kedro-org-tooling-adoption.md) | dreamt | `kedro-mcp` already resolved (wired, deliberately scoped); `kedro-skills`/`publish-kedro-viz`/`vscode-kedro` genuinely unused — owned by Atlas (the domain knowledge), mechanism leans on Steward's provisioning/deploy ducts. |
 | [`herald-moments-2-4-live-backend.md`](herald-moments-2-4-live-backend.md) | dreamt | The full-spec version of Epics 8-10 (real database + webhook server + cron scheduler) that CI would call automatically — deferred in favor of a scaled-down local-storage/CLI-triggered first pass, since no persistent-service architecture exists anywhere in Herald today. |
+| [`secure-live-dashboards.md`](secure-live-dashboards.md) | specified | A reusable role-based live-dashboard pattern other dashboards adopt — filter-then-search by API shape, role-isolated audit trail, identity at the ASGI boundary (Django+Channels), and a static GitHub-Pages mode that is mutually exclusive with role isolation. Atlas's Vizro board is the first adopter, not the subject. |
+| [`deferred-work-visibility.md`](deferred-work-visibility.md) | dreamt | `deferred_work_check` matches deferrals by `DW-*` id, but `bmad-dev-auto` writes bare `- source_spec:` bullets with no id — **470 anonymous vs 33 identified**, so the gate covers 6.6% of what it claims. Both sides must move, in order: writer, then grandfathering, then the gate. Sequenced behind doctor 6-9. |
 
 **Applications**
 
 | Dream | Status | What it is |
 |---|---|---|
-| [`deckcraft.md`](deckcraft.md) | dreamt | Air-gapped editable-PPTX/Marp/infographic pipeline from primitives — the family's designated PPTX engine. |
-| [`presenton-pixi-image.md`](presenton-pixi-image.md) | dreamt | Presenton repackaged conda-native + air-gapped for OpenShift in regulated enterprises. |
-| [`unity-data-stack.md`](unity-data-stack.md) | dreamt | The enterprise innersource platform — a python-first shared monorepo (Constitution + working pixi root recovered from gists). |
-| [`wasm-analytics-stack.md`](wasm-analytics-stack.md) | dreamt | Wasm-first analytical data stack on OpenShift — WASI-sandboxed Python, dlt+dbt, OTel/OL, Restricted-SCC hardened. |
+| [`presenton-pixi-image.md`](presenton-pixi-image.md) | archived | Presenton repackaged conda-native + air-gapped for OpenShift in regulated enterprises. |
+| [`unity-data-stack.md`](unity-data-stack.md) | archived | The enterprise innersource platform — a python-first shared monorepo (Constitution + working pixi root recovered from gists). |
+| [`wasm-analytics-stack.md`](wasm-analytics-stack.md) | archived | Wasm-first analytical data stack on OpenShift — WASI-sandboxed Python, dlt+dbt, OTel/OL, Restricted-SCC hardened. |
