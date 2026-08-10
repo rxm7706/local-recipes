@@ -40,18 +40,44 @@ def _signature_defaults(func) -> dict:
     return {name: params[name].default for name in FILTERS}
 
 
-def _server_tool_defaults() -> dict:
-    tree = ast.parse(Path(inspect.getfile(server)).read_text(encoding="utf-8"))
-    for node in ast.walk(tree):
+def _server_tree() -> ast.Module:
+    return ast.parse(Path(inspect.getfile(server)).read_text(encoding="utf-8"))
+
+
+def _server_tool_node() -> ast.FunctionDef:
+    for node in ast.walk(_server_tree()):
         if isinstance(node, ast.FunctionDef) and node.name == TOOL_NAME:
-            args = node.args.args
-            defaults = node.args.defaults
-            # defaults align to the TAIL of args
-            paired = dict(
-                zip((a.arg for a in args[len(args) - len(defaults):]), defaults)
-            )
-            return {name: ast.literal_eval(paired[name]) for name in FILTERS}
+            return node
     raise AssertionError(f"{TOOL_NAME} is not defined in server.py")
+
+
+def _server_tool_defaults() -> dict:
+    node = _server_tool_node()
+    args = node.args.args
+    defaults = node.args.defaults
+    # defaults align to the TAIL of args
+    paired = dict(zip((a.arg for a in args[len(args) - len(defaults):]), defaults))
+    return {name: ast.literal_eval(paired[name]) for name in FILTERS}
+
+
+def _registered_server_tools() -> set[str]:
+    """Every ``@mcp.tool()``-decorated function in ``server.py``.
+
+    Read via AST rather than by building the live server, mirroring
+    ``tests/nl/test_query_vizro_ai_dryrun.py``: FastMCP is an OPTIONAL extra and is not
+    installed in this environment, so nothing here can invoke a registered tool.
+    """
+    return {
+        node.name
+        for node in ast.walk(_server_tree())
+        if isinstance(node, ast.FunctionDef)
+        and any(
+            isinstance(d, ast.Call)
+            and isinstance(d.func, ast.Attribute)
+            and d.func.attr == "tool"
+            for d in node.decorator_list
+        )
+    }
 
 
 def test_mcp_tool_defaults_match_the_query_seam():
@@ -77,7 +103,7 @@ def test_the_trending_tool_is_recorded_in_the_mcp_audit_surface():
     adding ``run_upstream_discovery_pipeline`` to ``PIPELINE_TRIGGER_TOOLS``, and
     ``query_vizro_ai`` avoided via ``NL_INTERFACE_TOOLS``. Nothing detected it, so this
     pins it."""
-    assert audit.TRENDING_SURFACE_TOOLS == (TOOL_NAME,)
+    assert TOOL_NAME in audit.TRENDING_SURFACE_TOOLS
     assert callable(getattr(tools, TOOL_NAME))
 
     recorded = set(audit.TRENDING_SURFACE_TOOLS)
@@ -86,21 +112,59 @@ def test_the_trending_tool_is_recorded_in_the_mcp_audit_surface():
     assert not recorded & set(audit.NL_INTERFACE_TOOLS)
     assert not recorded & set(audit.PIPELINE_TRIGGER_TOOLS)
     assert not recorded & set(audit.CLI_ONLY_TOOLS)
+    assert not recorded & set(audit.GENERIC_SURFACE_TOOLS)
 
 
 def test_every_audit_recorded_surface_tool_is_registered_on_the_server():
     """The registry is only honest if it tracks the real server surface."""
-    tree = ast.parse(Path(inspect.getfile(server)).read_text(encoding="utf-8"))
-    registered = {
-        node.name
-        for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef)
-        and any(
-            isinstance(d, ast.Call)
-            and isinstance(d.func, ast.Attribute)
-            and d.func.attr == "tool"
-            for d in node.decorator_list
-        )
-    }
-    missing = set(audit.TRENDING_SURFACE_TOOLS) - registered
+    missing = audit.registered_surface_tools() - _registered_server_tools()
     assert not missing, f"recorded in audit.py but not registered on the server: {missing}"
+
+
+def test_every_registered_server_tool_is_recorded_in_the_audit_surface():
+    """The CONVERSE direction — the one that actually catches the defect that prompted
+    ``TRENDING_SURFACE_TOOLS`` (follow-up review finding, Story 13.3).
+
+    The previous pass added only ``recorded ⊆ registered``, which a tool registered on
+    the server and recorded in NO bucket satisfies trivially — i.e. exactly how
+    ``query_trending_candidates`` shipped, and exactly how the next new tool would ship,
+    with the whole suite green. This asserts the direction that fails for it."""
+    unrecorded = _registered_server_tools() - audit.registered_surface_tools()
+    assert not unrecorded, (
+        "registered on the server but recorded in no mcp/audit.py bucket: "
+        f"{sorted(unrecorded)}"
+    )
+
+
+def test_the_server_tool_forwards_every_filter_to_the_same_named_keyword():
+    """Guards the ONE hand-written forwarding hop in the whole surface (follow-up review
+    finding, Story 13.3).
+
+    ``server.py``'s ``@mcp.tool()`` wrapper re-declares all five filters and passes them
+    on by hand, and NOTHING exercised it: the default-parity tests above compare only
+    default VALUES, and ``tests/mcp/test_read_surface.py``'s delegation proof stops at
+    ``tools.py``. Transposing two kwargs in the wrapper (``period=tier, tier=period``)
+    left the entire suite green while an MCP client's ``period="daily"`` reached the
+    query seam as its ``tier`` — the exact CLI/MCP drift CAP-3's success signal forbids
+    (verified by mutation). Checked via AST for the same reason the rest of this module
+    is: FastMCP is an optional extra, absent here, so the live tool cannot be called."""
+    node = _server_tool_node()
+    delegations = [
+        call
+        for call in ast.walk(node)
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Attribute)
+        and call.func.attr == TOOL_NAME
+    ]
+    assert len(delegations) == 1, "the wrapper must be a single delegate call"
+    call = delegations[0]
+    assert not call.args, "every filter must be forwarded BY KEYWORD, never positionally"
+    forwarded = {
+        kw.arg: kw.value.id
+        for kw in call.keywords
+        if isinstance(kw.value, ast.Name)
+    }
+    assert {name: name for name in FILTERS}.items() <= forwarded.items(), (
+        f"server.py's {TOOL_NAME} does not forward each filter to its own name: "
+        f"{forwarded}"
+    )

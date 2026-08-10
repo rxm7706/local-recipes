@@ -7,6 +7,8 @@ vs MCP tool, same filters" — is covered separately, in
 
 from __future__ import annotations
 
+import json
+
 import pandas as pd
 import pytest
 
@@ -472,3 +474,102 @@ def test_integral_stars_total_survives_an_unrelated_null_row(seed_catalog):
     stars = result["candidates"][0]["stars_total"]
     assert stars == 1200
     assert isinstance(stars, int) and not isinstance(stars, bool)
+
+
+def test_integral_optional_columns_also_survive_an_unrelated_null_row(seed_catalog):
+    """Follow-up review finding, Story 13.3 (verified live): the integral-narrowing fix
+    above was applied to `stars_total` ALONE, but `stars_today` is null for 2 of the 3
+    fetched periods BY CONSTRUCTION and `forks_total` is null whenever the scrape lacks
+    the tag — so pandas widened those to float64 too and emitted `7.0`/`3.0` for the
+    rows that do carry a count, the identical defect one column over."""
+    df = pd.DataFrame(
+        [
+            _row(repo_full_name="alice/libfoo", period="daily", tier="1",
+                 reason=_TIER1_REASON, stars_total=1200, stars_today=7, forks_total=3),
+            _row(repo_full_name="bob/libbar", period="daily", tier="1",
+                 reason=_TIER1_REASON, stars_total=900, stars_today=None,
+                 forks_total=None),
+        ]
+    )
+    seed_catalog(df)
+
+    top_row = query.query_trending_candidates(period="daily")["candidates"][0]
+
+    assert df["stars_today"].dtype == "float64"  # the dtype the bug needs; pin it
+    for column, expected in (("stars_today", 7), ("forks_total", 3)):
+        value = top_row[column]
+        assert value == expected
+        assert isinstance(value, int) and not isinstance(value, bool), (
+            f"{column} emitted as {value!r} ({type(value).__name__})"
+        )
+
+
+def test_non_finite_stars_total_is_excluded_not_a_whole_query_crash(seed_catalog):
+    """Follow-up review finding, Story 13.3 (verified live): a corrupt cell coercing to
+    +/-inf — the literal `"inf"`, or an overflowing `"1e400"`, the same dirty-STRING
+    class the numeric coercion exists for — reached the integral narrowing and raised
+    `OverflowError: cannot convert float infinity to integer`, aborting the ENTIRE query
+    where the contract promises one excluded row."""
+    for bad in (float("inf"), float("-inf"), "inf", "1e400"):
+        df = pd.DataFrame(
+            [
+                _row(repo_full_name="a/corrupt", period="weekly", tier="1",
+                     reason=_TIER1_REASON, stars_total=bad),
+                _row(repo_full_name="b/good", period="weekly", tier="1",
+                     reason=_TIER1_REASON, stars_total=900),
+            ]
+        )
+        seed_catalog(df)
+
+        result = query.query_trending_candidates()
+
+        assert [c["repo_full_name"] for c in result["candidates"]] == ["b/good"], bad
+
+
+def test_non_finite_optional_value_serializes_to_json_safe_none(seed_catalog):
+    """Follow-up review finding, Story 13.3 (verified live): the NaN->None guard used
+    `pd.notna`, which says True for inf — so `json.dumps` emitted the bare `Infinity`
+    token, as non-RFC-8259 as the `NaN` the previous pass fixed and rejected by any
+    strict parser."""
+    df = pd.DataFrame(
+        [
+            _row(repo_full_name="alice/libfoo", period="weekly", tier="1",
+                 reason=_TIER1_REASON, stars_total=1200, stars_today=float("inf")),
+            _row(repo_full_name="bob/libbar", period="weekly", tier="1",
+                 reason=_TIER1_REASON, stars_total=900, stars_today=1.0),
+        ]
+    )
+    seed_catalog(df)
+
+    result = query.query_trending_candidates()
+
+    assert result["candidates"][0]["stars_today"] is None
+
+    def _reject(token):  # `json.dumps` happily EMITS Infinity; dumping proves nothing
+        raise AssertionError(f"non-RFC-8259 token in the envelope: {token}")
+
+    json.loads(json.dumps(result), parse_constant=_reject)
+
+
+def test_period_all_truncation_does_not_depend_on_physical_row_order(seed_catalog):
+    """Follow-up review finding, Story 13.3 (verified live): under `--period all` the
+    same repo contributes up to 3 rows tied on BOTH documented sort keys, so which of
+    them survived `head(top)` was decided by the parquet file's row order — the same
+    data re-materialized in a different order returned different rows, contradicting
+    this function's own documented "deterministic tie-break for --top's cap"."""
+    rows = [
+        _row(repo_full_name=name, period=period, tier="1", reason=_TIER1_REASON,
+             stars_total=1000)
+        for name in ("o/r0", "o/r1")
+        for period in ("daily", "weekly", "monthly")
+    ]
+
+    seen = set()
+    for order in ([0, 1, 2, 3, 4, 5], [2, 0, 1, 5, 3, 4], [5, 4, 3, 2, 1, 0]):
+        seed_catalog(pd.DataFrame([rows[i] for i in order]))
+        result = query.query_trending_candidates(period="all", top=3)
+        seen.add(
+            tuple((c["repo_full_name"], c["period"]) for c in result["candidates"])
+        )
+
+    assert len(seen) == 1, f"truncation varied with input order: {seen}"

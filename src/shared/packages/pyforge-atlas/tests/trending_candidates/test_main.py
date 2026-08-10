@@ -10,7 +10,9 @@ CLI's ``ValueError`` -> stderr + exit 1 contract.
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 
 import pandas as pd
 import pytest
@@ -165,7 +167,7 @@ def test_table_shows_provenance_so_never_ingested_differs_from_no_match(
     assert "(no candidates)" in never_ingested and "(no candidates)" in no_match
     assert never_ingested != no_match
     assert "unavailable" in never_ingested
-    assert "build_stamp=" in no_match and "matched=0" in no_match
+    assert "build_stamp=" in no_match and "shown=0" in no_match
 
 
 def test_table_shows_the_build_stamp_for_a_real_parquet_dataset(
@@ -181,3 +183,38 @@ def test_table_shows_the_build_stamp_for_a_real_parquet_dataset(
     assert "provenance=file-mtime" in out
     assert "build_stamp=none" not in out
     assert "alice/libfoo" in out
+
+
+def test_a_closed_stdout_pipe_is_not_a_raw_traceback(seed_catalog, monkeypatch):
+    """Follow-up review finding, Story 13.3 (verified live): the two print paths sat
+    OUTSIDE the `except Exception` guard, in an outer `try` carrying only a `finally`,
+    so a write failure escaped as a raw traceback — and the ordinary
+    `trending-candidates -- --json | head` produced exactly that (`BrokenPipeError`),
+    the one class of failure a CLI is most likely to meet."""
+    seed_catalog(_FIXTURE_DF)
+
+    class _ClosedPipe(io.StringIO):
+        def write(self, text):
+            if text.strip():
+                raise BrokenPipeError(32, "Broken pipe")
+            return 0
+
+    for argv in (["--json"], []):
+        monkeypatch.setattr(sys, "stdout", _ClosedPipe())
+        # The real handler dup2()s /dev/null onto stdout's fd; a StringIO has none, and
+        # the contextlib.suppress(OSError) around it is what keeps that harmless here.
+        assert main(argv) == 1, argv
+
+
+def test_a_multi_line_reason_stays_comment_prefixed(seed_parquet_catalog, capsys):
+    """Follow-up review finding, Story 13.3 (verified live in a fresh worktree): a kedro
+    `DatasetError` reason is multi-line, and the continuation lines printed with no `#`
+    prefix, dropping an un-prefixed `[Errno 2] ...` line between header and rows."""
+    seed_parquet_catalog(None)  # declared entry, backing file absent -> DatasetError
+
+    assert main([]) == 0
+    out = capsys.readouterr().out
+
+    header, _, rows = out.partition("(no candidates)")
+    assert "\n" in header.rstrip("\n"), "expected a multi-line degradation header"
+    assert all(line.startswith("# ") for line in header.strip().splitlines())

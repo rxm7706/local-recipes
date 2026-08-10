@@ -94,6 +94,29 @@ NL_INTERFACE_TOOLS = ("query_vizro_ai",)
 # delegating to the pyforge.atlas.trending_candidates seam.
 TRENDING_SURFACE_TOOLS = ("query_trending_candidates",)
 
+# The GENERIC surface (B3): not a legacy tool each, but the structural read/list
+# primitives THE_23's `read_dataset:<name>` verdicts above are served BY. Recorded
+# (follow-up review finding, Story 13.3) so this module can state the WHOLE MCP surface
+# and `test_every_registered_server_tool_is_recorded_in_the_audit_surface` can assert the
+# direction that actually catches the omission: a tool registered on the server and
+# recorded NOWHERE — which is precisely how `query_trending_candidates` shipped, with
+# every test green.
+GENERIC_SURFACE_TOOLS = (
+    "read_atlas_dataset",
+    "list_atlas_pipelines",
+    "list_atlas_datasets",
+)
+
+
+def registered_surface_tools() -> set[str]:
+    """Every MCP tool name this module records as part of the live server surface."""
+    return {
+        *PIPELINE_TRIGGER_TOOLS,
+        *NL_INTERFACE_TOOLS,
+        *TRENDING_SURFACE_TOOLS,
+        *GENERIC_SURFACE_TOOLS,
+    }
+
 
 def read_dataset_targets() -> set[str]:
     """The catalog dataset names referenced by ``read_dataset:`` verdicts."""

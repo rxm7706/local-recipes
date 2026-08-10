@@ -11,8 +11,10 @@ Run: ``pixi run -e pyforge-atlas trending-candidates [-- --json]``.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import logging
+import os
 import sys
 
 _TABLE_COLUMNS = ("repo_full_name", "tier", "reason", "stars_total", "period")
@@ -82,8 +84,18 @@ def _print_table(envelope: dict) -> None:
         f"  build_stamp={envelope['build_stamp'] or 'none'}"
     )
     if envelope.get("reason"):
-        print(f"# {envelope['reason']}")
-    print(f"# filters={envelope['filters']}  matched={envelope['count']}")
+        # Per LINE (follow-up review finding, Story 13.3): a kedro `DatasetError`
+        # reason is multi-line, and the continuation lines printed WITHOUT the `#`
+        # prefix — visible in the ordinary fresh-worktree run, where an un-prefixed
+        # `[Errno 2] ...` line sat between the header and the rows.
+        for line in str(envelope["reason"]).splitlines():
+            print(f"# {line}")
+    # `shown`, not `matched` (follow-up review finding, Story 13.3): `count` is the
+    # POST-cap row count, so labelling it "matched" was simply false whenever `--top`
+    # truncated — 25 shown of 400 matched read as "25 matched". The header's purpose
+    # (telling "never ingested" apart from "your filters matched nothing") is served
+    # either way by the provenance/reason lines above.
+    print(f"# filters={envelope['filters']}  shown={envelope['count']}")
 
     candidates = envelope["candidates"]
     if not candidates:
@@ -124,9 +136,18 @@ def main(argv: list[str] | None = None) -> int:
         # level is WARNING -- so an INFO-only floor still let every WARNING record
         # (e.g. kedro's own "Credentials not found in your Kedro project config.")
         # print INTO the envelope, and `json.loads(stdout)` then failed. Under `--json`
-        # stdout carries the envelope and NOTHING else; diagnostics still reach the
-        # operator, on stderr, via the handler below. Table mode is human-read, so
-        # library log noise there stays harmless and un-suppressed.
+        # stdout carries the envelope and NOTHING else.
+        #
+        # This SUPPRESSES those records; it does not redirect them (follow-up review
+        # finding, Story 13.3 — this comment used to claim "diagnostics still reach the
+        # operator, on stderr, via the handler below", and there is no such handler).
+        # Re-pointing them at stderr instead is not available from here: kedro installs
+        # its stdout handler via its own `dictConfig` DURING the bootstrap inside
+        # `query_trending_candidates`, i.e. after this point and before any code here
+        # runs again. The `--json` operator is not left blind: a load failure is
+        # reported IN-BAND in the envelope itself (`provenance_kind: "unavailable"` +
+        # `reason`), and any failure that reaches the guard below is printed to stderr.
+        # Table mode is human-read, so library log noise there stays un-suppressed.
         logging.disable(logging.CRITICAL)
 
     try:
@@ -150,7 +171,26 @@ def main(argv: list[str] | None = None) -> int:
             # Serialized INSIDE the guard too (review finding, Story 13.3): a cell
             # `json.dumps` cannot encode (e.g. a Timestamp column) used to escape as a
             # raw traceback from outside it.
-            payload = json.dumps(envelope) if args.json else None
+            #
+            # EMITTED inside it as well (follow-up review finding, Story 13.3): the two
+            # print paths used to sit outside this `except`, in an outer `try` carrying
+            # only a `finally`, so a write failure escaped as a raw traceback — and the
+            # ordinary `trending-candidates -- --json | head` produced exactly that
+            # (`BrokenPipeError`, verified live), for the one class of failure a CLI is
+            # most likely to meet.
+            if args.json:
+                print(json.dumps(envelope))
+            else:
+                _print_table(envelope)
+        except BrokenPipeError:
+            # The reader (`| head`, `| less` quit early) is gone: nothing can be
+            # reported to it, and leaving the interpreter to flush stdout at shutdown
+            # prints "Exception ignored in: <_io.TextIOWrapper name='<stdout>'>" to
+            # stderr. Detach stdout first, then exit quietly on the standard 1.
+            with contextlib.suppress(OSError):
+                devnull = os.open(os.devnull, os.O_WRONLY)
+                os.dup2(devnull, sys.stdout.fileno())
+            return 1
         except Exception as exc:
             # Broad on purpose: a bad filter value is `ValueError` (the documented
             # contract), but ANY other failure -- a Kedro session/credential bootstrap
@@ -162,11 +202,6 @@ def main(argv: list[str] | None = None) -> int:
             # printed an empty one).
             print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
             return 1
-
-        if args.json:
-            print(payload)
-        else:
-            _print_table(envelope)
         return 0
     finally:
         if args.json:

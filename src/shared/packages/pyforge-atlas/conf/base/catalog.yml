@@ -820,7 +820,9 @@ derived_universe_sbom:
 # key: both sources route through the EXISTING GITHUB_BASE_URL/GITHUB_API_BASE_URL
 # override points (no new override point), and staying uncredentialed keeps this
 # pipeline schedule-eligible without AD-11's attended-only-credentialed-run rule. CAP-3
-# (operator surface) through CAP-5 (Mason handoff) are Stories 13.3-13.5, pending.
+# (operator surface) LANDED in Story 13.3 — the `trending-candidates` CLI + MCP tool read
+# `trending_candidates_classified` below; CAP-4 (fixed-source audit) and CAP-5 (Mason
+# handoff) are Stories 13.4-13.5, still pending.
 trending_candidates:
   type: pyforge.atlas.datasets.TrendingSnapshotDataset
   filepath: data/raw/trending_candidates

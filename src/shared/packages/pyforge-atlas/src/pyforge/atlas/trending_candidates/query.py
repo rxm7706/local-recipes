@@ -88,6 +88,40 @@ def _tier_tokens(tier: str) -> set[str]:
     return {t.strip() for t in tier.split(",")}
 
 
+_INF = float("inf")
+
+
+def _narrow_integral_floats(frame: pd.DataFrame) -> pd.DataFrame:
+    """Cast every float column holding only whole numbers to the nullable ``Int64``.
+
+    The generalization of the ``stars_total`` fix (follow-up review finding, Story
+    13.3): that fix was applied to ONE column, but pandas widens ANY count column to
+    ``float64`` the moment one row is null, and `stars_today` is null for 2 of the 3
+    fetched periods by construction (``datasets/upstream_discovery.py`` — the trending
+    page carries a "today" delta only on the daily window) while ``forks_total`` is
+    null whenever the scrape lacks the tag. So a two-row daily frame emitted
+    ``"stars_today": 7.0`` for the row that HAS a delta — the identical "a count's
+    emitted JSON type depends on unrelated rows" defect, one column over, in the
+    operator's table and the machine-readable envelope alike (verified live).
+
+    Skips any column carrying a non-finite or out-of-int64-range value, which cannot be
+    represented as an ``Int64`` at all (``OverflowError``/``TypeError``).
+    """
+    narrowed = {}
+    for column in frame.columns:
+        series = frame[column]
+        if not pd.api.types.is_float_dtype(series):
+            continue
+        non_null = series.dropna()
+        if non_null.empty:
+            continue
+        if not (non_null.abs() != _INF).all() or not non_null.abs().lt(2**63).all():
+            continue
+        if non_null.eq(non_null.round()).all():
+            narrowed[column] = series.astype("Int64")
+    return frame.assign(**narrowed) if narrowed else frame
+
+
 def query_trending_candidates(
     *,
     period: str = "weekly",
@@ -186,17 +220,16 @@ def query_trending_candidates(
             # same numeric values, and also fixes the NaN-vs-None JSON-safety
             # concern below for this specific column.
             numeric = pd.to_numeric(df["stars_total"], errors="coerce")
-            # Keep whole-number star counts INTEGRAL (review finding, Story 13.3):
-            # `to_numeric` widens to float64 the moment ANY row's value is null, so a
-            # single unrelated null flipped every OTHER row's rendered value from
-            # `1200` to `1200.0` — in the operator table and in the machine-readable
-            # envelope alike, making the emitted JSON type of a star count depend on
-            # unrelated rows. The nullable `Int64` dtype carries integers and nulls
-            # together; masking with it treats NA as False, which is exactly the
-            # contracted "a null stars_total fails the --min-stars floor".
-            non_null = numeric.dropna()
-            if non_null.eq(non_null.round()).all():
-                numeric = numeric.astype("Int64")
+            # A non-finite value is not a star count (follow-up review finding, Story
+            # 13.3). A corrupt cell coercing to ±inf — the literal `"inf"`, or an
+            # overflowing `"1e400"`, the same dirty-STRING class the coercion above
+            # exists for — used to survive as a value that passes the floor and then
+            # aborted the ENTIRE query in the integral narrowing
+            # (`OverflowError: cannot convert float infinity to integer`, verified
+            # live): a whole-query crash where the contract promises one excluded row.
+            # Folded into NA so it takes the identical never-satisfies-the-floor path
+            # a null/unparseable value already takes.
+            numeric = numeric.where(numeric.abs() != _INF)
             df = df.assign(stars_total=numeric)
             df = df[df["stars_total"] >= min_stars]
         else:
@@ -205,14 +238,24 @@ def query_trending_candidates(
             df = df.iloc[0:0]
 
     if not df.empty:
-        sort_cols = [c for c in ("stars_total", "repo_full_name") if c in df.columns]
+        # `period` is the THIRD tie-break (follow-up review finding, Story 13.3).
+        # Under `--period all` the same repo contributes up to 3 rows tied on BOTH
+        # documented sort keys, so which of them survived `head(top)` was decided by
+        # the physical row order of the parquet file: the identical data
+        # re-materialized in a different order returned different rows for
+        # `--period all --top 3` (verified live), contradicting this function's own
+        # "a deterministic tie-break for --top's cap". A repo has at most one row per
+        # period, so this makes the ordering total.
+        sort_cols = [
+            c for c in ("stars_total", "repo_full_name", "period") if c in df.columns
+        ]
         if sort_cols:
             df = df.sort_values(
                 by=sort_cols,
                 ascending=[c != "stars_total" for c in sort_cols],
             )
 
-    capped = df.head(top)
+    capped = _narrow_integral_floats(df.head(top))
     # NaN survives to_dict() as the Python float `nan`, which `json.dumps` renders as
     # the bare, non-RFC-8259-conformant token `NaN` — breaking CAP-3's own literal
     # success signal ("JSON output validates against a documented schema", SPEC.md).
@@ -226,9 +269,13 @@ def query_trending_candidates(
     # to guard it used — a false green. Any real frame carrying BOTH a null and a
     # value in one optional column (e.g. `stars_today`, null whenever a row lacks a
     # daily delta) is float64, and leaked `NaN` into the emitted JSON.
-    candidates = capped.astype(object).where(pd.notna(capped), None).to_dict(
-        orient="records"
-    )
+    #
+    # ±inf is masked for the SAME reason (follow-up review finding, Story 13.3):
+    # `json.dumps` renders it as the bare `Infinity`/`-Infinity` token, equally
+    # non-RFC-8259 and equally rejected by a strict parser (verified live). `pd.notna`
+    # says True for inf, so it needs its own clause.
+    json_safe = pd.notna(capped) & ~capped.isin([_INF, -_INF])
+    candidates = capped.astype(object).where(json_safe, None).to_dict(orient="records")
 
     return {
         "schema_version": _provenance.SCHEMA_VERSION,
