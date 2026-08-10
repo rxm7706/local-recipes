@@ -9,7 +9,10 @@ over every `resolve.py` step."""
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
+import signal
 import subprocess
 import sys
 import threading
@@ -18,6 +21,7 @@ from unittest.mock import patch
 
 import pytest
 
+from pyforge.mason import cfe as cfe_module
 from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, ImportFloorResult, _build_probe_script,
     ensure_cfe_root, ensure_import_floor, probe_import_floor, run_streamed,
@@ -573,22 +577,198 @@ def test_run_streamed_broken_stderr_sink_does_not_deadlock_a_noisy_child():
     assert sink.writes == 1
 
 
-def test_run_streamed_closes_both_child_pipes():
+def test_run_streamed_closes_both_child_pipes(monkeypatch):
     """`Popen` is not used as a context manager here (the reader threads
     outlive any `with` block), so without an explicit close every call leaks
     two file descriptors until the GC runs -- 18 `ResourceWarning: unclosed
     file` across this file under `-W error::ResourceWarning` before the
-    2026-08-10 review pass."""
-    import warnings
+    2026-08-10 review pass.
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", ResourceWarning)
-        rc, out = run_streamed(
-            [sys.executable, "-c", "print('marker')"], timeout=15.0,
-        )
+    Asserted on the descriptors themselves, not via `ResourceWarning`
+    (review pass, 2026-08-10, second): the earlier version of this test wrapped
+    the call in `warnings.catch_warnings()` + `simplefilter("error",
+    ResourceWarning)` and could not fail. The warning is emitted by the GC
+    when the `TextIOWrapper` is finalized -- after the `with` block has
+    exited, and never at all while the `Popen` object is still referenced --
+    and arrives as an *unraisable* exception, which pytest downgrades to a
+    non-fatal `PytestUnraisableExceptionWarning`. Deleting the close loop
+    entirely left it passing, which is how the deadlock that loop introduced
+    (see the grandchild test below) reached a third review pass unnoticed.
+    """
+    created: list[subprocess.Popen] = []
+    real_popen = subprocess.Popen
+
+    def _capturing_popen(*args, **kwargs):
+        proc = real_popen(*args, **kwargs)
+        created.append(proc)
+        return proc
+
+    monkeypatch.setattr(subprocess, "Popen", _capturing_popen)
+
+    rc, out = run_streamed([sys.executable, "-c", "print('marker')"], timeout=15.0)
 
     assert rc == 0
     assert "marker" in out
+    # Held by `created`, so nothing has been garbage-collected: `closed` here
+    # reflects `run_streamed`'s own explicit close, not a finalizer.
+    assert len(created) == 1
+    assert created[0].stdout is not None and created[0].stdout.closed
+    assert created[0].stderr is not None and created[0].stderr.closed
+
+
+def test_run_streamed_returns_promptly_when_a_grandchild_holds_the_pipes(monkeypatch, tmp_path):
+    """A grandchild that inherits the pipe file descriptors and outlives the
+    direct child keeps both pipes from ever reaching EOF. `run_streamed` must
+    still return, bounded by `_JOIN_GRACE_SECONDS` (review pass, 2026-08-10,
+    second).
+
+    This is the scenario `_JOIN_GRACE_SECONDS` was introduced for, and the
+    previous pass's unconditional pipe close silently defeated it: `close()`
+    takes the `BufferedReader` lock the still-blocked reader thread holds, so
+    the main thread waited for exactly the EOF the bounded join had just
+    given up on -- an unbounded hang, reproduced at 45s against a child that
+    exits instantly, and swallowing `TimeoutExpired` outright on the timeout
+    path. Run in a worker thread so a regression fails this test instead of
+    hanging the suite.
+    """
+    monkeypatch.setattr(cfe_module, "_JOIN_GRACE_SECONDS", 0.5)
+
+    created: list[subprocess.Popen] = []
+    real_popen = subprocess.Popen
+
+    def _capturing_popen(*args, **kwargs):
+        proc = real_popen(*args, **kwargs)
+        created.append(proc)
+        return proc
+
+    monkeypatch.setattr(subprocess, "Popen", _capturing_popen)
+
+    pid_file = tmp_path / "grandchild.pid"
+    # The grandchild inherits this child's stdout/stderr (no redirection), so
+    # both pipes stay open after the child itself exits.
+    script = (
+        "import subprocess, sys, pathlib\n"
+        f"p = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)'])\n"
+        f"pathlib.Path({str(pid_file)!r}).write_text(str(p.pid))\n"
+        "sys.stdout.write('child-done\\n')\n"
+    )
+
+    result: dict = {}
+
+    def _run() -> None:
+        result["value"] = run_streamed([sys.executable, "-c", script], timeout=30.0)
+
+    worker = threading.Thread(target=_run, daemon=True)
+    worker.start()
+    worker.join(timeout=20.0)
+
+    try:
+        assert not worker.is_alive(), (
+            "run_streamed never returned: the bounded reader join was defeated "
+            "(closing a pipe whose reader is still blocked waits on that reader's lock)"
+        )
+        # The direct child exited 0; stdout is empty rather than a true
+        # partial capture, exactly as `_JOIN_GRACE_SECONDS` documents.
+        assert result["value"][0] == 0
+    finally:
+        if pid_file.exists():
+            with contextlib.suppress(ProcessLookupError, ValueError):
+                os.kill(int(pid_file.read_text()), signal.SIGKILL)
+        # `run_streamed` deliberately left both pipes open to their
+        # still-blocked readers. With the grandchild gone those readers hit
+        # EOF and release the buffer lock, so closing here is safe and keeps
+        # the suite clean under `-W error::ResourceWarning` -- bounded in a
+        # worker thread regardless, so a future regression degrades to a
+        # warning rather than hanging the suite.
+        def _close_leaked_pipes() -> None:
+            for proc in created:
+                for stream in (proc.stdout, proc.stderr):
+                    if stream is not None:
+                        with contextlib.suppress(Exception):
+                            stream.close()
+
+        closer = threading.Thread(target=_close_leaked_pipes, daemon=True)
+        closer.start()
+        closer.join(timeout=5.0)
+
+
+def test_run_streamed_forwards_every_line_to_a_sink_without_a_flush_method():
+    """A sink is only required to be writable. The docstring explicitly
+    invites a hand-rolled tee, and one without a `flush` method used to raise
+    `AttributeError` on the first line and latch the sink dead for the rest
+    of the run -- delivering line 1 of N and silently dropping the rest
+    (review pass, 2026-08-10, second)."""
+
+    class _WriteOnlySink:
+        def __init__(self) -> None:
+            self.lines: list[str] = []
+
+        def write(self, s: str) -> None:
+            self.lines.append(s)
+
+    sink = _WriteOnlySink()
+    script = (
+        "import sys\n"
+        "for i in range(5):\n"
+        "    print('line-%d' % i, file=sys.stderr, flush=True)\n"
+    )
+
+    rc, _ = run_streamed([sys.executable, "-c", script], timeout=15.0, stderr_sink=sink)
+
+    assert rc == 0
+    assert "".join(sink.lines).count("line-") == 5
+
+
+def test_run_streamed_keeps_forwarding_when_only_flush_fails():
+    """A failing `flush()` is not proof the sink is gone -- a one-off
+    `BlockingIOError` (EAGAIN on a non-blocking stderr) used to latch the
+    sink dead permanently after the first line (review pass, 2026-08-10,
+    second). A genuinely broken sink still latches, via its failing
+    *write* -- proven by
+    `test_run_streamed_broken_stderr_sink_does_not_deadlock_a_noisy_child`."""
+
+    class _FlushFailsSink:
+        def __init__(self) -> None:
+            self.lines: list[str] = []
+
+        def write(self, s: str) -> None:
+            self.lines.append(s)
+
+        def flush(self) -> None:
+            raise BlockingIOError("EAGAIN")
+
+    sink = _FlushFailsSink()
+    script = (
+        "import sys\n"
+        "for i in range(5):\n"
+        "    print('line-%d' % i, file=sys.stderr, flush=True)\n"
+    )
+
+    rc, _ = run_streamed([sys.executable, "-c", script], timeout=15.0, stderr_sink=sink)
+
+    assert rc == 0
+    assert "".join(sink.lines).count("line-") == 5
+
+
+def test_run_streamed_rejects_an_exhausted_generator_argv():
+    """`not argv` is always `False` for a generator, so an empty one slipped
+    past the non-empty guard and reached `Popen([])` -- raising the exact
+    `IndexError` that guard exists to replace (review pass, 2026-08-10,
+    second). `argv` is now materialized once, before both guards."""
+    with pytest.raises(ValueError, match=r"run_streamed\(argv=\.\.\.\)"):
+        run_streamed((token for token in []), timeout=15.0)
+
+
+def test_run_streamed_accepts_a_generator_argv():
+    """The materialization above must not break a valid non-`Sized` argv:
+    `list()` is called once, and the resulting list -- not the already-
+    consumed iterator -- is what reaches `Popen`."""
+    argv = (token for token in [sys.executable, "-c", "print('gen-marker')"])
+
+    rc, out = run_streamed(argv, timeout=15.0)
+
+    assert rc == 0
+    assert "gen-marker" in out
 
 
 @pytest.mark.parametrize("bad_timeout", [None, "15", object()])

@@ -19,8 +19,13 @@ not `toml`, and a `.env` loader not at all).
 
 What this guard does NOT catch, stated so a future story does not mistake
 its silence for proof: a *dynamic* import (`importlib.import_module("yaml")`,
-`__import__`), which is invisible to a static AST scan, and a hand-rolled
-parser that reads a settings file with nothing but `open()` and `str.split`.
+`__import__`), which is invisible to a static AST scan; a hand-rolled
+parser that reads a settings file with nothing but `open()` and `str.split`;
+and `json`, which cannot be banned because `render.py` already imports it
+for `--format json` output, so a `~/.mason.json` reader would sail straight
+through this scan (review pass, 2026-08-10 -- `json` is the most plausible
+of the three holes precisely because the import is already legitimate and
+unremarkable).
 AD-13's invariant is broader than this test ("no code path reads a
 Mason-specific key from a file"); the test enforces the statically decidable
 part of it, which is the part a static guard can honestly enforce.

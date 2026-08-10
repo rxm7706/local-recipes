@@ -30,6 +30,18 @@ def _restore_root_logging():
     boundary), so today this leaks nothing visible -- which is exactly why
     it is worth fencing now, before Story 2.1 adds the first real `logging`
     call and the failure arrives as a mystery in an unrelated test.
+
+    What this restores is handler *membership*, not handler *state* (review
+    pass, 2026-08-10, second). `basicConfig(force=True)` `close()`s each
+    handler it removes, so a saved handler is already dead by the time this
+    re-adds it, and nothing can revive it. Harmless for the handlers that
+    actually appear here -- pytest's `caplog` handler wraps a `StringIO`
+    whose `close()` is a no-op, and a `FileHandler` opened in append mode
+    reopens itself on the next record -- but a *write*-mode `FileHandler`,
+    which is what `pytest --log-file` installs, stays closed and silently
+    drops every record from the first `main()`-calling test onward. Run the
+    suite without `--log-file`, or expect a truncated log rather than a
+    failure.
     """
     root = logging.getLogger()
     saved_handlers = root.handlers[:]

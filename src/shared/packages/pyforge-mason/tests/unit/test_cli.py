@@ -313,7 +313,13 @@ def test_cfe_timeout_flag_rejects_nan_and_infinite_values(bad_value, capsys):
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["--cfe-timeout", bad_value])
     assert exc.value.code == 2
-    assert "--cfe-timeout" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    # Asserted on the validator's own wording, not just exit code 2 + the
+    # flag name (review pass, 2026-08-10, second): that weaker pair is
+    # exactly what let the `-inf` case pass while argparse -- not
+    # `_parse_finite_float` -- was doing the rejecting.
+    assert "must be a finite, positive number" in err
 
 
 def test_cfe_timeout_flag_rejects_negative_infinity_via_equals_form(capsys):
@@ -329,18 +335,30 @@ def test_cfe_timeout_flag_rejects_negative_infinity_via_equals_form(capsys):
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["--cfe-timeout=-inf"])
     assert exc.value.code == 2
-    assert "--cfe-timeout" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    # The whole point of the equals form: prove `_parse_finite_float` did the
+    # rejecting, not argparse's own "expected one argument".
+    assert "must be a finite, positive number" in err
 
 
 @pytest.mark.parametrize("bad_value", ["0", "-1", "-0.5"])
 def test_cfe_timeout_flag_rejects_non_positive_values(bad_value, capsys):
     """Review pass (2026-08-10): zero and negative timeouts are equally
     unusable as nan/inf, just via the opposite failure mode -- they expire
-    before the delegated operation has any chance to run."""
+    before the delegated operation has any chance to run.
+
+    `-1`/`-0.5` reach the validator rather than being read as option strings
+    because argparse treats a leading-`-` token as a negative number when the
+    parser has no option that looks like one; the wording assertion below
+    pins that, instead of accepting any exit-2 path (review pass,
+    2026-08-10, second)."""
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["--cfe-timeout", bad_value])
     assert exc.value.code == 2
-    assert "--cfe-timeout" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    assert "must be a finite, positive number" in err
 
 
 def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form():
@@ -530,6 +548,17 @@ class TestResolveOptionalFloat:
         `None` -- never a value its own siblings reject as unusable."""
         monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
         assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") is None
+
+    @pytest.mark.parametrize("unusable", [True, False])
+    def test_bool_flag_value_falls_through_to_env(self, monkeypatch, unusable):
+        """`bool` is a subclass of `int`, so `True` cleared both the
+        `isfinite` and `> 0` checks and was returned verbatim -- and
+        `cfe.run_streamed` rejects a bool `timeout` outright, so the resolver
+        was still handing out a value its documented consumer refuses
+        (review pass, 2026-08-10, second). Treated as unusable, like every
+        other value that fails the same standard."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") == 45.0
 
     def test_env_wins_over_none_default(self, monkeypatch):
         monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")

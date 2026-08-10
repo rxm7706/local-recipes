@@ -172,7 +172,17 @@ def _resolve_optional_float(flag_value: float | None, env_var_name: str) -> floa
     `None` -- the same "absent at whichever step supplied it" rule
     `_resolve_str` applies to a whitespace-only flag value.
     """
-    if flag_value is not None and math.isfinite(flag_value) and flag_value > 0:
+    if (
+        flag_value is not None
+        # `bool` is a subclass of `int`, so `True` clears both checks below
+        # and would be returned verbatim -- and `cfe.run_streamed` rejects a
+        # bool `timeout` outright, which is exactly the disagreement between
+        # this resolver and its consumer that the paragraph above claims to
+        # have closed (review pass, 2026-08-10, second).
+        and not isinstance(flag_value, bool)
+        and math.isfinite(flag_value)
+        and flag_value > 0
+    ):
         return flag_value
     raw = os.environ.get(env_var_name)
     if raw is None:
@@ -229,6 +239,18 @@ def _configure_logging(verbose: bool, quiet: bool) -> None:
     `caplog.at_level(...)` after the `main()` call. `tests/conftest.py`'s
     `_restore_root_logging` fixture keeps this from leaking between tests
     (review pass, 2026-08-10).
+
+    `force` also `close()`s each handler it removes, not merely detaches it,
+    and that is not undoable (review pass, 2026-08-10, second). Two
+    consequences worth knowing before relying on this function: a
+    write-mode `FileHandler` -- what `pytest --log-file` installs -- stays
+    dead for the rest of the process and silently drops every later record;
+    and `main()`, though importable, is therefore not safe to call
+    in-process from a host that owns the root logger, since it destroys that
+    host's logging rather than borrowing it. Mason is a CLI whose real
+    consumer gets a fresh process per invocation, so `force=True` remains
+    the right call here (spec Design Notes); a future in-process embedding
+    story should configure a `pyforge.mason` logger instead of the root.
     """
     if quiet:
         level = logging.ERROR
