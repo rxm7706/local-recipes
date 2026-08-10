@@ -144,6 +144,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # pure relocation: the script imported bmad_loop.sprintstatus, which
     # sources/deps.py restates instead (AD-13), so the verdict no longer
     # requires the machinery it judges.
+    # Story 6.8 (FR-15) added BMAD_DRIFT, porting scripts/bmad_drift_check.py's
+    # judgement on the pyforge-marshal project docs' own currency -- the tenth
+    # and last of Epic 6's Charter §6 sweep.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -163,6 +166,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "spec-surface",
         "deferred-work",
         "forward-dependency",
+        "bmad-drift",
     }
 
 
