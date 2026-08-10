@@ -3408,7 +3408,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 15:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 16:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5451,7 +5451,7 @@ window.DASHBOARD_DATA = {
     "live": 30,
     "reached": 8,
     "gaps": 28,
-    "findings": 18,
+    "findings": 17,
     "rows": [
       {
         "label": "atlas",
@@ -5856,7 +5856,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-10T09:59",
+          "spec": "2026-08-10T11:03",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-09",
@@ -5971,7 +5971,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-08",
+          "spec": "2026-08-10T10:32",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -5981,7 +5981,7 @@ window.DASHBOARD_DATA = {
           "epics": "2026-08-02",
           "sprint": "2026-08-10",
           "tea": "2026-08-10",
-          "gates": "2026-08-01",
+          "gates": "2026-08-10",
           "code": "2026-08-09",
           "verify": "2026-08-09",
           "retro": ""
@@ -6053,14 +6053,8 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-08",
+            "at": "2026-08-10T10:32",
             "other": "2026-08-01"
-          },
-          {
-            "kind": "behind-code",
-            "stage": "spec",
-            "at": "2026-08-08",
-            "other": "2026-08-09"
           },
           {
             "kind": "behind-code",
@@ -8056,7 +8050,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T10:10",
+          "spec": "2026-08-10T11:03",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9329,7 +9323,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-08",
+          "spec": "2026-08-10T11:03",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12662,7 +12656,7 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "green",
+        "state": "drift",
         "findings": 0,
         "verdict": "",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
@@ -15140,8 +15134,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 15:19 UTC",
-    "generatedEpoch": 1786375189
+    "generatedAt": "2026-08-10 16:03 UTC",
+    "generatedEpoch": 1786377832
   },
   "storySpecs": [
     {
@@ -15165,14 +15159,14 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-marshal",
       "done": 67,
-      "tracked": 51,
-      "gap": 16
+      "tracked": 56,
+      "gap": 11
     },
     {
       "station": "pyforge-mason",
       "done": 10,
-      "tracked": 4,
-      "gap": 6
+      "tracked": 10,
+      "gap": 0
     },
     {
       "station": "pyforge-scribe",
