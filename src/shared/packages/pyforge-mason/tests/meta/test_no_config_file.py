@@ -6,12 +6,24 @@ first thread of a second configuration system this invariant exists to rule
 out before it starts.
 
 Banned modules: `configparser` (stdlib INI), `tomllib` (stdlib TOML,
-3.11+), `tomli` (TOML backport), `yaml`/`pyyaml`'s import name, and
-`ruamel.yaml` — the two YAML libraries CFE itself depends on (see
-`cfe.CFE_IMPORT_FLOOR`), named explicitly here because their presence in
-CFE's own import floor makes them the most plausible accidental import if a
-future story reached for "the YAML library that's already on the floor" to
-read a settings file.
+3.11+), `tomli`/`toml`/`tomlkit` (TOML backport and the two most common
+third-party TOML libraries), `yaml`/`pyyaml`'s import name, `ruamel.yaml`,
+`configobj` (INI), and `dotenv` (`python-dotenv`'s import name). The two
+YAML libraries are named because CFE itself depends on them (see
+`cfe.CFE_IMPORT_FLOOR`), which makes them the most plausible accidental
+import if a future story reached for "the YAML library that's already on
+the floor" to read a settings file; the TOML and `.env` entries are named
+because they are what a developer adding "just a small config file" reaches
+for first (review pass, 2026-08-10 -- the original list banned `tomli` but
+not `toml`, and a `.env` loader not at all).
+
+What this guard does NOT catch, stated so a future story does not mistake
+its silence for proof: a *dynamic* import (`importlib.import_module("yaml")`,
+`__import__`), which is invisible to a static AST scan, and a hand-rolled
+parser that reads a settings file with nothing but `open()` and `str.split`.
+AD-13's invariant is broader than this test ("no code path reads a
+Mason-specific key from a file"); the test enforces the statically decidable
+part of it, which is the part a static guard can honestly enforce.
 
 AD-13's own text carves out one sanctioned exception this guard does not yet
 need to encode: "Mason reads no key from `pyproject.toml` other than the
@@ -43,7 +55,10 @@ import pytest
 
 PKG_ROOT = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "mason"
 
-_BANNED_MODULES = ("configparser", "tomllib", "tomli", "yaml", "ruamel.yaml")
+_BANNED_MODULES = (
+    "configparser", "tomllib", "tomli", "toml", "tomlkit",
+    "yaml", "ruamel.yaml", "configobj", "dotenv",
+)
 
 
 def _matches_banned(dotted_name: str) -> str | None:
@@ -63,7 +78,13 @@ def _find_config_file_parser_imports(root: Path) -> list[tuple[Path, str]]:
     violators: list[tuple[Path, str]] = []
     for path in sorted(root.rglob("*.py")):
         try:
-            source = path.read_text(encoding="utf-8")
+            # utf-8-sig, not utf-8: CPython itself strips a UTF-8 BOM from
+            # source files, but `ast.parse` on a string that still carries
+            # the BOM character raises SyntaxError -- so a perfectly valid,
+            # importable module would fail this guard as "invalid Python
+            # syntax" (review pass, 2026-08-10). `utf-8-sig` decodes files
+            # with and without a BOM identically to `utf-8` otherwise.
+            source = path.read_text(encoding="utf-8-sig")
         except OSError as exc:
             # A file the scanner cannot even read (broken symlink,
             # permissions) is a file it cannot prove clean — fail loudly
@@ -100,6 +121,18 @@ def _find_config_file_parser_imports(root: Path) -> list[tuple[Path, str]]:
                 # when the trailing segment happens to match.
                 if node.module is not None and node.level == 0:
                     banned = _matches_banned(node.module)
+                    if banned is None:
+                        # `from ruamel import yaml` names the banned dotted
+                        # module across the import's two halves, so matching
+                        # `node.module` alone ("ruamel") misses it entirely
+                        # -- the single most natural way to import
+                        # ruamel.yaml, waved straight through until the
+                        # 2026-08-10 review pass. Recheck each bound name
+                        # joined onto the module path.
+                        for alias in node.names:
+                            banned = _matches_banned(f"{node.module}.{alias.name}")
+                            if banned is not None:
+                                break
                     if banned is not None:
                         violators.append((path, banned))
     return violators
@@ -136,6 +169,18 @@ def test_no_module_imports_a_config_file_parser():
         ("from yaml import safe_load\n", "yaml"),
         ("import ruamel.yaml\n", "ruamel.yaml"),
         ("from ruamel.yaml import YAML\n", "ruamel.yaml"),
+        # Review pass (2026-08-10): the banned dotted name split across the
+        # import's two halves -- `node.module` alone is only "ruamel".
+        ("from ruamel import yaml\n", "ruamel.yaml"),
+        # Review pass (2026-08-10): ban-list gaps -- what a developer adding
+        # "just a small config file" actually reaches for.
+        ("import toml\n", "toml"),
+        ("from toml import load\n", "toml"),
+        ("import tomlkit\n", "tomlkit"),
+        ("import configobj\n", "configobj"),
+        ("from configobj import ConfigObj\n", "configobj"),
+        ("import dotenv\n", "dotenv"),
+        ("from dotenv import load_dotenv\n", "dotenv"),
     ],
 )
 def test_detector_fires_on_every_banned_config_file_parser_import(
@@ -162,6 +207,39 @@ def test_detector_permits_a_relative_import_of_a_local_module_with_the_same_name
     violators = _find_config_file_parser_imports(root)
 
     assert violators == []
+
+
+def test_detector_permits_an_innocent_from_import_of_a_non_banned_name(tmp_path):
+    """The `from X import Y` recheck added for `from ruamel import yaml`
+    joins the two halves -- it must not turn an ordinary import whose bound
+    name merely resembles nothing banned into a false positive (review pass,
+    2026-08-10)."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "clean.py").write_text(
+        "from json import loads\nfrom os import environ\n", encoding="utf-8",
+    )
+
+    violators = _find_config_file_parser_imports(root)
+
+    assert violators == []
+
+
+def test_detector_reads_a_file_carrying_a_utf8_bom(tmp_path):
+    """A BOM-prefixed source file is valid, importable Python (CPython
+    strips the BOM), but `ast.parse` chokes on the BOM character -- reading
+    as plain `utf-8` made this guard fail such a file as "invalid Python
+    syntax" (review pass, 2026-08-10)."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "bom.py").write_bytes(b"\xef\xbb\xbfimport json\n")
+
+    assert _find_config_file_parser_imports(root) == []
+
+    # ...and a BOM must not hide a real violation either.
+    (root / "bom_sneaky.py").write_bytes(b"\xef\xbb\xbfimport yaml\n")
+
+    assert (root / "bom_sneaky.py", "yaml") in _find_config_file_parser_imports(root)
 
 
 def test_detector_permits_a_module_with_no_banned_import(tmp_path):
