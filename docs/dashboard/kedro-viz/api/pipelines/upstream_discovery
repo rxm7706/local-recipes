@@ -1,0 +1,268 @@
+{
+  "nodes": [
+    {
+      "id": "f27d8057",
+      "name": "pypi_intelligence_enriched",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__",
+        "pypi_intelligence",
+        "seed_gaps"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "27bdea9a",
+      "name": "pypi_universe",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__",
+        "pypi_intelligence",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "517e5e70",
+      "name": "refresh_trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "ttls": {
+          "core_downloads": 604800,
+          "core_downloads_platform_breakdown": 604800,
+          "core_downloads_pyver_breakdown": 604800,
+          "core_downloads_channel_breakdown": 604800,
+          "core_version_download_history": 604800,
+          "core_cf_graph_raw": 86400,
+          "pypi_universe": 604800,
+          "pypi_current_versions": 604800,
+          "pypi_downloads_monthly": 2592000,
+          "pypi_cross_channel_flags": 604800,
+          "pypi_intelligence_enriched": 604800,
+          "pypi_conda_map_store": 604800,
+          "pypi_endoflife_raw": 604800,
+          "vulnerability_cisa_kev_raw": 86400,
+          "vulnerability_package_rollup": 604800,
+          "vulnerability_package_version_vulns": 2592000,
+          "vulnerability_epss_raw": 86400,
+          "vulnerability_cwe_catalog_raw": 7776000,
+          "vulnerability_osv_offline_store": 604800,
+          "vcs_upstream_versions": 604800,
+          "vcs_registry_versions": 604800,
+          "vcs_live_health": 86400,
+          "trending_candidates": 86400
+        }
+      },
+      "full_name": "refresh_trending_candidates"
+    },
+    {
+      "id": "6d0063d1",
+      "name": "params:ttls",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "c10a63b1",
+      "name": "trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.upstream_discovery.TrendingSnapshotDataset"
+    },
+    {
+      "id": "984bc0c0",
+      "name": "pypi_conda_mapping",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vcs_health",
+        "seed_gaps",
+        "upstream_discovery",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "437ccc69",
+      "name": "classify_trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_trending_candidates"
+    },
+    {
+      "id": "b17d345f",
+      "name": "trending_candidates_classified",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    }
+  ],
+  "edges": [
+    {
+      "source": "517e5e70",
+      "target": "c10a63b1"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "437ccc69"
+    },
+    {
+      "source": "437ccc69",
+      "target": "b17d345f"
+    },
+    {
+      "source": "f27d8057",
+      "target": "437ccc69"
+    },
+    {
+      "source": "6d0063d1",
+      "target": "517e5e70"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "437ccc69"
+    },
+    {
+      "source": "c10a63b1",
+      "target": "437ccc69"
+    }
+  ],
+  "layers": [],
+  "tags": [],
+  "pipelines": [
+    {
+      "id": "__default__",
+      "name": "__default__"
+    },
+    {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
+      "id": "universal_sbom",
+      "name": "universal_sbom"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    },
+    {
+      "id": "vcs_health",
+      "name": "vcs_health"
+    },
+    {
+      "id": "upstream_discovery",
+      "name": "upstream_discovery"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "core",
+      "name": "core"
+    }
+  ],
+  "modular_pipelines": {
+    "__root__": {
+      "id": "__root__",
+      "name": "__root__",
+      "inputs": [],
+      "outputs": [],
+      "children": [
+        {
+          "id": "984bc0c0",
+          "type": "data"
+        },
+        {
+          "id": "437ccc69",
+          "type": "task"
+        },
+        {
+          "id": "27bdea9a",
+          "type": "data"
+        },
+        {
+          "id": "b17d345f",
+          "type": "data"
+        },
+        {
+          "id": "6d0063d1",
+          "type": "data"
+        },
+        {
+          "id": "517e5e70",
+          "type": "task"
+        },
+        {
+          "id": "f27d8057",
+          "type": "data"
+        },
+        {
+          "id": "6d0063d1",
+          "type": "parameters"
+        },
+        {
+          "id": "c10a63b1",
+          "type": "data"
+        }
+      ]
+    }
+  },
+  "selected_pipeline": "upstream_discovery"
+}

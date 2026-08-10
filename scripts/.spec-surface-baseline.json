@@ -56,7 +56,7 @@
    "src/shared/packages/pyforge-atlas/AGENTS.md": "c19df5f8d41cd5b3f4c5020f0d4ead7a825c2e87",
    "src/shared/packages/pyforge-atlas/README.md": "a23e82b36ab0c10706f8f278a1a0f77ff1e441e8",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
-   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "a79fc2ca8779deddd8b7e9c8bb0fb76a8990f108",
+   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "59cad890199425225fdb4dae7cd2621e3bfab768",
    "src/shared/packages/pyforge-atlas/conf/base/dagster.yml": "0411c867ce6d61441fc8955155534b5ba7b43003",
    "src/shared/packages/pyforge-atlas/conf/base/globals.yml": "b87d717f4452c40421b1c4895e5be17423f56384",
    "src/shared/packages/pyforge-atlas/conf/base/parameters.yml": "7aac5bec420d62aba8f1e0efb30ca4140e3752d8",
@@ -91,11 +91,11 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/storage.py": "4aa2340395e42a4c35e6de1fe8a492e8874fe844",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/wiki.py": "46e99f657592227206f79fd7954d6b3121b5146d",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/hooks.py": "7023475c3319352f6f71d9074fb30ff57f922a71",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/__init__.py": "6b902b8d065d00985261db28d702995186ee7282",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/audit.py": "1a8c8d6a79a0073e1b2c2bb4a7075bee0ae2c35b",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py": "276e564639e168279e6c97562f56f72df4ee5550",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/__init__.py": "3ce562197170f47dbd5e2376d61c6d555a267fe8",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/audit.py": "3d94d73232f05c930cc97cabad5493f24d21aff2",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py": "523292505dda45ddacc89264881dceb6353c8147",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/session.py": "1e8dd3f9f7118e228a43d6dad10829ab60cd25ad",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py": "b245b43b92a9b8e701712ca2e32909773372f596",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py": "2c9a2fd75ac2e5e4bcc8cd831be88b828caed3dc",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/nl/__init__.py": "1ded9fab2ae295730d9270242ccfedfd7922cbf9",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/nl/backend.py": "46e5613cdad60314f768dae7252210a245162b24",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/nl/query.py": "8c6477839ac043f48bcf708748ef8bc085237ba0",
@@ -127,7 +127,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/universal_sbom/nodes.py": "0c700447faa826374757757985cc700eaf8e016b",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/universal_sbom/pipeline.py": "d1b7574546fb964919db6c18b4bf3270a60e6c54",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/__init__.py": "bf014294716d9243de1422b809a4703892707b92",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py": "c17ea4dba84466276cdbf0bc931beb1a5b9ab681",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py": "c27362a0c32592a96770f1c966b4824cf8161ea4",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/pipeline.py": "86ae04d6a4c73fba6a8e054608a8c27669111449",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/__init__.py": "a5d2b0b161b1a830a2b8ba1a50cb6bfa0a5b343d",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/nodes.py": "8874701e69f8d72aed1564b0104b6ae717e7f004",
@@ -147,9 +147,6 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/metrics.py": "225a55634020167f1d42bf24b0a36e98566230f4",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py": "836e0b3fa7a194618ce31996abb35960e46dbe57",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/settings.py": "6e254084218e711042c00fe310952e3d552effa6",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/trending_candidates/__init__.py": "25c9cc4fdc3d3db59f73b03a7f1b6b271a03fa6c",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/trending_candidates/__main__.py": "8dac59ca5976b99ab01d0e453ca7dc6242f1ea54",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/trending_candidates/query.py": "481304f4cfdea06d8b7555b6b240c2f8e0cd7c3f",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/validation.py": "dbdeef7baf6c0add08bb766ad6f020ca9af58bb5",
    "src/shared/packages/pyforge-atlas/tests/a2a_surface/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/a2a_surface/test_a2a_payloads.py": "2fc4cac9746cddee08814711300bd35bfed7103b",
@@ -186,8 +183,8 @@
    "src/shared/packages/pyforge-atlas/tests/mcp/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/mcp/test_audit_mapping.py": "6771783abccbe1d3c418ee4234327d1f8e58d431",
    "src/shared/packages/pyforge-atlas/tests/mcp/test_kedro_mcp_absent.py": "ca4684b3a49839897381b265a5a756f711667eb5",
-   "src/shared/packages/pyforge-atlas/tests/mcp/test_no_business_logic_in_tool_bodies.py": "0337e30f9af1ad20881c33af116f4915d164f5e5",
-   "src/shared/packages/pyforge-atlas/tests/mcp/test_read_surface.py": "8881115e298f1d5f29e25bd88e216f22cf39553f",
+   "src/shared/packages/pyforge-atlas/tests/mcp/test_no_business_logic_in_tool_bodies.py": "33b631d644143c716223e943466b3e7e8a017c37",
+   "src/shared/packages/pyforge-atlas/tests/mcp/test_read_surface.py": "b2c0ca173b92ced32bea6015244be0b492dd0c96",
    "src/shared/packages/pyforge-atlas/tests/mcp/test_trigger_surface.py": "3c8b04cc25085292a8f326f451876bcb3100df66",
    "src/shared/packages/pyforge-atlas/tests/nl/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/nl/test_query_vizro_ai_dryrun.py": "3e1b7e99e534ef4df892253c59850fbe6f7591cc",
@@ -292,11 +289,6 @@
    "src/shared/packages/pyforge-atlas/tests/test_import_smoke.py": "86d8f2f7cec4186a5750623499bdc88e1ce0594c",
    "src/shared/packages/pyforge-atlas/tests/test_main_version.py": "cd3c26d77aff093d0798a1a757ceb81ab6951286",
    "src/shared/packages/pyforge-atlas/tests/test_scaffold_layout.py": "e24c8e28aabdd3b0f6ec88b525f594fb4bb69d3b",
-   "src/shared/packages/pyforge-atlas/tests/trending_candidates/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/shared/packages/pyforge-atlas/tests/trending_candidates/conftest.py": "7ef9e44c7d303f9b26a59bf5a17d8bf043c9d230",
-   "src/shared/packages/pyforge-atlas/tests/trending_candidates/test_main.py": "5a767f2bdc4f069938ffca1cb2f1b8454d37e884",
-   "src/shared/packages/pyforge-atlas/tests/trending_candidates/test_query.py": "0fa5c29ad9a2ed2daf556a484913e9d4d2683665",
-   "src/shared/packages/pyforge-atlas/tests/trending_candidates/test_surface_parity.py": "01903103f72ad5aa10d9ee53e73ca7784486ea1a",
    "src/shared/packages/pyforge-atlas/tests/validation/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/validation/test_validation_hook.py": "1a447ba88efd0864d2fe95d7410a44bc5f420ab8",
    "src/shared/packages/pyforge-atlas/tests/wasm/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -310,7 +302,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "c936f3ecfa6dba1357677b0d9ac1c37a93c342af"
+  "memlog": "3449f90f8828255ea0eff36a068d6dc4d7d51bd2"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -341,16 +333,17 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py": "9bed65ac1bfe216b246addff056894f3badc25a4",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/registry.py": "4b0e8504e147f2fa249bc96416a881485118d251",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/cli_bridge.py": "9f2b71c2a0e3a1836df4819b576d28a4345c9d6c",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json": "af703c1ef3b4d8e654a8ed1bfbbaebd36c950e54",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/data/report-schema.json": "2eff7c839ba99a9286359a0f765ed7e8a32742d9",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/fleet_surface.py": "49d47414ca52970bcfa40ac6f65cffa705f72af7",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py": "6ae76c471aa906a1a0e5948b5e6dc14f38437898",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/models.py": "6620e762b8a6fe78566593249c64c18392625022",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/prescribe.py": "9f6d051c3839415749e316701e61bc3b269c1515",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/score.py": "2a94d915ae073bf04b30a8d96e12145a5758230a",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "a06fd149bddc54d52d5b561ddf5991e36a61f50a",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py": "c530e79919b5d3bbaf6ccf37fe6c990ffeb42fac",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "2771a052f58785f6fa5a9c75a06e642556177e1c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "259bf8052e1d08e44e4fc2882fdcdee4941888aa",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "48b0ff6350a7d39c6c7b7b6744713ea5f767bb0f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "5ac7033128986f91d8ddc0576c5962e1f45e43d8",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "ff2b2b81f6adf6ab6e49690c200af7bb1f1f98d3",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909",
@@ -375,7 +368,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_cli_monitor.py": "977a5af6147ab89c8f77f0a841bd1189bab1bd38",
    "src/shared/packages/pyforge-doctor/tests/unit/test_fleet_surface.py": "38b11bb8887fbcee9b7abe5dab468d8ec0530754",
    "src/shared/packages/pyforge-doctor/tests/unit/test_main_stub.py": "a07a342ce2b4605f79174a5a2e8b19cac7521f3d",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_models.py": "b72b9270fdf9859d5dbbfee493a4f67a1f5d609e",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_models.py": "2e435ed5865f2339a3dff873c93e34756bbb36c9",
    "src/shared/packages/pyforge-doctor/tests/unit/test_prescribe_partition.py": "14ebe056316b6fbe960da3836bc2ca295256a11e",
    "src/shared/packages/pyforge-doctor/tests/unit/test_prescribe_rank.py": "7123ae56465beb3415045bdbeb48b087c01ad8fd",
    "src/shared/packages/pyforge-doctor/tests/unit/test_prescribe_root_cause.py": "0fa6cfc561b69cd5e364db5b1ed5f5886f417405",
@@ -393,6 +386,8 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "c2641950ef4d5efacef83627446e55f5d0a67c4b",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_forward_dependency.py": "a9ae03b6574a0209d4886e24756ac1d0b481a645",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_independence.py": "13fc2fab591220da75bd51325ddcf0e552182148",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py": "d31f832cdc085709eae7d59b03842d446165ee0c",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory_independence.py": "9b9a9fab99570a47dca39666a68114f2214ae514",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py": "91279686e55259bf69cfd9591dfe5aaa0f7bc7e7",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_independence.py": "0b64f066e13166f1b99707430db05fa6e2f54686",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_marshal_independence.py": "8c61b539abc86199f64613502908549a8d937063",
@@ -401,7 +396,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_warden.py": "5122025ff7966e19724a19605701c9e10044cb22",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "be180c03ac0e73145aa3c88283174cd4cba57590"
+  "memlog": "d0bc846823ccdad515489b78cd1d9b9dbc992e80"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3474,13 +3469,18 @@
   "files": {},
   "memlog": ""
  },
+ "pyforge-steward/spec-secure-live-dashboards": {
+  "files": {},
+  "memlog": "e7eeec864ca70bdc66ff44f451ffcd23fd55543e"
+ },
  "pyforge-steward/spec-unified-container": {
   "files": {
-   ".dockerignore": "fa7ef26fb451869a17858d658e5238e837912aa5",
-   "Containerfile": "afdc20855cba5357564e22bc302a2dc0be1ff8b2",
-   "pixi.toml": "e13951a84c4deee7d5f6dccc74aaa8e9aab9b8d3"
+   ".dockerignore": "2419b62502a3b2d205a8c879dc4b0aa4213752db",
+   "Containerfile": "579e6faab42478eb0b6e52e665da68edf6cd6d56",
+   "pixi.toml": "f3e313fec783b04466b46f6e3d44fd10572ab9d4",
+   "scripts/container-gates": "e963665a0bc5868c07d964669a026bb0fc151f41"
   },
-  "memlog": "e043abbfa5ea35c2d5ec9d8631993672894bba20"
+  "memlog": "e4b8cc3e2747883de7542966a68f43d45e854630"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {

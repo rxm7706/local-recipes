@@ -73,6 +73,46 @@ jobs:
           locked: true
           cache: true
 
+      # `kedro viz build` resolves the WHOLE catalog, and two entries declare
+      # `credentials:` (catalog.yml: `pypi_bigquery_downloads_raw` ->
+      # `bigquery_adc`, `vcs_github_api_raw` -> `github_token`). Those live in
+      # `conf/local/credentials.yml`, which `pyforge-atlas/.gitignore` excludes
+      # via `conf/**/*credentials*` -- deliberately, and that rule is what keeps
+      # real credentials out of the tree and out of the image. So a runner has
+      # no credentials file at all and the build died with
+      # "Unable to find credentials 'bigquery_adc'" the first time this
+      # workflow ever fired (atlas 13.1 was the first push to touch
+      # `pipelines/**`, this workflow's only path trigger).
+      #
+      # Both entries are `api.APIDataset`-family, whose `credentials` is an auth
+      # pair -- viz only INTROSPECTS the DAG, it never loads through them. So
+      # obviously-fake pairs are sufficient and nothing here is a secret. Shapes
+      # mirror `pyforge-atlas/tests/catalog/conftest.py::STUB_CREDENTIALS`,
+      # which is the project's existing stub vocabulary; keep them in step.
+      #
+      # Guarded on absence so this can never clobber a real file if the workflow
+      # is ever run somewhere a developer's `conf/local/` is populated.
+      - name: Materialize stub credentials for offline catalog resolution
+        run: |
+          set -euo pipefail
+          CRED=src/shared/packages/pyforge-atlas/conf/local/credentials.yml
+          if [ -e "$CRED" ]; then
+            echo "$CRED already exists — leaving it untouched."
+            exit 0
+          fi
+          cat > "$CRED" <<'YAML'
+          # STUB credentials, written by .github/workflows/kedro-viz-publish.yml.
+          # Not secrets. `kedro viz build` only introspects the DAG; it never
+          # loads through these. Shapes mirror tests/catalog/conftest.py.
+          bigquery_adc:
+            - service-account
+            - stub-adc
+          github_token:
+            - x-access-token
+            - stub-token
+          YAML
+          echo "wrote stub $CRED"
+
       - name: Build + normalize + stage the real DAG's kedro-viz export
         run: pixi run -e pyforge-atlas viz-publish-stage
 
