@@ -1,7 +1,7 @@
 """`reconcile` — Epic 8, Story 8.1. One test per I/O & Edge-Case Matrix row,
-plus the two algorithm corrections recorded in the story's Design Notes
-(value-equality short-circuit; sync-point captured strictly after the
-write). Every test drives `reconcile` through a fake `transport` returning
+against the AD-5(amended)/AD-10 per-field baseline-value mechanism (never a
+timestamp — see `sync.py`'s own module docstring and this story's Design
+Notes). Every test drives `reconcile` through a fake `transport` returning
 canned GraphQL/REST JSON, entirely in-memory — no live network call.
 """
 
@@ -16,6 +16,7 @@ from pyforge.steward.sync import (
     SyncAPIError,
     SyncConfig,
     TransportResponse,
+    _parse_baseline,
     get_jira_issue,
     github_graphql_request,
     reconcile,
@@ -28,11 +29,11 @@ CONFIG = SyncConfig(
     github_project_id="PVT_1",
     github_status_field_id="gh_status",
     github_link_field_id="gh_link",
-    github_sync_point_field_id="gh_syncpoint",
+    github_baseline_field_id="gh_baseline",
     jira_base_url="https://example.atlassian.net",
     jira_project_key="PROJ",
     jira_link_field_id="jira_link",
-    jira_sync_point_field_id="jira_syncpoint",
+    jira_baseline_field_id="jira_baseline",
 )
 
 CONFIG_JIRA_WINS = SyncConfig(
@@ -52,18 +53,14 @@ class FakeTransport:
         *,
         github_item_id: str = "ITEM_1",
         github_fields: dict[str, str] | None = None,
-        github_updated_at: str,
         jira_issue_key: str = "PROJ-1",
         jira_fields: dict[str, object] | None = None,
-        jira_updated_at: str,
         jira_transitions: list[dict[str, object]] | None = None,
     ) -> None:
         self.github_item_id = github_item_id
         self.github_fields: dict[str, str] = dict(github_fields or {})
-        self.github_updated_at = github_updated_at
         self.jira_issue_key = jira_issue_key
         self.jira_fields: dict[str, object] = dict(jira_fields or {})
-        self.jira_updated_at = jira_updated_at
         self.jira_transitions = jira_transitions or []
         self.calls: list[dict[str, object]] = []
 
@@ -94,7 +91,6 @@ class FakeTransport:
 
         node = {
             "id": self.github_item_id,
-            "updatedAt": self.github_updated_at,
             "fieldValues": {
                 "nodes": [
                     {"text": value, "field": {"id": field_id}}
@@ -117,7 +113,7 @@ class FakeTransport:
             self.jira_fields["status"] = {"name": matched["to"]["name"]}
             return TransportResponse(status=204, body=b"")
         if method == "GET":
-            payload = {"fields": {**self.jira_fields, "updated": self.jira_updated_at}}
+            payload = {"fields": dict(self.jira_fields)}
             return TransportResponse(status=200, body=json.dumps(payload).encode())
         if method == "PUT":
             self.jira_fields.update(body["fields"])
@@ -144,23 +140,51 @@ def _jira_status(transport: FakeTransport) -> str | None:
     return (transport.jira_fields.get("status") or {}).get("name")
 
 
-# ── Row: GH changed, Jira didn't -> Jira updated to match, both sync-points refreshed ──
+def _status_push_calls(transport: FakeTransport) -> list[dict[str, object]]:
+    """Calls that push the TRACKED value itself -- as opposed to a baseline
+    refresh: a GitHub field write to the status field, or a Jira transition
+    POST."""
+    pushes = []
+    for call in transport.calls:
+        if call["url"] == _GITHUB_GRAPHQL_URL:
+            variables = (call["body"] or {}).get("variables", {})
+            if variables.get("fieldId") == CONFIG.github_status_field_id:
+                pushes.append(call)
+        elif call["url"].endswith("/transitions") and call["method"] == "POST":
+            pushes.append(call)
+    return pushes
 
 
-def test_github_changed_jira_did_not_pushes_to_jira_and_refreshes_both_sync_points():
+def _baseline_write_calls(transport: FakeTransport) -> list[dict[str, object]]:
+    """Calls that refresh a baseline field: a GitHub field write to the
+    baseline field, or a Jira PUT (baseline writes go through
+    `update_jira_issue_fields`, distinct from a transition POST)."""
+    writes = []
+    for call in transport.calls:
+        if call["url"] == _GITHUB_GRAPHQL_URL:
+            variables = (call["body"] or {}).get("variables", {})
+            if variables.get("fieldId") == CONFIG.github_baseline_field_id:
+                writes.append(call)
+        elif call["method"] == "PUT":
+            writes.append(call)
+    return writes
+
+
+# ── Row: GH changed, Jira didn't -> Jira updated to match, both baselines refreshed ──
+
+
+def test_github_changed_jira_did_not_pushes_to_jira_and_refreshes_both_baselines():
     transport = FakeTransport(
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "In Progress",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
         },
-        github_updated_at="2026-08-05T00:00:00Z",  # newer than gh_syncpoint -> not stale
         jira_fields={
             "status": {"name": "To Do"},
             "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-05T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',  # matches current -- jira unchanged
         },
-        jira_updated_at="2026-08-01T00:00:00Z",  # <= jira_syncpoint -> stale
         jira_transitions=[
             {"id": "31", "to": {"name": "In Progress"}},
             {"id": "21", "to": {"name": "To Do"}},
@@ -172,28 +196,25 @@ def test_github_changed_jira_did_not_pushes_to_jira_and_refreshes_both_sync_poin
     assert result.ok is True
     assert result.details["decision"] == "push_to_jira"
     assert _jira_status(transport) == "In Progress"
-    assert transport.github_fields["gh_syncpoint"] != "2026-08-01T00:00:00+00:00"
-    assert transport.jira_fields["jira_syncpoint"] != "2026-08-05T00:00:00+00:00"
-    assert transport.github_fields["gh_syncpoint"] == transport.jira_fields["jira_syncpoint"]
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
 
 
-# ── Row: Jira changed, GH didn't -> GH item field updated, both sync-points refreshed ──
+# ── Row: Jira changed, GH didn't -> GH item field updated, both baselines refreshed ──
 
 
-def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_sync_points():
+def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_baselines():
     transport = FakeTransport(
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "To Do",
-            "gh_syncpoint": "2026-08-05T00:00:00+00:00",
+            "gh_baseline": '{"status": "To Do"}',  # matches current -- gh unchanged
         },
-        github_updated_at="2026-08-01T00:00:00Z",  # <= gh_syncpoint -> stale
         jira_fields={
             "status": {"name": "In Progress"},
             "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-01T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
         },
-        jira_updated_at="2026-08-05T00:00:00Z",  # newer than jira_syncpoint -> not stale
     )
 
     result = reconcile(jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
@@ -201,12 +222,11 @@ def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_sync_po
     assert result.ok is True
     assert result.details["decision"] == "push_to_github"
     assert transport.github_fields["gh_status"] == "In Progress"
-    assert transport.github_fields["gh_syncpoint"] != "2026-08-05T00:00:00+00:00"
-    assert transport.jira_fields["jira_syncpoint"] != "2026-08-01T00:00:00+00:00"
-    assert transport.github_fields["gh_syncpoint"] == transport.jira_fields["jira_syncpoint"]
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
 
 
-# ── Row: both changed since last sync (real conflict) -> GitHub wins per AD-4 ──
+# ── Row: both changed since their own baseline (real conflict) -> GitHub wins per AD-4 ──
 
 
 def _conflict_transport() -> FakeTransport:
@@ -214,15 +234,13 @@ def _conflict_transport() -> FakeTransport:
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "In Progress",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
         },
-        github_updated_at="2026-08-05T00:00:00Z",  # newer than gh_syncpoint -> not stale
         jira_fields={
             "status": {"name": "Blocked"},
             "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-01T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
         },
-        jira_updated_at="2026-08-05T00:00:00Z",  # newer than jira_syncpoint -> not stale
         jira_transitions=[
             {"id": "31", "to": {"name": "In Progress"}},
             {"id": "41", "to": {"name": "Blocked"}},
@@ -252,7 +270,7 @@ def test_real_conflict_honors_field_overrides_jira_wins():
     assert _jira_status(transport) == "Blocked"  # jira's own value untouched
 
 
-# ── Row: neither changed (loop candidate / redelivery) -> no-op, no writes ──
+# ── Row: neither changed (loop candidate / redelivery / echo) -> no-op, no writes ──
 
 
 def test_neither_changed_is_a_no_op_with_zero_writes():
@@ -260,22 +278,20 @@ def test_neither_changed_is_a_no_op_with_zero_writes():
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "In Progress",
-            "gh_syncpoint": "2026-08-05T00:00:00+00:00",
+            "gh_baseline": '{"status": "In Progress"}',  # matches current -- unchanged
         },
-        github_updated_at="2026-08-01T00:00:00Z",  # <= gh_syncpoint -> stale
         jira_fields={
             "status": {"name": "In Progress"},
             "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-05T00:00:00+00:00",
+            "jira_baseline": '{"status": "In Progress"}',  # matches current -- unchanged
         },
-        jira_updated_at="2026-08-01T00:00:00Z",  # <= jira_syncpoint -> stale
     )
 
     result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
 
     assert result.ok is True
     assert result.details["decision"] == "no_op"
-    assert transport.write_calls() == []
+    assert transport.write_calls() == []  # true no-op: baseline is never touched either
 
 
 # ── Row: --dry-run -> same decision computed and reported, zero write calls ──
@@ -286,15 +302,13 @@ def test_dry_run_computes_the_same_decision_and_makes_no_write_calls():
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "In Progress",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
+            "gh_baseline": '{"status": "To Do"}',
         },
-        github_updated_at="2026-08-05T00:00:00Z",
         jira_fields={
             "status": {"name": "To Do"},
             "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-05T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',
         },
-        jira_updated_at="2026-08-01T00:00:00Z",
         jira_transitions=[
             {"id": "31", "to": {"name": "In Progress"}},
             {"id": "21", "to": {"name": "To Do"}},
@@ -305,7 +319,7 @@ def test_dry_run_computes_the_same_decision_and_makes_no_write_calls():
 
     assert result.ok is True
     assert result.details["decision"] == "push_to_jira"  # same decision a real run would make
-    assert transport.write_calls() == []
+    assert transport.write_calls() == []  # zero writes, including to either baseline field
     assert _jira_status(transport) == "To Do"  # untouched
 
 
@@ -316,11 +330,9 @@ def test_unresolvable_github_link_fails_named_and_makes_no_write():
     transport = FakeTransport(
         github_fields={
             "gh_status": "In Progress",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
+            "gh_baseline": '{"status": "To Do"}',
             # no "gh_link" entry at all -> link field reads as unset
         },
-        github_updated_at="2026-08-05T00:00:00Z",
-        jira_updated_at="2026-08-05T00:00:00Z",
     )
 
     result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
@@ -335,11 +347,9 @@ def test_unresolvable_jira_link_fails_named_and_makes_no_write():
     transport = FakeTransport(
         jira_fields={
             "status": {"name": "In Progress"},
-            "jira_syncpoint": "2026-08-01T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',
             # no "jira_link" entry -> link field reads as unset
         },
-        github_updated_at="2026-08-05T00:00:00Z",
-        jira_updated_at="2026-08-05T00:00:00Z",
     )
 
     result = reconcile(jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
@@ -358,15 +368,13 @@ def test_no_matching_jira_transition_is_a_named_failure_not_a_guess():
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "Nonexistent Status",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
         },
-        github_updated_at="2026-08-05T00:00:00Z",
         jira_fields={
             "status": {"name": "To Do"},
             "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-05T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',  # unchanged
         },
-        jira_updated_at="2026-08-01T00:00:00Z",
         jira_transitions=[{"id": "21", "to": {"name": "To Do"}}],  # no match for "Nonexistent Status"
     )
 
@@ -375,90 +383,237 @@ def test_no_matching_jira_transition_is_a_named_failure_not_a_guess():
     assert result.ok is False
     assert "Nonexistent Status" in result.summary
     assert _jira_status(transport) == "To Do"  # never guessed a different transition
-    # the sync-point refresh must never run after a failed value push
-    assert transport.github_fields["gh_syncpoint"] == "2026-08-01T00:00:00+00:00"
+    # the baseline refresh must never run after a failed value push
+    assert transport.github_fields["gh_baseline"] == '{"status": "To Do"}'
+    assert transport.jira_fields["jira_baseline"] == '{"status": "To Do"}'
 
 
-# ── Design Notes correction (1): value-equality short-circuit ──
+# ── Row: first link (no baseline yet) ───────────────────────────────────────
 
 
-def test_value_already_matches_destination_is_a_no_op_despite_staleness_saying_push():
-    """An unrelated field edit legitimately makes gh_stale False (AD-5 is
-    item-level, not field-level) without the TRACKED value having changed --
-    reconcile must recognize the destination already holds the target value
-    and make no write, rather than attempting a live push/transition for a
-    value that's already there."""
-    transport = FakeTransport(
-        github_fields={
-            "gh_link": "PROJ-1",
-            "gh_status": "In Progress",  # already matches jira's status below
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
-        },
-        github_updated_at="2026-08-05T00:00:00Z",  # not stale (some unrelated field changed)
-        jira_fields={
-            "status": {"name": "In Progress"},
-            "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-05T00:00:00+00:00",
-        },
-        jira_updated_at="2026-08-01T00:00:00Z",  # stale -> would compute push_to_jira
-        # No transitions registered: if reconcile attempted a live push, the
-        # "no transition matches" failure below would fire and this test
-        # would fail loudly instead of silently passing on the wrong branch.
-        jira_transitions=[],
-    )
-
-    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
-
-    assert result.ok is True
-    assert result.details["decision"] == "no_op"
-    assert transport.write_calls() == []
-
-
-def test_value_already_matches_short_circuits_even_a_real_conflict():
-    transport = FakeTransport(
-        github_fields={
-            "gh_link": "PROJ-1",
-            "gh_status": "Blocked",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
-        },
-        github_updated_at="2026-08-05T00:00:00Z",  # not stale
-        jira_fields={
-            "status": {"name": "Blocked"},  # already matches gh's value
-            "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-01T00:00:00+00:00",
-        },
-        jira_updated_at="2026-08-05T00:00:00Z",  # not stale -> real conflict by staleness alone
-        jira_transitions=[],
-    )
-
-    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
-
-    assert result.ok is True
-    assert result.details["decision"] == "no_op"
-    assert transport.write_calls() == []
-
-
-# ── Design Notes correction (2): sync-point captured strictly after the write ──
-
-
-def test_sync_point_written_is_not_older_than_the_tracked_value_write():
-    """The two sync-point writes must be the LAST calls FakeTransport
-    records -- proof `reconcile` captures/writes the new sync point only
-    after the cross-system value write has already completed, never before
-    or once up front."""
+def test_first_link_no_baseline_and_differing_values_ad4_decides_and_writes_both_baselines():
+    """AD-10 rule 1: an absent baseline key is a first link, not a loop
+    candidate -- never collapsed with 'both changed relative to a real
+    baseline'. Both sides already hold differing values, so AD-4's default
+    authority (GitHub wins) decides, and both sides' baseline fields are
+    written for the first time afterward."""
     transport = FakeTransport(
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "In Progress",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
+            # no "gh_baseline" entry at all -> never synced
         },
-        github_updated_at="2026-08-05T00:00:00Z",
+        jira_fields={
+            "status": {"name": "Blocked"},
+            "jira_link": "ITEM_1",
+            # no "jira_baseline" entry at all -> never synced
+        },
+        jira_transitions=[{"id": "31", "to": {"name": "In Progress"}}],
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "push_to_jira"
+    assert _jira_status(transport) == "In Progress"
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+
+
+def test_first_link_no_baseline_and_matching_values_is_a_no_op_but_still_writes_both_baselines():
+    """Same first-link scenario, but both sides already agree -- no push
+    needed, yet both baseline fields must still be written for the first
+    time (AD-10 rule 1's 'baselines written afterward'), or every future
+    reconcile of this newly-linked pair would see it as 'changed' forever."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+        },
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "jira_link": "ITEM_1",
+        },
+        jira_transitions=[],
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "no_op"
+    assert _status_push_calls(transport) == []
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+
+
+# ── Row: field cleared on one side (explicit null CURRENT value, not the baseline) ──
+
+
+def test_field_cleared_on_jira_side_is_a_genuine_change_pushed_to_github():
+    """The 'field cleared' row: Jira's baseline recorded a real prior value,
+    but Jira's CURRENT status is now the explicit null sentinel (the key is
+    present in the baseline map -- it's the CURRENT read that's absent).
+    This must be treated as a genuine change and propagated -- never
+    confused with 'never synced' (which is the baseline KEY's absence, not
+    the current value's).
+
+    Exercises the GH-unchanged / Jira-cleared-pushed-to-GitHub direction via
+    `update_project_item_field`, which accepts any value (including a
+    clear) -- chosen over the inverse direction because
+    `transition_jira_issue`'s transition lookup has no sensible way to
+    'transition to null'."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "In Progress"}',  # matches current -- unchanged
+        },
+        jira_fields={
+            # no "status" key at all -> reads as None (cleared)
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "In Progress"}',  # was "In Progress"; now cleared
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "push_to_github"
+    assert result.details["target_value"] is None
+    assert transport.github_fields["gh_status"] is None
+    assert not any(c["url"].endswith("/transitions") for c in transport.calls)
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": None}
+
+
+# ── Row: baseline exceeds the vendor field-size ceiling -> named failure, not a sidecar ──
+
+
+def test_baseline_exceeding_the_field_size_ceiling_is_a_named_failure_after_the_value_push():
+    """AD-2/AD-10's escape hatch to Mode B: a serialized baseline map that
+    would not fit the configured field's size ceiling must never silently
+    fall back to a sidecar store. Jira's ceiling (255 chars) is the
+    tighter of the two, so it is the one this test drives over -- and by
+    the time it fires, the cross-system VALUE push (the Jira transition)
+    has already completed, per reconcile's own documented, accepted
+    non-atomicity (same risk class as `keys.rotate_identity`'s
+    partial-completion state -- mirrors this file's own
+    `test_no_matching_jira_transition_is_a_named_failure_not_a_guess` proof
+    shape for a different failure mode)."""
+    long_status = "X" * 300  # comfortably over Jira's 255-char ceiling, under GitHub's 1024
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": long_status,
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
+        },
         jira_fields={
             "status": {"name": "To Do"},
             "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-05T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',  # unchanged
         },
-        jira_updated_at="2026-08-01T00:00:00Z",
+        jira_transitions=[{"id": "99", "to": {"name": long_status}}],
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    assert "baseline" in result.summary
+    assert "Mode B" in result.summary
+    # The value push already completed -- accepted non-atomicity.
+    assert _jira_status(transport) == long_status
+    # Neither baseline field was actually written (the failure fires while
+    # computing the serialized maps, before either write is attempted).
+    assert transport.github_fields["gh_baseline"] == '{"status": "To Do"}'
+    assert transport.jira_fields["jira_baseline"] == '{"status": "To Do"}'
+
+
+# ── Row: both changed to the SAME value -> converged already, no push, baselines still refreshed ──
+
+
+def test_both_diverged_to_the_same_value_is_a_no_op_but_still_refreshes_baselines():
+    """The scenario this check protects under the new mechanism: an
+    established pair (both baselines present and non-empty) where BOTH
+    sides changed relative to their own baseline (gh_changed=True AND
+    jira_changed=True -- an AD-4 'conflict' by the loop-guard's own
+    definition), but gh.status already equals jira.status -- both
+    independently converged to the SAME new value from their respective
+    stale baselines. No push is needed (the destination already holds the
+    value AD-4's authority pick would have pushed), but both baselines are
+    still stale relative to their OWN prior value and must be refreshed, or
+    every future reconcile of this pair would see it as 'changed' forever."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "Blocked",
+            "gh_baseline": '{"status": "In Progress"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "Blocked"},  # already matches gh's value
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+        # No transitions registered: if reconcile attempted a live push, the
+        # "no transition matches" failure would fire and this test would
+        # fail loudly instead of silently passing on the wrong branch.
+        jira_transitions=[],
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "no_op"
+    assert _status_push_calls(transport) == []  # no push write to either side's tracked field
+    assert len(_baseline_write_calls(transport)) == 2  # both baselines still refreshed
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "Blocked"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "Blocked"}
+
+
+def test_both_diverged_to_the_same_value_short_circuits_even_with_jira_wins_override():
+    """Same scenario as above, but with `field_overrides={"status": "jira"}`
+    -- proves the convergence check fires regardless of which side AD-4
+    would have picked as authority, since the two current values already
+    agree."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "Blocked",
+            "gh_baseline": '{"status": "In Progress"}',
+        },
+        jira_fields={
+            "status": {"name": "Blocked"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',
+        },
+        jira_transitions=[],
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_JIRA_WINS, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "no_op"
+    assert _status_push_calls(transport) == []
+    assert len(_baseline_write_calls(transport)) == 2
+
+
+# ── Baseline written strictly after the tracked-value write, never before ──
+
+
+def test_baseline_written_after_the_tracked_value_write_not_before():
+    """The two baseline writes must be the LAST calls FakeTransport records
+    -- proof `reconcile` refreshes the baseline only after the cross-system
+    value write has already completed, never before or interleaved."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "To Do"}',
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',
+        },
         jira_transitions=[
             {"id": "31", "to": {"name": "In Progress"}},
             {"id": "21", "to": {"name": "To Do"}},
@@ -470,20 +625,20 @@ def test_sync_point_written_is_not_older_than_the_tracked_value_write():
 
     writes = transport.write_calls()
     # The tracked-value write (the Jira transition POST) happens before
-    # either sync-point write (one GitHub GraphQL mutation, one Jira PUT).
+    # either baseline write (one GitHub GraphQL mutation, one Jira PUT).
     transition_index = next(
         i for i, c in enumerate(writes) if c["url"].endswith("/transitions")
     )
-    sync_point_indices = [i for i in range(len(writes)) if i != transition_index]
-    assert sync_point_indices, "expected two sync-point writes after the tracked-value write"
-    assert all(i > transition_index for i in sync_point_indices)
+    baseline_indices = [i for i in range(len(writes)) if i != transition_index]
+    assert baseline_indices, "expected two baseline writes after the tracked-value write"
+    assert all(i > transition_index for i in baseline_indices)
 
 
 # ── AC: given a valid SyncConfig missing a link on entry (both ids empty) ──
 
 
 def test_neither_identifier_given_fails_named_without_any_call():
-    transport = FakeTransport(github_updated_at="2026-08-05T00:00:00Z", jira_updated_at="2026-08-05T00:00:00Z")
+    transport = FakeTransport()
 
     result = reconcile(config=CONFIG, transport=transport)
 
@@ -492,11 +647,40 @@ def test_neither_identifier_given_fails_named_without_any_call():
 
 
 def test_empty_string_identifier_is_treated_like_not_given():
-    transport = FakeTransport(github_updated_at="2026-08-05T00:00:00Z", jira_updated_at="2026-08-05T00:00:00Z")
+    transport = FakeTransport()
 
     result = reconcile(github_item_id="", jira_issue_key="", config=CONFIG, transport=transport)
 
     assert result.ok is False
+
+
+def test_both_identifiers_given_and_reciprocal_reconciles_normally():
+    """The "both identifiers given" branch of `_read_both_sides` (as
+    opposed to resolving one via the other's link field) was otherwise
+    untouched by this diff's fixture rewrite -- exercise it directly under
+    the new baseline mechanism, not just the two single-identifier paths
+    every other test in this file drives."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # unchanged
+        },
+        jira_transitions=[{"id": "31", "to": {"name": "In Progress"}}],
+    )
+
+    result = reconcile(
+        github_item_id="ITEM_1", jira_issue_key="PROJ-1", config=CONFIG, transport=transport
+    )
+
+    assert result.ok is True
+    assert result.details["decision"] == "push_to_jira"
+    assert _jira_status(transport) == "In Progress"
 
 
 # ── Review pass 1 findings: reciprocal-link and configured-project validation ──
@@ -509,15 +693,13 @@ def test_mismatched_reciprocal_link_is_rejected():
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "In Progress",
-            "gh_syncpoint": "2026-08-01T00:00:00+00:00",
+            "gh_baseline": '{"status": "To Do"}',
         },
-        github_updated_at="2026-08-05T00:00:00Z",
         jira_fields={
             "status": {"name": "To Do"},
             "jira_link": "ITEM_999",  # does not point back at ITEM_1
-            "jira_syncpoint": "2026-08-05T00:00:00+00:00",
+            "jira_baseline": '{"status": "To Do"}',
         },
-        jira_updated_at="2026-08-01T00:00:00Z",
     )
 
     result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
@@ -530,40 +712,13 @@ def test_mismatched_reciprocal_link_is_rejected():
 def test_jira_issue_outside_configured_project_is_rejected():
     """CONFIG.jira_project_key is 'PROJ'; an issue key from another project
     must be rejected before any state is read from it."""
-    transport = FakeTransport(
-        github_updated_at="2026-08-05T00:00:00Z",
-        jira_updated_at="2026-08-05T00:00:00Z",
-    )
+    transport = FakeTransport()
 
     result = reconcile(jira_issue_key="OTHER-1", config=CONFIG, transport=transport)
 
     assert result.ok is False
     assert "does not belong to configured project" in result.summary
     assert transport.calls == []
-
-
-def test_jira_timestamp_without_colon_in_offset_is_parsed():
-    """Jira Cloud's real wire format is commonly '+0000' with no colon,
-    distinct from every other fixture's 'Z'/'+00:00' style."""
-    transport = FakeTransport(
-        github_fields={
-            "gh_link": "PROJ-1",
-            "gh_status": "To Do",
-            "gh_syncpoint": "2026-08-05T00:00:00+00:00",
-        },
-        github_updated_at="2026-08-01T00:00:00Z",  # stale
-        jira_fields={
-            "status": {"name": "In Progress"},
-            "jira_link": "ITEM_1",
-            "jira_syncpoint": "2026-08-01T00:00:00+0000",
-        },
-        jira_updated_at="2026-08-05T12:00:00.000+0000",  # not stale, no colon in offset
-    )
-
-    result = reconcile(jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
-
-    assert result.ok is True
-    assert result.details["decision"] == "push_to_github"
 
 
 def test_github_graphql_non_dict_response_is_a_named_failure():
@@ -584,7 +739,7 @@ def test_jira_status_field_not_a_mapping_reads_as_unknown_status():
     an unknown status, never raise an unhandled AttributeError."""
 
     def transport(request):
-        payload = {"fields": {"status": "not-a-mapping", "updated": "2026-08-05T00:00:00Z"}}
+        payload = {"fields": {"status": "not-a-mapping"}}
         return TransportResponse(status=200, body=json.dumps(payload).encode())
 
     credential = HostScopedCredential(hosts=("example.atlassian.net",))
@@ -607,3 +762,20 @@ def test_jira_transitions_not_a_list_is_a_named_failure():
         transition_jira_issue(
             "PROJ-1", "In Progress", config=CONFIG, credential=credential, transport=transport
         )
+
+
+def test_parse_baseline_treats_none_and_empty_string_as_never_synced():
+    assert _parse_baseline(None, side="github item", identifier="ITEM_1") == {}
+    assert _parse_baseline("", side="github item", identifier="ITEM_1") == {}
+
+
+def test_parse_baseline_rejects_a_falsy_non_string_value_instead_of_treating_it_as_never_synced():
+    """A baseline field genuinely misconfigured to point at a non-text field
+    (e.g. a Jira Number/Checkbox field returning `0`/`false`) must surface a
+    named, loud failure -- never silently collapse to '{}' the same way an
+    actually-never-synced field does, which would hide a real config
+    mismatch behind indistinguishable "first link" behavior."""
+    with pytest.raises(SyncAPIError, match="malformed baseline field"):
+        _parse_baseline(0, side="jira issue", identifier="PROJ-1")
+    with pytest.raises(SyncAPIError, match="malformed baseline field"):
+        _parse_baseline(False, side="jira issue", identifier="PROJ-1")
