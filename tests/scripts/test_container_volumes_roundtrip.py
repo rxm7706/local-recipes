@@ -42,15 +42,24 @@ def _image_cached() -> bool:
     pulls-if-missing by default. Checking this explicitly (not just that
     `docker` is on PATH) is what actually keeps this suite's "no network
     pull needed" claim true on a docker-equipped host that doesn't happen to
-    have `ubuntu:24.04` cached."""
+    have `ubuntu:24.04` cached.
+
+    Runs at `pytestmark` evaluation time, i.e. module collection -- an
+    uncaught exception here would crash collection of the whole module
+    instead of cleanly skipping it, so a transient docker-daemon hiccup
+    (this repo routinely runs several bmad-loop worktrees against the same
+    daemon) is treated the same as "not cached": skip, don't crash."""
     if shutil.which("docker") is None:
         return False
-    result = subprocess.run(
-        ["docker", "image", "inspect", IMAGE],
-        capture_output=True,
-        text=True,
-        timeout=_DOCKER_TIMEOUT,
-    )
+    try:
+        result = subprocess.run(
+            ["docker", "image", "inspect", IMAGE],
+            capture_output=True,
+            text=True,
+            timeout=_DOCKER_TIMEOUT,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
     return result.returncode == 0
 
 

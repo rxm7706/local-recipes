@@ -308,6 +308,15 @@ def _roundtrip_mount(image: str, mount: str) -> bool:
             file=sys.stderr,
         )
         return False
+    except (OSError, ValueError) as exc:
+        # `OSError` beyond plain `FileNotFoundError` (e.g. `PermissionError` if
+        # `docker` is on PATH but not executable) and `ValueError` (e.g. an
+        # `--image` value `subprocess.run` itself rejects, such as an embedded
+        # NUL byte) both reach here rather than the more specific handlers
+        # above -- mirrors `_remove_volume`'s own general-`OSError` fallback so
+        # this path keeps the same "never a raw traceback" guarantee.
+        print(f"container-gates: volumes-roundtrip: {mount}: {exc}", file=sys.stderr)
+        return False
     finally:
         _remove_volume(volume)
 

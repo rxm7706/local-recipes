@@ -162,9 +162,13 @@ RUN bash -c "source /shell-hook.sh \
 # cannot prove this -- see that script's own header for why).
 #   /pyforge/.steward                       -- steward's own durable store:
 #     keys inventory + budget ceilings (architecture-spine-documented as
-#     "repo-root, tracked... survives bmad-switch"); `steward keys
-#     list`/`budget check` answering correctly from this path after a
-#     restart is CAP-4's own success measure.
+#     "repo-root, tracked... survives bmad-switch" -- that description is of
+#     the HOST checkout; `.dockerignore` excludes `.steward/` from the build
+#     context like every other secret-shaped path, so no tracked content
+#     from the host ever ships in a layer -- every fresh volume here starts
+#     empty and is populated only by what a running container writes into
+#     it); `steward keys list`/`budget check` answering correctly from this
+#     path after a restart is CAP-4's own success measure.
 #   /pyforge/.claude/data/conda-forge-expert -- conda-forge-expert's mutable
 #     runtime cache (cf_atlas.db, vdb/, cve/, mapping caches) -- gitignored,
 #     rebuilt over time, but expensive to lose on every container replace.
