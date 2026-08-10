@@ -33,8 +33,11 @@
 # discovery ingest (`trending_candidates`, the `upstream_discovery` pipeline
 # below) — the former "unshipped Phase T" is no longer wholly uncataloged.
 # Story 13.2 (2026-08-09) landed CAP-2 tier classification
-# (`trending_candidates_classified`). CAP-3 (operator surface) through CAP-5
-# (Mason handoff) remain pending (Stories 13.3-13.5, AD-19).
+# (`trending_candidates_classified`). Story 13.3 (2026-08-09) landed CAP-3, the
+# read-only `trending-candidates` CLI/MCP query surface over that dataset (no new
+# catalog entry — see the comment above `trending_candidates_classified` for its
+# settled cadence decision). CAP-4 (fixed-source audit track) and CAP-5 (Mason
+# handoff) remain pending (Stories 13.4-13.5, AD-19).
 
 # =============================================================================
 # core — conda-side backbone (Phases B / B.5 / B.6 / F / I / J / M)
@@ -835,7 +838,12 @@ trending_candidates:
 # pattern). CADENCE: re-materialized by the WEEKLY bootstrap_data job only — the daily
 # upstream_discovery_trending job selects refresh_trending_candidates alone, so this table
 # trails its own source by up to 6 days. Wiring it to a daily cadence would couple that job
-# to three other pipelines' outputs; deferred to CAP-3 (Story 13.3), the first consumer.
+# to three other pipelines' outputs. CAP-3 (Story 13.3, the first consumer) settled this by
+# DECISION, not a schedule change: the `trending-candidates` CLI/MCP surface reads whatever
+# is currently materialized and surfaces its own build_stamp/build_stamp_newest (AD-17) in
+# every response, so an operator or agent can always see how stale this table is — coupling
+# the classifier to the daily ingest job remains a cross-pipeline scheduling change, still
+# out of scope.
 trending_candidates_classified:
   type: pandas.ParquetDataset
   filepath: data/derived/trending_candidates_classified/trending_candidates_classified.parquet
