@@ -144,7 +144,26 @@ Story 4.3 (review-cap landing, FR-27/AD-24) adds three more methods,
   update would leave ``into`` itself racy the same way), and removes the
   temp worktree in a ``finally`` block on every exit path. See
   ``adapters/vcs_git.py``'s own docstring for the full step-by-step.
-"""
+
+Story 4.12 (a landing leaves the loop home current with ``main``, FR-173)
+adds two more methods, ``cli/land.py``'s own post-merge resync primitives:
+
+- ``fetch`` -- a plain ``git fetch <remote> <ref>`` against ``repo_root``:
+  the one NETWORK read this story adds, updating ONLY the remote-tracking
+  ref (``refs/remotes/<remote>/<ref>``), never any local branch.
+- ``fast_forward`` -- ``git merge --ff-only <ref>`` run inside
+  ``worktree_path``: advances ``worktree_path``'s own checked-out branch to
+  ``ref`` ONLY when it is already an ancestor of ``ref`` -- never a forced
+  merge, ``--no-ff``, rebase, or ``reset --hard``. A diverged branch (e.g. a
+  live bmad-loop run that kept committing past the landed wave) makes git
+  refuse cleanly rather than silently overwriting or rewriting history.
+  Returns the new HEAD sha.
+
+Both raise ``VcsCommandError`` on any failure -- ``cli/land.py`` folds that
+into a single new WARN-tier finding (``MRS-LAND-009``) naming the branch and
+git's own reason, never escalating and never blocking ``land``'s own exit
+(the merge that matters -- the wave landing on ``main`` -- has already
+succeeded by the time this resync step runs)."""
 
 from __future__ import annotations
 
@@ -374,4 +393,25 @@ class VcsPort(Protocol):
         let ``changed_files`` silently under-report the real change set.
         Raises ``VcsCommandError`` if ``worktree_path`` is not inside a git
         repository or has no commits checked out at all."""
+        ...
+
+    def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
+        """Story 4.12 (FR-173): ``git fetch <remote> <ref>`` against
+        ``repo_root`` -- a NETWORK read updating ONLY the remote-tracking
+        ref ``refs/remotes/<remote>/<ref>``, never any local branch.
+        Raises ``VcsCommandError`` on any git failure (no network, an
+        unknown remote, an unresolvable ``ref``)."""
+        ...
+
+    def fast_forward(self, worktree_path: Path, ref: str) -> str:
+        """Story 4.12 (FR-173): ``git merge --ff-only <ref>`` run inside
+        ``worktree_path`` -- advances ``worktree_path``'s own checked-out
+        branch to ``ref`` ONLY when it is already an ancestor of ``ref``.
+        Never a forced merge, ``--no-ff``, rebase, or ``reset --hard`` -- no
+        history rewrite, ever. Returns the new HEAD sha (``git rev-parse
+        HEAD`` immediately after). Raises ``VcsCommandError`` if the merge
+        is not a fast-forward (a diverged branch), the working tree is
+        dirty, a lock is held, or on any other git failure -- the caller
+        treats that as a reportable, non-blocking condition, never a
+        history-rewriting fallback."""
         ...
