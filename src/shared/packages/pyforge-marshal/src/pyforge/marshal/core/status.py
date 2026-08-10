@@ -808,6 +808,17 @@ class FleetHomeFacts:
     # ``cli/status.py`` is the one that knows which case it is and emits the
     # matching WARN finding).
     unpushed_work: dict[str, object] | None = None
+    # Story 4.14 (FR-176): every `.bmad-loop/runs/*/failed/*/changes.patch`
+    # `cli/status.py` found under this home (a bare `Path.glob`, gathered
+    # once per home regardless of journal readability), each already
+    # classified as `{"story_key": str, "run_id": str, "path": str,
+    # "size_bytes": int, "done": bool | None}`. Unlike `unpushed_work`, this
+    # field is never hardcoded away in a degraded row (see
+    # `build_fleet_row`'s own comment for `unpushed_work` above, which this
+    # mirrors): it is an INDEPENDENT filesystem signal with no "could not be
+    # consulted" case of its own -- a glob that finds nothing IS the clean
+    # answer (`()`), so there is nothing to suppress.
+    failed_patches: tuple[dict[str, object], ...] = ()
 
 
 def is_run_live(facts: FleetHomeFacts) -> bool:
@@ -880,6 +891,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "escalation_reason": None,
             "escalation_artifact": None,
             "unpushed_work": facts.unpushed_work,
+            "failed_patches": facts.failed_patches,
         }
         finding = Finding(
             code=_MALFORMED_JOURNAL_CODE,
@@ -904,6 +916,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "escalation_reason": None,
             "escalation_artifact": None,
             "unpushed_work": facts.unpushed_work,
+            "failed_patches": facts.failed_patches,
         }
         return row, None
 
@@ -961,6 +974,10 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         # verbatim -- never re-derived here (AD-48). `None` when no
         # matching finding exists, or the detector could not be consulted.
         "unpushed_work": facts.unpushed_work,
+        # Story 4.14: the caller's own already-classified failed-story
+        # patches, verbatim -- never re-derived here (see `FleetHomeFacts.
+        # failed_patches`'s own docstring above).
+        "failed_patches": facts.failed_patches,
     }
     return row, None
 

@@ -674,6 +674,17 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
 # a landing story's Tier-3 followup deferral simply stays unpromoted for
 # this run, re-attempted on the next.
+# Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
+# codes to cli/status.py's own MRS-STATUS-* area, both WARN: MRS-STATUS-010
+# (a failed-story patch found via a bare Path.glob over
+# .bmad-loop/runs/*/failed/*/changes.patch is not confirmed durably merged
+# into main, per core.promotion.merged_story_keys -- including a patch
+# whose own story-dir name does not even parse as a story key, which
+# cannot be proven landed either) and MRS-STATUS-011 (main's own commit
+# history could not be read at all while classifying these patches -- the
+# read is attempted at most once, lazily, for the whole sweep, mirroring
+# MRS-STATUS-009's identical "the read failed, degrade every affected
+# value to unknown, never a hard failure" reasoning).
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -848,6 +859,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-PREFLIGHT-012": Verdict.ERROR,
     "MRS-LAND-009": Verdict.WARN,
     "MRS-LAND-010": Verdict.WARN,
+    "MRS-STATUS-010": Verdict.WARN,
+    "MRS-STATUS-011": Verdict.WARN,
 }
 
 
