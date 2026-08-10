@@ -2534,7 +2534,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "8.1",
-            175
+            227
           ],
           [
             "8.2",
@@ -2567,8 +2567,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 1416,
-        "totalLabel": "~23.6 h active compute",
+        "total": 1468,
+        "totalLabel": "~24.5 h active compute",
         "note": "Derived from 14 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 69,
@@ -2583,7 +2583,7 @@ window.DASHBOARD_DATA = {
           "7.3": 165,
           "7.4": 86,
           "7.5": 43,
-          "8.1": 175,
+          "8.1": 227,
           "8.2": 4
         },
         "epicMin": {
@@ -2591,7 +2591,7 @@ window.DASHBOARD_DATA = {
           "E5": 42,
           "E6": 141,
           "E7": 546,
-          "E8": 179
+          "E8": 231
         }
       },
       "lineState": {
@@ -3419,7 +3419,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 07:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 07:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4555,7 +4555,7 @@ window.DASHBOARD_DATA = {
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-09",
+      "updated": "2026-08-10",
       "dream": "pyforge-steward",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
     },
@@ -5950,7 +5950,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-02",
           "epics": "2026-08-02",
-          "sprint": "2026-08-09",
+          "sprint": "2026-08-10",
           "tea": "2026-08-10",
           "gates": "2026-08-01",
           "code": "2026-08-09",
@@ -6205,7 +6205,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-09T05:14",
+          "spec": "2026-08-10T05:13",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6288,7 +6288,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-09T05:14",
+            "at": "2026-08-10T05:13",
             "other": "2026-08-01"
           }
         ],
@@ -13149,7 +13149,7 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 211,
+    "open": 212,
     "done": 21,
     "triaged": 143,
     "bySeverity": {
@@ -13157,7 +13157,7 @@ window.DASHBOARD_DATA = {
       "high": 1,
       "medium": 2,
       "low": 21,
-      "unspecified": 187
+      "unspecified": 188
     },
     "projects": [
       {
@@ -14822,7 +14822,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-mason",
         "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
-        "open": 4,
+        "open": 5,
         "done": 0,
         "triaged": 0,
         "entries": [
@@ -14850,6 +14850,13 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-1-4-2",
             "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-10-configuration-surface-logging-and-child-output-streaming.m",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
@@ -14881,15 +14888,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "marshal",
-      "story": "4.13",
-      "epoch": 1786344542,
-      "sha": "073f33760",
-      "subject": "Merge bmad-loop/20260809-231524-abb9/4-13-the-loops-deferred-work-reaches-the-tracked-ledger into loop/pyforge-marshal ("
+      "station": "mason",
+      "story": "1.10",
+      "epoch": 1786344910,
+      "sha": "0d8f54d64",
+      "subject": "Merge bmad-loop/20260809-231234-a3cb/1-10-configuration-surface-logging-and-child-output-streaming into loop/pyforge-mas"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-10 07:04 UTC",
-    "generatedEpoch": 1786345448
+    "generatedAt": "2026-08-10 07:10 UTC",
+    "generatedEpoch": 1786345845
   },
   "storySpecs": [
     {
