@@ -1,10 +1,11 @@
 ---
 id: SPEC-artifact-chain-reconciliation
 spec: artifact-chain-reconciliation
-status: ready
+status: in-progress
 owner-dream: docs/dreams/artifact-chain-reconciliation.md
 companions:
   - audit-method.md
+  - dream-inventory-2026-08-10.md
 sources:
   - ../../../../../../docs/dreams/artifact-chain-reconciliation.md
 assumptions:
