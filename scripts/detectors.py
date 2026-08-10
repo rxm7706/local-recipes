@@ -80,9 +80,21 @@ SEARCH = (
 
 SCOPES = ("repo", "runtime")
 
+# Sentinel for `_declared_scope`: a file matches the `*_check.py`/`check_*.py`
+# glob but explicitly opts out via `DETECTOR = None` -- a residual mutation-only
+# script (Story 6.9 reduced `spec_surface_check.py`/`bmad_drift_check.py` this
+# way) that keeps its historical name for doc/CLI continuity but was never a
+# detector and should not trip the "looks like one but declares nothing"
+# registry gap below.
+_NOT_A_DETECTOR = object()
 
-def _declared_scope(path: pathlib.Path) -> str | None:
-    """Read `DETECTOR = {...}` from a module without importing it."""
+
+def _declared_scope(path: pathlib.Path) -> str | None | object:
+    """Read `DETECTOR = {...}` from a module without importing it.
+
+    Returns a scope string, `None` (no/invalid `DETECTOR` -- a registry gap),
+    or `_NOT_A_DETECTOR` (`DETECTOR = None` -- an explicit, intentional opt-out).
+    """
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (OSError, SyntaxError):
@@ -96,9 +108,12 @@ def _declared_scope(path: pathlib.Path) -> str | None:
             value = ast.literal_eval(node.value)
         except ValueError:
             return None
+        if value is None:
+            return _NOT_A_DETECTOR
         if isinstance(value, dict):
             scope = value.get("scope")
             return scope if scope in SCOPES else None
+        return None
     return None
 
 
@@ -127,6 +142,8 @@ def discover() -> tuple[list[dict], list[str]]:
         for path in sorted(directory.glob(pattern)):
             rel = path.relative_to(ROOT).as_posix()
             scope = _declared_scope(path)
+            if scope is _NOT_A_DETECTOR:
+                continue
             if scope is None:
                 findings.append(
                     f"{rel}: looks like a detector but declares no valid "

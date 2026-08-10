@@ -36,8 +36,16 @@ if str(_DOCTOR_SRC) not in sys.path:
 
 
 def main() -> int:
-    from pyforge.doctor.models import DoctorStatus
-    from pyforge.doctor.sources.chain import gather_spec_surface
+    try:
+        from pyforge.doctor.models import DoctorStatus
+        from pyforge.doctor.sources.chain import gather_spec_surface
+    except ImportError as exc:
+        # chain.py needs PyYAML; a truly bare interpreter (no pixi env, no
+        # pip install -- this script's whole reason to exist) may not have
+        # it. Degrade to "cannot run", never a silent crash or a false green.
+        print(f"pyforge.doctor unavailable in this interpreter ({exc}); "
+              f"cannot reconcile.", file=sys.stderr)
+        return 2
 
     findings = gather_spec_surface(REPO_ROOT)
     gating = [f for f in findings if f.status is DoctorStatus.FAIL]

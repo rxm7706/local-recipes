@@ -23,7 +23,10 @@ _bmad-output/**          # the contracts themselves (bmad-drift-check governs)
 # NOT ownership. These are exemptions pending the Charter §6 re-home that moves each
 # verdict to Doctor (`sources/*.py`, structurally barred from importing the station it
 # judges — the pattern sources/marshal.py established 2026-08-08). Delete each line as
-# its detector lands in Doctor.
+# its detector lands in Doctor -- EXCEPT the two residual mutation-only entries below
+# (spec_surface_check.py, bmad_drift_check.py): their verdicts already landed, but the
+# files stay on disk permanently for --fix/--write-baseline capability Doctor's
+# read-only ports deliberately don't have, so their lines don't delete when the rest do.
 scripts/spec_surface_check.py         # mutation-only residual (Story 6.9 review pass 1) — no longer a detector (no DETECTOR marker); the read-only coverage/drift verdict retired into spec-pyforge-doctor-governed sources/chain.py::gather_spec_surface. Kept for --write-baseline/--spec NAME, live-depended-on by SYNC-RUNBOOK.md Step 3 and spec-surface-drift-reconciliation's own active CAP-1.
 scripts/bmad_drift_check.py           # mutation-only residual (Story 6.9 review pass 1) — no longer a detector (no DETECTOR marker); the read-only 18-finding-kind verdict retired into spec-pyforge-doctor-governed sources/factory.py::gather. Kept for --json/--groundtruth, --specs, --fix, --write-baseline, live-depended-on by SYNC-RUNBOOK.md and CLAUDE.md's own Sync-loop section.
 scripts/spec_surface_reconcile.py     # bmad-loop's own install-free S-13.7 verify-step command (harness_bmadloop.py's _SURFACE_RECONCILE_COMMAND) — reaches sources/chain.py::gather_spec_surface via a sys.path insert, never pip/pixi. Not a detector: no pixi task invokes it by name, no DETECTOR marker.

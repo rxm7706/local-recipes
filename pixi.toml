@@ -429,7 +429,7 @@ description = "Verify local-recipes env, BMAD installation, and active project b
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
 [feature.local-recipes.tasks.bmad-drift-check]
-description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are read-only-gather scope, not ported. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
+description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python -m pyforge.doctor.sources bmad-drift"
 
 [feature.local-recipes.tasks.bmad-groundtruth]

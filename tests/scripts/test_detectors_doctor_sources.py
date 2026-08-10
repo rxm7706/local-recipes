@@ -165,3 +165,49 @@ def test_main_scope_repo_reports_ten_unknown_rows_and_never_exits_zero_when_unim
     out = capsys.readouterr().out
     unknown_lines = [ln for ln in out.splitlines() if "unknown" in ln and ln.strip().startswith("?")]
     assert len(unknown_lines) == 10, out
+
+
+def test_discover_reports_zero_registry_findings_against_the_real_scripts_tree():
+    """Regression pin for the gap review pass 2 found: nothing exercised
+    ``discover()`` against this checkout's OWN live ``scripts/``/
+    ``docs/dashboard/`` tree, so ``spec_surface_check.py``/
+    ``bmad_drift_check.py`` matching the ``*_check.py`` glob with no
+    ``DETECTOR`` marker (Story 6.9 review pass 1 reduced both to
+    mutation-only residuals) went undetected as a permanent registry red
+    until an adversarial pass caught it live. The synthetic fixture above
+    can't catch this class of gap by construction -- it never has any
+    matching file on disk."""
+    _detectors, registry_findings = detectors.discover()
+
+    assert registry_findings == [], (
+        "a *_check.py-named file with no DETECTOR marker must explicitly "
+        "opt out via `DETECTOR = None`, not silently trip the registry gap"
+    )
+
+
+def test_declared_scope_treats_detector_none_as_an_explicit_opt_out(tmp_path: Path):
+    opt_out = tmp_path / "residual_check.py"
+    opt_out.write_text("DETECTOR = None\n", encoding="utf-8")
+    missing = tmp_path / "forgotten_check.py"
+    missing.write_text("X = 1\n", encoding="utf-8")
+
+    assert detectors._declared_scope(opt_out) is detectors._NOT_A_DETECTOR
+    assert detectors._declared_scope(missing) is None
+
+
+def test_discover_skips_detector_none_files_without_a_registry_finding(monkeypatch, tmp_path: Path):
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "docs" / "dashboard").mkdir(parents=True)
+    (tmp_path / "pixi.toml").write_text("", encoding="utf-8")
+    (tmp_path / "scripts" / "residual_check.py").write_text("DETECTOR = None\n", encoding="utf-8")
+    monkeypatch.setattr(detectors, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        detectors, "SEARCH",
+        ((tmp_path / "scripts", "*_check.py"),
+         (tmp_path / "docs" / "dashboard", "check_*.py")),
+    )
+
+    found, registry_findings = detectors.discover()
+
+    assert found == []
+    assert registry_findings == []

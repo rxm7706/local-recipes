@@ -64,6 +64,12 @@ import sys
 import argparse
 from pathlib import Path
 
+# Explicit opt-out: this file still matches detectors.py's `*_check.py` glob
+# by name (kept for doc/CLI continuity), but Story 6.9 reduced it to a
+# mutation-only residual -- it is not a detector and must not trip the
+# registry's "looks like one but declares nothing" gap.
+DETECTOR = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILL = REPO_ROOT / ".claude" / "skills" / "conda-forge-expert"
 # The factory document set moved local-recipes -> pyforge-marshal on 2026-07-28: the
@@ -385,6 +391,21 @@ def classify(path: Path) -> str:
 
 
 # ----------------------------------------------------------------------- fix
+def _remaining_after_fix() -> list | None:
+    """Re-gather the verdict install-free, for `--fix` to report what it
+    couldn't auto-remediate. Returns `None` if `pyforge.doctor` can't be
+    reached (never a silent 0 or a raw traceback)."""
+    try:
+        doctor_src = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
+        if str(doctor_src) not in sys.path:
+            sys.path.insert(0, str(doctor_src))
+        from pyforge.doctor.models import DoctorStatus
+        from pyforge.doctor.sources.factory import gather
+    except ImportError:
+        return None
+    return [f for f in gather(REPO_ROOT) if f.status is DoctorStatus.FAIL]
+
+
 def do_fix() -> list[str]:
     actions = []
     if PLAN.is_dir():
@@ -463,6 +484,23 @@ def main(argv: list[str] | None = None) -> int:
         print("FIX applied:" if actions else "FIX: nothing to remediate.")
         for a in actions:
             print(f"  - {a}")
+        # do_fix() only remediates the mechanical classes (archive moves,
+        # stray-file removal) -- pin drift, coverage gaps, etc. still need
+        # human/spec action. Re-check afterward instead of unconditionally
+        # returning 0, matching the pre-Story-6.9 behavior of `cmd_check`.
+        remaining = _remaining_after_fix()
+        if remaining is None:
+            print("\ncould not re-check after fix (pyforge.doctor unavailable); "
+                  "run `python -m pyforge.doctor.sources bmad-drift` separately.",
+                  file=sys.stderr)
+            return 2
+        if remaining:
+            print(f"\n{len(remaining)} finding(s) remain after fix — not "
+                  f"auto-fixable. See SYNC-RUNBOOK.md.")
+            for f in remaining:
+                print(f"  - [{f.check}] {f.message}")
+            return 1
+        print("\nOK: no findings remain after fix.")
         return 0
     print(
         "this script no longer computes the drift verdict -- run "

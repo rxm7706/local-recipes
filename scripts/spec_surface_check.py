@@ -42,6 +42,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Explicit opt-out: this file still matches detectors.py's `*_check.py` glob
+# by name (kept for doc/CLI continuity), but Story 6.9 reduced it to a
+# mutation-only residual -- it is not a detector and must not trip the
+# registry's "looks like one but declares nothing" gap.
+DETECTOR = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SPEC_GLOB = "_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md"
 BASELINE = REPO_ROOT / "scripts" / ".spec-surface-baseline.json"

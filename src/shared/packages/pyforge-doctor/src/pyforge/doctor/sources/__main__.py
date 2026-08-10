@@ -31,13 +31,14 @@ the repo it runs in" means for a module that ships as a built package.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
 from ..models import Finding, Source
-from ..verdict import exit_code_for
+from ..verdict import EXIT_SIGINT, exit_code_for
 from . import board, chain, deps, factory, ledger, marshal
 
 __all__ = ("main", "DISPATCH")
@@ -112,7 +113,16 @@ def main(argv: list[str] | None = None) -> int:
     target = Path(".")
 
     if args.groundtruth:
-        print(json.dumps(factory.ground_truth(target), indent=2, sort_keys=True))
+        try:
+            gt = factory.ground_truth(target)
+        except Exception as exc:
+            # Unlike every DISPATCH entry (wrapped by `gather()`'s own
+            # degrade_on_exception), this call goes straight through --
+            # a bad-but-present pixi.toml/CHANGELOG.md/SKILL.md raises
+            # rather than degrading. Never a raw traceback here.
+            print(f"could not gather ground truth: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(gt, indent=2, sort_keys=True))
         return 0
 
     findings = DISPATCH[args.source](target)
@@ -130,4 +140,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # check-layout drives a real browser and can hang; the retired
+    # docs/dashboard/check_layout.py had this same suppress-and-130
+    # handling directly in its own __main__ block.
+    with contextlib.suppress(KeyboardInterrupt):
+        sys.exit(main())
+    sys.exit(EXIT_SIGINT)
