@@ -2477,7 +2477,7 @@ window.DASHBOARD_DATA = {
         "median": 64,
         "lo": 10,
         "hi": 360,
-        "phaseAsOf": "2026-08-10 12:41 UTC"
+        "phaseAsOf": "2026-08-10 12:48 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2537,7 +2537,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "8.2",
-            10
+            19
           ]
         ],
         "foot": [
@@ -2547,7 +2547,7 @@ window.DASHBOARD_DATA = {
             "var(--done)"
           ],
           [
-            "10–360 min",
+            "19–360 min",
             "observed range",
             ""
           ],
@@ -2566,8 +2566,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 1534,
-        "totalLabel": "~25.6 h active compute",
+        "total": 1543,
+        "totalLabel": "~25.7 h active compute",
         "note": "Derived from 14 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 69,
@@ -2583,14 +2583,14 @@ window.DASHBOARD_DATA = {
           "7.4": 86,
           "7.5": 43,
           "8.1": 287,
-          "8.2": 10
+          "8.2": 19
         },
         "epicMin": {
           "E1": 508,
           "E5": 42,
           "E6": 141,
           "E7": 546,
-          "E8": 297
+          "E8": 306
         }
       },
       "lineState": {
@@ -3418,7 +3418,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 12:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 12:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -15006,15 +15006,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "marshal",
-      "story": "4.15",
-      "epoch": 1786358153,
-      "sha": "442dbc705",
-      "subject": "Merge bmad-loop/20260809-231524-abb9/4-15-one-pusher-not-two into loop/pyforge-marshal (bmad-loop)"
+      "station": "steward",
+      "story": "8.1",
+      "epoch": 1786365517,
+      "sha": "fa86f1f0d",
+      "subject": "Merge bmad-loop/20260810-063828-0c71/8-1-bidirectional-propagation into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 12:41 UTC",
-    "generatedEpoch": 1786365676
+    "generatedAt": "2026-08-10 12:48 UTC",
+    "generatedEpoch": 1786366127
   },
   "storySpecs": [
     {
