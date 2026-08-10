@@ -21,3 +21,5 @@ letting the index grow unbounded.
 ## Project
 
 ## Reference
+
+- [bmad-loop escalation & landing traps](reference/bmad-loop-escalation-and-landing-traps.md) — re-arm defaults to re-implementing from scratch; `--no-interactive` is NOT the safe flag; diff the restore patch against current main; `dashboard-gen` defaults to the intent feed
