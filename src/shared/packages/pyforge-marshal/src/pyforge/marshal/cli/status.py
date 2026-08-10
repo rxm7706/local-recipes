@@ -98,6 +98,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
@@ -720,10 +721,24 @@ def _gather_failed_patches(home: Path) -> tuple[tuple[Path, int], ...]:
     (no directory-listing primitive exists on that port; adding one for
     this single, read-only caller would be disproportionate -- mirrors
     ``cli/spin.py::_latest_run_dir``'s own documented, identical
-    precedent). Sorted for a deterministic sweep order; an unreadable
-    ``.bmad-loop`` tree (permission failure, or simply absent) degrades to
-    "none found", the same failure handling ``_latest_run_dir`` itself
-    already uses.
+    precedent). Sorted for a deterministic sweep order; an absent
+    ``.bmad-loop`` tree degrades to "none found", the same failure handling
+    ``_latest_run_dir`` itself already uses.
+
+    **A permission failure does NOT reach the ``except OSError`` below**
+    (review finding, 2026-08-10, pass 5 -- this docstring previously said
+    it did, contradicting ``core/status.py::FleetHomeFacts.failed_patches``,
+    which states the real behaviour). ``Path.glob`` suppresses the
+    ``OSError`` from an unreadable directory mid-traversal and silently
+    yields a PARTIAL result: verified on CPython 3.14.6, ``chmod 000`` on
+    one ``failed/<story>/`` makes just that patch vanish while its siblings
+    are still reported, and ``chmod 000`` on ``failed/`` empties the home
+    -- neither raises, so neither is distinguishable here from "clean". The
+    ``except OSError`` guards only a failure raised before iteration
+    begins. This is a known, recorded limit of this signal, deferred rather
+    than reported (closing it honestly needs enumeration-integrity
+    reporting under a new finding code); do NOT read ``()`` as proof the
+    tree was fully read.
 
     **EVERY reportability test lives HERE, never at the caller's per-entry
     loop** -- so a non-empty return genuinely means "there is something to
@@ -767,6 +782,11 @@ def _gather_failed_patches(home: Path) -> tuple[tuple[Path, int], ...]:
     return tuple(pairs)
 
 
+# Every C0 control, DEL, and the three non-C0 characters `str.splitlines`
+# also breaks on (NEL, LINE SEPARATOR, PARAGRAPH SEPARATOR). See `_one_line`.
+_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f\x85\u2028\u2029]+")
+
+
 def _one_line(value: object) -> str:
     """``value`` as a single-line ``str`` (Story 4.14) -- the SAME
     newline-stripping ``_render_text_status`` already applies to
@@ -783,8 +803,19 @@ def _one_line(value: object) -> str:
     review finding 2026-08-10 pass 4, and the identical class already fixed
     in ``cli/config.py``. The wider, cross-cutting gap this does NOT close
     (``MRS-STATUS-008``'s own ``remedy``/``stat`` interpolation shares it)
-    stays recorded in the deferred-work ledger."""
-    return str(value).replace("\n", " ").replace("\r", " ").strip()
+    stays recorded in the deferred-work ledger.
+
+    Every character ``str.splitlines`` treats as a line break is collapsed,
+    not only ``\\n``/``\\r`` (review finding, 2026-08-10, pass 5). The
+    original pair was too narrow for this function's OWN stated threat
+    model: if a ``failed/<story>/`` directory name may legally carry a
+    newline then it may equally carry ``\\v``, ``\\f``, ``\\x1c``-``\\x1e``,
+    ``\\x85``, ``\\u2028`` or ``\\u2029`` -- all legal in a POSIX/UTF-8
+    filename, all split by ``splitlines`` (the very method this story's own
+    forged-line test asserts with), and several rendered as a line break by
+    a terminal. Also collapses the remaining C0 controls and ``\\x7f``,
+    which cannot forge a line but can rewrite one already printed."""
+    return _CONTROL_RE.sub(" ", str(value)).strip()
 
 
 def _name_patches(named: list[tuple[str, dict[str, object]]]) -> str:
@@ -801,9 +832,20 @@ def _name_patches(named: list[tuple[str, dict[str, object]]]) -> str:
     construction -- live, ``pyforge-doctor`` and ``pyforge-warden`` both
     carry a ``6-9-*`` patch, so a bare-key rendering emitted ``6.9, 6.9``
     and named neither. Sorted for determinism and ``_one_line``-sanitized,
-    since an entry's key may fall back to a raw POSIX directory name."""
+    since an entry's key may fall back to a raw POSIX directory name.
+
+    ``@<run_id>`` closes the SAME collision one level down (review finding,
+    2026-08-10, pass 5): a home accumulates one ``failed/<story>/`` per
+    killed attempt, so repeated attempts at ONE story in ONE home rendered
+    identically -- live, ``pyforge-steward`` carries three run dirs, and the
+    degenerate case read ``(steward/8.1, steward/8.1, steward/8.1)`` and
+    located none of them. This is exactly why ``MRS-STATUS-010`` already
+    names ``run_id`` (review finding, pass 2); ``MRS-STATUS-011`` is the
+    ONLY report a ``done: null`` patch ever gets, since ``010`` fires solely
+    for ``done is False``, so the omission bit harder here."""
     keys = sorted(
         f"{_one_line(slug)}/{_one_line(entry.get('story_key'))}"
+        f"@{_one_line(entry.get('run_id'))}"
         for slug, entry in named
     )
     if not keys:
@@ -1220,9 +1262,11 @@ def run_status(
                             "policy did not resolve cleanly "
                             f"({', '.join(withheld_codes)}, withheld here so "
                             "a policy problem cannot change this command's "
-                            "exit code -- run `marshal status --project "
-                            f"{slug} --reconcile-ledger` for the finding "
-                            "itself), so its failed-story patches cannot be "
+                            "exit code -- `marshal status --project "
+                            f"{slug} --reconcile-ledger` surfaces the "
+                            "finding itself, once that project has a "
+                            "readable tracked ledger), so its failed-story "
+                            "patches cannot be "
                             "classified against a trusted template: "
                             f"{_name_patches([(slug, e) for e in failed_patches])} "
                             "report done: null (landed-status unknown)"
@@ -1318,7 +1362,21 @@ def run_status(
                 severity=Severity.WARN,
                 message=(
                     f"cannot read {_MERGE_BASE_BRANCH!r}'s commit history to "
-                    f"classify failed-story patches: {main_read_error} -- "
+                    "classify failed-story patches: "
+                    # `_one_line` HERE too, not only on the story key and
+                    # path (review finding, 2026-08-10, pass 5). This
+                    # interpolates git's own stderr, which is routinely
+                    # MULTI-LINE -- a missing local `main` yields three
+                    # lines ("fatal: ambiguous argument 'main'...", "Use
+                    # '--' to separate paths...", "'git <command> ...'").
+                    # `_render_text_status`'s findings block prints one
+                    # finding per line without escaping, so the unsanitized
+                    # form split ONE WARN across three output lines, two of
+                    # them starting with git-controlled text and no
+                    # `MRS-...` prefix. Pass 4 closed this class for
+                    # `MRS-STATUS-010`'s operands and left the arm whose
+                    # trigger is the ordinary, non-adversarial one open.
+                    f"{_one_line(main_read_error)} -- "
                     f"{_name_patches(main_unavailable)} found this sweep "
                     "report done: null (landed-status unknown)"
                 ),
