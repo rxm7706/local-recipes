@@ -2468,7 +2468,17 @@ window.DASHBOARD_DATA = {
         "E3",
         "E4"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "8.1",
+        "title": "Bidirectional propagation",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1786361908,
+        "median": 64,
+        "lo": 10,
+        "hi": 360,
+        "phaseAsOf": "2026-08-10 12:17 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 33 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -2542,12 +2552,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "29/33",
+            "28/33",
             "stories complete",
             "var(--done)"
           ],
           [
-            "4",
+            "5",
             "remaining",
             ""
           ]
@@ -2584,8 +2594,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "8.2"
+        "state": "in flight",
+        "at": "8.1"
       },
       "epics": [
         {
@@ -2776,7 +2786,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "8.1",
-              "done",
+              "active",
               "Bidirectional propagation"
             ],
             [
@@ -3408,7 +3418,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 12:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 12:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6306,7 +6316,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "29/33",
+        "progress": "28/33",
         "complete": 14,
         "of": 14
       },
@@ -13197,7 +13207,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 1
         },
-        "line": "paused 8.2",
+        "line": "in flight 8.1",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -14986,8 +14996,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "status": {
-    "source": "git",
-    "running": [],
+    "source": "sprint-status",
+    "running": [
+      {
+        "station": "Steward",
+        "story": "8.1",
+        "phase": "dev",
+        "startEpoch": 1786361908
+      }
+    ],
     "lastShipped": {
       "station": "marshal",
       "story": "4.15",
@@ -14995,9 +15012,9 @@ window.DASHBOARD_DATA = {
       "sha": "442dbc705",
       "subject": "Merge bmad-loop/20260809-231524-abb9/4-15-one-pusher-not-two into loop/pyforge-marshal (bmad-loop)"
     },
-    "runningAvailable": false,
-    "generatedAt": "2026-08-10 12:11 UTC",
-    "generatedEpoch": 1786363914
+    "runningAvailable": true,
+    "generatedAt": "2026-08-10 12:17 UTC",
+    "generatedEpoch": 1786364234
   },
   "storySpecs": [
     {
@@ -15313,7 +15330,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 12,
         "epicsDone": 12,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 46
       },
       {
         "key": "doctor",
@@ -15322,7 +15341,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 6,
         "epicsDone": 6,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 28
       },
       {
         "key": "herald",
@@ -15331,7 +15352,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 12,
         "epicsDone": 12,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 47
       },
       {
         "key": "marshal",
@@ -15340,7 +15363,9 @@ window.DASHBOARD_DATA = {
         "blocked": 1,
         "epics": 13,
         "epicsDone": 7,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 67
       },
       {
         "key": "mason",
@@ -15349,7 +15374,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 5,
         "epicsDone": 1,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 10
       },
       {
         "key": "scribe",
@@ -15358,7 +15385,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 2,
         "epicsDone": 2,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 9
       },
       {
         "key": "steward",
@@ -15367,7 +15396,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 8,
         "epicsDone": 7,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 28
       },
       {
         "key": "warden",
@@ -15376,7 +15407,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 6,
         "epicsDone": 6,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 31
       }
     ],
     "total": {
@@ -15386,6 +15419,10 @@ window.DASHBOARD_DATA = {
       "epics": 64,
       "epicsDone": 53
     },
-    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`)."
+    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
+    "live": {
+      "running": [],
+      "projected": 266
+    }
   }
 };
