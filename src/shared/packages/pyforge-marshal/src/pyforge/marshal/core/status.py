@@ -808,6 +808,54 @@ class FleetHomeFacts:
     # ``cli/status.py`` is the one that knows which case it is and emits the
     # matching WARN finding).
     unpushed_work: dict[str, object] | None = None
+    # Story 4.14 (FR-176): every `.bmad-loop/runs/*/failed/*/changes.patch`
+    # `cli/status.py` found under this home (a bare `Path.glob`, gathered
+    # once per home regardless of journal readability), each already
+    # classified as `{"story_key": str, "run_id": str, "path": str,
+    # "size_bytes": int, "done": bool | None, "confidence": str}`. Unlike
+    # `unpushed_work`, this field is never hardcoded away in a degraded row
+    # (see `build_fleet_row`'s own comment for `unpushed_work` above, which
+    # this mirrors): it is an INDEPENDENT filesystem signal, gathered from
+    # this home's own directory tree rather than from an external detector
+    # that could be missing, so `()` is the ordinary clean answer and there
+    # is nothing for a degraded row to suppress.
+    #
+    # `()` is NOT, however, unconditionally proof that the tree was read
+    # (review finding, 2026-08-10, pass 3 -- this comment previously claimed
+    # this field had "no could-not-be-consulted case of its own", which the
+    # caller contradicts): `cli/status.py::_gather_failed_patches` degrades
+    # an unreadable `.bmad-loop` tree to `()` deliberately, following
+    # `cli/spin.py::_latest_run_dir`'s own precedent, and `Path.glob` itself
+    # silently yields a PARTIAL result when an intermediate directory is
+    # unreadable (verified against CPython 3.14). Both are recorded, known
+    # limits of this signal, deferred rather than reported; do not read `()`
+    # as "the filesystem was definitely consulted and definitely clean".
+    #
+    # `confidence` is this module's OWN `CONFIDENCE_CONFIRMED`/
+    # `CONFIDENCE_UNCONFIRMED` (below), never a third vocabulary: a
+    # `done: true` entry is `CONFIDENCE_CONFIRMED` (a POSITIVE
+    # `core.promotion.merged_story_keys` match is the stronger direction),
+    # while both `done: false` and `done: null` are
+    # `CONFIDENCE_UNCONFIRMED` -- an ABSENCE of a match proves nothing (the
+    # squash-merge blind spot that constant block documents in full,
+    # re-confirmed live on 2026-08-10: 2 of 3 real `MRS-STATUS-010` WARNs
+    # against the live 12-patch fleet were false).
+    # `reconcile_ledger_vs_git` below already tags the identical evidence
+    # source exactly this way.
+    #
+    # `CONFIDENCE_CONFIRMED` here is NOT unqualified proof, and this field
+    # must not be read as such (review finding, 2026-08-10, pass 4 -- the
+    # same overclaim-correction this docstring's paragraph above already
+    # applied to `()`): the POSITIVE direction has a verified contamination
+    # of its own, recorded as an open deferral against `core/promotion.py`.
+    # `extract_story_key_from_github_merge_subject` takes no `project_slug`,
+    # so one station's `<epic>.<seq>` matches on another station's PR-merge
+    # subject -- measured 2026-08-10, `pyforge-mason`/`-doctor`/`-scribe`
+    # each resolve ~30 keys, most belonging to other stations. A false
+    # `done: true` therefore silences this net for exactly the story it
+    # exists to protect. Both directions of this signal are best-effort;
+    # only their failure modes differ (noise vs. silence).
+    failed_patches: tuple[dict[str, object], ...] = ()
 
 
 def is_run_live(facts: FleetHomeFacts) -> bool:
@@ -880,6 +928,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "escalation_reason": None,
             "escalation_artifact": None,
             "unpushed_work": facts.unpushed_work,
+            "failed_patches": facts.failed_patches,
         }
         finding = Finding(
             code=_MALFORMED_JOURNAL_CODE,
@@ -904,6 +953,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "escalation_reason": None,
             "escalation_artifact": None,
             "unpushed_work": facts.unpushed_work,
+            "failed_patches": facts.failed_patches,
         }
         return row, None
 
@@ -961,6 +1011,10 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         # verbatim -- never re-derived here (AD-48). `None` when no
         # matching finding exists, or the detector could not be consulted.
         "unpushed_work": facts.unpushed_work,
+        # Story 4.14: the caller's own already-classified failed-story
+        # patches, verbatim -- never re-derived here (see `FleetHomeFacts.
+        # failed_patches`'s own docstring above).
+        "failed_patches": facts.failed_patches,
     }
     return row, None
 

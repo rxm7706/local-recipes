@@ -324,6 +324,25 @@ run at all -- missing script, launch failure, its own documented
 ``UNKNOWN``/exit-2 case, or malformed JSON). Both are "reported, never
 blocks progression", the same tier as ``MRS-STATUS-001``/``005``.
 
+Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
+codes to the same area for the SECOND durability signal folded onto that
+row -- a session-timeout kill's preserved
+``.bmad-loop/runs/*/failed/*/changes.patch`` -- and both are
+``Verdict.WARN``, deliberately: the intent contract's own Boundary forbids
+this best-effort read from changing ``marshal status``'s exit code, which
+is precisely what this table, not ``Severity``, decides.
+``MRS-STATUS-010`` (a found patch whose story is not CONFIRMED landed --
+no conforming merge subject on ``main`` for its key, or a story-directory
+name that never parsed as a story key) sits at the same "reported, never
+blocks progression" tier as ``MRS-STATUS-008``/``009``. ``MRS-STATUS-011``
+(landed-status could not be determined at all) sits there too, and carries
+TWO causes: an unreadable ``main`` (once for the whole sweep) OR a
+per-project policy resolution that itself raised a blocking finding --
+which is WITHHELD from the sweep's findings and re-reported at this tier
+instead, exactly so a misconfigured station cannot flip this command to
+exit 4. That withholding is why the guard consults ``classify`` here
+rather than the finding's own ``Severity``.
+
 Story 6.1 (profile-driven adapter selection, project-scoped, FR-48/FR-51/
 AD-19) adds two more codes to ``cli/spin.py``'s own ``MRS-SPIN-*`` area.
 ``MRS-SPIN-013`` (a resolved story's own declared ``difficulty:`` was
@@ -674,6 +693,28 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
 # a landing story's Tier-3 followup deferral simply stays unpromoted for
 # this run, re-attempted on the next.
+# Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
+# codes to cli/status.py's own MRS-STATUS-* area, both WARN.
+# MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
+# .bmad-loop/runs/*/failed/*/changes.patch is NOT CONFIRMED durably merged
+# into main (per core.promotion.merged_story_keys -- including a patch whose
+# own story-dir name does not even parse as a story key, which cannot be
+# confirmed landed either). Deliberately an UNCONFIRMED direction, never
+# "has not landed" as fact: an absence of a match is the direction
+# core/status.py's own CONFIDENCE_UNCONFIRMED block documents as proving
+# nothing, so this is WARN-tier reporting, never an ERROR gate.
+# MRS-STATUS-011: a patch's landed-status could not be determined at all,
+# from EITHER of two causes -- (1) main's own commit history could not be
+# read (that read is attempted at most once, lazily, for the whole sweep,
+# so this arm fires at most once per invocation and degrades every patch
+# found this run), or (2) ONE project slug's own merge-subject policy could
+# not be resolved (a malformed project-policy TOML, an ERROR-severity
+# MRS-POLICY-004), which is PER-SLUG and so can fire once per affected
+# home, degrading only that project's patches. Cause 2 exists precisely so
+# that ERROR never reaches the default sweep's own verdict: Story 4.14's
+# Boundaries forbid this signal from changing marshal status's exit code.
+# Both mirror MRS-STATUS-009's identical "the read failed, degrade every
+# affected value to unknown, never a hard failure" reasoning.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -848,6 +889,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-PREFLIGHT-012": Verdict.ERROR,
     "MRS-LAND-009": Verdict.WARN,
     "MRS-LAND-010": Verdict.WARN,
+    "MRS-STATUS-010": Verdict.WARN,
+    "MRS-STATUS-011": Verdict.WARN,
 }
 
 
