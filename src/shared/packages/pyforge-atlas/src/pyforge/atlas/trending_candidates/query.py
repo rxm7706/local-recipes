@@ -63,7 +63,12 @@ def _validate_tier(tier: str) -> str:
             f"unrecognized --tier token(s) {bad!r} in {tier!r}: each token must be one "
             f"of {sorted(_VALID_TIERS)}, or the literal 'all'"
         )
-    return stripped
+    # The NORMALIZED tokens, not the outer-stripped input (second follow-up review
+    # finding, Story 13.3): `_validate_period` returns its fully-stripped value and its
+    # test pins "normalized, not echoed padded", but this returned `" 1 , 2 "` as
+    # `"1 , 2"` — so two callers passing the same tier set got byte-different `filters`
+    # blocks in the envelope for an identical candidate list.
+    return ",".join(tokens)
 
 
 def _validate_top(top: int) -> int:
@@ -151,8 +156,19 @@ def query_trending_candidates(
       coerces to NaN and NEVER satisfies a ``>=`` comparison, so it is excluded,
       not errored.
 
-    then sorts ``stars_total`` descending / ``repo_full_name`` ascending (a
-    deterministic tie-break for ``--top``'s cap) and caps to ``top``.
+    then sorts ``stars_total`` descending / ``repo_full_name`` ascending / ``period``
+    ascending (a TOTAL order, so ``--top``'s cap is deterministic — the third key was
+    added because under ``period="all"`` one repo contributes up to 3 rows tied on both
+    of the others) and caps to ``top``.
+
+    The envelope reports three counts, not one (second follow-up review finding, Story
+    13.3): ``rows`` (what the dataset held), ``matched`` (what the filters kept, BEFORE
+    the cap) and ``count`` (what is actually returned). With ``count`` alone, a table
+    whose rows are ALL tagged ``period="all"`` — the shape CAP-1 writes whenever the
+    HTML scrape breaks across all 3 windows and it falls back to the Search API —
+    answers the default ``period="weekly"`` query with a byte-identical "nothing here"
+    to a healthy table nothing matched in, and a capped result is indistinguishable
+    from an exhaustive one.
 
     A missing/absent ``trending_candidates_classified`` (no backing file yet — the
     realistic "never ingested" state) degrades to an empty candidate set via the same
@@ -179,6 +195,7 @@ def query_trending_candidates(
             )
 
     df = value if isinstance(value, pd.DataFrame) else pd.DataFrame(value)
+    rows_loaded = len(df)
 
     # Each filter applies only when its backing column exists — but when the column is
     # ABSENT and the filter was actually REQUESTED, the result is EMPTIED rather than
@@ -237,6 +254,8 @@ def query_trending_candidates(
             # never silently pass a filter it cannot satisfy (Boundaries & Constraints).
             df = df.iloc[0:0]
 
+    matched = len(df)
+
     if not df.empty:
         # `period` is the THIRD tie-break (follow-up review finding, Story 13.3).
         # Under `--period all` the same repo contributes up to 3 rows tied on BOTH
@@ -291,6 +310,13 @@ def query_trending_candidates(
             "not_on_cf": not_on_cf,
             "min_stars": min_stars,
         },
+        # rows -> matched -> count: what was there, what the filters kept, what the cap
+        # returned (second follow-up review finding, Story 13.3 — see the docstring).
+        # `rows`/`matched` are the ONLY signal separating "this table is fallback-shaped
+        # (every row period='all') so your default weekly query cannot match" from
+        # "nothing trending qualified", and the only one that makes truncation visible.
+        "rows": rows_loaded,
+        "matched": matched,
         "count": len(candidates),
         "candidates": candidates,
     }

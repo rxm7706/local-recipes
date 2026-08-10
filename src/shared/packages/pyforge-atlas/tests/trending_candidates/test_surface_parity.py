@@ -60,24 +60,36 @@ def _server_tool_defaults() -> dict:
     return {name: ast.literal_eval(paired[name]) for name in FILTERS}
 
 
+def _is_tool_decorator(node: ast.expr) -> bool:
+    """``@mcp.tool`` and ``@mcp.tool()`` alike (second follow-up review finding, Story
+    13.3). FastMCP accepts both spellings, and this matcher used to require the CALL
+    form — so a tool registered with the bare decorator was invisible to
+    ``_registered_server_tools`` and the "every registered tool is recorded" assertion
+    below passed over it (mutation-verified: appending a bare-decorated tool to
+    ``server.py``'s source left the detected count unchanged at 13, while the same tool
+    written ``@mcp.tool()`` took it to 14). A registry guard must not depend on how the
+    decorator is spelled."""
+    target = node.func if isinstance(node, ast.Call) else node
+    return isinstance(target, ast.Attribute) and target.attr == "tool"
+
+
+def _tools_in_source(source: str) -> set[str]:
+    return {
+        node.name
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.FunctionDef)
+        and any(_is_tool_decorator(d) for d in node.decorator_list)
+    }
+
+
 def _registered_server_tools() -> set[str]:
-    """Every ``@mcp.tool()``-decorated function in ``server.py``.
+    """Every ``@mcp.tool``-decorated function in ``server.py``.
 
     Read via AST rather than by building the live server, mirroring
     ``tests/nl/test_query_vizro_ai_dryrun.py``: FastMCP is an OPTIONAL extra and is not
     installed in this environment, so nothing here can invoke a registered tool.
     """
-    return {
-        node.name
-        for node in ast.walk(_server_tree())
-        if isinstance(node, ast.FunctionDef)
-        and any(
-            isinstance(d, ast.Call)
-            and isinstance(d.func, ast.Attribute)
-            and d.func.attr == "tool"
-            for d in node.decorator_list
-        )
-    }
+    return _tools_in_source(Path(inspect.getfile(server)).read_text(encoding="utf-8"))
 
 
 def test_mcp_tool_defaults_match_the_query_seam():
@@ -134,6 +146,23 @@ def test_every_registered_server_tool_is_recorded_in_the_audit_surface():
         "registered on the server but recorded in no mcp/audit.py bucket: "
         f"{sorted(unrecorded)}"
     )
+
+
+def test_the_registry_guard_sees_a_bare_mcp_tool_decorator_too():
+    """A mutation guard for the guard above (second follow-up review finding, Story
+    13.3).
+
+    ``_registered_server_tools`` matched only the CALL form, so a tool registered with
+    the bare ``@mcp.tool`` — a spelling FastMCP accepts — was invisible to it, and
+    ``test_every_registered_server_tool_is_recorded_in_the_audit_surface`` passed over
+    it: the next unrecorded tool would ship exactly the way
+    ``query_trending_candidates`` did, whole suite green, as long as it omitted two
+    parentheses."""
+    source = Path(inspect.getfile(server)).read_text(encoding="utf-8")
+    baseline = _tools_in_source(source)
+    for decorator in ("@mcp.tool", "@mcp.tool()"):
+        probe = f"{source}\n\n{decorator}\ndef unrecorded_probe_tool() -> dict:\n    return {{}}\n"
+        assert _tools_in_source(probe) - baseline == {"unrecorded_probe_tool"}, decorator
 
 
 def test_the_server_tool_forwards_every_filter_to_the_same_named_keyword():

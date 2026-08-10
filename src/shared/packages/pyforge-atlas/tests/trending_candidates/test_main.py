@@ -10,9 +10,14 @@ CLI's ``ValueError`` -> stderr + exit 1 contract.
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
+import os
+import stat
+import subprocess
 import sys
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -201,9 +206,110 @@ def test_a_closed_stdout_pipe_is_not_a_raw_traceback(seed_catalog, monkeypatch):
 
     for argv in (["--json"], []):
         monkeypatch.setattr(sys, "stdout", _ClosedPipe())
-        # The real handler dup2()s /dev/null onto stdout's fd; a StringIO has none, and
-        # the contextlib.suppress(OSError) around it is what keeps that harmless here.
+        # The handler's /dev/null detach runs only when `sys.stdout is sys.__stdout__`
+        # (second follow-up review finding, Story 13.3), so a substituted stdout — this
+        # one, pytest's, any in-process caller's — is never dup2()'d over.
         assert main(argv) == 1, argv
+
+
+def test_a_buffered_broken_pipe_exits_1_and_spares_the_hosts_own_stdout_fd(
+    seed_catalog, monkeypatch
+):
+    """Two second-follow-up review findings at once, both verified live.
+
+    1. The previous pass's broken-pipe fix was a NO-OP for the case it was written for.
+       stdout is BLOCK-buffered whenever it is a pipe and no realistic envelope fills
+       that buffer, so `print` returned cleanly and the BrokenPipeError only surfaced in
+       the interpreter's SHUTDOWN flush — outside the guard — as "Exception ignored
+       while flushing sys.stdout" and exit 120. `test_a_closed_stdout_pipe_...` above
+       could not catch it: its `StringIO` raises inside `write`, i.e. only ever models
+       the UNBUFFERED case. This uses a real, really-buffered pipe.
+    2. The guard's `os.dup2` retargeted the descriptor for the WHOLE process and nothing
+       undid it, so a host that called `main()` in-process came back with its own stdout
+       pointed at /dev/null for good.
+    """
+    read_fd, write_fd = os.pipe()
+    os.close(read_fd)  # no reader left: any write to this pipe raises BrokenPipeError
+    host_stdout = os.fdopen(write_fd, "w")  # block-buffered, exactly like a real pipe
+    monkeypatch.setattr(sys, "stdout", host_stdout)
+    seed_catalog(_FIXTURE_DF)
+    try:
+        assert main(["--json"]) == 1
+        assert stat.S_ISFIFO(os.fstat(write_fd).st_mode), (
+            "the host's stdout descriptor was retargeted at /dev/null"
+        )
+    finally:
+        with contextlib.suppress(OSError):
+            host_stdout.close()
+
+
+# Stubs the query seam so the probe stays a pure-stdlib CLI run: no kedro bootstrap, no
+# catalog, no data — the only thing under test is what the interpreter does with a
+# buffered stdout whose reader is gone.
+_BROKEN_PIPE_PROBE = """
+import sys, types
+import pyforge.atlas.trending_candidates as pkg
+stub = types.ModuleType("pyforge.atlas.trending_candidates.query")
+stub.query_trending_candidates = lambda **kw: {"count": 0, "candidates": [], "filters": kw}
+sys.modules[stub.__name__] = stub
+pkg.query = stub
+from pyforge.atlas.trending_candidates.__main__ import main
+raise SystemExit(main(["--json"]))
+"""
+
+
+def test_a_real_interpreter_exit_on_a_broken_pipe_prints_nothing_to_stderr():
+    """The user-visible half of the same finding, through a real process exit.
+
+    `PYTHONUNBUFFERED=1` is exported by the ambient dev shell — not by `pixi.toml` and
+    not by the Containerfile — and that is exactly what made the previous pass's live
+    `--json | head` check appear to pass. This child runs with it explicitly UNSET, so
+    stdout is block-buffered the way it is for every operator who does not export it.
+    """
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONUNBUFFERED"}
+    # `pyforge` is a namespace package (no `__file__`), so the src root is derived from
+    # a real module inside it: src/pyforge/atlas/trending_candidates/query.py.
+    src_root = str(Path(query.__file__).parents[3])
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, (src_root, env.get("PYTHONPATH"))))
+
+    read_fd, write_fd = os.pipe()
+    proc = subprocess.Popen(
+        [sys.executable, "-c", _BROKEN_PIPE_PROBE],
+        stdout=write_fd,
+        stderr=subprocess.PIPE,
+        env=env,
+        text=True,
+    )
+    os.close(write_fd)
+    os.close(read_fd)  # the child's writes now have no reader
+    _, err = proc.communicate(timeout=120)
+
+    assert proc.returncode == 1, f"rc={proc.returncode} stderr={err!r}"
+    assert "Exception ignored" not in err, err
+    assert "BrokenPipeError" not in err, err
+
+
+def test_the_table_header_separates_never_ingested_from_filtered_out(seed_catalog, capsys):
+    """Second follow-up review finding, Story 13.3. A `rows=N matched=0` table says "the
+    data is here, your filters excluded all of it"; `shown=0` alone said nothing at all —
+    so the CAP-1 fallback shape (EVERY row tagged period="all", which is what the dataset
+    writes when the HTML scrape breaks across all three windows) answered the default
+    `--period weekly` with the same `(no candidates)` as a healthy table nothing
+    qualified in, under a fresh build_stamp saying all was well."""
+    fallback_shaped = pd.DataFrame(
+        [
+            {**_FIXTURE_DF.iloc[0].to_dict(), "repo_full_name": name, "period": "all",
+             "source": "search_api_fallback"}
+            for name in ("alice/libfoo", "bob/rustcli")
+        ]
+    )
+    seed_catalog(fallback_shaped)
+
+    assert main([]) == 0
+    out = capsys.readouterr().out
+
+    assert "rows=2" in out and "matched=0" in out and "shown=0" in out
+    assert "(no candidates)" in out
 
 
 def test_a_multi_line_reason_stays_comment_prefixed(seed_parquet_catalog, capsys):
