@@ -1,0 +1,66 @@
+# Steward `sync reconcile` — Jira -> GitHub propagation (Epic 8, Story 8.1).
+#
+# TEMPLATE for the *target* (external) repo. NEVER installed into
+# local-recipes' own .github/workflows/ -- copy this file into the target
+# repo as .github/workflows/steward-sync-jira-to-github.yml and fill in the
+# TODOs. See this directory's README.md for the full setup (secrets, the
+# matching Jira Automation Rule payload, and the manual live-pair
+# verification procedure).
+#
+# `repository_dispatch` only (AD-1: trigger is decoupled from transport, but
+# this direction has no zero-infra polling counterpart in this story's scope
+# -- a Jira Automation Rule is the trigger; see the README's matching rule).
+
+name: steward-sync-jira-to-github
+
+on:
+  repository_dispatch:
+    types: [jira_issue_updated]
+  workflow_dispatch:
+    inputs:
+      jira_issue:
+        description: "Jira issue key (manual trigger, for first-deploy verification)"
+        required: true
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      # Implicit checkout of THIS (target) repo -- where
+      # .steward/sync-config.yaml lives.
+      - uses: actions/checkout@v4
+
+      # A second, EXPLICIT checkout of local-recipes into a named
+      # subdirectory: `steward` is not published to PyPI or conda-forge, so
+      # it is installed straight from source.
+      - uses: actions/checkout@v4
+        with:
+          repository: rxm7706/local-recipes   # TODO: your fork/mirror, if you run one
+          path: _steward-src
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install steward
+        run: pip install ./_steward-src/src/shared/packages/pyforge-steward
+
+      - name: Configure Jira credentials (.netrc)
+        env:
+          JIRA_EMAIL: ${{ secrets.STEWARD_JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.STEWARD_JIRA_API_TOKEN }}
+          JIRA_HOST: ${{ vars.STEWARD_JIRA_HOST }}   # e.g. your-org.atlassian.net -- no scheme
+        run: |
+          rm -f ~/.netrc
+          touch ~/.netrc
+          chmod 600 ~/.netrc
+          echo "machine ${JIRA_HOST} login ${JIRA_EMAIL} password ${JIRA_API_TOKEN}" >> ~/.netrc
+
+      - name: steward sync reconcile
+        env:
+          # Fine-grained PAT, Projects V2 read/write scope ONLY (AD-8).
+          GITHUB_TOKEN: ${{ secrets.STEWARD_GITHUB_TOKEN }}
+        run: |
+          steward sync reconcile \
+            --jira-issue "${{ github.event.client_payload.jira_key || github.event.inputs.jira_issue }}" \
+            --config .steward/sync-config.yaml
