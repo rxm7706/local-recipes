@@ -1,5 +1,6 @@
 """``upstream_discovery`` pipeline nodes — GitHub-trending discovery trigger (Story 13.1,
-FR-64 / CAP-1) + tier classification (Story 13.2, FR-65 / CAP-2).
+FR-64 / CAP-1) + tier classification (Story 13.2, FR-65 / CAP-2) + fixed-source audit
+track (Story 13.4, FR-67 / CAP-4).
 
 CAP-1's ``refresh_trending_candidates`` is a PURE ``params -> RefreshRequest`` trigger —
 mirrors ``pipelines/vulnerability/nodes.py::refresh_vdb_store`` exactly. ALL fetch +
@@ -10,7 +11,14 @@ CAP-2's ``classify_trending_candidates`` joins the already-materialized
 ``trending_candidates`` against ``pypi_universe`` / ``pypi_conda_mapping`` /
 ``pypi_intelligence_enriched`` catalog datasets and assigns a tier + reason to every row —
 pure pandas/stdlib, no new fetch (mirrors ``pipelines/seed_gaps/nodes.py``'s
-join-then-classify-then-DataFrame style)."""
+join-then-classify-then-DataFrame style).
+
+CAP-4's ``load_org_audit_candidates`` is a PURE ``params -> pd.DataFrame`` loader over the
+git-tracked, hand-curated ``params:org_audit_candidates`` list — no HTTP/parse import; the
+source is config, not a live fetch. ``classify_trending_candidates`` (above, unchanged) is
+reused as CAP-4's classify half via a second ``pipeline.py`` node binding: Kedro's
+positional ``inputs=[...]`` lets the same function serve ``org_audit_candidates`` in place
+of ``trending_candidates``."""
 
 from __future__ import annotations
 
@@ -363,3 +371,51 @@ def classify_trending_candidates(
         rows.append(record)
 
     return pd.DataFrame(rows, columns=out_cols)
+
+
+# ---------------------------------------------------------------------------
+# load_org_audit_candidates (Story 13.4, CAP-4 / FR-67)
+# ---------------------------------------------------------------------------
+
+_ORG_AUDIT_COLS = ["repo_full_name"]
+
+
+def load_org_audit_candidates(org_audit_candidates: list | None) -> pd.DataFrame:
+    # CAP-4 — fixed-source audit track ingest (Story 13.4, FR-67; spec-upstream-discovery)
+    """PURE ``params:org_audit_candidates -> pd.DataFrame`` loader: builds a
+    ``repo_full_name``-column frame from the git-tracked, hand-curated declared list
+    (``conf/base/parameters.yml``). No HTTP/parse import — the source is config, not a
+    live fetch, so there is no dataset-owned IO seam to inject (Boundaries &
+    Constraints).
+
+    Every list entry produces exactly one row — never a silent drop (review finding,
+    Story 13.4: matches :func:`classify_trending_candidates`'s own stated "never a
+    silent drop" invariant, which this loader must not violate one step upstream). A
+    non-dict entry, a missing ``repo_full_name`` key, or a non-string value degrades
+    that row's ``repo_full_name`` to ``None`` rather than being excluded — the
+    downstream classifier already resolves a ``None``/non-string ``repo_full_name`` to
+    a visible ``skip``/``no-pypi-artifact`` (or ``unclassified-needs-human``) row via
+    its existing ``_repo_segment`` guard, so a hand-edit typo in ``parameters.yml``
+    surfaces as a reasoned skip instead of vanishing. A resolved ``repo_full_name``
+    that repeats an earlier one (case-insensitively) is deduped, keeping the first
+    occurrence's original casing — a literal or case-variant duplicate in the
+    hand-curated list must not double-count in ``org_audit_candidates_classified``. A
+    ``None``/non-list ``org_audit_candidates`` (or an empty list) degrades to an empty
+    frame carrying the ``repo_full_name`` column, matching
+    :func:`classify_trending_candidates`'s own empty-input schema so the downstream
+    classify node's empty-input guard fires cleanly rather than KeyError-ing on a
+    missing column."""
+    rows: list[dict] = []
+    seen: set[str] = set()
+    if isinstance(org_audit_candidates, list):
+        for entry in org_audit_candidates:
+            repo_full_name = entry.get("repo_full_name") if isinstance(entry, dict) else None
+            if not isinstance(repo_full_name, str):
+                repo_full_name = None
+            if repo_full_name is not None:
+                key = repo_full_name.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+            rows.append({"repo_full_name": repo_full_name})
+    return pd.DataFrame(rows, columns=_ORG_AUDIT_COLS)
