@@ -51,8 +51,8 @@ WARN — it never hard-fails the run.
 
 | Flag | Meaning | Default |
 |---|---|---|
-| `--period` | `daily` \| `weekly` \| `monthly` ingestion window | `weekly` |
-| `--tier` | `1` \| `2` \| `skip` \| `all` | `1,2` |
+| `--period` | `daily` \| `weekly` \| `monthly` \| `all` ingestion window | `weekly` |
+| `--tier` | comma-list of `1` \| `2` \| `skip`, or the literal `all` | `1,2` |
 | `--top` | Display cap over the already-ingested set (independent of ingest depth) | `25` |
 | `--not-on-cf` / `--all` | Filter to not-yet-on-conda-forge candidates | `--not-on-cf` |
 | `--min-stars` | Floor to drop micro-repos | `500` |
@@ -60,3 +60,12 @@ WARN — it never hard-fails the run.
 
 Read-side, offline-safe, idempotent: no fetch happens in the read path —
 ingestion (CAP-1) and query (CAP-3) are separate operations.
+
+As-built (Story 13.3, 2026-08-09): `--period` gained the 4th value `all` — the Search
+API fallback stamps its rows with the literal `period="all"`
+(`datasets/upstream_discovery.py::_SEARCH_API_FALLBACK_PERIOD`), so the three
+enumerated windows alone could never reach them. `--period all` means "no period
+filter" and is the explicit opt-in that also surfaces a repo's up-to-3x multi-window
+duplicates. `--tier` accepts a comma-list because the default is the two-tier set
+`1,2`. The shipped surface (`python -m pyforge.atlas.trending_candidates`, MCP
+`query_trending_candidates`) is the authority on behaviour; this table is its contract.

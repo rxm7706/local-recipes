@@ -92,6 +92,12 @@ _COMPILED_SHAPES = frozenset({"c-extension", "cython", "rust-pyo3"})
 
 _CLASSIFIER_NEW_COLS = ["pypi_name", "tier", "reason"]
 
+# The exact `reason` value for a resolved+already-on-conda-forge skip (Story 13.2).
+# Named (not inline) because CAP-3's `trending_candidates/query.py` imports it as the
+# single source of truth for its `--not-on-cf` filter (review finding, Story 13.3:
+# an independent copy of this literal would silently drift if this wording ever changed).
+REASON_ALREADY_ON_CF = "already-on-conda-forge"
+
 
 def _normalize_pypi_name(name: str) -> str:
     """PEP 503 name normalization: lowercase, collapse runs of ``-``/``_``/``.``
@@ -244,7 +250,7 @@ def _classify_row(
     if not mapping_usable:
         return "skip", "unclassified-needs-human"
     if on_cf:
-        return "skip", "already-on-conda-forge"
+        return "skip", REASON_ALREADY_ON_CF
     if intel is None:
         return "skip", "unclassified-needs-human"
     license_spdx = intel.get("license_spdx")

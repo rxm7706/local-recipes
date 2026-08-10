@@ -23,6 +23,7 @@ from typing import Any
 from pyforge.atlas.mcp import session as _session
 from pyforge.atlas import nl as _nl
 from pyforge.atlas import provenance as _provenance
+from pyforge.atlas.trending_candidates import query as _trending
 
 # The authoritative registry mirror: the four registered pipelines from
 # B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
@@ -146,6 +147,32 @@ def query_vizro_ai(query: str, *, env: Mapping[str, str] | None = None) -> dict[
     call, no fabricated chart.
     """
     return _nl.query_vizro_ai(query, env=env)
+
+
+def query_trending_candidates(
+    period: str = "weekly",
+    tier: str = "1,2",
+    top: int = 25,
+    not_on_cf: bool = True,
+    min_stars: int = 500,
+    *,
+    project_path: Path | str | None = None,
+    env: str | None = None,
+) -> dict[str, Any]:
+    """CAP-3 operator surface (Story 13.3, FR-66): THIN delegation to the
+    ``trending_candidates`` seam (AD-7) — the filter/sort/cap/validation logic (pandas)
+    lives in ``pyforge.atlas.trending_candidates.query``, not in this tool body. The
+    CLI (``python -m pyforge.atlas.trending_candidates``) delegates to the SAME
+    function, so identical filters yield identical output by construction."""
+    return _trending.query_trending_candidates(
+        period=period,
+        tier=tier,
+        top=top,
+        not_on_cf=not_on_cf,
+        min_stars=min_stars,
+        project_path=project_path,
+        env=env,
+    )
 
 
 def list_pipelines(
