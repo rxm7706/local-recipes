@@ -123,7 +123,7 @@ contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-60 Dream files as of 2026-08-10, of which 41 are mapped below — the 19 omitted are
+61 Dream files as of 2026-08-10, of which 42 are mapped below — the 19 omitted are
 archived per-station satellites folded into their parent Dream on 2026-08-08 (see
 **Dream-level-only consolidation**). The **frontmatter is the source of truth**; this table is a
 curated map, and its Status column is now synced from frontmatter rather than hand-copied.
@@ -192,6 +192,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`herald-moments-2-4-live-backend.md`](herald-moments-2-4-live-backend.md) | dreamt | The full-spec version of Epics 8-10 (real database + webhook server + cron scheduler) that CI would call automatically — deferred in favor of a scaled-down local-storage/CLI-triggered first pass, since no persistent-service architecture exists anywhere in Herald today. |
 | [`secure-live-dashboards.md`](secure-live-dashboards.md) | specified | A reusable role-based live-dashboard pattern other dashboards adopt — filter-then-search by API shape, role-isolated audit trail, identity at the ASGI boundary (Django+Channels), and a static GitHub-Pages mode that is mutually exclusive with role isolation. Atlas's Vizro board is the first adopter, not the subject. |
 | [`deferred-work-visibility.md`](deferred-work-visibility.md) | dreamt | `deferred_work_check` matches deferrals by `DW-*` id, but `bmad-dev-auto` writes bare `- source_spec:` bullets with no id — **470 anonymous vs 33 identified**, so the gate covers 6.6% of what it claims. Both sides must move, in order: writer, then grandfathering, then the gate. Sequenced behind doctor 6-9. |
+| [`artifact-chain-reconciliation.md`](artifact-chain-reconciliation.md) | specified | The pause-and-audit at 267/335, spanning **all of PyForge** — all 61 Dreams, all artifacts, all stages, all code: cited verdicts per story, done-claim sampling on all eight stations (completed ones first-class — three of the four queued decomposition chains extend them), AC→test coverage, two-sided correction pre-authorized (artifact↔code), nothing silent. CAP-1..8, serial: steward → mason → marshal → completed five → full inventory. |
 
 **Applications**
 
