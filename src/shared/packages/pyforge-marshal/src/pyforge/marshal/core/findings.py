@@ -1103,6 +1103,23 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # probe reads ONLY the home's own rendered `.mcp.json` plus `PATH`/disk
 # state -- never `~/.claude.json` or any other user-scoped registry (AD-43's
 # own hard constraint).
+#
+# Story 4.12 (a landing leaves the loop home current with `main`, FR-173)
+# adds a NINTH `MRS-LAND-*` code, `MRS-LAND-009`: after a landing (or a
+# clean no-op `land` invocation that finds nothing new to land -- between-
+# runs drift is this story's own primary scenario), `VcsPort.fetch` plus
+# `VcsPort.fast_forward` attempt to advance the loop-home's own checked-out
+# station branch to `origin/<base>`. `MRS-LAND-009` names ANY failure of
+# that attempt -- a diverged branch (e.g. a live run that kept committing
+# past the landed wave, making the fast-forward impossible), a fetch
+# failure (no network/remote), a dirty working tree, or a held lock --
+# never fired when `landing_resync` is `False` or `landing_merge_strategy`
+# is `"squash"`/`"rebase"` (a fast-forward is impossible BY CONSTRUCTION
+# under either of those two strategies, every single landing, so the resync
+# step is skipped entirely rather than firing a WARN that can never clear).
+# Deliberately a NEW code, not a reuse of `MRS-LAND-008`: that code is
+# reserved by Story 4.11 (`is_run_live`/`--retire-live-branch`), a sibling
+# effort against the same `MRS-LAND-*` area.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1253,6 +1270,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-012",
         "MRS-PREFLIGHT-013",
         "MRS-PREFLIGHT-014",
+        "MRS-LAND-009",
     }
 )
 
