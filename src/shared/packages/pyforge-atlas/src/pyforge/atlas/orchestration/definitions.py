@@ -259,6 +259,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "report_license_map_gap": 120,
     # -- upstream_discovery -------------------------------------------------- #
     "refresh_trending_candidates": 600,  # CAP-1 (3 HTML pages + Search API fallback)
+    "classify_trending_candidates": 120,  # CAP-2 (pure in-memory join, no network)
 }
 
 # Fallback for kedro-dagster's synthetic pipeline-run hook ops (they are cheap
