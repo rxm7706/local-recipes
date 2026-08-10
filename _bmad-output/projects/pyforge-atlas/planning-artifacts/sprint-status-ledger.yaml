@@ -25,7 +25,7 @@ development_status:
   12-2-publish-the-real-dag-continuously: done
   12-3-record-the-vscode-kedro-verdict: done
   13-1-trending-ingest: done
-  13-2-tier-classification: backlog
+  13-2-tier-classification: done
   13-3-trending-candidates-operator-surface: backlog
   13-4-fixed-source-audit-track: backlog
   13-5-downstream-handoff-to-mason: backlog
