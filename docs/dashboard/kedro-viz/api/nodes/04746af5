@@ -24,7 +24,8 @@
       "vulnerability_osv_offline_store": 604800,
       "vcs_upstream_versions": 604800,
       "vcs_registry_versions": 604800,
-      "vcs_live_health": 86400
+      "vcs_live_health": 86400,
+      "trending_candidates": 86400
     },
     "freshness": {
       "stale_after_days": 14

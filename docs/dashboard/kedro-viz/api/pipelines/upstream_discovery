@@ -1,65 +1,12 @@
 {
   "nodes": [
     {
-      "id": "18664949",
-      "name": "core_packages_enumerated",
+      "id": "517e5e70",
+      "name": "refresh_trending_candidates",
       "tags": [],
       "pipelines": [
-        "__default__",
-        "universal_sbom",
-        "vulnerability",
-        "vcs_health",
-        "seed_gaps",
-        "core",
-        "pypi_intelligence",
-        "derived_artifacts"
-      ],
-      "type": "data",
-      "modular_pipelines": null,
-      "node_extras": null,
-      "layer": null,
-      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
-    },
-    {
-      "id": "f1f1425b",
-      "name": "parameters",
-      "tags": [],
-      "pipelines": [
-        "__default__",
-        "universal_sbom",
-        "derived_artifacts"
-      ],
-      "type": "parameters",
-      "modular_pipelines": null,
-      "node_extras": null,
-      "layer": null,
-      "dataset_type": null
-    },
-    {
-      "id": "984bc0c0",
-      "name": "pypi_conda_mapping",
-      "tags": [],
-      "pipelines": [
-        "__default__",
-        "universal_sbom",
-        "vcs_health",
-        "seed_gaps",
-        "pypi_intelligence",
-        "derived_artifacts"
-      ],
-      "type": "data",
-      "modular_pipelines": null,
-      "node_extras": null,
-      "layer": null,
-      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
-    },
-    {
-      "id": "f952fa75",
-      "name": "build_universe_sbom",
-      "tags": [],
-      "pipelines": [
-        "__default__",
-        "derived_artifacts"
+        "upstream_discovery",
+        "__default__"
       ],
       "type": "task",
       "modular_pipelines": null,
@@ -89,50 +36,47 @@
           "vcs_registry_versions": 604800,
           "vcs_live_health": 86400,
           "trending_candidates": 86400
-        },
-        "freshness": {
-          "stale_after_days": 14
-        },
-        "refresh_cadences": {
-          "vulnerability_vdb_store": 604800,
-          "vulnerability_osv_offline_store": 604800,
-          "pypi_conda_map_store": 604800
         }
       },
-      "full_name": "build_universe_sbom"
+      "full_name": "refresh_trending_candidates"
     },
     {
-      "id": "ff48367d",
-      "name": "derived_universe_sbom",
+      "id": "6d0063d1",
+      "name": "params:ttls",
       "tags": [],
       "pipelines": [
-        "__default__",
-        "universal_sbom",
-        "derived_artifacts"
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "c10a63b1",
+      "name": "trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
       ],
       "type": "data",
       "modular_pipelines": null,
       "node_extras": null,
       "layer": null,
-      "dataset_type": "json.json_dataset.JSONDataset"
+      "dataset_type": "datasets.upstream_discovery.TrendingSnapshotDataset"
     }
   ],
   "edges": [
     {
-      "source": "f1f1425b",
-      "target": "f952fa75"
+      "source": "517e5e70",
+      "target": "c10a63b1"
     },
     {
-      "source": "18664949",
-      "target": "f952fa75"
-    },
-    {
-      "source": "984bc0c0",
-      "target": "f952fa75"
-    },
-    {
-      "source": "f952fa75",
-      "target": "ff48367d"
+      "source": "6d0063d1",
+      "target": "517e5e70"
     }
   ],
   "layers": [],
@@ -183,31 +127,23 @@
       "outputs": [],
       "children": [
         {
-          "id": "984bc0c0",
-          "type": "data"
+          "id": "6d0063d1",
+          "type": "parameters"
         },
         {
-          "id": "f952fa75",
+          "id": "517e5e70",
           "type": "task"
         },
         {
-          "id": "18664949",
+          "id": "6d0063d1",
           "type": "data"
         },
         {
-          "id": "f1f1425b",
+          "id": "c10a63b1",
           "type": "data"
-        },
-        {
-          "id": "ff48367d",
-          "type": "data"
-        },
-        {
-          "id": "f1f1425b",
-          "type": "parameters"
         }
       ]
     }
   },
-  "selected_pipeline": "derived_artifacts"
+  "selected_pipeline": "upstream_discovery"
 }

@@ -24,14 +24,6 @@
       "vcs_registry_versions": 604800,
       "vcs_live_health": 86400,
       "trending_candidates": 86400
-    },
-    "freshness": {
-      "stale_after_days": 14
-    },
-    "refresh_cadences": {
-      "vulnerability_vdb_store": 604800,
-      "vulnerability_osv_offline_store": 604800,
-      "pypi_conda_map_store": 604800
     }
   }
 }
