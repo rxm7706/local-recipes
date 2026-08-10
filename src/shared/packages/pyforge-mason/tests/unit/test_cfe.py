@@ -261,17 +261,26 @@ def test_ensure_cfe_root_never_re_resolves():
 
 def test_run_streamed_forwards_stderr_live_not_buffered_to_completion():
     """The child writes one stderr line, sleeps, writes a second stderr
-    line, then emits a JSON stdout line. A custom sink sets a
-    `threading.Event` the instant it sees the first line; `run_streamed`
-    itself runs in a background thread so the test can assert the event
-    fires *before* the child has had time to also emit its second line or
-    exit -- proving genuine incremental delivery, not just correct final
-    content (capsys can't observe this: it only offers the post-hoc
-    aggregate, never an as-it-happens callback)."""
+    line, then emits a JSON stdout line. A custom sink timestamps the
+    instant it sees the first line; `run_streamed` itself runs in a
+    background thread so the test can prove that line was delivered while
+    the child was still sleeping -- genuine incremental delivery, not just
+    correct final content (capsys can't observe this: it only offers the
+    post-hoc aggregate, never an as-it-happens callback).
+
+    Review pass (2026-08-10): this used to assert "`second-line` is not in
+    the sink *yet*" from the main thread after waiting on an Event. That
+    reads the sink at an arbitrary later moment, so any pause longer than
+    the child's sleep between the Event firing and the assertion running (a
+    loaded CI box, GIL contention, a parallel suite) failed the test with no
+    real defect. The timestamp is captured inside the sink at the moment the
+    line arrives, so the proof no longer depends on when the main thread
+    happens to be scheduled."""
+    child_sleep = 2.0
     script = (
         "import sys, time, json\n"
         "print('first-line', file=sys.stderr, flush=True)\n"
-        "time.sleep(1.0)\n"
+        f"time.sleep({child_sleep})\n"
         "print('second-line', file=sys.stderr, flush=True)\n"
         "print(json.dumps({'ok': True}))\n"
     )
@@ -279,11 +288,13 @@ def test_run_streamed_forwards_stderr_live_not_buffered_to_completion():
     class _EventSink:
         def __init__(self) -> None:
             self.first_line_seen = threading.Event()
+            self.first_line_at: float | None = None
             self.lines: list[str] = []
 
         def write(self, s: str) -> None:
             self.lines.append(s)
-            if "first-line" in s:
+            if "first-line" in s and self.first_line_at is None:
+                self.first_line_at = time.monotonic()
                 self.first_line_seen.set()
 
         def flush(self) -> None:
@@ -293,19 +304,24 @@ def test_run_streamed_forwards_stderr_live_not_buffered_to_completion():
     result: dict = {}
 
     def _run() -> None:
-        rc, out = run_streamed([sys.executable, "-c", script], timeout=15.0, stderr_sink=sink)
+        rc, out = run_streamed([sys.executable, "-c", script], timeout=30.0, stderr_sink=sink)
         result["rc"] = rc
         result["out"] = out
 
+    started_at = time.monotonic()
     thread = threading.Thread(target=_run)
     thread.start()
 
-    assert sink.first_line_seen.wait(timeout=10.0), "first stderr line never reached the sink"
-    # The child's own time.sleep(1.0) hasn't elapsed yet -- if this were
-    # buffered to completion, the second line would already be present too.
-    assert not any("second-line" in line for line in sink.lines)
+    assert sink.first_line_seen.wait(timeout=20.0), "first stderr line never reached the sink"
+    # Delivered while the child was still inside its own sleep -- buffering
+    # to completion could not produce a first line this early. Measured at
+    # arrival, so a slow main thread cannot turn a correct run into a
+    # failure; `started_at` predates the interpreter spawn, making this
+    # strictly harder to pass than the real streaming latency.
+    assert sink.first_line_at is not None
+    assert sink.first_line_at - started_at < child_sleep
 
-    thread.join(timeout=15.0)
+    thread.join(timeout=30.0)
     assert not thread.is_alive()
     assert result["rc"] == 0
     assert any("second-line" in line for line in sink.lines)
@@ -336,7 +352,15 @@ def test_run_streamed_timeout_kills_child_and_raises_promptly():
         run_streamed([sys.executable, "-c", script], timeout=0.3)
     elapsed = time.monotonic() - start
 
-    assert elapsed < 10.0
+    # Review pass (2026-08-10): this bound was `< 10.0`, which the un-killed
+    # mutant clears by only 0.3s -- it fails at 10.3s purely because the two
+    # bounded reader joins cap it at 2 * _JOIN_GRACE_SECONDS, so retuning
+    # that constant below 5.0 would let a genuinely orphaned 30-second child
+    # sail through green. A killed child releases its pipes immediately, so
+    # both joins return at once and the real figure here is ~0.4s; 3.0s is
+    # generous for a loaded CI box while staying far under any join-derived
+    # ceiling.
+    assert elapsed < 3.0
 
 
 def test_run_streamed_default_sink_resolves_to_current_sys_stderr_at_call_time(capsys):
@@ -495,3 +519,83 @@ def test_run_streamed_child_stdin_is_not_inherited():
 
     assert rc == 0
     assert "stdin-read-returned:''" in out
+
+
+# --- Review pass (2026-08-10): the broken-sink deadlock, pipe hygiene, -----
+# --------------------------------- and a non-numeric timeout --------------
+
+def test_run_streamed_broken_stderr_sink_does_not_deadlock_a_noisy_child():
+    """The regression that `test_run_streamed_survives_a_broken_stderr_sink`
+    above cannot catch: its child emits a single stderr line, so the OS pipe
+    buffer never fills and abandoning the pipe costs nothing.
+
+    A child noisy enough to fill the ~64KB stderr buffer exposes the real
+    defect. Wrapping the whole read loop in `except Exception: return`
+    stopped draining stderr the moment the sink first raised, so the child
+    blocked forever on its next write and was SIGKILLed when `timeout`
+    expired -- a healthy process destroyed by a broken *output destination*,
+    the exact failure mode this primitive exists to prevent. Verified
+    against the pre-fix code: `TimeoutExpired` after the full 5s.
+
+    The reader must keep consuming to EOF and discard what it can no longer
+    deliver, so this completes in well under `timeout`."""
+    class _BrokenSink:
+        def __init__(self) -> None:
+            self.writes = 0
+
+        def write(self, s: str) -> None:
+            self.writes += 1
+            raise BrokenPipeError("downstream reader exited (e.g. `... | head -5`)")
+
+        def flush(self) -> None:  # pragma: no cover - never reached
+            pass
+
+    script = (
+        "import sys\n"
+        "for i in range(20000):\n"
+        "    sys.stderr.write('noisy stderr line %d ---------------------------\\n' % i)\n"
+        "sys.stderr.flush()\n"
+        "print('stdout-marker')\n"
+    )
+    sink = _BrokenSink()
+
+    start = time.monotonic()
+    rc, out = run_streamed(
+        [sys.executable, "-c", script], timeout=20.0, stderr_sink=sink,
+    )
+    elapsed = time.monotonic() - start
+
+    assert rc == 0
+    assert "stdout-marker" in out
+    assert elapsed < 15.0, "the child was throttled by an undrained stderr pipe"
+    # The sink was genuinely exercised and genuinely broken -- one failed
+    # write, then never written to again.
+    assert sink.writes == 1
+
+
+def test_run_streamed_closes_both_child_pipes():
+    """`Popen` is not used as a context manager here (the reader threads
+    outlive any `with` block), so without an explicit close every call leaks
+    two file descriptors until the GC runs -- 18 `ResourceWarning: unclosed
+    file` across this file under `-W error::ResourceWarning` before the
+    2026-08-10 review pass."""
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", ResourceWarning)
+        rc, out = run_streamed(
+            [sys.executable, "-c", "print('marker')"], timeout=15.0,
+        )
+
+    assert rc == 0
+    assert "marker" in out
+
+
+@pytest.mark.parametrize("bad_timeout", [None, "15", object()])
+def test_run_streamed_rejects_a_non_numeric_timeout(bad_timeout):
+    """`math.isfinite` alone raised a bare "must be real number, not
+    NoneType" naming neither this function nor the parameter (review pass,
+    2026-08-10). `timeout=None` is the likely mistake -- it means "wait
+    forever" to subprocess's own API, and this function has no such mode."""
+    with pytest.raises(TypeError, match=r"run_streamed\(timeout=\.\.\.\)"):
+        run_streamed([sys.executable, "-c", "pass"], timeout=bad_timeout)

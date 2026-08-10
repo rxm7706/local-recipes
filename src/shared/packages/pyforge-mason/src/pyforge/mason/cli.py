@@ -38,8 +38,8 @@ import logging
 import math
 import os
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from . import __version__, doctor, render
 from .errors import CfeUnresolvedError, MasonError
@@ -108,8 +108,15 @@ def _resolve_bool(flag_value: bool | None, env_var_name: str, default: bool) -> 
 
 def _parse_finite_float(raw: str) -> float:
     """`argparse`'s `type=` callable for `--cfe-timeout`: parses like `float`,
-    but rejects `nan`/`inf`/`-inf` and non-positive values (review pass,
-    2026-08-09; extended 2026-08-10).
+    but rejects `nan`/`inf`/`-inf` and non-positive values, and reports a
+    non-numeric value in Mason's own words (review pass, 2026-08-09;
+    extended 2026-08-10).
+
+    Letting the bare `ValueError` from `float()` escape would make argparse
+    fall back to naming the `type=` callable itself -- `invalid
+    _parse_finite_float value: '30s'`, leaking a private helper's name into
+    a user-facing usage error. Every rejection path here therefore raises
+    `argparse.ArgumentTypeError` with the flag's real name.
 
     Python's `float()` happily parses `nan`/`inf`/`-inf` -- they are not a
     malformed value, so `_resolve_optional_float`'s "unparseable -> None"
@@ -124,7 +131,12 @@ def _parse_finite_float(raw: str) -> float:
     `--cfe-timeout` value, rather than accepting a value that is well-formed
     but unusable.
     """
-    value = float(raw)
+    try:
+        value = float(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"invalid --cfe-timeout value: {raw!r} (must be a number of seconds)"
+        ) from None
     if not math.isfinite(value) or value <= 0:
         raise argparse.ArgumentTypeError(
             f"invalid --cfe-timeout value: {raw!r} (must be a finite, positive number)"
@@ -146,8 +158,21 @@ def _resolve_optional_float(flag_value: float | None, env_var_name: str) -> floa
     all fall back to `None` rather than raising -- matching `_resolve_str`'s
     treatment of a malformed/absent environment value as "not supplied,"
     not a usage error.
+
+    The *flag* value is held to the identical finite-and-positive standard
+    (review pass, 2026-08-10). Validating only the environment half left the
+    two halves of one knob disagreeing: `nan`/`inf`/`0`/negative resolved to
+    `None` from the environment but passed straight through from the flag
+    parameter -- so this resolver could hand a caller exactly the value
+    `_parse_finite_float` and `cfe.run_streamed` both reject as unusable.
+    `--cfe-timeout` itself cannot deliver one (argparse runs
+    `_parse_finite_float` first), but a direct, non-argparse caller can, and
+    the resolver is the wrong place to launder it. An unusable flag value
+    falls *through* to the environment rather than short-circuiting to
+    `None` -- the same "absent at whichever step supplied it" rule
+    `_resolve_str` applies to a whitespace-only flag value.
     """
-    if flag_value is not None:
+    if flag_value is not None and math.isfinite(flag_value) and flag_value > 0:
         return flag_value
     raw = os.environ.get(env_var_name)
     if raw is None:
@@ -181,11 +206,29 @@ def _configure_logging(verbose: bool, quiet: bool) -> None:
     given -- a documented tie-break; the spec's Acceptance Criteria don't
     specify one, so `quiet` (the more conservative choice) was picked.
 
+    That tie-break is applied to the two *resolved* values, after each knob
+    has independently run AD-13's flag -> environment -> default chain --
+    so `MASON_QUIET=1` in the environment beats an explicit `--verbose` on
+    the command line (review pass, 2026-08-10). This follows from AD-13's
+    per-knob precedence rule rather than contradicting it (`--verbose` did
+    win its own chain; `quiet` then won the tie-break), but it is
+    surprising enough to state outright: a stale `MASON_QUIET` in a shell
+    profile silently mutes a `--verbose` run, and clearing it -- not adding
+    a flag -- is the fix.
+
     `force=True` is load-bearing, not cosmetic: `logging.basicConfig` only
     configures the root logger the *first* time it is called in a process by
     default, so a second `main()` invocation within one process (as happens
     repeatedly in this test suite) would silently no-op without it, leaving
-    an earlier test's level/stream configuration in place.
+    an earlier test's level/stream configuration in place. Its cost, for
+    whoever writes the first test that asserts on a real log record: `force`
+    *removes* every existing root handler, including the one pytest's
+    `caplog` fixture installs -- so records emitted after a `main()` call in
+    the same test do not reach `caplog.text` (they reach stderr, where
+    `capsys` sees them). Assert via `capsys`, or re-enter
+    `caplog.at_level(...)` after the `main()` call. `tests/conftest.py`'s
+    `_restore_root_logging` fixture keeps this from leaking between tests
+    (review pass, 2026-08-10).
     """
     if quiet:
         level = logging.ERROR
