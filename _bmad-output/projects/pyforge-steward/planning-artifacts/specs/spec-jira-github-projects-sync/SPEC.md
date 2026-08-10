@@ -2,7 +2,16 @@
 spec: jira-github-projects-sync
 status: ready
 owner-dream: docs/dreams/jira-github-projects-sync.md
-surface: []          # frontier — no sync code, workflow, or Jira/Projects integration exists anywhere in this repo yet (verified by grep 2026-08-08)
+surface: []          # Governs nothing, DELIBERATELY — and no longer because the frontier is
+                     # empty. CORRECTED 2026-08-10: steward Story 8.1 landed `steward/sync.py`
+                     # (874 lines), a `sync` duty on the CLI, three conformance suites, and the
+                     # `docs/reference/sync-jira-github-workflow-templates/` set. Those files are
+                     # governed by `spec-pyforge-steward`'s surface (the station owns its package
+                     # tree), not by this Spec, so an empty `surface:` here is correct governance
+                     # rather than a stale claim — a glob matching nothing is silent by design.
+                     # The original note ("no sync code exists anywhere in this repo yet, verified
+                     # by grep 2026-08-08") was true when written and is now false; it was flagged
+                     # by 8.1's own review pass as a deferred finding.
 companions:
   # The architecture that answers Q2/Q3/Q4 below. Load-bearing: its ADs are the
   # build contract Epic 8's stories are written against.
@@ -50,9 +59,11 @@ Two boards, one truth. When a developer drags a GitHub Projects V2 item to "Done
 transitions the linked Jira issue from a Cloud dashboard, the other board should reflect it
 without a human re-typing anything, without a third-party SaaS bridge (Unito, Exalate) in the
 loop, and without the two systems chasing their own tail. Today nothing does this: this repo
-has no Jira integration and no GitHub Projects integration of any kind (verified 2026-08-08 —
-the only matches for either term are the Dream, its intake document, and unrelated
-recipe-fixture names); story status lives in per-project `sprint-status-ledger.yaml` files and
+had no Jira integration and no GitHub Projects integration of any kind when this Spec was
+written (verified 2026-08-08). **That changed on 2026-08-10**: Story 8.1 landed the reconcile
+core — `steward/sync.py`, the `sync` duty, and both workflow templates — so this Spec is now
+partly realized rather than pure frontier. Story status still lives in per-project
+`sprint-status-ledger.yaml` files and
 GitHub is driven directly via `gh` Issues/PRs. The complete technical write-up already exists
 as intake material; what does not exist is a contracted, buildable sync engine that is boring
 in exactly the way infrastructure should be — cheap to run, idempotent, and impossible to

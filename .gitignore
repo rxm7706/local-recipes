@@ -808,3 +808,11 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # is costing. Negated narrowly (this one fixture tree), not by weakening `*.log`.
 !.claude/skills/conda-forge-expert/tests/fixtures/error_logs/
 !.claude/skills/conda-forge-expert/tests/fixtures/error_logs/**/*.log
+
+# pyforge-steward `sync` duty (Epic 8, Story 8.1): the operator's real
+# `.steward/sync-config.yaml` names live GitHub project/field IDs and Jira
+# base URL/field IDs for an external board -- not a secret itself, but
+# deployment-specific and never meant to be committed to THIS repo (this
+# repo only ships the tracked template). Mirrors the `.env`/`.env.example`
+# convention above: the example stays tracked, the real file is ignored.
+.steward/sync-config.yaml

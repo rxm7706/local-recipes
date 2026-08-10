@@ -1,0 +1,92 @@
+# Steward `sync reconcile` — GitHub -> Jira propagation (Epic 8, Story 8.1).
+#
+# TEMPLATE for the *target* (external) repo whose GitHub Projects V2 board
+# this syncs. NEVER installed into local-recipes' own .github/workflows/ --
+# copy this file into the target repo as
+# .github/workflows/steward-sync-github-to-jira.yml and fill in the TODOs.
+# See this directory's README.md for the full setup (secrets, the matching
+# Jira Automation Rule, and the manual live-pair verification procedure).
+#
+# Two triggers, independent of each other (AD-1 -- trigger is decoupled from
+# transport):
+#   1. `schedule` (DEFAULT, zero extra infrastructure) -- polls linked
+#      item(s) on a cadence you choose below.
+#   2. `repository_dispatch` (OPT-IN near-real-time) -- fired by an external
+#      receiver (a GitHub App with org-level Projects read access, or a
+#      webhook endpoint) that consumes GitHub's `projects_v2_item` webhook.
+#      There is NO `on: project_v2_item` / `on: projects_v2_item` workflow
+#      trigger -- verified against GitHub's own "events that trigger
+#      workflows" docs 2026-08-09 (see ARCHITECTURE-SPINE.md AD-1). Reaching
+#      this workflow from that webhook REQUIRES the external receiver you
+#      stand up yourself; this template only consumes the dispatch it sends.
+
+name: steward-sync-github-to-jira
+
+on:
+  schedule:
+    # TODO: tune the cadence for your board's activity level
+    # (ARCHITECTURE-SPINE.md's Deferred: "the concrete interval... is a
+    # per-deployment tuning value, not an invariant"). Every 15 minutes is a
+    # reasonable zero-infrastructure default.
+    - cron: "*/15 * * * *"
+  repository_dispatch:
+    types: [github_item_updated]
+  workflow_dispatch: {}   # manual trigger -- useful for first-deploy verification
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      # Implicit checkout of THIS (target) repo -- where
+      # .steward/sync-config.yaml lives.
+      - uses: actions/checkout@v4
+
+      # A second, EXPLICIT checkout of local-recipes into a named
+      # subdirectory: `steward` is not published to PyPI or conda-forge, so
+      # it is installed straight from source. Without this second checkout
+      # the target repo alone has nothing to install `steward` from.
+      - uses: actions/checkout@v4
+        with:
+          repository: rxm7706/local-recipes   # TODO: your fork/mirror, if you run one
+          path: _steward-src
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install steward
+        run: pip install ./_steward-src/src/shared/packages/pyforge-steward
+
+      - name: Configure Jira credentials (.netrc)
+        env:
+          JIRA_EMAIL: ${{ secrets.STEWARD_JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.STEWARD_JIRA_API_TOKEN }}
+          JIRA_HOST: ${{ vars.STEWARD_JIRA_HOST }}   # e.g. your-org.atlassian.net -- no scheme
+        run: |
+          rm -f ~/.netrc
+          touch ~/.netrc
+          chmod 600 ~/.netrc
+          echo "machine ${JIRA_HOST} login ${JIRA_EMAIL} password ${JIRA_API_TOKEN}" >> ~/.netrc
+
+      - name: steward sync reconcile
+        env:
+          # Fine-grained PAT, Projects V2 read/write scope ONLY (AD-8:
+          # least-privilege, read from secrets storage at run time, never
+          # written to logs/artifacts/the control plane).
+          GITHUB_TOKEN: ${{ secrets.STEWARD_GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            steward sync reconcile \
+              --github-item "${{ github.event.client_payload.node_id }}" \
+              --config .steward/sync-config.yaml
+          else
+            # TODO: the schedule/manual path needs every linked item's ID --
+            # loop over your own item inventory here (e.g. a `gh project
+            # item-list` call, or a small script that reads them off the
+            # board). One example item is shown so this template is
+            # directly runnable for a first smoke test (see the README's
+            # manual live-pair verification procedure).
+            steward sync reconcile \
+              --github-item "${{ vars.STEWARD_EXAMPLE_ITEM_ID }}" \
+              --config .steward/sync-config.yaml
+          fi

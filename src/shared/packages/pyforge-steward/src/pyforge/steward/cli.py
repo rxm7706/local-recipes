@@ -32,15 +32,17 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 # meaningful, just distinct and documented.
 EXIT_BUDGET_NOT_CONFIGURED = 3
 
-# The four duties — all real as of this story. `keys` (Epic 1), `deploy`
-# (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3).
-DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
+# The five duties — all real as of this story. `keys` (Epic 1), `deploy`
+# (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
+# `sync` (Epic 8, Story 8.1).
+DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget", "sync")
 
 _HELP = {
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
     "deploy": "dashboard build/reconcile/status",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
+    "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
 }
 
 
@@ -61,6 +63,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_provision_subparsers(duty_parser)
         elif name == "budget":
             _add_budget_subparsers(duty_parser)
+        elif name == "sync":
+            _add_sync_subparsers(duty_parser)
     return parser
 
 
@@ -211,13 +215,41 @@ def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
+    """Add the `reconcile` verb (Epic 8, Story 8.1) — the only verb this
+    story defines. `--github-item`/`--jira-issue` are mutually exclusive and
+    one is required: `reconcile` resolves whichever identifier wasn't given
+    via the other side's link field (see `sync.py`'s `reconcile` docstring).
+    """
+    sync_subs = sync_parser.add_subparsers(dest="sync_verb", metavar="{reconcile}")
+
+    reconcile_ = sync_subs.add_parser(
+        "reconcile", help="re-read both linked items and converge the divergent side"
+    )
+    identifier_group = reconcile_.add_mutually_exclusive_group(required=True)
+    identifier_group.add_argument(
+        "--github-item", metavar="ID", help="GitHub Projects V2 item node ID"
+    )
+    identifier_group.add_argument("--jira-issue", metavar="KEY", help="Jira issue key")
+    reconcile_.add_argument(
+        "--config",
+        default=None,
+        metavar="PATH",
+        help="path to sync-config.yaml (default: repo-root .steward/sync-config.yaml)",
+    )
+    reconcile_.add_argument(
+        "--dry-run", action="store_true", help="compute and report the decision — make no write calls"
+    )
+
+
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
     `keys` returns a real `KeysDuty` (Story 1.3); `deploy` returns a real
     `DeployDuty` (Story 2.1); `provision` returns a real `ProvisionDuty`
-    (Story 3.1); `budget` returns a real `BudgetDuty` (Story 4.1). No duty
-    is `NullDuty` any more — the seam remains for a future fifth duty.
+    (Story 3.1); `budget` returns a real `BudgetDuty` (Story 4.1); `sync`
+    returns a real `SyncDuty` (Story 8.1). No duty is `NullDuty` any more —
+    the seam remains for a future sixth duty.
     """
     if name == "keys":
         # Imported here, not at module top: keys.py resolves its `_http.py`
@@ -239,6 +271,14 @@ def resolve_duty(name: str) -> Duty:
         from .budget import BudgetDuty
 
         return BudgetDuty()
+    if name == "sync":
+        # Imported here, not at module top, for the same reason as `keys`
+        # above: sync.py imports keys.py directly (it reuses
+        # HostScopedCredential/resolve_headers/repo_root verbatim), so it
+        # inherits keys.py's own local-recipes-checkout guard.
+        from .sync import SyncDuty
+
+        return SyncDuty()
     return NullDuty(name)
 
 
