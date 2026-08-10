@@ -1071,6 +1071,7 @@ class _FakeVcs:
         worktrees_raise: bool = False,
         commit_subjects_value: tuple[str, ...] = (),
         commit_subjects_raises: bool = False,
+        commit_subjects_error: str = "cannot read commit history",
     ) -> None:
         self.repo_root_value = repo_root_value
         self.repo_root_raises = repo_root_raises
@@ -1082,6 +1083,12 @@ class _FakeVcs:
         # commit_subjects` convention.
         self.commit_subjects_value = commit_subjects_value
         self.commit_subjects_raises = commit_subjects_raises
+        # Story 4.14 (review finding, 2026-08-10, pass 5): the raised text
+        # is now settable, because `GitVcs` wraps git's OWN stderr and git's
+        # stderr for the exact failure `MRS-STATUS-011`'s cause 1 exists for
+        # -- a missing local `main` -- is THREE lines. A single-line default
+        # made every existing test blind to interpolating it unsanitized.
+        self.commit_subjects_error = commit_subjects_error
         # Story 4.14 (review finding, 2026-08-10, pass 4): "`main`'s commit
         # subjects are read at most ONCE per invocation and reused for every
         # home" is a load-bearing invariant -- KEEP instruction #3 in this
@@ -1105,7 +1112,7 @@ class _FakeVcs:
     def commit_subjects(self, repo_root, ref):
         self.commit_subjects_calls.append((repo_root, ref))
         if self.commit_subjects_raises:
-            raise VcsCommandError("cannot read commit history")
+            raise VcsCommandError(self.commit_subjects_error)
         return self.commit_subjects_value
 
 
@@ -4188,6 +4195,132 @@ class TestFailedPatches:
         assert "INJECTED" in out
         assert not any(
             line.lstrip().startswith("MRS-STATUS-999") for line in out.splitlines()
+        )
+        assert exit_code == 0
+
+    def test_multiline_git_error_cannot_forge_a_text_findings_line(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 5): pass 4 sanitized
+        `MRS-STATUS-010`'s operands and left `MRS-STATUS-011`'s -- even
+        though THAT arm interpolates git's own stderr, which is routinely
+        multi-line, and its trigger is the ordinary non-adversarial one.
+        Real git, asked for a `main` that does not exist locally, answers in
+        three lines; unsanitized, that split ONE WARN across three output
+        lines, two of them beginning with git-controlled text and no
+        `MRS-...` prefix."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_raises=True,
+            # Verbatim shape of real git's stderr for a missing `main`.
+            commit_subjects_error=(
+                "git log main --format=%s failed: fatal: ambiguous argument "
+                "'main': unknown revision or path not in the working tree.\n"
+                "Use '--' to separate paths from revisions, like this:\n"
+                "'git <command> [<revision>...] -- [<file>...]'"
+            ),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        # Nothing is censored -- git's own diagnosis is still readable.
+        assert "ambiguous argument" in out
+        assert "git <command>" in out
+        # ...but the WHOLE finding occupies exactly one line, so no line of
+        # the findings block starts with git's text instead of a code.
+        finding_lines = [
+            line for line in out.splitlines() if "ambiguous argument" in line
+        ]
+        assert len(finding_lines) == 1
+        assert "MRS-STATUS-011" in finding_lines[0]
+        assert exit_code == 0
+
+    def test_sweep_wide_warn_qualifies_a_repeated_story_key_by_run(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 5): pass 4 closed the CROSS-HOME
+        collision (`6.9, 6.9`) and left the CROSS-RUN one open. A home
+        accumulates one `failed/<story>/` per killed attempt, so repeated
+        attempts at ONE story in ONE home rendered identically -- live,
+        `pyforge-steward` carries three run dirs. `MRS-STATUS-011` is the
+        only report a `done: null` patch ever gets (`010` fires solely for
+        `done is False`), so an unlocatable name is the whole signal."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        for run_id in ("20260809-231524-abb9", "20260810-004512-c31f"):
+            _seed_failed_patch(home, run_id=run_id, story_dir=_REAL_STORY_DIR)
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_raises=True,
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        message = next(
+            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
+        )
+        assert "2 patch(es)" in message
+        # Both attempts named, and DISTINGUISHABLE -- the run id is the only
+        # thing that differs between them.
+        assert "acme/4.11@20260809-231524-abb9" in message
+        assert "acme/4.11@20260810-004512-c31f" in message
+        assert exit_code == 0
+
+    def test_non_newline_line_breaks_cannot_forge_a_text_findings_line(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 5): `_one_line` collapsed only
+        `\\n` and `\\r`, too narrow for its OWN stated threat model. If a
+        `failed/<story>/` name may legally carry a newline it may equally
+        carry `\\v`, `\\f`, `\\x85`, `\\u2028` or `\\u2029` -- all legal in a
+        POSIX/UTF-8 filename, and all split by `str.splitlines`, which is
+        the very method the sibling forged-line test asserts with."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home,
+            run_id="20260809-231524-abb9",
+            story_dir="4-11-fine\v  MRS-STATUS-998 [error] INJECTED X",
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        assert "INJECTED" in out
+        assert not any(
+            line.lstrip().startswith("MRS-STATUS-998") for line in out.splitlines()
         )
         assert exit_code == 0
 

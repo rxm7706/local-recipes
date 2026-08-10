@@ -719,6 +719,27 @@ crashing the sweep or, worse, silently reading as "confirmed clean" -- the
 exact false-green the detector's own module docstring names as the
 2026-07-31 incident's root cause.
 
+Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
+codes to that same fleet-summary path, folding a SECOND durability signal
+onto every home's row beside ``unpushed_work``: the
+``.bmad-loop/runs/*/failed/*/changes.patch`` a session-timeout kill
+preserves. ``MRS-STATUS-010`` (a found patch whose story is NOT CONFIRMED
+landed -- either no conforming merge subject for its key on ``main``, or a
+story-directory name that never parsed as a story key at all) classifies
+``Verdict.WARN``, this area's own "reported, never blocks progression"
+tier: the check is a best-effort read and must never change ``marshal
+status``'s exit code. It states the UNCONFIRMED direction rather than
+asserting "has not landed", because an ABSENCE of a match proves nothing
+(the squash-merge blind spot ``core/status.py``'s own
+``CONFIDENCE_UNCONFIRMED`` block documents in full). ``MRS-STATUS-011`` (a
+patch's landed-status could not be determined at all) is ``Verdict.WARN``
+for the same reason and has TWO distinct causes: ``main``'s commit history
+could not be read -- ONCE for the whole sweep, since that read is attempted
+at most once -- OR resolving one project's own merge-subject policy raised
+an exit-code-changing finding, which is withheld and re-reported at this
+tier, once per affected home. Both name the patches they degraded; every
+degraded entry reports ``done: null``, never a fabricated ``false``.
+
 Story 6.1 (profile-driven adapter selection, project-scoped, FR-48/FR-51/
 AD-19) adds two more codes to ``cli/spin.py``'s own ``MRS-SPIN-*`` area:
 ``MRS-SPIN-013`` (a resolved in-scope story's own tracked spec declares a
