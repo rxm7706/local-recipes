@@ -5,6 +5,7 @@
       "name": "pypi_intelligence_enriched",
       "tags": [],
       "pipelines": [
+        "upstream_discovery",
         "__default__",
         "pypi_intelligence",
         "seed_gaps"
@@ -185,6 +186,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
       ],

@@ -44,6 +44,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
       ],

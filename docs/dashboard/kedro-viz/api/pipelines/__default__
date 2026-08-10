@@ -415,6 +415,7 @@
       "name": "pypi_intelligence_enriched",
       "tags": [],
       "pipelines": [
+        "upstream_discovery",
         "__default__",
         "pypi_intelligence",
         "seed_gaps"
@@ -492,6 +493,7 @@
       "name": "pypi_universe",
       "tags": [],
       "pipelines": [
+        "upstream_discovery",
         "__default__",
         "pypi_intelligence",
         "universal_sbom"
@@ -1712,6 +1714,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
       ],
@@ -1783,6 +1786,34 @@
       "node_extras": null,
       "layer": null,
       "dataset_type": "json.json_dataset.JSONDataset"
+    },
+    {
+      "id": "437ccc69",
+      "name": "classify_trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_trending_candidates"
+    },
+    {
+      "id": "b17d345f",
+      "name": "trending_candidates_classified",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     },
     {
       "id": "50d783ee",
@@ -2059,6 +2090,10 @@
       "target": "04746af5"
     },
     {
+      "source": "c10a63b1",
+      "target": "437ccc69"
+    },
+    {
       "source": "d142eb2a",
       "target": "d51007a2"
     },
@@ -2151,6 +2186,10 @@
       "target": "595030c3"
     },
     {
+      "source": "437ccc69",
+      "target": "b17d345f"
+    },
+    {
       "source": "27bdea9a",
       "target": "1444471b"
     },
@@ -2201,6 +2240,10 @@
     {
       "source": "b4132c13",
       "target": "0e32d244"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "437ccc69"
     },
     {
       "source": "8cd71bf4",
@@ -2487,6 +2530,10 @@
       "target": "80624468"
     },
     {
+      "source": "f27d8057",
+      "target": "437ccc69"
+    },
+    {
       "source": "8405d07e",
       "target": "2967fde9"
     },
@@ -2557,6 +2604,10 @@
     {
       "source": "2bd50436",
       "target": "8a33e83a"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "437ccc69"
     },
     {
       "source": "9005f53d",
@@ -2783,6 +2834,10 @@
           "type": "data"
         },
         {
+          "id": "437ccc69",
+          "type": "task"
+        },
+        {
           "id": "d51007a2",
           "type": "task"
         },
@@ -2836,6 +2891,10 @@
         },
         {
           "id": "4ef251bc",
+          "type": "data"
+        },
+        {
+          "id": "b17d345f",
           "type": "data"
         },
         {

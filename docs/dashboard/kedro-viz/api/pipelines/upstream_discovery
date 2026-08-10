@@ -1,6 +1,38 @@
 {
   "nodes": [
     {
+      "id": "f27d8057",
+      "name": "pypi_intelligence_enriched",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__",
+        "pypi_intelligence",
+        "seed_gaps"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "27bdea9a",
+      "name": "pypi_universe",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__",
+        "pypi_intelligence",
+        "universal_sbom"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
       "id": "517e5e70",
       "name": "refresh_trending_candidates",
       "tags": [],
@@ -67,6 +99,53 @@
       "node_extras": null,
       "layer": null,
       "dataset_type": "datasets.upstream_discovery.TrendingSnapshotDataset"
+    },
+    {
+      "id": "984bc0c0",
+      "name": "pypi_conda_mapping",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vcs_health",
+        "seed_gaps",
+        "upstream_discovery",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "437ccc69",
+      "name": "classify_trending_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_trending_candidates"
+    },
+    {
+      "id": "b17d345f",
+      "name": "trending_candidates_classified",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     }
   ],
   "edges": [
@@ -75,8 +154,28 @@
       "target": "c10a63b1"
     },
     {
+      "source": "27bdea9a",
+      "target": "437ccc69"
+    },
+    {
+      "source": "437ccc69",
+      "target": "b17d345f"
+    },
+    {
+      "source": "f27d8057",
+      "target": "437ccc69"
+    },
+    {
       "source": "6d0063d1",
       "target": "517e5e70"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "437ccc69"
+    },
+    {
+      "source": "c10a63b1",
+      "target": "437ccc69"
     }
   ],
   "layers": [],
@@ -127,16 +226,36 @@
       "outputs": [],
       "children": [
         {
+          "id": "984bc0c0",
+          "type": "data"
+        },
+        {
+          "id": "437ccc69",
+          "type": "task"
+        },
+        {
+          "id": "27bdea9a",
+          "type": "data"
+        },
+        {
+          "id": "b17d345f",
+          "type": "data"
+        },
+        {
           "id": "6d0063d1",
-          "type": "parameters"
+          "type": "data"
         },
         {
           "id": "517e5e70",
           "type": "task"
         },
         {
-          "id": "6d0063d1",
+          "id": "f27d8057",
           "type": "data"
+        },
+        {
+          "id": "6d0063d1",
+          "type": "parameters"
         },
         {
           "id": "c10a63b1",
