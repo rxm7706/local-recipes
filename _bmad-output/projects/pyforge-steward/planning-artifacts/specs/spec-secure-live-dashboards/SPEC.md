@@ -7,6 +7,7 @@ companions: []
 sources:
   - ../../../../../../docs/dreams/secure-live-dashboards.md
   - ../../../../../../docs/intake/secure-live-dashboards/role-based-live-dashboard-blueprint.md
+  - ../../../../../../docs/intake/secure-live-dashboards/vizro-static-github-pages-workaround.md
 open_questions:
   - "Where the pattern lives: a `steward` subcommand that scaffolds and verifies, a library the dashboard imports, or a template repository. Each implies a different upgrade story when the pattern improves, and an adopter that has diverged is the case that decides it."
   - "Whether the pattern PROVIDES the RLS pipeline and audit writer or VERIFIES that an adopter has an acceptable one. Provide is reusable and rigid; verify tolerates dashboards that already made their own choices. This bounds every capability below."
@@ -94,6 +95,15 @@ Steward provisions the engines, deploys the services, and holds the keys.
     than claimed; a test that exercises only the restricted path, and would therefore pass
     against an implementation that always restricts, is treated as a defect.
 
+- **CAP-8 — the same dashboard definition ships hosted or static, without a fork.**
+  - **intent:** A board that needs no isolation can be published as a free static site on
+    GitHub Pages — its Plotly components exported to HTML, assembled into a responsive grid,
+    rebuilt by CI — from the *same* definition the hosted mode deploys. Two delivery modes,
+    one dashboard.
+  - **success:** the same board is published both ways without anyone hand-re-deriving its
+    charts for the static build; and the static build **refuses** — not warns — when the board
+    has declared an access column, because that combination cannot be honoured.
+
 ## Constraints
 
 - **Secrets come from Steward's `keys` surface — never from source, and never from a default
@@ -109,6 +119,13 @@ Steward provisions the engines, deploys the services, and holds the keys.
   which is why the trust boundary is an open question above rather than an assumed given.
 - **One schema across environments.** Development and production differ by connection
   configuration, not by code path, so a boundary cannot hold in one and not the other.
+- **Choosing a delivery mode is choosing a security posture, not a hosting preference.** The
+  static mode's optional client-side filtering embeds the data for *all* states in the page,
+  so every role's rows reach every browser; and with no server there is no audit trail at all,
+  not a reduced one. A board that declares an access column therefore **may not** be delivered
+  statically, and the static build refuses rather than warns. The two modes are a per-dashboard
+  choice, not a spectrum: public and unrestricted at zero infrastructure, or role-isolated and
+  hosted.
 
 ## Non-goals
 

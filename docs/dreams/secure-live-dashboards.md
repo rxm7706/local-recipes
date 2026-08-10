@@ -42,9 +42,21 @@ container stack, and a CI security suite.
 - The security boundaries are asserted by tests that mock different corporate identities and
   prove isolation holds — and those tests run on every push, against an in-memory database,
   before a merge is allowed.
+- **The same Vizro board can also be published as a free static site on GitHub Pages** — its
+  Plotly components exported to HTML, assembled into a responsive grid, rebuilt by CI — for the
+  case where the audience is everyone and there is nothing to isolate. One dashboard
+  definition, two delivery modes, and **choosing a mode is choosing a security posture, not a
+  hosting preference**: the static mode ships its data to the browser, so a board that has
+  declared role isolation cannot be delivered that way.
 
 ## What is real
 
+- **Both delivery modes exist as intake material.** The hosted one is the full blueprint
+  below; the static one is a Vizro→GitHub Pages workaround
+  (`docs/intake/secure-live-dashboards/vizro-static-github-pages-workaround.md`) — export
+  `vm.Graph(figure=...)` components via `fig.to_html(full_html=False, include_plotlyjs='cdn')`,
+  inject into a responsive grid template, and have GitHub Actions publish to `gh-pages`, with
+  optional client-side filtering through `Plotly.react()`.
 - **The full blueprint exists** as intake material: system integration and token lifecycle,
   the two-step RLS pipeline (global cache → per-request slice), the audit schema
   (`id`, `timestamp`, `username`, `role`, `action_description`, `row_count`), webhook alerting,
@@ -111,3 +123,20 @@ lands. A one-off hardening of one board leaves the next one facing the same wall
   security CI). Operator chose `owner: steward` over `atlas` on the reasoning above, and
   scoped it as a **reusable pattern** other dashboards adopt rather than a hardening of the
   existing board or a standalone system.
+- **2026-08-09** — Spec produced (`bmad-spec`), then architecture (`bmad-architecture`):
+  the pattern is a **library in the request path plus a subcommand around it**, split on the
+  process boundary; the library provides, the subcommand verifies; verification is Steward's,
+  with a carve-out to Doctor for verdicts on Steward's own implementation.
+- **2026-08-09** — Second adopter named, and it changed the pattern: Herald's
+  `spec-herald-moments-2-4-live-backend` **adopts this rather than building its own backend**,
+  which answered its "where does a persistent Herald backend run, and under whose operational
+  ownership" question with *Steward's perimeter*. Because Herald commits to no framework,
+  the pattern was un-bound from Vizro (binds at the WSGI/request layer instead); because
+  Herald needs a CI webhook receiver, machine callers gained an HMAC-proof path that never
+  grants a human role. Marshal's fleet board is a **candidate** — the fit is the estate's
+  strongest, since `docs/dashboard/data.js` is already keyed by station — but it needs its
+  own Dream, since `spec-factory-console` owns that board and is already realized.
+- **2026-08-09** — Second delivery mode added: the static Vizro→GitHub Pages path. It is
+  **not** a cheaper way to ship the same board — its client-side filtering embeds every
+  role's rows in the page, so the two modes are a per-dashboard choice of security posture.
+  This is why Marshal wants an *alternate* live board rather than a secured static one.
