@@ -9,21 +9,31 @@ are what these tests pin:
   * coverage was gated on any Deps *text* rather than a parseable *reference*, so
     mason reported measured-and-clean with 0 of 30 declarations readable.
 
+Story 6.9: `scripts/forward_dependency_check.py` retired into
+`pyforge.doctor.sources.deps` (ported verbatim in behavior, Story 6.7,
+AD-13 — the module RESTATES `ACTIONABLE_STATUSES` rather than importing
+`bmad_loop`, so unlike the deleted script this port needs no harness at
+all). This file now imports the port directly instead of the deleted
+script; the three tests that used to subprocess-run the script and parse
+its printed report now call `gather_forward_dependency` and read its
+`Finding` tuple instead — `coverage` is always the LAST finding the gather
+appends (its own module comment: "ALWAYS emitted, never only on a clean
+run"), the equivalent of the origin's `tail[-1]` summary line.
+
 Mirrors test_spec_surface_check.py's shape for a repo-level `scripts/` detector.
 """
-import subprocess
-import sys
+from __future__ import annotations
+
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
-CHECKER = REPO_ROOT / "scripts" / "forward_dependency_check.py"
+PROJECTS = REPO_ROOT / "_bmad-output" / "projects"
 
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 fdc = pytest.importorskip(
-    "forward_dependency_check",
-    reason="requires bmad_loop (pixi run -e local-recipes)",
+    "pyforge.doctor.sources.deps",
+    reason="pyforge.doctor not present (skill used standalone)",
 )
 
 
@@ -89,32 +99,35 @@ def test_prose_declarations_are_not_readable(text):
 # --- the live tree ---------------------------------------------------------
 
 def test_detector_exits_zero_on_the_live_tree():
-    r = subprocess.run([sys.executable, str(CHECKER)],
-                       capture_output=True, text=True, cwd=REPO_ROOT)
-    assert r.returncode == 0, f"detector reported findings:\n{r.stdout}\n{r.stderr}"
+    from pyforge.doctor.models import DoctorStatus
+    findings = fdc.gather_forward_dependency(REPO_ROOT)
+    fail = [f for f in findings if f.status is DoctorStatus.FAIL]
+    assert not fail, f"detector reported findings:\n" + "\n".join(
+        f"[{f.check}] {f.message}" for f in fail)
 
 
 def test_no_station_reads_unmeasured():
     """atlas was the last one, and it was a parsing defect rather than missing data."""
-    r = subprocess.run([sys.executable, str(CHECKER)],
-                       capture_output=True, text=True, cwd=REPO_ROOT)
-    assert "[unmeasured]" not in r.stdout, r.stdout
+    findings = fdc.gather_forward_dependency(REPO_ROOT)
+    unmeasured = [f for f in findings if f.check == "unmeasured"]
+    assert not unmeasured, unmeasured
 
 
 def test_last_line_carries_the_coverage_breakdown():
-    """scripts/detectors.py lifts tail[-1][:200] as this detector's registry
-    summary, so the final line must never read as fully measured."""
-    r = subprocess.run([sys.executable, str(CHECKER)],
-                       capture_output=True, text=True, cwd=REPO_ROOT)
-    last = [ln for ln in r.stdout.strip().splitlines() if ln.strip()][-1]
+    """`coverage` is always the LAST finding `gather_forward_dependency`
+    appends -- the equivalent of scripts/detectors.py's own `tail[-1][:200]`
+    registry summary over the origin script's printed report."""
+    findings = fdc.gather_forward_dependency(REPO_ROOT)
+    last = findings[-1]
+    assert last.check == "coverage"
     for word in ("measured", "partial", "no-dispatch", "unmeasured"):
-        assert word in last, f"{word!r} missing from summary line: {last!r}"
+        assert word in last.message, f"{word!r} missing from coverage message: {last.message!r}"
 
 
 def test_atlas_parses_and_is_not_silently_clean():
     """0 -> 46 stories. Atlas must appear, and must NOT claim full coverage:
     only 7 of its 43 declarations are machine-readable."""
-    d = fdc.PROJECTS / "pyforge-atlas"
+    d = PROJECTS / "pyforge-atlas"
     stories = [t for ef in fdc.find_epics_files(d) for t in fdc.story_deps(ef)]
     assert len(stories) >= 40, f"atlas parsed only {len(stories)} stories"
     declared = [x[3] for x in stories if x[3]]
@@ -125,7 +138,7 @@ def test_atlas_parses_and_is_not_silently_clean():
 
 def test_marshals_three_known_forward_deps_are_still_found():
     """The original defect. 2-3 -> epic 3, 2-7 -> epic 4, 8-5 -> epic 10."""
-    d = fdc.PROJECTS / "pyforge-marshal"
+    d = PROJECTS / "pyforge-marshal"
     found = {}
     for ef in fdc.find_epics_files(d):
         for epic, num, _title, deps in fdc.story_deps(ef):

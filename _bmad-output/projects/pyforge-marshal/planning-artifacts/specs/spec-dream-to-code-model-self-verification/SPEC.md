@@ -4,8 +4,9 @@ spec: dream-to-code-model-self-verification
 status: draft
 owner-dream: docs/dreams/dream-to-code-model-self-verification.md
 surface:
-  - scripts/dream_chain_check.py
-  - scripts/bmad_drift_check.py
+  # scripts/dream_chain_check.py and scripts/bmad_drift_check.py retired 2026-08-09
+  # (Story 6.9) — both moved into src/shared/packages/pyforge-doctor/**, already
+  # governed by spec-pyforge-doctor's own blanket glob; see this spec's memlog.
   - .claude/skills/conda-forge-expert/tests/meta/
 sources:
   - ../../../../../../docs/dreams/dream-to-code-model-self-verification.md

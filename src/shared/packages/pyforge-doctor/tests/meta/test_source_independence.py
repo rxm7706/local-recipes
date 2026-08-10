@@ -315,12 +315,25 @@ def test_env_hygiene_is_out_of_scope_by_design():
     assert registration.subject_station == registration.owning_station == "doctor"
 
 
+#: Dunder modules in ``sources/`` that are packaging/entrypoint machinery, never a
+#: ``Source`` implementation, and therefore have no ``SOURCE_MODULE`` entry to map and
+#: no single "judged station" to scan for independence. Named exhaustively rather than
+#: matched by a ``__*__`` pattern, so adding a third one is a deliberate edit here and
+#: not an accident that silently widens the exemption. ``__main__.py`` joined on
+#: 2026-08-10 when doctor story 6-9 landed the sources dispatcher: it imports EVERY
+#: source by design, so an independence scan over it is meaningless, and it gathers
+#: nothing itself.
+NON_SOURCE_MODULES = frozenset({"__init__.py", "__main__.py"})
+
+
 def test_every_real_sources_file_is_mapped_by_at_least_one_source():
     # rglob, not glob (review pass 1 fix): a future sources/<subpkg>/impl.py
     # must still be caught as unmapped here, not left invisible to a
     # top-level-only scan.
     real_files = {
-        path.name for path in SOURCES_DIR.rglob("*.py") if path.name != "__init__.py"
+        path.name
+        for path in SOURCES_DIR.rglob("*.py")
+        if path.name not in NON_SOURCE_MODULES
     }
     mapped_files = set(SOURCE_MODULE.values())
     unmapped = real_files - mapped_files
@@ -334,7 +347,9 @@ def test_every_mapped_filename_actually_exists():
     # The reverse typo-guard: a SOURCE_MODULE entry naming a file that
     # doesn't exist would otherwise silently never be scanned below.
     real_files = {
-        path.name for path in SOURCES_DIR.rglob("*.py") if path.name != "__init__.py"
+        path.name
+        for path in SOURCES_DIR.rglob("*.py")
+        if path.name not in NON_SOURCE_MODULES
     }
     missing = set(SOURCE_MODULE.values()) - real_files
     assert not missing, f"SOURCE_MODULE references missing file(s): {sorted(missing)}"

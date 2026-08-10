@@ -7,11 +7,10 @@ companions: []
 sources:
   - ../../../../../../docs/dreams/surface-drift-reconciliation.md
 surface:
-  # The instrument this Spec repairs. Governed here rather than left under
-  # spec-regenerable-factory's surface because that Spec is `shipped` and states the
-  # detector's EXISTENCE contract; this one states its RECONCILIATION contract and is
-  # the live change-surface until it ships.
-  - scripts/spec_surface_check.py
+  # The instrument this Spec repairs. `scripts/spec_surface_check.py`'s own
+  # EXISTENCE-contract line retired 2026-08-09 (Story 6.9) — the detector moved into
+  # src/shared/packages/pyforge-doctor/**, already governed by spec-pyforge-doctor's
+  # blanket glob. The baseline stays: its PATH did not move, only the tool reading it.
   - scripts/.spec-surface-baseline.json
 surface-drift-exclude:
   # The baseline is a stamped artifact of the tool it belongs to — its hash moves on
