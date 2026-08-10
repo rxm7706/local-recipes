@@ -46,10 +46,21 @@ home's row is unaffected. The SAME code also covers the coarser failure of
 enumerated) -- reported as one WARN over an otherwise-empty report, never a
 crash.
 
-No ``sprint-status.yaml``, ledger, or any other hand-maintained feed is ever
-read for the fleet summary or ``--run`` detail views above (AD-5's own
-explicit prohibition) -- see ``core/status.py``'s own module-level
-docstring section for the pure derivation core this module feeds.
+No ``sprint-status.yaml``, ledger, or any other hand-maintained feed of
+STORY STATE is ever read for the fleet summary or ``--run`` detail views
+above (AD-5's own explicit prohibition) -- see ``core/status.py``'s own
+module-level docstring section for the pure derivation core this module
+feeds.
+
+One narrow, deliberate qualification (Story 4.14, correction 2026-08-10):
+the fleet summary DOES now read a hand-maintained tracked file -- each
+patch-carrying home's own ``marshal-policy.toml`` -- via
+``_merged_keys_for_slug``. That is CONFIGURATION (the project's
+``merge_subject_template``), never a claim about any story's state, so
+AD-5's prohibition is untouched: the durability answer still comes only
+from git. Stated explicitly because the unqualified sentence above was
+false for one release and a maintainer reading top-down would otherwise
+hit it 1,300 lines before the code that contradicts it.
 
 **Story 5.4's ``--reconcile-ledger`` view is the ONE deliberate exception**
 (FR-39/FR-40): it reads the TRACKED ``sprint-status-ledger.yaml`` twin --
@@ -756,17 +767,44 @@ def _gather_failed_patches(home: Path) -> tuple[tuple[Path, int], ...]:
     return tuple(pairs)
 
 
-def _name_patches(entries: list[dict[str, object]]) -> str:
-    """``entries`` rendered as a human-readable, deterministic phrase naming
-    each patch's own story key (Story 4.14, review finding 2026-08-10 pass
-    3). The intent contract's Always bullet requires that a patch whose
-    landed-status "could not be determined" raise "exactly one WARN naming
-    it" -- so the single ``MRS-STATUS-011`` that degrades a set of patches
-    has to name them, not merely count them. Newline-stripped, mirroring
-    ``_render_text_status``'s own ``unpushed.stat`` sanitization, since an
-    entry's key may fall back to a raw POSIX directory name."""
+def _one_line(value: object) -> str:
+    """``value`` as a single-line ``str`` (Story 4.14) -- the SAME
+    newline-stripping ``_render_text_status`` already applies to
+    ``unpushed.stat``, hoisted so every one of this story's own finding
+    messages gets it rather than only some of them.
+
+    Required because a ``failed/<story>/`` directory name is a raw POSIX
+    filename, which may legally contain a newline, and BOTH the story key
+    (when it does not parse, ``_render_story_key_best_effort`` returns the
+    raw name) and the patch path (always, on every entry) are interpolated
+    into ``Finding.message``. ``_render_text_status``'s own findings block
+    prints one finding per line WITHOUT sanitizing, so an unsanitized
+    newline forges a findings line no finding emitted -- reproduced live,
+    review finding 2026-08-10 pass 4, and the identical class already fixed
+    in ``cli/config.py``. The wider, cross-cutting gap this does NOT close
+    (``MRS-STATUS-008``'s own ``remedy``/``stat`` interpolation shares it)
+    stays recorded in the deferred-work ledger."""
+    return str(value).replace("\n", " ").replace("\r", " ").strip()
+
+
+def _name_patches(named: list[tuple[str, dict[str, object]]]) -> str:
+    """``named`` -- ``(slug, entry)`` pairs -- rendered as a human-readable,
+    deterministic phrase naming each patch (Story 4.14, review finding
+    2026-08-10 pass 3). The intent contract's Always bullet requires that a
+    patch whose landed-status "could not be determined" raise "exactly one
+    WARN naming it" -- so the single ``MRS-STATUS-011`` that degrades a set
+    of patches has to name them, not merely count them.
+
+    Each patch is named ``<slug>/<story_key>``, never a bare story key
+    (review finding, 2026-08-10 pass 4): the sweep-wide arm names patches
+    from EVERY home at once, and story numbers repeat across stations by
+    construction -- live, ``pyforge-doctor`` and ``pyforge-warden`` both
+    carry a ``6-9-*`` patch, so a bare-key rendering emitted ``6.9, 6.9``
+    and named neither. Sorted for determinism and ``_one_line``-sanitized,
+    since an entry's key may fall back to a raw POSIX directory name."""
     keys = sorted(
-        str(entry.get("story_key")).replace("\n", " ").strip() for entry in entries
+        f"{_one_line(slug)}/{_one_line(entry.get('story_key'))}"
+        for slug, entry in named
     )
     if not keys:
         return "no patches"
@@ -794,10 +832,24 @@ def _merged_keys_for_slug(
     Note the POSITIVE/NEGATIVE asymmetry of the returned set, which every
     caller must respect (``core/status.py``'s own ``CONFIDENCE_CONFIRMED``/
     ``CONFIDENCE_UNCONFIRMED`` block carries the full rationale): a key
-    PRESENT here is proof of a durable merge, while a key ABSENT proves
+    PRESENT here is the STRONGER direction, while a key ABSENT proves
     nothing -- ``promotion.merged_story_keys`` cannot parse a story key out
     of a GitHub squash-merge's free-form prose subject, nor out of a
-    ``land/<station>-<epic>-<seq>`` merge subject."""
+    ``land/<station>-<epic>-<seq>`` merge subject.
+
+    "Stronger", not "proof" (review finding, 2026-08-10, pass 4). The
+    positive direction has a known, VERIFIED contamination of its own,
+    recorded as an open deferral against ``core/promotion.py``:
+    ``extract_story_key_from_github_merge_subject`` takes no
+    ``project_slug`` at all -- unlike the bmad-loop pattern, scoped after a
+    live collision -- so in this repo's single shared ``git log`` one
+    station's ``<epic>.<seq>`` is "merged" on the sole evidence of a
+    DIFFERENT station's PR-merge subject. Measured 2026-08-10 against
+    ``main``'s 2,353 subjects, ``pyforge-mason``, ``pyforge-doctor`` and
+    ``pyforge-scribe`` each return ~30 keys, most of them another station's.
+    So the honest reading is: ABSENT proves nothing, PRESENT is good
+    evidence that is nonetheless cross-project blind. Callers must not
+    upgrade "present" to "certainly landed" in prose an operator reads."""
     findings: list[Finding] = []
     project_data: Mapping[str, object] = {}
     if policy_core._is_valid_project_slug(slug):
@@ -988,7 +1040,7 @@ def run_status(
     # be emitted at the point of failure, since the homes scanned later in
     # the sweep are not yet known there.
     main_read_error: VcsCommandError | None = None
-    main_unavailable: list[dict[str, object]] = []
+    main_unavailable: list[tuple[str, dict[str, object]]] = []
 
     rows: list[dict[str, object]] = []
     for slug, home in fleet:
@@ -1032,7 +1084,7 @@ def run_status(
 
             merged_keys: frozenset[str] = frozenset()
             keys_available = main_subjects_available
-            policy_degraded = False
+            withheld_codes: tuple[str, ...] = ()
             if main_subjects_available:
                 merged_keys, keys_findings = _merged_keys_for_slug(slug, main_subjects)
                 # `_MRS_STATUS_011`'s cause 2 (review finding, 2026-08-10,
@@ -1071,7 +1123,15 @@ def run_status(
                 ]
                 if blocking:
                     keys_available = False
-                    policy_degraded = True
+                    # The withheld codes are carried to the `MRS-STATUS-011`
+                    # message below rather than dropped (review finding,
+                    # 2026-08-10, pass 4). Withholding the finding keeps the
+                    # exit code honest, but withholding its NAME too left
+                    # the operator of the default view unable to tell WHICH
+                    # policy problem degraded the home -- the real
+                    # diagnostic was invisible in the only view most sweeps
+                    # ever run.
+                    withheld_codes = tuple(dict.fromkeys(f.code for f in blocking))
                     # Any NON-blocking policy finding is still reported
                     # verbatim -- only the exit-code-changing ones are
                     # withheld (review finding, 2026-08-10, pass 3: the
@@ -1098,10 +1158,19 @@ def run_status(
                 )
                 # `confidence` is `core/status.py`'s OWN already-established
                 # vocabulary for this EXACT evidence source, never a third
-                # one: a POSITIVE `merged_story_keys` match is proof
-                # (`CONFIDENCE_CONFIRMED`); an absence of a match, and an
-                # unavailable comparison, both prove nothing
-                # (`CONFIDENCE_UNCONFIRMED`).
+                # one: a POSITIVE `merged_story_keys` match is the stronger
+                # direction (`CONFIDENCE_CONFIRMED`); an absence of a match,
+                # and an unavailable comparison, both prove nothing
+                # (`CONFIDENCE_UNCONFIRMED`). `CONFIDENCE_CONFIRMED` is this
+                # vocabulary's own name for the stronger direction and is
+                # reused verbatim rather than qualified with a third value
+                # -- but it is NOT unqualified proof, and this module must
+                # not read it as such: the positive direction is
+                # cross-project blind (an open `core/promotion.py` deferral,
+                # verified live), so a `done: true` here can in principle be
+                # another station's merge. See `_merged_keys_for_slug`'s own
+                # docstring above for the measurement.
+
                 confidence = (
                     status_core.CONFIDENCE_CONFIRMED
                     if done is True
@@ -1128,23 +1197,41 @@ def run_status(
             # 2026-08-10, pass 3). PER-SLUG, so unlike the
             # unreadable-`main` arm it can fire once per affected home, and
             # it is scoped to this project's own patches, never the sweep's.
-            if policy_degraded:
+            if withheld_codes:
+                # The message states WHAT HAPPENED, never a specific cause
+                # it has not established (review finding, 2026-08-10, pass
+                # 4). The earlier wording -- "cannot resolve this project's
+                # own merge-subject policy" -- is false for most of the
+                # codes that reach this branch: `MRS-POLICY-001` (an
+                # unrecognized key) is `Verdict.UNEVALUABLE` and so blocks,
+                # yet `compose` still returns a perfectly good
+                # `merge_subject_template`. Degrading anyway is the
+                # deliberate conservative choice (this read cannot tell a
+                # template that came from the project's own file from one
+                # that fell back to the default), but asserting the wrong
+                # reason for it is not. Naming the withheld codes is what
+                # makes the suppressed diagnostic findable at all.
                 findings.append(
                     Finding(
                         code=_MRS_STATUS_011,
                         severity=Severity.WARN,
                         message=(
-                            f"{slug}: cannot resolve this project's own "
-                            "merge-subject policy to classify its "
-                            "failed-story patches -- "
-                            f"{_name_patches(failed_patches)} "
+                            f"{slug}: this project's own merge-subject "
+                            "policy did not resolve cleanly "
+                            f"({', '.join(withheld_codes)}, withheld here so "
+                            "a policy problem cannot change this command's "
+                            "exit code -- run `marshal status --project "
+                            f"{slug} --reconcile-ledger` for the finding "
+                            "itself), so its failed-story patches cannot be "
+                            "classified against a trusted template: "
+                            f"{_name_patches([(slug, e) for e in failed_patches])} "
                             "report done: null (landed-status unknown)"
                         ),
                         path=slug,
                     )
                 )
             if main_read_error is not None:
-                main_unavailable.extend(failed_patches)
+                main_unavailable.extend((slug, entry) for entry in failed_patches)
 
         row, finding = status_core.build_fleet_row(facts)
         rows.append(row)
@@ -1198,8 +1285,9 @@ def run_status(
                         severity=Severity.WARN,
                         message=(
                             f"{slug}: failed-story patch for story "
-                            f"{entry.get('story_key')} (run "
-                            f"{entry.get('run_id')}) at {entry.get('path')} "
+                            f"{_one_line(entry.get('story_key'))} (run "
+                            f"{_one_line(entry.get('run_id'))}) at "
+                            f"{_one_line(entry.get('path'))} "
                             f"({entry.get('size_bytes')} bytes) has no "
                             "confirming durable merge on "
                             f"{_MERGE_BASE_BRANCH!r} -- UNCONFIRMED, not "

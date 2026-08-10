@@ -834,13 +834,27 @@ class FleetHomeFacts:
     # `confidence` is this module's OWN `CONFIDENCE_CONFIRMED`/
     # `CONFIDENCE_UNCONFIRMED` (below), never a third vocabulary: a
     # `done: true` entry is `CONFIDENCE_CONFIRMED` (a POSITIVE
-    # `core.promotion.merged_story_keys` match is proof), while both
-    # `done: false` and `done: null` are `CONFIDENCE_UNCONFIRMED` -- an
-    # ABSENCE of a match proves nothing (the squash-merge blind spot that
-    # constant block documents in full, re-confirmed live on 2026-08-10:
-    # 2 of 3 real `MRS-STATUS-010` WARNs against the live 12-patch fleet
-    # were false). `reconcile_ledger_vs_git` below already tags the
-    # identical evidence source exactly this way.
+    # `core.promotion.merged_story_keys` match is the stronger direction),
+    # while both `done: false` and `done: null` are
+    # `CONFIDENCE_UNCONFIRMED` -- an ABSENCE of a match proves nothing (the
+    # squash-merge blind spot that constant block documents in full,
+    # re-confirmed live on 2026-08-10: 2 of 3 real `MRS-STATUS-010` WARNs
+    # against the live 12-patch fleet were false).
+    # `reconcile_ledger_vs_git` below already tags the identical evidence
+    # source exactly this way.
+    #
+    # `CONFIDENCE_CONFIRMED` here is NOT unqualified proof, and this field
+    # must not be read as such (review finding, 2026-08-10, pass 4 -- the
+    # same overclaim-correction this docstring's paragraph above already
+    # applied to `()`): the POSITIVE direction has a verified contamination
+    # of its own, recorded as an open deferral against `core/promotion.py`.
+    # `extract_story_key_from_github_merge_subject` takes no `project_slug`,
+    # so one station's `<epic>.<seq>` matches on another station's PR-merge
+    # subject -- measured 2026-08-10, `pyforge-mason`/`-doctor`/`-scribe`
+    # each resolve ~30 keys, most belonging to other stations. A false
+    # `done: true` therefore silences this net for exactly the story it
+    # exists to protect. Both directions of this signal are best-effort;
+    # only their failure modes differ (noise vs. silence).
     failed_patches: tuple[dict[str, object], ...] = ()
 
 

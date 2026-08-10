@@ -1082,6 +1082,15 @@ class _FakeVcs:
         # commit_subjects` convention.
         self.commit_subjects_value = commit_subjects_value
         self.commit_subjects_raises = commit_subjects_raises
+        # Story 4.14 (review finding, 2026-08-10, pass 4): "`main`'s commit
+        # subjects are read at most ONCE per invocation and reused for every
+        # home" is a load-bearing invariant -- KEEP instruction #3 in this
+        # story's own spec, and a claim asserted at four separate doc sites
+        # -- but nothing observed it, so deleting the `main_subjects_
+        # attempted` guard left the whole suite green while turning one `git
+        # log` per sweep into one per home. Counted here, mirroring
+        # `_FakeHarness.calls`'s own convention in this same file.
+        self.commit_subjects_calls: list[tuple[Path, str]] = []
 
     def repo_common_root(self, start):
         if self.repo_root_raises:
@@ -1094,6 +1103,7 @@ class _FakeVcs:
         return self.worktrees
 
     def commit_subjects(self, repo_root, ref):
+        self.commit_subjects_calls.append((repo_root, ref))
         if self.commit_subjects_raises:
             raise VcsCommandError("cannot read commit history")
         return self.commit_subjects_value
@@ -3985,6 +3995,200 @@ class TestFailedPatches:
 
         out = capsys.readouterr().out
         assert "FAILED_PATCHES n=2 pending=0 unknown=2" in out
+        assert exit_code == 0
+
+    def test_main_is_read_exactly_once_no_matter_how_many_homes(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 4): KEEP instruction #3 -- the
+        `main` commit-subject read is lazy and cached ONCE for the whole
+        sweep -- was asserted at four doc sites and observed by nothing.
+        `_FakeVcs` recorded no call count, so removing the
+        `main_subjects_attempted` guard (turning one `git log`-scale walk
+        per invocation into one per patch-carrying home) kept the suite
+        green. Three patch-carrying homes, exactly one read."""
+        _stub_latest_run_dir(
+            monkeypatch, run_dir_map={"acme": None, "beta": None, "gamma": None}
+        )
+        homes = []
+        for slug, story_dir in (
+            ("acme", _REAL_STORY_DIR),
+            ("beta", _TWO_DIGIT_EPIC_DIR),
+            ("gamma", _REAL_STORY_DIR),
+        ):
+            home = tmp_path / "loop-homes" / slug
+            _seed_failed_patch(
+                home, run_id="20260809-231524-abb9", story_dir=story_dir
+            )
+            homes.append(WorktreeEntry(path=home, branch=f"loop/{slug}"))
+        vcs = _FakeVcs(
+            worktrees=tuple(homes), commit_subjects_value=(_merged_subject("4.11"),)
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        assert [ref for _, ref in vcs.commit_subjects_calls] == ["main"]
+        assert exit_code == 0
+
+    def test_main_is_never_read_when_no_home_carries_a_patch(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """The other half of the same invariant: the read is LAZY, so a
+        genuinely patch-free fleet never pays for it at all."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        home.mkdir(parents=True)
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        assert vcs.commit_subjects_calls == []
+        assert exit_code == 0
+
+    def test_sweep_wide_warn_qualifies_a_repeated_story_key_by_home(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 4): the sweep-wide
+        `MRS-STATUS-011` named patches by BARE story key, and story numbers
+        repeat across stations by construction -- live, `pyforge-doctor` and
+        `pyforge-warden` both carry a `6-9-*` patch, so the one WARN read
+        `... (6.9, 6.9)` and located neither. Each patch is now named
+        `<slug>/<story_key>`."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
+        shared_dir = "6-9-the-scripts-shims-retire"
+        homes = []
+        for slug in ("acme", "beta"):
+            home = tmp_path / "loop-homes" / slug
+            _seed_failed_patch(
+                home, run_id="20260809-231524-abb9", story_dir=shared_dir
+            )
+            homes.append(WorktreeEntry(path=home, branch=f"loop/{slug}"))
+        vcs = _FakeVcs(worktrees=tuple(homes), commit_subjects_raises=True)
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        message = next(
+            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
+        )
+        assert "acme/6.9" in message
+        assert "beta/6.9" in message
+        assert exit_code == 0
+
+    def test_unknown_policy_key_warn_names_the_withheld_code_honestly(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 4): the per-slug arm asserted
+        "cannot resolve this project's own merge-subject policy", which is
+        FALSE for most codes that reach it -- `MRS-POLICY-001` (an
+        unrecognized key) classifies `UNEVALUABLE` and so blocks, yet
+        `compose` still returns a perfectly usable template. Degrading is
+        still the deliberate conservative choice, but the message must state
+        what happened rather than a cause it has not established, and must
+        NAME the withheld code so the suppressed diagnostic is findable at
+        all (it is invisible in the only view most sweeps ever run)."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        odd_policy = tmp_path / "odd-policy.toml"
+        odd_policy.write_text(
+            "[core.promotion]\nno_such_key = 1\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(
+            status_cli, "conventional_project_policy_path", lambda slug: odd_policy
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        # Still withheld -- the exit code stays WARN-only (the Boundary).
+        assert "MRS-POLICY-001" not in codes
+        assert codes.count("MRS-STATUS-011") == 1
+        message = next(
+            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
+        )
+        # Names the withheld code, and does NOT assert the cause it cannot
+        # establish.
+        assert "MRS-POLICY-001" in message
+        assert "cannot resolve this project's own merge-subject policy" not in message
+        assert "acme/4.11" in message
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_newline_in_story_dir_cannot_forge_a_text_findings_line(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 4, reproduced live): a POSIX
+        directory name may contain a newline, and BOTH the fallback story
+        key and the patch path are interpolated into `MRS-STATUS-010`'s
+        message. `_render_text_status`'s findings block prints one finding
+        per line WITHOUT sanitizing, so an unsanitized newline forged a
+        findings line no finding emitted -- the identical class already
+        fixed in `cli/config.py`, and already sanitized by this story's own
+        `_name_patches` for the sibling code."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home,
+            run_id="20260809-231524-abb9",
+            story_dir="4-11-fine\n  MRS-STATUS-999 [error] INJECTED",
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        # The forged text is still VISIBLE (nothing is censored) -- it just
+        # cannot start its own line and impersonate a finding.
+        assert "INJECTED" in out
+        assert not any(
+            line.lstrip().startswith("MRS-STATUS-999") for line in out.splitlines()
+        )
         assert exit_code == 0
 
     def test_repeated_sweep_is_identical_and_never_mutates_a_patch(
