@@ -336,7 +336,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "2771a052f58785f6fa5a9c75a06e642556177e1c",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "259bf8052e1d08e44e4fc2882fdcdee4941888aa",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "750e8e73e41efdb72693fdab19b69f71ef15e0bd",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "ac2fec3571351640d99729dc8038bb357a21523f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "5ac7033128986f91d8ddc0576c5962e1f45e43d8",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "ff2b2b81f6adf6ab6e49690c200af7bb1f1f98d3",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py": "1093b25282e09939e211b7a904eb2264143b0909",
@@ -379,7 +379,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "c2641950ef4d5efacef83627446e55f5d0a67c4b",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_forward_dependency.py": "a9ae03b6574a0209d4886e24756ac1d0b481a645",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_independence.py": "13fc2fab591220da75bd51325ddcf0e552182148",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py": "49a6d1b49d83677350885c0db216c1591413daba",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py": "8eb1f118144e35b77d6a8945781c1dbd8a6d28ff",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory_independence.py": "9b9a9fab99570a47dca39666a68114f2214ae514",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py": "91279686e55259bf69cfd9591dfe5aaa0f7bc7e7",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_independence.py": "0b64f066e13166f1b99707430db05fa6e2f54686",
@@ -389,7 +389,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_warden.py": "5122025ff7966e19724a19605701c9e10044cb22",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "8c725059a6cf1fa4ef6b3522b0743e9fc8bcd062"
+  "memlog": "dc2cd0d70d38e9481bbe65eb69d5902b4beb5cb6"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},

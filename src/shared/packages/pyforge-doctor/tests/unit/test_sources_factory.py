@@ -1050,23 +1050,134 @@ def test_unreadable_phase_registry_warns_instead_of_fabricating_phase_n(
 
 
 def test_every_unevaluable_finding_carries_the_same_evidence_keys(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """``bmad-drift-unevaluable`` is produced by two sites -- a per-check
-    failure and ``_gather``'s own missing-project guard. A consumer grouping
-    by ``evidence["check"]`` must not KeyError depending on which fired; the
-    rule ``sources/ledger.py`` states explicitly for its own pair."""
+    failure (``_unevaluable``) and ``_gather``'s own missing-project guard. A
+    consumer grouping by ``evidence["check"]`` must not KeyError depending on
+    which fired; the rule ``sources/ledger.py`` states explicitly for its own
+    pair.
+
+    The second follow-up review pass found this test reaching the guard
+    TWICE -- ``repo / "nowhere"`` has no ``pyforge-marshal`` project either,
+    so ``_unevaluable``, whose ``evidence["check"]`` is a FUNCTION name
+    rather than the literal ``"bmad-drift"``, was never actually exercised by
+    the one test that names it. The per-check operand now forces a real check
+    to raise inside a real project, which is what makes the two shapes
+    genuinely comparable."""
     repo = tmp_path / "repo"
     _bootstrap(repo)
-    (factory._proj(repo) / ".sync-baseline.json").write_text("[]", encoding="utf-8")
+
+    def _boom(target: Path) -> list:
+        raise OSError("simulated per-check failure")
+
+    monkeypatch.setattr(factory, "check_pins", _boom)
 
     absent = factory.gather(tmp_path / "not-a-bmad-repo")
-    per_check = factory.gather(repo / "nowhere")
+    per_check = factory.gather(repo)
+
+    # Both producers really fired -- otherwise the key assertion below is
+    # vacuous for whichever one was missed.
+    assert [f.check for f in absent] == ["bmad-drift-unevaluable"]
+    assert {f.evidence["check"] for f in absent} == {"bmad-drift"}
+    assert _unevaluable_checks(per_check) == {"check_pins"}
 
     for findings in (absent, per_check):
         for f in findings:
-            assert f.check in {"bmad-drift-unevaluable", "bmad-drift"}
+            if f.check != "bmad-drift-unevaluable":
+                continue
             assert sorted(f.evidence) == ["check", "target"], f.evidence
+
+
+@_needs_unprivileged
+def test_unreadable_doc_neither_hides_a_finding_nor_fabricates_pin_missing(
+    tmp_path: Path,
+) -> None:
+    """``_read`` caught every ``OSError`` and answered ``""``, so an
+    unreadable FILE was indistinguishable from an absent one -- the last
+    member of the cannot-evaluate family two prior passes left open, and the
+    only one that fails in BOTH directions.
+
+    Hiding: an unreadable ``.md`` loses its own ``stale-rule`` WARN and the
+    run reports a confident aggregate OK. Fabricating: ``_doc_pin`` reads
+    ``""`` as "this doc states no pin", so an unreadable tracked doc is
+    reported as a ``pin-missing`` HARD FAIL -- a specific, actionable-looking
+    accusation against a doc whose pin is perfectly intact."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    plan = factory._proj(repo) / "planning-artifacts"
+    stale = plan / "note.md"
+    stale.write_text("use <recipe-name>-<version>\n", encoding="utf-8")
+
+    assert "stale-rule" in {f.check for f in factory.gather(repo)}
+
+    stale.chmod(0o000)
+    (plan / "index.md").chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        stale.chmod(0o644)
+        (plan / "index.md").chmod(0o644)
+
+    assert not any(f.status is DoctorStatus.OK and f.check == "bmad-drift" for f in after), (
+        f"an unreadable doc was reported as a clean project: {after}"
+    )
+    assert not any(f.check == "pin-missing" for f in after), (
+        f"an unreadable doc was slandered as missing its pin: {after}"
+    )
+    assert {"check_pins", "check_stale_rules"} <= _unevaluable_checks(after)
+
+
+def test_read_still_answers_empty_for_a_directory_named_like_a_doc(
+    tmp_path: Path,
+) -> None:
+    """``check_stale_rules`` selects by SUFFIX alone, so it reaches a
+    directory named ``*.md``. The origin read that as empty
+    (``IsADirectoryError`` is an ``OSError``); narrowing ``_read`` must not
+    turn a filing oddity into a cannot-evaluate WARN."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._proj(repo) / "planning-artifacts" / "notes.md").mkdir()
+
+    findings = factory.gather(repo)
+
+    assert not _unevaluable_checks(findings), findings
+    assert {f.check for f in findings} == {"bmad-drift"}
+
+
+@_needs_unprivileged
+def test_unreadable_planning_tree_keeps_the_readable_trees_hard_findings(
+    tmp_path: Path,
+) -> None:
+    """``check_archive_hygiene`` scans two INDEPENDENT trees, and scanned
+    both in one try-scope -- so an unreadable ``planning-artifacts/`` took
+    ``implementation-artifacts/``'s real HARD findings down with it, even
+    though that tree was never visited. ``check_pins`` and
+    ``check_tier_alignment`` already split their own independent halves."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "retro-thing.md").write_text("retro\n", encoding="utf-8")
+    (impl / "junk.patch").write_text("diff\n", encoding="utf-8")
+
+    before = {f.check for f in factory.gather(repo)}
+    assert {"archive-misplaced", "stray-file"} <= before
+
+    plan = factory._proj(repo) / "planning-artifacts"
+    plan.chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        plan.chmod(0o755)
+
+    assert "check_archive_hygiene" in _unevaluable_checks(after)
+    hygiene = {(f.check, f.evidence["subject"]) for f in after
+               if f.check in {"archive-misplaced", "stray-file"}}
+    assert hygiene == {
+        ("archive-misplaced", "implementation-artifacts/retro-thing.md"),
+        ("stray-file", "implementation-artifacts/junk.patch"),
+    }, f"an unreadable planning tree discarded the readable tree's findings: {after}"
 
 
 def test_finding_order_is_stable_across_readdir_order(tmp_path: Path) -> None:

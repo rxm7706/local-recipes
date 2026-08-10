@@ -111,7 +111,11 @@ reads as clean. All of them are replaced here by raising counterparts ported
 from ``sources/chain.py``, which converged on the same trio through its own
 review passes: ``_probe``/``_is_dir``/``_is_file`` for the existence gates,
 ``_listdir``/``_listdir_match`` for one directory, ``_walk`` for a recursive
-one. Each raise lands in ``_gather``'s per-check try/except and surfaces as
+one, and ``_read`` for a file's CONTENT -- the last of these being the origin
+script's own blanket ``except OSError: return ""``, which survived two review
+passes here because it hides in every check rather than at any one gate, and
+which fabricated FALSE ``pin-missing`` HARD findings as readily as it hid real
+ones. Each raise lands in ``_gather``'s per-check try/except and surfaces as
 that ONE check's ``bmad-drift-unevaluable`` WARN. Likewise for GROUND TRUTH:
 ``_live_version`` and ``_max_single_phase`` raise when the live skill version
 or the atlas phase registry cannot be read, rather than substituting the
@@ -318,30 +322,49 @@ def _walk(d: Path) -> list[Path]:
 
 
 def _read(path: Path) -> str:
-    """The file's text, or ``""`` when it does not exist / cannot be opened
-    -- the origin script's own ``_read``, widened for one case the origin
-    never had to survive.
+    """The file's text, or ``""`` when it GENUINELY does not exist --
+    RAISING when it exists but could not be read. The file-CONTENT member of
+    the ``_probe``/``_is_dir``/``_is_file``/``_listdir``/``_walk`` family
+    above; the origin script's own ``_read``, widened for two cases, each
+    reproduced live.
 
-    The origin caught ``OSError`` only, so a single non-UTF-8 byte in a
-    tracked doc raised ``UnicodeDecodeError`` (a ``ValueError``) and killed
-    the whole script. Here that exception would instead be caught by
-    ``_gather``'s per-check net, which is honest but discards every OTHER
-    real finding the same check had already computed -- reproduced by the
-    follow-up review pass: one stray latin-1 byte in one project ``.md``
-    erased that check's real ``stale-rule`` finding for a different, wholly
-    readable file. Decoding the undecodable bytes with U+FFFD keeps the
-    file's readable content scannable, so neither the file nor its siblings
-    go silently unexamined -- strictly better than ``chain.py``'s own
-    ``return set()`` degradation, which would read the file as empty and
-    therefore clean."""
+    *Non-UTF-8 bytes.* The origin caught ``OSError`` only, so a single
+    non-UTF-8 byte in a tracked doc raised ``UnicodeDecodeError`` (a
+    ``ValueError``) and killed the whole script. Here that exception would
+    instead be caught by ``_gather``'s per-check net, which is honest but
+    discards every OTHER real finding the same check had already computed --
+    reproduced by the first follow-up review pass: one stray latin-1 byte in
+    one project ``.md`` erased that check's real ``stale-rule`` finding for a
+    different, wholly readable file. Decoding the undecodable bytes with
+    U+FFFD keeps the file's readable content scannable, so neither the file
+    nor its siblings go silently unexamined -- strictly better than
+    ``chain.py``'s own ``return set()`` degradation, which would read the
+    file as empty and therefore clean.
+
+    *Unreadable file.* The origin's blanket ``except OSError: return ""``
+    survived two review passes here, leaving this module's headline
+    invariant -- "cannot evaluate" is never "clean" -- true of every
+    EXISTENCE and LISTING primitive but false of the one that answers *what
+    is in this file*, which every check ultimately reads through. It failed
+    BOTH ways, both reproduced by the second follow-up pass: ``chmod 000`` on
+    one project ``.md`` erased its real ``stale-rule`` WARN and left a
+    confident aggregate OK, while ``chmod 000`` on ``planning-artifacts/``
+    manufactured FOURTEEN FALSE ``pin-missing`` HARD findings about docs
+    whose pins were perfectly intact -- ``_doc_pin`` reads ``""`` as "this
+    doc states no pin", so an unreadable doc is not merely lost, it is
+    actively slandered. Only the genuinely-absent cases still answer ``""``:
+    ``FileNotFoundError`` (an absent tracked doc or ground-truth file, which
+    every caller already treats as "nothing stated here") and
+    ``IsADirectoryError``/``NotADirectoryError`` (a directory named
+    ``*.md``, which ``check_stale_rules`` reaches by suffix alone, and which
+    the origin also read as empty). Everything else lands in ``_gather``'s
+    per-check net as that ONE check's named ``bmad-drift-unevaluable``
+    WARN."""
     try:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        try:
-            return path.read_bytes().decode("utf-8", errors="replace")
-        except OSError:
-            return ""
-    except OSError:
+        return path.read_bytes().decode("utf-8", errors="replace")
+    except (FileNotFoundError, IsADirectoryError, NotADirectoryError):
         return ""
 
 
@@ -608,21 +631,45 @@ def check_pins(target: Path) -> list[Finding]:
 
 
 def check_archive_hygiene(target: Path) -> list[Finding]:
+    """Misfiled archive artifacts and throwaway strays, across the project's
+    two artifact trees.
+
+    The two trees are INDEPENDENT inputs, so each is scanned in its own
+    try/except -- the split shape ``check_pins`` and ``check_tier_alignment``
+    already use for their own independent halves, and the one this check was
+    missing. Reproduced by the second follow-up review pass: ``chmod 000`` on
+    ``planning-artifacts/`` erased two real HARD findings (a ``stray-file``
+    and an ``archive-misplaced``) from a wholly READABLE
+    ``implementation-artifacts/``, leaving a single WARN in their place and
+    no way for an operator to learn that a readable tree had gone unvisited.
+
+    ``OSError`` is exactly the cannot-evaluate class this module's raising
+    primitives (``_is_dir``/``_listdir``/``_listdir_match``/``_is_file``)
+    signal with; anything else is a real bug and still propagates to
+    ``_gather``'s own coarser per-check net."""
     out: list[Finding] = []
-    plan = _plan(target)
-    impl = _impl(target)
-    if _is_dir(plan):
-        for p in _listdir_match(plan, "sprint-change-proposal-*.md"):
-            out.append(_finding(HARD, "archive-misplaced", f"planning-artifacts/{p.name}",
-                       "sprint-change-proposal belongs in change-history/", fixable=True))
-    if _is_dir(impl):
-        for p in _listdir_match(impl, "retro-*.md"):
-            out.append(_finding(HARD, "archive-misplaced", f"implementation-artifacts/{p.name}",
-                       "retro belongs in retros/", fixable=True))
-        for p in _listdir(impl):
-            if _is_file(p) and p.suffix in STRAY_SUFFIXES:
-                out.append(_finding(HARD, "stray-file", f"implementation-artifacts/{p.name}",
-                           "throwaway artifact (already in git history) — remove", fixable=True))
+    try:
+        plan = _plan(target)
+        if _is_dir(plan):
+            for p in _listdir_match(plan, "sprint-change-proposal-*.md"):
+                out.append(_finding(HARD, "archive-misplaced", f"planning-artifacts/{p.name}",
+                           "sprint-change-proposal belongs in change-history/", fixable=True))
+    except OSError as exc:
+        out.append(_unevaluable("check_archive_hygiene",
+                                f"{exc.__class__.__name__}: {exc}", target))
+    try:
+        impl = _impl(target)
+        if _is_dir(impl):
+            for p in _listdir_match(impl, "retro-*.md"):
+                out.append(_finding(HARD, "archive-misplaced", f"implementation-artifacts/{p.name}",
+                           "retro belongs in retros/", fixable=True))
+            for p in _listdir(impl):
+                if _is_file(p) and p.suffix in STRAY_SUFFIXES:
+                    out.append(_finding(HARD, "stray-file", f"implementation-artifacts/{p.name}",
+                               "throwaway artifact (already in git history) — remove", fixable=True))
+    except OSError as exc:
+        out.append(_unevaluable("check_archive_hygiene",
+                                f"{exc.__class__.__name__}: {exc}", target))
     return out
 
 
