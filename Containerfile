@@ -151,6 +151,31 @@ RUN printf '#!/bin/bash\nset -e\nsource /shell-hook.sh\nexec -- "$@"\n' > /entry
 RUN bash -c "source /shell-hook.sh \
     && python3 /pyforge/scripts/container-gates secrets-scan /pyforge /shell-hook.sh /entrypoint.sh"
 
+# Story 7.5 ("The image proves itself at build time") build-time gate, FR-26 /
+# SPEC.md's CAP-5: `scripts/container-gates cli-smoke` runs each of the eight
+# real station CLIs' `--help` and fails this `RUN` -- and therefore `docker
+# build`/`podman build` itself -- if any one is missing, unimportable, or over
+# its documented start-up budget (never a later `docker run`'s problem). Same
+# `bash -c "source ..."` pattern as the secrets-scan gate above and for the
+# same reason: `source` is a bash builtin BuildKit's default `/bin/sh` (dash)
+# doesn't have. `--help`, not `--version`: see this script's own module
+# docstring for why `--version` is not a reliable gate for `marshal`, and
+# `--help` is for all eight. The eight names below are the real
+# `pyforge-container` console scripts (`pixi.toml`'s `[environments]` entry
+# composing all eight station features) -- `container-gates cli-smoke` itself
+# has no station-name list of its own (AD-2 delegation-purity); only this RUN
+# line names them.
+RUN bash -c "source /shell-hook.sh \
+    && python3 /pyforge/scripts/container-gates cli-smoke \
+        --cli 'marshal --help' \
+        --cli 'steward --help' \
+        --cli 'pyforge-atlas --help' \
+        --cli 'warden --help' \
+        --cli 'doctor --help' \
+        --cli 'mason --help' \
+        --cli 'herald --help' \
+        --cli 'scribe --help'"
+
 # Story 7.4 ("State outlives the container") mount contract: the three
 # durable-state roots PRD FR-25 ("loop homes, the Tier-3 store and mutable
 # runtime caches resolve to mounted volumes") and SPEC.md's CAP-4 name (the

@@ -52,9 +52,28 @@ container, restart it with the same volume" operation, so build-time gating
 preserves state -- proving that requires a real `docker run` -> (implicit
 `--rm` teardown) -> `docker run` sequence against an already-tagged image.
 
+`cli-smoke --cli "<cmd> ..." [--cli "<cmd> ..." ...]` proves the station
+CLIs the image composes into `pyforge-container` actually work inside that
+exact env (Story 7.5, "The image proves itself at build time"). It is
+duty-agnostic like `secrets-scan`/`volumes-roundtrip` (AD-2
+delegation-purity): each `--cli` value is a full invocation string,
+`shlex.split` (no shell) and run directly via `subprocess.run`, so this
+script carries no station-name list of its own -- only the Containerfile
+`RUN` line names the real eight. Wired as a Containerfile `RUN` step
+(final stage, like `secrets-scan`), so a broken/missing/hung station CLI
+fails the `docker build`/`podman build` command itself, not a later
+`docker run`. `--help`, not `--version`, is what the `RUN` line invokes:
+argparse's `-h/--help` handling requires the parser (and therefore every
+subcommand-defining import) to have built successfully, and it exits
+non-zero on failure for all eight stations -- `marshal`'s own
+`pyforge-marshal-smoke` pixi task documents that `--version` "always exits
+0 (informational, never a gate)" for that one station, so `--help` is the
+uniformly reliable choice across all eight.
+
 Usage:
     container-gates secrets-scan <root> [<root> ...]
     container-gates volumes-roundtrip --image IMAGE --mount PATH [--mount PATH ...]
+    container-gates cli-smoke --cli "<cmd> ..." [--cli "<cmd> ..." ...]
 """
 
 import argparse
@@ -76,6 +95,18 @@ _SCAN_TIMEOUT_SECONDS = 300
 # already-cached image; this bounds worst-case (a hung daemon/container),
 # not a normal upper bound.
 _DOCKER_RUN_TIMEOUT_SECONDS = 120
+# Generous on purpose: measured live against a real built guild image, all
+# eight real stations' `docker run --rm <image> <cli> --help` completed
+# between 0.31s and 0.74s -- that figure INCLUDES full `docker run`
+# container-startup overhead, which the code this constant actually bounds
+# (a bare in-container `subprocess.run`, no `docker run` involved) never
+# pays, so ~13x the slowest observed sample is a floor on the real margin,
+# not a precise ratio -- the true in-container cost is lower still, making
+# this bound more generous than the arithmetic alone suggests. Bounds
+# worst-case (a hang), not a normal upper bound, and is one constant for
+# all eight stations on purpose (no per-station tuning absent evidence any
+# one is structurally slower).
+_CLI_SMOKE_TIMEOUT_SECONDS = 10
 _MARKER_FILENAME = ".container-gates-roundtrip-marker"
 # `--mount` becomes the `DST` half of docker's `-v SRC:DST` shorthand AND is
 # interpolated into an in-container `sh -c` string -- a `:` would corrupt the
@@ -334,6 +365,88 @@ def cmd_volumes_roundtrip(image: str, mounts: list[str]) -> int:
     return 0 if ok else 1
 
 
+def _check_cli(cli: str, timeout: float = _CLI_SMOKE_TIMEOUT_SECONDS) -> bool:
+    """Run one `--cli` value per the story spec's I/O & Edge-Case Matrix.
+
+    `cli` is parsed with `shlex.split` -- no shell -- so `argv[0]` is the
+    literal binary name `subprocess.run` looks up on PATH, and that same
+    `argv[0]` is reused below as the display name in every message, so it
+    always matches what the caller actually typed (e.g. `marshal`, not a
+    derived label).
+
+    `timeout` defaults to the module-level budget but is a real parameter,
+    not a value baked into the body, so a caller -- namely this script's
+    own test suite -- can pass a tiny value to prove the `TimeoutExpired`
+    path fast, without a test waiting out the full production budget for
+    one matrix row.
+
+    A malformed value (unbalanced quoting -- `shlex.split` raises
+    `ValueError`) or an empty one (`shlex.split` returns `[]`, e.g. an
+    all-whitespace string) is reported here and never reaches
+    `subprocess.run`. A missing binary (`FileNotFoundError`), a broken or
+    unimportable CLI (non-zero exit), and a hang past `timeout`
+    (`TimeoutExpired`, which already kills the child process) are all
+    reported as clean stderr diagnostics -- never a raw traceback --
+    mirroring `_scan_target`/`_roundtrip_mount`'s doctrine in this same
+    script. `PermissionError`/`IsADirectoryError` (argv[0] resolves but
+    isn't executable) and a `ValueError` from `subprocess.run` itself (e.g.
+    an embedded NUL byte) reach the same general `except (OSError,
+    ValueError)` fallback `_roundtrip_mount` already uses for the identical
+    class of gap.
+    """
+    try:
+        argv = shlex.split(cli)
+    except ValueError as exc:
+        print(f"container-gates: cli-smoke: invalid --cli value {cli!r}: {exc}", file=sys.stderr)
+        return False
+    if not argv:
+        print(
+            f"container-gates: cli-smoke: invalid --cli value {cli!r}: empty command",
+            file=sys.stderr,
+        )
+        return False
+    name = argv[0]
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+    except FileNotFoundError:
+        print(f"container-gates: cli-smoke: {name}: not found on PATH", file=sys.stderr)
+        return False
+    except subprocess.TimeoutExpired:
+        print(f"container-gates: cli-smoke: {name}: timed out (> {timeout}s)", file=sys.stderr)
+        return False
+    except (OSError, ValueError) as exc:
+        # Mirrors `_roundtrip_mount`'s own general fallback: a `docker`-free
+        # analogue of the same gap (e.g. `argv[0]` resolves on PATH but
+        # isn't executable -- `PermissionError`/`IsADirectoryError` -- or
+        # `subprocess.run` itself rejects the argv, e.g. an embedded NUL
+        # byte, raising `ValueError`). Never a raw traceback either way.
+        print(f"container-gates: cli-smoke: {name}: {exc}", file=sys.stderr)
+        return False
+    if result.returncode != 0:
+        diagnostic = result.stderr.strip() or result.stdout.strip() or "(no output captured)"
+        tail = "\n".join(diagnostic.splitlines()[-5:])
+        print(
+            f"container-gates: cli-smoke: {name}: exited {result.returncode}: {tail}",
+            file=sys.stderr,
+        )
+        return False
+    print(f"container-gates: cli-smoke: {name}: OK")
+    return True
+
+
+def cmd_cli_smoke(clis: list[str], timeout: float = _CLI_SMOKE_TIMEOUT_SECONDS) -> int:
+    """Check every `--cli` value; never short-circuit; fail if any failed."""
+    ok = True
+    for cli in clis:
+        if not _check_cli(cli, timeout):
+            ok = False
+    if ok:
+        print(f"container-gates: cli-smoke: clean ({len(clis)} cli(s))")
+    else:
+        print("container-gates: cli-smoke: FAILED -- see findings above", file=sys.stderr)
+    return 0 if ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="container-gates", description="Container build-time and post-build gates."
@@ -355,11 +468,19 @@ def main(argv: list[str] | None = None) -> int:
     volumes_roundtrip.add_argument(
         "--mount", action="append", required=True, dest="mounts", metavar="PATH"
     )
+    cli_smoke = subs.add_parser(
+        "cli-smoke",
+        help="run one or more `--cli \"<cmd> ...\"` invocations directly (no shell) "
+        "and fail if any is missing, exits non-zero, or hangs past the timeout budget",
+    )
+    cli_smoke.add_argument("--cli", action="append", required=True, dest="clis", metavar="CMD")
     args = parser.parse_args(argv)
     if args.command == "secrets-scan":
         return cmd_secrets_scan(args.roots)
     if args.command == "volumes-roundtrip":
         return cmd_volumes_roundtrip(args.image, args.mounts)
+    if args.command == "cli-smoke":
+        return cmd_cli_smoke(args.clis)
     parser.print_help(sys.stderr)  # pragma: no cover -- unreachable, `required=True` above
     return 1
 
