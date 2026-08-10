@@ -2033,7 +2033,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 9 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 9 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -2084,12 +2084,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "10/38",
+            "10/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "28",
+            "32",
             "remaining",
             ""
           ]
@@ -2338,6 +2338,32 @@ window.DASHBOARD_DATA = {
               "5.5",
               "pending",
               "Rule-2 conda-forge-expert retrospective"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "The CFE rebuild — pilot slice, parallel-run, and the re-scope gate",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Slice map and campaign state"
+            ],
+            [
+              "6.2",
+              "pending",
+              "The divergence-and-endgame guard, proven red first"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Pilot slice — recipe generation, built and parallel-validated"
+            ],
+            [
+              "6.4",
+              "pending",
+              "The re-scope gate — measured cost, recorded decision"
             ]
           ]
         }
@@ -3434,7 +3460,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 17:01 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 23:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3523,7 +3549,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "conda-forge-expert-rebuild",
       "title": "Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "mason",
       "type": "dream",
       "chain": {
@@ -4467,7 +4493,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "conda-forge-expert-rebuild",
       "project": "pyforge-mason",
-      "title": "conda-forge-expert rebuild — Skill-Forge-authored, slice by slice, hard cutover",
+      "title": "conda-forge-expert rebuild — Skill-Forge-authored, slice by slice, parallel-run to an enforced end cutover",
       "caps": 4,
       "companions": 0,
       "updated": "2026-08-10",
@@ -5391,7 +5417,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
           "done": 10,
-          "total": 38
+          "total": 42
         },
         {
           "slug": "presenton-pixi-image",
@@ -5997,7 +6023,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T10:32",
+          "spec": "2026-08-10T17:57",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6079,7 +6105,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T10:32",
+            "at": "2026-08-10T17:57",
             "other": "2026-08-01"
           },
           {
@@ -6100,7 +6126,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "10/38",
+        "progress": "10/42",
         "complete": 13,
         "of": 13
       },
@@ -8083,7 +8109,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T12:01",
+          "spec": "2026-08-10T17:57",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10527,7 +10553,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-07",
           "deck": "",
-          "spec": "2026-08-10T09:40",
+          "spec": "2026-08-10T17:55",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10576,7 +10602,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
+        "dreamStatus": "specified",
         "ownerDream": "conda-forge-expert-rebuild",
         "noDream": false,
         "unowned": false,
@@ -12723,16 +12749,6 @@ window.DASHBOARD_DATA = {
   "backlog": {
     "rows": [
       {
-        "slug": "conda-forge-expert-rebuild",
-        "title": "Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice",
-        "status": "dreamt",
-        "owner": "mason",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
-        }
-      },
-      {
         "slug": "herald-moments-2-4-live-backend",
         "title": "Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered",
         "status": "dreamt",
@@ -12740,6 +12756,16 @@ window.DASHBOARD_DATA = {
         "blockedOn": "",
         "chain": {
           "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
+        }
+      },
+      {
+        "slug": "conda-forge-expert-rebuild",
+        "title": "Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice",
+        "status": "specified",
+        "owner": "mason",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
         }
       },
       {
@@ -12775,8 +12801,8 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 0,
     "byOwner": {
-      "mason": 1,
       "herald": 1,
+      "mason": 1,
       "doctor": 1,
       "steward": 2
     },
@@ -13183,9 +13209,9 @@ window.DASHBOARD_DATA = {
         "station": "mason",
         "total": 8,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
-          "specified": 1,
+          "specified": 2,
           "realized": 0,
           "archived": 4,
           "practice": 2
@@ -13223,13 +13249,6 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "conda-forge-expert-rebuild",
-            "title": "Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
             "slug": "fleet-stewardship",
             "title": "Fleet stewardship — tend every feedstock we can touch",
             "status": "realized",
@@ -13241,6 +13260,13 @@ window.DASHBOARD_DATA = {
             "title": "The Packaging Factory",
             "status": "realized",
             "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "conda-forge-expert-rebuild",
+            "title": "Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice",
+            "status": "specified",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -15145,8 +15171,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 17:01 UTC",
-    "generatedEpoch": 1786381268
+    "generatedAt": "2026-08-10 23:10 UTC",
+    "generatedEpoch": 1786403455
   },
   "storySpecs": [
     {
@@ -15282,14 +15308,14 @@ window.DASHBOARD_DATA = {
         "openSpecs": [
           {
             "slug": "spec-conda-forge-expert-rebuild",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
           }
         ],
         "done": 10,
-        "backlog": 28,
+        "backlog": 32,
         "blocked": 0,
-        "total": 38,
+        "total": 42,
         "next": "2-1-the-cfe-port",
         "blockedKeys": [],
         "backlogKeys": [
@@ -15441,9 +15467,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 267,
-      "backlog": 71,
+      "backlog": 75,
       "blocked": 1,
-      "total": 339
+      "total": 343
     }
   },
   "fleetProgress": {
@@ -15494,10 +15520,10 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "mason",
-        "stories": 38,
+        "stories": 42,
         "done": 10,
         "blocked": 0,
-        "epics": 5,
+        "epics": 6,
         "epicsDone": 1,
         "complete": false,
         "running": false,
@@ -15538,10 +15564,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 339,
+      "stories": 343,
       "done": 267,
       "blocked": 1,
-      "epics": 65,
+      "epics": 66,
       "epicsDone": 53
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",

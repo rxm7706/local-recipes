@@ -18,7 +18,7 @@ sources:
   - '../../briefs/brief-pyforge-mason-2026-07-25/brief.md'
   - '../../research/technical-mason-cli-seam-research-2026-07-25.md'
 companions:
-  - '../../../../local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md'
+  - '../../specs/spec-packaging-factory/SPEC.md'
 ---
 
 # Architecture Spine — pyforge-mason
@@ -86,6 +86,13 @@ graph TD
 - **Rule:** `pyforge/mason/cfe.py` is the only module that may name a CFE script, hold a CFE path,
   or spawn a CFE process. Every CFE script Mason uses is declared once in a module-level table in
   that file. A use-case calls a named adapter function; it never passes a script name.
+- **Carve-out (amended 2026-08-10, correct-course; operator-approved):** AD-5 deliberately homes
+  root *resolution* in `resolve.py`, so exactly two non-`cfe.py` references are sanctioned:
+  `resolve.py`'s root-marker constant (`_CFE_MARKER`, the `.claude/scripts/conda-forge-expert`
+  path used to *recognize* a CFE root) and `errors.py`'s user-guidance echo of that path. Nothing
+  else — S-2.2's `test_adapter_sole_caller` enforces precisely this two-entry allowlist, each
+  entry carrying a rationale comment. Script names and process-spawning remain `cfe.py`-only with
+  no exception.
 
 ### AD-4 — Subprocess-only, typed, timed invocation [ADOPTED: PRD D-1, NFR-1]
 
@@ -207,7 +214,7 @@ graph TD
   code path logs an environment-variable *value* at any verbosity. Credential presence is validated
   **before** any artifact is built (FR-20).
 
-### AD-15 — The CFE surface is read-only, forever
+### AD-15 — The CFE surface is read-only for the wrap effort; the rebuild replaces it slice-by-slice (amended 2026-08-10)
 
 - **Binds:** FR-45, FR-47, NFR-16, CLAUDE.md Rules 1 & 2
 - **Prevents:** a Mason story "fixing" CFE — which would break the `spec-packaging-factory`
@@ -217,7 +224,21 @@ graph TD
   `.claude/scripts/conda-forge-expert/**`, or `.claude/tools/conda_forge_server.py`. Behaviour
   needed from CFE that CFE does not have is an **open question routed to a CFE retrospective**,
   never a local patch or a vendored copy. `spec_surface_check` stays green throughout.
-- **Sanctioned exception (exactly one):** the closing Rule-2 retrospective edits those files, because
+- **Amendment (2026-08-10, correct-course; operator directive: "the current conda-forge-expert
+  skill is unsustainable — we rebuild and shift to the mason rebuilt version"):** the wrap-phase
+  rule above binds **the mason-CLI effort** (Epics 1–5): none of ITS implementation commits write
+  the CFE surface, and S-5.2's governance check scopes to commits touching
+  `src/shared/packages/pyforge-mason/**` (code paths only — deliberately NOT mason
+  planning-artifacts, where the rebuild effort's own slice map and campaign state live per its
+  CAP-1), resolving OQ-E5. The **sanctioned writer** of
+  the CFE surface is the `spec-conda-forge-expert-rebuild` effort, under its own Spec's gates:
+  slices built and validated IN PARALLEL with the live original (operator's cutover-shape
+  decision, same date, concern raised and overridden): the live skill stays authoritative at
+  every commit; the equivalence harness, the dual-landing rule for Rule-2 knowledge, and a
+  detector-enforced END cutover (every caller flips, legacy retires, campaign-terminal) are
+  the disciplines that prevent the atlas outcome under parallel-run. Behaviour needed from CFE during the
+  wrap effort still routes to a CFE retrospective, never a local patch.
+- **Sanctioned exception (exactly one, within the mason-CLI effort):** the closing Rule-2 retrospective edits those files, because
   CLAUDE.md Rule 2 mandates it. It is identified by a `retro:` commit subject plus a CFE
   `CHANGELOG.md` entry in the same commit, and the governance check asserts it is used once. Rule 1
   says Mason may not edit CFE *while implementing*; Rule 2 says Mason must edit CFE *when
@@ -267,7 +288,7 @@ avoid renumbering either.)*
 | Module naming | One module per use-case noun (`recipe`, `package`, `environment`); ports named for what they adapt (`cfe`, `engines/twine`). No `utils`, no `helpers`, no `common`. |
 | Command naming | `mason <noun> <verb>`; nouns are singular; verbs are imperative. Nested argparse subparsers, one builder function per noun. |
 | Error identifiers | Lowercase, colon-delimited, stable: `cfe:unresolved`, `ship:credential-missing`, `engine:absent`. Identifiers are API — changing one is a MAJOR bump. |
-| Data shapes | `@dataclass(frozen=True)` in `models.py`. Enums for closed sets (`ShipState`, `ShipTarget`). No dicts as return types across a layer boundary. |
+| Data shapes | `@dataclass(frozen=True)` in `models.py` (re-affirmed 2026-08-10 after an operator re-decision: `models.py` is a LEAF the presentation layer imports safely — the dependency-direction guard is the reason. Story 2.1 creates it; the one landed divergence, `DoctorReport` in `doctor.py`, moves in with a `doctor.py` re-export so no import or test churns). Enums for closed sets (`ShipState`, `ShipTarget`). No dicts as return types across a layer boundary. |
 | JSON envelope | Every JSON document carries `schema_version`, `command`, `status`, `data`, `errors`. One document per invocation. |
 | Dates & versions | UTC ISO-8601 with `Z`. Versions are strings, compared via `packaging.version`, never string-compared. |
 | Logging | `logging` to stderr only. `--verbose` raises level; `--quiet` lowers. Never a value from the environment. |
@@ -310,7 +331,7 @@ src/shared/packages/pyforge-mason/
     __main__.py
     cli.py                  # driving adapter — argparse noun/verb tree
     render.py               # the only formatter (AD-8)
-    models.py               # ShipReceipt, ShipTargetResult, CfeResult, LockResult, DoctorReport
+    models.py               # ShipReceipt, ShipTargetResult, CfeResult, LockResult, DoctorReport (created by S-2.1; DoctorReport migrates in with a doctor.py re-export)
     errors.py               # MasonError taxonomy (AD-7)
     exit_codes.py           # sole exit-code owner (AD-7)
     resolve.py              # pure resolution chains (AD-5)
