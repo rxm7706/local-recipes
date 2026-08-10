@@ -12,17 +12,7 @@ window.DASHBOARD_DATA = {
         "WF–WH",
         "WI · post-audit"
       ],
-      "inflight": {
-        "key": "13.2",
-        "title": "Tier classification (FR-65)",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786324309,
-        "median": 29,
-        "lo": 4,
-        "hi": 227,
-        "phaseAsOf": "2026-08-10 01:40 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 11 of 46 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -523,17 +513,7 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": {
-        "key": "6.8",
-        "title": "`bmad_drift` comes home without breaking the board",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786323128,
-        "median": 90,
-        "lo": 34,
-        "hi": 427,
-        "phaseAsOf": "2026-08-10 01:40 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 13 of 28 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -2489,15 +2469,15 @@ window.DASHBOARD_DATA = {
         "E4"
       ],
       "inflight": {
-        "key": "7.5",
-        "title": "The image proves itself at build time",
+        "key": "8.2",
+        "title": "Zero-loop guarantee",
         "phase": "dev",
         "attempt": "1",
-        "startEpoch": 1786324443,
-        "median": 69,
-        "lo": 37,
+        "startEpoch": 1786358729,
+        "median": 64,
+        "lo": 4,
         "hi": 360,
-        "phaseAsOf": "2026-08-10 01:40 UTC"
+        "phaseAsOf": "2026-08-10 10:49 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2614,7 +2594,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "8.2"
       },
       "epics": [
@@ -2811,7 +2791,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.2",
-              "pending",
+              "active",
               "Zero-loop guarantee"
             ],
             [
@@ -3438,7 +3418,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 10:37 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 10:49 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -13103,7 +13083,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 1
         },
-        "line": "paused 8.2",
+        "line": "in flight 8.2",
         "load": 4,
         "blocked": 0,
         "dreams": [
@@ -14892,37 +14872,25 @@ window.DASHBOARD_DATA = {
     ]
   },
   "status": {
-    "source": "git",
+    "source": "sprint-status",
     "running": [
       {
-        "station": "Atlas",
-        "story": "13.2",
-        "phase": "dev",
-        "startEpoch": 1786324309
-      },
-      {
-        "station": "Doctor",
-        "story": "6.8",
-        "phase": "dev",
-        "startEpoch": 1786323128
-      },
-      {
         "station": "Steward",
-        "story": "7.5",
+        "story": "8.2",
         "phase": "dev",
-        "startEpoch": 1786324443
+        "startEpoch": 1786358729
       }
     ],
     "lastShipped": {
       "station": "marshal",
-      "story": "4.14",
-      "epoch": 1786356151,
-      "sha": "11461c316",
-      "subject": "Merge bmad-loop/20260809-231524-abb9/4-14-the-failed-story-safety-net-is-reported into loop/pyforge-marshal (bmad-loop)"
+      "story": "4.15",
+      "epoch": 1786358153,
+      "sha": "442dbc705",
+      "subject": "Merge bmad-loop/20260809-231524-abb9/4-15-one-pusher-not-two into loop/pyforge-marshal (bmad-loop)"
     },
-    "runningAvailable": false,
-    "generatedAt": "2026-08-10 10:37 UTC",
-    "generatedEpoch": 1786358272
+    "runningAvailable": true,
+    "generatedAt": "2026-08-10 10:49 UTC",
+    "generatedEpoch": 1786358977
   },
   "storySpecs": [
     {
@@ -15233,7 +15201,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 12,
         "epicsDone": 12,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 46
       },
       {
         "key": "doctor",
@@ -15242,7 +15212,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 6,
         "epicsDone": 5,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 27
       },
       {
         "key": "herald",
@@ -15251,7 +15223,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 12,
         "epicsDone": 12,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 47
       },
       {
         "key": "marshal",
@@ -15260,7 +15234,9 @@ window.DASHBOARD_DATA = {
         "blocked": 1,
         "epics": 13,
         "epicsDone": 7,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 67
       },
       {
         "key": "mason",
@@ -15269,7 +15245,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 5,
         "epicsDone": 1,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 10
       },
       {
         "key": "scribe",
@@ -15278,7 +15256,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 2,
         "epicsDone": 2,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 9
       },
       {
         "key": "steward",
@@ -15287,7 +15267,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 8,
         "epicsDone": 7,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 29
       },
       {
         "key": "warden",
@@ -15296,7 +15278,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 6,
         "epicsDone": 6,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 31
       }
     ],
     "total": {
@@ -15306,6 +15290,10 @@ window.DASHBOARD_DATA = {
       "epics": 64,
       "epicsDone": 52
     },
-    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`)."
+    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
+    "live": {
+      "running": [],
+      "projected": 266
+    }
   }
 };
