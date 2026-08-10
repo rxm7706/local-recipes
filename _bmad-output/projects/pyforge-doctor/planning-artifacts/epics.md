@@ -739,3 +739,46 @@ artifact)
 **And** a newly added source with no declared subject fails the test
 
 **Status:** done
+
+## Epic 7: Deferred-work visibility
+
+> **Audit-proposed decomposition (Phase 3, 2026-08-10), pending operator confirmation at
+> re-spin.** Authored from the operator-approved decomposition queue recorded 2026-08-10
+> (prior session). Stories are `backlog`; the owning Spec **remains in `DEFERRED_SPECS`**
+> deliberately — de-registering that gate is the operator's call, not the audit's. Nothing
+> here dispatches without an explicit `marshal factory spin` plus that confirmation.
+
+**Value delivered.** `deferred_work_check`'s guarantee becomes real: every deferral carries
+identity from birth, anonymous Tier-3 entries are seen, and the 470-entry blind backlog is
+grandfathered rather than exploding a landing pass. Decomposes
+`spec-deferred-work-visibility` (ready, PR #396; open_questions closed — Doctor owns BOTH
+halves, the emitter mints ids at defer time, grandfather wholesale at a dated cut-off,
+same severity both sides). Sequenced behind 6-9, which landed (PRs #394/#395). Added by
+the fleet audit's Phase 3 (2026-08-10) per the operator-approved decomposition queue.
+
+### Story 7.1: The emitter mints identity at defer time
+**Given** a bmad-dev-auto review pass that defers work **When** the deferral is written
+**Then** the entry carries an id under the station's own convention (`DW-FU-<story>` for
+doctor/atlas/marshal/warden, `DW-<story>-<n>` for mason) from birth — an entry reaching
+promotion without an id is already invisible to the promoter (CAP-1; edits
+`.claude/skills/bmad-dev-auto/step-04-review.md`, allowlisted not governed).
+
+### Story 7.2: Grandfather the 470 at a dated cut-off
+**Given** the pre-existing anonymous backlog **When** this story lands **Then** the dated
+cut-off baseline exists covering all 470 wholesale (warden's precedent); CAP-3's full
+success — green on unchanged repo, red on one new anonymous entry — is demonstrable only
+once S-7.3 arms the gate against it. Triage is explicitly a separate, later effort.
+**Deps:** S-7.1.
+
+### Story 7.3: The detector sees anonymous Tier-3 entries
+**Given** `pyforge.doctor.sources`' deferred-work source **When** it audits **Then**
+`_anonymous()` runs on the Tier-3 file too, new anonymous entries are findings, the
+grandfathered set is exempt by the baseline, and **the CAP-2 mutation proof is met:
+deleting an id heading from a Tier-3 entry reds the detector, demonstrated by mutation**
+— the vacuity class `_anonymous()`'s own docstring records catching once before (CAP-2).
+**Deps:** S-7.2.
+
+### Story 7.4: One severity, both sides
+**Given** anonymous entries on either side of the tracked/Tier-3 pair **When** reported
+**Then** both carry the same severity, asserted by a test that plants one on each side
+(CAP-2 closing AC). **Deps:** S-7.3.

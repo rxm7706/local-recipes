@@ -12,6 +12,11 @@ sources:
   - ../../research/technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md
   - ../../../../../../docs/specs/cfe-atlas-datapipeline-kedro-migration.md
 open_questions:
+  # All four RESOLVED by delivery (audit Phase 3, 2026-08-10): Q1 by Path B shipping
+  # (12-2 publishes via steward deploy dashboard — the dormancy question no longer gates);
+  # Q2 answered (atlas Epic 12 carried the story, done); Q3 deferred as optional goodwill
+  # (not an AC — recorded here); Q4 answered (bmad-module-provisioning landed FIRST and is
+  # realized — provision-through-it stands for any future kedro-skills install).
   - "Is publish-kedro-viz dormant-and-abandoned or stable-and-done? Last push 2025-11-25 (~8.5 months); the Action is thin enough that quiet may mean finished, but it wraps kedro-viz's build interface and kedro-viz itself is moving (v12.4.0, pushed 2026-08-08) — a future kedro-viz major could strand the v3 pin. The research recommends Path B (Steward publishes `kedro viz build` output directly) precisely because this question is unresolved."
   - "Which station's backlog carries the viz-publishing story? The Dream blesses owner ≠ mechanism (Atlas owns the outcome, Steward owns `deploy dashboard`), but the story has to live somewhere concrete."
   - "Does the kedro-skills upstream-contribution angle (Atlas as an unusually invariant-heavy Kedro deployment) become an AC on the audit story ('file upstream issues for guidance the audit finds wrong') or a separate goodwill task?"
