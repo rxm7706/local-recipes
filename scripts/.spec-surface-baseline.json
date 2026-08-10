@@ -320,6 +320,10 @@
   "files": {},
   "memlog": "866c5451f01fd2f586edb8a077ca476806d2ea8a"
  },
+ "pyforge-doctor/spec-deferred-work-visibility": {
+  "files": {},
+  "memlog": "1235144e2df01517100a31e5fe545b91888af5b6"
+ },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
    "src/shared/packages/pyforge-doctor/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",

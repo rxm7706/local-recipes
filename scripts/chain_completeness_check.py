@@ -74,20 +74,28 @@ DEFERRED_SPECS: dict[str, str] = {
         "layer content. Its Spec scopes to ONE pilot slice with an explicit re-scope "
         "gate; decomposing the whole rebuild before that spike would plan work nobody "
         "has shown is possible",
+    "spec-deferred-work-visibility":
+        "sequenced behind doctor 6-9, deliberately and by its own Spec. The target it would "
+        "change — `deferred_work_check` — is one of the `scripts/*_check.py` shims that 6-9 "
+        "retires, so decomposing now plans edits to a file about to move and would write the "
+        "fix twice. The Spec also carries four genuinely open questions (the detector's home "
+        "after 6-9, the grandfathering cut-off date, whether `bmad-dev-auto` mints ids or the "
+        "detector infers them, and what a `twin` even means for an entry with no id to twin "
+        "against) — the third changes which side of the writer/gate pair moves first, which is "
+        "the whole sequencing decision. Revisit once 6-9 lands",
     "spec-secure-live-dashboards":
-        "packaging IS now settled — the 2026-08-09 architecture run answered all six open "
-        "questions (AD-1 library + subcommand split on the process boundary, AD-2 the "
-        "library provides while the subcommand verifies), so the ORIGINAL reason for this "
-        "entry has expired and the Spec moved to `ready`. It stays deferred for a new and "
-        "narrower reason: one dependency question upstream of it is still open. The pattern "
-        "adds django/channels/daphne/asgiref to Steward, and `pyforge-container` composes "
-        "the eight station features BY NAME, so those land in the whole-Guild image "
-        "automatically. Whether they belong in `pyforge-steward` or in a "
-        "`pyforge-steward[dashboard]` extra is decided by the pending unified-container "
-        "architecture, and the answer changes the stories materially — a story that adds an "
-        "optional extra is not the story that adds a base dependency. Revisit once that "
-        "architecture lands AND steward Epic 8 completes; steward already carries two open "
-        "epics and a third would only sit in backlog",
+        "TWO of this entry's three successive reasons have now expired, and the reason is "
+        "narrowed again rather than left stale. (1) Packaging was settled by the 2026-08-09 "
+        "architecture run — AD-1 library + subcommand split on the process boundary, AD-2 the "
+        "library provides while the subcommand verifies — and the Spec moved to `ready`. "
+        "(2) The dependency question is settled too, as of 2026-08-10: the unified-container "
+        "architecture landed and its AD-1 rules that the ASGI stack "
+        "(django/channels/daphne/asgiref) ships as the `pyforge-steward[dashboard]` OPTIONAL "
+        "EXTRA and never as a base dependency, so `pyforge-container` composing the eight "
+        "station features by name no longer drags it into the whole-Guild image. What remains "
+        "is scheduling alone: steward Epic 8 is unbuilt (0/5) and a third open epic would only "
+        "sit in backlog. Revisit when Epic 8 completes — there is no longer an unanswered "
+        "design question in front of this",
 }
 
 

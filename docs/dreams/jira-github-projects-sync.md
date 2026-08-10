@@ -2,7 +2,7 @@
 title: A ticket moves once, both boards know
 type: dream
 owner: steward
-status: dreamt
+status: specified
 ---
 
 # A ticket moves once, both boards know

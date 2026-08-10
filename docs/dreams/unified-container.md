@@ -2,7 +2,7 @@
 title: One container, eight stations
 type: dream
 owner: steward
-status: dreamt
+status: realized
 ---
 
 # One container, eight stations
@@ -49,3 +49,14 @@ once this gets pressure-tested via `bmad-spec`.
 - **2026-08-02** — Dream captured. User's framing: unifying all 8 stations into one
   container is itself a reason to unify architecture first — directly motivated by the same
   session's PRD/brief/architecture/Spec consolidation across Atlas/Herald/Mason/Marshal.
+
+- **2026-08-10** — **Realized.** Steward Epic 7, "The one-container Guild", is **5/5 done and
+  merged**, and `spec-unified-container/SPEC.md` already read `status: shipped`. The Dream's own
+  frontmatter had been left at `dreamt` throughout — nobody advanced it as the chain moved,
+  which is the exact rot the "no `building` state" rule exists to prevent and which had already
+  bitten `pyforge-warden` and `deckcraft` on 2026-07-25. The architecture that shipped resolved
+  Q1 as **one lean image**, with `pyforge-factory-full` deferred behind a named trigger ("when
+  recipe builds need to run inside the container"); the ASGI stack ships as the
+  `pyforge-steward[dashboard]` extra rather than a base dependency, so the container never
+  carries it. Evidence: `architecture-unified-container-2026-08-09/ARCHITECTURE-SPINE.md` (AD-1
+  through AD-6) and steward's `sprint-status-ledger.yaml` Epic 7.
