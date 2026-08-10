@@ -1,0 +1,57 @@
+# Steward `sync` duty configuration (Epic 8, Story 8.1) — the non-secret,
+# operator-declared mapping that makes the GitHub Projects V2 <-> Jira Cloud
+# reconcile engine board-agnostic (AD-2: no sidecar store; every ID below
+# names a field that must already exist on the external board/project --
+# `steward sync` never provisions any of them).
+#
+# Copy this file to `.steward/sync-config.yaml` (gitignored) and fill in the
+# real IDs for your board/project. NEVER put a credential in this file
+# (AD-8): GitHub auth reads GITHUB_TOKEN/GH_TOKEN from the environment; Jira
+# auth reads ~/.netrc (Basic auth: your Atlassian email as the login, an API
+# token as the password) -- both through the same `keys` credential surface
+# every other Steward duty uses, never a new auth path.
+
+github:
+  # The GitHub Projects V2 project's own node ID (e.g. from
+  # `gh api graphql -f query='{ organization(login:"...") { projectV2(number:N) { id } } }'`).
+  project_id: "PVT_xxxxxxxxxxxxxxxxxxxx"
+  # The custom field that holds the propagated status value. Must be a
+  # plain TEXT field, NOT GitHub's native single-select "Status" field --
+  # this story propagates the configured field's raw string value 1:1 and
+  # never resolves a single-select option ID.
+  status_field_id: "PVTF_xxxxxxxxxxxxxxxxxxxx"
+  # The custom TEXT field that holds the linked Jira issue key (e.g. "PROJ-123").
+  link_field_id: "PVTF_xxxxxxxxxxxxxxxxxxxx"
+  # The custom TEXT field that records this item's own last sync-point
+  # timestamp (ISO-8601, UTC) -- the AD-5 loop guard compares an item's own
+  # `updatedAt` against this field, never against the other vendor's clock.
+  sync_point_field_id: "PVTF_xxxxxxxxxxxxxxxxxxxx"
+
+jira:
+  # Jira Cloud site base URL, no trailing slash.
+  base_url: "https://your-org.atlassian.net"
+  # The Jira project key items must belong to (e.g. "PROJ").
+  project_key: "PROJ"
+  # The custom field that holds the linked GitHub Projects V2 item's node ID.
+  link_field_id: "customfield_10001"
+  # The custom field that records this issue's own last sync-point
+  # timestamp (ISO-8601, UTC).
+  sync_point_field_id: "customfield_10002"
+
+# Per-field conflict-authority overrides (AD-4). On a real conflict (both
+# sides changed since the last recorded sync point), GitHub's value wins by
+# default. List a field here with the value "jira" to reverse that for just
+# that field. Omit a field entirely to keep the default (GitHub wins); no
+# other value is accepted (a typo must fail loud, never silently revert to
+# the default).
+field_overrides: {}
+# field_overrides:
+#   status: jira
+
+# GitHub login -> Jira accountId. Reserved for a future assignee-sync field
+# (the architecture's CAP-1 names status/assignee/identity-link; this story
+# wires status only -- see ARCHITECTURE-SPINE.md's Deferred section). Safe
+# to leave empty for now.
+user_mapping: {}
+# user_mapping:
+#   octocat: "5b10a2844c20165700ede21g"
