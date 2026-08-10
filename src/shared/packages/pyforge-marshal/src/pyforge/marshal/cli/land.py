@@ -103,11 +103,12 @@ from typing import TYPE_CHECKING
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
-from ..adapters.fs_local import LocalFs
+from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness
 from ..adapters.process_posix import PosixProcess
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import policy, promotion
+from ..core import deferred_work, policy, promotion
+from ..core.identity import StoryKey
 from ..core.journal import Phase
 from ..core.landing import rule_applies
 from ..core.model import Finding, Severity, build_envelope
@@ -151,6 +152,7 @@ _MRS_LAND_006 = "MRS-LAND-006"
 _MRS_LAND_007 = "MRS-LAND-007"
 _MRS_LAND_008 = "MRS-LAND-008"
 _MRS_LAND_009 = "MRS-LAND-009"
+_MRS_LAND_010 = "MRS-LAND-010"
 
 # This module's own journal kinds (AD-28: distinct writer namespaces, never
 # conflated with `cli/deploy.py`'s `_LAND_MERGE_KIND`/`_BATCH_PR_WRITE_KIND`
@@ -163,6 +165,19 @@ _MRS_LAND_009 = "MRS-LAND-009"
 # identical action.
 _LAND_MERGE_PR_KIND = "land-merge-pr"
 _LAND_OBSERVATION_KIND = "land-observation"
+# Story 4.13's own journal kind -- distinct from `_PROMOTE_COMMIT_KIND`
+# (`cli/deploy.py`'s own spec-promotion commit, a different writer
+# namespace entirely per this module's own "distinct writer namespaces"
+# discipline above).
+_LAND_DEFERRED_WORK_KIND = "land-deferred-work-promotion"
+
+# Story 4.13 (AD-42's own precedent, `cli/deploy.py::_PROMOTE_LOCK_TIMEOUT_S`):
+# how long `_promote_deferred_work` waits for a concurrent writer to release
+# the tracked ledger's advisory lock before refusing cleanly (MRS-LAND-010).
+# Short -- a re-run converges cheaply, so a long wait here buys little over
+# just refusing and letting the next `land`/`deploy promote` invocation
+# retry.
+_LAND_DEFERRED_WORK_LOCK_TIMEOUT_S = 5.0
 
 
 def add_land_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -584,6 +599,11 @@ def run_land(
             harness=harness,
             process=process,
         )
+        promoted = _promote_deferred_work(
+            fs, vcs, root, slug, wave_keys, clock, deploy_run, findings
+        )
+        if promoted:
+            data["deferred_work_promoted"] = list(promoted)
         home_current = _resync_home_branch(
             vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
         )
@@ -981,6 +1001,10 @@ def run_land(
             intent_id=merge_intent_id,
         )
 
+    promoted = _promote_deferred_work(fs, vcs, root, slug, wave_keys, clock, deploy_run, findings)
+    if promoted:
+        data["deferred_work_promoted"] = list(promoted)
+
     # One journal OBSERVATION entry recording checks required/passed, what
     # merged, and under whose authority (the story's own Always bullet) --
     # redacted at capture via `_land_redact_text`, reused rather than
@@ -1021,6 +1045,208 @@ def run_land(
         data["home_current"] = home_current
 
     return _emit(args, data, findings)
+
+
+def _promote_deferred_work(
+    fs: FsPort,
+    vcs: VcsPort,
+    root: Path,
+    slug: str,
+    wave_keys: list[StoryKey],
+    clock: ClockPort,
+    deploy_run: "_DeployRun",
+    findings: list[Finding],
+) -> tuple[str, ...]:
+    """FR-175 (Story 4.13): promotes each landing story's Tier-3
+    ``review-budget-followup`` deferral -- bmad-loop's own follow-up-review
+    damping safety valve, written to the gitignored ``implementation-
+    artifacts/deferred-work.md`` -- into the tracked ``planning-artifacts/
+    deferred-work-ledger.md``, at the moment ``wave_keys`` is confirmed
+    landed. Mirrors ``cli/deploy.py``'s own spec-promotion shape
+    (``_scan_promotions``/``run_promote``, AD-42): a cheap unlocked read,
+    the pure ``core.deferred_work`` classify/render core, THEN a lock ->
+    write -> commit -> intent/outcome-journal sequence for the write alone.
+
+    Reads both files fresh via ``fs.read_text`` (never a cached copy, per
+    this story's own Boundaries) and returns ``()`` -- no lock acquired, no
+    write, no finding -- when the Tier-3 file is absent/empty, no Tier-3
+    block parses, or every parsed candidate is already promoted
+    (``core.deferred_work.deferrals_to_promote``'s own idempotency check:
+    a promoted id already present as a COMPLETE token anywhere in the
+    tracked ledger's text -- never a bare substring test, which would
+    false-positive on a prefix collision like ``"DW-FU-1-1"`` vs
+    ``"DW-FU-1-10"`` -- is never re-appended). This single-shared-file
+    idempotency check is simpler than ``cli/deploy.py::_already_promoted_keys``'s own
+    ``vcs.path_has_uncommitted_changes`` guard by design (see this story's
+    Design Notes for the deviation and its rationale) -- this operation
+    reads, writes, AND commits the one shared ledger file within this one
+    call, unlike ``run_promote``'s per-story tracked-file copies, which a
+    separate, earlier, possibly-crashed invocation could have left
+    uncommitted.
+
+    A MISSING tracked ledger (no file at all -- a brand-new project) is
+    treated as an empty one and bootstrapped on write (review finding,
+    2026-08-10): the very first promotion for such a project must not be a
+    silent, permanent no-op. A tracked ledger that EXISTED at the first,
+    unlocked read but is gone by the time the lock is held is a different,
+    genuinely anomalous case -- a concurrent deletion -- and is reported
+    (``MRS-LAND-010`` WARN) rather than silently resurrected from stale
+    pre-lock content.
+
+    Otherwise: acquires an advisory lock on the tracked ledger path itself
+    (a sibling ``.lock`` file, mirroring ``run_promote``'s own
+    ``specs_dir`` lock), re-reads and re-filters under the lock (closing
+    the window against a concurrent writer), appends every candidate's
+    ``render_ledger_entry`` text, writes the whole file atomically, commits
+    it in its OWN dedicated commit (never folded into any other write this
+    run makes), and journals intent-before/outcome-after
+    (``_LAND_DEFERRED_WORK_KIND``, mirroring ``_PROMOTE_COMMIT_KIND``'s own
+    shape). Lock contention or a ``commit_paths`` failure fires ONE
+    ``MRS-LAND-010`` WARN and returns ``()`` -- never blocking ``land``'s
+    own exit code (the wave's own landing already succeeded by the time
+    this best-effort step runs)."""
+    tier3_path = (
+        root
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "deferred-work.md"
+    )
+    tracked_path = (
+        root
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    )
+
+    tier3_text = fs.read_text(tier3_path)
+    if not tier3_text:
+        return ()
+    candidates = deferred_work.parse_followup_deferrals(tier3_text)
+    if not candidates:
+        return ()
+
+    tracked_text = fs.read_text(tracked_path)
+    tracked_existed = tracked_text is not None
+    if tracked_text is None:
+        tracked_text = ""
+
+    landing_keys = frozenset(wave_keys)
+    if not deferred_work.deferrals_to_promote(candidates, landing_keys, tracked_text):
+        return ()
+
+    try:
+        lock = fs.acquire_advisory_lock(
+            tracked_path, timeout_s=_LAND_DEFERRED_WORK_LOCK_TIMEOUT_S
+        )
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_LAND_010,
+                severity=Severity.WARN,
+                message=(
+                    f"cannot acquire the deferred-work-ledger lock on "
+                    f"{str(tracked_path)!r} within "
+                    f"{_LAND_DEFERRED_WORK_LOCK_TIMEOUT_S}s -- another land/"
+                    f"promote is plausibly running concurrently for "
+                    f"{slug!r}; nothing was promoted this run: {exc}"
+                ),
+            )
+        )
+        return ()
+
+    try:
+        fresh_tracked_text = fs.read_text(tracked_path)
+        if fresh_tracked_text is None:
+            if tracked_existed:
+                findings.append(
+                    Finding(
+                        code=_MRS_LAND_010,
+                        severity=Severity.WARN,
+                        message=(
+                            f"the tracked deferred-work ledger at "
+                            f"{str(tracked_path)!r} existed moments ago but "
+                            "is gone now -- skipping this run rather than "
+                            "resurrecting it from stale pre-lock content"
+                        ),
+                    )
+                )
+                return ()
+            fresh_tracked_text = ""
+        to_promote = deferred_work.deferrals_to_promote(
+            candidates, landing_keys, fresh_tracked_text
+        )
+        if not to_promote:
+            return ()
+
+        promoted_date = clock.now().date().isoformat()
+        entry_text = "\n".join(
+            deferred_work.render_ledger_entry(candidate, promoted_date=promoted_date)
+            for candidate in to_promote
+        )
+        prefix = fresh_tracked_text.rstrip("\n")
+        new_text = (prefix + "\n\n" if prefix else "") + entry_text
+        try:
+            fs.write_text_atomic(tracked_path, new_text)
+        except FsError as exc:
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_010,
+                    severity=Severity.WARN,
+                    message=(
+                        f"cannot write the promoted deferred-work entries "
+                        f"to {str(tracked_path)!r}: {exc}"
+                    ),
+                )
+            )
+            return ()
+
+        promoted_ids = tuple(
+            deferred_work.promoted_id(candidate.story_key) for candidate in to_promote
+        )
+        message = (
+            f"marshal: promote {len(promoted_ids)} deferred-work "
+            f"entr{'y' if len(promoted_ids) == 1 else 'ies'} for {slug!r}"
+        )
+        intent_id = deploy_run.write(
+            findings,
+            kind=_LAND_DEFERRED_WORK_KIND,
+            phase=Phase.INTENT,
+            payload={"action": "commit_paths", "promoted": list(promoted_ids)},
+        )
+        try:
+            vcs.commit_paths(root, (tracked_path,), message)
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_010,
+                    severity=Severity.WARN,
+                    message=(
+                        f"promoted deferred-work entries {list(promoted_ids)} "
+                        f"written to {str(tracked_path)!r} but could not be "
+                        f"committed: {exc}"
+                    ),
+                )
+            )
+            return ()
+        if intent_id is not None:
+            deploy_run.write(
+                findings,
+                kind=_LAND_DEFERRED_WORK_KIND,
+                phase=Phase.OUTCOME,
+                payload={
+                    "action": "commit_paths",
+                    "promoted": list(promoted_ids),
+                    "commit_message": message,
+                },
+                intent_id=intent_id,
+            )
+        return promoted_ids
+    finally:
+        fs.release_advisory_lock(lock)
 
 
 def _resync_home_branch(
@@ -1205,6 +1431,9 @@ def _render_text_land(data: Mapping[str, object], findings: tuple[Finding, ...])
         lines.append(f"resynced: {data.get('resynced')}")
     if "home_current" in data:
         lines.append(f"home current with {data.get('base')!r}: {data.get('home_current')}")
+    if "deferred_work_promoted" in data:
+        promoted = data["deferred_work_promoted"]
+        lines.append(f"deferred work promoted: {', '.join(promoted)}")
     if findings:
         lines.append("findings:")
         for finding in findings:
