@@ -34,7 +34,6 @@ scripts/unpushed_work_check.py        # detector — stays Marshal's: same opera
 scripts/detectors.py                  # the detector REGISTRY itself — governs the others, governed by none; §6 re-home decides its home
 scripts/spec_surface_allowlist.txt    # this file — the allowlist cannot govern itself
 scripts/dashboard_watch.py            # local dev watcher (rebuilds the board on save), not a gate
-scripts/loop_push_watch.py            # local dev watcher over loop homes, not a gate
 scripts/deck_export.py                # deck build helper (presentation-deck workflow governs)
 scripts/normalize_deferred_ledgers.py # one-off ledger-format migration utility
 scripts/seed_claude_consent.py        # local harness bootstrap (agent consent seeding)

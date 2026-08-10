@@ -75,7 +75,7 @@ development_status:
   4-12-a-landing-leaves-the-loop-home-current-with-main: done
   4-13-the-loops-deferred-work-reaches-the-tracked-ledger: done
   4-14-the-failed-story-safety-net-is-reported: done
-  4-15-one-pusher-not-two: backlog
+  4-15-one-pusher-not-two: done
   4-2-teardown-reachability-and-spec-recovery-assistance: done
   4-3-merge-subject-conformance-and-review-cap-landing: done
   4-4-batch-pull-request-with-hygiene-preflight: done

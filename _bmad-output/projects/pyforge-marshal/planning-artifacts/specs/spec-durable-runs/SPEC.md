@@ -34,7 +34,8 @@ duplicate.** All six capabilities are accounted for in `spec-pyforge-marshal`'s 
 - **CAP-1** (`scripts/unpushed_work_check.py`) and **CAP-2** (`scripts/loop_push_watch.py`)
   already shipped as standalone repo scripts, outside the `marshal` CLI package surface —
   cited as motivating evidence for FR-61, correctly given no FR number of their own since
-  they are not marshal-CLI features.
+  they are not marshal-CLI features. (CAP-2's script was later retired 2026-08-10 once FR-61
+  fully subsumed its role — see the dated correction under § What carries forward.)
 - **CAP-3** (stage-boundary push) and **CAP-4** (durability wired into fleet launch) →
   **FR-61** (bounded-loss durability).
 - **CAP-5** (durability as a reported fleet property) → **FR-62**.
@@ -44,9 +45,16 @@ duplicate.** All six capabilities are accounted for in `spec-pyforge-marshal`'s 
 
 Everything — this Dream's real, measured evidence (the 2026-07-31 audit table) is cited
 directly in the consolidated `pyforge-marshal.md`. The two shipped scripts
-(`unpushed_work_check.py`, `loop_push_watch.py`) remain live, unmodified by this retirement.
+(`unpushed_work_check.py`, `loop_push_watch.py`) remained live, unmodified by this retirement
+(see the dated correction immediately below for `loop_push_watch.py`'s later fate).
 FR-61/62/63 in the real PRD are the current, binding contract for everything this Spec
 proposed.
+
+**Correction, 2026-08-10 (Story 4.15/FR-177):** the sentence above is no longer accurate for
+the second script. `loop_push_watch.py` was retired — its only role (bounded-loss durability
+during a live run) is now fully subsumed by the supervisor's own FR-61 stage-boundary +
+interval-fallback push, and the standalone watcher was confirmed never auto-started anywhere.
+`unpushed_work_check.py` remains live and unmodified.
 
 ## Non-goals
 
