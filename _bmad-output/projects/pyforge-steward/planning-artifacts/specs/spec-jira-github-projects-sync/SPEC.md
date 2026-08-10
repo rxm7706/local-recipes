@@ -21,6 +21,14 @@ sources:
 #          mechanism on a schedule trigger — batch cadence at zero infrastructure, no database —
 #          with control state stored in the synced systems themselves. Mode B stays opt-in for
 #          queryable sync history and uniform arbitrary-custom-field handling.
+#          NEAR-REAL-TIME IS OPT-IN, NOT THE DEFAULT, and the reason is a verified fact rather
+#          than a preference: there is NO `project_v2_item` / `projects_v2_item` event usable in
+#          a GitHub Actions `on:` block (checked against GitHub's docs 2026-08-09, after steward
+#          story 8-1 raised it as an intent_gap). The webhook reaches a workflow only via an
+#          EXTERNAL RECEIVER — a GitHub App with org-level Projects read access, or a webhook
+#          endpoint — that then calls `repository_dispatch`. A webhook default would therefore
+#          have silently mandated hosting and credentials for every adopter. The Jira→GitHub
+#          direction already used `repository_dispatch` correctly and is unchanged.
 #   Q4 (Mode B's data-model shape)
 #       -> AD-7: Mode B ships the NORMALIZED schema together with its three-table control plane,
 #          which is what makes the join tractable; the flat single-table variant is rejected.
