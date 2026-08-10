@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 48
+# stories: 54
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -52,6 +52,10 @@ development_status:
   5-3-delegation-fidelity-test: backlog
   5-4-free-inheritance-verification: backlog
   5-5-rule-2-conda-forge-expert-retrospective: backlog
+  6-1-slice-map-and-campaign-state: backlog
+  6-2-the-divergence-and-endgame-guard-proven-red-first: backlog
+  6-3-pilot-slice-recipe-generation-built-and-parallel-validated: backlog
+  6-4-the-re-scope-gate-measured-cost-recorded-decision: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: backlog
@@ -62,3 +66,5 @@ development_status:
   epic-4-retrospective: optional
   epic-5: backlog
   epic-5-retrospective: optional
+  epic-6: backlog
+  epic-6-retrospective: optional

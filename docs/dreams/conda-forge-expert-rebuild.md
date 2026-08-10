@@ -2,7 +2,7 @@
 title: Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice
 type: dream
 owner: mason
-status: dreamt
+status: specified
 ---
 
 # Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice
@@ -38,6 +38,8 @@ This Dream exists specifically to not repeat that outcome: the user chose full s
 all 30+ MCP tools and scripts, not a narrow pilot) but paired it with **hard cutover per
 slice** — every rebuilt capability retires its old CFE path, redirects every caller (pixi
 tasks, the MCP tool registration, Mason's own `cfe.py` port), in the *same* migration story
+*(historical framing — the cutover shape was re-decided 2026-08-10 to parallel-run with a
+detector-enforced end cutover; see the Realization log)*
 that builds it, never a separate future effort. That pairing is the whole bet: broad scope,
 but no slice is allowed to become a second, unused ~29,000 lines.
 
@@ -51,12 +53,12 @@ but no slice is allowed to become a second, unused ~29,000 lines.
 - Per slice: `skf-create-skill` compiles the replacement → a migration story in the *same*
   epic redirects every caller (pixi tasks, `.claude/tools/conda_forge_server.py`'s MCP tool
   registrations, Rule-1/Rule-2 references, Mason's `cfe.py` port) from the old path to the
-  new one → the old code for that slice is removed or explicitly deprecated → `skf-audit-skill`
+  new one → the slice is equivalence-proven against the live original (removal happens at the campaign-end cutover) → `skf-audit-skill`
   confirms zero drift.
 - `skf-campaign` tracks the whole multi-slice sequence with file-based state and resume, so
   the effort survives across sessions the way `bmad-loop` runs do for other stations.
 - At the end: no `.claude/skills/conda-forge-expert/` code path is dead weight sitting next to
-  a newer, unused replacement — every slice that shipped is the slice that's actually called.
+  a newer, unused replacement — every parallel slice is continuously equivalence-checked, and the end cutover is detector-enforced, never hoped for.
   The 106 gotchas and 10 constraints are carried forward into the new skill's own briefs, not
   re-derived from scratch and not lost.
 - Rule 1 (SKILL.md is authoritative) and Rule 2 (every conda-forge effort ends with a retro
@@ -65,13 +67,13 @@ but no slice is allowed to become a second, unused ~29,000 lines.
 
 ## What is real
 
-Nothing built yet. This is a `dreamt`-stage placeholder, captured at the moment the decision
+Specified 2026-08-10 (Spec ready, Epic 6 decomposed to the re-scope gate). Originally a `dreamt`-stage placeholder, captured at the moment the decision
 to reopen D-1 was made explicitly, with the scope and cutover-discipline questions already
-answered (see Realization log) — the next step is a Spec (`bmad-spec`), not code.
+answered (see Realization log) — the next step was a Spec — now in place; the pilot slice is the next code.
 
 ## Constraints
 
-- **Hard cutover per slice, non-negotiable.** No slice's migration story may be deferred to
+- **Parallel-run with a detector-enforced end cutover (re-shaped 2026-08-10, operator override; was: hard cutover per slice).** No slice's migration story may be deferred to
   "later" — this is the one discipline atlas's rebuild lacked, and it is the entire reason
   this Dream is structured the way it is.
 - **Mason's own D-1 is untouched.** `mason recipe`'s wrap-by-subprocess design does not change;
@@ -108,5 +110,18 @@ structured specifically to not repeat).
   discipline before any plan was drafted: user chose **full scope** (all 30+ MCP tools and
   scripts, not a narrow pilot) paired with **hard cutover per slice** (every slice's migration
   lands in the same epic that builds it — explicitly rejecting the "build everything, migrate
-  later" shape that produced atlas's outcome). This Dream captures that decision; next step is
-  `bmad-spec`, not code.
+  later" shape that produced atlas's outcome). This Dream captures that decision *(the cutover half re-decided
+  2026-08-10 — parallel-run, enforced endgame; see the Realization log)*; the Spec now
+  exists and Epic 6 decomposes the pilot.
+
+- **2026-08-10** — Specified, by operator directive during the mason correct-course
+  session: *"the current conda-forge-expert skill is unsustainable — we rebuild and shift
+  to using the mason rebuilt version."* AD-15 amended to sanction the rebuild as the CFE
+  surface's writer under this Spec's gates; mason Epic 6 decomposes the pilot slice through
+  the re-scope gate (6.1-6.4) and no further — the remaining slices decompose only from
+  6.4's recorded decision.
+- **2026-08-10 (later)** — Cutover shape decided by the operator, concern raised and
+  overridden: **parallel-run both, cut over at the end** (not per-slice cutover). The atlas
+  precedent was on the table; the decision is survivable only with the three CAP-3
+  mitigations (equivalence harness, dual-landing, detector-enforced endgame), now the
+  Spec's contract. This Dream cannot read `realized` until the end cutover completes.

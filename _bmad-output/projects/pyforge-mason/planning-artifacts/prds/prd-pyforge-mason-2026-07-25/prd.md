@@ -676,6 +676,12 @@ requirements are the mechanism that does.
 
 #### FR-45: No CFE surface modification by implementation work
 
+> **Scoped 2026-08-10 (correct-course, operator directive):** this FR binds **the mason-CLI
+> effort's commits** — those touching `src/shared/packages/pyforge-mason/**` and its planning
+> artifacts under Epics 1–5. The sanctioned CFE-rebuild effort (`spec-conda-forge-expert-rebuild`,
+> parallel-run shape) writes the CFE surface under its own Spec's gates, per amended AD-15; its
+> commits are not "implementation commits" of THIS effort and are outside this FR's check.
+
 **Consequences (testable):**
 - The repository's `spec_surface_check` remains green across the whole effort.
 - **No implementation commit** touches `.claude/skills/conda-forge-expert/**`,
@@ -1108,7 +1114,7 @@ Carried forward:
    exists, drop FR-9's Docker bullet. *Owner: architect. Revisit: at S-2.6.*
 9. **OQ-9** *(new in r2)* — Can the FR-45 governance check inspect the effort's commit range
    automatically in this repository's branching model, or must it be a documented manual gate?
-   *Owner: architect. Revisit: at S-5.2.*
+   *Owner: architect. RESOLVED 2026-08-10 (correct-course): S-5.2 scopes automatically to commits touching `src/shared/packages/pyforge-mason/**`.*
 10. **OQ-10** *(new in r2)* — D-10 narrows the differentiator's reach in v1. Does that change the
     product's positioning claim, or is "the `pypi` half works everywhere, the conda half works where
     your recipes live" an acceptable public story? *Owner: PM. Revisit: before public positioning.*

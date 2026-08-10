@@ -12,8 +12,8 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-packaging-automation-tooling-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md"
 project_name: pyforge-mason
-epicCount: 5
-storyCount: 38
+epicCount: 6
+storyCount: 42
 frCount: 50
 status: complete
 revision: 2
@@ -29,7 +29,7 @@ epics_role: canonical
 
 ## Overview
 
-Decomposition of Mason's PRD (50 FRs / 16 NFRs / 13 D-records) and architecture spine (16 ADs,
+Decomposition of Mason's PRD (50 FRs / 16 NFRs / 13 D-records) and architecture spine (18 ADs,
 ports-and-adapters with a knowledge-free core) into **5 epics and 38 stories**.
 
 **dist** `pyforge-mason` · **module** `pyforge.mason` · **CLI** `mason`
@@ -57,7 +57,7 @@ NFR-5/NFR-6/NFR-12 are cross-cutting constraints verified in S-5.1 and S-5.3.
 
 ### Architecture Decisions covered
 
-All 16 ADs flow into specific stories:
+All 18 ADs flow into specific stories (AD-25/AD-26 rows added 2026-08-10, correct-course):
 
 | AD | Owning story/stories |
 |---|---|
@@ -77,6 +77,8 @@ All 16 ADs flow into specific stories:
 | AD-14 credential blindness | S-2.3, S-3.4 |
 | AD-15 CFE surface read-only | S-5.2 |
 | AD-16 fake CFE root | S-1.9 |
+| AD-25 | S-1.10 (delivered — `run_streamed`; FR-49) |
+| AD-26 | S-3.9 (`pypi-test` rehearsal gate; FR-50) |
 
 ### FR Coverage Map
 
@@ -171,6 +173,13 @@ mandatory retrospective that keeps the wrapped skill improving.
 **FRs covered:** FR-44, FR-45, FR-46, FR-47
 **Standalone:** verification and closeout. The two most critical guards (FR-42, FR-43) deliberately
 ship early in Epic 2; this epic covers the guards that need the full product to exist.
+
+### Epic 6: The CFE rebuild — pilot slice, parallel-run, and the re-scope gate
+The CFE surface's sanctioned rebuild (operator directive 2026-08-10), decomposed only through its
+re-scope gate: slice map + campaign state, the divergence-and-endgame guard, the recipe-generation
+pilot built and parallel-validated, and the recorded go/adjust/stop decision.
+**FRs covered:** none of FR-1..FR-50 — decomposes `spec-conda-forge-expert-rebuild`'s own contract.
+**Standalone:** gated on nothing in Epics 1-5; its endgame gates the rebuild Dream's `realized`.
 
 ---
 
@@ -571,7 +580,10 @@ deny-list category — and fails if any planted violation goes undetected
 **Given** `tests/meta/test_adapter_sole_caller.py`
 **When** it scans `src/pyforge/mason/`
 **Then** it fails if any module other than `cfe.py` references a CFE path, a CFE script filename, or
-spawns a process against one
+spawns a process against one — honoring AD-3's two-entry carve-out (amended 2026-08-10):
+`resolve.py`'s `_CFE_MARKER` root-marker constant and `errors.py`'s guidance echo are allowlisted,
+each allowlist entry carrying a rationale comment; script names and process-spawning have no
+exception anywhere
 
 **Given** both tests
 **When** the default test task runs
@@ -729,6 +741,13 @@ So that **I fix what a reviewer would flag before they see it**.
 
 ### Story 2.9: `mason recipe submit`
 
+> **Audit note (2026-08-10, correct-course):** CFE's `submit_pr.py` accepts an in-tree recipe
+> slug only (`_path_guard` confines to `<cfe-root>/recipes/`; PRD D-10 states this for
+> `--to conda-forge` and it applies here identically). S-2.4's user-specified output path
+> composes with this ONLY via `CFE_RECIPES_ROOT`: the submit adapter sets it in the child
+> process environment to the recipe's parent directory — no new user-facing CLI knob (AD-13's
+> closed set holds), no CFE-side change (AD-15's wrap rule holds).
+
 As a **user with a working recipe**,
 I want **to open a staged-recipes pull request safely**,
 So that **I can contribute without memorizing the submission dance**.
@@ -755,6 +774,13 @@ identifier
 **When** it completes
 **Then** staged-recipes submission has exactly one implementation in `recipe.py`, which Epic 3 will
 call rather than reimplement
+
+**Given** a recipe generated to a user-specified path (S-2.4)
+**When** `mason recipe submit --to conda-forge` runs against it
+**Then** the submit adapter sets `CFE_RECIPES_ROOT` in the child environment to the recipe's
+parent directory so CFE's slug-confined `submit_pr.py` resolves it — no new user-facing CLI
+knob, no CFE-side change — and a test proves an out-of-tree recipe submits (AC added
+2026-08-10, correct-course)
 
 *Effort: M. Realizes FR-13; AD-9, AD-11 (owner side).*
 
@@ -1230,23 +1256,34 @@ the filesystem
 
 ### Story 5.2: Governance test
 
+> **Re-issued 2026-08-10 (correct-course, operator directive):** AD-15 was amended — the CFE
+> surface is read-only for THE MASON-CLI EFFORT (this epic set), while the
+> `spec-conda-forge-expert-rebuild` effort is the sanctioned writer under its own Spec's gates.
+> This story's commit-range check therefore scopes to commits touching
+> `src/shared/packages/pyforge-mason/**` (code paths only — deliberately NOT planning-artifacts,
+> where the rebuild effort's slice map and campaign state live — resolving OQ-E5), and rebuild-effort
+> commits are governed by the rebuild Spec's own entry-point-compatibility gates, not this test.
+
 As a **repository maintainer**,
 I want **automated proof that Mason never wrote to the conda-forge-expert surface**,
 So that **CLAUDE.md Rule 1 and the `spec-packaging-factory` sentinel are enforced, not trusted**.
 
 **Acceptance Criteria:**
 
-**Given** the effort's commit range
+**Given** the mason-CLI effort's commit range — commits touching
+`src/shared/packages/pyforge-mason/**` (re-issued 2026-08-10: rebuild-effort commits are
+governed by `spec-conda-forge-expert-rebuild`'s own gates and are outside this check)
 **When** it is scanned
-**Then** no **implementation** commit touches `.claude/skills/conda-forge-expert/**`,
+**Then** no **implementation** commit in that range touches `.claude/skills/conda-forge-expert/**`,
 `.claude/scripts/conda-forge-expert/**`, or `.claude/tools/conda_forge_server.py`
 
 **Given** the closing Rule-2 retrospective (S-5.5), which must edit exactly those files
 **When** the check runs
 **Then** that one commit is recognized as the sanctioned exception — identified by a `retro:` subject
 plus a CFE `CHANGELOG.md` entry in the same commit — and excluded
-**And** the check asserts the exception is used **exactly once** and carries a CHANGELOG move, so it
-cannot be borrowed to slip an implementation change through
+**And** the check asserts the exception is used **exactly once within this effort's range** and
+carries a CHANGELOG move, so it cannot be borrowed to slip an implementation change through
+(rebuild-slice retros land under the rebuild Spec's own Rule-2 obligation, outside this count)
 
 **Given** the repository
 **When** `scripts/spec_surface_check.py` runs
@@ -1344,6 +1381,59 @@ sanctioned-exception rule recognizes it
 
 ---
 
+## Epic 6: The CFE rebuild — pilot slice, parallel-run, and the re-scope gate
+
+**Value delivered.** The feasibility spike of `spec-conda-forge-expert-rebuild`, decomposed
+through its own re-scope gate and NO further. **Operator directives (2026-08-10,
+in-session): (1) "the current conda-forge-expert skill is unsustainable — we rebuild and
+shift to using the mason rebuilt version"; (2) cutover shape = PARALLEL-RUN both, cut over
+at the end** — chosen over per-slice cutover with the atlas precedent on the table, and
+survivable only with the three CAP-3 mitigations: the equivalence harness (divergence reds
+CI), the dual-landing rule (Rule-2 knowledge lands in both homes while parallel), and the
+detector-enforced end cutover (the campaign cannot close until every caller flips and
+legacy retires). AD-15 (amended) sanctions this effort as the CFE surface's writer under
+these gates; the mason-CLI effort (Epics 1-5) remains wrap-only; the live skill stays
+authoritative for all conda-forge work at every commit until the end cutover. The end
+cutover itself is decomposed later, from 6.4's decision — it is this epic's declared
+terminal obligation, not its scope.
+
+### Story 6.1: Slice map and campaign state
+**Given** the CFE surface (3 tiers, ~67 canonical scripts, 106 gotchas) **Then** CAP-1's
+slice map exists with explicit ordering and the first slice named (recipe generation), and
+CAP-4's file-based campaign state initializes (mapped → briefed → compiled → parallel →
+audited; cut-over/retired are campaign-end states), resumable from state alone.
+
+*Effort: S. Realizes rebuild-Spec CAP-1, CAP-4.*
+
+### Story 6.2: The divergence-and-endgame guard, proven red first
+**Given** the slice map **Then** CAP-3's detector (registered in `scripts/detectors.py`)
+enforces all three parallel-run clauses — (a) a parallel slice with a red or stale
+equivalence-harness result reds CI; (b) a Rule-2 retro landing in the live skill and not
+mirrored to affected slice briefs reds CI; (c) at the declared endgame, any caller still
+resolving to legacy reds CI — each clause proven red by a fixture before any slice lands.
+**Deps:** S-6.1.
+
+*Effort: M. Realizes rebuild-Spec CAP-3.*
+
+### Story 6.3: Pilot slice — recipe generation, built and parallel-validated
+**Given** the recipe-generation slice (generator + satellites + MCP tools + wrappers +
+G54/G91/G94c/G98 knowledge as verbatim brief inputs) **Then** CAP-2 end-to-end:
+Skill-Forge brief → compiled replacement → existing regression tests pass UNMODIFIED →
+the equivalence harness reports zero divergence on the shared corpus → skf-audit-skill
+reports zero drift. **The old path stays authoritative; no caller flips** — flip and
+retirement belong to the campaign-end cutover. **Deps:** S-6.2.
+
+*Effort: L. Realizes rebuild-Spec CAP-2.*
+
+### Story 6.4: The re-scope gate — measured cost, recorded decision
+**Given** the completed pilot **Then** a dated re-scope note in campaign state records the
+measured cost — including the dual-maintenance burden parallel-run adds — and the
+go/adjust/stop decision for every remaining slice AND the end-cutover plan. **No second
+brief is written before this lands**; the remaining slices and the endgame decompose only
+from this decision. **Deps:** S-6.3.
+
+*Effort: S. Realizes rebuild-Spec CAP-4's re-scope gate.*
+
 ## assumptions[]
 
 1. **A-1** — Story effort estimates assume a developer with access to this repository and a working
@@ -1366,5 +1456,7 @@ sanctioned-exception rule recognizes it
 3. **OQ-E3** — S-4.1's engine: `conda-lock` or `pixi` (PRD OQ-4). May need both adapters.
 4. **OQ-E4** — S-2.2's deny-list content (spine OQ-A3): the concrete pattern set must be reviewable
    and hard to weaken silently. Needs a review gate of its own.
-5. **OQ-E5** — Whether Epic 5's governance test (S-5.2) can inspect the commit range automatically
-   in this repository's branching model, or must be a documented manual check.
+5. **OQ-E5** — RESOLVED 2026-08-10 (correct-course): S-5.2 scopes automatically to commits
+   touching `src/shared/packages/pyforge-mason/**`; rebuild-effort commits are governed by
+   `spec-conda-forge-expert-rebuild`'s own gates, outside this check.
+
