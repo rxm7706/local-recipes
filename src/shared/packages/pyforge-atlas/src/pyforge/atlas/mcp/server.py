@@ -93,4 +93,26 @@ def build_server(name: str = "pyforge-atlas-atlas"):
         "backend not configured — attended Q3 bring-up (DW-D3)" advisory (no live LLM call)."""
         return tools.query_vizro_ai(query)
 
+    @mcp.tool()
+    def query_trending_candidates(
+        period: str = "weekly",
+        tier: str = "1,2",
+        top: int = 25,
+        not_on_cf: bool = True,
+        min_stars: int = 500,
+    ) -> dict:
+        """Query the CAP-2 tiered/classified GitHub-trending candidate list (CAP-3,
+        Story 13.3, FR-66): read-side only, offline-safe, filterable by
+        period (daily|weekly|monthly|all) / tier (comma-list of 1/2/skip, or 'all') /
+        top / not_on_cf / min_stars. Mirrors the `trending-candidates` CLI
+        (`python -m pyforge.atlas.trending_candidates`) byte-for-byte for identical
+        filters — both delegate to the same query_trending_candidates function."""
+        return tools.query_trending_candidates(
+            period=period,
+            tier=tier,
+            top=top,
+            not_on_cf=not_on_cf,
+            min_stars=min_stars,
+        )
+
     return mcp

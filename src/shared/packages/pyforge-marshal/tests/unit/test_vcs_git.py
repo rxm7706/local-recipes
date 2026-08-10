@@ -1498,3 +1498,140 @@ def test_worktree_head_sha_raises_when_not_a_git_repository(vcs, tmp_path):
     not_a_repo.mkdir()
     with pytest.raises(VcsCommandError):
         vcs.worktree_head_sha(not_a_repo)
+
+
+# --- fetch/fast_forward (Story 4.12, FR-173) --------------------------------
+
+
+def test_fast_forward_advances_a_behind_branch_to_the_fetched_ref(vcs, repo, remote, tmp_path):
+    """The ordinary case: `home` is behind `origin/main` -- `fetch` updates
+    `refs/remotes/origin/main`, then `fast_forward` advances `home`'s own
+    checked-out branch to it and returns the new HEAD sha."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "origin", "main")
+
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/behind", base="main")
+
+    (repo / "advance.txt").write_text("advance\n", encoding="utf-8")
+    _git(repo, "add", "advance.txt")
+    _git(repo, "commit", "-m", "advance main")
+    _git(repo, "push", "origin", "main")
+    expected = _git(repo, "rev-parse", "main").stdout.strip()
+
+    vcs.fetch(home, "origin", "main")
+    new_head = vcs.fast_forward(home, "origin/main")
+
+    assert new_head == expected
+    assert _git(home, "rev-parse", "HEAD").stdout.strip() == expected
+
+
+def test_fast_forward_no_ops_cleanly_when_already_current(vcs, repo, remote, tmp_path):
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "origin", "main")
+
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/current", base="main")
+    before = _git(home, "rev-parse", "HEAD").stdout.strip()
+
+    vcs.fetch(home, "origin", "main")
+    new_head = vcs.fast_forward(home, "origin/main")
+
+    assert new_head == before
+
+
+def test_fast_forward_refuses_a_diverged_branch(vcs, repo, remote, tmp_path):
+    """A branch that has advanced PAST the fetched ref (e.g. a live run
+    that kept committing to `loop/<slug>` after the wave was landed) is not
+    a fast-forward -- git refuses cleanly, never a forced merge/rebase.
+    Genuine divergence needs BOTH sides to carry a commit the other lacks --
+    `home`'s branch alone racing ahead of an unmoved `origin/main` is
+    trivially still an ancestor relationship (a no-op "already up to
+    date"), not a real divergence."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "origin", "main")
+
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/diverged", base="main")
+    (home / "diverged.txt").write_text("diverged\n", encoding="utf-8")
+    _git(home, "add", "diverged.txt")
+    _git(home, "commit", "-m", "diverged commit never pushed to origin/main")
+    home_head_before = _git(home, "rev-parse", "HEAD").stdout.strip()
+
+    # origin/main ALSO advances independently -- neither tip is an ancestor
+    # of the other, the genuine "not a fast-forward" shape.
+    (repo / "advance.txt").write_text("advance\n", encoding="utf-8")
+    _git(repo, "add", "advance.txt")
+    _git(repo, "commit", "-m", "origin/main's own independent advance")
+    _git(repo, "push", "origin", "main")
+
+    vcs.fetch(home, "origin", "main")
+    with pytest.raises(VcsCommandError):
+        vcs.fast_forward(home, "origin/main")
+
+    # The branch is left completely untouched on refusal.
+    assert _git(home, "rev-parse", "HEAD").stdout.strip() == home_head_before
+
+
+def test_fast_forward_refuses_a_dirty_working_tree(vcs, repo, remote, tmp_path):
+    """A fast-forward that would silently overwrite uncommitted, conflicting
+    local content is refused -- the incoming commit touches the SAME file
+    `home` carries a conflicting uncommitted edit to (touching a different,
+    unrelated file lets git fast-forward cleanly around an unrelated dirty
+    file, which would not exercise this refusal at all)."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "origin", "main")
+
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/dirty", base="main")
+    (repo / "README.md").write_text("advanced content\n", encoding="utf-8")
+    _git(repo, "add", "README.md")
+    _git(repo, "commit", "-m", "advance main")
+    _git(repo, "push", "origin", "main")
+    (home / "README.md").write_text("uncommitted local edit\n", encoding="utf-8")
+
+    vcs.fetch(home, "origin", "main")
+    with pytest.raises(VcsCommandError):
+        vcs.fast_forward(home, "origin/main")
+
+
+def test_fetch_raises_on_an_unknown_remote(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.fetch(repo, "origin", "main")
+
+
+def test_fetch_raises_when_repo_root_is_not_a_git_repository(vcs, tmp_path):
+    not_a_repo = tmp_path / "not-a-repo"
+    not_a_repo.mkdir()
+    with pytest.raises(VcsCommandError):
+        vcs.fetch(not_a_repo, "origin", "main")
+
+
+def test_fetch_only_updates_the_remote_tracking_ref_never_a_local_branch(
+    vcs, repo, remote, tmp_path
+):
+    """`fetch` alone (no `fast_forward` call) must never move `home`'s own
+    checked-out branch -- only `refs/remotes/origin/<ref>` advances."""
+    _git(repo, "remote", "add", "origin", str(remote))
+    _git(repo, "push", "origin", "main")
+
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/untouched", base="main")
+    before = _git(home, "rev-parse", "HEAD").stdout.strip()
+
+    (repo / "advance.txt").write_text("advance\n", encoding="utf-8")
+    _git(repo, "add", "advance.txt")
+    _git(repo, "commit", "-m", "advance main")
+    _git(repo, "push", "origin", "main")
+
+    vcs.fetch(home, "origin", "main")
+
+    assert _git(home, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(home, "rev-parse", "refs/remotes/origin/main").stdout.strip() == _git(
+        repo, "rev-parse", "main"
+    ).stdout.strip()
+
+
+def test_fast_forward_raises_on_an_unresolvable_ref(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.fast_forward(repo, "origin/no-such-branch")
