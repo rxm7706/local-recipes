@@ -45,6 +45,19 @@ and this promotes it to a rule binding every consumer of the registry.
 Declarations are read with `ast`, never by importing: a detector's module body
 may open files, spawn a browser, or shell out, and discovery must be free of
 side effects.
+
+DOCTOR-PORTED SOURCES (Story 6.9). Ten detectors that used to be
+`scripts/*_check.py` files (`--list` still shows a diagnostic
+`_doctor_sources()` catalog of every `sources.REGISTRY` entry) are now
+`pyforge.doctor.sources` library gathers with no file left to AST-scan --
+`discover()` above is permanently blind to them. `main()`'s real run path
+threads them in separately (`_run_doctor_sources`), in-process, merged into
+the SAME `results` list and the SAME exit-code aggregation a scanned
+detector's row feeds. `pyforge.doctor` unimportable in the active
+environment is no longer an "expected, uncounted absence" the way it was
+while the origin scripts still existed as a fallback -- it is now the ONLY
+source of truth for those ten, so it degrades to ten **unknown, never
+green** rows here too, exactly like a detector `discover()` cannot run.
 """
 from __future__ import annotations
 
@@ -131,7 +144,7 @@ def discover() -> tuple[list[dict], list[str]]:
 
 
 def _doctor_sources() -> tuple[bool, list[dict]]:
-    """Doctor-owned sources, declared not scanned.
+    """Doctor-owned sources, declared not scanned -- feeds `--list` ONLY.
 
     A source can live inside `pyforge.doctor`'s own package (e.g.
     `marshal-durability`) with no `scripts/*_check.py` file to AST-scan --
@@ -147,12 +160,110 @@ def _doctor_sources() -> tuple[bool, list[dict]]:
     not a detector failing to execute, so it is never a registry finding and
     never a crash -- but the caller still needs `available` to tell "the
     package is here and reports zero" apart from "the package isn't here."
+
+    Story 6.9: this relaxed discipline stays correct for THIS function
+    because `--list` is a diagnostic catalog view, never a verdict -- but it
+    is no longer the whole story. `_run_doctor_sources` below is the real
+    run path's OWN, separate helper, and it deliberately does NOT relax:
+    post-retirement, the ten `scripts/*_check.py` origins are gone, so an
+    unimportable `pyforge.doctor` there means ten verdicts have no source of
+    truth at all, and that MUST read as "unknown," exactly like a scanned
+    detector `discover()` cannot run -- never a silently empty registry.
     """
     try:
         from pyforge.doctor.sources import list_sources
     except ImportError:
         return False, []
     return True, [reg.to_json_dict() for reg in list_sources()]
+
+
+# Story 6.9: the ten retiring `scripts/*_check.py` (+ `docs/dashboard/
+# check_layout.py`) origins, each now a `pyforge.doctor.sources.__main__.
+# DISPATCH` entry -- paired here with the pixi task name that invokes it, so
+# a result row looks like a scanned detector's own `{"task": ...}` field.
+# The dispatch mapping itself is NOT re-declared here (imported from
+# `DISPATCH` at call time below) -- only the pixi-task-name pairing, which
+# has no other home, is.
+_DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
+    ("ledger-regression", "ledger-regression-check"),
+    ("story-status", "story-status-check"),
+    ("chain-completeness", "chain-completeness-check"),
+    ("dashboard-drift", "dashboard-drift-check"),
+    ("check-layout", "dashboard-layout-check"),
+    ("dream-chain", "dream-chain-check"),
+    ("spec-surface", "spec-surface-check"),
+    ("deferred-work", "deferred-work-check"),
+    ("forward-dependency", "forward-dependency-check"),
+    ("bmad-drift", "bmad-drift-check"),
+)
+
+
+def _run_doctor_sources(scope: str) -> list[dict]:
+    """Run the ten ported Doctor sources for real -- the counterpart to
+    `run_one` above, but in-process (a library `gather(target)` call, never
+    a subprocess: there is no script left to shell out to) rather than
+    AST-discovered-then-subprocess-run.
+
+    `pyforge.doctor` unimportable -> synthesize ten `status="unknown"` rows,
+    never silently return `[]`. Once the origin scripts retire, this is the
+    ONLY place these ten verdicts are measured -- `discover()` above no
+    longer finds them (their files are gone), so a `main()` that skipped
+    this branch on ImportError would discover zero detectors here and
+    return exit 0, the exact "false green from standing somewhere the
+    failure cannot occur" this package's own `unpushed_work_check.py`
+    docstring warns about. `unknown` participates in `main()`'s existing
+    `1` (findings) / `2` (unknown) exit aggregation unchanged -- it is
+    merged into the same `results` list a scanned detector's row lands in.
+
+    A per-source gather that raises escaping `degrade_on_exception`'s own
+    net (a defect in Doctor itself, not a "cannot evaluate this artifact"
+    WARN) is treated the same as the whole package being unimportable for
+    THAT one row: `status="unknown"`, never a silently dropped source --
+    the other nine still run.
+    """
+    try:
+        from pyforge.doctor.sources import scope_for
+        from pyforge.doctor.sources.__main__ import DISPATCH
+        from pyforge.doctor.models import Source
+        from pyforge.doctor.verdict import exit_code_for
+    except ImportError as exc:
+        return [
+            {"path": f"pyforge.doctor.sources:{name}", "name": name,
+             "scope": "?", "task": task, "rc": 2, "status": "unknown",
+             "secs": 0.0,
+             "summary": f"pyforge.doctor is not importable here — {exc}",
+             "output": ""}
+            for name, task in _DOCTOR_SOURCE_TASKS
+        ]
+
+    rows: list[dict] = []
+    for name, task in _DOCTOR_SOURCE_TASKS:
+        source_scope = scope_for(Source(name))
+        if scope not in ("all", source_scope):
+            continue
+        started = time.monotonic()
+        try:
+            findings = DISPATCH[name](ROOT)
+            rc = 1 if exit_code_for(findings) != 0 else 0
+            lines = [f"[{f.source.value}] {f.check}: {f.status.value} -- {f.message}"
+                     for f in findings]
+            status = {0: "pass", 1: "FINDINGS"}.get(rc, "unknown")
+            summary = lines[-1][:200] if lines else "no findings"
+            output = "\n".join(lines)
+        except Exception as exc:  # noqa: BLE001 -- a defect in the source
+            # itself (escaping its own degrade_on_exception net) must not
+            # take the other nine sources down with it, and must not read
+            # as a silent pass -- unknown, same as the import-failure path.
+            rc, status = 2, "unknown"
+            summary = f"{name} raised {exc.__class__.__name__}: {exc}"
+            output = summary
+        rows.append({
+            "path": f"pyforge.doctor.sources:{name}", "name": name,
+            "scope": source_scope, "task": task, "rc": rc, "status": status,
+            "secs": round(time.monotonic() - started, 1),
+            "summary": summary, "output": output,
+        })
+    return rows
 
 
 def run_one(det: dict, timeout: int) -> dict:
@@ -206,14 +317,20 @@ def main() -> int:
                       f"subject={s['subject_station']:<8} owner={s['owning_station']}")
         return 1 if registry_findings else 0
 
-    results = [run_one(d, args.timeout) for d in selected]
+    # Story 6.9: the ten ported Doctor sources run for real here too, merged
+    # into the SAME results/exit-code aggregation a scanned detector's row
+    # feeds -- discover() above is blind to them (their `scripts/*_check.py`
+    # origins are gone once retired; nothing left on disk to AST-scan), so
+    # without this the registry would silently discover fewer detectors
+    # rather than reporting the ten as unknown.
+    results = [run_one(d, args.timeout) for d in selected] + _run_doctor_sources(args.scope)
 
     if args.json:
         for r in results:
             r.pop("output", None)
         print(json.dumps({"registry": registry_findings, "results": results}, indent=1))
     else:
-        print(f"detectors — scope={args.scope}, {len(selected)} selected\n")
+        print(f"detectors — scope={args.scope}, {len(results)} selected\n")
         for r in results:
             mark = {"pass": "✔", "FINDINGS": "✗", "unknown": "?"}[r["status"]]
             print(f"  {mark} {r['name']:22} {r['status']:9} {r['secs']:5.1f}s  {r['summary']}")

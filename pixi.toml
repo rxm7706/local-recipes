@@ -429,12 +429,12 @@ description = "Verify local-recipes env, BMAD installation, and active project b
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
 [feature.local-recipes.tasks.bmad-drift-check]
-description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Flags: -- --fix (archive moves), -- --integrity-only, -- --write-baseline (stamp after a reconciliation). See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
-cmd = "python scripts/bmad_drift_check.py"
+description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are read-only-gather scope, not ported. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
+cmd = "python -m pyforge.doctor.sources bmad-drift"
 
 [feature.local-recipes.tasks.bmad-groundtruth]
 description = "Print the live ground-truth factory facts (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) as JSON — the source of truth the BMAD docs must portray."
-cmd = "python scripts/bmad_drift_check.py --json"
+cmd = "python -m pyforge.doctor.sources bmad-drift --groundtruth"
 
 [feature.local-recipes.tasks.dashboard-check]
 description = "Detector: execute the Guildhall's own JavaScript against the live data.js and fail on any runtime error. Catches a partial derived object (e.g. timing without perStory) that passes a truthiness guard then throws, blanking every section below it. The three doc detectors and the meta suite do NOT run this code."
@@ -446,11 +446,11 @@ cmd = "python scripts/llms_full_check.py"
 
 [feature.local-recipes.tasks.deferred-work-check]
 description = "Detector: no deferred-work entry lives ONLY in gitignored Tier-3. bmad-loop's follow-up-review damping refiles a still-recommended review into implementation-artifacts/deferred-work.md, which is gitignored — so its own safety valve leaks. Fails when a Tier-3 DW-* id has no tracked twin in planning-artifacts/deferred-work-ledger.md, or when a project carries a substantive Tier-3 ledger and no tracked one at all. Reconcile by promoting into the tracked ledger. Contract: spec-regenerable-factory."
-cmd = "python scripts/deferred_work_check.py"
+cmd = "python -m pyforge.doctor.sources deferred-work"
 
 [feature.local-recipes.tasks.story-status-check]
 description = "Detector: no story reads `done` in a sprint feed without having landed. A bmad-loop dev pass self-marks its story `done`; if the REVIEW then fails to converge the story is deferred and NOTHING rolls the feed back — a false green in the artifact the dashboard renders and the next run dispatches from, so the board over-reports AND the next run SKIPS a story that was never finished. Caught 3 live on 2026-07-31 (marshal 1-6, doctor 1-4, mason 1-3), all in the same shape: dev completed, review failed. Confirms a landing via a merge commit on any ref OR a harness-recorded commit_sha (AD-33: git owns repository facts), and reports only when the harness positively says deferred/escalated — so hand-implemented stories with no run record are never flagged. The real fix belongs upstream in bmad-loop; this is the containment. Contract: spec-regenerable-factory."
-cmd = "python scripts/story_status_check.py"
+cmd = "python -m pyforge.doctor.sources story-status"
 
 [feature.local-recipes.tasks.loop-stall-check]
 description = "Watchdog: a live bmad-loop run has stopped making progress. `bmad-loop status` reports the last phase it WROTE, so a session blocked on an interactive startup dialog reads `dev-running` forever — and the dialog never reaches the session log, it renders only in the tmux pane, so the log just stops growing. The supervisor's stall ladder does not fire either. Live cost 2026-07-31: scribe 1.3 sat 74 min on the CLAUDE.md external-import dialog, seven times its 600s grace, while five siblings wrote every second. Compares now against the newest mtime across a run's logs + journal, for runs whose state.json says neither finished, stopped nor paused (a paused run is SUPPOSED to sit still). Threshold 15m, override with -- --minutes N. Catches any cause: folder-trust prompt, external-import prompt, wedged model call, hung nested CLI. Contract: spec-bmad-loop-governance."
@@ -458,7 +458,7 @@ cmd = "python scripts/loop_stall_check.py"
 
 [feature.local-recipes.tasks.forward-dependency-check]
 description = "Detector: a story's own documented **Deps:** names a story in a LATER epic, and bmad-loop cannot see it. `next_actionable` (bmad_loop.sprintstatus) is a strict file-order scan within the current epic with no depends_on concept at all — confirmed against the installed library. A plain `bmad-loop run` would dispatch the forward-dependent story the moment its own epic clears, burning a dev attempt on work that can't complete yet. Found live 2026-08-03 in marshal (2-3 deps S-3.2, 2-7 deps S-4.1, 8-5 deps S-10.2); the fix is the non-standard `blocked` status (the loader does not validate against STORY_STATUSES, same mechanism `optional` relies on), then `python scripts/promote_sprint_status.py`. COVERAGE is keyed on MACHINE-READABLE refs, four classes (reworked 2026-08-08): `measured` (every declaration resolved or explicitly none) · `partial` (a real dependency stated in a grammar DEP_RE cannot parse — the ratio is named, so a station can never read as fully verified; this is how mason reported clean with 0 of 30 declarations parseable) · `no-dispatch` (the ledger positively shows 0 actionable stories, so nothing can be dispatched early — a measured fact, NOT a parse-clean claim) · `unmeasured` (no declaration and work remains, or the ledger is unreadable). Grammar: `S-<epic>.<num>` story, `S-<epic>.*` whole epic, `<station>:S-<epic>.<num>` cross-station, `—` none; prose only as trailing context. Contract: docs/dreams/bmad-loop-forward-dependency-blindness.md + its Spec under pyforge-marshal."
-cmd = "python scripts/forward_dependency_check.py"
+cmd = "python -m pyforge.doctor.sources forward-dependency"
 
 [feature.local-recipes.tasks.dashboard-watch]
 description = "Keep the LOCAL dashboard current while a bmad-loop run is in flight. index.html carries a 120s meta-refresh but nothing regenerates data.js, which is a static snapshot — so the page reloads the same stale file forever and a running story never appears (observed 2026-07-31: doctor 1.5 six minutes in, generate.py detected it correctly, board showed nothing). Regenerates every 100s — just under the page refresh — for as long as any run is live, then EXITS on its own, so no orphan process outlives the fleet. `Live` reuses loop-stall-check's definition: neither finished, stopped nor paused. Leaves docs/dashboard/data.js modified (tracked but fully regenerable — `git checkout -- docs/dashboard/data.js` before committing unrelated work). Flags: -- --once, -- --interval N. LOCAL ONLY: the published Pages board cannot show in-flight state, which is derived from ~/.bmad-loops and tmux."
@@ -469,24 +469,24 @@ description = "Pre-approve the Claude CLI's per-workspace STARTUP dialogs (folde
 cmd = "python scripts/seed_claude_consent.py"
 
 [feature.local-recipes.tasks.spec-surface-check]
-description = "Detector: every tracked file is governed by a spec surface: manifest or explicitly allowlisted (scripts/spec_surface_allowlist.txt), and no governed file drifted without its spec's memlog moving. Exits non-zero on findings. Reconcile: update the spec (bmad-spec re-derive), then -- --write-baseline. Contract: spec-regenerable-factory CAP-3."
-cmd = "python scripts/spec_surface_check.py"
+description = "Detector: every tracked file is governed by a spec surface: manifest or explicitly allowlisted (scripts/spec_surface_allowlist.txt), and no governed file drifted without its spec's memlog moving. Exits non-zero on findings. Reconcile: update the spec (bmad-spec re-derive). Contract: spec-regenerable-factory CAP-3."
+cmd = "python -m pyforge.doctor.sources spec-surface"
 
 [feature.local-recipes.tasks.dream-chain-check]
-description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Flags: -- --json, -- --inv INV-2. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
-cmd = "python scripts/dream_chain_check.py"
+description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
+cmd = "python -m pyforge.doctor.sources dream-chain"
 
 [feature.local-recipes.tasks.chain-completeness-check]
-description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice. Flags: -- --json, -- --inv INV-A."
-cmd = "python scripts/chain_completeness_check.py"
+description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
+cmd = "python -m pyforge.doctor.sources chain-completeness"
 
 [feature.local-recipes.tasks.ledger-regression-check]
-description = "Detector: no commit un-finishes a story in a tracked sprint ledger. The OUTERMOST of three guards on the same failure: promote_sprint_status.py refuses the write, --project bounds the blast radius, and this compares two TRACKED files across a revision range so it holds even when those are bypassed, hand-edited, or --allow-regression-ed. Reads only the tracked twin via git show, so it runs in bare CI where the gitignored Tier-3 feeds are invisible — the asymmetry that let one sync destroy 96 `done` markers across four stations on 2026-08-08 while printing success. `done` is the only guarded state; reopening a story is legitimate but must be its own commit. Exit 2 (never green) when the base revision cannot be resolved. Flags: -- --base <rev>, -- --head <rev>, -- --json."
-cmd = "python scripts/ledger_regression_check.py"
+description = "Detector: no commit un-finishes a story in a tracked sprint ledger. The OUTERMOST of three guards on the same failure: promote_sprint_status.py refuses the write, --project bounds the blast radius, and this compares two TRACKED files across a revision range so it holds even when those are bypassed, hand-edited, or --allow-regression-ed. Reads only the tracked twin via git show, so it runs in bare CI where the gitignored Tier-3 feeds are invisible — the asymmetry that let one sync destroy 96 `done` markers across four stations on 2026-08-08 while printing success. `done` is the only guarded state; reopening a story is legitimate but must be its own commit. Compares origin/main..HEAD."
+cmd = "python -m pyforge.doctor.sources ledger-regression"
 
 [feature.local-recipes.tasks.dashboard-layout-check]
 description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
-cmd = "python docs/dashboard/check_layout.py"
+cmd = "python -m pyforge.doctor.sources check-layout"
 
 [feature.local-recipes.tasks.loop-push-watch]
 description = "Push every loop home's station + per-story worktree branches on an interval, for as long as any bmad-loop engine is running, then EXIT on its own (same lifecycle contract as dashboard-watch). Closes the window in which a finished dev phase's work exists only on one disk: marshal 1.8 sat as a local-only 1,748-line commit for ~40 minutes on 2026-07-31, and that window reopens every time any of nine stations finishes a dev phase. Push is read-only w.r.t. working trees, so it cannot disturb a live session. A STOPGAP — the durable fix is for the loop to push at its own stage boundaries; this bounds worst-case loss to one interval meanwhile. Flags: -- --interval N (default 1800 = 30 min; a dev phase runs 60-90 min, so 30 catches a finished phase sitting unpushed through review without a round trip per home every few minutes), -- --once, -- --quiet."
@@ -522,7 +522,7 @@ cmd = "python scripts/promote_sprint_status.py"
 
 [feature.local-recipes.tasks.dashboard-drift-check]
 description = "Detector: the COMMITTED docs/dashboard/data.js still tells the truth. Two silent failure modes neither dashboard-check (which proves the board's JS runs, not that it is current) nor the CI deploy can catch. (1) stale-done — `generate.py --source git` only ever UPGRADES a story to done, so state it cannot derive from history stays at the committed baseline; that is what lets curated in-flight state survive a deploy, and also what let atlas sit at 36/38 with a ticking wall clock on a finished story after squash-merging PR #132 made Epic 10's `Merge bmad-loop/…` subjects non-ancestors of main. Compares every board status against the project's sprint feed. (2) missing-story — scan_projects correctly refuses to overwrite a line whose story headings it cannot parse (atlas's ids are mixed BY DESIGN: Waves 0-H key on `A1` because their signal is a `story(A1)` commit subject, Epic 10 keys on `10.6` because its signal is a bmad-loop `10-6-…` merge), so such a list is hand-authored and a new story can go missing. Parses epics.md headings for COMPARISON ONLY, accepting either id form. LOCAL-ONLY: the sprint feeds are gitignored Tier-3 that CI cannot read — the same asymmetry that caused the bug."
-cmd = "python scripts/dashboard_drift_check.py"
+cmd = "python -m pyforge.doctor.sources dashboard-drift"
 
 [feature.local-recipes.tasks.dashboard-dryrun]
 description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashboard-dryrun — build the BSL-driven Vizro Dashboard OBJECT offline (no server, no .run()), assert each expected page is present w/ a stable id+title (deterministic layout), pages are BSL-driven (loaders route through the D1 semantic models, proven vs an independent BSL query), the factory-status page reads the real sprint-status.yaml + carries a build timestamp (AD-17), and the agent-legibility structural props hold. Runs in local-recipes (the env carrying vizro + boring_semantic_layer). Full 28-page inventory is CIS-two-spine deferred (DW-D2). Offline, --frozen."
@@ -928,6 +928,13 @@ cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
 [feature.local-recipes.dependencies]
 #[feature.python.dependencies]
 python = "3.14.*"                 # Python language interpreter
+# Story 6.9: the 11 detector pixi tasks below re-point at `python -m
+# pyforge.doctor.sources <name>`, which needs the package importable in THIS
+# env -- mirrors [feature.pyforge-doctor.dependencies]'s identical
+# path-dependency edge (the `pyforge-warden` "gate extra default-installed
+# IN-REPO at feature level" precedent). Task names and this env stay stable;
+# only the package set grows (see the story spec's Design Notes).
+pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
 # kedro-dagster depenency pins
 # The tomlkit <0.13.3 ceiling is enforced UPSTREAM, so we no longer restate it here:
 # dagster-dg-core 1.13.15 declares `tomlkit <0.13.3` and our own pyforge-marshal

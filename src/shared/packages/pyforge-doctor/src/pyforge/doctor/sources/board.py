@@ -84,6 +84,18 @@ DEFERRED_SPECS: dict[str, str] = {
         "layer content. Its Spec scopes to ONE pilot slice with an explicit re-scope "
         "gate; decomposing the whole rebuild before that spike would plan work nobody "
         "has shown is possible",
+    # Story 6.9 parity sync (2026-08-09): the origin script gained this entry the same
+    # day, ahead of this story's own deletion pass -- ported verbatim so the two copies
+    # do not disagree on pyforge-steward's freshly-seeded Spec before the origin retires.
+    "spec-secure-live-dashboards":
+        "shape undecided by design: its first two open questions ask WHERE the pattern "
+        "lives (steward subcommand vs library vs template repo) and whether it PROVIDES "
+        "the RLS pipeline or merely VERIFIES an acceptable one. Those two bound every "
+        "capability in it — a subcommand that scaffolds decomposes into completely "
+        "different stories than a library an adopter imports — so epics written now would "
+        "be rewritten by the architecture phase. Seeded 2026-08-09 at the operator's "
+        "explicit instruction to produce the Spec and nothing more. Revisit after "
+        "bmad-architecture settles the packaging question",
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
