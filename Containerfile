@@ -151,5 +151,40 @@ RUN printf '#!/bin/bash\nset -e\nsource /shell-hook.sh\nexec -- "$@"\n' > /entry
 RUN bash -c "source /shell-hook.sh \
     && python3 /pyforge/scripts/container-gates secrets-scan /pyforge /shell-hook.sh /entrypoint.sh"
 
+# Story 7.4 ("State outlives the container") mount contract: the three
+# durable-state roots PRD FR-25 ("loop homes, the Tier-3 store and mutable
+# runtime caches resolve to mounted volumes") and SPEC.md's CAP-4 name (the
+# story's own Design Notes resolve FR-25's prose 1:1 onto CAP-4's concrete
+# list), so a volume/bind mount attached at these exact paths is what makes
+# a container replacement (not just a process restart inside one
+# long-lived container) preserve state, proven post-build by
+# `scripts/container-gates volumes-roundtrip` (a build-time `RUN` gate
+# cannot prove this -- see that script's own header for why).
+#   /pyforge/.steward                       -- steward's own durable store:
+#     keys inventory + budget ceilings (architecture-spine-documented as
+#     "repo-root, tracked... survives bmad-switch"); `steward keys
+#     list`/`budget check` answering correctly from this path after a
+#     restart is CAP-4's own success measure.
+#   /pyforge/.claude/data/conda-forge-expert -- conda-forge-expert's mutable
+#     runtime cache (cf_atlas.db, vdb/, cve/, mapping caches) -- gitignored,
+#     rebuilt over time, but expensive to lose on every container replace.
+#   /root/.bmad-loops                       -- loop homes. `HOME=/root` in
+#     this image: confirmed live -- no `USER` directive is set anywhere in
+#     this Containerfile, so the runtime stage runs as root by ubuntu:24.04's
+#     own default. NOTE: this declares the MOUNT POINT only. Story 7.1's
+#     SCOPE comment above already documents that `git`/`gh`/`pixi`/`tmux`
+#     are absent from this runtime stage, so `steward provision --runner
+#     bmad-loop` cannot actually materialize a worktree here -- that gap is
+#     unchanged by this story and stays logged to deferred-work.md. This
+#     story proves the mount point preserves whatever bytes land there, not
+#     that loop orchestration runs in-container.
+# FOR FUTURE EDITORS: this must stay the LAST content-writing instruction in
+# this stage. Any later `RUN` that writes into one of these three paths
+# would write into an anonymous volume for that RUN's own layer, not the
+# image layer -- the write would silently vanish from the built image (the
+# classic Docker `VOLUME` gotcha). Add new `RUN`/`COPY` steps ABOVE this
+# line, not below it.
+VOLUME ["/pyforge/.steward", "/pyforge/.claude/data/conda-forge-expert", "/root/.bmad-loops"]
+
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["marshal"]

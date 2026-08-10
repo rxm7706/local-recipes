@@ -202,6 +202,19 @@ cmd = "steward --version && steward keys audit --drift"
 description = "scripts/container-gates's secrets-scan subcommand (Story 7.3; needs a real `steward` binary on PATH)."
 cmd = "pytest tests/scripts/test_container_gates.py -q"
 
+# `tests/scripts/test_container_volumes_roundtrip.py` (repo-root
+# `scripts/container-gates`, Story 7.4) needs a real `docker` binary on
+# PATH -- it subprocess-invokes `container-gates volumes-roundtrip`, which
+# itself subprocess-invokes `docker run`/`docker volume rm` against the
+# locally-cached `ubuntu:24.04` fixture image. Lives alongside
+# `pyforge-steward-container-gates-test` for the same reason that task does
+# (this env is the one that actually builds+installs `steward`, even though
+# this particular subcommand is duty-agnostic and never calls `steward`
+# itself).
+[feature.pyforge-steward.tasks.pyforge-steward-container-volumes-test]
+description = "scripts/container-gates's volumes-roundtrip subcommand (Story 7.4; needs a real `docker` binary on PATH)."
+cmd = "pytest tests/scripts/test_container_volumes_roundtrip.py -q"
+
 # --- pyforge-marshal (Marshal): pixi build workspace member (doctor/warden mirror, Story 1.1) --
 # Task names mirror the sibling convention verbatim. Story 1.1 delivers the
 # package spine, the closed verdict lattice + finding-code registry
