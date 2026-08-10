@@ -1,16 +1,30 @@
 ---
 spec: jira-github-projects-sync
-status: draft
+status: ready
 owner-dream: docs/dreams/jira-github-projects-sync.md
 surface: []          # frontier — no sync code, workflow, or Jira/Projects integration exists anywhere in this repo yet (verified by grep 2026-08-08)
-companions: []
+companions:
+  # The architecture that answers Q2/Q3/Q4 below. Load-bearing: its ADs are the
+  # build contract Epic 8's stories are written against.
+  - ../../architecture/architecture-jira-github-projects-sync-2026-08-09/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/jira-github-projects-sync.md
   - ../../../../../../docs/intake/jira-github-projects-sync/jira-github-projects-sync-prd-and-architecture.md
-open_questions:
-  - "Q2 — no authoritative side is named. The Dream demands zero-loop bidirectional propagation but never says which system wins when the two boards disagree at sync time (simultaneous conflicting moves); the intake document's per-field sync-direction config is a mechanism for expressing an answer, not the answer itself."
-  - "Q3 — Mode A (real-time serverless: GitHub Actions + Jira Automations) vs Mode B (scheduled batch: dlt + PostgreSQL) vs a deliberate combination is an architecture-phase decision the Dream refuses to pre-commit."
-  - "Q4 — Mode B's data-model shape is unreconciled on purpose: flat single-table (direct custom_status column) vs normalized EAV schema + three-table control-plane bridge, and whether the bridge's entity-linking table replaces or coexists with the simpler custom-field linking."
+# All three open questions were ANSWERED by the architecture run on 2026-08-09 and by the
+# operator's Q3 direction; status moved draft -> ready on that basis. Resolutions, kept here
+# rather than deleted so the contract records what was decided and where:
+#   Q2 (which side is authoritative on a conflicting simultaneous edit)
+#       -> AD-4: GitHub Projects V2 is authoritative, per-field overridable; AD-5 keeps the
+#          time-based zero-loop guard SEPARATE from the conflict rule, so neither masks the other.
+#   Q3 (Mode A vs Mode B vs a combination)  [operator direction, 2026-08-09]
+#       -> AD-1/AD-2/AD-3: trigger is decoupled from transport. The DEFAULT is Mode A's
+#          mechanism on a schedule trigger — batch cadence at zero infrastructure, no database —
+#          with control state stored in the synced systems themselves. Mode B stays opt-in for
+#          queryable sync history and uniform arbitrary-custom-field handling.
+#   Q4 (Mode B's data-model shape)
+#       -> AD-7: Mode B ships the NORMALIZED schema together with its three-table control plane,
+#          which is what makes the join tractable; the flat single-table variant is rejected.
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what

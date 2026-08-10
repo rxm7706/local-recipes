@@ -71,6 +71,11 @@ from .migration_status import (
     MigrationDetailDataset,
     migration_names,
 )
+from .upstream_discovery import (
+    TrendingSnapshotDataset,
+    parse_search_api_response,
+    parse_trending_html,
+)
 
 __all__ = [
     "IncrementalParquetDataset",
@@ -121,4 +126,8 @@ __all__ = [
     "MIGRATION_BUCKETS",
     "BLOCKER_BUCKETS",
     "EXCLUDED_STATUS_FILES",
+    # Story 13.1 — GitHub-trending discovery ingest (CAP-1, FR-64)
+    "TrendingSnapshotDataset",
+    "parse_trending_html",
+    "parse_search_api_response",
 ]

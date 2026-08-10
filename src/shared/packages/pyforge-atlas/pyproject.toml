@@ -56,6 +56,10 @@ dependencies = [
     "opentelemetry-api>=1.44.0",
     "opentelemetry-sdk>=1.44.0",
     "a2a-sdk>=1.1.2",                 # imported as `a2a`
+    # Story 13.1 (CAP-1): `datasets/upstream_discovery.py` imports `bs4` at MODULE level
+    # (the GitHub-trending HTML scrape, stdlib `html.parser` backend — no lxml). Kept
+    # byte-for-byte in step with the member pixi.toml run-dependencies (AUD-ATLAS-010).
+    "beautifulsoup4>=4.15.0",         # imported as `bs4`
 ]
 
 [project.optional-dependencies]
