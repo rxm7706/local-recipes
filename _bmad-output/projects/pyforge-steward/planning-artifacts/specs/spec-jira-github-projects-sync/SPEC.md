@@ -24,7 +24,12 @@ sources:
 # rather than deleted so the contract records what was decided and where:
 #   Q2 (which side is authoritative on a conflicting simultaneous edit)
 #       -> AD-4: GitHub Projects V2 is authoritative, per-field overridable; AD-5 keeps the
-#          time-based zero-loop guard SEPARATE from the conflict rule, so neither masks the other.
+#          zero-loop guard SEPARATE from the conflict rule, so neither masks the other. That
+#          separation is why the CAP-2 defect below stayed contained and did not reopen Q2.
+#          CORRECTED 2026-08-10: AD-5's guard is no longer TIME-based. It compares each side's
+#          current VALUE against the baseline it was last synced to. The time-based rule was
+#          structurally unimplementable under AD-2 — the sync point is a field ON the item, so
+#          writing it advances that same item's `updated_at`. AD-4 itself is UNCHANGED.
 #   Q3 (Mode A vs Mode B vs a combination)  [operator direction, 2026-08-09]
 #       -> AD-1/AD-2/AD-3: trigger is decoupled from transport. The DEFAULT is Mode A's
 #          mechanism on a schedule trigger — batch cadence at zero infrastructure, no database —
@@ -82,12 +87,17 @@ accidentally DDoS itself.
 
 - **CAP-2 — zero-loop guarantee.**
   - **intent:** An update one side makes *because of a sync* never triggers a sync back the
-    other way. The intake document offers two candidate mechanisms — Mode A's bot-identity
+    other way. The intake document offered two candidate mechanisms — Mode A's bot-identity
     guard clauses, and Mode B's time-based check (item `updated_at` vs the engine's own
-    `last_sync_timestamp`) — either is a viable starting point, neither is pre-chosen here.
+    `last_sync_timestamp`). **Neither survived**: the time-based check is unimplementable under
+    AD-2 (proven by trace, steward 8-1), and the identity check does not exist under
+    `trigger=schedule` or in Mode B. AD-5 now fixes the mechanism as a value comparison against
+    a per-field baseline (AD-10); this Spec no longer leaves it open.
   - **success:** a demonstrated (not merely claimed) test in which a synced update provably
     does not echo: N round-trips of a single human change produce exactly one propagation, not
-    N.
+    N. Under AD-5 this holds **by construction** — after one propagation both sides equal the
+    baseline, so every later reconcile is a no-op whenever it runs, and the test is not
+    timing-dependent.
 
 - **CAP-3 — idempotent update processing.**
   - **intent:** Re-processing the same update payload twice produces the same end state both
