@@ -28,7 +28,7 @@ development_status:
   13-2-tier-classification: done
   13-3-trending-candidates-operator-surface: done
   13-4-fixed-source-audit-track: done
-  13-5-downstream-handoff-to-mason: backlog
+  13-5-downstream-handoff-to-mason: done
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done
   2-3-implement-incrementalparquetdataset-for-ttl-gating: done
