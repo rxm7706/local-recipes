@@ -260,6 +260,8 @@ NODE_TIMEOUTS: dict[str, int] = {
     # -- upstream_discovery -------------------------------------------------- #
     "refresh_trending_candidates": 600,  # CAP-1 (3 HTML pages + Search API fallback)
     "classify_trending_candidates": 120,  # CAP-2 (pure in-memory join, no network)
+    "load_org_audit_candidates": 30,  # CAP-4 (pure in-memory params->DataFrame, no network)
+    "classify_org_audit_candidates": 120,  # CAP-4 (reuses CAP-2's classifier, no network)
 }
 
 # Fallback for kedro-dagster's synthetic pipeline-run hook ops (they are cheap

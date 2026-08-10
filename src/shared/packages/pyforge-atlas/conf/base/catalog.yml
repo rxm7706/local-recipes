@@ -33,8 +33,12 @@
 # discovery ingest (`trending_candidates`, the `upstream_discovery` pipeline
 # below) — the former "unshipped Phase T" is no longer wholly uncataloged.
 # Story 13.2 (2026-08-09) landed CAP-2 tier classification
-# (`trending_candidates_classified`). CAP-3 (operator surface) through CAP-5
-# (Mason handoff) remain pending (Stories 13.3-13.5, AD-19).
+# (`trending_candidates_classified`). Story 13.3 (2026-08-09) landed CAP-3, the
+# read-only `trending-candidates` CLI/MCP query surface over that dataset (no new
+# catalog entry — see the comment above `trending_candidates_classified` for its
+# settled cadence decision). Story 13.4 (2026-08-10) landed CAP-4, the fixed-source
+# audit track (`org_audit_candidates`/`org_audit_candidates_classified` below). CAP-5
+# (Mason handoff) remains pending (Story 13.5, AD-19).
 
 # =============================================================================
 # core — conda-side backbone (Phases B / B.5 / B.6 / F / I / J / M)
@@ -817,7 +821,10 @@ derived_universe_sbom:
 # key: both sources route through the EXISTING GITHUB_BASE_URL/GITHUB_API_BASE_URL
 # override points (no new override point), and staying uncredentialed keeps this
 # pipeline schedule-eligible without AD-11's attended-only-credentialed-run rule. CAP-3
-# (operator surface) through CAP-5 (Mason handoff) are Stories 13.3-13.5, pending.
+# (operator surface) LANDED in Story 13.3 — the `trending-candidates` CLI + MCP tool read
+# `trending_candidates_classified` below; CAP-4 (fixed-source audit) LANDED in Story
+# 13.4 — see `org_audit_candidates`/`org_audit_candidates_classified` at the end of this
+# block. CAP-5 (Mason handoff) is Story 13.5, still pending.
 trending_candidates:
   type: pyforge.atlas.datasets.TrendingSnapshotDataset
   filepath: data/raw/trending_candidates
@@ -835,9 +842,36 @@ trending_candidates:
 # pattern). CADENCE: re-materialized by the WEEKLY bootstrap_data job only — the daily
 # upstream_discovery_trending job selects refresh_trending_candidates alone, so this table
 # trails its own source by up to 6 days. Wiring it to a daily cadence would couple that job
-# to three other pipelines' outputs; deferred to CAP-3 (Story 13.3), the first consumer.
+# to three other pipelines' outputs. CAP-3 (Story 13.3, the first consumer) settled this by
+# DECISION, not a schedule change: the `trending-candidates` CLI/MCP surface reads whatever
+# is currently materialized and surfaces its own build_stamp/build_stamp_newest (AD-17) in
+# every response, so an operator or agent can always see how stale this table is — coupling
+# the classifier to the daily ingest job remains a cross-pipeline scheduling change, still
+# out of scope.
 trending_candidates_classified:
   type: pandas.ParquetDataset
   filepath: data/derived/trending_candidates_classified/trending_candidates_classified.parquet
+  metadata:
+    layer: derived
+
+# CAP-4 — fixed-source audit track (Story 13.4, FR-67). load_org_audit_candidates is a
+# PURE params->DataFrame loader over the git-tracked, hand-curated
+# params:org_audit_candidates list (conf/base/parameters.yml) — no fetch, no
+# credentials, no endpoint-base.
+org_audit_candidates:
+  type: pandas.ParquetDataset
+  filepath: data/raw/org_audit_candidates/org_audit_candidates.parquet
+  metadata:
+    layer: raw
+
+# classify_org_audit_candidates reuses classify_trending_candidates UNCHANGED (bound via
+# Kedro's positional inputs=[...] to org_audit_candidates instead of trending_candidates)
+# — same tier/reason shape as trending_candidates_classified above, re-verified against
+# CURRENT pypi_universe/pypi_conda_mapping/pypi_intelligence_enriched on every run: a
+# declared candidate that has since shipped independently to conda-forge classifies to
+# tier="skip"/reason="already-on-conda-forge" automatically (FR-67).
+org_audit_candidates_classified:
+  type: pandas.ParquetDataset
+  filepath: data/derived/org_audit_candidates_classified/org_audit_candidates_classified.parquet
   metadata:
     layer: derived
