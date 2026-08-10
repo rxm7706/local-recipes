@@ -21,7 +21,7 @@ window.DASHBOARD_DATA = {
         "median": 29,
         "lo": 4,
         "hi": 227,
-        "phaseAsOf": "2026-08-10 01:18 UTC"
+        "phaseAsOf": "2026-08-10 01:20 UTC"
       },
       "velocity": {
         "derived": true,
@@ -516,7 +516,7 @@ window.DASHBOARD_DATA = {
         "median": 90,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-10 01:18 UTC"
+        "phaseAsOf": "2026-08-10 01:20 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2443,10 +2443,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786324443,
-        "median": 64,
+        "median": 69,
         "lo": 37,
         "hi": 360,
-        "phaseAsOf": "2026-08-10 01:18 UTC"
+        "phaseAsOf": "2026-08-10 01:20 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3371,7 +3371,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 01:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 01:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5278,7 +5278,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "running",
           "note": "next free slot",
-          "done": 26,
+          "done": 27,
           "total": 33
         },
         {
@@ -14821,8 +14821,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260809-114839-7af9/7-3-credentials-never-enter-image-layers into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 01:18 UTC",
-    "generatedEpoch": 1786324688
+    "generatedAt": "2026-08-10 01:20 UTC",
+    "generatedEpoch": 1786324814
   },
   "storySpecs": [
     {
@@ -14863,9 +14863,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 26,
+      "done": 27,
       "tracked": 18,
-      "gap": 8
+      "gap": 9
     },
     {
       "station": "pyforge-warden",
@@ -15060,11 +15060,11 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-unified-container/SPEC.md"
           }
         ],
-        "done": 26,
-        "backlog": 2,
+        "done": 27,
+        "backlog": 1,
         "blocked": 5,
         "total": 33,
-        "next": "7-4-state-outlives-the-container",
+        "next": "7-5-the-image-proves-itself-at-build-time",
         "blockedKeys": [
           "8-1-bidirectional-propagation",
           "8-2-zero-loop-guarantee",
@@ -15073,7 +15073,6 @@ window.DASHBOARD_DATA = {
           "8-5-explicit-status-vocabulary-translation"
         ],
         "backlogKeys": [
-          "7-4-state-outlives-the-container",
           "7-5-the-image-proves-itself-at-build-time"
         ],
         "state": "ready"
@@ -15134,8 +15133,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 252,
-      "backlog": 77,
+      "done": 253,
+      "backlog": 76,
       "blocked": 6,
       "total": 335
     }
@@ -15211,13 +15210,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 33,
-        "done": 26,
+        "done": 27,
         "blocked": 5,
         "epics": 8,
         "epicsDone": 6,
         "complete": false,
         "running": false,
-        "projected": 26
+        "projected": 27
       },
       {
         "key": "warden",
@@ -15233,7 +15232,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 335,
-      "done": 252,
+      "done": 253,
       "blocked": 6,
       "epics": 64,
       "epicsDone": 48
@@ -15241,7 +15240,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 252
+      "projected": 253
     }
   }
 };
