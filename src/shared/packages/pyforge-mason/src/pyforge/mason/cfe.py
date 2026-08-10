@@ -65,11 +65,13 @@ same outcome without a second error type.
 from __future__ import annotations
 
 import functools
+import math
 import subprocess
 import sys
 import threading
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Mapping, Sequence, TextIO
+from typing import TextIO
 
 from .errors import CfeImportFloorError, CfeUnresolvedError
 from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND
@@ -200,10 +202,16 @@ immediately -- *unless* the child spawned a grandchild that inherited the
 pipe file descriptors (common for build tooling that shells out further),
 in which case the pipes never see EOF and an unbounded `.join()` would hang
 `run_streamed` forever even though the direct child is gone. A bounded join
-converts that into "return with whatever was captured so far" instead of an
-indefinite hang -- matching this file's existing `probe_import_floor`
-precedent of degrading to a best-effort result rather than raising a new
-error type for a rare, hard-to-fully-solve edge case."""
+converts that into a prompt return instead of an indefinite hang -- but each
+reader is a single blocking call (`proc.stdout.read()`, the `for line in
+proc.stderr` iterator), so the timeout cannot interrupt it mid-read: in this
+rare scenario `run_streamed` returns with `stdout=""` (not a true partial
+capture) while the still-blocked daemon thread(s) keep running in the
+background until their pipe eventually closes on its own. Matches this
+file's existing `probe_import_floor` precedent of degrading to a
+best-effort result rather than raising a new error type for a rare,
+hard-to-fully-solve edge case -- applied honestly here rather than claimed
+as a full partial-capture guarantee."""
 
 
 def run_streamed(
@@ -231,6 +239,20 @@ def run_streamed(
     passed as text, `list(argv)` below would explode it into one-character
     argv elements, producing a confusing `FileNotFoundError` instead of a
     clear error naming the mistake, so that shape is rejected immediately.
+    `argv` must also be non-empty -- `Popen([])` raises an unhelpful
+    `IndexError` rather than naming the mistake.
+
+    `timeout` must be a finite, positive number: `nan` never compares as
+    expired, `inf` never expires at all, and zero/negative values expire
+    before the child has any chance to run -- all rejected up front, the
+    same way `cli.py`'s `_parse_finite_float` guards `--cfe-timeout` at the
+    flag layer, since a caller (e.g. a future `engines/*` mirror) may invoke
+    this function directly without going through argparse.
+
+    The child's `stdin` is `subprocess.DEVNULL`: a delegated operation that
+    unexpectedly prompts for input must fail fast, not hang indefinitely on
+    a stream nothing feeds in a non-interactive context -- the same
+    "silently hung" failure mode this function exists to prevent on stderr.
 
     `stderr_sink` defaults to `sys.stderr`, resolved *inside* this function
     body -- never as a `= sys.stderr` default parameter, which would bind
@@ -258,7 +280,18 @@ def run_streamed(
     joined with a bounded grace period (`_JOIN_GRACE_SECONDS`) rather than
     unboundedly, since a grandchild process that inherited the pipe file
     descriptors could otherwise keep them open past the direct child's own
-    death and hang this function forever.
+    death and hang this function forever. The two joins are sequential, so
+    this function's own worst-case wall-clock bound is `timeout` (or
+    however long `kill()`+`wait()` take) plus up to `2 *
+    _JOIN_GRACE_SECONDS` -- a caller with a tight external deadline should
+    account for that margin, not just `timeout` alone.
+
+    `env`, when given, *replaces* the child's environment wholesale (it is
+    passed straight to `Popen`) rather than merging with the caller's own --
+    a partial dict (e.g. only a CFE-specific variable) silently strips
+    everything else, including `PATH`, leaving a child that cannot itself
+    shell out to anything. A caller wanting the inherited environment plus
+    overrides must build that merged mapping itself.
 
     Always a list argv, never `shell=True` (AD-2/AD-4).
     """
@@ -267,11 +300,18 @@ def run_streamed(
             f"run_streamed(argv=...) must be a sequence of arguments, not a bare "
             f"{type(argv).__name__} -- got {argv!r}"
         )
+    if not argv:
+        raise ValueError("run_streamed(argv=...) must not be empty")
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError(
+            f"run_streamed(timeout=...) must be a finite, positive number -- got {timeout!r}"
+        )
 
     sink = stderr_sink if stderr_sink is not None else sys.stderr
 
     proc = subprocess.Popen(
         list(argv),
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -284,13 +324,26 @@ def run_streamed(
 
     def _forward_stderr() -> None:
         assert proc.stderr is not None
-        for line in proc.stderr:
-            sink.write(line)
-            sink.flush()
+        try:
+            for line in proc.stderr:
+                sink.write(line)
+                sink.flush()
+        except Exception:
+            # A broken/closed stderr_sink (or similarly rare stream
+            # failure) degrades rather than crashing this daemon thread via
+            # Python's default excepthook: whatever reached the sink before
+            # the failure stays there, the rest is lost, and run_streamed
+            # still returns instead of hanging or raising a second,
+            # unrelated error type.
+            pass
 
     def _capture_stdout() -> None:
         assert proc.stdout is not None
-        captured_stdout.append(proc.stdout.read())
+        try:
+            captured_stdout.append(proc.stdout.read())
+        except Exception:
+            # Mirrors _forward_stderr's degrade-not-crash handling above.
+            pass
 
     stderr_thread = threading.Thread(target=_forward_stderr, daemon=True)
     stdout_thread = threading.Thread(target=_capture_stdout, daemon=True)

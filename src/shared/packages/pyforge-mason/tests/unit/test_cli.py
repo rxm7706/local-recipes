@@ -293,12 +293,43 @@ def test_cfe_timeout_flag_rejects_a_non_numeric_value(capsys):
     assert "--cfe-timeout" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("bad_value", ["nan", "inf", "-inf", "Infinity"])
+@pytest.mark.parametrize("bad_value", ["nan", "inf", "Infinity"])
 def test_cfe_timeout_flag_rejects_nan_and_infinite_values(bad_value, capsys):
     """Review pass (2026-08-09): `float()` parses `nan`/`inf`/`-inf` as
     well-formed, but neither is a usable subprocess timeout -- `nan` never
     compares as expired, `inf` never expires at all. Must be rejected the
-    same way a non-numeric value is."""
+    same way a non-numeric value is.
+
+    `-inf` is deliberately excluded from this parametrize list -- see
+    `test_cfe_timeout_flag_rejects_negative_infinity_via_equals_form` below,
+    which exercises it correctly."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout", bad_value])
+    assert exc.value.code == 2
+    assert "--cfe-timeout" in capsys.readouterr().err
+
+
+def test_cfe_timeout_flag_rejects_negative_infinity_via_equals_form(capsys):
+    """`-inf` as a separate argv token looks like another option string to
+    argparse's own parser (leading `-`), so `--cfe-timeout -inf` is rejected
+    by argparse's own "expected one argument" error *before*
+    `_parse_finite_float` ever runs -- both forms exit 2 with `--cfe-timeout`
+    in the message, so a naive two-token test for `-inf` passes without
+    actually proving the isfinite guard rejects it (edge-case-hunter
+    finding, review pass 2026-08-10). The `--cfe-timeout=-inf` single-token
+    form bypasses that ambiguity and genuinely reaches the custom
+    validator."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout=-inf"])
+    assert exc.value.code == 2
+    assert "--cfe-timeout" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bad_value", ["0", "-1", "-0.5"])
+def test_cfe_timeout_flag_rejects_non_positive_values(bad_value, capsys):
+    """Review pass (2026-08-10): zero and negative timeouts are equally
+    unusable as nan/inf, just via the opposite failure mode -- they expire
+    before the delegated operation has any chance to run."""
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["--cfe-timeout", bad_value])
     assert exc.value.code == 2
@@ -495,6 +526,14 @@ class TestResolveOptionalFloat:
         but a `nan`/`inf` timeout is unusable -- must degrade to `None`
         exactly like a genuinely malformed value, mirroring
         `_parse_finite_float`'s flag-side guard."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", raw)
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    @pytest.mark.parametrize("raw", ["0", "-1", "-0.5"])
+    def test_non_positive_env_value_falls_back_to_none(self, raw, monkeypatch):
+        """Review pass (2026-08-10): zero and negative timeouts are equally
+        unusable as nan/inf -- must degrade to `None` the same way,
+        mirroring `_parse_finite_float`'s flag-side guard."""
         monkeypatch.setenv("MASON_CFE_TIMEOUT", raw)
         assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
 

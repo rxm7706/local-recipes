@@ -433,3 +433,65 @@ def test_run_streamed_kills_child_on_a_non_timeout_exception_from_wait(monkeypat
         run_streamed([sys.executable, "-c", "import time; time.sleep(5)"], timeout=15.0)
 
     assert killed["called"]
+
+
+# --- Review pass (2026-08-10): empty argv, timeout validation, stdin -------
+
+def test_run_streamed_rejects_an_empty_argv():
+    """`argv=[]` passes the bare-str/bytes guard but explodes `Popen([])`
+    into an unhelpful `IndexError` -- must be rejected up front with a clear
+    error naming the mistake instead."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        run_streamed([], timeout=15.0)
+
+
+@pytest.mark.parametrize("bad_timeout", [float("nan"), float("inf"), float("-inf"), 0.0, -5.0])
+def test_run_streamed_rejects_a_non_finite_or_non_positive_timeout(bad_timeout):
+    """`run_streamed`'s own `timeout` parameter must be validated
+    independently of `cli.py`'s `_parse_finite_float` -- a caller (e.g. a
+    future `engines/*` mirror) may invoke this function directly, bypassing
+    argparse entirely. `nan`/`inf` never expire; zero/negative expire before
+    the child has any chance to run."""
+    with pytest.raises(ValueError, match="finite, positive"):
+        run_streamed([sys.executable, "-c", "pass"], timeout=bad_timeout)
+
+
+def test_run_streamed_survives_a_broken_stderr_sink():
+    """Both reviewers independently found the reader threads had no
+    exception handling: a `stderr_sink` that raises on write must not crash
+    the daemon reader thread via Python's default excepthook, hang, or make
+    `run_streamed` raise a second, unrelated error type -- it degrades
+    (whatever reached the sink before the failure stays there, the rest is
+    lost) and the function still returns normally."""
+    class _BrokenSink:
+        def write(self, s: str) -> None:
+            raise OSError("sink is broken")
+
+        def flush(self) -> None:
+            pass
+
+    script = "import sys\nprint('line', file=sys.stderr, flush=True)\nprint('stdout-marker')\n"
+
+    rc, out = run_streamed(
+        [sys.executable, "-c", script], timeout=15.0, stderr_sink=_BrokenSink(),
+    )
+
+    assert rc == 0
+    assert "stdout-marker" in out
+
+
+def test_run_streamed_child_stdin_is_not_inherited():
+    """The child's stdin must be `subprocess.DEVNULL`, not Mason's own
+    stdin -- a delegated operation that unexpectedly prompts for input must
+    fail fast (EOF) rather than hang waiting on a stream nothing feeds in a
+    non-interactive context."""
+    script = (
+        "import sys\n"
+        "data = sys.stdin.read()\n"
+        "print('stdin-read-returned:' + repr(data))\n"
+    )
+
+    rc, out = run_streamed([sys.executable, "-c", script], timeout=15.0)
+
+    assert rc == 0
+    assert "stdin-read-returned:''" in out

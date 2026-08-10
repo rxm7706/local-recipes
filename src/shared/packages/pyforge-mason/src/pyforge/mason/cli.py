@@ -108,22 +108,26 @@ def _resolve_bool(flag_value: bool | None, env_var_name: str, default: bool) -> 
 
 def _parse_finite_float(raw: str) -> float:
     """`argparse`'s `type=` callable for `--cfe-timeout`: parses like `float`,
-    but rejects `nan`/`inf`/`-inf` (review pass, 2026-08-09).
+    but rejects `nan`/`inf`/`-inf` and non-positive values (review pass,
+    2026-08-09; extended 2026-08-10).
 
-    Python's `float()` happily parses those three spellings -- they are not
-    a malformed value, so `_resolve_optional_float`'s "unparseable -> None"
+    Python's `float()` happily parses `nan`/`inf`/`-inf` -- they are not a
+    malformed value, so `_resolve_optional_float`'s "unparseable -> None"
     fallback below would never catch them, and a `nan`/`inf` deadline handed
     to a future `subprocess.wait(timeout=...)` call is either meaningless
     (`nan` compares false against everything, effectively never expiring) or
-    silently defeats the whole point of a mandatory timeout (`inf`). Raising
-    `argparse.ArgumentTypeError` here gives the same clean usage-error
-    behavior argparse already produces for a non-numeric `--cfe-timeout`
-    value, rather than accepting a value that is well-formed but unusable.
+    silently defeats the whole point of a mandatory timeout (`inf`). Zero
+    and negative values are equally unusable, just via the opposite failure
+    mode: they expire before the delegated operation has any chance to run
+    at all. Raising `argparse.ArgumentTypeError` here gives the same clean
+    usage-error behavior argparse already produces for a non-numeric
+    `--cfe-timeout` value, rather than accepting a value that is well-formed
+    but unusable.
     """
     value = float(raw)
-    if not math.isfinite(value):
+    if not math.isfinite(value) or value <= 0:
         raise argparse.ArgumentTypeError(
-            f"invalid --cfe-timeout value: {raw!r} (must be a finite number)"
+            f"invalid --cfe-timeout value: {raw!r} (must be a finite, positive number)"
         )
     return value
 
@@ -136,11 +140,12 @@ def _resolve_optional_float(flag_value: float | None, env_var_name: str) -> floa
     PRD FR-4's "per-operation default" lives at a future call site (Story
     2.1's CFE adapter), not in this resolver. The environment value is
     stripped before parsing; a value that is unset, whitespace-only, not
-    parseable as `float`, or parses to a non-finite value (`nan`/`inf`/
-    `-inf` -- review pass, 2026-08-09, mirroring `_parse_finite_float`'s
-    flag-side guard above) all fall back to `None` rather than raising --
-    matching `_resolve_str`'s treatment of a malformed/absent environment
-    value as "not supplied," not a usage error.
+    parseable as `float`, or parses to a non-finite or non-positive value
+    (`nan`/`inf`/`-inf`/`0`/negative -- review pass, 2026-08-09, extended
+    2026-08-10, mirroring `_parse_finite_float`'s flag-side guard above)
+    all fall back to `None` rather than raising -- matching `_resolve_str`'s
+    treatment of a malformed/absent environment value as "not supplied,"
+    not a usage error.
     """
     if flag_value is not None:
         return flag_value
@@ -154,7 +159,7 @@ def _resolve_optional_float(flag_value: float | None, env_var_name: str) -> floa
         parsed = float(raw)
     except ValueError:
         return None
-    if not math.isfinite(parsed):
+    if not math.isfinite(parsed) or parsed <= 0:
         return None
     return parsed
 

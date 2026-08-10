@@ -13,6 +13,19 @@ CFE's own import floor makes them the most plausible accidental import if a
 future story reached for "the YAML library that's already on the floor" to
 read a settings file.
 
+AD-13's own text carves out one sanctioned exception this guard does not yet
+need to encode: "Mason reads no key from `pyproject.toml` other than the
+packaging metadata it is asked to build." No code path reads a *target*
+package's `pyproject.toml` today (Story 1.10's Never boundary: nothing
+delegates to a build yet), so `tomllib`/`tomli` stay unconditionally banned
+here; a future story that legitimately needs that carve-out will have to
+extend this guard deliberately, not rediscover the gap as a test failure.
+
+Relative imports (`from .yaml import X`, `level > 0`) are never flagged even
+when the trailing segment matches a banned name -- that names a local
+sibling module (e.g. a hypothetical `mason/yaml.py`), not the third-party
+package, and it would be a real false positive to treat the two the same.
+
 AST-based, not string/regex matching, mirroring
 `test_dependency_direction.py`'s AD-2 guard exactly (Story 1.1's retro
 finding: a naive text scan fails on a comment that merely *mentions* the
@@ -81,7 +94,11 @@ def _find_config_file_parser_imports(root: Path) -> list[tuple[Path, str]]:
                     if banned is not None:
                         violators.append((path, banned))
             elif isinstance(node, ast.ImportFrom):
-                if node.module is not None:
+                # node.level > 0 is a relative import (`from .yaml import
+                # X`) -- it names a local sibling module, never the
+                # third-party/stdlib package `_BANNED_MODULES` bans, even
+                # when the trailing segment happens to match.
+                if node.module is not None and node.level == 0:
                     banned = _matches_banned(node.module)
                     if banned is not None:
                         violators.append((path, banned))
@@ -131,6 +148,20 @@ def test_detector_fires_on_every_banned_config_file_parser_import(
     violators = _find_config_file_parser_imports(root)
 
     assert (root / "sneaky.py", expected_banned) in violators
+
+
+def test_detector_permits_a_relative_import_of_a_local_module_with_the_same_name(tmp_path):
+    """Edge-case-hunter finding (review pass, 2026-08-10): `from .yaml
+    import X` names a local sibling module, never the third-party `yaml`
+    package `_BANNED_MODULES` bans -- must not false-positive."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "yaml.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (root / "user.py").write_text("from .yaml import VALUE\n", encoding="utf-8")
+
+    violators = _find_config_file_parser_imports(root)
+
+    assert violators == []
 
 
 def test_detector_permits_a_module_with_no_banned_import(tmp_path):
