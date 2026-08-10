@@ -817,6 +817,7 @@ class TestBuildFleetRow:
             "escalation_reason": None,
             "escalation_artifact": None,
             "unpushed_work": None,
+            "failed_patches": (),
         }
         assert finding is None
 
@@ -2737,6 +2738,45 @@ class TestReconcileLedgerCli:
         assert payload["verdict"] == "unevaluable"
         assert exit_code == 1
 
+    def test_git_failure_still_reports_this_project_policy_diagnostics(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Story 4.14 review finding (2026-08-10, pass 2): this view's own
+        project-policy diagnostics must survive a git-read failure. The
+        pre-4.14 shipped code resolved the policy BEFORE reading git, so a
+        malformed project-policy TOML still reported its `MRS-POLICY-004`;
+        pass 1's refactor returned early on the git failure and silently
+        dropped it. Both findings must be present."""
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        bad_policy = tmp_path / "bad-policy.toml"
+        bad_policy.write_text("not [ valid toml", encoding="utf-8")
+        monkeypatch.setattr(
+            status_cli, "conventional_project_policy_path", lambda slug: bad_policy
+        )
+        vcs = _FakeVcs(commit_subjects_raises=True)
+        harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        # The pre-existing shipped diagnostic, never silently dropped, and
+        # in the SAME order the pre-4.14 code emitted it (policy resolved
+        # first, git reported second). This view surfaces such findings at
+        # FACE VALUE -- unlike the default fleet sweep, which must degrade
+        # them to a WARN.
+        assert codes == ["MRS-POLICY-004", "MRS-STATUS-007"]
+        assert payload["data"]["discrepancies"] == []
+        # `MRS-STATUS-007`'s own UNEVALUABLE still dominates the composed
+        # verdict (this view genuinely could not evaluate anything) -- the
+        # added policy finding changes what is REPORTED, never the tier.
+        assert exit_code == 1
+
     def test_full_agreement_is_clean_with_no_discrepancies(
         self, tmp_path, capsys, monkeypatch
     ):
@@ -3238,3 +3278,750 @@ class TestUnpushedWork:
         out = capsys.readouterr().out
         assert "UNPUSHED files=5" in out
         assert exit_code == 0
+
+
+# =============================================================================
+# Story 4.14: the failed-story safety net is reported (FR-176) -- covers
+# every row of the spec's I/O & Edge-Case Matrix for `_gather_failed_patches`
+# plus the `MRS-STATUS-010`/`011` classification wired into `run_status`'s
+# existing per-home loop, AND each of the spec's three Acceptance Criteria
+# explicitly (`--project SLUG` scoping, per-home independence under one bad
+# policy, and a repeated sweep being byte-identical). Mirrors
+# `TestUnpushedWork`'s own fixture convention (real `tmp_path` + `LocalFs()`);
+# `_merged_subject` (Story 5.4's own helper, above) builds a commit subject
+# `core.promotion.merged_story_keys` will recognize as a durable merge for a
+# given story key, against the bare default `merge_subject_template` -- no
+# real `_bmad-output/projects/acme/` project exists in this repo, so `acme`'s
+# composed policy always falls through to that default, the SAME latent
+# coupling `TestReconcileLedgerCli` already relies on.
+#
+# Review finding (2026-08-10, pass 2): the story-dir fixtures below use REAL
+# bmad-loop directory names -- long multi-hyphen titles and a two-digit epic
+# -- not only synthetic `4-13-title` stubs. Pass 1's all-synthetic fixtures
+# are precisely why a feature that was wrong on 2 of 3 real WARNs still
+# passed its own unit suite.
+# =============================================================================
+
+#: A real bmad-loop failed-story directory name (this very story's own epic).
+_REAL_STORY_DIR = "4-11-marshal-land-refuses-while-a-run-is-in-flight"
+#: A real two-digit-epic directory name (`pyforge-atlas` carries 12.1/12.2
+#: patches on the live fleet) -- `normalize` must not mis-parse the epic.
+_TWO_DIGIT_EPIC_DIR = "12-1-the-atlas-pipeline-reports-its-own-freshness"
+
+
+def _seed_failed_patch(
+    home: Path,
+    *,
+    run_id: str,
+    story_dir: str,
+    content: bytes = b"diff --git a/x b/x\n@@ -0,0 +1 @@\n+x\n",
+) -> Path:
+    """A real on-disk ``.bmad-loop/runs/<run_id>/failed/<story_dir>/
+    changes.patch`` -- bmad-loop's own on-disk shape (external to this repo)
+    for a session-timeout-killed story's preserved diff."""
+    patch_dir = home / ".bmad-loop" / "runs" / run_id / "failed" / story_dir
+    patch_dir.mkdir(parents=True)
+    patch_path = patch_dir / "changes.patch"
+    patch_path.write_bytes(content)
+    return patch_path
+
+
+class TestFailedPatches:
+    def test_no_patches_anywhere_is_silent(self, tmp_path, capsys, monkeypatch):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["failed_patches"] == []
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-010" not in codes
+        assert "MRS-STATUS-011" not in codes
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_landed_patch_is_spent_and_confirmed_no_finding(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        patch_path = _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(_merged_subject("4.11"),),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        # A POSITIVE `merged_story_keys` match IS proof (`core/status.py`'s
+        # own `CONFIDENCE_CONFIRMED`) -- the one direction that may be
+        # asserted.
+        assert row["failed_patches"] == [
+            {
+                "story_key": "4.11",
+                "run_id": "20260809-231524-abb9",
+                "path": str(patch_path),
+                "size_bytes": patch_path.stat().st_size,
+                "done": True,
+                "confidence": status.CONFIDENCE_CONFIRMED,
+            }
+        ]
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-010" not in codes
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_two_digit_epic_story_dir_parses_and_classifies(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """A two-digit epic (`12-1-...`, live on `pyforge-atlas`) must
+        normalize to `12.1`, never to `1.2` or the raw dir name."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"atlas": None})
+        home = tmp_path / "loop-homes" / "atlas"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/atlas"),),
+            commit_subjects_value=(_merged_subject("12.1"),),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        entry = payload["data"]["homes"][0]["failed_patches"][0]
+        assert entry["story_key"] == "12.1"
+        assert entry["done"] is True
+        assert entry["confidence"] == status.CONFIDENCE_CONFIRMED
+        assert [f["code"] for f in payload["findings"]] == []
+        assert exit_code == 0
+
+    def test_unlanded_patch_warns_as_unconfirmed_naming_the_run(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 2, the finding that reverted this
+        story's first implementation): the ABSENCE of a `merged_story_keys`
+        match proves nothing (`core/status.py`'s own `CONFIDENCE_UNCONFIRMED`
+        block: squash-merge prose and `land/<station>-<epic>-<seq>` merge
+        subjects are both unparseable -- 2 of 3 live WARNs were false), so
+        the entry carries `confidence: unconfirmed` and the finding must NOT
+        assert "has not landed" as established fact. It also names `run_id`
+        (live: `pyforge-steward` carries three run dirs, otherwise
+        distinguishable only by a long absolute path)."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        entry = row["failed_patches"][0]
+        assert entry["story_key"] == "4.11"
+        assert entry["done"] is False
+        assert entry["confidence"] == status.CONFIDENCE_UNCONFIRMED
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes.count("MRS-STATUS-010") == 1
+        message = next(
+            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-010"
+        )
+        # States the UNCONFIRMED direction and why -- never the flat
+        # assertion the reverted implementation emitted.
+        assert "UNCONFIRMED" in message
+        assert "has not landed" not in message
+        assert "no confirming durable merge" in message
+        assert "20260809-231524-abb9" in message
+        assert "4.11" in message
+        # WARN tier only -- never this command's exit code (the story's own
+        # Boundary).
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_git_read_failure_degrades_every_patch_and_warns_once(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
+        home_a = tmp_path / "loop-homes" / "acme"
+        home_b = tmp_path / "loop-homes" / "beta"
+        _seed_failed_patch(
+            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        _seed_failed_patch(
+            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(
+                WorktreeEntry(path=home_a, branch="loop/acme"),
+                WorktreeEntry(path=home_b, branch="loop/beta"),
+            ),
+            commit_subjects_raises=True,
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        homes_by_slug = {row["slug"]: row for row in payload["data"]["homes"]}
+        for slug in ("acme", "beta"):
+            entry = homes_by_slug[slug]["failed_patches"][0]
+            assert entry["done"] is None
+            # `null` is never fabricated as either landed or unlanded -- and
+            # it is certainly not `confirmed`.
+            assert entry["confidence"] == status.CONFIDENCE_UNCONFIRMED
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes.count("MRS-STATUS-011") == 1
+        assert "MRS-STATUS-010" not in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_unparseable_story_dir_name_treated_as_pending(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir="not-a-story-name"
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        entry = row["failed_patches"][0]
+        assert entry["story_key"] == "not-a-story-name"
+        assert entry["done"] is False
+        assert entry["confidence"] == status.CONFIDENCE_UNCONFIRMED
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes.count("MRS-STATUS-010") == 1
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_malformed_project_policy_degrades_to_warn_not_error(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 1, Blind Hunter): a malformed
+        project policy for `slug` -- entirely unrelated to this durability
+        check -- used to inject `_merged_keys_for_slug`'s raw `PolicyIOError`
+        finding (`MRS-POLICY-004`, `Verdict.ERROR`) straight into the DEFAULT
+        `marshal status` sweep, changing its exit code (WARN is 0, ERROR is
+        4) over a patch this story's own Boundaries say must be WARN-tier
+        at worst. It must now degrade to `done: null` plus a single
+        `MRS-STATUS-011` WARN, exactly like an unreadable `main`."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        bad_policy = tmp_path / "bad-policy.toml"
+        bad_policy.write_text("not [ valid toml", encoding="utf-8")
+        monkeypatch.setattr(
+            status_cli, "conventional_project_policy_path", lambda slug: bad_policy
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["failed_patches"][0]["done"] is None
+        assert row["failed_patches"][0]["confidence"] == status.CONFIDENCE_UNCONFIRMED
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-POLICY-004" not in codes
+        assert "MRS-STATUS-010" not in codes
+        assert codes.count("MRS-STATUS-011") == 1
+        # The per-slug arm's message is scoped to THIS project (never "every
+        # patch found this sweep", review finding pass 2) and NAMES the
+        # patches it degraded rather than merely counting them (review
+        # finding pass 3: the intent contract's Always bullet requires a
+        # patch whose landed-status could not be determined to be raised by
+        # "exactly one WARN naming it").
+        message = next(
+            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
+        )
+        assert "acme" in message
+        assert "this project's own merge-subject policy" in message
+        assert "every patch found this sweep" not in message
+        assert "4.11" in message
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_one_bad_policy_never_suppresses_the_other_home(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Acceptance Criterion (previously untested, review finding pass 2):
+        with two homes where only ONE slug's policy is malformed, the other
+        home must still classify its own patches normally and still surface
+        its own real finding -- this command's established "one bad row never
+        blocks the sweep" precedent, applied to the exact branch pass 1
+        introduced."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
+        home_a = tmp_path / "loop-homes" / "acme"
+        home_b = tmp_path / "loop-homes" / "beta"
+        _seed_failed_patch(
+            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        _seed_failed_patch(
+            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        bad_policy = tmp_path / "bad-policy.toml"
+        bad_policy.write_text("not [ valid toml", encoding="utf-8")
+        good_policy = tmp_path / "missing-policy.toml"
+
+        monkeypatch.setattr(
+            status_cli,
+            "conventional_project_policy_path",
+            lambda slug: bad_policy if slug == "acme" else good_policy,
+        )
+        vcs = _FakeVcs(
+            worktrees=(
+                WorktreeEntry(path=home_a, branch="loop/acme"),
+                WorktreeEntry(path=home_b, branch="loop/beta"),
+            ),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        homes_by_slug = {row["slug"]: row for row in payload["data"]["homes"]}
+        # acme degraded (its own policy is unreadable) ...
+        assert homes_by_slug["acme"]["failed_patches"][0]["done"] is None
+        # ... while beta still classified normally and still warns.
+        beta_entry = homes_by_slug["beta"]["failed_patches"][0]
+        assert beta_entry["done"] is False
+        assert beta_entry["story_key"] == "12.1"
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes.count("MRS-STATUS-011") == 1
+        assert codes.count("MRS-STATUS-010") == 1
+        assert "MRS-POLICY-004" not in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_project_scoping_only_scans_that_project(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Acceptance Criterion (previously untested, review finding pass 2):
+        `--project SLUG` scopes the failed-patch scan to that project's own
+        loop home -- the other home's patches are neither reported nor
+        warned about, consistent with this command's existing fleet-scoping
+        behavior."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
+        home_a = tmp_path / "loop-homes" / "acme"
+        home_b = tmp_path / "loop-homes" / "beta"
+        _seed_failed_patch(
+            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        _seed_failed_patch(
+            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(
+                WorktreeEntry(path=home_a, branch="loop/acme"),
+                WorktreeEntry(path=home_b, branch="loop/beta"),
+            ),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(project="beta"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        rows = payload["data"]["homes"]
+        assert [row["slug"] for row in rows] == ["beta"]
+        assert rows[0]["failed_patches"][0]["story_key"] == "12.1"
+        codes = [f["code"] for f in payload["findings"]]
+        # Exactly ONE MRS-STATUS-010 -- acme's patch was never scanned.
+        assert codes.count("MRS-STATUS-010") == 1
+        message = next(
+            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-010"
+        )
+        assert message.startswith("beta:")
+        assert exit_code == 0
+
+    def test_directory_named_changes_patch_is_not_reported(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, Edge Case Hunter): `Path.glob` does
+        not distinguish file kind, and `.stat()` on a directory succeeds
+        rather than raising -- a directory literally named `changes.patch`
+        must not be fabricated into a reported entry. Pass 2: the filter
+        lives INSIDE `_gather_failed_patches`, so such a directory must not
+        even open the `if patch_paths:` gate -- no `main` read is paid for
+        and no orphaned `MRS-STATUS-011` can be emitted (asserted here by
+        making that read RAISE: a gate that opened would warn)."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        patch_dir = (
+            home / ".bmad-loop" / "runs" / "20260809-231524-abb9" / "failed"
+            / _REAL_STORY_DIR
+        )
+        (patch_dir / "changes.patch").mkdir(parents=True)
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_raises=True,
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["failed_patches"] == []
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-010" not in codes
+        assert "MRS-STATUS-011" not in codes
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_zero_byte_patch_is_not_reported(self, tmp_path, capsys, monkeypatch):
+        """Review finding (2026-08-10, pass 2): a zero-byte `changes.patch`
+        -- a kill BEFORE any diff was written -- preserved nothing to
+        recover, so a WARN would direct an operator at an empty file.
+        Skipped entirely: no entry, no finding."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home,
+            run_id="20260809-231524-abb9",
+            story_dir=_REAL_STORY_DIR,
+            content=b"",
+        )
+        _seed_failed_patch(
+            home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        entries = payload["data"]["homes"][0]["failed_patches"]
+        assert [entry["story_key"] for entry in entries] == ["12.1"]
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes.count("MRS-STATUS-010") == 1
+        assert exit_code == 0
+
+    def test_only_unreportable_patches_never_emits_an_orphaned_finding(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 3, reproduced live): every
+        reportability test belongs INSIDE `_gather_failed_patches`, not at
+        the caller's per-entry loop. A home whose ONLY glob match is
+        unreportable (here: zero-byte) used to still open the caller's `if
+        patch_paths:` gate, pay for the `main` read, and -- when that read
+        failed -- emit an ORPHANED `MRS-STATUS-011` naming a patch count
+        while every row correctly reported `failed_patches: []`, flipping
+        the verdict `clean -> warn` with nothing to show for it."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home,
+            run_id="20260809-231524-abb9",
+            story_dir=_REAL_STORY_DIR,
+            content=b"",
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_raises=True,
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["homes"][0]["failed_patches"] == []
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-011" not in codes
+        assert "MRS-STATUS-010" not in codes
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_unreadable_main_warn_names_every_degraded_patch(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 3): the intent contract's Always
+        bullet requires a patch whose landed-status "could not be
+        determined" to raise "exactly one WARN naming it". The single
+        sweep-wide `MRS-STATUS-011` must therefore NAME the patches it
+        degraded, across every home, not just count them -- which is why it
+        is emitted after the per-home loop rather than at the point the git
+        read fails (where the later homes are not yet known)."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
+        home_a = tmp_path / "loop-homes" / "acme"
+        home_b = tmp_path / "loop-homes" / "beta"
+        _seed_failed_patch(
+            home_a, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        _seed_failed_patch(
+            home_b, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(
+                WorktreeEntry(path=home_a, branch="loop/acme"),
+                WorktreeEntry(path=home_b, branch="loop/beta"),
+            ),
+            commit_subjects_raises=True,
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes.count("MRS-STATUS-011") == 1
+        message = next(
+            f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-011"
+        )
+        # Both homes' patches named in the ONE sweep-wide WARN.
+        assert "4.11" in message
+        assert "12.1" in message
+        assert "2 patch(es)" in message
+        assert exit_code == 0
+
+    def test_journal_unreadable_row_still_reports_failed_patches(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """`build_fleet_row`'s degraded (`journal_unreadable`) shape carries
+        `failed_patches` verbatim rather than hardcoding it away the way it
+        does `unpushed_work` -- this is an independent filesystem signal, so
+        a malformed journal must not suppress it. Mirrors
+        `TestUnpushedWork::test_journal_unreadable_row_still_surfaces_real_
+        unpushed_work`'s own precedent for the sibling signal."""
+        home = tmp_path / "loop-homes" / "acme"
+        run_dir = home / ".bmad-loop" / "runs" / "20260809-231524-abb9"
+        run_dir.mkdir(parents=True)
+        (run_dir / "journal.jsonl").write_text("{not json\n", encoding="utf-8")
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["failed_patches"][0]["story_key"] == "4.11"
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes.count("MRS-STATUS-010") == 1
+        assert exit_code == 0
+
+    def test_text_format_renders_the_full_tri_state(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        _seed_failed_patch(
+            home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(_merged_subject("4.11"),),
+        )
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        assert "FAILED_PATCHES n=2 pending=1 unknown=0" in out
+        assert exit_code == 0
+
+    def test_text_format_shows_unknown_when_main_is_unreadable(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Review finding (2026-08-10, pass 2): counting only `pending`
+        rendered an all-`null` sweep as `FAILED_PATCHES n=2 pending=0` --
+        byte-identical to all-landed, fabricating unknown as clean. The
+        `unknown=` count is what makes the two distinguishable, and this is
+        the test whose absence let that false-green ship."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        _seed_failed_patch(
+            home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_raises=True,
+        )
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        out = capsys.readouterr().out
+        assert "FAILED_PATCHES n=2 pending=0 unknown=2" in out
+        assert exit_code == 0
+
+    def test_repeated_sweep_is_identical_and_never_mutates_a_patch(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Acceptance Criterion: the same fleet swept twice with no change in
+        patches or merge history reports identical `failed_patches` data and
+        finding counts -- a pure read that never clears, moves, or truncates
+        a patch."""
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        home = tmp_path / "loop-homes" / "acme"
+        patch_path = _seed_failed_patch(
+            home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR
+        )
+        before = patch_path.read_bytes()
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+
+        payloads = []
+        for _ in range(2):
+            exit_code = status_cli.run_status(
+                _args(),
+                vcs=vcs,
+                fs=LocalFs(),
+                harness=_FakeHarness(),
+                process=_FakeProcess(),
+                clock=_FakeClock(now=_FIXED_NOW),
+            )
+            assert exit_code == 0
+            payloads.append(_payload(capsys))
+
+        first, second = payloads
+        assert first["data"]["homes"] == second["data"]["homes"]
+        assert [f["code"] for f in first["findings"]] == [
+            f["code"] for f in second["findings"]
+        ]
+        assert patch_path.is_file()
+        assert patch_path.read_bytes() == before

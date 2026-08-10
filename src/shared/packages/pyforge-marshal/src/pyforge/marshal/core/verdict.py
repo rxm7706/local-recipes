@@ -674,6 +674,28 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
 # a landing story's Tier-3 followup deferral simply stays unpromoted for
 # this run, re-attempted on the next.
+# Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
+# codes to cli/status.py's own MRS-STATUS-* area, both WARN.
+# MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
+# .bmad-loop/runs/*/failed/*/changes.patch is NOT CONFIRMED durably merged
+# into main (per core.promotion.merged_story_keys -- including a patch whose
+# own story-dir name does not even parse as a story key, which cannot be
+# confirmed landed either). Deliberately an UNCONFIRMED direction, never
+# "has not landed" as fact: an absence of a match is the direction
+# core/status.py's own CONFIDENCE_UNCONFIRMED block documents as proving
+# nothing, so this is WARN-tier reporting, never an ERROR gate.
+# MRS-STATUS-011: a patch's landed-status could not be determined at all,
+# from EITHER of two causes -- (1) main's own commit history could not be
+# read (that read is attempted at most once, lazily, for the whole sweep,
+# so this arm fires at most once per invocation and degrades every patch
+# found this run), or (2) ONE project slug's own merge-subject policy could
+# not be resolved (a malformed project-policy TOML, an ERROR-severity
+# MRS-POLICY-004), which is PER-SLUG and so can fire once per affected
+# home, degrading only that project's patches. Cause 2 exists precisely so
+# that ERROR never reaches the default sweep's own verdict: Story 4.14's
+# Boundaries forbid this signal from changing marshal status's exit code.
+# Both mirror MRS-STATUS-009's identical "the read failed, degrade every
+# affected value to unknown, never a hard failure" reasoning.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -848,6 +870,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-PREFLIGHT-012": Verdict.ERROR,
     "MRS-LAND-009": Verdict.WARN,
     "MRS-LAND-010": Verdict.WARN,
+    "MRS-STATUS-010": Verdict.WARN,
+    "MRS-STATUS-011": Verdict.WARN,
 }
 
 
