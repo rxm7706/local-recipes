@@ -119,5 +119,101 @@ COPY --from=builder /shell-hook.sh /shell-hook.sh
 RUN printf '#!/bin/bash\nset -e\nsource /shell-hook.sh\nexec -- "$@"\n' > /entrypoint.sh \
     && chmod +x /entrypoint.sh
 
+# Story 7.3 ("Credentials never enter image layers") build-time gate:
+# `scripts/container-gates secrets-scan` delegates to the existing `steward
+# keys audit --secrets <path>` primitive (AD-2 -- no second scanner) over
+# every root the image ships (`/pyforge`, `/shell-hook.sh`, `/entrypoint.sh`)
+# and fails this `RUN` on any finding, which natively aborts `docker
+# build`/`podman build` itself -- not a later `docker run`. A plain `RUN`
+# step, not a separate CI script, so it always runs on THIS stage's actual
+# content and can never drift out of sync with what the image produces.
+# `bash -c "..."`, not a bare `RUN source ...`: `source` is a bash builtin,
+# and BuildKit's default `RUN` shell is `/bin/sh` (dash on this base image),
+# which doesn't have it -- `/bin/sh: source: not found`, confirmed live.
+# Sourcing /shell-hook.sh first puts `steward` (and python3) on PATH the same
+# way /entrypoint.sh does at runtime -- the builder stage's `pixi install
+# --frozen -e pyforge-container` materialized both under
+# /pyforge/.pixi/envs/pyforge-container/, which the COPY above brought along.
+#
+# `/pyforge` is a DIRECTORY root, so `container-gates` skips its `.pixi/`
+# child entirely rather than recursing into it: `.pixi/` is this very
+# materialized env, and it ships the `age`/`age-keygen` binaries the `keys`
+# duty needs to function at all -- `age-keygen` itself has a literal
+# `AGE-SECRET-KEY-1...` string compiled in (an upstream test vector,
+# confirmed live: `pixi run -e pyforge-steward steward keys audit --secrets
+# .pixi/envs/pyforge-steward/bin` finds exactly that one hit, and `strings
+# .../age-keygen | grep AGE-SECRET-KEY-1` shows the literal baked into the
+# binary -- not written by this repo or this image). That finding is
+# unavoidable and permanent for any image shipping `age`/`age-keygen`, so
+# excluding `.pixi/` is the only way this gate is ever green on a clean
+# build. `/shell-hook.sh` and `/entrypoint.sh` are FILE roots, scanned
+# directly (no `.pixi/`-exclusion logic applies to a file).
+RUN bash -c "source /shell-hook.sh \
+    && python3 /pyforge/scripts/container-gates secrets-scan /pyforge /shell-hook.sh /entrypoint.sh"
+
+# Story 7.5 ("The image proves itself at build time") build-time gate, FR-26 /
+# SPEC.md's CAP-5: `scripts/container-gates cli-smoke` runs each of the eight
+# real station CLIs' `--help` and fails this `RUN` -- and therefore `docker
+# build`/`podman build` itself -- if any one is missing, unimportable, or over
+# its documented start-up budget (never a later `docker run`'s problem). Same
+# `bash -c "source ..."` pattern as the secrets-scan gate above and for the
+# same reason: `source` is a bash builtin BuildKit's default `/bin/sh` (dash)
+# doesn't have. `--help`, not `--version`: see this script's own module
+# docstring for why `--version` is not a reliable gate for `marshal`, and
+# `--help` is for all eight. The eight names below are the real
+# `pyforge-container` console scripts (`pixi.toml`'s `[environments]` entry
+# composing all eight station features) -- `container-gates cli-smoke` itself
+# has no station-name list of its own (AD-2 delegation-purity); only this RUN
+# line names them.
+RUN bash -c "source /shell-hook.sh \
+    && python3 /pyforge/scripts/container-gates cli-smoke \
+        --cli 'marshal --help' \
+        --cli 'steward --help' \
+        --cli 'pyforge-atlas --help' \
+        --cli 'warden --help' \
+        --cli 'doctor --help' \
+        --cli 'mason --help' \
+        --cli 'herald --help' \
+        --cli 'scribe --help'"
+
+# Story 7.4 ("State outlives the container") mount contract: the three
+# durable-state roots PRD FR-25 ("loop homes, the Tier-3 store and mutable
+# runtime caches resolve to mounted volumes") and SPEC.md's CAP-4 name (the
+# story's own Design Notes resolve FR-25's prose 1:1 onto CAP-4's concrete
+# list), so a volume/bind mount attached at these exact paths is what makes
+# a container replacement (not just a process restart inside one
+# long-lived container) preserve state, proven post-build by
+# `scripts/container-gates volumes-roundtrip` (a build-time `RUN` gate
+# cannot prove this -- see that script's own header for why).
+#   /pyforge/.steward                       -- steward's own durable store:
+#     keys inventory + budget ceilings (architecture-spine-documented as
+#     "repo-root, tracked... survives bmad-switch" -- that description is of
+#     the HOST checkout; `.dockerignore` excludes `.steward/` from the build
+#     context like every other secret-shaped path, so no tracked content
+#     from the host ever ships in a layer -- every fresh volume here starts
+#     empty and is populated only by what a running container writes into
+#     it); `steward keys list`/`budget check` answering correctly from this
+#     path after a restart is CAP-4's own success measure.
+#   /pyforge/.claude/data/conda-forge-expert -- conda-forge-expert's mutable
+#     runtime cache (cf_atlas.db, vdb/, cve/, mapping caches) -- gitignored,
+#     rebuilt over time, but expensive to lose on every container replace.
+#   /root/.bmad-loops                       -- loop homes. `HOME=/root` in
+#     this image: confirmed live -- no `USER` directive is set anywhere in
+#     this Containerfile, so the runtime stage runs as root by ubuntu:24.04's
+#     own default. NOTE: this declares the MOUNT POINT only. Story 7.1's
+#     SCOPE comment above already documents that `git`/`gh`/`pixi`/`tmux`
+#     are absent from this runtime stage, so `steward provision --runner
+#     bmad-loop` cannot actually materialize a worktree here -- that gap is
+#     unchanged by this story and stays logged to deferred-work.md. This
+#     story proves the mount point preserves whatever bytes land there, not
+#     that loop orchestration runs in-container.
+# FOR FUTURE EDITORS: this must stay the LAST content-writing instruction in
+# this stage. Any later `RUN` that writes into one of these three paths
+# would write into an anonymous volume for that RUN's own layer, not the
+# image layer -- the write would silently vanish from the built image (the
+# classic Docker `VOLUME` gotcha). Add new `RUN`/`COPY` steps ABOVE this
+# line, not below it.
+VOLUME ["/pyforge/.steward", "/pyforge/.claude/data/conda-forge-expert", "/root/.bmad-loops"]
+
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["marshal"]

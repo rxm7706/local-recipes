@@ -277,6 +277,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # subject_station="marshal" honest -- the source now judges Marshal's
     # artifacts while depending on nothing Marshal ships, which is the
     # property S-6.10's meta-test will assert for every source.
+    SourceRegistration(
+        source=Source.BMAD_DRIFT,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 6.8 -- ported from scripts/bmad_drift_check.py, the tenth and
+    # last of Epic 6's Charter §6 sweep; scope stays "repo" per that script's
+    # own DETECTOR declaration.
 )
 
 

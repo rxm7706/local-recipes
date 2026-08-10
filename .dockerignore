@@ -168,6 +168,27 @@ miniforge3/
 # Node artifacts (present under some presentations/* subprojects)
 **/node_modules/
 
+# Test suites -- Story 7.3 ("Credentials never enter image layers"). Never
+# needed to run a station CLI, and shipping them is worse than dead weight:
+# a REPO-WIDE unrestricted grep for `_SECRET_PATTERNS`'s three shapes
+# (sk-ant-/AGE-SECRET-KEY-1/PEM-header) -- not scoped to any one package --
+# found matches in exactly 3 files, all inside pyforge-steward's own
+# `tests/` tree, confirmed by `steward keys audit --secrets
+# src/shared/packages/pyforge-steward` (7 findings, same 3 files):
+# deliberate synthetic fixtures proving the plaintext-secret scanner works
+# (`tests/conformance/test_keys_plaintext_secret_scan.py`,
+# `tests/conformance/fixtures/plaintext_secret_candidate/leaked_key.txt`,
+# `tests/meta/test_invariants.py`), each word-marked (SYNTHETIC/TEST/
+# PLACEHOLDER/NOTREAL), never a real leak. Stripping `tests/` closes that
+# false positive at the source instead of teaching `scripts/container-gates`
+# (or the shared scanner -- see DW-1-3-13) an allowlist. Live-verified this
+# rule doesn't regress Story 7.1's own AC: a real `docker build` +
+# `docker run <img> <cli> --version` for all 8 station CLIs (marshal,
+# steward, pyforge-atlas, warden, doctor, mason, herald, scribe) still pass
+# after this exclusion. `**/` because every
+# package under src/shared/packages/* grows its own `tests/` directory.
+**/tests/
+
 # Editor/IDE metadata -- `**/` because `recipes/.idea/` is tracked too.
 **/.idea/
 **/.vscode/
