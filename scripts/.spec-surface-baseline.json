@@ -2381,7 +2381,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/clock_system.py": "e9b2f6d0cf1b73337cd7fd0dbd3a892bd98f0c70",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/forge_gh.py": "4ac77da08ed4fa486170c3dda4c788dae98d260e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/fs_local.py": "3645617097ab33cf639efde5898abc0dac16499d",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "0929769036fa7b4f97727f2eac767108ace8f056",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "8e59743b01f61e4a945d36c6aee6859a6bafdf22",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/notify_file_desktop.py": "5dd870e650263b2626062e836f692f44e5170c98",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/observer_mux.py": "67f30b31f342863be0de62217f658bec74271d7d",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/process_posix.py": "02b21617c3fc2ccd2eaa932a9e53a6d1315a1eba",
@@ -2508,7 +2508,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "faf4989c360ee0d9508fd4c95aa2848562f2e8a1",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "18457557624771e5365d39d2c0c0df03b1ebc9e1"
   },
-  "memlog": "d9806c1a9872ab988c042aa619e548c36829e3e1"
+  "memlog": "e776bf1d08853c79814397371e192e8ad1c2f14e"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

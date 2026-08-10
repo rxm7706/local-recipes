@@ -156,7 +156,7 @@ from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
-__all__ = ("gather",)
+__all__ = ("gather", "ground_truth")
 
 Ver = tuple[int, int, int]
 
@@ -501,6 +501,21 @@ def _ground_truth(target: Path) -> dict:
         "gotcha_max": _gotcha_max(target),
         "pixi_envs": _env_count(target),
     }
+
+
+def ground_truth(target: Path) -> dict:
+    """Public export of ``_ground_truth`` -- Story 6.9's ``bmad-groundtruth``
+    pixi task (the ``--groundtruth`` flag on ``python -m
+    pyforge.doctor.sources bmad-drift``) needs a non-private entrypoint to
+    print the same six live-fact keys the origin script's own
+    ``--json``/``--groundtruth`` printed (``docs/dashboard/generate.py``'s
+    baseline-delta compare reads five of them: ``skill_version``,
+    ``pixi_envs``, ``mcp_tools``, ``atlas_phases``, ``schema_version``; the
+    sixth, ``gotcha_max``, is carried too since the origin's own output did
+    and an extra key is harmless to that consumer's ``dict.get`` reads).
+    Every check in this module keeps calling the private ``_ground_truth``
+    directly -- this is purely a CLI-facing export, not a rename."""
+    return _ground_truth(target)
 
 
 def _live_version(target: Path) -> Ver:

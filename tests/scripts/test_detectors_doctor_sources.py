@@ -1,18 +1,21 @@
-"""Tests for ``scripts/detectors.py``'s ``_doctor_sources()`` helper (Story 6.2).
+"""Tests for ``scripts/detectors.py``'s Doctor-source integration.
 
-Two branches, mirroring the spec's I/O & Edge-Case Matrix:
+Two groups:
 
-- ``pyforge.doctor`` importable -- ``(True, rows)``, one row per
-  ``sources.REGISTRY`` entry, carrying ``scope``/``subject_station``/
-  ``owning_station``.
-- ``pyforge.doctor`` NOT importable -- ``(False, [])``, never a crash, never
-  a registry finding.
-
-Proves ``scripts/detectors.py``'s enumeration survives ``pyforge-doctor``
-being absent from the active environment (the AC's own "not importable in
-the active environment" scenario), without requiring the package to
-actually be uninstalled to test it, and that the caller can always tell
-"zero sources" apart from "the package isn't here" via the leading `bool`.
+1. ``_doctor_sources()`` (Story 6.2) -- the ``--list``-only diagnostic
+   catalog view. Two branches, mirroring the spec's I/O & Edge-Case Matrix:
+   ``pyforge.doctor`` importable -- ``(True, rows)``, one row per
+   ``sources.REGISTRY`` entry; NOT importable -- ``(False, [])``, never a
+   crash, never a registry finding.
+2. ``_run_doctor_sources()`` / ``main()`` (Story 6.9) -- the REAL run path.
+   Unlike group 1, an unimportable ``pyforge.doctor`` here is NOT a benign
+   absence: post-retirement, the ten origin ``scripts/*_check.py`` files are
+   gone, so this is the ONLY place those ten verdicts are measured. Pins the
+   "unknown, never green" regression the story's own precondition names --
+   confirmed to fail against the pre-fix code (this file's own git history:
+   `_run_doctor_sources` reverted, the new test below went red -- a silent
+   `exit_code == 0` over a post-retirement fixture with zero scanned
+   detectors, exactly the false green the precondition describes).
 """
 
 from __future__ import annotations
@@ -89,3 +92,76 @@ def test_list_human_readable_reports_doctor_sources_section():
     assert "marshal-durability" in proc.stdout
     assert "subject=marshal" in proc.stdout
     assert "owner=doctor" in proc.stdout
+
+
+# --- _run_doctor_sources() / main() real run path (Story 6.9) -----------------
+
+
+def _post_retirement_fixture(tmp_path: Path) -> None:
+    """A repo tree shaped like the state AFTER this story's Commit 2:
+    ``scripts/`` and ``docs/dashboard/`` exist but hold none of the ten
+    retired ``*_check.py`` files -- ``discover()`` must find ZERO scanned
+    detectors here, so the only way this fixture reports anything is via
+    ``_run_doctor_sources``. Mirrors the story's own "post-retirement
+    fixture" wording in its Code Map."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "docs" / "dashboard").mkdir(parents=True)
+    (tmp_path / "pixi.toml").write_text("", encoding="utf-8")
+
+
+def test_run_doctor_sources_returns_ten_unknown_rows_when_unimportable(monkeypatch):
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources", None)
+
+    rows = detectors._run_doctor_sources("all")
+
+    assert len(rows) == 10
+    assert all(row["status"] == "unknown" for row in rows)
+    assert all(row["rc"] == 2 for row in rows)
+    assert all("pyforge.doctor is not importable" in row["summary"] for row in rows)
+
+
+def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector():
+    # dashboard-drift is the one scope="runtime" source among the ten
+    # (sources.REGISTRY); --scope repo must exclude it, mirroring
+    # discover()'s own scope filter for scanned detectors.
+    repo_rows = detectors._run_doctor_sources("repo")
+    all_rows = detectors._run_doctor_sources("all")
+
+    assert len(all_rows) == 10
+    assert len(repo_rows) == 9
+    assert "dashboard-drift" not in {row["name"] for row in repo_rows}
+    assert "dashboard-drift" in {row["name"] for row in all_rows}
+
+
+def test_main_scope_repo_reports_ten_unknown_rows_and_never_exits_zero_when_unimportable(
+    monkeypatch, tmp_path: Path, capsys,
+):
+    """The regression this story's own precondition names: with
+    ``pyforge.doctor`` unimportable and NOTHING left for ``discover()`` to
+    scan (the post-retirement shape), ``detectors.py --scope repo`` must
+    report ten ``unknown`` rows and exit non-zero -- never 0 with a
+    silently empty registry. Confirmed to fail against the pre-fix code by
+    temporarily reverting ``_run_doctor_sources``/its call in ``main()``:
+    without it, ``results`` is `[]`, `registry_findings` is `[]`, and
+    ``main()`` returns the exact false-green ``0`` this test pins."""
+    _post_retirement_fixture(tmp_path)
+    monkeypatch.setattr(detectors, "ROOT", tmp_path)
+    # SEARCH is a module-level constant DERIVED from ROOT at import time
+    # (`ROOT / "scripts"`, `ROOT / "docs" / "dashboard"`) -- patching ROOT
+    # alone does not retroactively move it, so discover() would otherwise
+    # keep scanning THIS checkout's real scripts/ regardless of the fixture.
+    monkeypatch.setattr(
+        detectors, "SEARCH",
+        ((tmp_path / "scripts", "*_check.py"),
+         (tmp_path / "docs" / "dashboard", "check_*.py")),
+    )
+    monkeypatch.setitem(sys.modules, "pyforge.doctor.sources", None)
+    monkeypatch.setattr(sys, "argv", ["detectors.py", "--scope", "repo"])
+
+    exit_code = detectors.main()
+
+    assert exit_code != 0, "unknown, never a silent 0 (the story's own precondition)"
+    assert exit_code == 2
+    out = capsys.readouterr().out
+    unknown_lines = [ln for ln in out.splitlines() if "unknown" in ln and ln.strip().startswith("?")]
+    assert len(unknown_lines) == 10, out
