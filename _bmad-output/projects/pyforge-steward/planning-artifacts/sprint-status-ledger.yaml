@@ -42,7 +42,7 @@ development_status:
   7-3-credentials-never-enter-image-layers: done
   7-4-state-outlives-the-container: done
   7-5-the-image-proves-itself-at-build-time: done
-  8-1-bidirectional-propagation: done
+  8-1-bidirectional-propagation: backlog
   8-2-zero-loop-guarantee: backlog
   8-3-idempotent-update-processing: backlog
   8-4-fail-loud-fail-alone: backlog

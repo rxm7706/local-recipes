@@ -92,7 +92,11 @@ shortcut.
 
 ## The three questions the Spec left open
 
-**Q3 — which mode?** Both. Default: serverless transport, **webhook trigger — true Mode A, real-time**. Mode B opt-in. *(Operator decision 2026-08-09; reversed the same day from an initial `schedule` default, on explicit instruction that near-real-time is wanted.)*
+**Q3 — which mode?** Both. Default: serverless transport, **`schedule` trigger** — zero
+infrastructure, batch cadence. `trigger=webhook` and Mode B are both opt-in. *(Operator decision
+2026-08-09, then reversed to `webhook` on instruction that near-real-time was wanted, then
+reversed back the same day when story 8-1 proved a webhook default cannot be zero-infrastructure
+— see "Why this reads as two reversals" above.)*
 
 **Q2 — which board wins a simultaneous conflicting edit?** **GitHub, per-field overridable.**
 
@@ -121,6 +125,67 @@ wrong; the display can lag. Implementers must not treat a stale view as a failed
 should re-verify against GitHub's issue tracker at implementation time rather than assuming it
 still reproduces.
 
+## The mechanism that had to be replaced (amended 2026-08-10)
+
+The first version of the loop guard asked *"has this item been touched since I last synced it?"*
+by comparing the item's own last-modified time against a marker the engine wrote onto **that same
+item**.
+
+That cannot work, and not because of a tuning mistake. **Writing the marker is itself a
+modification of the item**, so the item's last-modified time always ends up newer than the marker
+the engine just wrote. Every reconcile after the very first one therefore concluded "both boards
+changed", handed the item to the conflict rule, and let GitHub-wins quietly overwrite real
+Jira-side edits.
+
+A 30-second tolerance was tried. It does not help: both values are timestamps the *vendor*
+recorded, not clocks that keep ticking, so the gap never closes. The misclassification is
+permanent, not a window.
+
+Story 8-1 found this over three review passes, **refused to ship it**, reverted its own work
+rather than leave a half-fix in place, and stopped for this decision. That was the right call —
+the flaw was in the contract it was building against, not in its code.
+
+### What replaces it
+
+**Compare values, not clocks.** The engine remembers the value each field was last synced to.
+"Did this side change?" becomes "is it different from what I last recorded?"
+
+The self-interference simply disappears: writing the bookkeeping field does not change the
+*status* value, so the signal the guard reads is untouched by the write that broke the old one.
+
+Two things get better as a side effect, and they are worth more than the fix itself:
+
+- **A real conflict becomes detectable for the first time.** With a shared baseline, "both sides
+  moved away from the same starting point" is a fact you can observe. The conflict rule was
+  always written against that precondition; nothing before could actually supply it.
+- **"No echo" becomes provable rather than timed.** After one propagation both boards match the
+  baseline, so every later pass is a no-op no matter when it runs. That is what the success
+  criterion asks you to demonstrate.
+
+### What it costs
+
+The engine stores a small map of last-synced values per item instead of a single timestamp.
+Under the default transport that is one more bookkeeping field per side — no new infrastructure,
+and the same place the design already keeps its state. If a board ever outgrows the vendor's
+field-size limit, that is the documented signal to move to Mode B, not a reason to bolt on a
+sidecar store.
+
+### The other two options, and why not
+
+Two alternatives were on the table.
+
+**Per-field change signals** — ask each vendor "which *field* changed?" instead of "did the item
+change?". Not wrong, and it survives as an optional speed-up, but it is not a peer of the chosen
+fix: it makes the signal sharper, while the value comparison changes what the signal *is* and
+removes the failure entirely. It also leans on a capability the two vendors expose very
+differently — a property of GitHub's field objects, but only reconstructable from Jira's paginated
+change history. Values, by contrast, are returned by both.
+
+**Document a bounded data-loss window** and give the operator a "converged / may be pending"
+indicator. Rejected twice over: the spec makes zero-loop non-negotiable and requires you to
+*prove* it on demand, and the premise is false anyway — the loss is permanent, not bounded, so
+there is no window to honestly document.
+
 ## What this does *not* decide
 
 Deliberately left to the stories or to first use: the schedule interval, where Mode B's
@@ -130,6 +195,12 @@ schedule pulls both sides.
 
 ## Status
 
-Epic 8's five stories remain **blocked** in the ledger. Unblocking them is a separate operator
-call after this architecture is reviewed — the architecture answers the questions, it does not
-authorise the build.
+Epic 8's five stories remain **unbuilt** — 8-1 back to `backlog` (PR #389), 8-2 through 8-5
+blocked. Unblocking them is a separate operator call after this architecture is reviewed; the
+architecture answers the questions, it does not authorise the build.
+
+One thing must happen before 8-1 re-runs, and it is not optional: **story 8-1's intent contract
+names the broken mechanism literally** ("compares each side's `updated_at` against its own
+recorded sync point"). That contract has to be re-issued from AD-5's amendment. A dev session
+cannot amend it locally, which is exactly why 8-1 halted instead of attempting a fourth repair —
+re-running it against the old contract would rebuild the same defect.
