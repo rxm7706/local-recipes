@@ -1,5 +1,5 @@
 """``upstream_discovery`` node unit tests (Story 13.1 CAP-1 / FR-64 + Story 13.2 CAP-2 /
-FR-65).
+FR-65 + Story 13.4 CAP-4 / FR-67).
 
 Pure trigger-node test mirroring ``tests/pipelines/vulnerability/test_nodes.py``'s style
 (there is no equivalent trigger-node test file there — the closest precedent is
@@ -9,7 +9,12 @@ a ``ttls`` dict, present / missing / non-numeric).
 
 The CAP-2 classifier tests below mirror ``tests/pipelines/seed_gaps/test_nodes.py``'s
 style: small hand-built fixture ``DataFrame``s, one test per I/O & Edge-Case Matrix row
-(spec-13-2-tier-classification.md)."""
+(spec-13-2-tier-classification.md).
+
+The CAP-4 ``load_org_audit_candidates`` tests (Story 13.4) follow the same style: one
+test per I/O & Edge-Case Matrix row, plus a reuse/drop test proving
+``classify_trending_candidates`` tolerates the narrower ``org_audit_candidates`` schema
+and reproduces the shipped-since-drop behavior (spec-13-4-fixed-source-audit-track.md)."""
 
 from __future__ import annotations
 
@@ -20,6 +25,7 @@ from pyforge.atlas.datasets.refresh import RefreshRequest
 from pyforge.atlas.pipelines.upstream_discovery import nodes as N
 from pyforge.atlas.pipelines.upstream_discovery.nodes import (
     DAILY_SECONDS,
+    load_org_audit_candidates,
     refresh_trending_candidates,
 )
 
@@ -469,3 +475,118 @@ def test_malformed_packaging_shape_degrades_to_unclassified_not_confident_tier2(
     row = out.iloc[0]
     assert row["tier"] == "skip"
     assert row["reason"] == "unclassified-needs-human"
+
+
+# ---------------------------------------------------------------------------
+# load_org_audit_candidates (Story 13.4, CAP-4 / FR-67) — one test per I/O &
+# Edge-Case Matrix row, plus a reuse/drop test against classify_trending_candidates.
+# ---------------------------------------------------------------------------
+
+
+def test_load_org_audit_candidates_happy_path_builds_repo_full_name_column():
+    out = load_org_audit_candidates(
+        [
+            {"repo_full_name": "microsoft/edit"},
+            {"repo_full_name": "microsoft/qlib"},
+        ]
+    )
+    assert list(out.columns) == ["repo_full_name"]
+    assert list(out["repo_full_name"]) == ["microsoft/edit", "microsoft/qlib"]
+
+
+def test_load_org_audit_candidates_malformed_entries_produce_a_none_row_not_excluded():
+    """Review finding, Story 13.4: a malformed entry must still produce a row (never a
+    silent drop, matching classify_trending_candidates's own invariant) — its
+    repo_full_name degrades to None rather than the row vanishing."""
+    out = load_org_audit_candidates(
+        [
+            {"repo_full_name": "microsoft/edit"},  # valid
+            {"description": "no repo_full_name key"},  # missing repo_full_name -> None
+            "not-a-dict",  # non-dict entry -> None
+            {"repo_full_name": 12345},  # non-string repo_full_name -> None
+            {"repo_full_name": None},  # non-string (None) repo_full_name -> None
+        ]
+    )
+    assert len(out) == 5
+    values = list(out["repo_full_name"])
+    assert values[0] == "microsoft/edit"
+    assert all(v is None or (isinstance(v, float) and pd.isna(v)) for v in values[1:])
+
+
+def test_load_org_audit_candidates_empty_list_degrades_to_empty_schema():
+    out = load_org_audit_candidates([])
+    assert out.empty
+    assert list(out.columns) == ["repo_full_name"]
+
+
+@pytest.mark.parametrize("bad_input", [None, "not-a-list", 42, {"repo_full_name": "x"}])
+def test_load_org_audit_candidates_none_or_non_list_degrades_to_empty_never_raises(bad_input):
+    out = load_org_audit_candidates(bad_input)
+    assert out.empty
+    assert list(out.columns) == ["repo_full_name"]
+
+
+def test_load_org_audit_candidates_all_invalid_entries_still_produce_one_row_each():
+    out = load_org_audit_candidates(["not-a-dict", {"no": "repo_full_name"}, {"repo_full_name": 1}])
+    assert len(out) == 3
+    values = list(out["repo_full_name"])
+    assert all(v is None or (isinstance(v, float) and pd.isna(v)) for v in values)
+
+
+def test_load_org_audit_candidates_dedups_case_insensitive_keeping_first_occurrence():
+    out = load_org_audit_candidates(
+        [
+            {"repo_full_name": "microsoft/edit"},
+            {"repo_full_name": "Microsoft/Edit"},
+            {"repo_full_name": "microsoft/qlib"},
+        ]
+    )
+    assert list(out["repo_full_name"]) == ["microsoft/edit", "microsoft/qlib"]
+
+
+def test_load_org_audit_candidates_distinct_malformed_entries_are_not_deduped_together():
+    """Two DIFFERENT malformed entries must not collapse into one row — only real,
+    repeated repo_full_name values are deduped."""
+    out = load_org_audit_candidates(["not-a-dict", {"no": "repo_full_name"}])
+    assert len(out) == 2
+
+
+def test_org_audit_candidates_reuse_drops_already_shipped_candidate():
+    """FR-67's literal contract: classify_trending_candidates, run against an
+    org_audit_candidates-shaped frame (repo_full_name only — no description/stars_total/
+    etc. that trending_candidates normally carries), drops a candidate that has since
+    shipped independently to conda-forge — tier="skip"/reason="already-on-conda-forge"
+    — proving both FR-67's re-verification contract and that the classifier tolerates a
+    narrower input schema than trending_candidates."""
+    org_audit_candidates = load_org_audit_candidates(
+        [{"repo_full_name": "microsoft/promptflow"}]
+    )
+    universe = _universe(["promptflow"])
+    mapping = _mapping(["promptflow"])  # already shipped to conda-forge since the list was written
+    intel = _intel(
+        [{"pypi_name": "promptflow", "packaging_shape": "pure-python", "license_spdx": "MIT",
+          "license_raw": "MIT", "notes": None}]
+    )
+    out = N.classify_trending_candidates(org_audit_candidates, universe, mapping, intel)
+    assert len(out) == 1
+    row = out.iloc[0]
+    assert row["tier"] == "skip"
+    assert row["reason"] == "already-on-conda-forge"
+
+
+def test_org_audit_candidates_malformed_entry_reaches_classifier_as_a_visible_skip_row():
+    """Review finding, Story 13.4: a malformed parameters.yml entry (e.g. a hand-edit
+    typo) must not vanish — it reaches classify_trending_candidates as a None
+    repo_full_name and comes back as a visible skip row, never silently dropped."""
+    org_audit_candidates = load_org_audit_candidates([{"no": "repo_full_name"}])
+    universe = _universe(["promptflow"])
+    mapping = _mapping(["promptflow"])
+    intel = _intel(
+        [{"pypi_name": "promptflow", "packaging_shape": "pure-python", "license_spdx": "MIT",
+          "license_raw": "MIT", "notes": None}]
+    )
+    out = N.classify_trending_candidates(org_audit_candidates, universe, mapping, intel)
+    assert len(out) == 1
+    row = out.iloc[0]
+    assert row["tier"] == "skip"
+    assert row["reason"] == "no-pypi-artifact"
