@@ -102,6 +102,24 @@ safety net, on top of the per-check isolation described above: an exception
 this module's own authors did not anticipate degrades to one WARN naming it,
 rather than propagating.
 
+**"Cannot evaluate" is never "clean"** -- the corollary, and the thing two
+review passes were spent closing. Every stdlib primitive this module used to
+answer "is this here?" or "what is in here?" (``Path.is_dir``/``is_file``,
+``Path.glob``/``rglob``) swallows ``OSError`` and answers ``False``/nothing,
+so an unreadable input is indistinguishable from an absent one -- and absent
+reads as clean. All of them are replaced here by raising counterparts ported
+from ``sources/chain.py``, which converged on the same trio through its own
+review passes: ``_probe``/``_is_dir``/``_is_file`` for the existence gates,
+``_listdir``/``_listdir_match`` for one directory, ``_walk`` for a recursive
+one. Each raise lands in ``_gather``'s per-check try/except and surfaces as
+that ONE check's ``bmad-drift-unevaluable`` WARN. Likewise for GROUND TRUTH:
+``_live_version`` and ``_max_single_phase`` raise when the live skill version
+or the atlas phase registry cannot be read, rather than substituting the
+origin CLI's own ``(0, 0, 0)``/``"N"`` placeholders -- those were safe only
+because that CLI printed them in a report header an operator could see, and a
+library ``gather()`` has no header. Each individual case is recorded, with
+its reproduction, on the helper that closes it.
+
 **Project dir absent is an honest WARN, not a confident empty-OK** (mirrors
 ``sources/chain.py``'s own "not a monorepo root" guard): the original
 script's own ``main()`` treats a missing ``pyforge-marshal`` project as
@@ -119,6 +137,7 @@ precedent for ``spec_surface_check.py``'s ``--write-baseline``.
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 import re
@@ -242,9 +261,86 @@ def _is_dir(p: Path) -> bool:
     return st is not None and stat.S_ISDIR(st.st_mode)
 
 
+def _is_file(p: Path) -> bool:
+    """``p.is_file()`` that raises rather than lying -- see ``_probe``, and
+    ``sources/chain.py``'s own ``_is_file``, whose port this is.
+
+    The first review pass brought over ``_probe``/``_is_dir`` but not this
+    third member of the same trio, leaving ``check_deferred_work``'s and
+    ``check_baseline``'s own existence gates on the bare stdlib method.
+    Reproduced by the follow-up pass: ``chmod 000`` on a project's
+    ``implementation-artifacts/`` turned a real ``deferred-stale`` WARN into
+    NO finding at all while three sibling checks WARNed -- an operator saw
+    "3 checks unevaluable" with no way to learn deferred-work was a fourth."""
+    st = _probe(p)
+    return st is not None and stat.S_ISREG(st.st_mode)
+
+
+def _listdir(d: Path) -> list[Path]:
+    """A directory's entries, sorted, RAISING on an unreadable directory --
+    verbatim in intent from ``sources/chain.py``'s own ``_listdir``.
+
+    ``Path.glob``/``Path.iterdir`` swallow ``OSError`` mid-traversal and
+    simply yield nothing, so an unreadable directory is indistinguishable
+    from an empty one -- and "empty" reads as clean, i.e. a confident OK for
+    a question that could not actually be asked. Sorting is not incidental:
+    the raw ``glob`` order this replaces is ``readdir`` order, so the same
+    repo state produced a different finding ORDER on different clones."""
+    return sorted(d.iterdir())
+
+
+def _listdir_match(d: Path, pattern: str) -> list[Path]:
+    """``d.glob(pattern)`` for a NON-recursive pattern, routed through
+    ``_listdir`` so an unreadable ``d`` raises instead of yielding nothing.
+    Every call site keeps the origin script's own glob pattern verbatim;
+    ``fnmatchcase`` is what ``pathlib`` itself matches names with, dotfiles
+    included."""
+    return [p for p in _listdir(d) if fnmatch.fnmatchcase(p.name, pattern)]
+
+
+def _walk(d: Path) -> list[Path]:
+    """Every path under ``d``, recursively -- the raising counterpart to
+    ``Path.rglob("*")``, built on ``_listdir`` so an unreadable directory
+    ANYWHERE in the tree raises rather than silently truncating the walk.
+
+    ``rglob``'s swallow is the deeper half of the class ``_probe``/``_is_dir``
+    close at the top level only: reproduced by the follow-up review pass,
+    ``chmod 000`` on one nested ``planning-artifacts/specs/`` erased a real
+    ``stale-rule`` WARN and two real ``uncovered`` HARD findings from the
+    run with no WARN of any kind. Symlinked directories are not descended
+    into, matching ``rglob``'s own default."""
+    out: list[Path] = []
+    for entry in _listdir(d):
+        out.append(entry)
+        if not entry.is_symlink() and _is_dir(entry):
+            out.extend(_walk(entry))
+    return out
+
+
 def _read(path: Path) -> str:
+    """The file's text, or ``""`` when it does not exist / cannot be opened
+    -- the origin script's own ``_read``, widened for one case the origin
+    never had to survive.
+
+    The origin caught ``OSError`` only, so a single non-UTF-8 byte in a
+    tracked doc raised ``UnicodeDecodeError`` (a ``ValueError``) and killed
+    the whole script. Here that exception would instead be caught by
+    ``_gather``'s per-check net, which is honest but discards every OTHER
+    real finding the same check had already computed -- reproduced by the
+    follow-up review pass: one stray latin-1 byte in one project ``.md``
+    erased that check's real ``stale-rule`` finding for a different, wholly
+    readable file. Decoding the undecodable bytes with U+FFFD keeps the
+    file's readable content scannable, so neither the file nor its siblings
+    go silently unexamined -- strictly better than ``chain.py``'s own
+    ``return set()`` degradation, which would read the file as empty and
+    therefore clean."""
     try:
         return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        try:
+            return path.read_bytes().decode("utf-8", errors="replace")
+        except OSError:
+            return ""
     except OSError:
         return ""
 
@@ -291,8 +387,27 @@ def _phase_count(target: Path) -> int:
 
 
 def _max_single_phase(target: Path) -> str:
-    singles = [p for p in _phase_ids(target) if re.fullmatch(r"[A-Z]", p)]
-    return max(singles) if singles else "N"
+    """The highest single-letter atlas phase ID, RAISING when the phase
+    registry could not be read.
+
+    The origin returned a hardcoded ``"N"`` here, which was safe in a CLI
+    that printed ``0 phases`` in its own report header right next to the
+    finding. This module has no header, so that fallback fabricated a
+    specific, actionable-looking verdict out of ground truth that was never
+    read -- reproduced by the follow-up review pass: deleting
+    ``conda_forge_atlas.py`` made a clean phase list acquire
+    ``phase-list-stale: … omits phases through N``. Raising routes it to
+    ``check_phase_lists``'s own ``bmad-drift-unevaluable`` WARN instead."""
+    ids = _phase_ids(target)
+    singles = [p for p in ids if re.fullmatch(r"[A-Z]", p)]
+    if not singles:
+        raise ValueError(
+            "no single-letter atlas phase IDs in "
+            f"{_rel(_skill(target) / 'scripts' / 'conda_forge_atlas.py', target)} "
+            "— the PHASES registry is missing or unreadable, so no phase list "
+            "can be judged stale"
+        )
+    return max(singles)
 
 
 def _gotcha_max(target: Path) -> int | None:
@@ -334,7 +449,28 @@ def _ground_truth(target: Path) -> dict:
 
 
 def _live_version(target: Path) -> Ver:
-    return _parse_ver(_ground_truth(target)["skill_version"])
+    """The live skill version every pin is compared against, RAISING when it
+    could not be read.
+
+    ``_skill_version`` returns ``None`` for an absent/unreadable/unparseable
+    ``CHANGELOG.md``, and the origin's own ``_parse_ver(None)`` turns that
+    into ``(0, 0, 0)`` -- a live version no real pin can ever be behind. The
+    origin printed ``live conda-forge-expert vNone`` in its report header, so
+    an operator saw the hole; a library ``gather()`` has no header, so the
+    hole was silent. Reproduced by the follow-up review pass: deleting
+    ``CHANGELOG.md`` erased ALL 17 ``pin-behind`` findings from a project
+    pinned two minor versions back, leaving a run that looked clean. Raising
+    routes it to ``check_pins``'/``check_deferred_work``'s own
+    ``bmad-drift-unevaluable`` WARN instead -- the honest answer for a
+    comparison whose right-hand side is unknown."""
+    version = _ground_truth(target)["skill_version"]
+    if version is None:
+        raise ValueError(
+            "no live conda-forge-expert version in "
+            f"{_rel(_skill(target) / 'CHANGELOG.md', target)} "
+            "— nothing to compare the tracked docs' pins against"
+        )
+    return _parse_ver(version)
 
 
 # -------------------------------------------------------------- sync baseline
@@ -420,31 +556,51 @@ def _finding(severity: str, kind: str, subject: str, detail: str, *, fixable: bo
     )
 
 
-def _unevaluable(check_name: str, detail: str) -> Finding:
+def _unevaluable(check_name: str, detail: str, target: Path) -> Finding:
     """The WARN item for one ported check that raised, or degraded past its
     own internal handling -- the per-check isolation boundary this module's
-    own docstring describes."""
+    own docstring describes.
+
+    ``target`` is carried on EVERY ``bmad-drift-unevaluable`` finding, this
+    one and ``_gather``'s own missing-project variant alike, so a consumer
+    reading ``evidence["check"]`` or ``evidence["target"]`` cannot
+    ``KeyError`` depending on which of the two fired -- the rule
+    ``sources/ledger.py`` states explicitly for its own pair of
+    cannot-evaluate WARNs."""
     return Finding(
         source=Source.BMAD_DRIFT,
         check="bmad-drift-unevaluable",
         status=DoctorStatus.WARN,
         message=f"{check_name} could not be evaluated — {detail}",
-        evidence={"check": check_name},
+        evidence={"check": check_name, "target": str(target)},
     )
 
 
 # --------------------------------------------------------------------- checks
 def check_pins(target: Path) -> list[Finding]:
-    live = _live_version(target)
+    """Every tracked doc must carry a ``source_pin``, and it must not be
+    behind the live skill version.
+
+    When the LIVE version cannot be read, only the behind-ness half is
+    unanswerable -- a doc with no pin at all is still definitively broken.
+    So that half degrades to one honest ``bmad-drift-unevaluable`` WARN and
+    the ``pin-missing`` half still runs, mirroring ``check_tier_alignment``'s
+    own git-unavailable shape one screen down rather than discarding a real
+    HARD finding over an unrelated missing file."""
     proj = _proj(target)
     out: list[Finding] = []
+    try:
+        live: Ver | None = _live_version(target)
+    except ValueError as exc:
+        live = None
+        out.append(_unevaluable("check_pins", str(exc), target))
     for rel, cat in TRACKED:
         pin = _doc_pin(proj / rel)
         if pin is None:
             if cat != "snapshot":
                 out.append(_finding(HARD, "pin-missing", rel,
                            "missing/corrupt source_pin — breaks the drift contract"))
-        elif (pin[0], pin[1]) < (live[0], live[1]):
+        elif live is not None and (pin[0], pin[1]) < (live[0], live[1]):
             sev = INFO if cat == "snapshot" else DRIFT
             out.append(_finding(sev, "pin-behind", rel,
                        f"pinned v{pin[0]}.{pin[1]}.{pin[2]} < live v{live[0]}.{live[1]}.{live[2]} [{cat}]"))
@@ -456,15 +612,15 @@ def check_archive_hygiene(target: Path) -> list[Finding]:
     plan = _plan(target)
     impl = _impl(target)
     if _is_dir(plan):
-        for p in plan.glob("sprint-change-proposal-*.md"):
+        for p in _listdir_match(plan, "sprint-change-proposal-*.md"):
             out.append(_finding(HARD, "archive-misplaced", f"planning-artifacts/{p.name}",
                        "sprint-change-proposal belongs in change-history/", fixable=True))
     if _is_dir(impl):
-        for p in impl.glob("retro-*.md"):
+        for p in _listdir_match(impl, "retro-*.md"):
             out.append(_finding(HARD, "archive-misplaced", f"implementation-artifacts/{p.name}",
                        "retro belongs in retros/", fixable=True))
-        for p in impl.iterdir():
-            if p.is_file() and p.suffix in STRAY_SUFFIXES:
+        for p in _listdir(impl):
+            if _is_file(p) and p.suffix in STRAY_SUFFIXES:
                 out.append(_finding(HARD, "stray-file", f"implementation-artifacts/{p.name}",
                            "throwaway artifact (already in git history) — remove", fixable=True))
     return out
@@ -478,8 +634,8 @@ def check_spec_status(target: Path) -> list[Finding]:
     retro_slugs = []
     retros_dir = impl / "retros"
     if _is_dir(retros_dir):
-        retro_slugs = [_slug(p.name) for p in retros_dir.glob("retro-*.md")]
-    for spec in impl.glob("spec-*.md"):
+        retro_slugs = [_slug(p.name) for p in _listdir_match(retros_dir, "retro-*.md")]
+    for spec in _listdir_match(impl, "spec-*.md"):
         status = _spec_status(_read(spec))
         if not status or TERMINAL_STATUS.search(status) or not NONTERMINAL_STATUS.search(status):
             continue
@@ -492,15 +648,20 @@ def check_spec_status(target: Path) -> list[Finding]:
 
 
 def check_deferred_work(target: Path) -> list[Finding]:
-    live = _live_version(target)
+    # `_live_version` is resolved HERE, not at the top: it is needed only for
+    # the final staleness comparison, so a repo with no deferred-work.md (or
+    # one with no reconciliation stamp at all) reaches its verdict without
+    # depending on -- or degrading over -- the live skill version. Also spares
+    # the common no-file case a whole `_ground_truth` computation.
     df = _impl(target) / "deferred-work.md"
-    if not df.is_file():
+    if not _is_file(df):
         return []
     text = _read(df)
     m = re.search(r"last\s+reconciled[^\n]*?v(\d+)\.(\d+)\.(\d+)", text, re.I)
     if not m:
         return [_finding(DRIFT, "deferred-stale", "implementation-artifacts/deferred-work.md",
                 "no 'Last reconciled: ... vX.Y.Z' stamp — cannot tell if it is current")]
+    live = _live_version(target)
     pin = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
     if (pin[0], pin[1]) < (live[0], live[1]):
         return [_finding(DRIFT, "deferred-stale", "implementation-artifacts/deferred-work.md",
@@ -538,7 +699,9 @@ def check_stale_rules(target: Path) -> list[Finding]:
     proj = _proj(target)
     if not _is_dir(proj):
         return out
-    for path in proj.rglob("*.md"):
+    for path in _walk(proj):
+        if path.suffix != ".md":
+            continue
         if any(p in IGNORE_PARTS for p in path.parts):
             continue
         text = _read(path)
@@ -550,7 +713,13 @@ def check_stale_rules(target: Path) -> list[Finding]:
 
 def check_phase_lists(target: Path) -> list[Finding]:
     out: list[Finding] = []
-    hi = _max_single_phase(target)
+    # `hi` is resolved LAZILY, on the first doc that actually contains a
+    # judgeable phase list. `_max_single_phase` raises when the atlas PHASES
+    # registry cannot be read, and this check should degrade to a
+    # `bmad-drift-unevaluable` WARN only when there was in fact something to
+    # judge -- a repo with no phase lists anywhere has nothing to say about a
+    # registry it never needed.
+    hi: str | None = None
     proj = _proj(target)
     for rel, cat in TRACKED:
         if cat == "snapshot":
@@ -559,6 +728,8 @@ def check_phase_lists(target: Path) -> list[Finding]:
             seg = m.group(0)
             if "/C/" not in seg or "/D" not in seg:
                 continue
+            if hi is None:
+                hi = _max_single_phase(target)
             if f"/{hi}" not in seg and not seg.endswith(hi):
                 out.append(_finding(DRIFT, "phase-list-stale", rel,
                            f"atlas-phase list '{seg[:32]}…' omits phases through {hi}"))
@@ -576,7 +747,7 @@ def check_baseline(target: Path) -> list[Finding]:
     live value. A live git failure therefore never changes an observable
     finding for this check."""
     baseline = _proj(target) / ".sync-baseline.json"
-    if not baseline.is_file():
+    if not _is_file(baseline):
         return [_finding(INFO, "no-baseline", ".sync-baseline.json",
                           "no reconciliation baseline — run `bmad-drift-check -- --write-baseline` after a sync")]
     try:
@@ -754,17 +925,17 @@ def classify(path: Path, target: Path) -> str:
 
 def check_coverage(target: Path) -> list[Finding]:
     """Walk the whole project; HARD-fail any file no rule classifies -- so
-    coverage can't lapse. ``Path.rglob`` swallows ``OSError`` mid-traversal
-    and simply yields nothing for an unreadable directory -- the same
-    inherited risk class ``sources/chain.py``'s own ``_listdir`` was built to
-    close, deliberately left un-hardened here per this story's Design Notes
-    (a question for the review pass, not pre-solved)."""
+    coverage can't lapse. Walks through ``_walk``, not ``Path.rglob``: the
+    latter swallows ``OSError`` mid-traversal and simply yields nothing for
+    an unreadable directory, which this check would then read as full
+    coverage. The story's Design Notes left that question to the review
+    pass, which reproduced it (see ``_walk``) and closed it here."""
     findings: list[Finding] = []
     proj = _proj(target)
     if not _is_dir(proj):
         return findings
-    for path in sorted(proj.rglob("*")):
-        if not path.is_file():
+    for path in sorted(_walk(proj)):
+        if not _is_file(path):
             continue
         cls = classify(path, target)
         if cls == "ignored":
@@ -793,6 +964,7 @@ def check_tier_alignment(target: Path) -> list[Finding]:
             "check_tier_alignment",
             f"git ls-files -- {IMPL_REL} failed; git may be unavailable or "
             f"{target} is not a repository",
+            target,
         ))
     else:
         for f in tracked:
@@ -804,8 +976,8 @@ def check_tier_alignment(target: Path) -> list[Finding]:
                        f"git-tracked ({remedy})"))
     docs_specs = _docs_specs(target)
     if _is_dir(docs_specs):
-        for p in sorted(docs_specs.iterdir()):
-            if p.is_file() and p.suffix != ".md":
+        for p in _listdir(docs_specs):
+            if _is_file(p) and p.suffix != ".md":
                 out.append(_finding(DRIFT, "docs-specs-nonmd", f"docs/specs/{p.name}",
                            "docs/specs holds BMAD intake specs (markdown) — non-.md is misfiled"))
     return out
@@ -820,7 +992,7 @@ def check_spec_indexed(target: Path) -> list[Finding]:
     claude = _read(target / "CLAUDE.md")
     return [_finding(DRIFT, "spec-unindexed", f"docs/specs/{p.name}",
                     "not referenced in CLAUDE.md Project Documentation Reference")
-            for p in sorted(docs_specs.glob("*.md")) if p.name not in claude]
+            for p in _listdir_match(docs_specs, "*.md") if p.name not in claude]
 
 
 def _roster(target: Path) -> dict:
@@ -846,7 +1018,7 @@ def check_dream_vocab(target: Path) -> list[Finding]:
     roster = _roster(target)
     dream_statuses = tuple(roster["dream_statuses"])
     dream_types = tuple(roster["dream_types"])
-    for f in sorted(dreams_dir.glob("*.md")):
+    for f in _listdir_match(dreams_dir, "*.md"):
         if f.name == "README.md":
             continue
         text = _read(f)
@@ -875,7 +1047,7 @@ def check_dream_owners(target: Path) -> list[Finding]:
     roster = _roster(target)
     stations = tuple(roster["stations"])
     guild_dreams = tuple(roster["guild_dreams"])
-    for f in sorted(dreams_dir.glob("*.md")):
+    for f in _listdir_match(dreams_dir, "*.md"):
         if f.name == "README.md":
             continue
         m = re.search(r"^owner:\s*(\S+)\s*$", _read(f), re.M)
@@ -941,7 +1113,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                     f"no {PROJ_REL}/ under {target} — the BMAD project drift "
                     f"check cannot be evaluated here"
                 ),
-                evidence={"target": str(target)},
+                evidence={"check": "bmad-drift", "target": str(target)},
             ),
         )
 
@@ -960,7 +1132,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             # gather()'s own outer degrade_on_exception, discarding every
             # finding already accumulated from checks that ran successfully
             # earlier in this same pass.
-            findings.append(_unevaluable(name, f"{exc.__class__.__name__}: {exc}"))
+            findings.append(_unevaluable(name, f"{exc.__class__.__name__}: {exc}", target))
 
     if not findings:
         return (

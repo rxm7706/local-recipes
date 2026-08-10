@@ -20,6 +20,7 @@ mutation under ``implementation-artifacts/`` does not also trip
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -27,6 +28,15 @@ import pytest
 
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import factory
+
+#: ``chmod 000`` does not stop root, so the cannot-evaluate tests below would
+#: read a perfectly clean tree and assert a WARN that never comes. The
+#: ``test_sources_chain_*.py`` permission tests predate this guard and simply
+#: assume an unprivileged runner; skipping is the honest form of the same
+#: assumption.
+_needs_unprivileged = pytest.mark.skipif(
+    os.geteuid() == 0, reason="chmod-based unreadable-directory tests are meaningless as root",
+)
 
 # Mirrors test_sources_ledger.py's own scrub: a contributor's own git config
 # must not decide whether this suite passes (GIT_DIR leakage, commit signing,
@@ -557,7 +567,9 @@ def test_docs_specs_nonmd_reports_warn(tmp_path: Path) -> None:
     assert finding.status is DoctorStatus.WARN
 
 
-def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(tmp_path: Path) -> None:
+def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The spec's own row: git unavailable / target not a repository --
     ``check_tier_alignment`` names the cause instead of silently reporting a
     confident-clean "nothing tracked". An unrelated real finding
@@ -569,7 +581,14 @@ def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(tmp_path: Path)
     _seed_ground_truth(repo)
     _seed_all_tracked(repo)
     (factory._proj(repo) / "planning-artifacts" / "index.md").unlink()
-    # deliberately never `git init` here
+    # Deliberately never `git init` here -- but "not a repository" is only
+    # true if git's upward discovery also stops. The autouse fixture SCRUBS
+    # GIT_CEILING_DIRECTORIES, so a contributor whose TMPDIR sits inside a
+    # checkout would have git find that outer repo, exit 0, and fail this
+    # test with a bare KeyError instead of a diagnosable assertion -- leaving
+    # the degradation path it is the only test for unverified. Pin the
+    # ceiling to tmp_path (resolved: git ignores symlinked ceiling entries).
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.resolve()))
 
     findings = factory.gather(repo)
 
@@ -579,7 +598,7 @@ def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(tmp_path: Path)
     unevaluable = by_check["bmad-drift-unevaluable"]
     assert unevaluable.status is DoctorStatus.WARN
     assert "check_tier_alignment" in unevaluable.message
-    assert unevaluable.evidence == {"check": "check_tier_alignment"}
+    assert unevaluable.evidence == {"check": "check_tier_alignment", "target": str(repo)}
 
 
 # --------------------------------------------------------------------- spec index
@@ -798,7 +817,7 @@ def test_one_check_raising_does_not_discard_the_others_real_findings(
     unevaluable = [f for f in findings if f.check == "bmad-drift-unevaluable"]
     assert len(unevaluable) == 1
     assert unevaluable[0].status is DoctorStatus.WARN
-    assert unevaluable[0].evidence == {"check": "check_pins"}
+    assert unevaluable[0].evidence == {"check": "check_pins", "target": str(repo)}
     assert "check_pins" in unevaluable[0].message
     assert "RuntimeError" in unevaluable[0].message
     assert "simulated check_pins failure" in unevaluable[0].message
@@ -826,3 +845,242 @@ def test_gather_wraps_an_unanticipated_gather_level_exception(
     assert finding.check == "bmad-drift"
     assert finding.status is DoctorStatus.WARN
     assert "RuntimeError" in finding.message
+
+
+# ------------------------------------------- cannot-evaluate, not clean (6.8 follow-up)
+#
+# Every test below reproduces a case the FIRST review pass left open and the
+# follow-up pass closed. Before the fix each one produced NO finding at all --
+# a confident clean bill of health for a question that could not be asked --
+# which is the exact defect class this module's per-check isolation exists to
+# turn into an honest WARN. They are the first permission-based tests in this
+# file; `test_sources_chain_*.py` carry the equivalents for their own modules.
+
+
+def _unevaluable_checks(findings: tuple) -> set[str]:
+    return {
+        f.evidence["check"] for f in findings if f.check == "bmad-drift-unevaluable"
+    }
+
+
+def test_baseline_valid_json_of_the_wrong_shape_reports_fail(tmp_path: Path) -> None:
+    """The ``isinstance(base, dict)`` guard. Both pre-existing
+    baseline-corrupt tests write ``"{not json"``, which takes the
+    ``ValueError`` path -- so this branch, added by the first review pass,
+    shipped with no coverage at all. A JSON array parses fine and then
+    ``AttributeError``s on ``.get()``."""
+    for index, payload in enumerate(("[]", "42", '"oops"')):
+        repo = tmp_path / f"repo-{index}"
+        _init_repo(repo)
+        _seed_ground_truth(repo)
+        _seed_all_tracked(repo)
+        baseline = factory._proj(repo) / ".sync-baseline.json"
+        baseline.write_text(payload, encoding="utf-8")
+
+        findings = factory.gather(repo)
+
+        finding = _only(findings, "baseline-corrupt")
+        assert finding.status is DoctorStatus.FAIL
+        assert finding.message == "baseline JSON is not an object"
+        assert not _unevaluable_checks(findings), (
+            f"{payload} degraded to the coarse per-check net instead of the "
+            f"precise baseline-corrupt finding: {findings}"
+        )
+
+
+@_needs_unprivileged
+def test_unreadable_nested_dir_warns_instead_of_reporting_full_coverage(
+    tmp_path: Path,
+) -> None:
+    """``Path.rglob`` swallows ``OSError`` mid-walk and yields nothing, so an
+    unreadable subdirectory read as "no files here" -- and no files reads as
+    fully covered. Reproduced before the fix: one ``chmod 000`` on a nested
+    ``planning-artifacts/specs/`` erased a real ``uncovered`` HARD finding
+    AND a real ``stale-rule`` WARN with no WARN of any kind in their place."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    nested = factory._proj(repo) / "planning-artifacts" / "specs"
+    nested.mkdir(parents=True, exist_ok=True)
+    (nested / "junkfile.txt").write_text("unclassifiable\n", encoding="utf-8")
+    (nested / "note.md").write_text("use <recipe-name>-<version>\n", encoding="utf-8")
+
+    before = factory.gather(repo)
+    assert {"uncovered", "stale-rule"} <= {f.check for f in before}
+
+    nested.chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        nested.chmod(0o755)
+
+    assert not any(f.status is DoctorStatus.OK and f.check == "bmad-drift" for f in after), (
+        f"an unreadable nested dir was reported as a clean project: {after}"
+    )
+    assert {"check_coverage", "check_stale_rules"} <= _unevaluable_checks(after)
+    assert all("PermissionError" in f.message
+               for f in after if f.check == "bmad-drift-unevaluable")
+
+
+@_needs_unprivileged
+def test_unreadable_implementation_artifacts_warns_for_deferred_work(
+    tmp_path: Path,
+) -> None:
+    """``check_deferred_work``/``check_baseline`` gated on the bare
+    ``Path.is_file()``, which answers ``False`` for an unreadable ANCESTOR.
+    Before the fix an unreadable ``implementation-artifacts/`` made three
+    sibling checks WARN while this one silently reported clean -- an operator
+    saw "3 checks unevaluable" and had no way to learn there was a fourth."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "deferred-work.md").write_text("Last reconciled: v0.9.0\n", encoding="utf-8")
+
+    assert _only(factory.gather(repo), "deferred-stale").status is DoctorStatus.WARN
+
+    impl.chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        impl.chmod(0o755)
+
+    assert "check_deferred_work" in _unevaluable_checks(after)
+
+
+@_needs_unprivileged
+def test_unreadable_dreams_dir_warns_instead_of_reporting_no_dream_drift(
+    tmp_path: Path,
+) -> None:
+    """The same swallow one directory over: ``docs/dreams/`` statable but
+    unreadable made both Dream checks report clean."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    dreams = repo / "docs" / "dreams"
+    dreams.mkdir(parents=True, exist_ok=True)
+    (dreams / "orphan.md").write_text("---\nstatus: bogus\n---\n", encoding="utf-8")
+
+    assert "dream-vocab" in {f.check for f in factory.gather(repo)}
+
+    dreams.chmod(0o000)
+    try:
+        after = factory.gather(repo)
+    finally:
+        dreams.chmod(0o755)
+
+    assert {"check_dream_vocab", "check_dream_owners"} <= _unevaluable_checks(after)
+
+
+def test_non_utf8_byte_does_not_discard_a_sibling_docs_real_finding(
+    tmp_path: Path,
+) -> None:
+    """``_read`` caught ``OSError`` only, so one stray latin-1 byte raised
+    ``UnicodeDecodeError`` out of the whole check -- taking a DIFFERENT,
+    perfectly readable file's real ``stale-rule`` finding with it."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    plan = factory._proj(repo) / "planning-artifacts"
+    (plan / "readable.md").write_text("use <recipe-name>-<version>\n", encoding="utf-8")
+    (plan / "mojibake.md").write_bytes(b"caf\xe9 uses <recipe-name>-<version>\n")
+
+    findings = factory.gather(repo)
+
+    stale = [f for f in findings if f.check == "stale-rule"]
+    assert {f.evidence["subject"] for f in stale} == {
+        "planning-artifacts/readable.md", "planning-artifacts/mojibake.md",
+    }, f"a non-UTF-8 byte discarded a sibling doc's finding: {findings}"
+    assert not _unevaluable_checks(findings)
+
+
+def test_unknown_live_version_warns_but_keeps_the_pin_missing_half(
+    tmp_path: Path,
+) -> None:
+    """``_parse_ver(None)`` turned an unreadable skill CHANGELOG into a live
+    version of ``(0, 0, 0)`` -- which no real pin can be behind, so every
+    ``pin-behind`` finding vanished silently. The behind-ness half is now an
+    honest WARN, while ``pin-missing`` (which never needed the live version)
+    still runs, mirroring ``check_tier_alignment``'s own git-unavailable
+    shape."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _seed_ground_truth(repo)
+    _seed_all_tracked(repo, version="0.1.0")
+    (factory._proj(repo) / "planning-artifacts" / "index.md").write_text(
+        "no pin at all\n", encoding="utf-8",
+    )
+    _commit_all(repo, "seed behind-pinned project")
+
+    before = {f.check for f in factory.gather(repo)}
+    assert {"pin-behind", "pin-missing"} <= before
+
+    (repo / ".claude" / "skills" / "conda-forge-expert" / "CHANGELOG.md").unlink()
+    after = factory.gather(repo)
+
+    assert not any(f.check == "pin-behind" for f in after)
+    assert _only(after, "pin-missing").status is DoctorStatus.FAIL
+    assert "check_pins" in _unevaluable_checks(after)
+
+
+def test_unreadable_phase_registry_warns_instead_of_fabricating_phase_n(
+    tmp_path: Path,
+) -> None:
+    """``_max_single_phase`` fell back to a hardcoded ``"N"``, manufacturing
+    a specific, actionable-looking ``omits phases through N`` claim out of
+    ground truth that was never read. It now raises -- but LAZILY, so a repo
+    with no phase list anywhere stays quiet rather than WARNing about a
+    registry it never needed."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    atlas = repo / ".claude" / "skills" / "conda-forge-expert" / "scripts" / "conda_forge_atlas.py"
+
+    # No judgeable phase list anywhere: silence, not a WARN.
+    atlas.unlink()
+    assert "check_phase_lists" not in _unevaluable_checks(factory.gather(repo))
+
+    # Now give it something to judge -- with the registry still unreadable.
+    (factory._proj(repo) / "planning-artifacts" / "index.md").write_text(
+        "---\nsource_pin: conda-forge-expert v1.0.0\n---\npipeline: B/C/D/E/F\n",
+        encoding="utf-8",
+    )
+    after = factory.gather(repo)
+
+    assert not any(f.check == "phase-list-stale" for f in after), (
+        f"fabricated a phase verdict from an unreadable registry: {after}"
+    )
+    assert "check_phase_lists" in _unevaluable_checks(after)
+
+
+def test_every_unevaluable_finding_carries_the_same_evidence_keys(
+    tmp_path: Path,
+) -> None:
+    """``bmad-drift-unevaluable`` is produced by two sites -- a per-check
+    failure and ``_gather``'s own missing-project guard. A consumer grouping
+    by ``evidence["check"]`` must not KeyError depending on which fired; the
+    rule ``sources/ledger.py`` states explicitly for its own pair."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._proj(repo) / ".sync-baseline.json").write_text("[]", encoding="utf-8")
+
+    absent = factory.gather(tmp_path / "not-a-bmad-repo")
+    per_check = factory.gather(repo / "nowhere")
+
+    for findings in (absent, per_check):
+        for f in findings:
+            assert f.check in {"bmad-drift-unevaluable", "bmad-drift"}
+            assert sorted(f.evidence) == ["check", "target"], f.evidence
+
+
+def test_finding_order_is_stable_across_readdir_order(tmp_path: Path) -> None:
+    """Raw ``glob``/``rglob`` yields ``readdir`` order, so the same repo state
+    produced a different finding ORDER on different clones -- defeating any
+    diff- or snapshot-based consumer of ``doctor report``. Every collection
+    site now lists through ``_listdir``, which sorts."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    plan = factory._proj(repo) / "planning-artifacts"
+    for name in ("z-note.md", "a-note.md", "m-note.md"):
+        (plan / name).write_text("use <recipe-name>-<version>\n", encoding="utf-8")
+
+    subjects = [f.evidence["subject"] for f in factory.gather(repo) if f.check == "stale-rule"]
+
+    assert subjects == sorted(subjects)
+    assert len(subjects) == 3
