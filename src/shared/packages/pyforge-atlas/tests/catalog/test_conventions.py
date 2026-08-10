@@ -153,7 +153,9 @@ def test_orphan_ttls_name_their_future_consumer(parameters, parameters_raw_text)
         m.group(1): m.group(2)
         for line in parameters_raw_text.splitlines()
         if (m := re.match(
-            r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+|\d+\.\d+)\b", line.strip()
+            # `(?!\.\d)` after the dotted-numeric alternative stops a 3-segment ID like
+            # "13.1.2" from partial-matching as "13.1" (review finding, Story 13.1).
+            r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+|\d+\.\d+(?!\.\d))\b", line.strip()
         ))
     }
     missing = sorted(k for k in ttls if k not in FLIP_LIST and k not in annotated)

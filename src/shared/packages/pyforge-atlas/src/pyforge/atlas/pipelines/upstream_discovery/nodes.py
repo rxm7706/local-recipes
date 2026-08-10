@@ -9,13 +9,7 @@ HTTP/parse imports here.
 
 from __future__ import annotations
 
-from ...datasets.refresh import RefreshRequest
-
-# The daily discovery cadence fallback (ttls.trending_candidates has no legacy
-# equivalent to inherit — a fresh decision, CAP-1). Mirrors upstream_discovery.py's own
-# local default so a missing/non-numeric ttls entry degrades to the same cadence the
-# dataset itself defaults to.
-DAILY_SECONDS = 86_400
+from ...datasets.refresh import DAILY_SECONDS, RefreshRequest
 
 
 def _coerce_cadence(ttls: dict, key: str) -> int:

@@ -81,6 +81,31 @@ GOOD_HTML = """
 # markup change / a scrape layout break).
 BROKEN_HTML = "<html><body><div class='completely-different-layout'>nothing here</div></body></html>"
 
+# Weekly/monthly cards phrase the stars delta differently than "today" -- pins the
+# review-pass regex fix (Story 13.1) so a future edit narrowing the pattern back to
+# "today" only is caught here instead of only in production.
+GOOD_HTML_WEEKLY = GOOD_HTML.replace("120 stars today", "340 stars this week")
+GOOD_HTML_MONTHLY = GOOD_HTML.replace("120 stars today", "9,001 stars this month")
+
+# One card with no h2>a[href] title link (an ad slot / layout variant) mixed with one
+# well-formed card -- the missing-link card must be skipped, not crash or drop the page.
+MIXED_HTML = """
+<html><body>
+<article class="Box-row">
+  <h2 class="h3 lh-condensed">No title link here</h2>
+</article>
+<article class="Box-row">
+  <h2 class="h3 lh-condensed">
+    <a href="/psf/requests">
+      <span class="text-normal">psf /</span>
+      requests
+    </a>
+  </h2>
+  <p class="col-9 color-fg-muted my-1 pr-4">A simple, yet elegant, HTTP library.</p>
+</article>
+</body></html>
+"""
+
 
 def _make_html_fetcher(mapping: dict):
     def _fetcher(url: str):
@@ -147,6 +172,43 @@ def test_parse_trending_html_layout_break_returns_empty_never_raises():
     assert parse_trending_html(BROKEN_HTML, period="daily") == []
     assert parse_trending_html("", period="weekly") == []
     assert parse_trending_html(None, period="monthly") == []  # never raises on None
+
+
+@pytest.mark.parametrize(
+    ("html", "period", "expected_stars_today"),
+    [
+        (GOOD_HTML, "daily", 120),
+        (GOOD_HTML_WEEKLY, "weekly", 340),
+        (GOOD_HTML_MONTHLY, "monthly", 9001),
+    ],
+)
+def test_parse_trending_html_stars_delta_matches_all_three_period_phrasings(
+    html, period, expected_stars_today
+):
+    rows = parse_trending_html(html, period=period)
+    assert rows[0]["stars_today"] == expected_stars_today
+
+
+def test_parse_trending_html_skips_card_with_no_title_link():
+    rows = parse_trending_html(MIXED_HTML, period="daily")
+    assert len(rows) == 1
+    assert rows[0]["repo_full_name"] == "psf/requests"
+
+
+def test_parse_trending_html_skips_card_with_absolute_href():
+    # If GitHub's markup ever emits an absolute URL instead of the expected relative
+    # `/owner/repo` href, `.strip("/")` alone doesn't clean it up -- guard the shape
+    # explicitly rather than persist a garbled repo_full_name/repo_url.
+    html = GOOD_HTML.replace('href="/psf/requests"', 'href="https://github.com/psf/requests"')
+    rows = parse_trending_html(html, period="daily")
+    assert len(rows) == 1
+    assert rows[0]["repo_full_name"] == "pallets/flask"
+
+
+def test_parse_trending_html_empty_language_tag_normalizes_to_none():
+    html = GOOD_HTML.replace(">Python</span>", "></span>", 1)
+    rows = parse_trending_html(html, period="daily")
+    assert rows[0]["language"] is None
 
 
 # ---------------------------------------------------------------------------

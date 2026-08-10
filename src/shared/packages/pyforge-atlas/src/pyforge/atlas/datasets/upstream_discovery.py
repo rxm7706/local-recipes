@@ -42,18 +42,13 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from .refresh import (
+    DAILY_SECONDS,
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     ExternalRefreshDataset,
 )
 
 logger = logging.getLogger(__name__)
-
-# The daily discovery cadence — ttls.trending_candidates (conf/base/parameters.yml). No
-# legacy equivalent (the never-shipped Phase T had no real cadence to inherit), so this is
-# a fresh decision, not a ported constant — kept local to this module rather than added to
-# refresh.py's WEEKLY_SECONDS-scoped constants.
-_DEFAULT_CADENCE_SECONDS = 86_400
 
 # The Search API fallback has no daily/weekly/monthly time window (it is a plain
 # stars-sorted query) — rows from it are stamped this period value rather than
@@ -66,6 +61,12 @@ _SEARCH_API_FALLBACK_PERIOD = "all"
 # finding, Story 13.1) — match all three phrasings, not just the daily one.
 _STARS_DELTA_RE = re.compile(r"([\d,]+)\s+stars?\s+(?:today|this\s+week|this\s+month)", re.IGNORECASE)
 _DIGITS_RE = re.compile(r"[\d,]+")
+
+# The title link's href is expected to be the site-relative `owner/repo` form (after
+# stripping slashes). An absolute URL or a multi-segment path doesn't get cleaned up by
+# `.strip("/")` alone and would otherwise persist a garbled repo_full_name/repo_url
+# instead of degrading gracefully (review finding, Story 13.1).
+_REPO_FULL_NAME_RE = re.compile(r"[^/]+/[^/]+")
 
 
 def _parse_count(text: str | None) -> int | None:
@@ -118,14 +119,14 @@ def parse_trending_html(html: str, *, period: str) -> list[dict]:
         if link is None:
             continue
         repo_full_name = (link.get("href") or "").strip("/").strip()
-        if not repo_full_name:
+        if not repo_full_name or not _REPO_FULL_NAME_RE.fullmatch(repo_full_name):
             continue
 
         desc_tag = article.find("p")
         description = desc_tag.get_text(strip=True) if desc_tag is not None else None
 
         lang_tag = article.find(attrs={"itemprop": "programmingLanguage"})
-        language = lang_tag.get_text(strip=True) if lang_tag is not None else None
+        language = (lang_tag.get_text(strip=True) if lang_tag is not None else None) or None
 
         stars_tag = article.select_one('a[href$="/stargazers"]')
         forks_tag = article.select_one('a[href$="/forks"]')
@@ -261,7 +262,7 @@ class TrendingSnapshotDataset(ExternalRefreshDataset):
             # method — only when a fetcher is actually wired, so construction stays
             # offline (kedro-catalog-check resolves this entry with no fetcher at all).
             refresher=self._do_refresh if fetcher is not None else None,
-            cadence_seconds=cadence_seconds if cadence_seconds is not None else _DEFAULT_CADENCE_SECONDS,
+            cadence_seconds=cadence_seconds if cadence_seconds is not None else DAILY_SECONDS,
             required_resource=None,
             timeout_seconds=timeout_seconds,
             max_retries=max_retries,
