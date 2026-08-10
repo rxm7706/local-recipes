@@ -1,20 +1,23 @@
 ---
 spec: deferred-work-visibility
-status: draft
+status: ready
 owner-dream: docs/dreams/deferred-work-visibility.md
 surface: []          # Governs no files of its own, and that is honest rather than a frontier
-                     # claim. Everything this would change is already governed elsewhere:
-                     # `.claude/skills/bmad-dev-auto/**` by mason's spec-fleet-stewardship,
-                     # `scripts/deferred_work_check.py` and `pyforge/doctor/sources/` by
-                     # doctor's own station spec. A glob matching nothing is silent by design.
+                     # claim. CORRECTED 2026-08-10: the earlier note here claimed
+                     # `.claude/skills/bmad-dev-auto/**` was governed by mason's
+                     # spec-fleet-stewardship. It is NOT — verified two ways (zero hits for
+                     # `bmad-dev-auto` in scripts/.spec-surface-baseline.json, and no Spec
+                     # surface glob in any of the 8 projects matches
+                     # `.claude/skills/bmad-dev-auto/step-04-review.md`). That path is
+                     # ALLOWLISTED, not governed: spec_surface_allowlist.txt line 3,
+                     # `.claude/**  # non-CFE agent config`. The detector half IS governed, by
+                     # doctor's own station spec — and as of PR #394 it lives at
+                     # `Source.DEFERRED_WORK` in `pyforge/doctor/sources/`, not the deleted
+                     # shim. A glob matching nothing is silent by design.
 companions: []
 sources:
   - ../../../../../../docs/dreams/deferred-work-visibility.md
-open_questions:
-  - "Who owns which half? The detector half looks like Doctor's — Epic 6 spent six stories re-homing exactly these verdicts. The emitter half looks like Marshal's — it owns loop orchestration and the `bmad-dev-auto` skill. Splitting one effort across two stations needs deciding rather than assuming."
-  - "Are all 470 worth keeping? They accumulated unseen, so some may be stale, duplicated, or already resolved. Grandfathering wholesale preserves noise as well as signal; triage may be cheaper than it looks, or may be a second effort."
-  - "Does the emitter assign ids, or does promotion? Minting at defer time makes Tier-3 self-describing; minting at promotion keeps id-generation in one place. Marshal Story 4.13 already automated promotion — which argues for the second, except 4.13 promotes BY ID and so inherits the same blind spot."
-  - "Should the tracked ledger's own anonymous entries red at the same severity? `_anonymous()` already reports them there as `ledger-entry-unidentified`. If Tier-3 gains the same check, the two sides should agree on severity rather than drift apart."
+open_questions: []
 ---
 
 ## Why
@@ -79,12 +82,11 @@ ledger returns 0, and the detector still prints `OK`.
 - **Follow the in-house grandfathering precedent.** `spec-pyforge-warden` already ships
   baseline-and-grandfathering for exactly this shape: a real gate that would otherwise red on a
   large pre-existing backlog. Do not invent a second mechanism.
-- **The detector half must not be written against the shim.**
-  `scripts/deferred_work_check.py` is one of the eight shims doctor story 6-9 **deletes**
-  (confirmed on its branch: `D scripts/deferred_work_check.py`); its logic moves into
-  `pyforge.doctor.sources`' `REGISTRY`. A fix written against the shim is work thrown away, so
-  the detector half belongs in Doctor's `sources/` — after, or deliberately alongside, the 6-9
-  rewiring.
+- **The detector half is written against `sources/`, and the shim is already gone.**
+  6-9 **landed** on 2026-08-10 (PR #394): `scripts/deferred_work_check.py` is deleted and the
+  check is `Source.DEFERRED_WORK`, registered in `pyforge/doctor/sources/__init__.py`. What was
+  an ordering constraint is now settled history — there is no shim left to write against by
+  mistake.
 - **Station id conventions are deliberate and survive.** doctor/atlas/marshal/warden use
   `DW-FU-<story>`; mason uses `DW-<story>-<n>`. Whatever ships respects each station's own
   precedent rather than normalising them.
@@ -96,10 +98,37 @@ ledger returns 0, and the detector still prints `OK`.
 - **Not a change to what gets deferred.** Review passes decide that. This is about durability
   of the record, not the decision.
 - **Not a fleet-wide id convention.** The per-station difference is deliberate.
-- **Not coupled to landing 6-9.** The ordering constraint is real, but this Spec does not force
-  that landing's timing.
+- **Not coupled to landing 6-9** — moot as of 2026-08-10: 6-9 has landed, so the ordering
+  constraint is discharged rather than merely uncoupled.
 - **Not a triage of the existing 470.** Whether they are all worth keeping is an open question
   above, and possibly its own effort.
+
+## Resolved Questions
+
+All four were answered 2026-08-10, after 6-9 landed removed the only recorded blocker.
+
+- **Q1 — who owns which half? RESOLVED: Doctor owns both; the effort is not split.** Three
+  grounds. The detector half is Doctor's beyond argument now that 6-9 has landed. The emitter
+  half is not a change to loop *orchestration* (which would be Marshal's) but a one-line
+  template change making `bmad-dev-auto` **comply** with a contract Doctor defines and
+  validates — the station that says what a valid deferral looks like should own making the
+  emitter produce one. And per the frontmatter correction, the emitter path is allowlisted, so
+  a Doctor-owned change invades no other station's surface. *Rejected: splitting a 3-CAP effort
+  across two stations for a single template edit — it buys a seam boundary and pays a
+  coordination cost on every story.*
+- **Q2 — are all 470 worth keeping? RESOLVED: grandfather all 470 wholesale at a dated
+  cut-off; do not triage here.** Triage is already a Non-goal, and the warden precedent this
+  Spec is told to follow does exactly this. Triage stays worth doing, named as its own
+  follow-on rather than smuggled into a gate story — it is judgement work per entry and would
+  block a mechanical fix behind an open-ended review.
+- **Q3 — emitter or promotion mints the id? RESOLVED: the emitter, at defer time.** CAP-1
+  already says "carries identity from birth", and the alternative is self-defeating: an entry
+  that reaches promotion without an id is *already invisible* to the thing that would promote
+  it. Marshal Story 4.13 promotes **by id** and so inherits this exact blind spot, which means
+  routing minting through promotion would rebuild the defect one layer up.
+- **Q4 — same severity on the tracked side? RESOLVED: yes.** One invariant, two sides.
+  Different severities would let one side be silenced independently of the other — and drift
+  between the two sides is the shape of the original defect, not a new risk.
 
 ## Success signal
 
