@@ -10,12 +10,14 @@ GitHub GraphQL client and a Jira REST v3 client built on an injectable
 `.claude/skills/conda-forge-expert/scripts/_http.py`'s `open_url` — never a
 live network call from a test), and `reconcile` — the event-triggered
 reconciliation core (ARCHITECTURE-SPINE.md's Design Paradigm): a webhook or
-schedule tick is only ever a wake-up, never a value source. Every call re-reads
-both linked items' current state, compares each side's own `updated_at`
-against its own recorded sync-point field (AD-5 — never a cross-vendor
-wall-clock comparison), and converges the divergent side; on a real conflict
+schedule tick is only ever a wake-up, never a value source. Every call
+re-reads both linked items' current state and asks, per side, whether its
+current tracked-field value differs from the **baseline** value that side was
+last synced to — a per-field map of last-synced values, never a timestamp
+(AD-5 amended, AD-10). Neither side differs from its own baseline → no-op.
+Exactly one differs → propagate it. Both differ → a genuine conflict, and
 GitHub wins unless `field_overrides` says otherwise (AD-4). Control-plane
-state — the entity link and the per-item sync point — lives only as
+state — the entity link and the per-field baseline map — lives only as
 configured fields on the items themselves; there is no sidecar store of any
 kind (AD-2).
 
@@ -26,16 +28,14 @@ never builds its own credential/header logic. `SyncDuty` is the
 wiring `steward sync reconcile (--github-item ID | --jira-issue KEY)
 [--config PATH] [--dry-run]`.
 
-See ARCHITECTURE-SPINE.md's Design Paradigm and this story's own spec Design
-Notes ("Reconcile algorithm") for the two load-bearing corrections `reconcile`
-implements verbatim: (1) a
-value-equality short-circuit before ANY write/no-op decision is reported —
-the structural reason an unrelated field edit (AD-5 is item-level, not
-field-level, staleness) never drives a live push for a value the destination
-already holds; (2) the sync-point timestamp is captured strictly AFTER the
-cross-system write completes, never before or once up front — a pre-write
-capture can never be guaranteed >= the write's own server-side timestamp,
-which would permanently defeat the loop guard for that item.
+See ARCHITECTURE-SPINE.md's AD-5 (amended) and AD-10, and this story's own
+spec Design Notes ("Reconcile algorithm"), for the baseline-value mechanism
+`reconcile` implements verbatim: an absent baseline key means "never synced"
+(a first link, not a loop candidate); a present key holding `None` means "was
+synced, and was an explicit clear" — the two must never be collapsed. A
+serialized baseline map that would exceed the configured field's size ceiling
+is a named failure pointing at Mode B (AD-2/AD-10's documented escape hatch),
+never a sidecar store.
 """
 
 from __future__ import annotations
@@ -45,7 +45,6 @@ import json
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 from urllib.parse import quote, urlparse
@@ -69,10 +68,10 @@ _GITHUB_GRAPHQL_URL = f"https://{_GITHUB_API_HOST}/graphql"
 _SYNC_CONFIG_RELATIVE_PATH = Path(".steward/sync-config.yaml")
 
 _REQUIRED_GITHUB_FIELDS: tuple[str, ...] = (
-    "project_id", "status_field_id", "link_field_id", "sync_point_field_id",
+    "project_id", "status_field_id", "link_field_id", "baseline_field_id",
 )
 _REQUIRED_JIRA_FIELDS: tuple[str, ...] = (
-    "base_url", "project_key", "link_field_id", "sync_point_field_id",
+    "base_url", "project_key", "link_field_id", "baseline_field_id",
 )
 
 # The only field_overrides value this story recognizes -- overriding AD-4's
@@ -105,11 +104,11 @@ class SyncConfig:
     github_project_id: str
     github_status_field_id: str
     github_link_field_id: str
-    github_sync_point_field_id: str
+    github_baseline_field_id: str
     jira_base_url: str
     jira_project_key: str
     jira_link_field_id: str
-    jira_sync_point_field_id: str
+    jira_baseline_field_id: str
     field_overrides: dict[str, str] = field(default_factory=dict)
     user_mapping: dict[str, str] = field(default_factory=dict)
 
@@ -193,11 +192,11 @@ def load_config(path: str | Path) -> SyncConfig:
         github_project_id=github_values["project_id"],
         github_status_field_id=github_values["status_field_id"],
         github_link_field_id=github_values["link_field_id"],
-        github_sync_point_field_id=github_values["sync_point_field_id"],
+        github_baseline_field_id=github_values["baseline_field_id"],
         jira_base_url=jira_values["base_url"],
         jira_project_key=jira_values["project_key"],
         jira_link_field_id=jira_values["link_field_id"],
-        jira_sync_point_field_id=jira_values["sync_point_field_id"],
+        jira_baseline_field_id=jira_values["baseline_field_id"],
         field_overrides=dict(field_overrides),
         user_mapping=dict(user_mapping),
     )
@@ -219,6 +218,12 @@ class SyncAPIError(SyncError):
 class SyncUnlinkedError(SyncError):
     """An item has no identity-link value recorded pointing at its
     counterpart on the other side."""
+
+
+class SyncBaselineTooLargeError(SyncError):
+    """A serialized baseline map would not fit the configured field's
+    size ceiling (AD-2/AD-10's documented escape hatch to Mode B) --
+    never a licence to fall back to a sidecar store."""
 
 
 # ── The injectable transport seam ───────────────────────────────────────────
@@ -268,29 +273,63 @@ def _default_transport(request: urllib.request.Request) -> TransportResponse:
         ) from exc
 
 
-# ── Timestamp handling (AD-5's loop guard compares these) ──────────────────
+# ── Baseline handling (AD-5 amended / AD-10's loop guard compares these) ───
+
+# GitHub Projects V2 text fields have no publicly documented character ceiling (verified by
+# web search against GitHub's own GraphQL reference and community discussions, 2026-08-10:
+# none exists). Conservative, explicitly unverified placeholder -- re-verify against a live
+# board before relying on it.
+_GITHUB_BASELINE_FIELD_CEILING = 1024
+
+# Jira Cloud's "Text Field (single line)" custom field type is hard-capped at 255 characters
+# at the database level (well-documented, e.g. JRASERVER-42470) -- a write past this limit is
+# silently rejected by Jira's own REST API, so this module must catch it first.
+_JIRA_BASELINE_FIELD_CEILING = 255
 
 
-def _parse_timestamp(value: str) -> datetime:
-    """Parse an ISO-8601 timestamp from either vendor's API.
+def _parse_baseline(raw: object, *, side: str, identifier: str) -> dict[str, object]:
+    """Parse a side's baseline field into its per-field last-synced-value
+    map (AD-10). `None` or an empty string (the field has never been
+    written) means "never synced" for every field: returns `{}`, never
+    raises.
 
-    A timezone-naive value (e.g. a hand-edited sync-point field with no
-    offset) is treated as UTC rather than left to raise `TypeError` the
-    first time it is compared against a timezone-aware value -- every
-    timestamp `reconcile` compares flows through this one function, so
-    normalizing here is sufficient; no comparison site needs its own
-    naive/aware guard.
+    Deliberately narrower than a bare truthiness check: a baseline field
+    genuinely misconfigured to point at a non-text field (e.g. a Jira
+    Number/Checkbox field returning `0`/`false`) must not be silently
+    swallowed as "never synced" -- it falls through to the JSON parse
+    below, which raises a named, loud `SyncAPIError` instead.
+
+    A non-empty value that isn't valid JSON, or that parses to something
+    other than a JSON object, is a named `SyncAPIError` -- never a raw
+    `json.JSONDecodeError`/`AttributeError` escaping to a caller.
     """
+    if raw is None or raw == "":
+        return {}
     try:
-        text = value.strip()
-        if text.endswith("Z"):
-            text = text[:-1] + "+00:00"
-        parsed = datetime.fromisoformat(text)
-    except (AttributeError, ValueError) as exc:
-        raise SyncAPIError(f"sync: cannot parse timestamp {value!r}: {exc}") from exc
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise SyncAPIError(f"{side} {identifier}: malformed baseline field (not JSON): {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise SyncAPIError(f"{side} {identifier}: baseline field is not a JSON object")
     return parsed
+
+
+def _serialize_baseline(baseline: dict[str, object], *, side: str, ceiling: int) -> str:
+    """Serialize a baseline map deterministically (`sort_keys` -- stable
+    across writes/tests) and enforce the vendor's field-size ceiling before
+    either baseline field write is attempted (AD-2/AD-10's documented escape
+    hatch to Mode B). Note this only gates the two baseline writes -- by the
+    time this runs, the cross-system tracked-value write (the Jira
+    transition or GitHub field update) has, in the general case, already
+    completed; see `reconcile`'s own accepted-non-atomicity comment.
+    """
+    text = json.dumps(baseline, sort_keys=True, separators=(",", ":"))
+    if len(text) > ceiling:
+        raise SyncBaselineTooLargeError(
+            f"{side} baseline ({len(text)} chars) exceeds the {ceiling}-char field ceiling -- "
+            "see AD-2/AD-10: the documented escape hatch is Mode B, never a sidecar store"
+        )
+    return text
 
 
 # ── GitHub Projects V2 (GraphQL) client ─────────────────────────────────────
@@ -300,7 +339,6 @@ query($itemId: ID!) {
   node(id: $itemId) {
     ... on ProjectV2Item {
       id
-      updatedAt
       fieldValues(first: 50) {
         nodes {
           ... on ProjectV2ItemFieldTextValue {
@@ -367,15 +405,14 @@ class GitHubItemState:
     item_id: str
     link: str | None
     status: str | None
-    updated_at: datetime
-    sync_point: datetime | None
+    baseline: dict[str, object]
 
 
 def get_project_item(
     item_id: str, *, config: SyncConfig, credential: HostScopedCredential, transport: TransportFn
 ) -> GitHubItemState:
-    """Read a GitHub Projects V2 item's `updatedAt`, tracked status, link,
-    and sync-point field values.
+    """Read a GitHub Projects V2 item's tracked status, link, and baseline
+    field values.
 
     Every field is read as `ProjectV2ItemFieldTextValue` -- this story's
     tracked GitHub field is a plain TEXT field, never GitHub's native
@@ -384,8 +421,8 @@ def get_project_item(
     matching the Boundaries & Constraints' "Never build a general
     status-vocabulary translation table").
 
-    Raises `SyncAPIError` for a missing/malformed `data.node` or `updatedAt`
-    -- never a raw `KeyError` escaping to `cli.main()`'s crash boundary.
+    Raises `SyncAPIError` for a missing/malformed `data.node` -- never a raw
+    `KeyError` escaping to `cli.main()`'s crash boundary.
     """
     payload = github_graphql_request(
         _GET_PROJECT_ITEM_QUERY, {"itemId": item_id}, credential=credential, transport=transport
@@ -398,12 +435,6 @@ def get_project_item(
         ) from exc
     if node is None:
         raise SyncAPIError(f"GitHub project item {item_id}: not found")
-    try:
-        updated_at = _parse_timestamp(node["updatedAt"])
-    except (KeyError, TypeError) as exc:
-        raise SyncAPIError(
-            f"GitHub project item {item_id}: malformed response (missing updatedAt)"
-        ) from exc
 
     field_values: dict[str, str] = {}
     for entry in ((node.get("fieldValues") or {}).get("nodes") or []):
@@ -412,13 +443,12 @@ def get_project_item(
         if field_id is not None and text is not None:
             field_values[field_id] = text
 
-    sync_point_raw = field_values.get(config.github_sync_point_field_id)
+    baseline_raw = field_values.get(config.github_baseline_field_id)
     return GitHubItemState(
         item_id=item_id,
         link=field_values.get(config.github_link_field_id),
         status=field_values.get(config.github_status_field_id),
-        updated_at=updated_at,
-        sync_point=_parse_timestamp(sync_point_raw) if sync_point_raw else None,
+        baseline=_parse_baseline(baseline_raw, side="github item", identifier=item_id),
     )
 
 
@@ -432,7 +462,7 @@ def update_project_item_field(
     transport: TransportFn,
 ) -> None:
     """`updateProjectV2ItemFieldValue` -- write `value` to `field_id` on
-    `item_id` (used for both the tracked status field and the sync-point
+    `item_id` (used for both the tracked status field and the baseline
     field; the caller decides which `field_id`)."""
     variables = {
         "projectId": config.github_project_id,
@@ -469,21 +499,20 @@ class JiraIssueState:
     issue_key: str
     link: str | None
     status: str | None
-    updated_at: datetime
-    sync_point: datetime | None
+    baseline: dict[str, object]
 
 
 def get_jira_issue(
     issue_key: str, *, config: SyncConfig, credential: HostScopedCredential, transport: TransportFn
 ) -> JiraIssueState:
     """`GET /rest/api/3/issue/{key}` -- reads only the fields this module
-    needs (`status`, `updated`, the configured link/sync-point custom
-    fields), never the full issue payload.
+    needs (`status`, the configured link/baseline custom fields), never the
+    full issue payload.
 
     Raises `SyncAPIError` for a non-2xx status, malformed JSON, or a
-    missing/malformed `fields`/`updated` -- never a raw `KeyError`.
+    missing/malformed `fields` -- never a raw `KeyError`.
     """
-    requested_fields = f"status,updated,{config.jira_link_field_id},{config.jira_sync_point_field_id}"
+    requested_fields = f"status,{config.jira_link_field_id},{config.jira_baseline_field_id}"
     url = f"{_jira_issue_url(config, issue_key)}?fields={requested_fields}"
     headers = dict(resolve_headers(credential, url))
     headers["Accept"] = "application/json"
@@ -496,23 +525,19 @@ def get_jira_issue(
         payload = json.loads(response.body)
     except json.JSONDecodeError as exc:
         raise SyncAPIError(f"Jira issue {issue_key}: malformed JSON response: {exc}") from exc
-    try:
-        fields = payload["fields"]
-        updated_at = _parse_timestamp(fields["updated"])
-    except (KeyError, TypeError) as exc:
-        raise SyncAPIError(
-            f"Jira issue {issue_key}: malformed response (missing fields/updated)"
-        ) from exc
+    fields = payload.get("fields") if isinstance(payload, dict) else None
+    if not isinstance(fields, dict):
+        raise SyncAPIError(f"Jira issue {issue_key}: malformed response (missing/malformed fields)")
 
-    sync_point_raw = fields.get(config.jira_sync_point_field_id)
     status_field = fields.get("status")
     status = status_field.get("name") if isinstance(status_field, dict) else None
     return JiraIssueState(
         issue_key=issue_key,
         link=fields.get(config.jira_link_field_id),
         status=status,
-        updated_at=updated_at,
-        sync_point=_parse_timestamp(sync_point_raw) if sync_point_raw else None,
+        baseline=_parse_baseline(
+            fields.get(config.jira_baseline_field_id), side="jira issue", identifier=issue_key
+        ),
     )
 
 
@@ -525,7 +550,7 @@ def update_jira_issue_fields(
     transport: TransportFn,
 ) -> None:
     """`PUT /rest/api/3/issue/{key}` with `{"fields": fields_}` -- used for
-    the sync-point field write (status changes go through
+    the baseline field write (status changes go through
     `transition_jira_issue` instead; Jira status is not a plain settable
     field). A 2xx status (Jira's real API returns 204; this module accepts
     any status `< 300` rather than hard-coding 204 exactly) is success."""
@@ -603,6 +628,12 @@ def transition_jira_issue(
 
 
 # ── The reconcile core ──────────────────────────────────────────────────────
+
+# This story's one tracked field (matches field_overrides's own
+# _VALID_OVERRIDE_FIELDS). _MISSING is a sentinel distinct from `None` -- see
+# `reconcile`'s own comment for why the distinction matters (AD-10 rule 2).
+_TRACKED_FIELD = "status"
+_MISSING = object()
 
 
 def _validate_jira_project(issue_key: str, config: SyncConfig) -> None:
@@ -720,91 +751,123 @@ def reconcile(
     except SyncError as exc:
         return DutyResult(ok=False, summary=f"sync reconcile: {exc}")
 
-    # AD-5: an item is a loop candidate when its own updated_at is NOT newer
-    # than its own recorded sync point. Absent sync_point => NOT stale --
-    # nothing recorded yet can never prove loop candidacy.
-    gh_stale = gh.sync_point is not None and gh.updated_at <= gh.sync_point
-    jira_stale = jira.sync_point is not None and jira.updated_at <= jira.sync_point
+    # AD-5 (amended) / AD-10: a side has changed when its current
+    # tracked-field value differs from the value its OWN baseline map
+    # records for that field. `_MISSING` is a sentinel distinct from `None`
+    # -- an absent key means "never synced" (AD-10 rule 1: not a loop
+    # candidate, reconcile as a first link); a present key holding `None`
+    # means "synced, and was an explicit clear" (AD-10 rule 2). Collapsing
+    # those two would make a deliberate clear indistinguishable from a field
+    # the engine has never seen -- exactly the trap AD-10 exists to name.
+    gh_base = gh.baseline.get(_TRACKED_FIELD, _MISSING)
+    jira_base = jira.baseline.get(_TRACKED_FIELD, _MISSING)
+    gh_changed = gh_base is _MISSING or gh.status != gh_base
+    jira_changed = jira_base is _MISSING or jira.status != jira_base
 
-    if gh_stale and jira_stale:
-        decision = "no_op"
-        target_value: str | None = None
-    elif not gh_stale and jira_stale:
-        decision = "push_to_jira"
-        target_value = gh.status
-    elif gh_stale and not jira_stale:
-        decision = "push_to_github"
-        target_value = jira.status
+    if not gh_changed and not jira_changed:
+        # True no-op: neither side diverged from its own baseline -- zero
+        # writes, baseline left untouched. This is the zero-loop property,
+        # and it holds regardless of when reconcile runs. `details` keeps
+        # the same shape every other return path uses (including "baseline",
+        # here None since it was never touched) so a caller can read
+        # `details["baseline"]` unconditionally without a KeyError.
+        return DutyResult(
+            ok=True,
+            summary=f"sync reconcile: no_op (github={gh.item_id}, jira={jira.issue_key}, dry_run={dry_run})",
+            details={
+                "decision": "no_op",
+                "github_item_id": gh.item_id,
+                "jira_issue_key": jira.issue_key,
+                "target_value": None,
+                "baseline": None,
+            },
+        )
+
+    if gh_changed and not jira_changed:
+        decision, target_value = "push_to_jira", gh.status
+    elif jira_changed and not gh_changed:
+        decision, target_value = "push_to_github", jira.status
     else:
-        # Real conflict: both changed since their own sync point. AD-4 --
-        # GitHub wins unless field_overrides says otherwise; a pure function
-        # of (github_value, jira_value, field_mapping), never wall-clock.
-        if config.field_overrides.get("status") == "jira":
-            decision = "push_to_github"
-            target_value = jira.status
+        # Both changed -> AD-4 conflict authority. GitHub wins unless
+        # field_overrides says otherwise; a pure function of
+        # (github_value, jira_value, field_mapping), never wall-clock.
+        if config.field_overrides.get(_TRACKED_FIELD) == "jira":
+            decision, target_value = "push_to_github", jira.status
         else:
-            decision = "push_to_jira"
-            target_value = gh.status
+            decision, target_value = "push_to_jira", gh.status
 
-    # (1) Value-equality short-circuit -- MUST run before dry_run/no-op
-    # reporting, not just before the real write (see this module's
-    # docstring / the story's Design Notes for the full rationale: this is
-    # what makes AD-5's item-level staleness check safe against an
-    # unrelated field edit, and is the structural loop-breaker of last
-    # resort).
-    if decision != "no_op":
-        current_dest_value = jira.status if decision == "push_to_jira" else gh.status
-        if target_value == current_dest_value:
-            decision = "no_op"
+    # Convergence check -- still required, now for a narrower reason than
+    # the mechanism it replaces. Two sides can independently change to the
+    # SAME new value (both diverge from their own stale baseline, but agree
+    # with each other); this catches "the destination already holds
+    # target_value" and downgrades to no_op. It is NOT the early return
+    # above -- the baseline still needs refreshing below, since both sides
+    # were still stale relative to their own prior baseline.
+    current_dest_value = jira.status if decision == "push_to_jira" else gh.status
+    if target_value == current_dest_value:
+        decision = "no_op"
 
+    # "baseline" defaults to None (overwritten below once actually written)
+    # so every return path from here on shares one consistent details shape.
     details: dict[str, object] = {
         "decision": decision,
         "github_item_id": gh.item_id,
         "jira_issue_key": jira.issue_key,
         "target_value": target_value,
+        "baseline": None,
     }
 
-    if dry_run or decision == "no_op":
+    if dry_run:
         return DutyResult(
             ok=True,
-            summary=f"sync reconcile: {decision} (github={gh.item_id}, jira={jira.issue_key}, dry_run={dry_run})",
+            summary=f"sync reconcile: {decision} (github={gh.item_id}, jira={jira.issue_key}, dry_run=True)",
             details=details,
         )
 
-    try:
-        if decision == "push_to_jira":
-            transition_jira_issue(
-                jira.issue_key, target_value, config=config, credential=jira_credential, transport=transport
-            )
-        else:
-            update_project_item_field(
-                gh.item_id,
-                config.github_status_field_id,
-                target_value,
-                config=config,
-                credential=github_credential,
-                transport=transport,
-            )
-    except SyncError as exc:
-        return DutyResult(ok=False, summary=f"sync reconcile: {exc}")
+    if decision != "no_op":
+        try:
+            if decision == "push_to_jira":
+                transition_jira_issue(
+                    jira.issue_key, target_value, config=config, credential=jira_credential, transport=transport
+                )
+            else:
+                update_project_item_field(
+                    gh.item_id,
+                    config.github_status_field_id,
+                    target_value,
+                    config=config,
+                    credential=github_credential,
+                    transport=transport,
+                )
+        except SyncError as exc:
+            return DutyResult(ok=False, summary=f"sync reconcile: {exc}")
 
-    # (2) Capture the sync-point timestamp AFTER the write above completes --
-    # NEVER before any write, and never once up front for reuse across all
-    # writes (see this module's docstring / the story's Design Notes).
-    new_sync_point = datetime.now(timezone.utc).isoformat()
-
+    # Baseline refresh -- ALWAYS runs from here on (both the "converged
+    # already" no_op path and the real-push path reach this), because at
+    # least one side diverged from ITS OWN prior baseline and every future
+    # reconcile of this pair would otherwise see it as "changed" forever.
     try:
+        new_gh_baseline = _serialize_baseline(
+            {**gh.baseline, _TRACKED_FIELD: target_value},
+            side="github",
+            ceiling=_GITHUB_BASELINE_FIELD_CEILING,
+        )
+        new_jira_baseline = _serialize_baseline(
+            {**jira.baseline, _TRACKED_FIELD: target_value},
+            side="jira",
+            ceiling=_JIRA_BASELINE_FIELD_CEILING,
+        )
         update_project_item_field(
             gh.item_id,
-            config.github_sync_point_field_id,
-            new_sync_point,
+            config.github_baseline_field_id,
+            new_gh_baseline,
             config=config,
             credential=github_credential,
             transport=transport,
         )
         update_jira_issue_fields(
             jira.issue_key,
-            {config.jira_sync_point_field_id: new_sync_point},
+            {config.jira_baseline_field_id: new_jira_baseline},
             config=config,
             credential=jira_credential,
             transport=transport,
@@ -812,19 +875,20 @@ def reconcile(
     except SyncError as exc:
         # Known, accepted non-atomicity (same risk class as
         # keys.rotate_identity's documented partial-completion state): the
-        # tracked-field write above already succeeded; only the sync-point
-        # refresh failed. Reported here rather than rolled back.
+        # tracked-field write above already succeeded (if decision != no_op);
+        # only the baseline refresh failed. Reported here rather than rolled
+        # back.
         return DutyResult(
             ok=False,
-            summary=f"sync reconcile: pushed {decision} but failed refreshing sync points: {exc}",
+            summary=f"sync reconcile: {decision} but failed refreshing baseline: {exc}",
         )
 
-    details["sync_point"] = new_sync_point
+    details["baseline"] = {_TRACKED_FIELD: target_value}
     return DutyResult(
         ok=True,
         summary=(
             f"sync reconcile: {decision} -> {target_value!r} "
-            f"(github={gh.item_id}, jira={jira.issue_key}); sync points refreshed to {new_sync_point}"
+            f"(github={gh.item_id}, jira={jira.issue_key}); baseline refreshed"
         ),
         details=details,
     )

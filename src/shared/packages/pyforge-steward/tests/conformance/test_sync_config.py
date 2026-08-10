@@ -13,12 +13,12 @@ github:
   project_id: PVT_abc123
   status_field_id: PVTF_status
   link_field_id: PVTF_link
-  sync_point_field_id: PVTF_syncpoint
+  baseline_field_id: PVTF_baseline
 jira:
   base_url: https://example.atlassian.net
   project_key: PROJ
   link_field_id: customfield_10001
-  sync_point_field_id: customfield_10002
+  baseline_field_id: customfield_10002
 """
 
 
@@ -37,11 +37,11 @@ def test_happy_path_loads_a_fully_populated_config(tmp_path):
     assert config.github_project_id == "PVT_abc123"
     assert config.github_status_field_id == "PVTF_status"
     assert config.github_link_field_id == "PVTF_link"
-    assert config.github_sync_point_field_id == "PVTF_syncpoint"
+    assert config.github_baseline_field_id == "PVTF_baseline"
     assert config.jira_base_url == "https://example.atlassian.net"
     assert config.jira_project_key == "PROJ"
     assert config.jira_link_field_id == "customfield_10001"
-    assert config.jira_sync_point_field_id == "customfield_10002"
+    assert config.jira_baseline_field_id == "customfield_10002"
     assert config.field_overrides == {}
     assert config.user_mapping == {}
 
@@ -93,7 +93,7 @@ jira:
   base_url: https://example.atlassian.net
   project_key: PROJ
   link_field_id: customfield_10001
-  sync_point_field_id: customfield_10002
+  baseline_field_id: customfield_10002
 """,
     )
 
@@ -113,11 +113,11 @@ jira:
   base_url: https://example.atlassian.net
   project_key: PROJ
   link_field_id: customfield_10001
-  sync_point_field_id: customfield_10002
+  baseline_field_id: customfield_10002
 """,
     )
 
-    with pytest.raises(SyncConfigError, match="sync_point_field_id"):
+    with pytest.raises(SyncConfigError, match="baseline_field_id"):
         load_config(path)
 
 
@@ -131,12 +131,12 @@ github:
   project_id: ""
   status_field_id: PVTF_status
   link_field_id: PVTF_link
-  sync_point_field_id: PVTF_syncpoint
+  baseline_field_id: PVTF_baseline
 jira:
   base_url: https://example.atlassian.net
   project_key: PROJ
   link_field_id: customfield_10001
-  sync_point_field_id: customfield_10002
+  baseline_field_id: customfield_10002
 """,
     )
 

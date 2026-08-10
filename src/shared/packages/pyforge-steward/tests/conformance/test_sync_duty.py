@@ -18,12 +18,12 @@ github:
   project_id: PVT_abc123
   status_field_id: gh_status
   link_field_id: gh_link
-  sync_point_field_id: gh_syncpoint
+  baseline_field_id: gh_baseline
 jira:
   base_url: https://example.atlassian.net
   project_key: PROJ
   link_field_id: jira_link
-  sync_point_field_id: jira_syncpoint
+  baseline_field_id: jira_baseline
 """
 
 
@@ -63,12 +63,11 @@ def test_sync_reconcile_dry_run_via_cli_threads_args_through_with_no_writes(tmp_
                 write_calls.append(url)
             node = {
                 "id": "ITEM_1",
-                "updatedAt": "2026-08-05T00:00:00Z",
                 "fieldValues": {
                     "nodes": [
                         {"text": "PROJ-1", "field": {"id": "gh_link"}},
                         {"text": "In Progress", "field": {"id": "gh_status"}},
-                        {"text": "2026-08-01T00:00:00+00:00", "field": {"id": "gh_syncpoint"}},
+                        {"text": '{"status": "To Do"}', "field": {"id": "gh_baseline"}},
                     ]
                 },
             }
@@ -78,9 +77,8 @@ def test_sync_reconcile_dry_run_via_cli_threads_args_through_with_no_writes(tmp_
         payload = {
             "fields": {
                 "status": {"name": "To Do"},
-                "updated": "2026-08-01T00:00:00Z",
                 "jira_link": "ITEM_1",
-                "jira_syncpoint": "2026-08-05T00:00:00+00:00",
+                "jira_baseline": '{"status": "To Do"}',
             }
         }
         return TransportResponse(status=200, body=json.dumps(payload).encode())

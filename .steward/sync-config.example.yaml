@@ -22,10 +22,12 @@ github:
   status_field_id: "PVTF_xxxxxxxxxxxxxxxxxxxx"
   # The custom TEXT field that holds the linked Jira issue key (e.g. "PROJ-123").
   link_field_id: "PVTF_xxxxxxxxxxxxxxxxxxxx"
-  # The custom TEXT field that records this item's own last sync-point
-  # timestamp (ISO-8601, UTC) -- the AD-5 loop guard compares an item's own
-  # `updatedAt` against this field, never against the other vendor's clock.
-  sync_point_field_id: "PVTF_xxxxxxxxxxxxxxxxxxxx"
+  # The custom TEXT field that holds this item's own baseline -- a
+  # JSON-serialized per-field map of last-synced values (e.g.
+  # `{"status": "In Progress"}`), never a timestamp. The AD-5/AD-10 loop
+  # guard compares the tracked field's CURRENT value against this map's own
+  # recorded value for that field.
+  baseline_field_id: "PVTF_xxxxxxxxxxxxxxxxxxxx"
 
 jira:
   # Jira Cloud site base URL, no trailing slash.
@@ -34,13 +36,14 @@ jira:
   project_key: "PROJ"
   # The custom field that holds the linked GitHub Projects V2 item's node ID.
   link_field_id: "customfield_10001"
-  # The custom field that records this issue's own last sync-point
-  # timestamp (ISO-8601, UTC).
-  sync_point_field_id: "customfield_10002"
+  # The custom field that holds this issue's own baseline -- a
+  # JSON-serialized per-field map of last-synced values (e.g.
+  # `{"status": "To Do"}`), never a timestamp.
+  baseline_field_id: "customfield_10002"
 
 # Per-field conflict-authority overrides (AD-4). On a real conflict (both
-# sides changed since the last recorded sync point), GitHub's value wins by
-# default. List a field here with the value "jira" to reverse that for just
+# sides changed since their own last recorded baseline), GitHub's value wins
+# by default. List a field here with the value "jira" to reverse that for just
 # that field. Omit a field entirely to keep the default (GitHub wins); no
 # other value is accepted (a typo must fail loud, never silently revert to
 # the default).

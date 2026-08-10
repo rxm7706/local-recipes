@@ -31,9 +31,10 @@ event-triggered-reconciliation paradigm).
    board and the Jira project:
    - GitHub: a project-level custom **text** field for the propagated
      status value, a text field holding the linked Jira issue key, and a
-     text field holding this item's own last-sync-point timestamp.
+     text field holding this item's own baseline (a JSON-serialized
+     per-field map of last-synced values, never a timestamp).
    - Jira: a custom field holding the linked GitHub item's node ID, and a
-     custom field holding this issue's own last-sync-point timestamp
+     custom field holding this issue's own baseline (same JSON-map shape)
      (Jira's built-in `status` field is read/written directly — no custom
      field needed for it).
 2. **Copy `.steward/sync-config.example.yaml`** (from this `local-recipes`
@@ -108,7 +109,7 @@ target repo's **operator**, once, after deploying the setup above:
 2. Trigger reconciliation — either wait for the next `schedule` tick, or run
    the workflow manually via `workflow_dispatch`.
 3. Confirm the linked Jira issue transitions to match, and that both sides'
-   sync-point fields advance.
+   baseline fields update to the new converged value.
 4. Repeat in the other direction: transition the Jira issue, trigger
    `jira-to-github.yml.template` (manually, or via the Automation Rule),
    and confirm the GitHub item's tracked field updates to match.
