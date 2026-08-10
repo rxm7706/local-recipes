@@ -52,7 +52,7 @@ development_status:
   5-3-delegation-fidelity-test: backlog
   5-4-free-inheritance-verification: backlog
   5-5-rule-2-conda-forge-expert-retrospective: backlog
-  epic-1: backlog
+  epic-1: done
   epic-1-retrospective: optional
   epic-2: backlog
   epic-2-retrospective: optional

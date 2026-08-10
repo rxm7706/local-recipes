@@ -7,9 +7,11 @@ specs are durable (tracked), NOT Tier-3." After a story merges, its spec is
 promoted from the run's `implementation-artifacts/` into this directory and
 committed here as the source of record.
 
-**Status (2026-08-08):** all 4 done stories (of 38 total; Epic 1 stories
-1.1-1.4 shipped, 1.5 onward + Epics 2-5 backlog) have a spec here — no
-promotion gap.
+**Status (2026-08-10, Phase 1 audit):** all 10 done stories (Epic 1
+complete; Epics 2-5 backlog, 28 stories) have a spec here — the 2026-08-08
+claim of "no promotion gap" was false: specs 1-5..1-10 lived only in
+gitignored Tier-3 and were promoted by the audit (the warden-loss failure
+mode, caught before a teardown could eat them).
 
 This directory also holds a Dream-level Spec for a Mason-owned satellite
 Dream (`spec-conda-forge-expert-rebuild/SPEC.md`, distinct from the

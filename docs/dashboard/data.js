@@ -3408,7 +3408,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 15:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 15:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6244,7 +6244,7 @@ window.DASHBOARD_DATA = {
           "epics": "2026-08-10",
           "sprint": "2026-08-10",
           "tea": "2026-08-10",
-          "gates": "2026-08-01",
+          "gates": "2026-08-10",
           "code": "2026-08-07",
           "verify": "2026-08-07",
           "retro": "2026-08-08"
@@ -15140,8 +15140,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 15:10 UTC",
-    "generatedEpoch": 1786374645
+    "generatedAt": "2026-08-10 15:19 UTC",
+    "generatedEpoch": 1786375189
   },
   "storySpecs": [
     {
