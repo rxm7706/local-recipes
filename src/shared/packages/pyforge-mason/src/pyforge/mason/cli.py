@@ -34,6 +34,8 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import logging
+import math
 import os
 import sys
 from pathlib import Path
@@ -62,6 +64,7 @@ _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine pr
 # public surface `_resolve_str`/`_resolve_bool` read from `os.environ`.
 _ENV_CFE_ROOT = "MASON_CFE_ROOT"
 _ENV_CFE_PYTHON = "MASON_CFE_PYTHON"
+_ENV_CFE_TIMEOUT = "MASON_CFE_TIMEOUT"
 _ENV_FORMAT = "MASON_FORMAT"
 _ENV_VERBOSE = "MASON_VERBOSE"
 _ENV_QUIET = "MASON_QUIET"
@@ -103,8 +106,99 @@ def _resolve_bool(flag_value: bool | None, env_var_name: str, default: bool) -> 
     return raw.strip().lower() not in _FALSY_ENV_VALUES
 
 
+def _parse_finite_float(raw: str) -> float:
+    """`argparse`'s `type=` callable for `--cfe-timeout`: parses like `float`,
+    but rejects `nan`/`inf`/`-inf` (review pass, 2026-08-09).
+
+    Python's `float()` happily parses those three spellings -- they are not
+    a malformed value, so `_resolve_optional_float`'s "unparseable -> None"
+    fallback below would never catch them, and a `nan`/`inf` deadline handed
+    to a future `subprocess.wait(timeout=...)` call is either meaningless
+    (`nan` compares false against everything, effectively never expiring) or
+    silently defeats the whole point of a mandatory timeout (`inf`). Raising
+    `argparse.ArgumentTypeError` here gives the same clean usage-error
+    behavior argparse already produces for a non-numeric `--cfe-timeout`
+    value, rather than accepting a value that is well-formed but unusable.
+    """
+    value = float(raw)
+    if not math.isfinite(value):
+        raise argparse.ArgumentTypeError(
+            f"invalid --cfe-timeout value: {raw!r} (must be a finite number)"
+        )
+    return value
+
+
+def _resolve_optional_float(flag_value: float | None, env_var_name: str) -> float | None:
+    """Resolve an optional float setting: flag -> environment -> `None` (AD-13).
+
+    Unlike `_resolve_str`/`_resolve_bool`, there is no Mason-wide `default`
+    parameter here: `--cfe-timeout`'s terminal fallback is always `None` --
+    PRD FR-4's "per-operation default" lives at a future call site (Story
+    2.1's CFE adapter), not in this resolver. The environment value is
+    stripped before parsing; a value that is unset, whitespace-only, not
+    parseable as `float`, or parses to a non-finite value (`nan`/`inf`/
+    `-inf` -- review pass, 2026-08-09, mirroring `_parse_finite_float`'s
+    flag-side guard above) all fall back to `None` rather than raising --
+    matching `_resolve_str`'s treatment of a malformed/absent environment
+    value as "not supplied," not a usage error.
+    """
+    if flag_value is not None:
+        return flag_value
+    raw = os.environ.get(env_var_name)
+    if raw is None:
+        return None
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        parsed = float(raw)
+    except ValueError:
+        return None
+    if not math.isfinite(parsed):
+        return None
+    return parsed
+
+
+def _configure_logging(verbose: bool, quiet: bool) -> None:
+    """Configure stdlib `logging` to stderr, level per verbosity (FR-49, AD-25).
+
+    Called once, in `main()`, immediately after `parser.parse_args(argv)`
+    returns successfully and before any noun dispatch, so every command path
+    that reaches that point (bare invocation, `doctor`, the custom bare-noun
+    usage error) is covered uniformly. This does NOT cover a usage error
+    `argparse` itself raises *during* `parse_args` (an invalid `--format`
+    choice, a non-numeric `--cfe-timeout`, an unrecognized flag) -- those
+    raise `SystemExit` before this call is ever reached, and today that is
+    harmless because nothing on that path calls into `logging`; a future
+    change that logs from inside a custom argparse validator would need its
+    own configuration, not assume this one already ran (review pass,
+    2026-08-09). `--quiet` wins when both `--verbose` and `--quiet` are
+    given -- a documented tie-break; the spec's Acceptance Criteria don't
+    specify one, so `quiet` (the more conservative choice) was picked.
+
+    `force=True` is load-bearing, not cosmetic: `logging.basicConfig` only
+    configures the root logger the *first* time it is called in a process by
+    default, so a second `main()` invocation within one process (as happens
+    repeatedly in this test suite) would silently no-op without it, leaving
+    an earlier test's level/stream configuration in place.
+    """
+    if quiet:
+        level = logging.ERROR
+    elif verbose:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+    logging.basicConfig(
+        stream=sys.stderr,
+        level=level,
+        format="%(levelname)s: %(message)s",
+        force=True,
+    )
+
+
 def _build_global_flags_parser() -> argparse.ArgumentParser:
-    """The five global flags, shared by the top-level parser and every noun.
+    """The six global flags (AD-13's closed v1 knob set), shared by the
+    top-level parser and every noun.
 
     `add_help=False` is mandatory: a parent parser with its own `-h/--help`
     would collide with the child parser's when used via `parents=[...]`.
@@ -130,6 +224,10 @@ def _build_global_flags_parser() -> argparse.ArgumentParser:
     parent.add_argument(
         "--cfe-python", default=argparse.SUPPRESS, metavar="PATH",
         help=f"interpreter used to run CFE scripts (flag -> {_ENV_CFE_PYTHON} -> running interpreter)",
+    )
+    parent.add_argument(
+        "--cfe-timeout", type=_parse_finite_float, default=argparse.SUPPRESS, metavar="SECONDS",
+        help=f"per-operation CFE subprocess timeout in seconds (flag -> {_ENV_CFE_TIMEOUT} -> none)",
     )
     parent.add_argument(
         "--format", choices=("text", "json"), default=argparse.SUPPRESS,
@@ -192,6 +290,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         # exit, not escape as a traceback. Caught by tests/unit/test_cli.py.
         parser = build_parser()
         ns = parser.parse_args(argv)
+
+        # FR-49/AD-25: configure logging immediately, before any noun
+        # dispatch, so every command path that reaches this point (bare
+        # invocation, doctor, the custom bare-noun usage error) is covered --
+        # not just the ones that reach a use-case. (A usage error argparse
+        # itself raises during parse_args, above, never reaches this line --
+        # see _configure_logging's docstring.)
+        _configure_logging(
+            _resolve_bool(getattr(ns, "verbose", None), _ENV_VERBOSE, False),
+            _resolve_bool(getattr(ns, "quiet", None), _ENV_QUIET, False),
+        )
 
         if not ns.noun:
             # A true bare top-level invocation is help output, not a

@@ -9,15 +9,18 @@ over every `resolve.py` step."""
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
+import threading
+import time
 from unittest.mock import patch
 
 import pytest
 
 from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, ImportFloorResult, _build_probe_script,
-    ensure_cfe_root, ensure_import_floor, probe_import_floor,
+    ensure_cfe_root, ensure_import_floor, probe_import_floor, run_streamed,
 )
 from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
 from pyforge.mason.resolve import (
@@ -249,3 +252,184 @@ def test_ensure_cfe_root_never_re_resolves():
     import pyforge.mason.cfe as cfe_module
 
     assert not hasattr(cfe_module, "resolve_cfe_root")
+
+
+# --- Story 1.10: run_streamed -- against real sys.executable child ---------
+# ------------------------------- processes, mirroring the real-interpreter -
+# ------------------------------- precedent above (AD-16 does not apply to --
+# ------------------------------- this file's own real-subprocess tests). --
+
+def test_run_streamed_forwards_stderr_live_not_buffered_to_completion():
+    """The child writes one stderr line, sleeps, writes a second stderr
+    line, then emits a JSON stdout line. A custom sink sets a
+    `threading.Event` the instant it sees the first line; `run_streamed`
+    itself runs in a background thread so the test can assert the event
+    fires *before* the child has had time to also emit its second line or
+    exit -- proving genuine incremental delivery, not just correct final
+    content (capsys can't observe this: it only offers the post-hoc
+    aggregate, never an as-it-happens callback)."""
+    script = (
+        "import sys, time, json\n"
+        "print('first-line', file=sys.stderr, flush=True)\n"
+        "time.sleep(1.0)\n"
+        "print('second-line', file=sys.stderr, flush=True)\n"
+        "print(json.dumps({'ok': True}))\n"
+    )
+
+    class _EventSink:
+        def __init__(self) -> None:
+            self.first_line_seen = threading.Event()
+            self.lines: list[str] = []
+
+        def write(self, s: str) -> None:
+            self.lines.append(s)
+            if "first-line" in s:
+                self.first_line_seen.set()
+
+        def flush(self) -> None:
+            pass
+
+    sink = _EventSink()
+    result: dict = {}
+
+    def _run() -> None:
+        rc, out = run_streamed([sys.executable, "-c", script], timeout=15.0, stderr_sink=sink)
+        result["rc"] = rc
+        result["out"] = out
+
+    thread = threading.Thread(target=_run)
+    thread.start()
+
+    assert sink.first_line_seen.wait(timeout=10.0), "first stderr line never reached the sink"
+    # The child's own time.sleep(1.0) hasn't elapsed yet -- if this were
+    # buffered to completion, the second line would already be present too.
+    assert not any("second-line" in line for line in sink.lines)
+
+    thread.join(timeout=15.0)
+    assert not thread.is_alive()
+    assert result["rc"] == 0
+    assert any("second-line" in line for line in sink.lines)
+    assert json.loads(result["out"].strip()) == {"ok": True}
+
+
+def test_run_streamed_returned_stdout_is_isolated_from_masons_own_stdout(capsys):
+    """Mason's own real `sys.stdout` must be untouched by a streaming call
+    (AD-8/AD-25) -- the child's stdout is only ever returned as a string,
+    never printed."""
+    script = "print('child-stdout-marker')\n"
+
+    rc, out = run_streamed([sys.executable, "-c", script], timeout=15.0)
+
+    assert rc == 0
+    assert "child-stdout-marker" in out
+    assert capsys.readouterr().out == ""
+
+
+def test_run_streamed_timeout_kills_child_and_raises_promptly():
+    """A child that outlives `timeout` is killed (no orphan) and
+    `subprocess.TimeoutExpired` propagates -- and the call itself returns
+    promptly, proving no hang, not just that the exception type is correct."""
+    script = "import time\ntime.sleep(30)\n"
+
+    start = time.monotonic()
+    with pytest.raises(subprocess.TimeoutExpired):
+        run_streamed([sys.executable, "-c", script], timeout=0.3)
+    elapsed = time.monotonic() - start
+
+    assert elapsed < 10.0
+
+
+def test_run_streamed_default_sink_resolves_to_current_sys_stderr_at_call_time(capsys):
+    """No `stderr_sink` given -- must resolve to `sys.stderr` as it is *at
+    call time*, not a module-import-time reference, so it tracks capsys's
+    per-test monkeypatching."""
+    script = "import sys\nprint('child-stderr-marker', file=sys.stderr, flush=True)\n"
+
+    rc, _out = run_streamed([sys.executable, "-c", script], timeout=15.0)
+
+    assert rc == 0
+    assert "child-stderr-marker" in capsys.readouterr().err
+
+
+# --- Review pass (2026-08-09): non-zero exit propagation, argv/env hardening
+
+def test_run_streamed_propagates_a_nonzero_child_returncode():
+    """Half of `run_streamed`'s declared return contract (returncode, stdout)
+    was never exercised by a failing child -- every prior test's child exits
+    0."""
+    script = "import sys\nsys.exit(7)\n"
+
+    rc, _out = run_streamed([sys.executable, "-c", script], timeout=15.0)
+
+    assert rc == 7
+
+
+def test_run_streamed_rejects_a_bare_str_argv():
+    """`argv: Sequence[str]` accepts a bare `str` unguarded by the type
+    system alone -- `list("mason build")` explodes into single characters.
+    `run_streamed` must reject this shape immediately with a clear error,
+    not a confusing `FileNotFoundError` for a one-character "program"."""
+    with pytest.raises(TypeError, match="bare str"):
+        run_streamed("mason build", timeout=15.0)
+
+
+def test_run_streamed_env_replaces_not_merges_the_inherited_environment(monkeypatch):
+    """`env=` is passed straight to `Popen`, which *replaces* the child's
+    environment rather than merging it with the caller's own -- a variable
+    only visible in the parent (not explicitly included in `env=`) must NOT
+    reach the child."""
+    monkeypatch.setenv("MASON_TEST_PARENT_ONLY_VAR", "parent-value")
+    script = (
+        "import os\n"
+        "print('present' if 'MASON_TEST_PARENT_ONLY_VAR' in os.environ else 'absent')\n"
+        "print('child-var=' + os.environ.get('MASON_TEST_CHILD_VAR', '<unset>'))\n"
+    )
+
+    rc, out = run_streamed(
+        [sys.executable, "-c", script],
+        timeout=15.0,
+        env={"MASON_TEST_CHILD_VAR": "child-value"},
+    )
+
+    assert rc == 0
+    assert "absent" in out  # the parent-only var did NOT leak through
+    assert "child-var=child-value" in out  # the explicitly-passed var did
+
+
+def test_run_streamed_kills_child_on_a_non_timeout_exception_from_wait(monkeypatch):
+    """The "no orphaned process" guarantee must hold for ANY exception
+    escaping `proc.wait()`, not only `subprocess.TimeoutExpired` -- proven
+    here with a synthetic `KeyboardInterrupt` standing in for the real one a
+    user's Ctrl-C would raise."""
+    import pyforge.mason.cfe as cfe_module
+
+    killed = {"called": False}
+    real_popen = cfe_module.subprocess.Popen
+
+    class _Proc:
+        def __init__(self, *args, **kwargs):
+            self._proc = real_popen(*args, **kwargs)
+
+        @property
+        def stdout(self):
+            return self._proc.stdout
+
+        @property
+        def stderr(self):
+            return self._proc.stderr
+
+        def wait(self, timeout=None):
+            if timeout is not None:
+                raise KeyboardInterrupt()
+            return self._proc.wait()
+
+        def kill(self):
+            killed["called"] = True
+            self._proc.kill()
+
+    monkeypatch.setattr(cfe_module.subprocess, "Popen", _Proc)
+
+    with pytest.raises(KeyboardInterrupt):
+        run_streamed([sys.executable, "-c", "import time; time.sleep(5)"], timeout=15.0)
+
+    assert killed["called"]

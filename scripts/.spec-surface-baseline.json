@@ -3330,8 +3330,8 @@
    "src/shared/packages/pyforge-mason/pyproject.toml": "9d211ba1a087a1c9ea7b64f1a02e457675c43682",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/__init__.py": "46289309757de463f476b8b344a9bd546e9f52ad",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/__main__.py": "f75cd41517314410ead57735024c0d7b30ada248",
-   "src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py": "6c663ccd043925627c7d6771138df94ac1ea981d",
-   "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py": "09a01f0f44c7fe5f3e1b3b1f919ec05080327871",
+   "src/shared/packages/pyforge-mason/src/pyforge/mason/cfe.py": "5899aa46892e37ab52929d1dc9a581f5d27729f5",
+   "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py": "050782ac5be4d6ad936c891339ac070a8c1d59cf",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/doctor.py": "a6143814eccfe8c4d17f26e516b0306a2402e653",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/engines/__init__.py": "eb371ba0a3a342265eceedf4788b186fc102101e",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/environment.py": "5c68f974b3bd15df9aaed5b81b1920fdab650d52",
@@ -3349,8 +3349,8 @@
    "src/shared/packages/pyforge-mason/tests/meta/test_exit_code_ownership.py": "aca673600a3da7386890fd0369bd73e6bb675268",
    "src/shared/packages/pyforge-mason/tests/meta/test_namespace_is_implicit.py": "205e26648d2e06295eab87799d13c353aa7dd99d",
    "src/shared/packages/pyforge-mason/tests/meta/test_render_ownership.py": "5fef0fba307cd487037e854a5a2751e06df92d9f",
-   "src/shared/packages/pyforge-mason/tests/unit/test_cfe.py": "50bde32ca7891677f637b84192b2204c32bb7b58",
-   "src/shared/packages/pyforge-mason/tests/unit/test_cli.py": "c7e1dd55971a8e312b1b2f26196f77b5c1c47d1d",
+   "src/shared/packages/pyforge-mason/tests/unit/test_cfe.py": "03ab8476449f4a61b215fe19f5997ee687d212b1",
+   "src/shared/packages/pyforge-mason/tests/unit/test_cli.py": "8fb869d25c205f5a062f6e66790a88f291ddee06",
    "src/shared/packages/pyforge-mason/tests/unit/test_doctor.py": "3f847a3a28ea1bfa761accd758f7d959b57d9af9",
    "src/shared/packages/pyforge-mason/tests/unit/test_engines.py": "b72cd1a740e9c71ee372e3f5504f4f7b89edaad2",
    "src/shared/packages/pyforge-mason/tests/unit/test_environment.py": "f30b0d407f0bb13fa0673fa1dfcb8eca5f0d35eb",
@@ -3361,7 +3361,7 @@
    "src/shared/packages/pyforge-mason/tests/unit/test_render.py": "d312702d1da3dd0b848414a7ab832d3172bf0d5d",
    "src/shared/packages/pyforge-mason/tests/unit/test_resolve.py": "90e2273c0a11dd8281066ab58fa8a819a71a826b"
   },
-  "memlog": "0738ea42df7c92f619534f4eded7d29c8cd8f0c4"
+  "memlog": "ff23cdb334d7077ef4833987d7cff8ed20078786"
  },
  "pyforge-mason/spec-pyforge-mason-recipe-validator": {
   "files": {},

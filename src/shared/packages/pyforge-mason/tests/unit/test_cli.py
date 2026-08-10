@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import logging
 import os
 from pathlib import Path
 from unittest.mock import patch
@@ -37,7 +38,10 @@ from unittest.mock import patch
 import pytest
 
 from pyforge.mason import __version__
-from pyforge.mason.cli import _resolve_bool, _resolve_str, build_parser, main
+from pyforge.mason.cli import (
+    _configure_logging, _resolve_bool, _resolve_optional_float, _resolve_str,
+    build_parser, main,
+)
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
 from pyforge.mason.errors import CfeUnresolvedError, MasonError
@@ -273,6 +277,52 @@ def test_global_boolean_flags_accepted_at_either_position(flag, attr):
     assert getattr(after, attr) is True
 
 
+def test_cfe_timeout_flag_accepted_at_either_position_and_parses_as_float():
+    before = build_parser().parse_args(["--cfe-timeout", "30", "package"])
+    after = build_parser().parse_args(["package", "--cfe-timeout", "30"])
+    assert before.noun == after.noun == "package"
+    assert before.cfe_timeout == after.cfe_timeout == 30.0
+    assert isinstance(before.cfe_timeout, float)
+    assert isinstance(after.cfe_timeout, float)
+
+
+def test_cfe_timeout_flag_rejects_a_non_numeric_value(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout", "not-a-number"])
+    assert exc.value.code == 2
+    assert "--cfe-timeout" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bad_value", ["nan", "inf", "-inf", "Infinity"])
+def test_cfe_timeout_flag_rejects_nan_and_infinite_values(bad_value, capsys):
+    """Review pass (2026-08-09): `float()` parses `nan`/`inf`/`-inf` as
+    well-formed, but neither is a usable subprocess timeout -- `nan` never
+    compares as expired, `inf` never expires at all. Must be rejected the
+    same way a non-numeric value is."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["--cfe-timeout", bad_value])
+    assert exc.value.code == 2
+    assert "--cfe-timeout" in capsys.readouterr().err
+
+
+def test_all_six_v1_knobs_have_both_a_flag_and_an_environment_form():
+    """AD-13/FR-48: the v1 knob set is closed and fully enumerated -- each of
+    the six has both a flag and an environment-variable form, both of which
+    must appear in --help output."""
+    help_text = build_parser().format_help()
+    pairs = [
+        ("--cfe-root", "MASON_CFE_ROOT"),
+        ("--cfe-python", "MASON_CFE_PYTHON"),
+        ("--cfe-timeout", "MASON_CFE_TIMEOUT"),
+        ("--format", "MASON_FORMAT"),
+        ("--verbose", "MASON_VERBOSE"),
+        ("--quiet", "MASON_QUIET"),
+    ]
+    for flag, env_var in pairs:
+        assert flag in help_text, f"{flag} missing from --help output"
+        assert env_var in help_text, f"{env_var} missing from --help output"
+
+
 def test_keyboard_interrupt_projects_to_130(monkeypatch):
     monkeypatch.setattr("pyforge.mason.cli.build_parser",
                         lambda: (_ for _ in ()).throw(KeyboardInterrupt()))
@@ -401,3 +451,105 @@ class TestResolveBool:
     def test_truthy_env_spellings(self, raw, monkeypatch):
         monkeypatch.setenv("MASON_VERBOSE", raw)
         assert _resolve_bool(None, "MASON_VERBOSE", False) is True
+
+
+class TestResolveOptionalFloat:
+    """`_resolve_optional_float` has no Mason-wide `default` parameter --
+    unlike `_resolve_str`/`_resolve_bool` above, its terminal fallback is
+    always `None` (spec Intent: FR-4's "per-operation default" lives at a
+    future call site, not in this resolver)."""
+
+    def test_flag_wins_over_env(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "99")
+        assert _resolve_optional_float(30.0, "MASON_CFE_TIMEOUT") == 30.0
+
+    def test_zero_flag_value_still_wins_over_env(self, monkeypatch):
+        """`flag_value is not None`, not a truthiness check -- `0.0` is a
+        valid (if unusual) timeout and must still win over the environment."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(0.0, "MASON_CFE_TIMEOUT") == 0.0
+
+    def test_env_wins_over_none_default(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") == 45.0
+
+    def test_padded_env_value_is_parsed_after_stripping(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "  12.5  ")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") == 12.5
+
+    def test_neither_set_falls_back_to_none(self, monkeypatch):
+        monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    def test_malformed_env_value_falls_back_to_none(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "not-a-number")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    def test_whitespace_only_env_value_falls_back_to_none(self, monkeypatch):
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "   ")
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+    @pytest.mark.parametrize("raw", ["nan", "inf", "-inf", "Infinity"])
+    def test_non_finite_env_value_falls_back_to_none(self, raw, monkeypatch):
+        """Review pass (2026-08-09): `float()` parses these as well-formed,
+        but a `nan`/`inf` timeout is unusable -- must degrade to `None`
+        exactly like a genuinely malformed value, mirroring
+        `_parse_finite_float`'s flag-side guard."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", raw)
+        assert _resolve_optional_float(None, "MASON_CFE_TIMEOUT") is None
+
+
+# --- Story 1.10: `_configure_logging` -- verbosity -> root logger level, ---
+# ------------------------------------- always stderr, never stdout --------
+
+class TestConfigureLogging:
+    def test_default_level_is_warning_and_info_is_swallowed(self, capsys):
+        _configure_logging(verbose=False, quiet=False)
+        assert logging.getLogger().getEffectiveLevel() == logging.WARNING
+        logger = logging.getLogger("pyforge.mason.test.default")
+        logger.info("swallowed-info")
+        logger.warning("shown-warning")
+        out = capsys.readouterr()
+        assert out.out == ""
+        assert "swallowed-info" not in out.err
+        assert "shown-warning" in out.err
+
+    def test_verbose_sets_level_info(self, capsys):
+        _configure_logging(verbose=True, quiet=False)
+        assert logging.getLogger().getEffectiveLevel() == logging.INFO
+        logger = logging.getLogger("pyforge.mason.test.verbose")
+        logger.info("shown-info")
+        out = capsys.readouterr()
+        assert out.out == ""
+        assert "shown-info" in out.err
+
+    def test_quiet_sets_level_error(self, capsys):
+        _configure_logging(verbose=False, quiet=True)
+        assert logging.getLogger().getEffectiveLevel() == logging.ERROR
+        logger = logging.getLogger("pyforge.mason.test.quiet")
+        logger.warning("swallowed-warning")
+        logger.error("shown-error")
+        out = capsys.readouterr()
+        assert out.out == ""
+        assert "swallowed-warning" not in out.err
+        assert "shown-error" in out.err
+
+    def test_quiet_wins_when_both_verbose_and_quiet_are_given(self, capsys):
+        """Documented tie-break (spec Boundaries & Constraints): the ACs
+        don't specify one, so `--quiet` (the more conservative choice) wins."""
+        _configure_logging(verbose=True, quiet=True)
+        assert logging.getLogger().getEffectiveLevel() == logging.ERROR
+
+
+def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, capsys):
+    """Regression guard for the spec's env-value-leak row: a distinctive
+    marker set via a resolved env var must never appear in stderr (the log
+    stream), even at --verbose. `doctor.build_report` is mocked to a fixed
+    report (existing doctor-test pattern) -- its own stdout report may
+    legitimately echo a resolved value; only the log stream is constrained."""
+    marker = "MASON-ENV-LEAK-MARKER-3f9a7c"
+    monkeypatch.setenv("MASON_CFE_ROOT", marker)
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
+        assert main(["doctor", "--verbose"]) == EXIT_OK
+    err = capsys.readouterr().err
+    assert marker not in err
