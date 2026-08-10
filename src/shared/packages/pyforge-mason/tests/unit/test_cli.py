@@ -290,7 +290,14 @@ def test_cfe_timeout_flag_rejects_a_non_numeric_value(capsys):
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["--cfe-timeout", "not-a-number"])
     assert exc.value.code == 2
-    assert "--cfe-timeout" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "--cfe-timeout" in err
+    # Review pass (2026-08-10): letting float()'s bare ValueError escape
+    # made argparse name the private `type=` callable instead of the flag --
+    # "invalid _parse_finite_float value: 'not-a-number'". The message a
+    # user sees must not leak a helper's identifier.
+    assert "_parse_finite_float" not in err
+    assert "must be a number of seconds" in err
 
 
 @pytest.mark.parametrize("bad_value", ["nan", "inf", "Infinity"])
@@ -494,11 +501,35 @@ class TestResolveOptionalFloat:
         monkeypatch.setenv("MASON_CFE_TIMEOUT", "99")
         assert _resolve_optional_float(30.0, "MASON_CFE_TIMEOUT") == 30.0
 
-    def test_zero_flag_value_still_wins_over_env(self, monkeypatch):
-        """`flag_value is not None`, not a truthiness check -- `0.0` is a
-        valid (if unusual) timeout and must still win over the environment."""
+    def test_small_fractional_flag_value_still_wins_over_env(self, monkeypatch):
+        """Not a truthiness check -- an unusual but *usable* timeout must
+        still win over the environment."""
         monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
-        assert _resolve_optional_float(0.0, "MASON_CFE_TIMEOUT") == 0.0
+        assert _resolve_optional_float(0.001, "MASON_CFE_TIMEOUT") == 0.001
+
+    @pytest.mark.parametrize(
+        "unusable", [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
+    )
+    def test_unusable_flag_value_falls_through_to_env(self, monkeypatch, unusable):
+        """Review pass (2026-08-10): this resolver used to validate only its
+        environment half, so `nan`/`inf`/`0`/negative passed straight
+        through from the flag parameter -- handing a caller exactly the
+        value `_parse_finite_float` and `cfe.run_streamed` both reject. A
+        flag value that fails the same finite-and-positive test is treated
+        as "absent at the step that supplied it" and resolution falls
+        through to the environment, mirroring `_resolve_str`'s handling of a
+        whitespace-only flag value."""
+        monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+        assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") == 45.0
+
+    @pytest.mark.parametrize(
+        "unusable", [0.0, -5.0, float("nan"), float("inf"), float("-inf")],
+    )
+    def test_unusable_flag_value_with_no_env_resolves_to_none(self, monkeypatch, unusable):
+        """...and with nothing to fall through to, the resolver returns
+        `None` -- never a value its own siblings reject as unusable."""
+        monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+        assert _resolve_optional_float(unusable, "MASON_CFE_TIMEOUT") is None
 
     def test_env_wins_over_none_default(self, monkeypatch):
         monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
@@ -578,6 +609,20 @@ class TestConfigureLogging:
         don't specify one, so `--quiet` (the more conservative choice) wins."""
         _configure_logging(verbose=True, quiet=True)
         assert logging.getLogger().getEffectiveLevel() == logging.ERROR
+
+
+def test_quiet_env_var_beats_an_explicit_verbose_flag(monkeypatch):
+    """Review pass (2026-08-10): the tie-break is applied to the two
+    *resolved* values, after each knob independently ran AD-13's
+    flag -> environment -> default chain -- so a stale `MASON_QUIET=1` in a
+    shell profile silently mutes an explicit `--verbose` run. This follows
+    from AD-13's per-knob precedence rather than contradicting it, but it is
+    surprising, so it is pinned here rather than left to be rediscovered."""
+    monkeypatch.setenv("MASON_QUIET", "1")
+    monkeypatch.delenv("MASON_VERBOSE", raising=False)
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
+        assert main(["doctor", "--verbose"]) == EXIT_OK
+    assert logging.getLogger().getEffectiveLevel() == logging.ERROR
 
 
 def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, capsys):

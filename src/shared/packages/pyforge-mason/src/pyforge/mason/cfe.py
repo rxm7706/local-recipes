@@ -272,11 +272,25 @@ def run_streamed(
     characters in the affected spot rather than crashing the reader thread
     outright and silently truncating everything after it.
 
-    On any exception escaping `proc.wait()` -- `subprocess.TimeoutExpired`,
-    but also e.g. a `KeyboardInterrupt` raised while blocked there -- the
-    child is killed and reaped (`proc.kill()` + `proc.wait()`) before the
-    exception is re-raised, so no orphaned process survives any exit from
-    this function, not only the timeout path. The reader threads are then
+    For the same anti-deadlock reason, a `stderr_sink` that raises (the
+    common real case: `mason ... 2>&1 | head -5`, where the downstream
+    reader exits and every later write is a `BrokenPipeError`) does NOT stop
+    the reader -- it keeps consuming the pipe to EOF and discards what it
+    can no longer deliver. Abandoning the pipe on the first sink failure
+    would leave nothing draining stderr, so the child would block on its
+    next write once the ~64KB pipe buffer filled and then be SIGKILLed when
+    `timeout` expired: a healthy process destroyed by a broken *output*
+    destination.
+
+    On any exception after the child is spawned -- `subprocess.
+    TimeoutExpired` from `proc.wait()`, a `KeyboardInterrupt` raised while
+    blocked there, or even a `Thread.start()` failure under thread
+    exhaustion -- the child is killed and reaped (`proc.kill()` +
+    `proc.wait()`) before the exception is re-raised, so no orphaned process
+    survives any exit from this function, not only the timeout path. Both
+    pipes are then closed explicitly (`Popen` is not used as a context
+    manager, because the reader threads outlive any `with` block), so a call
+    never leaks file descriptors. The reader threads are then
     joined with a bounded grace period (`_JOIN_GRACE_SECONDS`) rather than
     unboundedly, since a grandchild process that inherited the pipe file
     descriptors could otherwise keep them open past the direct child's own
@@ -302,6 +316,16 @@ def run_streamed(
         )
     if not argv:
         raise ValueError("run_streamed(argv=...) must not be empty")
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+        # Checked before math.isfinite(), which would otherwise raise a bare
+        # "must be real number, not NoneType" naming neither this function
+        # nor the parameter (review pass, 2026-08-10). `timeout=None` is the
+        # likely mistake: it means "wait forever" to subprocess's own API,
+        # and this function deliberately has no such mode.
+        raise TypeError(
+            f"run_streamed(timeout=...) must be a number of seconds, not "
+            f"{type(timeout).__name__} -- got {timeout!r}"
+        )
     if not math.isfinite(timeout) or timeout <= 0:
         raise ValueError(
             f"run_streamed(timeout=...) must be a finite, positive number -- got {timeout!r}"
@@ -324,17 +348,37 @@ def run_streamed(
 
     def _forward_stderr() -> None:
         assert proc.stderr is not None
+        sink_alive = True
         try:
             for line in proc.stderr:
-                sink.write(line)
-                sink.flush()
+                if not sink_alive:
+                    # The sink is gone, but this loop MUST keep reading to
+                    # EOF anyway (review pass, 2026-08-10). Abandoning the
+                    # pipe here is what a naive `except: return` around the
+                    # whole loop did, and it deadlocked the child: nothing
+                    # drains stderr, the OS pipe buffer fills (~64KB), the
+                    # child blocks forever on its next write, and a
+                    # perfectly healthy process is eventually SIGKILLed by
+                    # `timeout` -- the exact failure mode this function
+                    # exists to prevent. Reading and discarding costs
+                    # nothing and keeps the child running.
+                    continue
+                try:
+                    sink.write(line)
+                    sink.flush()
+                except Exception:
+                    # A broken/closed stderr_sink -- e.g. `mason ... 2>&1 |
+                    # head -5`, where the downstream reader exits and every
+                    # subsequent write raises BrokenPipeError. Degrade:
+                    # whatever reached the sink before the failure stays
+                    # there, the rest is discarded, and the child still runs
+                    # to completion.
+                    sink_alive = False
         except Exception:
-            # A broken/closed stderr_sink (or similarly rare stream
-            # failure) degrades rather than crashing this daemon thread via
-            # Python's default excepthook: whatever reached the sink before
-            # the failure stays there, the rest is lost, and run_streamed
-            # still returns instead of hanging or raising a second,
-            # unrelated error type.
+            # The pipe itself failed (closed underneath us during a bounded
+            # join, a decode error `errors="replace"` could not absorb).
+            # Degrade rather than crashing this daemon thread via Python's
+            # default excepthook.
             pass
 
     def _capture_stdout() -> None:
@@ -342,27 +386,47 @@ def run_streamed(
         try:
             captured_stdout.append(proc.stdout.read())
         except Exception:
-            # Mirrors _forward_stderr's degrade-not-crash handling above.
-            pass
+            # Mirrors _forward_stderr's degrade-not-crash handling above --
+            # including its keep-draining discipline: if the capturing read
+            # failed, this pipe still has to reach EOF or the child blocks
+            # on a full stdout buffer exactly as described there.
+            try:
+                for _ in proc.stdout:
+                    pass
+            except Exception:
+                pass
 
     stderr_thread = threading.Thread(target=_forward_stderr, daemon=True)
     stdout_thread = threading.Thread(target=_capture_stdout, daemon=True)
-    stderr_thread.start()
-    stdout_thread.start()
 
     try:
+        stderr_thread.start()
+        stdout_thread.start()
         proc.wait(timeout=timeout)
     except BaseException:
-        # Not just subprocess.TimeoutExpired: ANY exception here (including
-        # a KeyboardInterrupt raised while blocked in proc.wait()) must
-        # still kill and reap the child before propagating -- "no orphaned
-        # process" is a guarantee for every exit from this function, not
-        # only the timeout path.
+        # Not just subprocess.TimeoutExpired: ANY exception on this path
+        # (a KeyboardInterrupt raised while blocked in proc.wait(), or a
+        # Thread.start() RuntimeError under thread exhaustion -- review
+        # pass, 2026-08-10) must still kill and reap the child before
+        # propagating. "No orphaned process" is a guarantee for every exit
+        # from this function, not only the timeout path.
         proc.kill()
         proc.wait()
         raise
     finally:
-        stderr_thread.join(timeout=_JOIN_GRACE_SECONDS)
-        stdout_thread.join(timeout=_JOIN_GRACE_SECONDS)
+        for thread in (stderr_thread, stdout_thread):
+            if thread.ident is not None:  # never started -> nothing to join
+                thread.join(timeout=_JOIN_GRACE_SECONDS)
+        # Popen is not used as a context manager here (the reader threads
+        # outlive the `with` block's scope), so its two pipes must be closed
+        # explicitly or every call leaks two file descriptors until the GC
+        # runs -- surfacing as `ResourceWarning: unclosed file` under
+        # `-W error::ResourceWarning` (review pass, 2026-08-10).
+        for stream in (proc.stdout, proc.stderr):
+            if stream is not None:
+                try:
+                    stream.close()
+                except Exception:
+                    pass
 
     return proc.returncode, "".join(captured_stdout)
