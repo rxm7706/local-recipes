@@ -4,8 +4,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the architecture spine's own currency_review confirms its FR-1..FR-18 binds are unchanged. Epic/story breakdown re-checked against that unchanged architecture and confirmed current; no changes made."
+updated: '2026-08-10'
+currency_review: "Reviewed 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-20260810.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -561,7 +561,7 @@ Tier-3 feed, or any re-derivation
 **And** a ledger that is absent or unreadable is a named refusal, not a silent fallback
 **And** a test asserts `deploy.py` contains no story-status derivation of its own
 
-**Status:** backlog
+**Status:** done
 
 ---
 
@@ -577,20 +577,20 @@ inside an image build only exists if the backend exists first.
 module's own installer is invoked as a subprocess and the result reported; **And** an
 unknown name lists the valid ones rather than surfacing a raw tool error; **And** no
 module's install logic is reimplemented here.
-**Status:** backlog
+**Status:** done
 
 ### Story 6.2: `provision --list-modules`
 **FR/AD:** FR-20 • **Effort:** XS • **Surface:** `provision.py`
 **Given** any state **When** the operator lists modules **Then** each supported module is
 shown with its installed state, **derived from the filesystem** rather than a
 hand-maintained list (derive-don't-declare).
-**Status:** backlog
+**Status:** done
 
 ### Story 6.3: Partial install is a named failure
 **FR/AD:** FR-21; AD-7 • **Effort:** XS • **Surface:** `provision.py`, `tests/`
 **Given** an installer that exits non-zero, or exits 0 leaving the module unimportable
 **Then** the result is a named failure — never counted as provisioned, never silent.
-**Status:** backlog
+**Status:** done
 
 ---
 
@@ -604,34 +604,34 @@ lean all-stations image, with the packaging tier explicitly out of scope.
 **FR/AD:** FR-22 • **Effort:** M • **Surface:** `Containerfile`, `pixi.toml`
 **Given** the Containerfile **When** the image builds **Then** all eight station CLIs are
 present and each answers `--version` inside the container.
-**Status:** backlog
+**Status:** done
 
 ### Story 7.2: The repo at a fixed short path
 **FR/AD:** FR-23 • **Effort:** S • **Surface:** `Containerfile`
 **Given** the image **Then** the checkout sits at a path short enough to avoid the
 documented `pixi-build-python` path-length panic, fixed and documented rather than
 derived from the build host.
-**Status:** backlog
+**Status:** done
 
 ### Story 7.3: Credentials never enter image layers
 **FR/AD:** FR-24; AD-2, AD-3 • **Effort:** S • **Surface:** `Containerfile`, `scripts/container-gates`
 **Given** a built image **Then** a build-time scan finds no secret in any layer, and the
 build FAILS if one is present; **And** credentials arrive at run time only, through the
 existing `keys` surface.
-**Status:** backlog
+**Status:** done
 
 ### Story 7.4: State outlives the container
 **FR/AD:** FR-25 • **Effort:** M • **Surface:** `Containerfile`, `scripts/container-gates`
 **Given** loop homes, the Tier-3 store and mutable caches **Then** each resolves to a
 mounted volume, and a restart loses no durable state — proven by a round-trip test, not
 by inspection.
-**Status:** backlog
+**Status:** done
 
 ### Story 7.5: The image proves itself at build time
 **FR/AD:** FR-26 • **Effort:** S • **Surface:** `scripts/container-gates`
 **Given** the build **Then** a smoke gate fails the BUILD — not a later run — when any
 station CLI is missing, unimportable, or over its documented start-up budget.
-**Status:** backlog
+**Status:** done
 
 ---
 
@@ -657,11 +657,27 @@ intent-contract was re-issued from that amendment on 2026-08-10. **Never reintro
 comparison on the correctness path** — `updated_at` may only select candidates under
 `trigger=schedule`, never decide.
 
+**Audit note (Phase 1 backlog-truth, 2026-08-10 —
+`planning-artifacts/implementation-readiness-report-20260810.md`).** 8.1 landed (PR #397);
+verdicts on the rest (post-blind-review): **8.2 and 8.3 STILL-VALID, narrowed** — both
+mechanisms landed with 8.1; each story's deliverable is its demonstration test, exactly as the
+frozen 8-1 spec sequenced (`spec-8-1-bidirectional-propagation.md:116-120`); 8.2's test must
+also cover the non-atomic baseline-refresh failure path (`sync.py:869-880`). **8.4 and 8.5
+NEEDS-RESPEC before dispatch**: 8.4's batch premise has **no producer story** (nothing
+decomposes the `trigger=schedule` candidate enumerator), and 8.5 collides with the frozen
+boundary "Never build a general status-vocabulary translation table" the landed code cites
+(`sync.py:421-422`) while its GitHub direction is today a raw 1:1 pass-through — its scope is
+both directions plus a boundary amendment. Do not dispatch 8.4/8.5 until `bmad-correct-course`
+resolves these. A stale Tier-3 `blocked` record for 8.2 predates the AD-5 amendment — clear
+it at loop-home preflight before re-spin.
+
 ### Story 8.1: Bidirectional propagation
 **FR/AD:** FR-27 • **Effort:** L • **Deps:** the three open questions
 **Given** a status/assignee/link change on either board **Then** it reaches the other with
 no human action on the receiving side, demonstrated against a live pair.
-**Status:** backlog
+**Status:** done — *per its frozen spec's deliberately narrowed slice: status-field-only,
+fake-transport-tested. The AC's assignee/link propagation is NOT delivered and has no owning
+story (audit AF-5); the live-pair demonstration is an open coverage-debt row.*
 
 ### Story 8.2: Zero-loop guarantee
 **FR/AD:** FR-28 • **Effort:** M • **Deps:** S-8.1

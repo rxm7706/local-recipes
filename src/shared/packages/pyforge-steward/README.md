@@ -1,6 +1,6 @@
 # pyforge-steward
 
-Steward — the Provisioner's station. `steward keys / deploy / provision / budget`.
+Steward — the Provisioner's station. `steward keys / deploy / provision / budget / sync`.
 
 - **Dream:** `docs/dreams/pyforge-steward.md`
 - **Planning:** `_bmad-output/projects/pyforge-steward/planning-artifacts/`
