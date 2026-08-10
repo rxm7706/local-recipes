@@ -104,6 +104,7 @@ def test_pipeline_trigger_tools_match_the_registered_pipelines():
         "run_seed_gaps_pipeline",  # B6: the seed_gaps pipeline trigger
         "run_universal_sbom_pipeline",  # B7: the universal_sbom pipeline trigger
         "run_derived_artifacts_pipeline",  # B7: the derived_artifacts pipeline trigger
+        "run_upstream_discovery_pipeline",  # Story 13.1: the upstream_discovery pipeline trigger
     )
     stems = tuple(
         name.removeprefix("run_").removesuffix("_pipeline")

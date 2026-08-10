@@ -73,6 +73,11 @@ logger = logging.getLogger(__name__)
 # "vdb-refresh / update-cve-db / update-mapping-cache weekly").
 WEEKLY_SECONDS = 604_800
 
+# One day in seconds — the discovery cadence added by Story 13.1 (``trending_candidates``
+# has no legacy weekly equivalent to inherit). Shared here rather than duplicated as a
+# local literal in both the dataset and its trigger node (review finding, Story 13.1).
+DAILY_SECONDS = 86_400
+
 # Default per-asset retry/observability budget (AD-6 "every node carries its own
 # timeout/retry budget"). Declarative metadata a Dagster resource reads at C1 (DW-B5-2);
 # NOT enforced in-loop (the injected refresher / Dagster retry policy applies it).

@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
-Container build-time gates -- proves nothing secret-shaped ships in an image
-layer (Story 7.3, "Credentials never enter image layers").
+Container build-time and post-build gates.
+
+`secrets-scan` proves nothing secret-shaped ships in an image layer (Story
+7.3, "Credentials never enter image layers"). `volumes-roundtrip` proves a
+container replacement preserves whatever a named volume holds (Story 7.4,
+"State outlives the container").
 
 `secrets-scan <root> [<root> ...]` delegates to the existing
 `steward keys audit --secrets <path>` primitive (AD-2 -- no second
@@ -37,13 +41,47 @@ pixi.toml`, 9 total, all covered) -- those rules predate this story (Story
 7.1) and are unrelated to it. The only `.pixi/` that ever lands in `/pyforge`
 is the one top-level dir the builder stage's own `pixi install` creates.
 
+`volumes-roundtrip --image IMAGE --mount PATH [--mount PATH ...]` is
+duty-agnostic (AD-2 delegation-purity, matching `secrets-scan`): it only
+knows how to write/read a marker file through `docker run`/`docker volume`,
+nothing about `steward`'s own commands, so it works against any image with a
+shell (`sh`). This is deliberately a post-build verification tool, never a
+Containerfile `RUN` gate: a single `docker build` layer has no "stop this
+container, restart it with the same volume" operation, so build-time gating
+(the `secrets-scan` pattern above) structurally cannot prove a *restart*
+preserves state -- proving that requires a real `docker run` -> (implicit
+`--rm` teardown) -> `docker run` sequence against an already-tagged image.
+
+`cli-smoke --cli "<cmd> ..." [--cli "<cmd> ..." ...]` proves the station
+CLIs the image composes into `pyforge-container` actually work inside that
+exact env (Story 7.5, "The image proves itself at build time"). It is
+duty-agnostic like `secrets-scan`/`volumes-roundtrip` (AD-2
+delegation-purity): each `--cli` value is a full invocation string,
+`shlex.split` (no shell) and run directly via `subprocess.run`, so this
+script carries no station-name list of its own -- only the Containerfile
+`RUN` line names the real eight. Wired as a Containerfile `RUN` step
+(final stage, like `secrets-scan`), so a broken/missing/hung station CLI
+fails the `docker build`/`podman build` command itself, not a later
+`docker run`. `--help`, not `--version`, is what the `RUN` line invokes:
+argparse's `-h/--help` handling requires the parser (and therefore every
+subcommand-defining import) to have built successfully, and it exits
+non-zero on failure for all eight stations -- `marshal`'s own
+`pyforge-marshal-smoke` pixi task documents that `--version` "always exits
+0 (informational, never a gate)" for that one station, so `--help` is the
+uniformly reliable choice across all eight.
+
 Usage:
     container-gates secrets-scan <root> [<root> ...]
+    container-gates volumes-roundtrip --image IMAGE --mount PATH [--mount PATH ...]
+    container-gates cli-smoke --cli "<cmd> ..." [--cli "<cmd> ..." ...]
 """
 
 import argparse
+import re
+import shlex
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 _PIXI_DIRNAME = ".pixi"
@@ -52,6 +90,30 @@ _PIXI_DIRNAME = ".pixi"
 # `DONE 4.5s`). This bounds worst-case (a hang, not a slow-but-real scan)
 # rather than a normal upper bound.
 _SCAN_TIMEOUT_SECONDS = 300
+# A single `docker run` of a minimal write-or-read step completes in
+# low single-digit seconds even including image pull/layer setup on an
+# already-cached image; this bounds worst-case (a hung daemon/container),
+# not a normal upper bound.
+_DOCKER_RUN_TIMEOUT_SECONDS = 120
+# Generous on purpose: measured live against a real built guild image, all
+# eight real stations' `docker run --rm <image> <cli> --help` completed
+# between 0.31s and 0.74s -- that figure INCLUDES full `docker run`
+# container-startup overhead, which the code this constant actually bounds
+# (a bare in-container `subprocess.run`, no `docker run` involved) never
+# pays, so ~13x the slowest observed sample is a floor on the real margin,
+# not a precise ratio -- the true in-container cost is lower still, making
+# this bound more generous than the arithmetic alone suggests. Bounds
+# worst-case (a hang), not a normal upper bound, and is one constant for
+# all eight stations on purpose (no per-station tuning absent evidence any
+# one is structurally slower).
+_CLI_SMOKE_TIMEOUT_SECONDS = 10
+_MARKER_FILENAME = ".container-gates-roundtrip-marker"
+# `--mount` becomes the `DST` half of docker's `-v SRC:DST` shorthand AND is
+# interpolated into an in-container `sh -c` string -- a `:` would corrupt the
+# former, and a shell metacharacter would be executed as part of the latter.
+# Absolute, no `:`, no NUL: rejected cleanly here rather than handed to
+# `docker`/`sh` and trusted.
+_MOUNT_PATH_RE = re.compile(r"^/[^:\x00]*$")
 
 
 def _scan_target(target: Path) -> bool:
@@ -127,9 +189,267 @@ def cmd_secrets_scan(roots: list[str]) -> int:
     return 0 if ok else 1
 
 
+def _validate_mount(mount: str) -> str | None:
+    """Return an error message if `mount` is not safe to hand to `docker run
+    -v SRC:DST` and an in-container `sh -c` string, else `None`. Checked
+    upfront so a malformed `--mount` value is a clean, attributed CLI error
+    rather than a corrupted `-v` flag or unintended shell execution."""
+    if not _MOUNT_PATH_RE.match(mount):
+        return f"invalid --mount value {mount!r}: must be an absolute path containing no ':'"
+    return None
+
+
+def _docker_run(
+    image: str, volume: str, mount: str, shell_cmd: str, name: str
+) -> subprocess.CompletedProcess:
+    """One `docker run --rm --name <name>` against `image`, with `volume`
+    attached at `mount` and `shell_cmd` executed via `sh -c`. `--rm` means
+    the container is gone the instant this call returns -- the NEXT call for
+    the same mount (write, then read) is a genuinely separate container
+    instance, not a reused one, which is the whole point of the proof.
+    `--name` gives a timeout handler something concrete to `docker rm -f` if
+    this call is killed client-side before the container itself stops."""
+    return subprocess.run(
+        ["docker", "run", "--rm", "--name", name, "-v", f"{volume}:{mount}", image, "sh", "-c", shell_cmd],
+        capture_output=True,
+        text=True,
+        timeout=_DOCKER_RUN_TIMEOUT_SECONDS,
+    )
+
+
+def _kill_orphan(name: str) -> None:
+    """Best-effort cleanup for a container a `docker run --rm` timeout may
+    have orphaned server-side: killing the local `docker` CLI client (what
+    `subprocess`'s `timeout=` does) does not stop the container itself, and
+    a still-running container holding the volume would also make
+    `_remove_volume`'s own cleanup fail. Failures here are swallowed --
+    this is a best-effort backstop on an already-failed path, not a new
+    source of truth for the round trip's verdict."""
+    try:
+        subprocess.run(
+            ["docker", "rm", "-f", name],
+            capture_output=True,
+            text=True,
+            timeout=_DOCKER_RUN_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
+def _remove_volume(volume: str) -> None:
+    """Always attempt cleanup, whether the round trip it backed passed,
+    failed, or raised -- a leaked test volume is a defect on its own,
+    independent of whatever the round trip itself reported. `docker`
+    missing, and "no such volume" (the volume was never created -- e.g. the
+    image itself failed to resolve before any container/volume was ever
+    made, confirmed live), are both silently ignored here: the former is
+    already reported by the caller, and the latter is an expected outcome,
+    not a cleanup failure. Any OTHER `OSError` (e.g. a permissions problem
+    invoking `docker` itself) is reported but never changes the round
+    trip's own pass/fail verdict, which was already decided before this
+    runs."""
+    try:
+        subprocess.run(
+            ["docker", "volume", "rm", volume],
+            capture_output=True,
+            text=True,
+            timeout=_DOCKER_RUN_TIMEOUT_SECONDS,
+            check=True,
+        )
+    except FileNotFoundError:
+        pass
+    except subprocess.CalledProcessError as exc:
+        detail = exc.stderr.strip() if exc.stderr else str(exc)
+        if "no such volume" in detail.lower():
+            return
+        print(
+            f"container-gates: volumes-roundtrip: failed to remove volume {volume}: {detail}",
+            file=sys.stderr,
+        )
+    except subprocess.TimeoutExpired:
+        print(
+            f"container-gates: volumes-roundtrip: timed out removing volume {volume} "
+            f"(> {_DOCKER_RUN_TIMEOUT_SECONDS}s)",
+            file=sys.stderr,
+        )
+    except OSError as exc:
+        print(
+            f"container-gates: volumes-roundtrip: failed to remove volume {volume}: {exc}",
+            file=sys.stderr,
+        )
+
+
+def _roundtrip_mount(image: str, mount: str) -> bool:
+    """Prove `mount` survives container replacement against `image`: write a
+    random token into it via one `docker run`, then read it back via a
+    SEPARATE `docker run` (`--rm` already tore the first one down) attached
+    to the SAME named volume. A fresh uuid-suffixed volume name means two
+    invocations for the same `mount` never collide with, or accidentally
+    read, each other's tokens (matrix row 6). The volume is always removed
+    in `finally`, pass or fail -- see `_remove_volume`.
+
+    `docker` missing from PATH or a hung daemon are both reported as a
+    clean, attributable failure here rather than an unhandled traceback,
+    mirroring `_scan_target`'s doctrine in this same script."""
+    error = _validate_mount(mount)
+    if error:
+        print(f"container-gates: volumes-roundtrip: {error}", file=sys.stderr)
+        return False
+    volume = f"container-gates-roundtrip-{uuid.uuid4().hex}"
+    token = uuid.uuid4().hex
+    marker = shlex.quote(f"{mount}/{_MARKER_FILENAME}")
+    write_name = f"{volume}-write"
+    read_name = f"{volume}-read"
+    try:
+        write = _docker_run(image, volume, mount, f"echo {shlex.quote(token)} > {marker}", write_name)
+        if write.returncode != 0:
+            print(
+                f"container-gates: volumes-roundtrip: {mount}: write step failed "
+                f"against image {image!r}: {write.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return False
+        read = _docker_run(image, volume, mount, f"cat {marker}", read_name)
+        if read.returncode != 0:
+            print(
+                f"container-gates: volumes-roundtrip: {mount}: read step failed "
+                f"against image {image!r}: {read.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return False
+        got = read.stdout.strip()
+        if got != token:
+            print(
+                f"container-gates: volumes-roundtrip: {mount}: read back {got!r}, "
+                f"expected {token!r} -- the volume was not actually reused",
+                file=sys.stderr,
+            )
+            return False
+        print(f"container-gates: volumes-roundtrip: {mount}: OK")
+        return True
+    except FileNotFoundError:
+        print("container-gates: volumes-roundtrip: `docker` not found on PATH", file=sys.stderr)
+        return False
+    except subprocess.TimeoutExpired:
+        _kill_orphan(write_name)
+        _kill_orphan(read_name)
+        print(
+            f"container-gates: volumes-roundtrip: {mount}: docker timed out "
+            f"(> {_DOCKER_RUN_TIMEOUT_SECONDS}s)",
+            file=sys.stderr,
+        )
+        return False
+    except (OSError, ValueError) as exc:
+        # `OSError` beyond plain `FileNotFoundError` (e.g. `PermissionError` if
+        # `docker` is on PATH but not executable) and `ValueError` (e.g. an
+        # `--image` value `subprocess.run` itself rejects, such as an embedded
+        # NUL byte) both reach here rather than the more specific handlers
+        # above -- mirrors `_remove_volume`'s own general-`OSError` fallback so
+        # this path keeps the same "never a raw traceback" guarantee.
+        print(f"container-gates: volumes-roundtrip: {mount}: {exc}", file=sys.stderr)
+        return False
+    finally:
+        _remove_volume(volume)
+
+
+def cmd_volumes_roundtrip(image: str, mounts: list[str]) -> int:
+    """Round-trip every mount; never short-circuit; fail if any mount failed."""
+    ok = True
+    for mount in mounts:
+        if not _roundtrip_mount(image, mount):
+            ok = False
+    if ok:
+        print(f"container-gates: volumes-roundtrip: clean ({len(mounts)} mount(s))")
+    else:
+        print("container-gates: volumes-roundtrip: FAILED -- see findings above", file=sys.stderr)
+    return 0 if ok else 1
+
+
+def _check_cli(cli: str, timeout: float = _CLI_SMOKE_TIMEOUT_SECONDS) -> bool:
+    """Run one `--cli` value per the story spec's I/O & Edge-Case Matrix.
+
+    `cli` is parsed with `shlex.split` -- no shell -- so `argv[0]` is the
+    literal binary name `subprocess.run` looks up on PATH, and that same
+    `argv[0]` is reused below as the display name in every message, so it
+    always matches what the caller actually typed (e.g. `marshal`, not a
+    derived label).
+
+    `timeout` defaults to the module-level budget but is a real parameter,
+    not a value baked into the body, so a caller -- namely this script's
+    own test suite -- can pass a tiny value to prove the `TimeoutExpired`
+    path fast, without a test waiting out the full production budget for
+    one matrix row.
+
+    A malformed value (unbalanced quoting -- `shlex.split` raises
+    `ValueError`) or an empty one (`shlex.split` returns `[]`, e.g. an
+    all-whitespace string) is reported here and never reaches
+    `subprocess.run`. A missing binary (`FileNotFoundError`), a broken or
+    unimportable CLI (non-zero exit), and a hang past `timeout`
+    (`TimeoutExpired`, which already kills the child process) are all
+    reported as clean stderr diagnostics -- never a raw traceback --
+    mirroring `_scan_target`/`_roundtrip_mount`'s doctrine in this same
+    script. `PermissionError`/`IsADirectoryError` (argv[0] resolves but
+    isn't executable) and a `ValueError` from `subprocess.run` itself (e.g.
+    an embedded NUL byte) reach the same general `except (OSError,
+    ValueError)` fallback `_roundtrip_mount` already uses for the identical
+    class of gap.
+    """
+    try:
+        argv = shlex.split(cli)
+    except ValueError as exc:
+        print(f"container-gates: cli-smoke: invalid --cli value {cli!r}: {exc}", file=sys.stderr)
+        return False
+    if not argv:
+        print(
+            f"container-gates: cli-smoke: invalid --cli value {cli!r}: empty command",
+            file=sys.stderr,
+        )
+        return False
+    name = argv[0]
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+    except FileNotFoundError:
+        print(f"container-gates: cli-smoke: {name}: not found on PATH", file=sys.stderr)
+        return False
+    except subprocess.TimeoutExpired:
+        print(f"container-gates: cli-smoke: {name}: timed out (> {timeout}s)", file=sys.stderr)
+        return False
+    except (OSError, ValueError) as exc:
+        # Mirrors `_roundtrip_mount`'s own general fallback: a `docker`-free
+        # analogue of the same gap (e.g. `argv[0]` resolves on PATH but
+        # isn't executable -- `PermissionError`/`IsADirectoryError` -- or
+        # `subprocess.run` itself rejects the argv, e.g. an embedded NUL
+        # byte, raising `ValueError`). Never a raw traceback either way.
+        print(f"container-gates: cli-smoke: {name}: {exc}", file=sys.stderr)
+        return False
+    if result.returncode != 0:
+        diagnostic = result.stderr.strip() or result.stdout.strip() or "(no output captured)"
+        tail = "\n".join(diagnostic.splitlines()[-5:])
+        print(
+            f"container-gates: cli-smoke: {name}: exited {result.returncode}: {tail}",
+            file=sys.stderr,
+        )
+        return False
+    print(f"container-gates: cli-smoke: {name}: OK")
+    return True
+
+
+def cmd_cli_smoke(clis: list[str], timeout: float = _CLI_SMOKE_TIMEOUT_SECONDS) -> int:
+    """Check every `--cli` value; never short-circuit; fail if any failed."""
+    ok = True
+    for cli in clis:
+        if not _check_cli(cli, timeout):
+            ok = False
+    if ok:
+        print(f"container-gates: cli-smoke: clean ({len(clis)} cli(s))")
+    else:
+        print("container-gates: cli-smoke: FAILED -- see findings above", file=sys.stderr)
+    return 0 if ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="container-gates", description="Container build-time gates."
+        prog="container-gates", description="Container build-time and post-build gates."
     )
     subs = parser.add_subparsers(dest="command", required=True)
     secrets_scan = subs.add_parser(
@@ -138,9 +458,29 @@ def main(argv: list[str] | None = None) -> int:
         "via `steward keys audit --secrets` (`.pixi/` skipped for directory roots)",
     )
     secrets_scan.add_argument("roots", nargs="+", metavar="ROOT")
+    volumes_roundtrip = subs.add_parser(
+        "volumes-roundtrip",
+        help="prove a named docker volume survives container replacement: write a "
+        "marker in one container, destroy it, read the marker back in a fresh "
+        "container attached to the SAME volume",
+    )
+    volumes_roundtrip.add_argument("--image", required=True, metavar="IMAGE")
+    volumes_roundtrip.add_argument(
+        "--mount", action="append", required=True, dest="mounts", metavar="PATH"
+    )
+    cli_smoke = subs.add_parser(
+        "cli-smoke",
+        help="run one or more `--cli \"<cmd> ...\"` invocations directly (no shell) "
+        "and fail if any is missing, exits non-zero, or hangs past the timeout budget",
+    )
+    cli_smoke.add_argument("--cli", action="append", required=True, dest="clis", metavar="CMD")
     args = parser.parse_args(argv)
     if args.command == "secrets-scan":
         return cmd_secrets_scan(args.roots)
+    if args.command == "volumes-roundtrip":
+        return cmd_volumes_roundtrip(args.image, args.mounts)
+    if args.command == "cli-smoke":
+        return cmd_cli_smoke(args.clis)
     parser.print_help(sys.stderr)  # pragma: no cover -- unreachable, `required=True` above
     return 1
 

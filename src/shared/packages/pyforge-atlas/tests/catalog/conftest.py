@@ -68,6 +68,7 @@ PREFIX_TO_PIPELINE = {
     "seed_gaps": "seed_gaps",
     "seed": "seed_gaps",
     "derived": "derived_artifacts",
+    "trending": "upstream_discovery",
 }
 
 # Final implemented counts (drafting target was ~77: 35 sources + ~42
@@ -82,8 +83,9 @@ EXPECTED_PIPELINE_COUNTS = {
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 2,
+    "upstream_discovery": 2,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65)
 }
-EXPECTED_TOTAL = 86  # F4: 84 + sbom_hygiene_entry + sbom_compliance_report_entry
+EXPECTED_TOTAL = 88  # Story 13.2: 87 + trending_candidates_classified
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

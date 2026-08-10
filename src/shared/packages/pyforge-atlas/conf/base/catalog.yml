@@ -29,7 +29,12 @@
 # it), the 5 SQL views (query-time constructs — Waves D/F), dropped post-v25
 # tables, gemini_server + recipe-authoring surfaces + template trees +
 # authoring-time live fetches, read-CLI internals. § 13.1 Candidate /
-# Conditional rows (incl. the unshipped Phase T) are NOT cataloged (AD-19).
+# Conditional rows: Story 13.1 (2026-08-09) landed CAP-1 GitHub-trending
+# discovery ingest (`trending_candidates`, the `upstream_discovery` pipeline
+# below) — the former "unshipped Phase T" is no longer wholly uncataloged.
+# Story 13.2 (2026-08-09) landed CAP-2 tier classification
+# (`trending_candidates_classified`). CAP-3 (operator surface) through CAP-5
+# (Mason handoff) remain pending (Stories 13.3-13.5, AD-19).
 
 # =============================================================================
 # core — conda-side backbone (Phases B / B.5 / B.6 / F / I / J / M)
@@ -796,5 +801,43 @@ derived_purl_exports:
 derived_universe_sbom:
   type: json.JSONDataset
   filepath: data/derived/derived_universe_sbom/universe_sbom.cdx.json
+  metadata:
+    layer: derived
+
+# =============================================================================
+# upstream_discovery — GitHub-trending discovery ingest (Story 13.1, CAP-1; FR-64)
+# =============================================================================
+
+# HTML-scrape-primary (github.com/trending/python?since={daily,weekly,monthly}) with a
+# GitHub Search API fallback/corroboration source. TrendingSnapshotDataset (subclasses
+# ExternalRefreshDataset — the same base B5 used for vulnerability_vdb_store) owns the
+# injected fetch + parses via parse_trending_html/parse_search_api_response, persisting
+# the combined snapshot. A scrape layout break or an empty result degrades to WARN +
+# keep-last-good (AD-13), never a crash. Deliberately UNAUTHENTICATED — no `credentials:`
+# key: both sources route through the EXISTING GITHUB_BASE_URL/GITHUB_API_BASE_URL
+# override points (no new override point), and staying uncredentialed keeps this
+# pipeline schedule-eligible without AD-11's attended-only-credentialed-run rule. CAP-3
+# (operator surface) through CAP-5 (Mason handoff) are Stories 13.3-13.5, pending.
+trending_candidates:
+  type: pyforge.atlas.datasets.TrendingSnapshotDataset
+  filepath: data/raw/trending_candidates
+  daily_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/trending/python?since=daily
+  weekly_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/trending/python?since=weekly
+  monthly_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/trending/python?since=monthly
+  search_api_url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}/search/repositories?q=language:python&sort=stars&order=desc&per_page=100
+  metadata:
+    layer: raw
+
+# CAP-2 — tier classification (Story 13.2, FR-65). classify_trending_candidates joins
+# trending_candidates against pypi_universe/pypi_conda_mapping/pypi_intelligence_enriched
+# and assigns tier ("1"/"2"/"skip") + reason to every row, never a silent drop. Report-only
+# derived output (no TTL — mirrors seed_gaps_lts_registry_report, not the # A3: TTL-gated
+# pattern). CADENCE: re-materialized by the WEEKLY bootstrap_data job only — the daily
+# upstream_discovery_trending job selects refresh_trending_candidates alone, so this table
+# trails its own source by up to 6 days. Wiring it to a daily cadence would couple that job
+# to three other pipelines' outputs; deferred to CAP-3 (Story 13.3), the first consumer.
+trending_candidates_classified:
+  type: pandas.ParquetDataset
+  filepath: data/derived/trending_candidates_classified/trending_candidates_classified.parquet
   metadata:
     layer: derived

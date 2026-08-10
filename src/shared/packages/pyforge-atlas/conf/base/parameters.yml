@@ -49,6 +49,8 @@ ttls:
   vcs_upstream_versions: 604800                 # 7 d (PHASE_K_TTL_DAYS; column github_version_fetched_at)
   vcs_registry_versions: 604800                 # 7 d (PHASE_L_TTL_DAYS; legacy tracks per-registry *_fetched_at — a B-wave story may split per source)
   vcs_live_health: 86400                        # 1 d (PHASE_N_TTL_DAYS; live signals change fast)
+  # -- upstream_discovery
+  trending_candidates: 86400                    # 1 d (daily discovery cadence, no legacy equivalent) [future_consumer: 13.1]
 
 # AD-15 consumer-side freshness contract on derived-layer datasets — a
 # CONSUMER gate (refuse-stale), distinct from the fetch TTLs above; never
