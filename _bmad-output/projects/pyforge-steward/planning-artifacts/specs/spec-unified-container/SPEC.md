@@ -18,6 +18,12 @@ surface:
   - .dockerignore                     # build-context exclusions (credentials/state-leak + arm64/size gaps closed in 7.1's review pass)
   - pixi.toml                         # new composed `pyforge-container` env (pyforge-ci precedent)
   - scripts/container-gates           # image gates: keys audit --secrets over rootfs; provision --verify + per-station --help smoke
+companions:
+  # Settles what may ENTER the image (AD-1: the ASGI stack is a
+  # `pyforge-steward[dashboard]` extra, never a base dep) and fixes the Mode L / Mode I
+  # boundary. Answers Q2 by ratifying the baked checkout, and bounds Q3/Q4 without
+  # designing Mode I. Q1's second tier is deferred there with a named trigger.
+  - ../../architecture/architecture-unified-container-2026-08-09/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/unified-container.md
   - ../../research/technical-steward-pixi-workspace-member-research-2026-07-25.md   # Addendum A3/A4 — the feasibility study this Spec formalizes
