@@ -56,7 +56,7 @@
    "src/shared/packages/pyforge-atlas/AGENTS.md": "c19df5f8d41cd5b3f4c5020f0d4ead7a825c2e87",
    "src/shared/packages/pyforge-atlas/README.md": "a23e82b36ab0c10706f8f278a1a0f77ff1e441e8",
    "src/shared/packages/pyforge-atlas/conf/README.md": "a994ee8ba4c4464ceb3bc96fa26d92595a71e0b0",
-   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "0335be0153133d4ab42609aaaac81386a3722890",
+   "src/shared/packages/pyforge-atlas/conf/base/catalog.yml": "59cad890199425225fdb4dae7cd2621e3bfab768",
    "src/shared/packages/pyforge-atlas/conf/base/dagster.yml": "0411c867ce6d61441fc8955155534b5ba7b43003",
    "src/shared/packages/pyforge-atlas/conf/base/globals.yml": "b87d717f4452c40421b1c4895e5be17423f56384",
    "src/shared/packages/pyforge-atlas/conf/base/parameters.yml": "7aac5bec420d62aba8f1e0efb30ca4140e3752d8",
@@ -127,7 +127,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/universal_sbom/nodes.py": "0c700447faa826374757757985cc700eaf8e016b",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/universal_sbom/pipeline.py": "d1b7574546fb964919db6c18b4bf3270a60e6c54",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/__init__.py": "bf014294716d9243de1422b809a4703892707b92",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py": "b6c1505f8426e10dd1bf0abd8618e168c5690029",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py": "c27362a0c32592a96770f1c966b4824cf8161ea4",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/pipeline.py": "86ae04d6a4c73fba6a8e054608a8c27669111449",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/__init__.py": "a5d2b0b161b1a830a2b8ba1a50cb6bfa0a5b343d",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/nodes.py": "8874701e69f8d72aed1564b0104b6ae717e7f004",
@@ -258,7 +258,7 @@
    "src/shared/packages/pyforge-atlas/tests/pipelines/universal_sbom/test_match.py": "5217ab57da018f1e31775913e081ba42a6d7b628",
    "src/shared/packages/pyforge-atlas/tests/pipelines/universal_sbom/test_normalize.py": "533ab763efea3dab1474dc861b317036a0b81947",
    "src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery/__init__.py": "bb9f95ce98ba40fa044688e1cdd91344b6faa927",
-   "src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery/test_nodes.py": "fd380bf492957c80c78e674f0c8a2b89075c5e5c",
+   "src/shared/packages/pyforge-atlas/tests/pipelines/upstream_discovery/test_nodes.py": "8deea2accf0d120081351808ff6140a6c4fe2fda",
    "src/shared/packages/pyforge-atlas/tests/pipelines/vcs_health/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/pipelines/vcs_health/test_migration_readiness.py": "9123e2838d5edf0397011ece7ef38b97b667f080",
    "src/shared/packages/pyforge-atlas/tests/pipelines/vcs_health/test_nodes.py": "47a4e4d22de7ab081ad8a9f3d9b709f621af44ec",
@@ -302,7 +302,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "d5cc317edc631ad77e1d8790dc349a71b6bb57b4"
+  "memlog": "3449f90f8828255ea0eff36a068d6dc4d7d51bd2"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},

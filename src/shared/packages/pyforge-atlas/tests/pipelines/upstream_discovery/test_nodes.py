@@ -381,6 +381,79 @@ def test_non_string_license_spdx_does_not_raise():
     assert row["reason"] == "not-osi-license"
 
 
+def test_resolve_pypi_name_is_the_production_resolution_path():
+    """Review finding (Story 13.2): ``_resolve_pypi_name`` was dead code — the node
+    re-implemented resolution inline, so the nine helper tests above exercised a copy
+    that never shipped and the two could drift apart silently. Monkeypatching the
+    helper must therefore change the node's output."""
+    tc = _tc([{"repo_full_name": "someone/coolpkg", "description": None}])
+    universe = _universe(["coolpkg"])
+    calls: list[str] = []
+
+    def _spy(repo_full_name, pypi_universe, *, index=None):
+        calls.append(repo_full_name)
+        return None
+
+    original = N._resolve_pypi_name
+    N._resolve_pypi_name = _spy
+    try:
+        out = N.classify_trending_candidates(tc, universe, _mapping(["other"]), _intel([]))
+    finally:
+        N._resolve_pypi_name = original
+
+    assert calls == ["someone/coolpkg"]
+    assert out.iloc[0]["pypi_name"] is None
+
+
+def test_resolve_pypi_name_accepts_a_prebuilt_index():
+    universe = _universe(["cool.Pkg_Name"])
+    index = N._normalized_pypi_index(universe)
+    # The prebuilt index is authoritative — an unrelated frame is not consulted.
+    assert N._resolve_pypi_name("someone/cool-pkg-name", pd.DataFrame(), index=index) == "cool.Pkg_Name"
+
+
+@pytest.mark.parametrize("null_value", [None, float("nan"), pd.NA])
+def test_all_null_join_keys_are_not_a_usable_signal(null_value):
+    """Review finding (Story 13.2): a signal table that is non-empty and carries the
+    column but whose every ``pypi_name`` cell is missing was never searchable — it must
+    degrade like an empty table, not license a confident ``no-pypi-artifact`` call.
+    ``pd.NA`` is included because the string dtypes this project targets under pandas
+    3.0 produce it for a null cell (it is neither ``None`` nor a ``float``)."""
+    tc = _tc([{"repo_full_name": "someone/some-app", "description": "just an app"}])
+    null_universe = pd.DataFrame({"pypi_name": [null_value]})
+    out = N.classify_trending_candidates(tc, null_universe, _mapping(["other"]), _intel([]))
+    row = out.iloc[0]
+    assert row["pypi_name"] is None
+    assert row["tier"] == "skip"
+    assert row["reason"] == "unclassified-needs-human"
+
+
+def test_pd_na_join_key_is_never_inserted_as_a_live_index_entry():
+    """``pd.NA`` must not survive as the literal join key ``"<na>"`` — a repo actually
+    named ``<NA>`` would otherwise false-match it."""
+    assert N._normalized_pypi_index(pd.DataFrame({"pypi_name": [pd.NA, "realpkg"]})) == {
+        "realpkg": "realpkg"
+    }
+    assert N._is_missing(pd.NA) is True
+    assert N._is_missing(["MIT"]) is False
+
+
+def test_all_null_mapping_keys_degrade_resolved_row_to_unclassified():
+    """The same rule on the on-conda-forge side: an unsearchable mapping table cannot
+    confirm not-on-cf, so a resolved row must not fall through to a confident tier."""
+    tc = _tc([{"repo_full_name": "someone/coolpkg", "description": None}])
+    universe = _universe(["coolpkg"])
+    null_mapping = pd.DataFrame({"conda_name": ["conda-x"], "pypi_name": [None]})
+    intel = _intel(
+        [{"pypi_name": "coolpkg", "packaging_shape": "pure-python", "license_spdx": "MIT",
+          "license_raw": "MIT", "notes": None}]
+    )
+    out = N.classify_trending_candidates(tc, universe, null_mapping, intel)
+    row = out.iloc[0]
+    assert row["tier"] == "skip"
+    assert row["reason"] == "unclassified-needs-human"
+
+
 def test_malformed_packaging_shape_degrades_to_unclassified_not_confident_tier2():
     """Review finding (Story 13.2): an unexpected `packaging_shape` value (typo,
     new/unhandled shape) must not silently earn a confident tier "2" — only the

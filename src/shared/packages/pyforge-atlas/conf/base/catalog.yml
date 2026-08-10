@@ -832,7 +832,10 @@ trending_candidates:
 # trending_candidates against pypi_universe/pypi_conda_mapping/pypi_intelligence_enriched
 # and assigns tier ("1"/"2"/"skip") + reason to every row, never a silent drop. Report-only
 # derived output (no TTL — mirrors seed_gaps_lts_registry_report, not the # A3: TTL-gated
-# pattern); re-materialized whenever trending_candidates or its join signals change.
+# pattern). CADENCE: re-materialized by the WEEKLY bootstrap_data job only — the daily
+# upstream_discovery_trending job selects refresh_trending_candidates alone, so this table
+# trails its own source by up to 6 days. Wiring it to a daily cadence would couple that job
+# to three other pipelines' outputs; deferred to CAP-3 (Story 13.3), the first consumer.
 trending_candidates_classified:
   type: pandas.ParquetDataset
   filepath: data/derived/trending_candidates_classified/trending_candidates_classified.parquet

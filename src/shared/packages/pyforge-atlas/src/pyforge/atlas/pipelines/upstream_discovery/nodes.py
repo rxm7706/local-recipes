@@ -99,6 +99,28 @@ def _normalize_pypi_name(name: str) -> str:
     return _PEP503_RUN_RE.sub("-", name).lower()
 
 
+def _is_missing(v) -> bool:
+    """Scalar-safe missing check — ``True`` for ``None`` / NaN / ``pd.NA``, ``False``
+    for a real value INCLUDING a list/dict cell (``pd.isna`` on a non-scalar returns
+    an array whose truth value is ambiguous, so non-scalars are treated as present
+    rather than crashing the node).
+
+    Mirrors ``pipelines/pypi_intelligence/nodes.py::_is_missing`` deliberately rather
+    than importing it — no pipeline package imports another's ``nodes`` module in this
+    codebase. A plain ``v is None or isinstance(v, float) and pd.isna(v)`` check misses
+    ``pd.NA``, which the string dtypes this project targets under pandas 3.0 produce for
+    a null cell; that would insert ``str(pd.NA)`` -> ``"<na>"`` as a live join key
+    (review finding, Story 13.2)."""
+    if v is None:
+        return True
+    if isinstance(v, (list, tuple, dict, set)):
+        return False
+    try:
+        return bool(pd.isna(v))
+    except (ValueError, TypeError):
+        return False
+
+
 def _repo_segment(repo_full_name) -> str | None:
     """The ``repo`` half of a GitHub ``owner/repo`` full name (after the final
     ``/``); ``None`` on a non-string (e.g. a NaN cell), empty, or malformed value
@@ -122,18 +144,30 @@ def _normalized_pypi_index(pypi_universe: pd.DataFrame) -> dict[str, str]:
         return {}
     index: dict[str, str] = {}
     for name in pypi_universe["pypi_name"]:
-        if name is None or (isinstance(name, float) and pd.isna(name)):
+        if _is_missing(name):
             continue
         index.setdefault(_normalize_pypi_name(str(name)), str(name))
     return index
 
 
-def _resolve_pypi_name(repo_full_name: str, pypi_universe: pd.DataFrame) -> str | None:
+def _resolve_pypi_name(
+    repo_full_name: str,
+    pypi_universe: pd.DataFrame,
+    *,
+    index: dict[str, str] | None = None,
+) -> str | None:
     """Resolve a trending repo's ``owner/repo`` full name to a canonical PyPI package
     name: normalize the repo segment after ``/`` (PEP 503) and exact-match it against
-    a normalized index built once from ``pypi_universe.pypi_name``. ``None`` on no
+    a normalized index built from ``pypi_universe.pypi_name``. ``None`` on no
     match, a malformed/empty ``repo_full_name``, or an empty/malformed
     ``pypi_universe`` — never raises.
+
+    Pass ``index`` (from :func:`_normalized_pypi_index`) to reuse an index built ONCE
+    across many rows — :func:`classify_trending_candidates` does exactly that, so this
+    IS the production resolution path rather than a second copy of it that only the
+    tests exercise (review finding, Story 13.2: an inline duplicate here would let the
+    tested copy and the shipped copy drift apart silently). Without ``index`` the table
+    is indexed per call — correct, but O(universe) per row if called in a loop.
 
     A documented, lossy v1 heuristic (Design Notes): no atlas dataset maps a GitHub
     ``owner/repo`` to a PyPI name today, so a package published under a name
@@ -142,7 +176,8 @@ def _resolve_pypi_name(repo_full_name: str, pypi_universe: pd.DataFrame) -> str 
     segment = _repo_segment(repo_full_name)
     if segment is None:
         return None
-    return _normalized_pypi_index(pypi_universe).get(_normalize_pypi_name(segment))
+    lookup = _normalized_pypi_index(pypi_universe) if index is None else index
+    return lookup.get(_normalize_pypi_name(segment))
 
 
 def _is_awesome_list(repo_full_name: str, description) -> bool:
@@ -153,7 +188,7 @@ def _is_awesome_list(repo_full_name: str, description) -> bool:
     segment = _repo_segment(repo_full_name) or ""
     if segment.lower().startswith("awesome"):
         return True
-    if description is None or (isinstance(description, float) and pd.isna(description)):
+    if _is_missing(description):
         return False
     desc = str(description).lower()
     return "curated list" in desc or "awesome list" in desc
@@ -239,12 +274,16 @@ def classify_trending_candidates(
     ``pypi_name`` set, and the normalized ``pypi_intelligence_enriched``-by-``pypi_name``
     dict each ONCE (ALL THREE keyed the same PEP-503-normalized way — review finding,
     Story 13.2: comparing a normalized-resolved name against un-normalized join keys
-    silently missed real matches), then resolves + classifies per row via
-    :func:`_classify_row` (mirrors ``seed_gaps/nodes.py::report_lts_registry_gap``'s
-    join-then-classify-then-DataFrame style). An empty/malformed ``trending_candidates``
-    (missing ``repo_full_name``) returns an empty frame with the full output schema.
-    A genuinely unusable ``pypi_universe``/``pypi_conda_mapping`` table degrades its
-    OWN affected rows to ``unclassified-needs-human`` (:func:`_classify_row`'s
+    silently missed real matches), then resolves each row through
+    :func:`_resolve_pypi_name` (the SAME helper the unit tests exercise — passed the
+    prebuilt index so the shipped path and the tested path cannot drift) and classifies
+    it via :func:`_classify_row` (mirrors
+    ``seed_gaps/nodes.py::report_lts_registry_gap``'s join-then-classify-then-DataFrame
+    style). An empty/malformed ``trending_candidates`` (missing ``repo_full_name``)
+    returns an empty frame with the full output schema. A genuinely unusable
+    ``pypi_universe``/``pypi_conda_mapping`` table — empty, missing the column, OR
+    non-empty but carrying zero searchable keys — degrades its OWN affected rows to
+    ``unclassified-needs-human`` (:func:`_classify_row`'s
     ``universe_usable``/``mapping_usable``) rather than a blanket all-three-tables
     check — never raises (Boundaries & Constraints)."""
     if (
@@ -260,24 +299,25 @@ def classify_trending_candidates(
         out_cols = base_cols + [c for c in _CLASSIFIER_NEW_COLS if c not in base_cols]
         return pd.DataFrame(columns=out_cols)
 
-    universe_usable = (
-        pypi_universe is not None
-        and not getattr(pypi_universe, "empty", True)
-        and "pypi_name" in getattr(pypi_universe, "columns", [])
-    )
+    # A signal table is "usable" only when it yielded at least one searchable key —
+    # a table that is non-empty and carries the column but whose every `pypi_name`
+    # cell is missing was never actually searchable, so treating it as authoritative
+    # would emit a confident `no-pypi-artifact` / not-on-cf call off zero data
+    # (review finding, Story 13.2).
     pypi_index = _normalized_pypi_index(pypi_universe)
+    universe_usable = bool(pypi_index)
 
-    mapping_usable = (
+    on_cf_names: set[str] = set()
+    if (
         pypi_conda_mapping is not None
         and not getattr(pypi_conda_mapping, "empty", True)
         and "pypi_name" in getattr(pypi_conda_mapping, "columns", [])
-    )
-    on_cf_names: set[str] = set()
-    if mapping_usable:
+    ):
         for name in pypi_conda_mapping["pypi_name"]:
-            if name is None or (isinstance(name, float) and pd.isna(name)):
+            if _is_missing(name):
                 continue
             on_cf_names.add(_normalize_pypi_name(str(name)))
+    mapping_usable = bool(on_cf_names)
 
     intel_by_name: dict[str, dict] = {}
     if (
@@ -287,7 +327,7 @@ def classify_trending_candidates(
     ):
         for _, r in pypi_intelligence_enriched.iterrows():
             name = r.get("pypi_name")
-            if name is None or (isinstance(name, float) and pd.isna(name)):
+            if _is_missing(name):
                 continue
             intel_by_name[_normalize_pypi_name(str(name))] = r.to_dict()
 
@@ -297,8 +337,9 @@ def classify_trending_candidates(
     rows: list[dict] = []
     for _, row in trending_candidates.iterrows():
         record = row.to_dict()
-        segment = _repo_segment(record.get("repo_full_name"))
-        pypi_name = pypi_index.get(_normalize_pypi_name(segment)) if segment else None
+        pypi_name = _resolve_pypi_name(
+            record.get("repo_full_name"), pypi_universe, index=pypi_index
+        )
         normalized_name = _normalize_pypi_name(pypi_name) if pypi_name is not None else None
         on_cf = normalized_name is not None and normalized_name in on_cf_names
         intel_row = intel_by_name.get(normalized_name) if normalized_name is not None else None
