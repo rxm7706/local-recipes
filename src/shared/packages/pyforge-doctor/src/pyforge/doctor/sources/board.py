@@ -101,6 +101,15 @@ DEFERRED_SPECS: dict[str, str] = {
         "detector infers them, and what a `twin` even means for an entry with no id to twin "
         "against) — the third changes which side of the writer/gate pair moves first, which is "
         "the whole sequencing decision. Revisit once 6-9 lands",
+    "spec-artifact-chain-reconciliation":
+        "executed serially in the operator's main session by its own SPEC constraint (the "
+        "quick-dev shape) — decomposing it into marshal's PRD/epics would place audit "
+        "stories on the very board that feeds bmad-loop dispatch, and the audit exists to "
+        "PAUSE that loop until the chain is measured true. Its deliverables are the gate "
+        "reports (traceability matrices) landing in each station's planning-artifacts, "
+        "tracked and detector-checked there. Revisit if the audit becomes a standing "
+        "practice (its own open question) — a recurring cadence would deserve board "
+        "representation",
     "spec-secure-live-dashboards":
         "TWO of this entry's three successive reasons have now expired, and the reason is "
         "narrowed again rather than left stale. (1) Packaging was settled by the 2026-08-09 "
