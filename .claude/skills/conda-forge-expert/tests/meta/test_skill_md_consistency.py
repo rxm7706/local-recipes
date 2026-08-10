@@ -91,6 +91,11 @@ class TestSkillMdConsistency:
             "pin_version.py",             # G39 recipe-dir version-pin helper
             "fix_pyproject_version.py",   # G23 tree-sitter-swift checked-in helper
             "helper.py",                  # G23/G26 generic "checked-in helper"
+            # Retired repo-root detectors, cited only in historical Version History
+            # entries (a past release's own accurate description of what existed at
+            # the time) — Doctor Story 6.9 (2026-08-09) ported the last of them into
+            # `pyforge.doctor.sources` and deleted the `scripts/*_check.py` files.
+            "spec_surface_check.py",      # v8.79.1 entry — now sources/chain.py::gather_spec_surface
         }
 
         referenced = set(re.findall(r"\b([A-Za-z_][A-Za-z0-9_-]*\.py)\b", content))

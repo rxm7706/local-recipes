@@ -339,8 +339,8 @@ _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 #:
 #: bmad-loop writes governed code all day with no knowledge of the repo's
 #: spec-surface contract, so every loop-produced story that touches governed
-#: files reds `spec_surface_check` until a human names the changed paths in the
-#: owning Spec's `.memlog.md`. Measured 2026-08-09 on the first loop stories
+#: files reds the spec-surface verdict until a human names the changed paths in
+#: the owning Spec's `.memlog.md`. Measured 2026-08-09 on the first loop stories
 #: ever landed (doctor 6.2-6.4, then 6.5): 14 governed paths, then 9 more, all
 #: named by hand AT LANDING. This makes the producer pay it instead.
 #:
@@ -350,14 +350,25 @@ _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 #: stations do. Rendering appends, so a new station inherits this automatically and
 #: nobody has to remember to declare it in a ninth place (derive, don't declare).
 #:
-#: Plain `python`, not a pixi task: `scripts/spec_surface_check.py` is pure stdlib
-#: (git + hashlib), so it needs no environment, and it avoids the deep-worktree
-#: pixi path-length panic that breaks other gates inside bmad-loop run worktrees.
+#: Plain `python`, not a pixi task, and (Story 6.9 REVIEW PASS 1, 2026-08-10) no
+#: longer `scripts/spec_surface_check.py` either -- that script's own read-only
+#: verdict retired into `pyforge.doctor.sources.chain::gather_spec_surface`, whose
+#: package needs `pyforge-doctor` importable. `scripts/spec_surface_reconcile.py`
+#: reaches it WITHOUT installing anything: it puts this checkout's own
+#: `src/shared/packages/pyforge-doctor/src` onto `sys.path` directly (always
+#: present on disk in any worktree of this repo), the same install-free trick
+#: `tests/scripts/test_detectors_doctor_sources.py` already uses. Still pure
+#: stdlib once that's done (git + hashlib, via the Doctor package), so it still
+#: needs no environment, and it still avoids the deep-worktree pixi path-length
+#: panic that breaks other gates inside bmad-loop run worktrees.
 #:
 #: NEVER `--write-baseline`. A producer that can stamp its own baseline is exactly
 #: the laundering S-13.2 exists to end: the loop must RECONCILE by naming the paths
-#: it changed, never accept its own drift as correct.
-_SURFACE_RECONCILE_COMMAND = "python scripts/spec_surface_check.py"
+#: it changed, never accept its own drift as correct -- `spec_surface_reconcile.py`
+#: doesn't even expose the flag; only the mutation-only residual
+#: `scripts/spec_surface_check.py` (a human-invoked command, never bmad-loop's own)
+#: still can.
+_SURFACE_RECONCILE_COMMAND = "python scripts/spec_surface_reconcile.py"
 
 def render_policy_toml(
     effective: policy.EffectivePolicy,
