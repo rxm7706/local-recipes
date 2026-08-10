@@ -12,24 +12,28 @@ updated: 2026-08-09
 
 ## Design Paradigm
 
-**Scheduled reconciliation, not event propagation.**
+**Event-triggered reconciliation, not event propagation.**
 
-The engine does not process a stream of changes. On each run it reads the current state of
-both boards, computes the difference against the last recorded sync point, and converges
-them. Idempotence (CAP-3) then falls out of the paradigm rather than being defended by
-per-payload deduplication: re-running a converged state is a no-op because there is nothing
-left to converge.
+A webhook says only *"this item may have changed"*. The engine does not trust the payload as
+the change: it reads the affected item's current state on both boards, compares against the
+last recorded sync point, and converges. The payload is a **wake-up, not a source of truth**.
 
-This is what makes the default mode possible at zero infrastructure. An event pipeline must
-remember which events it has seen; a reconciler only needs to know the last agreed state,
-and that fits in a field on the items themselves.
+That distinction is what keeps idempotence (CAP-3) a property of the paradigm rather than
+something defended per-payload. A propagation pipeline must remember which deliveries it has
+seen to stay idempotent; a reconciler re-reads and converges, so a redelivered or
+out-of-order webhook is harmless by construction. This matters more under webhooks than it
+did under a schedule, because webhook delivery is at-least-once and unordered (AD-9).
+
+It is also what makes AD-2 possible: dedupe state would have to live somewhere, and there is
+nowhere to put it.
 
 ```mermaid
 flowchart LR
-  S[schedule tick] --> R[reconcile]
+  W[webhook: item may have changed] --> R[reconcile that item]
+  S[schedule tick optional] --> R
   R --> GR[read GitHub Projects V2]
   R --> JR[read Jira Cloud]
-  GR --> D[diff vs last sync point]
+  GR --> D[compare vs last sync point]
   JR --> D
   D --> P{divergence?}
   P -- no --> N[no-op]
@@ -42,18 +46,27 @@ flowchart LR
 
 ## Invariants & Rules
 
-### AD-1 — Trigger is decoupled from transport
+### AD-1 — Trigger is decoupled from transport; the default is true Mode A
 
 **Binds:** every entry point in both modes.
 **Prevents:** the mode choice silently dragging a cadence choice with it, which is what made
 the intake doc's Mode A/Mode B labels unusable (Mode A = real-time *and* zero-infra; Mode B =
 batch *and* PostgreSQL — so "batch at zero infra" was expressible in neither).
 **Rule:** a mode selects a **transport** (how state is stored and moved). A separate,
-independent setting selects a **trigger** (`schedule` | `webhook` | `manual`). The default
-configuration is transport=serverless, trigger=`schedule`. No code may assume a trigger from
-its transport.
+independent setting selects a **trigger** (`webhook` | `schedule` | `manual`). The default
+configuration is transport=serverless, trigger=`webhook` — **true Mode A as the intake
+document specifies it, real-time**. No code may assume a trigger from its transport.
+
+*Amended 2026-08-09 (operator reversal). The default was briefly `schedule`, on the reading
+that batch latency was acceptable and webhooks were therefore unearned complexity. Reversed
+to `webhook` on explicit instruction: near-real-time is wanted. The decoupling itself is
+retained — only the default value moved. It is what still lets Mode B run scheduled, and what
+lets an operator drop to a schedule later without touching transport code.*
+
 *Rejected: adopting Mode B as the default to obtain batch cadence — it buys cadence with a
-PostgreSQL instance the operator explicitly excluded.*
+PostgreSQL instance the operator explicitly excluded. Also rejected: collapsing the
+trigger/transport axes now that the default is plain Mode A — the axes are what make Mode B's
+scheduled operation expressible at all.*
 
 ### AD-2 — The default transport stores its control state in the synced systems
 
@@ -99,13 +112,21 @@ authority because it is where the work happens and where this repo's build line 
 
 ### AD-5 — The zero-loop guard is time-based, and is not the conflict rule
 
-**Binds:** CAP-2, both transports.
+**Binds:** CAP-2, both transports, every trigger.
 **Prevents:** conflating "did the engine cause this change?" (loop guard) with "which side
-wins?" (authority) — two different questions that a single mechanism will answer badly.
+wins?" (authority) — two different questions that a single mechanism will answer badly. Also
+prevents the guard becoming trigger-specific, which would break the moment a deployment moves
+to `schedule` or to Mode B.
 **Rule:** an item is a loop candidate when its own `updated_at` is **not** newer than the
-recorded sync point; such an item is skipped. Bot-identity checks may be added as a
-*secondary* signal but never as the primary guard: a scheduled run has no per-update
-initiator to inspect.
+recorded sync point; such an item is skipped. Under trigger=`webhook` an initiator *is*
+present, so the bot-identity check (`github-actions[bot]` or the dedicated sync bot) MAY be
+used as a cheap fast-path short-circuit — but **never** as the primary guard.
+
+*Amended 2026-08-09 alongside AD-1's reversal. The original rule justified time-based on the
+grounds that a scheduled run has no initiator to inspect; that justification weakens under
+webhooks, so it is restated on the durable ground instead: identity does not survive a trigger
+change to `schedule` and does not exist in Mode B at all. One loop-guard contract across both
+triggers and both transports is worth more than the cheaper check.*
 
 ### AD-6 — Unmapped values fail loud; unlinked items fail alone
 
@@ -137,16 +158,40 @@ infrastructure. Needing only the flat view is a signal to stay on the default.*
 storage at run time, and never written to logs, artifacts, or the control plane. This
 inherits Steward's existing `keys` surface rather than introducing a new credential path.
 
+### AD-9 — Webhook delivery is at-least-once and unordered
+
+**Binds:** trigger=`webhook` (the default), every entry point that accepts a delivery.
+**Prevents:** three stories each inventing a different defence against redelivery, reordering
+and loss — the exact divergence an AD exists to stop. This is the cost the reversal to
+real-time reintroduces, recorded as an invariant rather than left to per-story defensive code.
+**Rule:**
+1. **Redelivery is a no-op.** A payload delivered twice must leave both systems identical to
+   one delivery. The reconciler supplies this by construction (Paradigm) — no dedupe store,
+   which AD-2 would forbid anyway.
+2. **Out-of-order arrival must not regress state.** The payload is never the source of truth;
+   the engine re-reads current state and compares to the sync point, so a late delivery about
+   a superseded value converges to the current one rather than overwriting it.
+3. **A dropped delivery must be recoverable without manual repair.** Because reconciliation
+   is item-scoped and stateless, a `schedule` or `manual` trigger over the same code path is
+   the recovery mechanism — AD-1's decoupling is what makes that available rather than a
+   second implementation.
+
+*Rejected: trusting the webhook payload's field values directly (the intake doc's Flow A1/A2
+sketch). It is fewer API calls per event, but it makes correctness depend on delivery order,
+and it converts CAP-3 from a property of the design into per-payload dedupe state that has
+nowhere to live under AD-2.*
+
 ## Consistency Conventions
 
 | Concern | Convention |
 |---|---|
-| Trigger config | `trigger: schedule \| webhook \| manual`, independent of transport (AD-1) |
+| Trigger config | `trigger: webhook \| schedule \| manual`, independent of transport; default `webhook` (AD-1) |
 | Transport config | `transport: serverless \| data-hub`; default `serverless` |
 | Control-plane access | through the logical contract only; never a direct table or field read from engine code (AD-3) |
 | Error naming | one greppable identifier per failure class; unmapped value and unlinked item are distinct classes |
 | Exit code | any per-item failure ⇒ non-zero exit after the batch completes, never mid-batch abort |
 | Time | the sync point is the only time value with meaning; vendor timestamps are never compared to each other |
+| Webhook payload | a wake-up, never a value source — always re-read the item (AD-9) |
 
 ## Stack
 
@@ -154,7 +199,7 @@ SEED — verified at authoring; the code owns this once it exists.
 
 | Element | Choice |
 |---|---|
-| Default transport runtime | GitHub Actions (scheduled workflow) + Jira Automations |
+| Default transport runtime | GitHub Actions (`on: project_v2_item` webhook) + Jira Automations |
 | Mode B ingestion | `dlt` |
 | Mode B store | PostgreSQL |
 | Credential source | Steward `keys` surface |
@@ -163,9 +208,9 @@ SEED — verified at authoring; the code owns this once it exists.
 
 | Capability | Where it lives | Governed by |
 |---|---|---|
-| CAP-1 bidirectional propagation | reconcile loop | AD-1, AD-3 |
+| CAP-1 bidirectional propagation | reconcile loop | AD-1, AD-3, AD-9 |
 | CAP-2 zero-loop | loop guard | AD-5 |
-| CAP-3 idempotent processing | the paradigm itself | Paradigm, AD-2 |
+| CAP-3 idempotent processing | the paradigm itself | Paradigm, AD-2, AD-9 |
 | CAP-4 fail loud, fail alone | per-item error path | AD-6 |
 | CAP-5 vocabulary translation | `value_translation` | AD-6, AD-3 |
 
