@@ -10,6 +10,12 @@ surface:
   - a real database (SQLite-with-locking or Postgres) replacing .herald/progress.json / claims.json / notices-index.json
   - a webhook HTTP endpoint (/api/herald/webhooks/on-ship, /api/herald/webhooks/on-pr-close) — hosting location undecided
   - a cron/scheduled-job runner (weekly progress aggregation, 7-day evidence re-validation) — hosting location undecided
+companions:
+  # ADOPTED 2026-08-09 — this Spec takes Steward's pattern instead of building its own
+  # backend. Both are load-bearing: the Spec supplies the perimeter and identity contract,
+  # the spine's AD-8/AD-9 bind how Herald may consume it.
+  - ../../../../pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md
+  - ../../../../pyforge-steward/planning-artifacts/architecture/architecture-secure-live-dashboards-2026-08-09/ARCHITECTURE-SPINE.md
 sources:
   - ../../../../../../docs/dreams/herald-moments-2-4-live-backend.md
   - ../research/technical-herald-shipped-architecture-research-2026-08-08.md
@@ -17,9 +23,11 @@ sources:
   - ../retros/retro-herald-2026-08-08.md
 open_questions:
   - "Is there real pull for this at all? The CLI-triggered v1 shipped 2026-08-08 and has zero production-usage evidence yet; the technical research recommends exhausting the serverless intermediate steps (its §4.2) first and letting usage evidence drive the hosting decision. This Dream may stay dreamt."
-  - "Where does a persistent Herald backend run, and under whose operational ownership? Explicitly left open by the Dream; likely a Herald x Steward estate/deployment question, not Herald's call alone."
-  - "SQLite convergence vs per-file fcntl locking for the concurrency prerequisite: is moving the three .herald/*.json stores to one SQLite file (real locking, same function seam) the right first move, or is file locking sufficient for the hook-trigger intermediate step? (Technical research Open Question 3.)"
-  - "What actually triggers CI to call the webhook — which CI system, which events, with what authentication?"
+  # ANSWERED 2026-08-09 (operator): where the backend runs and under whose operational
+  # ownership. It runs on Steward's perimeter — this Spec adopts spec-secure-live-dashboards
+  # rather than building its own backend. The Herald x Steward question is decided, not open.
+  - "SQLite convergence vs per-file fcntl locking for the concurrency prerequisite: is moving the three .herald/*.json stores to one SQLite file (real locking, same function seam) the right first move, or is file locking sufficient for the hook-trigger intermediate step? (Technical research Open Question 3.) Adoption does NOT resolve this — it self-blocks regardless of hosting."
+  - "What actually triggers CI to call the webhook — which CI system, and which events? The AUTHENTICATION half is now answered: the adopted pattern's AD-9 requires a verifiable HMAC signature, and a machine caller is never granted a human role."
 ---
 
 > **Draft — deferred, unbuilt.** This Spec exists to satisfy INV-1 (every Dream carries a
@@ -84,11 +92,24 @@ seams rather than the pre-pivot epics doc, which was never annotated for the piv
   locking/transactional layer BEFORE any second writer can safely run concurrently with
   CLI-triggered writes. Any realization of LB-2 or LB-3 — or any serverless
   hook-trigger stepping stone — starts here, first.
-- **No silently-invented hosting.** Realizing this Spec requires first answering where
-  the backend runs persistently, under whose operational ownership, and what triggers
-  CI to call it — likely a cross-station Herald × Steward question, not a unilateral
-  Herald decision. This is the exact scope-invention risk the 2026-08-08 pivot existed
-  to avoid; it does not get waved through at build time.
+- **No silently-invented hosting — and none will be invented, because this Spec adopts
+  Steward's pattern.** The 2026-08-08 pivot existed to avoid exactly this scope-invention
+  risk, and the answer is now decided rather than deferred (operator, 2026-08-09): the
+  backend runs on **Steward's perimeter**, under Steward's operational ownership, by
+  adopting `spec-secure-live-dashboards` — the second named adopter after Atlas. Herald
+  therefore inherits identity (CAP-1), audit (CAP-4), role isolation (CAP-2/3), the
+  WSGI/container/edge perimeter (CAP-6) and the non-vacuous security suite (CAP-7) instead
+  of inventing them.
+- **Adoption resolves hosting, not the build — do not read it as more than it is.** The
+  pattern supplies **none** of LB-1's storage layer, LB-2's webhook receiver, or LB-3's
+  scheduler: it *emits* security webhooks, it does not *receive* them, and its audit store
+  is not a general application store. LB-1 through LB-3 remain Herald's work.
+- **Herald consumes the pattern under AD-8 and AD-9.** AD-8 (the pattern binds at the
+  WSGI/request layer, never to a dashboard framework) is what makes adoption possible at
+  all, given this Spec commits to no framework. AD-9 (a machine caller authenticates by
+  HMAC proof, never by ingress, and is never granted a human role) is what makes LB-2's
+  webhook receiver legal under the pattern's trust boundary. Both were added to the
+  pattern *because* Herald adopted it.
 - **The v1 CLI/web-tab contract must not change shape.** Only the data-access layer
   swaps and CLI-triggered updates become webhook/cron-triggered underneath the same
   commands. If realizing this Spec would reshape the CLI surface operators already
