@@ -2,7 +2,7 @@
 title: A backlog authored before the code existed is a plan for a different codebase
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # A backlog authored before the code existed is a plan for a different codebase
@@ -235,3 +235,11 @@ the verification step is inserted, not the decisions reopened.
   code → correct against contract), nothing silent. Spec:
   `pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation/`
   at `ready`, CAP-1..CAP-8, with the completed-station audit as CAP-3.
+- **2026-08-10 (close)** — Realized. Phases 0–4 executed in one autonomous session
+  (PRs #399–#406): 51 warns to zero by measurement, 68 backlog verdicts + 21+21+4
+  done-claim samples all cited, 19 story-spec recoveries, 195 citation re-issues,
+  61/61 Dreams dispositioned, one decomposition landed and two held conservatively
+  when the blind verifier and the consent classifier said hold. Every phase's first
+  draft was refuted in part by its own blind review — the method's point, proven
+  eight times. Spec `shipped`; the resume decisions are packaged in
+  `resume-package-2026-08-10.md`.

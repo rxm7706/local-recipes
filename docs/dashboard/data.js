@@ -3434,7 +3434,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 16:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 17:01 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3472,7 +3472,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "artifact-chain-reconciliation",
       "title": "A backlog authored before the code existed is a plan for a different codebase",
-      "status": "specified",
+      "status": "realized",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -4239,7 +4239,7 @@ window.DASHBOARD_DATA = {
       "project": "pyforge-marshal",
       "title": "Artifact-Chain Reconciliation — the pause-and-audit",
       "caps": 8,
-      "companions": 2,
+      "companions": 3,
       "updated": "2026-08-10",
       "dream": "artifact-chain-reconciliation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation"
@@ -8083,7 +8083,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T11:36",
+          "spec": "2026-08-10T12:01",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8132,7 +8132,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "specified",
+        "dreamStatus": "realized",
         "ownerDream": "artifact-chain-reconciliation",
         "noDream": false,
         "unowned": false,
@@ -12715,7 +12715,7 @@ window.DASHBOARD_DATA = {
     ],
     "baseline": {
       "skill": "8.81.0",
-      "head": "e16b2f6a0c",
+      "head": "3fd83c1aa1",
       "deltas": [],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
@@ -12740,16 +12740,6 @@ window.DASHBOARD_DATA = {
         "blockedOn": "",
         "chain": {
           "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
-        }
-      },
-      {
-        "slug": "artifact-chain-reconciliation",
-        "title": "A backlog authored before the code existed is a plan for a different codebase",
-        "status": "specified",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation"
         }
       },
       {
@@ -12787,7 +12777,6 @@ window.DASHBOARD_DATA = {
     "byOwner": {
       "mason": 1,
       "herald": 1,
-      "marshal": 1,
       "doctor": 1,
       "steward": 2
     },
@@ -12907,13 +12896,13 @@ window.DASHBOARD_DATA = {
         "counts": {
           "dreamt": 0,
           "pitched": 0,
-          "specified": 1,
-          "realized": 5,
+          "specified": 0,
+          "realized": 6,
           "archived": 15,
           "practice": 4
         },
         "line": "paused 7.1",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -13043,6 +13032,13 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "artifact-chain-reconciliation",
+            "title": "A backlog authored before the code existed is a plan for a different codebase",
+            "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "durable-runs",
             "title": "Durable runs — work survives the machine that made it",
             "status": "realized",
@@ -13081,13 +13077,6 @@ window.DASHBOARD_DATA = {
             "slug": "surface-drift-reconciliation",
             "title": "A drift gate nobody can clear, and a drift signal anyone can launder",
             "status": "realized",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "artifact-chain-reconciliation",
-            "title": "A backlog authored before the code existed is a plan for a different codebase",
-            "status": "specified",
             "type": "dream",
             "blockedOn": ""
           }
@@ -15156,8 +15145,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 16:53 UTC",
-    "generatedEpoch": 1786380827
+    "generatedAt": "2026-08-10 17:01 UTC",
+    "generatedEpoch": 1786381268
   },
   "storySpecs": [
     {
@@ -15222,11 +15211,6 @@ window.DASHBOARD_DATA = {
             "slug": "spec-agent-tool-surface",
             "status": "in-progress",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md"
-          },
-          {
-            "slug": "spec-artifact-chain-reconciliation",
-            "status": "in-progress",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation/SPEC.md"
           },
           {
             "slug": "spec-dashboard-project-path-derivation",
