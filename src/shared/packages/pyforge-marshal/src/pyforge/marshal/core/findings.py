@@ -1138,28 +1138,6 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # reported, never blocking -- the wave's own landing already succeeded (or
 # there was nothing new to land this run) by the time this best-effort step
 # runs.
-#
-# Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
-# codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a
-# bare `Path.glob` over every currently-attached home's own
-# `.bmad-loop/runs/*/failed/*/changes.patch` files -- bmad-loop's own
-# on-disk shape (external to this repo) for a session-timeout-killed
-# story's preserved diff, previously read by nothing in this repo.
-# `MRS-STATUS-010` names ONE such patch whose story is not confirmed
-# durably merged into `main` (per `core.promotion.merged_story_keys`,
-# AD-33 -- never the harness's own journal/`state.json`) -- reported per
-# matching patch, never silently absorbed; a patch whose own story-dir
-# name does not even parse as a story key reports the same code (it
-# cannot be proven landed either). Classifies `Verdict.WARN`, the same
-# "reported, never blocks progression" tier as this area's own 008/009.
-# `MRS-STATUS-011` names that `main`'s own commit history could not be
-# read at all while classifying these patches -- the read is attempted at
-# most ONCE, lazily, on first need across the whole sweep (most homes
-# carry no failed patches at all); every patch found this run then reports
-# `done: null` (landed-status unavailable), never fabricated as either
-# landed or unlanded. Also `Verdict.WARN`, mirroring `MRS-STATUS-009`'s
-# identical "the read failed, degrade every affected value to unknown,
-# never a hard failure" reasoning.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1312,8 +1290,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-014",
         "MRS-LAND-009",
         "MRS-LAND-010",
-        "MRS-STATUS-010",
-        "MRS-STATUS-011",
     }
 )
 

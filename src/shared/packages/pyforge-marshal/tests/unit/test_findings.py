@@ -201,8 +201,6 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-PREFLIGHT-014",
             "MRS-LAND-009",
             "MRS-LAND-010",
-            "MRS-STATUS-010",
-            "MRS-STATUS-011",
         }
     )
 
