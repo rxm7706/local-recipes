@@ -744,6 +744,78 @@
       "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     },
     {
+      "id": "4054ea75",
+      "name": "load_org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
+      },
+      "full_name": "load_org_audit_candidates"
+    },
+    {
+      "id": "926ef102",
+      "name": "params:org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "8d76eab7",
+      "name": "org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
       "id": "04746af5",
       "name": "normalize_intake_to_cyclonedx",
       "tags": [],
@@ -787,7 +859,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "normalize_intake_to_cyclonedx"
     },
@@ -1042,7 +1143,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "run_dependency_hygiene"
     },
@@ -1768,7 +1898,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "build_universe_sbom"
     },
@@ -1786,6 +1945,34 @@
       "node_extras": null,
       "layer": null,
       "dataset_type": "json.json_dataset.JSONDataset"
+    },
+    {
+      "id": "015741d1",
+      "name": "classify_org_audit_candidates",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "classify_org_audit_candidates"
+    },
+    {
+      "id": "1820adae",
+      "name": "org_audit_candidates_classified",
+      "tags": [],
+      "pipelines": [
+        "upstream_discovery",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     },
     {
       "id": "437ccc69",
@@ -1971,7 +2158,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "match_against_universe"
     },
@@ -2033,7 +2249,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "assemble_and_gate"
     },
@@ -2064,6 +2309,10 @@
     {
       "source": "359db7ba",
       "target": "8cd71bf4"
+    },
+    {
+      "source": "8d76eab7",
+      "target": "015741d1"
     },
     {
       "source": "f7f89bdf",
@@ -2158,12 +2407,12 @@
       "target": "b4132c13"
     },
     {
-      "source": "8cd71bf4",
-      "target": "f6c7654f"
-    },
-    {
       "source": "13c0b666",
       "target": "595030c3"
+    },
+    {
+      "source": "8cd71bf4",
+      "target": "f6c7654f"
     },
     {
       "source": "25c59f35",
@@ -2172,6 +2421,10 @@
     {
       "source": "9005f53d",
       "target": "8405d07e"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "015741d1"
     },
     {
       "source": "f1f1425b",
@@ -2282,6 +2535,10 @@
       "target": "1444471b"
     },
     {
+      "source": "926ef102",
+      "target": "4054ea75"
+    },
+    {
       "source": "14d7c1ab",
       "target": "f5eb96a7"
     },
@@ -2296,6 +2553,10 @@
     {
       "source": "7d428ada",
       "target": "1239af3a"
+    },
+    {
+      "source": "4054ea75",
+      "target": "8d76eab7"
     },
     {
       "source": "7f27c40a",
@@ -2422,6 +2683,10 @@
       "target": "1444471b"
     },
     {
+      "source": "f27d8057",
+      "target": "015741d1"
+    },
+    {
       "source": "3db02b39",
       "target": "595030c3"
     },
@@ -2494,6 +2759,10 @@
       "target": "eda40cd0"
     },
     {
+      "source": "015741d1",
+      "target": "1820adae"
+    },
+    {
       "source": "54bd4fd5",
       "target": "19426718"
     },
@@ -2512,6 +2781,10 @@
     {
       "source": "18664949",
       "target": "80a889cb"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "015741d1"
     },
     {
       "source": "595030c3",
@@ -2574,16 +2847,16 @@
       "target": "595030c3"
     },
     {
+      "source": "679aaf52",
+      "target": "2bd50436"
+    },
+    {
       "source": "6d4dd7cb",
       "target": "3bb91274"
     },
     {
       "source": "352d660b",
       "target": "4b62bbad"
-    },
-    {
-      "source": "679aaf52",
-      "target": "2bd50436"
     },
     {
       "source": "61d06077",
@@ -2790,6 +3063,10 @@
           "type": "data"
         },
         {
+          "id": "015741d1",
+          "type": "task"
+        },
+        {
           "id": "8cbe5033",
           "type": "task"
         },
@@ -2815,6 +3092,10 @@
         },
         {
           "id": "b17968ef",
+          "type": "data"
+        },
+        {
+          "id": "8d76eab7",
           "type": "data"
         },
         {
@@ -2860,6 +3141,10 @@
         {
           "id": "83133318",
           "type": "task"
+        },
+        {
+          "id": "1820adae",
+          "type": "data"
         },
         {
           "id": "ff48367d",
@@ -2958,12 +3243,20 @@
           "type": "data"
         },
         {
+          "id": "926ef102",
+          "type": "data"
+        },
+        {
           "id": "69c4954c",
           "type": "task"
         },
         {
           "id": "c50fd2f8",
           "type": "data"
+        },
+        {
+          "id": "926ef102",
+          "type": "parameters"
         },
         {
           "id": "5a055bdf",
@@ -3132,6 +3425,10 @@
         {
           "id": "c10a63b1",
           "type": "data"
+        },
+        {
+          "id": "4054ea75",
+          "type": "task"
         },
         {
           "id": "d5dd2817",

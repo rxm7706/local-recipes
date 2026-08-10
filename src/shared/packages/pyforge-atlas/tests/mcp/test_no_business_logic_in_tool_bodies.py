@@ -49,6 +49,11 @@ ALLOWED_CALL_ROOTS = {
                      # _session/_nl, a delegated seam; read_dataset only calls
                      # _provenance.load_with_provenance (AD-7/AD-17), the kind-dispatch +
                      # pandas/kedro_datasets introspection lives in provenance.py.
+    "_trending",  # Story 13.3 (CAP-3, FR-66): the trending_candidates query seam
+                  # (pyforge.atlas.trending_candidates.query) — like _session/_nl/
+                  # _provenance, a delegated seam; query_trending_candidates only calls
+                  # _trending.query_trending_candidates (AD-7), the filter/sort/cap/
+                  # validation pandas logic lives in trending_candidates/query.py.
     "s",
     "result",
     "sorted",

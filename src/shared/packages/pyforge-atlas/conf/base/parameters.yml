@@ -70,3 +70,27 @@ refresh_cadences:
   vulnerability_vdb_store: 604800          # 7 d (vdb-refresh weekly bootstrap; vuln-db env)
   vulnerability_osv_offline_store: 604800  # 7 d (update-cve-db; cve_manager CVE_TTL_DAYS=7)
   pypi_conda_map_store: 604800             # 7 d (update-mapping-cache; mapping_manager MAPPING_TTL_DAYS=7)
+
+# `org_audit_candidates:` — CAP-4's declared org-audit list (Story 13.4, FR-67). A
+# git-tracked, hand-curated list of `{repo_full_name}` entries — config-only, edited
+# by hand for a future audit batch with NO code change (`load_org_audit_candidates`
+# reads it verbatim; `ttls:` above is the sibling declared-config precedent this
+# mirrors). NOT committed current scope per SPEC.md's own non-goal ("Treating the
+# June-2026 org-audit package list as committed current scope") — the list below is
+# seeded from org-audit-precedent.md's June-2026 Microsoft "material gaps" candidates
+# purely as illustrative starting data. Every run RE-VERIFIES each entry fresh against
+# the current `pypi_conda_mapping`/`pypi_universe`/`pypi_intelligence_enriched` state
+# (the SAME `classify_trending_candidates` classifier CAP-2 uses, reused unchanged):
+# an entry that has since shipped independently to conda-forge classifies to
+# tier="skip"/reason="already-on-conda-forge" automatically and is dropped, never
+# re-proposed (FR-67's literal contract).
+org_audit_candidates:
+  - repo_full_name: "microsoft/edit"
+  - repo_full_name: "microsoft/agent-framework"
+  - repo_full_name: "microsoft/qlib"
+  - repo_full_name: "microsoft/PyRIT"
+  - repo_full_name: "microsoft/promptflow"
+  - repo_full_name: "microsoft/semantic-kernel"
+  - repo_full_name: "microsoft/torchscale"
+  - repo_full_name: "microsoft/SEAL"
+  - repo_full_name: "microsoft/DiskANN"
