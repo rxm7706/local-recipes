@@ -144,15 +144,16 @@ def test_no_ttl_markers_are_valid_and_kev_is_covered(
 
 def test_orphan_ttls_name_their_future_consumer(parameters, parameters_raw_text):
     """Review-pass P8: ttls keys outside the A3 FLIP_LIST are consumed by
-    NO shipped code yet — each must carry a `[future_consumer: B*]`
-    annotation naming the owning story, so they are visibly pending work,
-    not dead config."""
+    NO shipped code yet — each must carry a `[future_consumer: B*]` (legacy)
+    or `[future_consumer: <epic>.<story>]` (post-migration dotted-numeric
+    story-ID scheme, e.g. Story 13.1) annotation naming the owning story, so
+    they are visibly pending work, not dead config."""
     ttls = parameters.get("ttls") or {}
     annotated = {
         m.group(1): m.group(2)
         for line in parameters_raw_text.splitlines()
         if (m := re.match(
-            r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+)\b", line.strip()
+            r"^([a-z][a-z0-9_]*):.*\[future_consumer:\s*(B\d+|\d+\.\d+)\b", line.strip()
         ))
     }
     missing = sorted(k for k in ttls if k not in FLIP_LIST and k not in annotated)
