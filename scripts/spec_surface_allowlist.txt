@@ -24,10 +24,6 @@ _bmad-output/**          # the contracts themselves (bmad-drift-check governs)
 # verdict to Doctor (`sources/*.py`, structurally barred from importing the station it
 # judges — the pattern sources/marshal.py established 2026-08-08). Delete each line as
 # its detector lands in Doctor.
-scripts/chain_completeness_check.py   # detector, unowned — §6 re-home to Doctor pending (judges every station's board incl. Marshal's)
-scripts/dashboard_drift_check.py      # detector, unowned — §6 re-home to Doctor pending (judges Marshal's board)
-scripts/ledger_regression_check.py    # detector, unowned — §6 re-home to Doctor pending; Doctor's sources/marshal.py already holds the independent verdict
-scripts/story_status_check.py         # detector, unowned — §6 re-home to Doctor pending (judges Marshal's ledger)
 scripts/loop_stall_check.py           # detector — stays Marshal's: an operational watchdog over live runs, not a conformance verdict on an artifact
 scripts/fleet_picture.py              # progress REPORT, not a detector — never gates, always exits 0; read-only over the tracked sprint ledgers + `marshal status`. Allowlisted for the same reason unpushed_work_check.py is: operator tooling, not a governed surface.
 scripts/unpushed_work_check.py        # detector — stays Marshal's: same operational class as loop_stall_check

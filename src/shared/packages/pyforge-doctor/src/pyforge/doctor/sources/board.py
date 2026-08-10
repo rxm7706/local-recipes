@@ -40,10 +40,14 @@ redesign"); each stays exactly as strict or as lenient as its own original.
 
 from __future__ import annotations
 
+import functools
+import http.server
 import importlib.util
 import json
 import re
+import socketserver
 import sys
+import threading
 from pathlib import Path
 
 from ..models import DoctorStatus, Finding, Source
@@ -633,15 +637,22 @@ _DRIFT_DONE = frozenset({"done"})
 
 def _load_foreign_module(path: Path, mod_name: str):
     """``exec_module`` an arbitrary ``target``-relative Python file and return
-    it -- the shared body behind ``_load_dashboard_generate`` and
-    ``_load_check_layout``, which is the same
-    ``importlib.util.spec_from_file_location`` dynamic load the two original
-    scripts already use (Boundaries: preserve, don't redesign).
+    it -- the body behind ``_load_dashboard_generate``, the same
+    ``importlib.util.spec_from_file_location`` dynamic load the original
+    ``dashboard_drift_check.py`` already used (Boundaries: preserve, don't
+    redesign).
 
-    ONE helper rather than two near-copies on purpose: the two loaders had
-    already drifted -- only one of them had the ``sys.path`` snapshot and the
-    ``sys.modules`` cleanup below -- and a hardening applied to one but not
-    the other is the exact defect this consolidation removes.
+    Sole caller since Story 6.9: ``gather_check_layout`` used to share this
+    helper via its own ``_load_check_layout`` (dynamically loading
+    ``check_layout.py`` to reuse its assertions), but that origin file is
+    now deleted and its logic ported into this module as permanent code
+    (``_check_layout_geometry``/``_layout_chip_rows``/the ``_LAYOUT_*``
+    constants) -- there is nothing left for it to dynamically load. This
+    helper's own hardening was originally consolidated from two near-copies
+    that had already drifted (only one had the ``sys.path``/``sys.modules``
+    guards below); kept as ONE helper rather than trimmed back to inline
+    code, since a future gather reusing another station's script the same
+    way ``gather_dashboard_drift`` reuses ``generate.py`` would need it again.
 
     Three things this adds over a bare ``exec_module``, each guarding the
     Doctor PROCESS from a file it does not own:
@@ -658,9 +669,10 @@ def _load_foreign_module(path: Path, mod_name: str):
       free to call ``sys.exit()`` at import; ``SystemExit`` is a
       ``BaseException``, so ``degrade_on_exception`` -- which documents that
       it deliberately never catches one -- would let it escape the gather and
-      break both gathers' own "never a raised exception" contract. This is
-      the same conversion ``_load_data_js`` already makes for the same reason;
-      the loader had been left out. ``KeyboardInterrupt`` is NOT converted.
+      break ``gather_dashboard_drift``'s own "never a raised exception"
+      contract. This is the same conversion ``_load_data_js`` already makes
+      for the same reason; the loader had been left out. ``KeyboardInterrupt``
+      is NOT converted.
     """
     if not path.is_file():
         raise FileNotFoundError(f"{path} not found")
@@ -999,31 +1011,178 @@ def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
 # Ported from docs/dashboard/check_layout.py -- see that script's own module
 # docstring for the full "why measure geometry, not just execution" rationale
 # and the two live incidents (a broken status chip surviving three green
-# gates; the running chip's own fix trading one visual bug for another). The
-# assertions (edges/no-overlap/one-row/in-bounds/not-clipped) live in that
-# script's own pure ``check()``/``_rows()`` and are reused verbatim, never
-# re-derived (Design Notes) -- the only NEW code here is the browser/HTTP
-# orchestration.
+# gates; the running chip's own fix trading one visual bug for another).
+#
+# Story 6.9 FIX (2026-08-09): this section used to REUSE the origin script's
+# ``check()``/``_rows()``/probe constants via a dynamic ``exec_module`` of
+# ``target/docs/dashboard/check_layout.py`` (``_load_check_layout``, ported
+# from the same ``_load_foreign_module`` ``_load_dashboard_generate`` still
+# uses below). That was fine while the origin file existed alongside its
+# port; Story 6.9 deletes it -- and a dynamic load of a file that is gone
+# does not degrade occasionally, it fails EVERY time, in EVERY environment,
+# permanently: the port would move home only to stop functioning the moment
+# its own story landed. The assertions therefore move in as real, permanent
+# code below (``_check_layout_geometry``/``_layout_chip_rows``, verbatim in
+# behavior from the origin's own ``check()``/``_rows()``, prefixed to fit
+# this module's existing ``_check_<subject>`` naming convention rather than
+# colliding with it) -- no exec, no dependency on a file that may not exist.
+# The browser/HTTP orchestration below (``_run_check_layout``) is unchanged
+# in shape; only the names it reaches for moved from a loaded module's
+# attributes to this module's own.
 
 _LAYOUT_CHECK = "console-bar-layout"
 
+# --- ported verbatim from docs/dashboard/check_layout.py's own module-level
+# constants (see that script's history, recoverable via
+# `git show HEAD~1:docs/dashboard/check_layout.py` after this story's
+# deletion commit) -- values and comments carried unchanged.
 
-def _load_check_layout(target: Path):
-    """Dynamically import ``target/docs/dashboard/check_layout.py`` -- through
-    the SAME ``_load_foreign_module`` as ``_load_dashboard_generate``, so the
-    ``sys.path``/``sys.modules``/``SystemExit`` guards documented there apply
-    to both (they had drifted: only the sibling carried them).
+# Widths above the 720px collapse breakpoint, where the three-column grid is
+# live and all four assertions apply; plus one below it, where stacking is the
+# designed behaviour and only no-overlap/in-bounds are meaningful.
+_LAYOUT_WIDE = (1600, 1400, 1200, 1000, 820)
+_LAYOUT_NARROW = (700,)
+_LAYOUT_BREAKPOINT = 720
+_LAYOUT_CENTRE_TOL = 2.0   # px; sub-pixel layout means exact 0 is not a fair
+# demand -- carried verbatim; unused in the origin too (dead there already,
+# not a porting artifact).
 
-    Importing it does NOT require ``playwright``: that script's own ``from
-    playwright.sync_api import sync_playwright`` sits inside its ``main()``,
-    guarded by its own try/except, never at module level -- so this module can
-    load ``check()``, ``_rows()``, ``_serve()`` and the probe constants in an
-    environment where ``playwright`` is not installed at all (this package's
-    own pixi env)."""
-    return _load_foreign_module(
-        target / "docs" / "dashboard" / "check_layout.py",
-        "_doctor_board_check_layout",
-    )
+# Chips inside the status row. `#chip-gen` deliberately excluded -- it lives in
+# `.cbrow` now, and treating it as a row member made the gate report a phantom
+# "bar wrapped to 2 rows" (the two elements are in different containers, at the
+# same one-line bar height of 34px).
+_LAYOUT_CHIPS = ("#chip-ship", "#chip-run")
+_LAYOUT_EDGE_TOL = 14.0   # px; the bar's own 12px padding plus a sub-pixel allowance
+
+# Font sizes in px applied to `.cchip`. 11 is the design size; the rest simulate
+# a wider font face or a zoomed browser, which is how the operator hits at 11px
+# what a runner does not. Above 11 the bar is EXPECTED to grow taller as the
+# outer chips wrap -- that is the correct degradation -- so the one-row assertion
+# is scoped to the design size only. Centring and non-overlap must hold at ALL
+# sizes; they are the invariants.
+_LAYOUT_PRESSURES = (11, 14, 17, 20, 24)
+_LAYOUT_DESIGN_SIZE = 11
+
+_LAYOUT_APPLY = """(fs) => {
+  document.querySelectorAll('.cchip').forEach(e => { e.style.fontSize = fs + 'px'; });
+}"""
+
+_LAYOUT_PROBE = """() => {
+  const bar = document.querySelector('.cbstatus');
+  if (!bar) return null;
+  const bb = bar.getBoundingClientRect();
+  const box = el => { const b = el.getBoundingClientRect();
+    return {l:b.left, r:b.right, t:b.top, b:b.bottom, cx:(b.left+b.right)/2}; };
+  const out = {bar:{l:bb.left, r:bb.right, cx:(bb.left+bb.right)/2, h:bb.height}, chips:{}};
+  for (const s of %s) {
+    const el = document.querySelector(s);
+    if (!el) continue;
+    const c = box(el);
+    const txt = el.querySelector('.ctext');
+    c.need = txt ? txt.getBoundingClientRect().width : 0;   // intrinsic label width
+    c.have = el.clientWidth;                                 // room the chip actually has
+    out.chips[s] = c;
+  }
+  return out;
+}""" % list(_LAYOUT_CHIPS)
+
+
+class _LayoutQuietHandler(http.server.SimpleHTTPRequestHandler):
+    """SimpleHTTPRequestHandler logs every GET to stderr, which buries the one
+    line a detector is supposed to emit. A gate's output is its whole product.
+
+    Ported verbatim from the origin's own ``_QuietHandler``; renamed only to
+    keep this module's ``_Layout*``/``_layout_*`` prefix consistent now that
+    it lives beside ``board.py``'s other sources."""
+
+    def log_message(self, *_args):  # noqa: D102
+        pass
+
+
+def _serve_layout_dir(directory: Path):
+    """Serve ``directory`` over an ephemeral loopback port -- ported verbatim
+    from the origin's own ``_serve()`` (renamed only for this module's
+    prefix convention), so the run is hermetic rather than depending on
+    whichever server the operator happens to have open."""
+    handler = functools.partial(_LayoutQuietHandler, directory=str(directory))
+    httpd = socketserver.TCPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return httpd, httpd.server_address[1]
+
+
+def _layout_chip_rows(chips: dict) -> list[list[str]]:
+    """Group chips into visual rows by vertical overlap -- ported verbatim
+    from the origin's own ``_rows()`` (renamed only for this module's
+    prefix convention; body unchanged)."""
+    rows: list[list[str]] = []
+    for name in sorted(chips, key=lambda n: chips[n]["t"]):
+        c = chips[name]
+        for row in rows:
+            o = chips[row[0]]
+            if c["t"] < o["b"] and o["t"] < c["b"]:
+                row.append(name)
+                break
+        else:
+            rows.append([name])
+    return rows
+
+
+def _check_layout_geometry(width: int, m: dict, scenario: str = "live") -> list[str]:
+    """The five geometry assertions (edges/no-overlap/one-row/in-bounds/
+    not-clipped) -- ported verbatim from the origin's own ``check()``
+    (renamed to ``_check_layout_geometry`` to match this module's existing
+    ``_check_chain_completeness``/``_check_dashboard_drift`` naming
+    convention for "the pure assertion logic behind a gather"; body and
+    every message string unchanged)."""
+    bar, chips = m["bar"], m["chips"]
+    found: list[str] = []
+    at = f"w={width} [{scenario}]"
+    missing = [c for c in _LAYOUT_CHIPS if c not in chips]
+    if missing:
+        found.append(f"{at}: chip(s) absent from the DOM: {', '.join(missing)}")
+        return found
+
+    rows = _layout_chip_rows(chips)
+
+    # (2) no two chips sharing a row may overlap horizontally
+    for row in rows:
+        ordered = sorted(row, key=lambda n: chips[n]["l"])
+        for a, b in zip(ordered, ordered[1:]):
+            gap = chips[b]["l"] - chips[a]["r"]
+            if gap < 0:
+                found.append(f"{at}: {a} and {b} share a row and OVERLAP by {-gap:.1f}px")
+
+    # (5) no chip is clipping its own label
+    for name, c in chips.items():
+        if c.get("need", 0) > c.get("have", 0) + 1.0:
+            found.append(
+                f"{at}: {name} is CLIPPED — label needs {c['need']:.0f}px, chip has "
+                f"{c['have']:.0f}px; the text is rendering outside its own box")
+
+    # (4) nothing escapes the bar
+    for name, c in chips.items():
+        if c["l"] < bar["l"] - 0.5 or c["r"] > bar["r"] + 0.5:
+            found.append(
+                f"{at}: {name} escapes the bar "
+                f"(chip {c['l']:.0f}–{c['r']:.0f} vs bar {bar['l']:.0f}–{bar['r']:.0f})")
+
+    if width > _LAYOUT_BREAKPOINT:
+        # (3) one row above the breakpoint -- only at the design font size, since
+        # wrapping under font pressure is the intended degradation, not a fault.
+        if scenario == f"{_LAYOUT_DESIGN_SIZE}px" and len(rows) != 1:
+            found.append(
+                f"{at}: bar wrapped to {len(rows)} rows above the {_LAYOUT_BREAKPOINT}px "
+                f"breakpoint (height {bar['h']:.0f}px) — a chip is folding when it should not")
+        # (1) ship flush left, running flush right
+        dl = chips["#chip-ship"]["l"] - bar["l"]
+        dr = bar["r"] - chips["#chip-run"]["r"]
+        if dl > _LAYOUT_EDGE_TOL:
+            found.append(f"{at}: last-shipped chip is {dl:.1f}px from the bar's left edge "
+                         f"(tolerance {_LAYOUT_EDGE_TOL}px) — it is not left-flush")
+        if dr > _LAYOUT_EDGE_TOL:
+            found.append(f"{at}: running chip is {dr:.1f}px from the bar's right edge "
+                         f"(tolerance {_LAYOUT_EDGE_TOL}px) — it is not right-flush")
+    return found
 
 
 def _suppress_close(close) -> None:
@@ -1060,26 +1219,20 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
 
     NEVER CLAIMS GREEN IT DID NOT MEASURE, mirroring the original's own
     contract (its docstring: "a detector that cannot run reports unknown,
-    never green"). A missing ``check_layout.py``, a missing ``data.js``, an
-    unimportable ``playwright``, no launchable chromium, or a bar that never
-    rendered at any width all degrade to exactly ONE WARN ``Finding`` --
-    never a FAIL, never a raised exception. An INDIVIDUAL width that could not
-    be measured while others were adds one WARN ``Finding`` of its own and
-    leaves the measured widths' real verdict intact (see ``_run_check_layout``
-    for why cannot-measure must not be reported as a layout FAIL).
-    ``playwright`` stays an optional, try/except-guarded import here: this
-    package's pixi env does not install it (Boundaries).
-    """
-    try:
-        clm = _load_check_layout(target)
-    except Exception as exc:  # noqa: BLE001 -- "cannot even load the script
-        # that owns the assertions" is itself a cannot-evaluate WARN.
-        return _layout_warn(
-            f"console-bar layout could not be evaluated here — "
-            f"{exc.__class__.__name__}: {exc}",
-            target,
-        )
+    never green"). A missing ``data.js``, an unimportable ``playwright``, no
+    launchable chromium, or a bar that never rendered at any width all
+    degrade to exactly ONE WARN ``Finding`` -- never a FAIL, never a raised
+    exception. An INDIVIDUAL width that could not be measured while others
+    were adds one WARN ``Finding`` of its own and leaves the measured
+    widths' real verdict intact (see ``_run_check_layout`` for why
+    cannot-measure must not be reported as a layout FAIL). ``playwright``
+    stays an optional, try/except-guarded import here: this package's pixi
+    env does not install it (Boundaries).
 
+    Story 6.9: no longer gates on loading ``check_layout.py`` -- the
+    assertions are permanent code in this module now (see the section header
+    above), so there is nothing left to fail to load.
+    """
     try:
         data_js = target / "docs" / "dashboard" / "data.js"
         if not data_js.is_file():
@@ -1104,17 +1257,17 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
     return degrade_on_exception(
         Source.CHECK_LAYOUT,
         _LAYOUT_CHECK,
-        lambda: _no_system_exit(lambda: _run_check_layout(target, clm, sync_playwright)),
+        lambda: _run_check_layout(target, sync_playwright),
     )
 
 
-def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]:
+def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:
     """The NEW orchestration: launch a browser, serve ``target/docs/dashboard/``
-    over the reused ``_serve()``, measure the console bar at every width x
-    font-pressure combination the original script defines, and hand each
-    width's probe result to the reused ``check()``. Every explicit ``exit 2``
-    branch the original had (no usable chromium, the bar never rendering)
-    becomes a WARN ``Finding`` here instead of a process exit.
+    over ``_serve_layout_dir``, measure the console bar at every width x
+    font-pressure combination the origin script defined, and hand each
+    width's probe result to ``_check_layout_geometry``. Every explicit
+    ``exit 2`` branch the original had (no usable chromium, the bar never
+    rendering) becomes a WARN ``Finding`` here instead of a process exit.
 
     "COULD NOT MEASURE" AND "MEASURED, AND IT IS BROKEN" ARE DIFFERENT
     VERDICTS, and this function keeps them apart in two separate lists. A
@@ -1129,14 +1282,16 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
     FAIL, because that one IS the original's own finding text for a bar that
     loaded and did not render.
     """
-    # `target/docs/dashboard`, NOT `clm.HERE`. `HERE` is check_layout.py's own
-    # `Path(__file__).resolve().parent`, which is only the same directory when
-    # the loaded file happens to live beside the board this gather was ASKED
-    # about -- a symlinked or shared `check_layout.py` made the gather validate
-    # `target`'s data.js and then measure a DIFFERENT repo's dashboard
-    # (reproduced live). The original script had no `target` parameter and so
-    # could not hit this; the seam is new to the port.
-    httpd, port = clm._serve(target / "docs" / "dashboard")
+    # `target/docs/dashboard`, NOT the origin script's own `HERE`
+    # (`Path(__file__).resolve().parent`) -- that resolved to wherever
+    # check_layout.py physically lived, which was only the same directory as
+    # the board this gather was ASKED about when the file happened to sit
+    # beside it (a symlinked/shared `check_layout.py` measured a DIFFERENT
+    # repo's dashboard, reproduced live before this was ported). The origin
+    # script had no `target` parameter and so could not hit this; serving
+    # `target`'s own directory is the fix, and it is unconditional now that
+    # there is no loaded module's `HERE` to prefer by mistake.
+    httpd, port = _serve_layout_dir(target / "docs" / "dashboard")
     url = f"http://127.0.0.1:{port}/index.html"
     raw_findings: list[str] = []
     unmeasured: list[str] = []
@@ -1154,7 +1309,7 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
                         target,
                     )
             try:
-                for width in (*clm.WIDE, *clm.NARROW):
+                for width in (*_LAYOUT_WIDE, *_LAYOUT_NARROW):
                     # Per-width isolation: without this guard one late failure
                     # unwound the whole loop and discarded every
                     # already-measured FAIL, reporting a genuinely broken bar
@@ -1165,25 +1320,26 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
                         try:
                             page.goto(url, wait_until="networkidle", timeout=20000)
                             page.wait_for_timeout(250)
-                            for fs in clm.PRESSURES:
+                            for fs in _LAYOUT_PRESSURES:
                                 name = f"{fs}px"
-                                page.evaluate(clm.APPLY, fs)
+                                page.evaluate(_LAYOUT_APPLY, fs)
                                 page.wait_for_timeout(60)
-                                m = page.evaluate(clm.PROBE)
+                                m = page.evaluate(_LAYOUT_PROBE)
                                 if not m:
                                     raw_findings.append(
                                         f"w={width} [{name}]: .cbstatus not found — "
                                         f"the bar did not render"
                                     )
                                     continue
-                                # AFTER check(), not before. `measured` gates
-                                # the OK message's "console bar edges held, no
-                                # overlap" -- so counting a probe whose
-                                # assertions never actually RAN asserted a
-                                # clean grid over an evaluation that failed. A
-                                # `check()` raising at every width produced a
-                                # confident OK alongside the per-width WARNs.
-                                raw_findings += clm.check(width, m, name)
+                                # AFTER _check_layout_geometry(), not before.
+                                # `measured` gates the OK message's "console
+                                # bar edges held, no overlap" -- so counting a
+                                # probe whose assertions never actually RAN
+                                # asserted a clean grid over an evaluation
+                                # that failed. An assertion pass raising at
+                                # every width produced a confident OK
+                                # alongside the per-width WARNs.
+                                raw_findings += _check_layout_geometry(width, m, name)
                                 measured += 1
                         finally:
                             # A page that fails to CLOSE is not a failed
@@ -1197,9 +1353,12 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
                             # suppressed for exactly this reason.
                             _suppress_close(page.close)
                     except (Exception, SystemExit) as exc:  # noqa: BLE001 --
-                        # SystemExit: `clm` is a dynamically exec'd file owned
-                        # by another station and may sys.exit() from inside
-                        # check()/evaluate(); KeyboardInterrupt stays out.
+                        # SystemExit: kept as defense-in-depth against
+                        # playwright's own internals (a third-party library
+                        # this function calls into, not code this module
+                        # owns) rather than -- as before Story 6.9's fix --
+                        # against a dynamically exec'd `check_layout.py`
+                        # that no longer exists; KeyboardInterrupt stays out.
                         unmeasured.append(
                             f"w={width}: could not be measured — "
                             f"{exc.__class__.__name__}: {exc}"
@@ -1237,8 +1396,8 @@ def _run_check_layout(target: Path, clm, sync_playwright) -> tuple[Finding, ...]
     if not raw_findings:
         message = (
             f"console bar edges held, no overlap — {measured} measurement(s): "
-            f"{len(clm.WIDE) + len(clm.NARROW)} width(s) x "
-            f"{len(clm.PRESSURES)} font-pressure step(s)"
+            f"{len(_LAYOUT_WIDE) + len(_LAYOUT_NARROW)} width(s) x "
+            f"{len(_LAYOUT_PRESSURES)} font-pressure step(s)"
         )
         if unmeasured:
             # Never claim a clean grid that was not measured (this gather's
