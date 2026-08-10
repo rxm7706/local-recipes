@@ -516,7 +516,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 13 of 28 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 13 of 32 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -583,12 +583,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "28/28",
+            "28/32",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "4",
             "remaining",
             ""
           ]
@@ -621,8 +621,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "7.1"
       },
       "epics": [
         {
@@ -798,6 +798,32 @@ window.DASHBOARD_DATA = {
               "6.10",
               "done",
               "Independence is structural, for every source"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "Deferred-work visibility",
+          "stories": [
+            [
+              "7.1",
+              "pending",
+              "The emitter mints identity at defer time"
+            ],
+            [
+              "7.2",
+              "pending",
+              "Grandfather the 470 at a dated cut-off"
+            ],
+            [
+              "7.3",
+              "pending",
+              "The detector sees anonymous Tier-3 entries"
+            ],
+            [
+              "7.4",
+              "pending",
+              "One severity, both sides"
             ]
           ]
         }
@@ -3408,7 +3434,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 16:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 16:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3539,7 +3565,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "deferred-work-visibility",
       "title": "A deferral that nobody can see is a deferral that never happened",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "doctor",
       "type": "dream",
       "chain": {
@@ -3682,7 +3708,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "kedro-org-tooling-adoption",
       "title": "Atlas's own Kedro tooling gap — skills, viz publishing, IDE integration",
-      "status": "dreamt",
+      "status": "realized",
       "owner": "atlas",
       "type": "dream",
       "chain": {
@@ -4074,7 +4100,7 @@ window.DASHBOARD_DATA = {
       "title": "kedro-org-tooling-adoption — Spec",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-08-09",
+      "updated": "2026-08-10",
       "dream": "kedro-org-tooling-adoption",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
     },
@@ -4174,7 +4200,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-herald",
       "caps": 3,
       "companions": 6,
-      "updated": "2026-08-08",
+      "updated": "2026-08-10",
       "dream": "pyforge-herald",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
     },
@@ -4213,7 +4239,7 @@ window.DASHBOARD_DATA = {
       "project": "pyforge-marshal",
       "title": "Artifact-Chain Reconciliation — the pause-and-audit",
       "caps": 8,
-      "companions": 1,
+      "companions": 2,
       "updated": "2026-08-10",
       "dream": "artifact-chain-reconciliation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation"
@@ -4514,7 +4540,7 @@ window.DASHBOARD_DATA = {
       "title": "Scribe (pyforge-scribe) — the team's inward voice",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-09",
+      "updated": "2026-08-10",
       "dream": "pyforge-scribe",
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe"
     },
@@ -4624,7 +4650,7 @@ window.DASHBOARD_DATA = {
       "title": "Warden — the compliance gate that never false-greens",
       "caps": 12,
       "companions": 3,
-      "updated": "2026-07-29",
+      "updated": "2026-08-10",
       "dream": "pyforge-warden",
       "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden"
     },
@@ -5335,10 +5361,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "done",
+          "state": "running",
           "note": "line 2 — consolidative wrap",
           "done": 28,
-          "total": 28
+          "total": 32
         },
         {
           "slug": "pyforge-scribe",
@@ -5702,7 +5728,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "28/28",
+        "progress": "28/32",
         "complete": 14,
         "of": 14
       },
@@ -5821,8 +5847,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "47/47",
@@ -6193,8 +6219,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "9/9",
@@ -6439,8 +6465,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-08",
-        "age": 2,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
@@ -6472,9 +6498,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-07",
+          "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-09",
+          "spec": "2026-08-10",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -6523,7 +6549,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
+        "dreamStatus": "realized",
         "ownerDream": "kedro-org-tooling-adoption",
         "noDream": false,
         "unowned": false,
@@ -6891,7 +6917,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-02",
+          "spec": "2026-08-10",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -7145,7 +7171,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
+        "dreamStatus": "specified",
         "ownerDream": "deferred-work-visibility",
         "noDream": false,
         "unowned": false,
@@ -7491,8 +7517,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7597,8 +7623,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7704,8 +7730,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8057,7 +8083,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T11:28",
+          "spec": "2026-08-10T11:36",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11316,8 +11342,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11422,8 +11448,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11528,8 +11554,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-09",
-        "age": 1,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12285,8 +12311,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-08",
-        "age": 2,
+        "updated": "2026-08-10",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12571,7 +12597,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "5 complete (atlas, doctor, herald, scribe, warden); 3 building (marshal, mason, steward)",
+        "gate": "4 complete (atlas, herald, scribe, warden); 4 building (doctor, marshal, mason, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -12707,16 +12733,6 @@ window.DASHBOARD_DATA = {
         }
       },
       {
-        "slug": "deferred-work-visibility",
-        "title": "A deferral that nobody can see is a deferral that never happened",
-        "status": "dreamt",
-        "owner": "doctor",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility"
-        }
-      },
-      {
         "slug": "herald-moments-2-4-live-backend",
         "title": "Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered",
         "status": "dreamt",
@@ -12727,16 +12743,6 @@ window.DASHBOARD_DATA = {
         }
       },
       {
-        "slug": "kedro-org-tooling-adoption",
-        "title": "Atlas's own Kedro tooling gap — skills, viz publishing, IDE integration",
-        "status": "dreamt",
-        "owner": "atlas",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
-        }
-      },
-      {
         "slug": "artifact-chain-reconciliation",
         "title": "A backlog authored before the code existed is a plan for a different codebase",
         "status": "specified",
@@ -12744,6 +12750,16 @@ window.DASHBOARD_DATA = {
         "blockedOn": "",
         "chain": {
           "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation"
+        }
+      },
+      {
+        "slug": "deferred-work-visibility",
+        "title": "A deferral that nobody can see is a deferral that never happened",
+        "status": "specified",
+        "owner": "doctor",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility"
         }
       },
       {
@@ -12770,10 +12786,9 @@ window.DASHBOARD_DATA = {
     "blocked": 0,
     "byOwner": {
       "mason": 1,
-      "doctor": 1,
       "herald": 1,
-      "atlas": 1,
       "marshal": 1,
+      "doctor": 1,
       "steward": 2
     },
     "practices": [
@@ -13082,15 +13097,15 @@ window.DASHBOARD_DATA = {
         "station": "atlas",
         "total": 7,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 0,
-          "realized": 1,
+          "realized": 2,
           "archived": 5,
           "practice": 0
         },
         "line": "complete",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -13131,7 +13146,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "kedro-org-tooling-adoption",
             "title": "Atlas's own Kedro tooling gap — skills, viz publishing, IDE integration",
-            "status": "dreamt",
+            "status": "realized",
             "type": "dream",
             "blockedOn": ""
           },
@@ -13252,14 +13267,14 @@ window.DASHBOARD_DATA = {
         "station": "doctor",
         "total": 3,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
-          "specified": 0,
+          "specified": 1,
           "realized": 1,
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 7.1",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -13271,16 +13286,16 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "deferred-work-visibility",
-            "title": "A deferral that nobody can see is a deferral that never happened",
-            "status": "dreamt",
+            "slug": "pyforge-doctor",
+            "title": "Doctor — one bedside manner for the whole fleet",
+            "status": "realized",
             "type": "dream",
             "blockedOn": ""
           },
           {
-            "slug": "pyforge-doctor",
-            "title": "Doctor — one bedside manner for the whole fleet",
-            "status": "realized",
+            "slug": "deferred-work-visibility",
+            "title": "A deferral that nobody can see is a deferral that never happened",
+            "status": "specified",
             "type": "dream",
             "blockedOn": ""
           }
@@ -15141,8 +15156,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 16:28 UTC",
-    "generatedEpoch": 1786379336
+    "generatedAt": "2026-08-10 16:53 UTC",
+    "generatedEpoch": 1786380827
   },
   "storySpecs": [
     {
@@ -15210,7 +15225,7 @@ window.DASHBOARD_DATA = {
           },
           {
             "slug": "spec-artifact-chain-reconciliation",
-            "status": "ready",
+            "status": "in-progress",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-chain-reconciliation/SPEC.md"
           },
           {
@@ -15306,6 +15321,33 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          }
+        ],
+        "done": 28,
+        "backlog": 4,
+        "blocked": 0,
+        "total": 32,
+        "next": "7-1-the-emitter-mints-identity-at-defer-time",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "7-1-the-emitter-mints-identity-at-defer-time",
+          "7-2-grandfather-the-470-at-a-dated-cut-off",
+          "7-3-the-detector-sees-anonymous-tier-3-entries",
+          "7-4-one-severity-both-sides"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "steward",
         "project": "pyforge-steward",
         "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
@@ -15353,28 +15395,6 @@ window.DASHBOARD_DATA = {
         "backlog": 0,
         "blocked": 0,
         "total": 46,
-        "next": "",
-        "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
-      },
-      {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          }
-        ],
-        "done": 28,
-        "backlog": 0,
-        "blocked": 0,
-        "total": 28,
         "next": "",
         "blockedKeys": [],
         "backlogKeys": [],
@@ -15437,9 +15457,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 267,
-      "backlog": 67,
+      "backlog": 71,
       "blocked": 1,
-      "total": 335
+      "total": 339
     }
   },
   "fleetProgress": {
@@ -15457,12 +15477,12 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "doctor",
-        "stories": 28,
+        "stories": 32,
         "done": 28,
         "blocked": 0,
-        "epics": 6,
+        "epics": 7,
         "epicsDone": 6,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 28
       },
@@ -15534,10 +15554,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 335,
+      "stories": 339,
       "done": 267,
       "blocked": 1,
-      "epics": 64,
+      "epics": 65,
       "epicsDone": 53
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
