@@ -3408,7 +3408,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 11:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 12:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -7075,7 +7075,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T06:27",
+          "spec": "2026-08-10T07:08",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -7129,7 +7129,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 4,
+        "openQuestions": 0,
         "overtaken": false,
         "na": [
           "dream",
@@ -14996,8 +14996,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260809-231524-abb9/4-15-one-pusher-not-two into loop/pyforge-marshal (bmad-loop)"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-10 11:58 UTC",
-    "generatedEpoch": 1786363111
+    "generatedAt": "2026-08-10 12:11 UTC",
+    "generatedEpoch": 1786363914
   },
   "storySpecs": [
     {
@@ -15229,7 +15229,7 @@ window.DASHBOARD_DATA = {
         "openSpecs": [
           {
             "slug": "spec-deferred-work-visibility",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
           }
         ],
