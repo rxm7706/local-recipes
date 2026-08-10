@@ -8,8 +8,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — added Epic 4 (Stories 4.1-4.4, FR-10..13) decomposing the fresh docs/dreams/pyforge-doctor.md's frontier section. Mechanically verified: all 13 PRD FRs trace to epics.md both directions, 16/16 unique story ids, zero orphans."
+updated: '2026-08-10'
+currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -633,7 +633,7 @@ tests pass (10 new this story). One pre-existing `__all__`-sort lint finding
 **And** neither imports `pyforge.marshal`
 **And** Marshal's pre-write guards remain in place, unmodified
 
-**Status:** backlog
+**Status:** done
 
 ### Story 6.5: The board verdicts come home
 
@@ -645,7 +645,7 @@ tests pass (10 new this story). One pre-existing `__all__`-sort lint finding
 **And** `chain_completeness`'s INV-A..D findings survive the move verbatim — same
 invariants, same messages, proven by a mutation test per invariant
 
-**Status:** backlog
+**Status:** done
 
 ### Story 6.6: The chain verdicts come home
 
@@ -658,7 +658,7 @@ station shares
 **And** `yaml` is added to the `pyforge-doctor` env for the two that need it — a library
 add, never a feature union (the isolation rule that broke `main` twice, PRs #113/#115)
 
-**Status:** backlog
+**Status:** done
 
 ### Story 6.7: `forward_dependency` comes home, and the harness coupling is decided
 
@@ -679,7 +679,7 @@ breaks the invariant that makes the check trustworthy. Neither is free.
 **And** if the enum is restated, a conformance test fails when it diverges from the
 installed library — the invariant is preserved by a different mechanism, not dropped
 
-**Status:** backlog
+**Status:** done
 
 ### Story 6.8: `bmad_drift` comes home without breaking the board
 
@@ -693,7 +693,7 @@ installed library — the invariant is preserved by a different mechanism, not d
 **And** no hand-mirrored copy is reintroduced — the 2026-07-28 false positive is the reason
 that import exists
 
-**Status:** backlog
+**Status:** done
 
 ### Story 6.9: The `scripts/` shims retire
 
@@ -722,7 +722,7 @@ retired glob by diffing the governed-file count before and after
 recorded in its memlog rather than left implicit, since that Spec is `shipped` and nothing
 else would mark the hand-off
 
-**Status:** backlog
+**Status:** done
 
 ### Story 6.10: Independence is structural, for every source
 
@@ -738,4 +738,4 @@ and string constants that could reach `import_module`
 artifact)
 **And** a newly added source with no declared subject fails the test
 
-**Status:** backlog
+**Status:** done

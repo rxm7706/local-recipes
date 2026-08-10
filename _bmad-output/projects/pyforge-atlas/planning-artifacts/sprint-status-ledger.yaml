@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 67
+# stories: 70
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -63,8 +63,11 @@ development_status:
   epic-1: done
   epic-1-retrospective: done
   epic-10: done
-  epic-12: backlog
-  epic-13: backlog
+  epic-10-retrospective: done
+  epic-12: done
+  epic-12-retrospective: optional
+  epic-13: done
+  epic-13-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
   epic-3: done

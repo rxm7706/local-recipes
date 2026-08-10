@@ -5,11 +5,7 @@ Pre-flight + fleet-watch diagnostics CLI (`doctor check` / `doctor monitor` /
 `cf_atlas` signals into one schema-validated `DoctorReport` envelope and its
 own exit-code gate.
 
-**Status:** build skeleton (Story 1.1) — this scaffold lands the package
-layout, the frozen `Finding`/`DoctorReport` contract (`models.py`), and
-Doctor's own sole-owned exit-code projection (`verdict.py`, domain
-`{0, 2, 130}`). No `check`/`monitor`/`diagnose` verb is implemented yet —
-`doctor --version` / `doctor --help` are the only working invocations. See
+**Status:** all 28 stories shipped (6 epics): the `check`/`monitor`/`diagnose` verbs are live, and `python -m pyforge.doctor.sources` dispatches the 10 detector sources the repo's gates run on
 [`_bmad-output/projects/pyforge-doctor/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-doctor/planning-artifacts/)
 for the PRD/architecture.
 

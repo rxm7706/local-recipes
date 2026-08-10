@@ -6,10 +6,10 @@ Google's [`osv-scanner`](https://github.com/google/osv-scanner) (known CVEs)
 over Python / Conda / Pixi manifests, emitting one schema-validated
 `ComplianceReport` and acting as a strict CI/CD exit-code gate.
 
-**Status:** build skeleton — this is the Option B pixi *workspace member*
-wiring only. The E1–E4 implementation is specified in
-[`docs/specs/pyforge-warden.md`](../docs/specs/pyforge-warden.md) and delivered
-via `bmad-quick-dev`.
+**Status:** all 31 stories shipped (E1–E6) — the six-axis compliance gate
+(hygiene / security / license / currency + baseline & grandfathering +
+fix-PR actuator) is live. Specified in
+[`docs/specs/pyforge-warden.md`](../../../../docs/specs/pyforge-warden.md).
 
 ## Develop
 

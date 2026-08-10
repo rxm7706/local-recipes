@@ -8,8 +8,8 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — Story D2's acceptance criteria (line ~675) and the Epic 5 summary (line ~166) still carried the pre-correction '28-CLI, all answerable' overclaim after the PRD's 2026-08-01 CAP-8 fix and architecture.md's matching correction (AUD-ATLAS-041). Both corrected to: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other epic/story referenced the overclaim."
+updated: '2026-08-10'
+currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -1457,7 +1457,7 @@ invariant-heavy island: the org's tooling is evaluated against it on the record,
 pipeline DAG is published continuously rather than screenshotted.
 
 ### Story 12.1: kedro-skills audit-then-adopt (FR-61)
-**Effort:** S • **Status:** backlog
+**Effort:** S • **Status:** done
 **Given** `kedro-skills` pinned at the evaluated version **When** it runs against the real
 `pyforge-atlas` project **Then** every piece of generated guidance is audited against the
 AD-invariants; passing content lands in `.claude/skills/` reproducibly; contradicting
@@ -1465,13 +1465,13 @@ content is excluded **with the contradiction recorded**; **And** "not yet" is a 
 final verdict that closes the story.
 
 ### Story 12.2: Publish the real DAG continuously (FR-62)
-**Effort:** S • **Deps:** Steward S-2.1 (`deploy dashboard`) • **Status:** backlog
+**Effort:** S • **Deps:** Steward S-2.1 (`deploy dashboard`) • **Status:** done
 **Given** a push touching the pipelines tree **Then** CI builds Kedro-Viz from the **real**
 package, never the stub-mirror, and publishes **through `steward deploy dashboard`** —
 Atlas owns the outcome, Steward owns the mechanism.
 
 ### Story 12.3: Record the `vscode-kedro` verdict (FR-63)
-**Effort:** XS • **Status:** backlog
+**Effort:** XS • **Status:** done
 **Given** the evaluation **Then** a dated adopt/defer decision exists; if deferred, an
 optional `.vscode/extensions.json` recommendation is the whole deliverable. The
 **decision** closes this, not an installation.
@@ -1484,28 +1484,28 @@ optional `.vscode/extensions.json` recommendation is the whole deliverable. The
 Mason packages.
 
 ### Story 13.1: Trending ingest (FR-64)
-**Effort:** M • **Status:** backlog
+**Effort:** M • **Status:** done
 **Given** a schedule **Then** GitHub-trending candidates land in a named dataset under the
 `<domain>_<entity>` convention, via an **injected** fetcher (AD-1), never inline IO.
 
 ### Story 13.2: Tier classification (FR-65)
-**Effort:** M • **Deps:** S-13.1 • **Status:** backlog
+**Effort:** M • **Deps:** S-13.1 • **Status:** done
 **Given** ingested candidates **Then** each is tiered by declared rules, and an
 unclassifiable candidate is **reported**, never silently tiered.
 
 ### Story 13.3: `trending-candidates` operator surface (FR-66)
-**Effort:** S • **Deps:** S-13.2 • **Status:** backlog
+**Effort:** S • **Deps:** S-13.2 • **Status:** done
 **Given** a classified set **Then** a CLI/MCP tool answers "what is worth packaging next?"
 with `--json`, read-only and offline-safe like every other atlas read surface.
 
 ### Story 13.4: Fixed-source audit track (FR-67)
-**Effort:** S • **Deps:** S-13.2 • **Status:** backlog
+**Effort:** S • **Deps:** S-13.2 • **Status:** done
 **Given** the declared org-audit list **Then** each candidate's CURRENT state is
 re-verified before proposal — one that shipped independently since the list was written is
 dropped, not re-proposed.
 
 ### Story 13.5: Downstream handoff to Mason (FR-68)
-**Effort:** XS • **Deps:** S-13.3 • **Status:** backlog
+**Effort:** XS • **Deps:** S-13.3 • **Status:** done
 **Given** a selected candidate **Then** it hands off as structured data, not prose; Atlas
 proposes and never authors a recipe.
 
