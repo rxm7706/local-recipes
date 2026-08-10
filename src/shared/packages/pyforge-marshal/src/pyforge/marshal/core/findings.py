@@ -1120,6 +1120,24 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Deliberately a NEW code, not a reuse of `MRS-LAND-008`: that code is
 # reserved by Story 4.11 (`is_run_live`/`--retire-live-branch`), a sibling
 # effort against the same `MRS-LAND-*` area.
+#
+# Story 4.13 (the loop's deferred work reaches the tracked ledger, FR-175)
+# adds a TENTH `MRS-LAND-*` code, `MRS-LAND-010`: once a wave is confirmed
+# landed (the already-landed shortcut, or immediately after `forge.merge_pr`
+# succeeds), `cli/land.py::_promote_deferred_work` promotes each landing
+# story's Tier-3 `review-budget-followup` deferral (bmad-loop's own
+# follow-up-review damping safety valve, written to the gitignored
+# `implementation-artifacts/deferred-work.md`) into the tracked
+# `planning-artifacts/deferred-work-ledger.md`, mirroring `cli/deploy.py`'s
+# own spec-promotion lock/write/commit shape (AD-42). `MRS-LAND-010` names
+# EITHER failure this best-effort step can have -- the ledger's own
+# advisory lock could not be acquired, or `VcsPort.commit_paths` raised
+# after the ledger was rewritten locally -- never fired for the ordinary
+# "nothing to promote" case (silent, no finding, per the story's own Never
+# bullet). Classifies WARN, the same tier as `MRS-LAND-003`/`008`/`009`:
+# reported, never blocking -- the wave's own landing already succeeded (or
+# there was nothing new to land this run) by the time this best-effort step
+# runs.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1271,6 +1289,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-013",
         "MRS-PREFLIGHT-014",
         "MRS-LAND-009",
+        "MRS-LAND-010",
     }
 )
 

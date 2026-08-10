@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
 from pyforge.marshal.cli import land as land_module
@@ -53,6 +53,7 @@ class _FakeVcs:
         fetch_raises: bool = False,
         fast_forward_sha: str = "ff-sha",
         fast_forward_raises: bool = False,
+        commit_paths_raises: bool = False,
     ) -> None:
         self.existing_branches = existing_branches
         self.branch_exists_raises = branch_exists_raises
@@ -74,6 +75,8 @@ class _FakeVcs:
         self.fast_forward_sha = fast_forward_sha
         self.fast_forward_raises = fast_forward_raises
         self.fast_forward_calls: list[tuple[object, str]] = []
+        self.commit_paths_raises = commit_paths_raises
+        self.commit_paths_calls: list[tuple[object, tuple[Path, ...], str]] = []
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -127,6 +130,12 @@ class _FakeVcs:
                 "git merge --ff-only failed: not possible to fast-forward, aborting"
             )
         return self.fast_forward_sha
+
+    def commit_paths(self, repo_root, paths, message):
+        self.commit_paths_calls.append((repo_root, tuple(paths), message))
+        if self.commit_paths_raises:
+            raise VcsCommandError("git commit failed: nothing to commit (test double)")
+        return "deferred-work-commit-sha"
 
 
 class _FakeForge:
@@ -1701,3 +1710,465 @@ def test_deploy_run_write_never_touches_the_new_advisory_lock(tmp_path):
     )
     assert outcome_id is not None
     assert findings == []
+
+
+# --- deferred-work promotion (Story 4.13, FR-175) -------------------------
+#
+# ``_BMADLOOP_WAVE_SUBJECT`` names story key ``4-4`` (see the module-level
+# constant above) -- every fixture below names its Tier-3 deferral for that
+# same story, so the wave discovered from ``wave_subjects``/``base_subjects``
+# always matches.
+
+_TIER3_DEFERRAL_TEXT = """\
+### DW-8: Follow-up review still recommended for 4-4-batch after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-4-4-batch.md`
+severity: low
+reason: The follow-up-review damping cap was spent with the story finalized while the review pass still recommended an independent follow-up.
+status: open
+"""
+
+_TIER3_DEFERRAL_FOR_A_DIFFERENT_STORY = """\
+### DW-9: Follow-up review still recommended for 5-1-unrelated after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-5-1-unrelated.md`
+severity: low
+reason: Belongs to a story that is not part of this wave.
+status: open
+"""
+
+_TRACKED_LEDGER_HEADER = (
+    "---\ndoc_type: deferred-work-ledger\nproject: acme\n---\n\n"
+    "# acme — deferred-work ledger (TRACKED)\n\nsome pre-existing prose.\n"
+)
+
+
+def _write_deferred_work_fixtures(
+    tmp_path: Path, slug: str, *, tier3_text: str | None, tracked_text: str | None
+) -> tuple[Path, Path]:
+    tier3_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "deferred-work.md"
+    )
+    tracked_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "deferred-work-ledger.md"
+    )
+    if tier3_text is not None:
+        tier3_path.parent.mkdir(parents=True, exist_ok=True)
+        tier3_path.write_text(tier3_text, encoding="utf-8")
+    if tracked_text is not None:
+        tracked_path.parent.mkdir(parents=True, exist_ok=True)
+        tracked_path.write_text(tracked_text, encoding="utf-8")
+    return tier3_path, tracked_path
+
+
+def test_promote_on_merge_appends_and_commits_ledger_entry(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    assert exit_code == 0
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert "### DW-FU-4-4:" in ledger_text
+    # The bare Tier-3 id must survive into the promoted entry -- the exact
+    # substring scripts/deferred_work_check.py looks for to confirm the
+    # Tier-3 id now has a tracked twin.
+    assert "DW-8" in ledger_text
+    assert len(vcs.commit_paths_calls) == 1
+    called_root, called_paths, called_message = vcs.commit_paths_calls[0]
+    assert called_paths == (tracked_path,)
+    assert "deferred-work" in called_message
+
+
+def test_promote_on_already_landed_shortcut(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["already_landed"] is True
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    assert exit_code == 0
+    assert "### DW-FU-4-4:" in tracked_path.read_text(encoding="utf-8")
+    assert len(vcs.commit_paths_calls) == 1
+
+
+def test_promote_deferred_work_idempotent_rerun_no_duplicate_no_commit(
+    tmp_path, capsys, monkeypatch
+):
+    """The already-promoted case (Boundaries: "an id already present
+    anywhere in the tracked ledger's text is never re-appended;
+    idempotent -- a fully-idempotent run acquires no lock and writes
+    nothing"). Simulates a SECOND ``land`` run against a ledger that
+    already carries the promoted entry from a prior run."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    already_promoted_ledger = _TRACKED_LEDGER_HEADER + (
+        "\n### DW-FU-4-4: Follow-up review still recommended for "
+        "4-4-batch after the damping cap was spent\n\n"
+        "- source_spec: `spec-4-4-batch.md`\n"
+        "  summary: Follow-up review still recommended for 4-4-batch "
+        "after the damping cap was spent\n"
+        "  evidence: already promoted by a prior run\n"
+        "  promoted: 2026-08-09 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-8` there) "
+        "under the ledger's `DW-FU-<story>` convention, so the next "
+        "damped story cannot collide with a generic `DW-8`.\n"
+        "  severity: low\n"
+        "  status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=already_promoted_ledger
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    assert vcs.commit_paths_calls == []
+    final_text = tracked_path.read_text(encoding="utf-8")
+    assert final_text == already_promoted_ledger
+    assert final_text.count("DW-FU-4-4") == 1
+
+
+def test_promote_deferred_work_lock_contention_reports_warn(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+
+    class _AlwaysLockContendedFs(LocalFs):
+        def acquire_advisory_lock(self, path, *, timeout_s):
+            raise FsError(f"lock contended on {path} (test double)")
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=_AlwaysLockContendedFs(), forge=forge
+    )
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0  # MRS-LAND-010 is WARN-tier -- reported, never blocking
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" in codes
+    assert "deferred_work_promoted" not in payload["data"]
+    assert len(vcs.commit_paths_calls) == 0
+    # Nothing was written -- the lock refusal happens before any write.
+    assert tracked_path.read_text(encoding="utf-8") == _TRACKED_LEDGER_HEADER
+
+
+def test_promote_deferred_work_no_matching_tier3_entry_is_silent(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_deferred_work_fixtures(
+        tmp_path,
+        "acme",
+        tier3_text=_TIER3_DEFERRAL_FOR_A_DIFFERENT_STORY,
+        tracked_text=_TRACKED_LEDGER_HEADER,
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    assert vcs.commit_paths_calls == []
+
+
+def test_promote_deferred_work_no_tier3_file_is_silent(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["merged"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+
+
+def test_render_text_land_reports_deferred_work_promoted_line(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(format="text"), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "deferred work promoted: DW-FU-4-4" in out
+
+
+def test_promote_deferred_work_bootstraps_a_missing_tracked_ledger(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (2026-08-10): a project with NO tracked ledger file
+    at all must still get its first promotion -- not a silent, permanent
+    no-op -- and the bootstrapped file must not carry leading blank lines."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=None
+    )
+    assert not tracked_path.exists()
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert ledger_text.startswith("### DW-FU-4-4:")
+    assert len(vcs.commit_paths_calls) == 1
+
+
+def test_promote_deferred_work_dedupes_two_tier3_entries_for_the_same_story(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (2026-08-10): two Tier-3 review-budget-followup
+    blocks resolving to the SAME story key in one wave must never produce
+    two identical ``### DW-FU-<story>:`` headings in a single write."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    duplicate_tier3_text = _TIER3_DEFERRAL_TEXT + (
+        "\n### DW-20: Follow-up review still recommended for 4-4-batch "
+        "after the damping cap was spent\n"
+        "origin: review-budget-followup\n"
+        "source_spec: `spec-4-4-batch.md`\n"
+        "severity: low\n"
+        "reason: A second, distinct followup entry for the same story key.\n"
+        "status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=duplicate_tier3_text, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["deferred_work_promoted"] == ["DW-FU-4-4"]
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert ledger_text.count("### DW-FU-4-4:") == 1
+    assert len(vcs.commit_paths_calls) == 1
+
+
+def test_promote_deferred_work_ledger_deleted_between_reads_reports_warn(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (2026-08-10): a tracked ledger that existed at the
+    first, unlocked read but is gone by the time the lock is held is a
+    genuine anomaly (concurrent deletion) -- it must be reported, never
+    silently resurrected from stale pre-lock content."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+
+    class _DeletesLedgerAfterFirstReadFs(LocalFs):
+        def __init__(self, tracked_path: Path) -> None:
+            self._tracked_path = tracked_path
+            self._tracked_reads = 0
+
+        def read_text(self, path):
+            if path == self._tracked_path:
+                self._tracked_reads += 1
+                if self._tracked_reads >= 2:
+                    return None
+            return super().read_text(path)
+
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=_DeletesLedgerAfterFirstReadFs(tracked_path), forge=forge
+    )
+
+    payload = _payload(capsys)
+    assert exit_code == 0  # MRS-LAND-010 is WARN-tier -- reported, never blocking
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" in codes
+    assert "deferred_work_promoted" not in payload["data"]
+    assert vcs.commit_paths_calls == []
+
+
+def test_promote_on_already_landed_shortcut_idempotent_rerun_no_duplicate(
+    tmp_path, capsys, monkeypatch
+):
+    """The already-landed-shortcut call site's own idempotency (Blind
+    Hunter review finding, 2026-08-10: only the full-merge path had a
+    dedicated idempotent-rerun regression test before this one)."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    already_promoted_ledger = _TRACKED_LEDGER_HEADER + (
+        "\n### DW-FU-4-4: Follow-up review still recommended for "
+        "4-4-batch after the damping cap was spent\n\n"
+        "- source_spec: `spec-4-4-batch.md`\n"
+        "  summary: Follow-up review still recommended for 4-4-batch "
+        "after the damping cap was spent\n"
+        "  evidence: already promoted by a prior run\n"
+        "  promoted: 2026-08-09 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-8` there) "
+        "under the ledger's `DW-FU-<story>` convention, so the next "
+        "damped story cannot collide with a generic `DW-8`.\n"
+        "  severity: low\n"
+        "  status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=_TIER3_DEFERRAL_TEXT, tracked_text=already_promoted_ledger
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert payload["data"]["already_landed"] is True
+    assert exit_code == 0
+    assert "deferred_work_promoted" not in payload["data"]
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-010" not in codes
+    assert vcs.commit_paths_calls == []
+    final_text = tracked_path.read_text(encoding="utf-8")
+    assert final_text == already_promoted_ledger
+    assert final_text.count("DW-FU-4-4") == 1
+
+
+def test_promote_deferred_work_multiple_stories_in_one_wave(tmp_path, capsys, monkeypatch):
+    """Blind Hunter review finding (2026-08-10): multi-candidate promotion
+    (>1 distinct story promoted in one wave/commit) was previously
+    completely untested, including the commit-message pluralization
+    branch."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    two_story_tier3_text = _TIER3_DEFERRAL_TEXT + (
+        "\n### DW-21: Follow-up review still recommended for 4-5-other "
+        "after the damping cap was spent\n"
+        "origin: review-budget-followup\n"
+        "source_spec: `spec-4-5-other.md`\n"
+        "severity: low\n"
+        "reason: A distinct followup entry for a second story in the same wave.\n"
+        "status: open\n"
+    )
+    _tier3_path, tracked_path = _write_deferred_work_fixtures(
+        tmp_path, "acme", tier3_text=two_story_tier3_text, tracked_text=_TRACKED_LEDGER_HEADER
+    )
+    second_subject = "Merge bmad-loop/run-1/4-5-other into loop/acme (bmad-loop)"
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT, second_subject),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert sorted(payload["data"]["deferred_work_promoted"]) == ["DW-FU-4-4", "DW-FU-4-5"]
+    ledger_text = tracked_path.read_text(encoding="utf-8")
+    assert "### DW-FU-4-4:" in ledger_text
+    assert "### DW-FU-4-5:" in ledger_text
+    assert len(vcs.commit_paths_calls) == 1
+    _called_root, _called_paths, called_message = vcs.commit_paths_calls[0]
+    assert "entries" in called_message
+    assert "2 deferred-work" in called_message

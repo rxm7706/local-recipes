@@ -73,7 +73,7 @@ development_status:
   4-10-fleet-wide-branch-retirement: done
   4-11-marshal-land-refuses-while-a-run-is-in-flight: done
   4-12-a-landing-leaves-the-loop-home-current-with-main: done
-  4-13-the-loops-deferred-work-reaches-the-tracked-ledger: backlog
+  4-13-the-loops-deferred-work-reaches-the-tracked-ledger: done
   4-14-the-failed-story-safety-net-is-reported: backlog
   4-15-one-pusher-not-two: backlog
   4-2-teardown-reachability-and-spec-recovery-assistance: done
