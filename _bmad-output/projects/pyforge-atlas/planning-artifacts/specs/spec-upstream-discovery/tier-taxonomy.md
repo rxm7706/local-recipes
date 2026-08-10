@@ -51,8 +51,8 @@ WARN — it never hard-fails the run.
 
 | Flag | Meaning | Default |
 |---|---|---|
-| `--period` | `daily` \| `weekly` \| `monthly` ingestion window | `weekly` |
-| `--tier` | `1` \| `2` \| `skip` \| `all` | `1,2` |
+| `--period` | `daily` \| `weekly` \| `monthly` \| `all` ingestion window | `weekly` |
+| `--tier` | comma-list of `1` \| `2` \| `skip`, or the literal `all` | `1,2` |
 | `--top` | Display cap over the already-ingested set (independent of ingest depth) | `25` |
 | `--not-on-cf` / `--all` | Filter to not-yet-on-conda-forge candidates | `--not-on-cf` |
 | `--min-stars` | Floor to drop micro-repos | `500` |
@@ -60,3 +60,60 @@ WARN — it never hard-fails the run.
 
 Read-side, offline-safe, idempotent: no fetch happens in the read path —
 ingestion (CAP-1) and query (CAP-3) are separate operations.
+
+As-built (Story 13.3, 2026-08-09): `--period` gained the 4th value `all` — the Search
+API fallback stamps its rows with the literal `period="all"`
+(`datasets/upstream_discovery.py::_SEARCH_API_FALLBACK_PERIOD`), so the three
+enumerated windows alone could never reach them. `--period all` means "no period
+filter" and is the explicit opt-in that also surfaces a repo's up-to-3x multi-window
+duplicates. `--tier` accepts a comma-list because the default is the two-tier set
+`1,2`. The shipped surface (`python -m pyforge.atlas.trending_candidates`, MCP
+`query_trending_candidates`) is the authority on behaviour; this table is its contract.
+
+## Downstream handoff (CAP-5)
+
+As-built (Story 13.5, 2026-08-10): `trending-handoff`
+(`python -m pyforge.atlas.trending_candidates.handoff_main`,
+`pyforge.atlas.trending_candidates.handoff.hand_off_candidate`) is the CAP-5 gate that
+turns ONE queryable candidate into a structured record for the packaging factory
+(Mason) — never a recipe, never a staged-recipes PR. It is a plain read + CLI, the
+identical non-pipeline shape CAP-3 already established: no new fetch, no new catalog
+entry, no new Kedro node.
+
+- **Flags:** `--repo OWNER/REPO` (required, case-insensitive), `--verdict {pass,fail}`
+  (required), `--abandonment-signal TEXT` (required, non-empty), `--license-clarity
+  TEXT` (required, non-empty). Output is unconditionally JSON — there is no table
+  mode, unlike `trending-candidates`.
+- **The health-screen gate runs on EVERY call** — there is no `--force`/skip flag.
+  Only the PRESENCE of both evidence fields is validated (non-empty after `.strip()`),
+  never their TRUTH: the verdict is a caller-supplied recorded input, not a computed
+  one (pyforge-doctor's actual abandonment/license screen logic is explicitly out of
+  this kernel's scope — SPEC.md's CAP-5 non-goal). `--verdict fail` always refuses.
+- **Eligibility gates on `tier` directly, never on `not_on_cf`.** `_classify_row`
+  (`pipelines/upstream_discovery/nodes.py`) only ever pairs tier `"1"`/`"2"` with a
+  resolved OSI-license reason string — `"already-on-conda-forge"` and
+  `"unclassified-needs-human"` are ALWAYS tier `"skip"`. Gating on `tier in {"1","2"}`
+  therefore excludes both by construction, resolving the ambiguity a deferred-work
+  item raised against `--not-on-cf`'s reason-based semantics (a repo whose on-cf
+  status is genuinely UNKNOWN, not confirmed not-on-cf, could otherwise reach a
+  programmatic consumer under `--tier all`/`--tier skip` — see
+  `deferred-work.md`'s `spec-13-3-trending-candidates-operator-surface.md` entry) —
+  without touching `query_trending_candidates`'s own `--not-on-cf` filter semantics at
+  all.
+- **Multi-window dedup:** a repo appearing under more than one trending window
+  (`daily`/`weekly`/`monthly`) resolves to exactly ONE handoff record, via the same
+  deterministic sort `query_trending_candidates` already uses (`stars_total` desc /
+  `repo_full_name` asc / `period` asc, first row wins) — closes the deferred-work item
+  CAP-2's own review pass raised against multi-window duplicates.
+- **Schema:** `handoff.HANDOFF_ENVELOPE_SCHEMA` is a plain Python dict authored in
+  real JSON-Schema-draft-2020-12 vocabulary (no new `jsonschema` pixi dependency),
+  versioned independently via `handoff.HANDOFF_SCHEMA_VERSION` (an int, NOT
+  `_provenance.SCHEMA_VERSION` — a different envelope entirely). Required keys:
+  `schema_version`, `repo_full_name`, `tier`, `health_screen` (itself requiring
+  `verdict`/`abandonment_signal`/`license_clarity`); the record also carries the
+  selected row's own columns (repo identity, `reason`, `pypi_name`, …), a `provenance`
+  block (mirrors `query_trending_candidates`'s own staleness envelope), and an
+  epoch-seconds `handed_off_at`.
+- **NFR-6 exit codes:** 0 pass, 1 policy-fail (`ValueError` — ineligible candidate,
+  failing/missing health screen, dataset not yet ingested), 2 error (an unexpected
+  bootstrap failure is never swallowed as a policy-fail), 130 interrupted.

@@ -1519,6 +1519,14 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
 description = "Wave A gate 2 (Story A2, AD-11): catalog resolves offline w/ stub creds + no-inline-IO + AD-1 import-direction meta-tests + naming/layer/TTL/path conventions + 20 override points + per-host credential scoping (FR-1)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/catalog -q"
 
+[feature.pyforge-atlas.tasks.trending-candidates]
+description = "Story 13.3 (CAP-3, FR-66): query the CAP-2 tiered/classified GitHub-trending candidate list read-side, offline-safe — filterable by period/tier/top/not-on-cf/min-stars (tier-taxonomy.md's Operator-surface parameters table). Reads ONLY the already-materialized trending_candidates_classified dataset (no fetch here); mirrors the query_trending_candidates MCP tool byte-for-byte for identical filters, since both delegate to the SAME pyforge.atlas.trending_candidates.query.query_trending_candidates function. `--json` for machine-readable output, a formatted table otherwise."
+cmd = "python -m pyforge.atlas.trending_candidates"
+
+[feature.pyforge-atlas.tasks.trending-handoff]
+description = "Story 13.5 (CAP-5, FR-68): hand off ONE tier-1/2 candidate from the CAP-2 classified set to the packaging factory (Mason) as a structured, schema-documented JSON record — never a recipe, never a staged-recipes PR. Requires a caller-supplied PASSING health-screen verdict (--verdict pass + non-empty --abandonment-signal/--license-clarity) on EVERY call; gates eligibility on the row's tier (1/2) directly, never on a not_on_cf boolean. Reads ONLY the already-materialized trending_candidates_classified dataset (no fetch here). NFR-6 exit codes: 0 pass, 1 policy-fail, 2 error, 130 interrupted."
+cmd = "python -m pyforge.atlas.trending_candidates.handoff_main"
+
 [feature.pyforge-atlas.tasks.parity-diff]
 description = "Wave B verify gate (Story B1, AC-7): fixture-mode parity diff — each migrated node's output DataFrame vs its captured legacy snapshot (offline, non-credentialed, --frozen; B1 seeds Core/VCS fixtures, B4 consumes it at the attended credentialed event)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/parity -q"

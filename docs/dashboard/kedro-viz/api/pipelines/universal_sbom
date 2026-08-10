@@ -80,7 +80,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "normalize_intake_to_cyclonedx"
     },
@@ -185,7 +214,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "run_dependency_hygiene"
     },
@@ -281,7 +339,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "match_against_universe"
     },
@@ -343,7 +430,36 @@
           "vulnerability_vdb_store": 604800,
           "vulnerability_osv_offline_store": 604800,
           "pypi_conda_map_store": 604800
-        }
+        },
+        "org_audit_candidates": [
+          {
+            "repo_full_name": "microsoft/edit"
+          },
+          {
+            "repo_full_name": "microsoft/agent-framework"
+          },
+          {
+            "repo_full_name": "microsoft/qlib"
+          },
+          {
+            "repo_full_name": "microsoft/PyRIT"
+          },
+          {
+            "repo_full_name": "microsoft/promptflow"
+          },
+          {
+            "repo_full_name": "microsoft/semantic-kernel"
+          },
+          {
+            "repo_full_name": "microsoft/torchscale"
+          },
+          {
+            "repo_full_name": "microsoft/SEAL"
+          },
+          {
+            "repo_full_name": "microsoft/DiskANN"
+          }
+        ]
       },
       "full_name": "assemble_and_gate"
     },
