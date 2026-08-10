@@ -603,12 +603,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "28/28",
+            "27/28",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -641,8 +641,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "6.9"
       },
       "epics": [
         {
@@ -811,7 +811,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.9",
-              "done",
+              "pending",
               "The `scripts/` shims retire"
             ],
             [
@@ -3433,7 +3433,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 10:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-10 10:32 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5320,9 +5320,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "done",
+          "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 28,
+          "done": 27,
           "total": 28
         },
         {
@@ -5687,7 +5687,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "28/28",
+        "progress": "27/28",
         "complete": 14,
         "of": 14
       },
@@ -12343,7 +12343,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "5 complete (atlas, doctor, herald, scribe, warden); 3 building (marshal, mason, steward)",
+        "gate": "4 complete (atlas, herald, scribe, warden); 4 building (doctor, marshal, mason, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -13022,7 +13022,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 6.9",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -13163,7 +13163,7 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 212,
+    "open": 213,
     "done": 21,
     "triaged": 143,
     "bySeverity": {
@@ -13171,7 +13171,7 @@ window.DASHBOARD_DATA = {
       "high": 1,
       "medium": 2,
       "low": 21,
-      "unspecified": 188
+      "unspecified": 189
     },
     "projects": [
       {
@@ -13592,7 +13592,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 50,
+        "open": 51,
         "done": 9,
         "triaged": 25,
         "entries": [
@@ -14007,6 +14007,13 @@ window.DASHBOARD_DATA = {
             "title": "Follow-up review still recommended for 3-5-idle-strand-detection after the damping cap was spent",
             "status": "open",
             "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-4-14",
+            "title": "source_spec: `spec-4-14-the-failed-story-safety-net-is-reported.md`",
+            "status": "open",
+            "severity": "unspecified",
             "triaged": false
           }
         ]
@@ -14902,15 +14909,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "doctor",
-      "story": "6.10",
-      "epoch": 1786348119,
-      "sha": "96e8c67ed",
-      "subject": "Merge bmad-loop/20260809-195207-7471/6-10-independence-is-structural-for-every-source into loop/pyforge-doctor (bmad-loo"
+      "station": "marshal",
+      "story": "4.14",
+      "epoch": 1786356151,
+      "sha": "11461c316",
+      "subject": "Merge bmad-loop/20260809-231524-abb9/4-14-the-failed-story-safety-net-is-reported into loop/pyforge-marshal (bmad-loop)"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-10 10:04 UTC",
-    "generatedEpoch": 1786356247
+    "generatedAt": "2026-08-10 10:32 UTC",
+    "generatedEpoch": 1786357946
   },
   "storySpecs": [
     {
@@ -14921,7 +14928,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 28,
+      "done": 27,
       "tracked": 28,
       "gap": 0
     },
@@ -15106,6 +15113,24 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [],
+        "done": 27,
+        "backlog": 1,
+        "blocked": 0,
+        "total": 28,
+        "next": "6-9-the-scripts-shims-retire",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "6-9-the-scripts-shims-retire"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "atlas",
         "project": "pyforge-atlas",
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
@@ -15127,22 +15152,6 @@ window.DASHBOARD_DATA = {
         "backlog": 0,
         "blocked": 0,
         "total": 46,
-        "next": "",
-        "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
-      },
-      {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [],
-        "done": 28,
-        "backlog": 0,
-        "blocked": 0,
-        "total": 28,
         "next": "",
         "blockedKeys": [],
         "backlogKeys": [],
@@ -15204,8 +15213,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 266,
-      "backlog": 68,
+      "done": 265,
+      "backlog": 69,
       "blocked": 1,
       "total": 335
     }
@@ -15224,11 +15233,11 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 28,
-        "done": 28,
+        "done": 27,
         "blocked": 0,
         "epics": 6,
-        "epicsDone": 6,
-        "complete": true
+        "epicsDone": 5,
+        "complete": false
       },
       {
         "key": "herald",
@@ -15287,10 +15296,10 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 335,
-      "done": 266,
+      "done": 265,
       "blocked": 1,
       "epics": 64,
-      "epicsDone": 52
+      "epicsDone": 51
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`)."
   }
