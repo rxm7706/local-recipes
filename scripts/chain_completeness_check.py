@@ -75,14 +75,19 @@ DEFERRED_SPECS: dict[str, str] = {
         "gate; decomposing the whole rebuild before that spike would plan work nobody "
         "has shown is possible",
     "spec-secure-live-dashboards":
-        "shape undecided by design: its first two open questions ask WHERE the pattern "
-        "lives (steward subcommand vs library vs template repo) and whether it PROVIDES "
-        "the RLS pipeline or merely VERIFIES an acceptable one. Those two bound every "
-        "capability in it — a subcommand that scaffolds decomposes into completely "
-        "different stories than a library an adopter imports — so epics written now would "
-        "be rewritten by the architecture phase. Seeded 2026-08-09 at the operator's "
-        "explicit instruction to produce the Spec and nothing more. Revisit after "
-        "bmad-architecture settles the packaging question",
+        "packaging IS now settled — the 2026-08-09 architecture run answered all six open "
+        "questions (AD-1 library + subcommand split on the process boundary, AD-2 the "
+        "library provides while the subcommand verifies), so the ORIGINAL reason for this "
+        "entry has expired and the Spec moved to `ready`. It stays deferred for a new and "
+        "narrower reason: one dependency question upstream of it is still open. The pattern "
+        "adds django/channels/daphne/asgiref to Steward, and `pyforge-container` composes "
+        "the eight station features BY NAME, so those land in the whole-Guild image "
+        "automatically. Whether they belong in `pyforge-steward` or in a "
+        "`pyforge-steward[dashboard]` extra is decided by the pending unified-container "
+        "architecture, and the answer changes the stories materially — a story that adds an "
+        "optional extra is not the story that adds a base dependency. Revisit once that "
+        "architecture lands AND steward Epic 8 completes; steward already carries two open "
+        "epics and a third would only sit in backlog",
 }
 
 

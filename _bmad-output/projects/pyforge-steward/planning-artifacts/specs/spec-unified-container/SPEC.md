@@ -1,6 +1,17 @@
 ---
 spec: unified-container
-status: draft
+# SHIPPED 2026-08-09: steward Epic 7 "The one-container Guild" closed 5/5, and the
+# CAP -> story mapping is one-to-one — CAP-1 -> 7-1, CAP-2 -> 7-2, CAP-3 -> 7-3,
+# CAP-4 -> 7-4, CAP-5 -> 7-5 (landed in PR #372). Every capability this contract
+# names is delivered and on main.
+#
+# The four open_questions below stay OPEN on purpose and do NOT contradict
+# `shipped`. They are forward scope beyond the five capabilities, not unfulfilled
+# contract: Q2 says "decide at epic time" and Q4 says Mode I's design "is out of
+# scope". Mode L is what shipped. Mode I, the two-tier split, and the
+# baked-vs-bind-mount default are a later revision or a new Spec, not a debt
+# against this one.
+status: shipped
 owner-dream: docs/dreams/unified-container.md
 surface:
   - Containerfile                     # multi-stage: pixi-install lean env -> checkout at /pyforge -> entrypoint marshal
