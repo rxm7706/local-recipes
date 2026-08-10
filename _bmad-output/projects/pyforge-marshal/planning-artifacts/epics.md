@@ -11,8 +11,8 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 12
-storyCount: 86  # 2026-08-08: epics-genesis-installer.md (E7-E12, 36 stories) merged in; verified against sprint-status-ledger.yaml. Was 50 (E1-E6), itself corrected 2026-08-01 from an original 40.
+epicCount: 13
+storyCount: 103  # 2026-08-08: epics-genesis-installer.md (E7-E12, 36 stories) merged in; verified against sprint-status-ledger.yaml. Was 50 (E1-E6), itself corrected 2026-08-01 from an original 40.
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -93,7 +93,7 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E4** | Landing with a durable paper trail | The operator can land a wave and have every merged story's spec survive teardown, automatically | 15 | ~10 days |
 | **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 7 | ~5 days |
 | **E6** | Portability proven | The operator can run the method on another agent and hold a dated artifact proving it | 9 | ~12 days |
-| **E7** | Foundation & the write guard | The seed installer has a package, an error taxonomy, and a write primitive nothing can route around | 6 | ~7 days |
+| **E7** | Foundation & the write guard | The seed installer has its module tree, an error taxonomy, and a write primitive nothing can route around | 6 | ~7 days |
 | **E8** | The managed-region engine | A team's own file can carry a tool-owned span that upgrades without touching the rest | 5 | ~8 days |
 | **E9** | Detect & plan | An operator can see exactly what would change before anything is written | 6 | ~9 days |
 | **E10** | Materialize & the core verbs | `marshal seed check` / `adopt` / `init` work, each the previous plus one capability | 7 | ~12 days |
@@ -1432,7 +1432,7 @@ So that a provisioned home is reproducible in the one respect it currently is no
 
 ## Epic 7: Foundation & the Write Guard
 
-**Goal:** The package skeleton, the exit-code taxonomy, the single write primitive with its
+**Goal:** The seed module tree (inside `pyforge-marshal`), the exit-code taxonomy, the single write primitive with its
 never-write guard, the manifest schema and loader, the actual V1 model manifest, and the
 Copier fit spike. **Nothing else can be built safely until the guard exists** — every
 subsequent component assumes writes are already policed.
@@ -1443,41 +1443,44 @@ citations were mechanically re-issued this date from the architecture's recorded
 mapping (satellite `FR1..FR62` → `FR-66..FR-127`, `AD-01..15` → `AD-51..65`; 195 references;
 the retired `NFR-O1` → `NFR-12` per the PRD's own retirement row; S-12.5's typer/rich AC
 re-issued to the *amended* AD-51, which forbids what the original ordered). **The `genesis`
-naming contradiction is architecture-INTERNAL, not story-vs-spec**: Part II's preamble
-retires the name and AD-70 mandates one argparse tree — but **AD-64 and FR-118 still
-mandate `pyforge-genesis` / `genesis = pyforge.genesis.cli:main` verbatim**, and Story 7.1
-faithfully transcribes AD-64. Do not dispatch 7.1 (or any story binding the
-package/module/CLI name) until `bmad-correct-course` resolves the architecture's own
-split — the session must re-issue **AD-64, FR-118, and Part II's body text** along with the
-story ACs; re-issuing the stories against the current upstream would re-transcribe the name
-being removed. 8-5 stays correctly blocked on its cross-epic dep (S-10.2).
+naming contradiction (architecture-internal: the original AD-64/FR-118 vs Part II's
+retirement) is RESOLVED — 2026-08-10 correct-course, operator decision: the seed installer
+lives INSIDE `pyforge-marshal`.** AD-64 re-issued (no new package; `pyforge.marshal.seed`
+subpackage; `marshal seed <verb>` on the shipped tree; templates as package data), FR-118
+re-issued, Part II's binding names re-issued (state `.marshal/seed-state.yml`), Story 7.1
+re-scoped to the seed module tree + subparser stub, S-12.1's wiring ACs re-issued, and
+every E7-E12 story now carries a `Surface:` line. Prose "Genesis" survives only as the
+capability's satellite-era name and binds nothing. **The block is dispatchable** (order:
+7.1 → 7.6 spike gate → E8..E12); 8-5 stays correctly blocked on its cross-epic dep
+(S-10.2).
 
-### Story 7.1: Package skeleton as a pixi workspace member
+### Story 7.1: The seed module tree inside pyforge-marshal
 
-As the Genesis builder,
-I want a buildable `pyforge-genesis` package at `src/shared/packages/pyforge-genesis/`,
-So that every later story has a stable, importable home that matches the repo's existing
-pyforge packaging convention.
+As the seed-installer builder,
+I want the `pyforge.marshal.seed` subpackage scaffolded inside the existing `pyforge-marshal`
+member with the `seed` noun group stubbed on the shipped argparse tree,
+So that every later story has a stable, importable home with no new package, no second
+binary, and no revival of the retired `genesis` name (re-issued 2026-08-10, correct-course;
+amended AD-64/AD-70).
 
-**Type:** infra • **Effort:** S • **Deps:** none • **FR/AD:** AD-64, NFR-C1, NFR-C4
+**Type:** infra • **Effort:** S • **Deps:** none • **FR/AD:** AD-64 (as re-issued), AD-70, NFR-C1, NFR-C4
+**Surface:** `cli/seed.py`, `seed/__init__.py`, `tests/unit/test_seed_scaffold.py`
 
 **Acceptance Criteria:**
 
-**Given** the repo's pixi workspace root
-**When** the developer creates the member package and runs the test task
-**Then** `pyproject.toml` declares `name = "pyforge-genesis"`, `requires-python = ">=3.12"`,
-MIT license, `[tool.hatch.build.targets.wheel] packages = ["src/pyforge"]`, and
-`[project.scripts] genesis = "pyforge.genesis.cli:main"`
-**And** the member `pixi.toml` has a `[package]` table with `pixi-build-python` backend and
-**no `[workspace]` table** (root owns workspace config)
-**And** `import pyforge.genesis` succeeds alongside `import pyforge.warden` in the same
-environment (namespace coexistence, NFR-C4)
-**And** the module tree from architecture § 4 exists with `__init__.py` stubs
-**And** `tests/{unit,integration,oracle,meta}/` exist with one passing smoke test
-**And** ruff + pyright are clean on the skeleton
+**Given** the existing `pyforge-marshal` workspace member
+**When** the developer scaffolds the seed home and runs the member's test task
+**Then** `src/pyforge/marshal/seed/` exists with the architecture § 4 module tree as
+`__init__.py` stubs (model/, state/, regions/, detect/, plan/, apply/, engine/, derive/,
+migrate/, verbs/, templates/)
+**And** `marshal seed` registers as a noun-group subparser on the shipped argparse tree
+(AD-70) whose verbs report not-implemented cleanly — no new console script, no typer
+**And** `import pyforge.marshal.seed` succeeds in the lean `pyforge-marshal` env
+**And** the existing suite stays green with one added scaffold smoke test
+**And** ruff + pyright are clean on the new tree
 
-> Full root-`pixi.toml` wiring (feature, environment, tasks, `environment.yaml` regeneration)
-> lands in S-12.1; this story adds only what is needed to import and test locally.
+> Root-`pixi.toml` wiring (the `copier` dependency, gates, `environment.yaml`) lands in
+> S-12.1; this story adds only what imports and tests locally.
 
 ### Story 7.2: Error taxonomy and exit codes
 
@@ -1487,10 +1490,11 @@ So that automation can distinguish "repo is non-conformant" from "you gave me ba
 from "Genesis broke."
 
 **Type:** foundation • **Effort:** XS • **Deps:** S-7.1 • **FR/AD:** FR-126, P-10
+**Surface:** `seed/errors.py`, `tests/unit/test_seed_errors.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
-**Given** `pyforge.genesis.errors`
+**Given** `pyforge.marshal.seed.errors`
 **When** any verb fails
 **Then** exactly one exception type from a closed hierarchy is raised, each mapped to a
 distinct exit code: `0` success · `1` conformance failure (HARD findings) · `2` usage/argument
@@ -1510,6 +1514,7 @@ BMAD installer files) is structurally unreachable rather than merely policy.
 
 **Type:** foundation • **Effort:** M • **Deps:** S-7.2 • **FR/AD/P:** FR-71, FR-100, AD-61,
 NFR-R4, P-01
+**Surface:** `seed/fs.py`, `tests/unit/test_seed_fs.py`, `tests/meta/` (never-write proof) — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1535,6 +1540,7 @@ So that adding a model artifact never requires an engine code change.
 
 **Type:** foundation • **Effort:** M • **Deps:** S-7.2 • **FR/AD/P:** FR-66, FR-67, FR-68, FR-70,
 FR-71, AD-55, A-02, A-05, NFR-M1, P-11
+**Surface:** `seed/model/manifest.py`, `seed/model/version.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1562,6 +1568,7 @@ I want the operating model declared completely and correctly,
 So that what Genesis installs is exactly the model this repo proved.
 
 **Type:** content • **Effort:** L • **Deps:** S-7.4 • **FR/AD:** FR-66, FR-71, FR-118, PRD
+**Surface:** `seed/templates/manifest.yaml`, `seed/model/artifact.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 § Extraction Manifest
 
 **Acceptance Criteria:**
@@ -1594,6 +1601,7 @@ I want the five load-bearing Copier behaviors proven on 9.17 before E10 is built
 So that a wrong assumption changes the design now rather than after seven stories depend on it.
 
 **Type:** spike • **Effort:** S • **Deps:** S-7.1 • **FR/AD:** AD-52, AD-54, A-04, FR-120
+**Surface:** `seed/engine/copier.py` under `src/pyforge/marshal/`; spike report in marshal planning-artifacts
 
 **Acceptance Criteria:**
 
@@ -1602,7 +1610,7 @@ So that a wrong assumption changes the design now rather than after seven storie
 **Then** `run_copy(..., pretend=True)` performs **zero writes** and returns a usable result
 **And** `skip_if_exists` preserves a pre-existing file while creating its siblings
 **And** `data=` combined with `defaults=True` fully suppresses interactive prompting
-**And** the answers-file path is template-configurable to `.genesis/.copier-answers.yml`
+**And** the answers-file path is template-configurable to `.marshal/.copier-answers.yml`
 (**if not**, AD-52's fallback triggers and the finding is recorded in the story's dev notes)
 **And** `run_update` with `vcs_ref` orders correctly against PEP 440 tags
 **And** the spike's findings are written into the story record; any failure raises a
@@ -1625,12 +1633,13 @@ I want one canonical marker grammar rendered in the right comment syntax,
 So that regions are unambiguous, greppable, and self-describing.
 
 **Type:** foundation • **Effort:** S • **Deps:** S-7.4 • **FR/AD:** FR-108, FR-110, AD-53
+**Surface:** `seed/regions/markers.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
 **Given** the marker grammar
-`<open> genesis:begin region=<name> model-version=<semver> sha=<8-hex> <close>` and its
-matching `genesis:end`
+`<open> marshal-seed:begin region=<name> model-version=<semver> sha=<8-hex> <close>` and its
+matching `marshal-seed:end`
 **When** a region is rendered for a given file
 **Then** the comment style is selected from the registry by the artifact's declared `format`
 (**never sniffed** from content): `html` (`<!-- … -->`) for `.md`; `hash` (`# …`) for
@@ -1648,6 +1657,7 @@ I want to locate every managed region in a file precisely and refuse malformed o
 So that substitution operates on a span that is provably correct.
 
 **Type:** foundation • **Effort:** M • **Deps:** S-8.1 • **FR/AD/P:** FR-113, AD-53, P-06
+**Surface:** `seed/regions/parse.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1673,6 +1683,7 @@ So that a half-merged or conflict-marked file is not representable.
 
 **Type:** foundation • **Effort:** M • **Deps:** S-8.2, S-7.3 • **FR/AD/P:** FR-109, NFR-R3,
 P-06, P-01
+**Surface:** `seed/regions/apply.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1697,6 +1708,7 @@ I want to insert a region into a pre-existing file at a declared anchor,
 So that a team's `CLAUDE.md` gains the model content without Genesis guessing at structure.
 
 **Type:** feature • **Effort:** M • **Deps:** S-8.2, S-8.3 • **FR/AD:** FR-111, AD-56
+**Surface:** `seed/regions/apply.py`, `seed/regions/parse.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1722,6 +1734,7 @@ I want deleting the markers to be a permanent, greppable opt-out,
 So that I can diverge deliberately without fighting the tool every update.
 
 **Type:** feature • **Effort:** S • **Deps:** S-8.4, S-10.2 • **FR/AD:** FR-112, AD-58
+**Surface:** `seed/regions/parse.py`, `seed/state/store.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1749,6 +1762,7 @@ I want every conformance problem expressed as a typed finding with a documented 
 So that failures are actionable without reading Genesis's source.
 
 **Type:** foundation • **Effort:** S • **Deps:** S-7.2 • **FR/AD/P:** FR-90, AD-54, NFR-M3, P-10
+**Surface:** `seed/detect/findings.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1773,6 +1787,7 @@ I want each manifest artifact classified against the target repo,
 So that the plan reflects what is actually there rather than what the model assumes.
 
 **Type:** feature • **Effort:** M • **Deps:** S-7.4, S-8.2, S-9.1 • **FR/AD/P:** FR-80, P-03
+**Surface:** `seed/detect/inventory.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1785,7 +1800,7 @@ running detect against a read-only filesystem mount (or an equivalent write-bloc
 **And** the repo tree is walked **once**, with results cached for the run (NFR-P1/P2)
 **And** `.git/`, `node_modules/`, `.pixi/`, and gitignored paths are excluded from the walk
 except where an artifact explicitly targets them
-**And** detect works on a repo missing `.genesis/` entirely (first-ever adopt)
+**And** detect works on a repo missing `.marshal/` entirely (first-ever adopt)
 **And** detect returns a structure sufficient for both plan building and finding emission —
 no second pass required
 
@@ -1796,6 +1811,7 @@ I want a precise signal that a tool-owned artifact was hand-edited,
 So that Genesis refuses rather than silently overwriting a human's change.
 
 **Type:** feature • **Effort:** S • **Deps:** S-9.2, S-8.2 • **FR/AD/P:** FR-106, FR-86, P-07
+**Surface:** `seed/detect/hashes.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1816,6 +1832,7 @@ I want it recognized, recorded, and left completely alone,
 So that adopting the model never destroys work still in flight.
 
 **Type:** feature • **Effort:** S • **Deps:** S-9.2 • **FR/AD:** FR-81, AD-59
+**Surface:** `seed/detect/inventory.py`, `seed/detect/findings.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1835,6 +1852,7 @@ I want an unclassified artifact to be a build failure,
 So that the model's coverage cannot silently lapse the way undocumented conventions do.
 
 **Type:** feature • **Effort:** S • **Deps:** S-7.5, S-9.1 • **FR/AD:** FR-69, SC-10
+**Surface:** `seed/detect/inventory.py`, `seed/model/manifest.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1858,12 +1876,13 @@ So that "review then apply" is a real gate rather than a printed summary.
 
 **Type:** feature • **Effort:** M • **Deps:** S-9.2, S-9.3, S-9.4 • **FR/AD/P:** FR-82, AD-57,
 NFR-12, P-04, P-05
+**Surface:** `seed/plan/types.py`, `seed/plan/build.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
 **Given** a detect result
 **When** the plan builder runs
-**Then** it emits a `Plan` dataclass serializable to `.genesis/plan.json`
+**Then** it emits a `Plan` dataclass serializable to `.marshal/plan.json`
 **And** every `Action` names: artifact id, class, current state, target state, target path,
 chosen anchor (where applicable), and a rationale string (P-05)
 **And** the plan carries a `repo_fingerprint` = git HEAD + dirty flag + per-artifact content
@@ -1871,7 +1890,7 @@ hashes for every artifact it names
 **And** an empty plan (zero actions) is a first-class, valid result — the idempotence signal
 (AD-60)
 **And** the plan is round-trippable: serialize → load → identical
-**And** the plan file is written to `.genesis/plan.json` and is covered by the model's own
+**And** the plan file is written to `.marshal/plan.json` and is covered by the model's own
 `.gitignore` region; `--plan-out <path>` redirects it
 **And** actions are ordered deterministically (by artifact id) so two runs produce identical
 plan bytes
@@ -1893,6 +1912,7 @@ public-API-only rule is enforceable.
 
 **Type:** foundation • **Effort:** M • **Deps:** S-7.6, S-7.3 • **FR/AD/P:** FR-118, FR-119, FR-120,
 FR-121, FR-101, NFR-S1, NFR-S3, A-04, P-02
+**Surface:** `seed/engine/copier.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1922,12 +1942,13 @@ hours with the `bmad-switch` marker.
 
 **Type:** foundation • **Effort:** M • **Deps:** S-7.3 • **FR/AD/P:** FR-102, FR-103, FR-104, FR-105,
 FR-106, FR-107, AD-52, AD-58, P-08
+**Surface:** `seed/state/schema.json`, `seed/state/store.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
-**Given** `.genesis/state.yml`
+**Given** `.marshal/seed-state.yml`
 **When** state is written
-**Then** it contains `model_version`, `genesis_version`, `adopted_at`, `last_update`, `mode`,
+**Then** it contains `model_version`, `seed_model_version`, `adopted_at`, `last_update`, `mode`,
 `agents[]`, `managed[]` (id, path, class, body_sha, inserted_region_span), `skips[]`,
 `legacy[]`, `migrations_applied[]`, `opted_out[]`
 **And** it carries a prominent do-not-hand-edit header
@@ -1949,6 +1970,7 @@ So that an interrupted install never leaves a half-configured repo.
 
 **Type:** feature • **Effort:** M • **Deps:** S-10.1, S-10.2, S-8.3, S-9.6 • **FR/AD/P:** FR-83,
 NFR-R1, NFR-S3, P-04, P-07
+**Surface:** `seed/apply/run.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1972,6 +1994,7 @@ So that git remains a complete undo and no hand-edit is ever silently discarded.
 
 **Type:** feature • **Effort:** S • **Deps:** S-10.3, S-9.3 • **FR/AD:** FR-85, FR-86, FR-87,
 NFR-R2, SC-04, SC-05
+**Surface:** `seed/apply/run.py`, `seed/verbs/` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -1996,13 +2019,14 @@ So that a repo cannot silently drift from the model it installed.
 
 **Type:** feature • **Effort:** M • **Deps:** S-9.6, S-9.1, S-10.2 • **FR/AD:** FR-88, FR-89,
 FR-90, FR-91, FR-92, FR-93, NFR-P1
+**Surface:** `seed/verbs/check.py`, `cli/seed.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
 **Given** an adopted repo
 **When** `marshal seed check` runs
 **Then** it performs detect + plan and **never writes** — including not writing state, not
-writing `plan.json`, and not creating `.genesis/` (FR-88), asserted against a write-blocking
+writing `plan.json`, and not creating `.marshal/` (FR-88), asserted against a write-blocking
 fixture
 **And** it exits non-zero on any HARD finding; `--strict` additionally fails on DRIFT (FR-89)
 **And** `--json` emits the full findings report, stable and CI-annotatable (FR-91)
@@ -2023,6 +2047,7 @@ So that adoption is a reviewable, revertible, and repeatable operation.
 
 **Type:** feature • **Effort:** L • **Deps:** S-10.3, S-10.4, S-10.5, S-8.4 • **FR/AD:** FR-79,
 FR-80, FR-81, FR-82, FR-83, FR-84, FR-87, AD-60
+**Surface:** `seed/verbs/adopt.py`, `cli/seed.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2049,6 +2074,7 @@ So that day zero already has the tiers, the contract, the wiring, and a Dream to
 
 **Type:** feature • **Effort:** M • **Deps:** S-10.6 • **FR/AD:** FR-72, FR-73, FR-74, FR-75, FR-76,
 FR-77, FR-78
+**Surface:** `seed/verbs/init.py`, `cli/seed.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2086,6 +2112,7 @@ So that the four adapter files cannot drift from each other or from `AGENTS.md`.
 
 **Type:** feature • **Effort:** M • **Deps:** S-7.5, S-8.4 • **FR/AD:** FR-114, FR-115, FR-116, FR-117,
 AD-63, NFR-M1
+**Surface:** `seed/derive/adapters.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2114,6 +2141,7 @@ So that the index cannot go stale and the marker/symlink desync cannot recur.
 
 **Type:** feature • **Effort:** S • **Deps:** S-11.1 • **FR/AD:** FR (generated-derived class),
 AD-63
+**Surface:** `seed/derive/projects_index.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2138,6 +2166,7 @@ So that a model upgrade is a scripted operation rather than a manual chore in ev
 
 **Type:** feature • **Effort:** M • **Deps:** S-10.3, S-10.2 • **FR/AD/P:** FR-96, FR-97, AD-62,
 SC-07, P-12
+**Surface:** `seed/migrate/registry.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2165,6 +2194,7 @@ So that an upgrade to my repo's governance is never a surprise.
 
 **Type:** feature • **Effort:** M • **Deps:** S-11.3, S-11.1, S-8.3 • **FR/AD:** FR-94, FR-98,
 FR-99, FR-100, FR-101, SC-01
+**Surface:** `seed/verbs/update.py`, `seed/migrate/registry.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2191,6 +2221,7 @@ I want Genesis to tell me which required tools are missing or below floor,
 So that the model's machinery is not installed into an environment that cannot run it.
 
 **Type:** feature • **Effort:** S • **Deps:** S-10.5 • **FR/AD:** FR-95, PRD § Boundaries
+**Surface:** `seed/verbs/check.py` (Doctor delegation seam) — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2214,6 +2245,7 @@ I want the model to describe its own rules,
 So that the conventions are queryable rather than only narrated in prose.
 
 **Type:** feature • **Effort:** S • **Deps:** S-7.4, S-10.2 • **FR/AD:** FR-125, FR-127, D1
+**Surface:** `seed/verbs/explain.py`, `seed/verbs/version.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2244,17 +2276,21 @@ So that it builds as a conda package and its landing does not red the always-on 
 
 **Type:** infra • **Effort:** M • **Deps:** S-7.1, S-11.6 • **FR/AD:** FR-122, AD-64, NFR-C1,
 NFR-C2, NFR-C3, D3
+**Surface:** root `pixi.toml`, `environment.yaml`, `docs/reference/library-llms-full.md`, plus the member's `pixi.toml`/`pyproject.toml`
 
 **Acceptance Criteria:**
 
 **Given** the root `pixi.toml`
 **When** the member is wired in
-**Then** `[feature.pyforge-genesis.dependencies]` declares the path dependency plus
-`hatchling`, `python-build`, and `pytest`, and the member's `[package.run-dependencies]`
-declare `python >=3.12` and `copier >=9.17,<10`
-**And** `[environments] pyforge-genesis = { features = ["pyforge-genesis"],
-no-default-feature = true }` — the lean env bmad-loop worktrees materialize
-**And** `pyforge-genesis-test` and `genesis` tasks exist
+**Then** the engine dependency the S-7.6 spike adopted (Copier `>=9.17,<10` if it passed)
+lands in root `[feature.pyforge-marshal.dependencies]` AND the member's
+`[package.run-dependencies]` AND `pyproject.toml` `dependencies` — the shipped conda
+package and wheel must import standalone (re-issued 2026-08-10 per amended AD-64: no new
+feature, no new member)
+**And** the existing `pyforge-marshal` environment remains the lean env bmad-loop
+worktrees materialize — no `pyforge-genesis` env is ever created
+**And** the existing `pyforge-marshal-test` task covers `tests/**/seed*`; no `genesis`
+task exists
 **And** a version-range sync test asserts the `copier` pin in `pixi.toml` matches the constant
 in `engine/copier.py` (NFR-C2, warden's established pattern)
 **And** the package builds as a conda package **and** as wheel + sdist (FR-122)
@@ -2275,6 +2311,7 @@ the day it appears.
 
 **Type:** test • **Effort:** M • **Deps:** S-10.6, S-11.1, S-11.2 • **FR/AD:** SC-02, NFR-M2,
 AD-60
+**Surface:** `tests/oracle/test_local_recipes_empty_plan.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2299,6 +2336,7 @@ So that the model can be installed behind a firewall with confidence rather than
 
 **Type:** test • **Effort:** S • **Deps:** S-10.7, S-10.5 • **FR/AD:** NFR-A1, NFR-A2, NFR-S2,
 AD-65, P-09, SC-06
+**Surface:** `tests/integration/` (egress counter) — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2323,6 +2361,7 @@ So that a future story cannot quietly violate an invariant the whole design rest
 
 **Type:** test • **Effort:** M • **Deps:** S-10.3, S-11.4 • **FR/AD/P:** P-01–P-12, FR-100, SC-08,
 NFR-R4
+**Surface:** `tests/meta/` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2350,6 +2389,7 @@ So that Genesis is usable unattended and predictable interactively.
 
 **Type:** test • **Effort:** M • **Deps:** S-10.7, S-11.6 • **FR/AD:** FR-123, FR-124, FR-126, NFR-P1,
 NFR-P2, NFR-P3, NFR-12, AD-51, AD-60, SC-03, SC-09
+**Surface:** `tests/integration/`, `cli/seed.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
 
 **Acceptance Criteria:**
 
@@ -2373,6 +2413,7 @@ I want to understand the four verbs, the five classes, and every finding I might
 So that adopting the model does not require reading Genesis's source.
 
 **Type:** docs • **Effort:** S • **Deps:** S-12.5 • **FR/AD:** NFR-M3, D1
+**Surface:** `src/shared/packages/pyforge-marshal/README.md` + the finding-remedy reference doc (docs/)
 
 **Acceptance Criteria:**
 
@@ -2784,7 +2825,7 @@ All 62 FRs (FR-66–FR-127). No FR is deferred out of V1; the deferrals named in
 
 ### Non-Functional Requirements covered
 
-All 20 NFRs (NFR-R1–R4, A1–A2, P1–P3, C1–C4, S1–S3, M1–M3, O1). NFR enforcement concentrates
+All NFRs (NFR-O1 retired 2026-08-08 → NFR-12) (NFR-R1–R4, A1–A2, P1–P3, C1–C4, S1–S3, M1–M3, O1). NFR enforcement concentrates
 in E12, but NFR-R4 (guard at the primitive) is E7 by necessity.
 
 ### Architecture Decisions covered

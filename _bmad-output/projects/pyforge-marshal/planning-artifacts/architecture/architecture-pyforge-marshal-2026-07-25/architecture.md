@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-65 / NFR-1..NFR-14.
 status: final
 created: 2026-07-25
-updated: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
+updated: 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
 # 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
 binds:
@@ -664,7 +664,11 @@ The supervisor's **inputs** are observation-only — it never asks the session h
 **Integrated 2026-08-08.** This was a satellite — *"Satellite: Genesis Installer
 Architecture"* — from its 2026-08-02 consolidation until now. It is no longer a separate
 sub-product: its decisions are Marshal's own, its requirements cite Marshal's own FR
-sequence, and the name `genesis` is retired. The original standalone document remains at
+sequence, and the name `genesis` is retired. *(Naming re-issued 2026-08-10, correct-course:
+every BINDING name is the marshal-seed form — package `pyforge.marshal.seed` inside the
+existing `pyforge-marshal` member, CLI `marshal seed <verb>`, state `.marshal/seed-state.yml`,
+templates as package data. Narrative prose in this Part may still call the capability
+"Genesis", its satellite-era name; that word binds nothing.)* The original standalone document remains at
 `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-genesis-installer-2026-07-25/architecture.md`.
 
 **Namespaces, after integration.** `AD-01`..`AD-15` were already renumbered `AD-51`..`AD-65`
@@ -722,7 +726,7 @@ inputs:
   - "{project-root}/pixi.toml (workspace root)"
 ```
 
-**Architecture Decision Document — pyforge-genesis (Genesis)**
+**Part II body — the seed installer (integrated; formerly the pyforge-genesis satellite — binding names re-issued 2026-08-10 to the marshal-seed form)**
 
 ### 1. Context
 
@@ -734,8 +738,10 @@ CI-shaped), `update` (take a later model version). The model is declared as **da
 manifest), materialized by **Copier** (wrapped through its public API only), and kept
 correct by two engines Copier does not have: a **managed-region** engine that replaces
 marker-delimited spans inside repo-owned files, and a **conformance** engine that
-classifies and reports drift. Distribution: `pyforge-genesis` / `pyforge.genesis` /
-`genesis`, as a pixi workspace member producing a conda package plus wheel/sdist.
+classifies and reports drift. Distribution *(re-issued 2026-08-10, correct-course — operator decision: the seed installer
+lives INSIDE `pyforge-marshal`)*: the `pyforge.marshal.seed` subpackage of the existing
+`pyforge-marshal` workspace member; CLI surface `marshal seed <verb>` on the shipped
+argparse tree (AD-70); no separate package, no second binary.
 
 #### Locked technical decisions (carried from brief + PRD — do not re-discover)
 
@@ -826,7 +832,7 @@ flowchart TD
   FS -.->|guard| GUARD[never-write guard]
 ```
 
-**Every byte written to the target repo passes through `pyforge.genesis.fs`.** The
+**Every byte written to the target repo passes through `pyforge.marshal.seed.fs`.** The
 never-write guard lives there, not at call sites, so no future code path can bypass it
 (NFR-R4). This is the invariant that makes SC-08 provable rather than aspirational.
 
@@ -840,7 +846,7 @@ place with one message.
 
 #### A-05 — Two clocks: CLI version and model version
 
-`genesis_version` moves with releases; `model_version` moves with the operating model.
+`seed_model_version` moves with releases; `model_version` moves with the operating model.
 Migrations are keyed to `model_version` only. A repo can be current on the model and
 behind on the CLI, or vice versa, and both states are legible (FR-92, FR-125).
 
@@ -872,13 +878,12 @@ These bind independently-built stories. Violations are bugs, and each has a test
 #### Directory layout
 
 ```
-src/shared/packages/pyforge-genesis/
-├── pixi.toml                       # [package] — member; NO [workspace] table
-├── pyproject.toml                  # hatchling; packages = ["src/pyforge"]
-├── README.md
-├── src/pyforge/genesis/
+src/shared/packages/pyforge-marshal/          # EXISTING member — SEED OVERLAY ONLY shown below
+# (the member's shipped core/ adapters/ ports/ schemas/ supervisor/ cli/ and tests/contract/
+#  trees are omitted here — this diagram adds only what the seed stories create)
+├── src/pyforge/marshal/cli/seed.py     # the `seed` noun group on the shipped argparse tree (AD-70, AD-51-as-amended)
+├── src/pyforge/marshal/seed/
 │   ├── __init__.py
-│   ├── cli.py                      # typer app; the only presentation layer
 │   ├── errors.py                   # exit-code taxonomy (FR-126)
 │   ├── fs.py                       # THE write primitive + never-write guard
 │   ├── model/
@@ -886,7 +891,7 @@ src/shared/packages/pyforge-genesis/
 │   │   ├── artifact.py             # Artifact, ArtifactClass
 │   │   └── version.py              # model semver, ranges
 │   ├── state/
-│   │   ├── schema.json             # JSON Schema for .genesis/state.yml
+│   │   ├── schema.json             # JSON Schema for .marshal/seed-state.yml
 │   │   └── store.py                # read/validate/write (atomic)
 │   ├── regions/
 │   │   ├── markers.py              # per-format marker registry (FR-110)
@@ -959,12 +964,12 @@ surface — is a *rendering* requirement, not a framework one, and is already me
 is a pure projection of the machine-readable envelope (NFR-12), which is a stronger guarantee
 than `rich` would give. `rich` is not adopted; the plan renderer is an envelope projection.
 
-#### AD-52 — State: **one Genesis-owned file at `.genesis/state.yml`** (resolves Q-18)
+#### AD-52 — State: **one Genesis-owned file at `.marshal/seed-state.yml`** (resolves Q-18)
 
 **Binds:** all state access. **Prevents:** state/answers divergence; hand-edited state.
-**Rule:** Genesis owns `.genesis/state.yml` (git-tracked, FR-107, schema-validated, FR-104).
+**Rule:** Genesis owns `.marshal/seed-state.yml` (git-tracked, FR-107, schema-validated, FR-104).
 Copier's answers file is configured by the in-package template to live at
-`.genesis/.copier-answers.yml` and is **treated as opaque and tool-owned** — Genesis reads it
+`.marshal/.copier-answers.yml` and is **treated as opaque and tool-owned** — Genesis reads it
 never and writes it only via Copier (FR-105). Answers are re-supplied programmatically from
 Genesis state on every Copier call (`data=`), so Genesis state is the single source of truth
 and the answers file is a Copier implementation detail. If the answers-file relocation proves
@@ -976,8 +981,8 @@ unsupported (assumption 5), it stays at the repo root and the rule is otherwise 
 **Rule:** One canonical marker grammar, rendered per comment syntax:
 
 ```
-<open> genesis:begin region=<name> model-version=<semver> sha=<8-hex> <close>
-<open> genesis:end region=<name> <close>
+<open> marshal-seed:begin region=<name> model-version=<semver> sha=<8-hex> <close>
+<open> marshal-seed:end region=<name> <close>
 ```
 
 Registry v1 covers three comment styles — `html` (`<!-- … -->`) for `.md`; `hash` (`# …`)
@@ -1006,7 +1011,7 @@ roughly 85% of that file (`skill_version`, `schema_version`, `mcp_tool_count`, `
 `phase_ids`, `gotcha_max`, `recipe_split`, spec-status, baseline fingerprinting) is
 `local-recipes` factory-specific and meaningless in another repo; only `Finding`,
 `check_coverage`, `check_tier_alignment`, and `check_archive_hygiene` generalize. The two
-detectors coexist: `bmad-drift-check` stays the factory's own detector; `genesis check` is
+detectors coexist: `bmad-drift-check` stays the factory's own detector; `marshal seed check` is
 the model's. **Convergence is a V1.x question, not a V1 dependency** — this removes
 assumption 3 from the critical path.
 
@@ -1016,7 +1021,7 @@ assumption 3 from the critical path.
 **Rule:** `templates/manifest.yaml`, one document, entries keyed by stable **artifact id**
 (P-11). Each entry: `id`, `class`, `path` (jinja-templated on slug), `format` (for hybrid),
 `regions[]` with `anchor`, `since` / `until` model-version bounds, `applies_to` (`init` /
-`adopt` / both), and `rationale` (surfaced by `genesis explain`, FR-127). One file keeps
+`adopt` / both), and `rationale` (surfaced by `marshal seed explain`, FR-127). One file keeps
 coverage (FR-69) a single-pass check and makes the manifest reviewable as a diff — which
 matters, because **the manifest is the product's actual contract**.
 
@@ -1031,18 +1036,18 @@ line. Genesis never infers structure, never inserts inside a fenced code block (
 ``` fences are skipped when matching), and always reports the chosen anchor in the plan so
 the human reviewing the plan can veto placement.
 
-#### AD-57 — The plan artifact: `.genesis/plan.json`, **gitignored by default** (resolves Q-23)
+#### AD-57 — The plan artifact: `.marshal/plan.json`, **gitignored by default** (resolves Q-23)
 
 **Binds:** the plan lifecycle. **Prevents:** stale plans applied against a changed repo;
 plan-file churn in git.
-**Rule:** Plans are written to `.genesis/plan.json` and gitignored by the model's own
+**Rule:** Plans are written to `.marshal/plan.json` and gitignored by the model's own
 `.gitignore` region. A plan records a `repo_fingerprint` (git HEAD + dirty flag + hashes of
 the artifacts it names); `apply` **refuses** a plan whose fingerprint no longer matches
 (P-04's teeth). `--plan-out <path>` writes elsewhere for PR review; `--plan <path>` applies a
 specific plan file. Nx commits `migrations.json`; Genesis does not, because the plan is
 derived and cheap to regenerate while a committed stale plan is a hazard.
 
-#### AD-58 — `genesis eject` is **not built in V1, but state must not preclude it** (resolves Q-24)
+#### AD-58 — `marshal seed eject` is **not built in V1, but state must not preclude it** (resolves Q-24)
 
 **Binds:** the state schema. **Prevents:** a lock-in design that cannot be undone later.
 **Rule:** State records, for every managed artifact, enough to remove Genesis's claim
@@ -1099,19 +1104,23 @@ Gemini, and Copilot files are **whole-file generated-derived** because inspectio
 they are already nothing but per-tool framing around that same table. Adding a fifth agent is
 a manifest entry plus a wrapper template — no engine change (NFR-M1).
 
-#### AD-64 — Packaging clones `pyforge-warden` exactly
+#### AD-64 — No new package: the seed installer ships inside `pyforge-marshal` (re-issued 2026-08-10)
 
-**Binds:** packaging stories. **Prevents:** a divergent third packaging pattern.
-**Rule:** member `pixi.toml` with `[package]`, `pixi-build-python` backend, no `[workspace]`
-table; `pyproject.toml` with hatchling, `packages = ["src/pyforge"]`,
-`genesis = "pyforge.genesis.cli:main"`; root `pixi.toml` gains
-`[feature.pyforge-genesis.dependencies]` (path dependency + hatchling + python-build +
-pytest), task blocks, and
-`pyforge-genesis = { features = ["pyforge-genesis"], no-default-feature = true }`. The lean
-env is mandatory — bmad-loop worktrees materialize it, never the fat `local-recipes` env.
-Touching root `pixi.toml` fires the repo's two always-on PR gates (`maintenance` label +
-regenerated `environment.yaml`) and stales `library-llms-full.md`; all three are acceptance
-criteria on the packaging story, not follow-ups.
+**Binds:** packaging stories (S-7.1, S-12.1). **Prevents:** a second binary, a second
+workspace member for single-consumer code, and the retired `genesis` name surviving in
+packaging metadata.
+**Rule:** the seed installer is the `pyforge.marshal.seed` subpackage of the EXISTING
+`pyforge-marshal` workspace member — no new member `pixi.toml`, no new `pyproject.toml`, no
+new console script (`marshal seed <verb>` renders through the shipped argparse tree per
+AD-70/AD-51-as-amended). Model templates ship as `pyforge-marshal` package data
+(`pyforge/marshal/seed/templates/`, importlib.resources — realizes FR-118). New
+dependencies (`copier`, if S-7.6's spike adopts it) enter `[feature.pyforge-marshal]` in
+root `pixi.toml`; any root-`pixi.toml` change fires the repo's two always-on PR gates
+(`maintenance` label + regenerated `environment.yaml`) and stales `library-llms-full.md` —
+all three are acceptance criteria on the wiring story (S-12.1), not follow-ups. *(The
+original AD-64 — a separate `pyforge-genesis` member cloning `pyforge-warden`'s packaging —
+is superseded; Part II's preamble had already retired the name while this rule still
+mandated it, the contradiction the 2026-08-10 audit flagged.)*
 
 #### AD-65 — Offline by construction, proven by counter
 
@@ -1213,10 +1222,10 @@ bespoke materializer, so this gates rather than accompanies the build.
 - Composable feature modules (adopt a subset of the model) — V1.x; the manifest's
   `applies_to` field is shaped to allow a future `groups[]` without a schema break.
 - `check --fix` — V1.x; requires a fixable/unfixable distinction per finding type.
-- `genesis eject` — V1.x; state is shaped for it (AD-58).
+- `marshal seed eject` — V1.x; state is shaped for it (AD-58).
 - Publishing the model as a separately versioned artifact — V2; `--template` is the seam.
 - Windows parity beyond `init`/`check` — best-effort (NFR-C3).
-- Convergence of `genesis check` and `bmad-drift-check` — explicitly out of V1 (AD-54).
+- Convergence of `marshal seed check` and `bmad-drift-check` — explicitly out of V1 (AD-54).
 
 ---
 

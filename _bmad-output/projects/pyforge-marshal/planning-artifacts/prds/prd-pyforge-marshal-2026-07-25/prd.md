@@ -952,7 +952,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 10. **Q-10 — Serialization of shared Tier-2 writes.** **RESOLVED: decomposed; no mutex engine.** Tracked Tier-2 files are per-worktree copies, serialized by git at the push/PR boundary; the real hazard is semantic lost-update through clean merges of *regenerated* artifacts. Rule: merge append-only inputs, re-derive regenerated outputs on main after landing (an Epic 4 deploy-ordering rule). The genuinely shared canonical Tier-3 store gets an advisory append lock. The journal's two-writer problem is the Spec's F-6, already carried.
 11. **Q-11 — Tool-surface brokering.** **RESOLVED: yes, scoped.** The project's tool surface is declared in the project policy layer; `marshal init` renders a project-scoped `.mcp.json` into the loop home (the adapter-seed pattern); preflight probes resolvability. The user-scoped registry is never touched. Post-MVP, on the portability/adapter surface.
 12. **Q-12 — Escalation knowledge capture.** **RESOLVED: pull model.** Marshal's half is one FR-17 consequence — the resume entry records a reference to the resolving decision. Scribe ingests from run journals; that story is Scribe's backlog. No station writes across the boundary.
-13. **Q-13 — Enterprise plugin seam.** **RESOLVED: dissolved into existing seams; IDE exclusion retained.** Internal MCP servers → the Q-11 tool surface; proprietary/third-party agent CLIs → FR-52 adapter profiles; design bridges → Herald; internal skills → FR-45 projection. Site-wide policy vs the no-fourth-layer constraint resolves at install time — genesis-installer materializes site config into the Marshal-defaults layer, keeping runtime composition three layers and pure. No plugin-registry subsystem.
+13. **Q-13 — Enterprise plugin seam.** **RESOLVED: dissolved into existing seams; IDE exclusion retained.** Internal MCP servers → the Q-11 tool surface; proprietary/third-party agent CLIs → FR-52 adapter profiles; design bridges → Herald; internal skills → FR-45 projection. Site-wide policy vs the no-fourth-layer constraint resolves at install time — the seed installer (then genesis-installer) materializes site config into the Marshal-defaults layer, keeping runtime composition three layers and pure. No plugin-registry subsystem.
 14. **Q-14 — Does Marshal enforce inter-station order?** **RESOLVED (operator, 2026-07-31): Marshal sequences on verdicts it never authors.** Gating reads each station's durable, schema-validated verdict artifact, pinned to the tree revision it judged; Marshal never runs the judge. This *clarifies* the two §8 Non-Goals rather than striking them — "not 'the orchestrator'" targets the engine claim and stands; "verdicts stay independent" bars authorship, not consumption. Verdict reads remove most of the cross-environment invocation-port need; the route-verb surface was the then-queued `spec-one-front-door` derivation's contract — **that Spec landed 2026-08-01** (see Q-15/Q-16 below for what it left open).
 
 **Q-15/Q-16 added 2026-08-01, carried from `spec-one-front-door`'s own two live open questions rather than resolved by invention.**
@@ -1017,6 +1017,9 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 
 ## 15. The seed installer — `marshal seed`
 
+*(Naming re-issued 2026-08-10 — binding names are the marshal-seed form; prose "Genesis"
+is the capability's satellite-era name and binds nothing.)*
+
 **Integrated 2026-08-08.** This section was a satellite — *"Satellite: Genesis Installer
 PRD"*, a second sub-product with its own parallel numbering — from its 2026-08-02
 consolidation until now. It is no longer. The content is Marshal's own, its requirements
@@ -1073,15 +1076,15 @@ distribution:
   cli: "genesis"
 ```
 
-**Product Requirements Document — pyforge-genesis (Genesis)**
+**Part II — the seed installer (integrated; formerly the pyforge-genesis satellite — name retired, re-issued 2026-08-10 to `pyforge.marshal.seed` / `marshal seed <verb>`)**
 
 ### Executive Summary
 
 Genesis packages this repository's proven operating model as an installable tool with
-two verbs — **`genesis init`** (greenfield: a new repository born Dream-first) and
-**`genesis adopt`** (brownfield: layer the model onto an existing repo without disturbing
-what runs) — plus the two verbs that make an install *stay* correct: **`genesis check`**
-(read-only conformance, non-zero exit, CI-runnable) and **`genesis update`** (take a later
+two verbs — **`marshal seed init`** (greenfield: a new repository born Dream-first) and
+**`marshal seed adopt`** (brownfield: layer the model onto an existing repo without disturbing
+what runs) — plus the two verbs that make an install *stay* correct: **`marshal seed check`**
+(read-only conformance, non-zero exit, CI-runnable) and **`marshal seed update`** (take a later
 model version via a reviewable plan and version-ordered migrations).
 
 This PRD resolves the two questions the Dream and the brief left open:
@@ -1107,22 +1110,22 @@ regions inside repo-owned files, and conformance checking.
 
 #### Primary success criterion (the master switch)
 
-**SC-01.** A second repository created by `genesis init` runs a full Dream → spec → epics →
-loop-driven build, and later **takes a model upgrade via `genesis update` with no hand
-edits** — `genesis check` green before and after.
+**SC-01.** A second repository created by `marshal seed init` runs a full Dream → spec → epics →
+loop-driven build, and later **takes a model upgrade via `marshal seed update` with no hand
+edits** — `marshal seed check` green before and after.
 
 #### Supporting metrics (all mechanically testable)
 
 | ID | Criterion | Measured by |
 |---|---|---|
-| SC-02 | `genesis adopt --dry-run` against `local-recipes` at the shipped model version produces an **empty plan** | the reference-oracle test |
-| SC-03 | `genesis adopt` is idempotent — second run ⇒ empty plan, zero files changed | integration test |
-| SC-04 | `genesis adopt` on a hand-edited managed region **refuses and reports**; does not overwrite | integration test |
-| SC-05 | `genesis adopt --apply` on a dirty git worktree refuses | integration test |
-| SC-06 | `genesis init` + `genesis check` green **offline, zero network calls** | egress-counter test (warden's established pattern) |
+| SC-02 | `marshal seed adopt --dry-run` against `local-recipes` at the shipped model version produces an **empty plan** | the reference-oracle test |
+| SC-03 | `marshal seed adopt` is idempotent — second run ⇒ empty plan, zero files changed | integration test |
+| SC-04 | `marshal seed adopt` on a hand-edited managed region **refuses and reports**; does not overwrite | integration test |
+| SC-05 | `marshal seed adopt --apply` on a dirty git worktree refuses | integration test |
+| SC-06 | `marshal seed init` + `marshal seed check` green **offline, zero network calls** | egress-counter test (warden's established pattern) |
 | SC-07 | A simulated breaking model change (model v1 → v2) is absorbed by a migration in an installed repo with no manual edits | migration integration test |
-| SC-08 | `genesis update` **cannot** write to `docs/dreams/**` or `**/planning-artifacts/**` | write-scope guard test |
-| SC-09 | `genesis init` to a working Dream-first repo in **< 5 minutes** wall-clock (vs. the 10-phase manual setup plan) | timed smoke test |
+| SC-08 | `marshal seed update` **cannot** write to `docs/dreams/**` or `**/planning-artifacts/**` | write-scope guard test |
+| SC-09 | `marshal seed init` to a working Dream-first repo in **< 5 minutes** wall-clock (vs. the 10-phase manual setup plan) | timed smoke test |
 | SC-10 | 100% of model artifacts in the manifest are classified; no artifact is unclassified | manifest-coverage test (mirrors `bmad_drift_check.py`'s `uncovered` HARD finding) |
 
 #### Counter-metrics (watch for success that is actually failure)
@@ -1151,7 +1154,7 @@ Genesis pauses or rescopes if, at V1 completion:
 #### J1 — "Start a new pyforge sibling, Dream-first from day zero"
 
 A maintainer is spinning `pyforge-scribe` out of the monorepo into its own repository. He
-runs `genesis init ../pyforge-scribe --slug pyforge-scribe --agents claude,cursor`. Genesis
+runs `marshal seed init ../pyforge-scribe --slug pyforge-scribe --agents claude,cursor`. Genesis
 materializes `docs/dreams/` (README, frontmatter contract, one seed Dream stub named for
 the slug), the tier layout with its gitignore rules, `AGENTS.md` carrying the portability
 contract, `CLAUDE.md` and `.cursor/rules/specs.mdc` generated from that contract, the BMAD
@@ -1163,28 +1166,28 @@ Total elapsed before the first Dream: under five minutes, versus reading ten pha
 #### J2 — "Adopt the model into a repo that already ships"
 
 A team has a working data-platform monorepo — CI, releases, an existing `CLAUDE.md`, and a
-`docs/adr/` convention they like. They run `genesis adopt` (dry-run by default). Genesis
+`docs/adr/` convention they like. They run `marshal seed adopt` (dry-run by default). Genesis
 prints a plan: 9 artifacts absent (will create), 3 present-conformant (skip), 1
 present-divergent (`CLAUDE.md` — will insert a managed region at an anchor, leaving all
 existing content), 1 present-legacy (`docs/adr/` — recorded, preserved, untouched). Nothing
-has been written. They review the plan in a PR, run `genesis adopt --apply`, and their
+has been written. They review the plan in a PR, run `marshal seed adopt --apply`, and their
 build still works because Genesis never touched a file it did not name.
 
 #### J3 — "Take a model upgrade six weeks later"
 
 The model ships v1.3.0: the durable-story-specs convention adds a `planning-artifacts/specs/`
 rule to the tier table, and `bmad-switch` gains an atomicity fix. An installed repo runs
-`genesis check` in CI, which fails with `model-behind: repo at 1.2.0, available 1.3.0`. The
-maintainer runs `genesis update` — a plan is written naming two migrations and three files.
-He reviews it, runs `genesis update --run`. The tiers managed region in `AGENTS.md` is
+`marshal seed check` in CI, which fails with `model-behind: repo at 1.2.0, available 1.3.0`. The
+maintainer runs `marshal seed update` — a plan is written naming two migrations and three files.
+He reviews it, runs `marshal seed update --run`. The tiers managed region in `AGENTS.md` is
 replaced; `scripts/bmad-switch` is regenerated wholesale; the derived adapters are
 recomputed. His Dreams, PRDs, and epics are untouched — structurally unreachable from the
-update path. `genesis check` is green.
+update path. `marshal seed check` is green.
 
 #### J4 — "The model and the repo disagree"
 
 An engineer hand-edits the tiers block inside `AGENTS.md` because a rule did not fit. Next
-CI run, `genesis check` reports `managed-region-modified: AGENTS.md#tiers (hash mismatch)`
+CI run, `marshal seed check` reports `managed-region-modified: AGENTS.md#tiers (hash mismatch)`
 and exits non-zero. He has three sanctioned moves: revert; delete the markers (a deliberate,
 greppable opt-out that Genesis records and thereafter respects); or add the path to
 `skips[]`. What he cannot do is diverge silently — which is the entire point, because the
@@ -1193,7 +1196,7 @@ agents reading that file would otherwise follow a rule the model does not have.
 #### J5 — "Verify the model is still extractable"
 
 A CFE retro lands a convention change directly in `local-recipes` (out-of-band, as always
-happens). CI runs `genesis adopt --dry-run` against the repo itself. The plan is non-empty:
+happens). CI runs `marshal seed adopt --dry-run` against the repo itself. The plan is non-empty:
 the model in the package no longer matches the repo it was extracted from. That is the
 signal to update the Genesis templates — the drift is caught the day it appears rather than
 at the next install.
@@ -1251,7 +1254,7 @@ FR-66–FR-71 encode and SC-10 tests.
 > Classify each artifact by **who must be able to change it** and **how an installed repo
 > takes a later model upgrade for it.**
 
-| Class | Definition | Behavior on `genesis update` | Behavior on hand-edit |
+| Class | Definition | Behavior on `marshal seed update` | Behavior on hand-edit |
 |---|---|---|---|
 | **REFERENCED** | Not materialized. The repo depends on it by version range; it lives upstream. | nothing in the repo changes | n/a |
 | **COPIED · MANAGED** | Materialized, **tool-owned**. The repo should not hand-edit it. | regenerated wholesale | `check` reports; `update` refuses without `--force` |
@@ -1285,7 +1288,7 @@ Genesis **verifies presence and floor** for these (FR-95) and never installs the
 | `scripts/bmad_drift_check.py` (the detector) | must run locally, offline, in the adopting repo's CI; this is the conformance engine and it evolves with the model |
 | `docs/dreams/README.md` | the Tier-0 contract itself — the Dream frontmatter schema, the flow diagram, the conventions |
 | The model's own rule text (tier tables, portability contract) | delivered *into* hybrid files, not as standalone files — see HYBRID |
-| CI workflow that runs `genesis check` + the detector | mechanical; no reason for a repo to own it |
+| CI workflow that runs `marshal seed check` + the detector | mechanical; no reason for a repo to own it |
 | `.gitignore` model block | the tier rules made executable (`_bmad-output/projects/*/implementation-artifacts/`, the two symlinks, `_bmad/custom/.active-project`, `.bmad-loop/runs/`) — delivered as a managed region in a repo-owned `.gitignore` |
 
 ##### COPIED · SEEDED
@@ -1359,7 +1362,7 @@ SC-10's coverage test treats that as an explicit, enumerated state rather than a
 | Write scope | a repo's **structure and conventions** | a repo's **executions** |
 | Owns | the tier layout, AGENTS.md family, BMAD multi-project wiring, the deck-family skeleton, the conformance detector | bmad-loop runs, gates, escalation, graduated autonomy, worktree lifecycle, project switching **at run time** |
 | Lifecycle | install-time and upgrade-time | run-time |
-| `init` semantics | `genesis init` creates **the repository** the specs will live in | `marshal init --spec …` initializes **a build** from a spec |
+| `init` semantics | `marshal seed init` creates **the repository** the specs will live in | `marshal init --spec …` initializes **a build** from a spec |
 | `scripts/bmad-switch`, `scripts/bmad-loop-worktree` | **delivers** them (MANAGED class) and keeps them current | **runs** them; owns their behavior and evolution |
 | `.bmad-loop/policy.toml` | **seeds** it | **owns and rewrites** it per project |
 
@@ -1371,7 +1374,7 @@ never forks them.
 
 #### Genesis ↔ Doctor
 
-`genesis check` asks *"does this repo conform to the model?"*; `doctor check` asks *"is this
+`marshal seed check` asks *"does this repo conform to the model?"*; `doctor check` asks *"is this
 machine able to run the factory?"* Genesis's REFERENCED-dependency verification (FR-95)
 overlaps Doctor's pre-flight charter, so: **Genesis performs a minimal presence-and-floor
 probe with no dependency on Doctor** (it must work in a repo that has not adopted Doctor),
@@ -1401,11 +1404,11 @@ gate every epic, not just the last.
    and complete coverage.
 2. **Managed-region engine** — marker parse, span replace, content hash. The riskiest
    bespoke component; independently testable; built early.
-3. **`genesis adopt`** — detect → plan → confirm → apply, dry-run default, idempotent,
+3. **`marshal seed adopt`** — detect → plan → confirm → apply, dry-run default, idempotent,
    `present-legacy` aware.
-4. **`genesis check`** — read-only, non-zero exit, CI-shaped output.
-5. **`genesis init`** — greenfield, on the same engine as adopt.
-6. **`genesis update`** + migration runner — two-phase plan/apply, version-ordered,
+4. **`marshal seed check`** — read-only, non-zero exit, CI-shaped output.
+5. **`marshal seed init`** — greenfield, on the same engine as adopt.
+6. **`marshal seed update`** + migration runner — two-phase plan/apply, version-ordered,
    applied-once, write-scope guarded.
 7. **State file** — schema-validated, tool-owned, do-not-edit.
 8. **Agent adapter fan-out** — Claude Code, Cursor, Copilot, Gemini generated from the
@@ -1440,9 +1443,9 @@ versioned artifact.
 - **FR-71** — The manifest declares the **never-write path set** (§ *The Extraction
   Manifest*), which the apply and update paths enforce.
 
-#### `genesis init` (greenfield)
+#### `marshal seed init` (greenfield)
 
-- **FR-72** — `genesis init <path>` creates a Dream-first repository tree at `<path>`,
+- **FR-72** — `marshal seed init <path>` creates a Dream-first repository tree at `<path>`,
   materializing every manifest artifact applicable to a new repo.
 - **FR-73** — `init` accepts `--slug` (the first BMAD project slug, defaulting to the
   directory name) and `--agents` (comma-separated adapter selection).
@@ -1461,9 +1464,9 @@ versioned artifact.
 - **FR-78** — `init` refuses to run into a non-empty directory unless `--force`; the
   documented path for an existing repo is `adopt`.
 
-#### `genesis adopt` (brownfield)
+#### `marshal seed adopt` (brownfield)
 
-- **FR-79** — `genesis adopt` runs **detect → plan → confirm → apply** and is **dry-run by
+- **FR-79** — `marshal seed adopt` runs **detect → plan → confirm → apply** and is **dry-run by
   default**; `--apply` (or `--yes` for unattended use) executes.
 - **FR-80** — Detect classifies each manifest artifact in the target repo as `absent`,
   `present-conformant`, `present-divergent`, or `present-legacy`.
@@ -1482,9 +1485,9 @@ versioned artifact.
 - **FR-87** — `adopt` accepts `--skip <glob>` (recorded in state) and honors previously
   recorded skips on subsequent runs.
 
-#### `genesis check` (conformance)
+#### `marshal seed check` (conformance)
 
-- **FR-88** — `genesis check` is **read-only** and never writes to the repo (state file
+- **FR-88** — `marshal seed check` is **read-only** and never writes to the repo (state file
   included).
 - **FR-89** — `check` exits non-zero on any HARD finding; `--strict` additionally fails on
   DRIFT findings.
@@ -1498,9 +1501,9 @@ versioned artifact.
 - **FR-93** — `check` runs offline and completes in under 5 seconds on a repo the size of
   `local-recipes`.
 
-#### `genesis update` + migrations
+#### `marshal seed update` + migrations
 
-- **FR-94** — `genesis update` is **two-phase**: the default invocation writes a plan and
+- **FR-94** — `marshal seed update` is **two-phase**: the default invocation writes a plan and
   changes nothing; `--run` applies the plan.
 - **FR-95** — Update verifies REFERENCED dependencies against their declared floors and
   reports (does not install) anything missing or below floor; delegates to `doctor check`
@@ -1515,13 +1518,13 @@ versioned artifact.
 - **FR-99** — Update replaces only the marked span of `hybrid-managed-region` files.
 - **FR-100** — Update **cannot** write to any path in the never-write set (FR-71); an attempt is
   a hard error and a test asserts it.
-- **FR-101** — `genesis update --force` maps to Copier `run_recopy` semantics (discard local
+- **FR-101** — `marshal seed update --force` maps to Copier `run_recopy` semantics (discard local
   evolution of managed artifacts) and requires explicit confirmation.
 
 #### State file
 
 - **FR-102** — Genesis writes one tool-owned state file recording: `model_version`,
-  `genesis_version`, `adopted_at`, `last_update`, `mode`, `agents[]`, `managed[]` (path +
+  `seed_model_version`, `adopted_at`, `last_update`, `mode`, `agents[]`, `managed[]` (path +
   class + content hash), `skips[]`, `legacy[]`, `migrations_applied[]`.
 - **FR-103** — The state file carries a prominent do-not-hand-edit header.
 - **FR-104** — State is validated against a JSON schema on every read; an invalid state file
@@ -1554,14 +1557,14 @@ versioned artifact.
   (`.cursor/rules/specs.mdc`), GitHub Copilot (`.github/copilot-instructions.md`), Gemini
   (`GEMINI.md`).
 - **FR-116** — Adapter selection is per-repo, recorded in state, and changeable later
-  (`genesis adopt --agents …` adds adapters idempotently).
+  (`marshal seed adopt --agents …` adds adapters idempotently).
 - **FR-117** — For an adapter file that already exists with repo-specific content
   (`CLAUDE.md` is the common case), the model content is delivered as a **managed region**
   rather than by overwriting the file.
 
 #### Templates, distribution & CLI
 
-- **FR-118** — Model templates ship **inside** the `pyforge-genesis` package; no runtime fetch
+- **FR-118** — Model templates ship **inside** the `pyforge-marshal` package (as `pyforge/marshal/seed/templates/` package data — re-issued 2026-08-10, correct-course); no runtime fetch
   is required for any verb.
 - **FR-119** — `--template <path|url>` overrides the in-package templates, for development and
   for teams that fork the model.
@@ -1575,10 +1578,10 @@ versioned artifact.
   unattended runs.
 - **FR-124** — All mutating verbs support `--dry-run` explicitly (and default to it where
   FR-79 requires).
-- **FR-125** — `genesis version` reports both the CLI version and the bundled model version.
+- **FR-125** — `marshal seed version` reports both the CLI version and the bundled model version.
 - **FR-126** — Non-zero exit codes are distinct and documented per failure mode (conformance
   failure, precondition failure, internal error).
-- **FR-127** — A `genesis explain <artifact>` verb prints an artifact's class, rationale, and
+- **FR-127** — A `marshal seed explain <artifact>` verb prints an artifact's class, rationale, and
   update behavior — the model documenting itself to the agents that read it (D1).
 
 ---
@@ -1649,7 +1652,7 @@ versioned artifact.
    convention closed the last known hole on 2026-07-25.
 3. **[ASSUMPTION]** `scripts/bmad_drift_check.py` (662 lines, with a HARD/DRIFT/INFO
    severity model and a coverage check that already HARD-fails unclassified files) can seed
-   `genesis check` rather than requiring a from-scratch build. **Not yet validated against
+   `marshal seed check` rather than requiring a from-scratch build. **Not yet validated against
    the code** — an early spike should confirm before Epic scoping hardens.
 4. **[ASSUMPTION]** Copier's `run_copy` / `run_update` / `run_recopy` signatures are stable
    across 9.x.
@@ -1669,7 +1672,7 @@ versioned artifact.
 2. **Q-18** — One state file, or Genesis state alongside Copier's `.copier-answers.yml`?
    Depends on assumption 5.
 3. **Q-19** — Exact marker syntax and the format registry's initial coverage (FR-110).
-4. **Q-20** — Does `genesis check` copy, extract, or re-implement `bmad_drift_check.py`?
+4. **Q-20** — Does `marshal seed check` copy, extract, or re-implement `bmad_drift_check.py`?
    Depends on assumption 3. Extraction into the package is attractive but couples
    `local-recipes` to a Genesis release.
 5. **Q-21** — Where does the manifest live physically — one YAML/TOML file, or one file per
@@ -1678,7 +1681,7 @@ versioned artifact.
    Fallback-to-append is specified; is that always safe?
 7. **Q-23** — Does the plan artifact get committed by convention (like Nx's
    `migrations.json`), and if so, where — and is it gitignored or tracked?
-8. **Q-24** — How does a repo *leave* the model (`genesis eject`)? Not in V1 scope, but the
+8. **Q-24** — How does a repo *leave* the model (`marshal seed eject`)? Not in V1 scope, but the
    state file's design should not preclude it.
 9. **Q-25** — Model deprecation path: the manifest marks `docs/specs/` legacy today. Does
    the model define a migration from Tier-1 legacy to Tier-2, or only preserve?
