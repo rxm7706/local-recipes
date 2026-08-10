@@ -46,22 +46,35 @@ flowchart LR
 
 ## Invariants & Rules
 
-### AD-1 — Trigger is decoupled from transport; the default is true Mode A
+### AD-1 — Trigger is decoupled from transport; the default is `schedule`, webhook is opt-in
 
 **Binds:** every entry point in both modes.
 **Prevents:** the mode choice silently dragging a cadence choice with it, which is what made
 the intake doc's Mode A/Mode B labels unusable (Mode A = real-time *and* zero-infra; Mode B =
-batch *and* PostgreSQL — so "batch at zero infra" was expressible in neither).
+batch *and* PostgreSQL — so "batch at zero infra" was expressible in neither). **And** it now
+prevents the default forcing every adopter to stand up an external webhook receiver.
 **Rule:** a mode selects a **transport** (how state is stored and moved). A separate,
 independent setting selects a **trigger** (`webhook` | `schedule` | `manual`). The default
-configuration is transport=serverless, trigger=`webhook` — **true Mode A as the intake
-document specifies it, real-time**. No code may assume a trigger from its transport.
+configuration is transport=serverless, trigger=**`schedule`** — zero infrastructure, batch
+cadence. `trigger=webhook` is fully supported as an **opt-in** for adopters who will run a
+receiver. No code may assume a trigger from its transport.
 
-*Amended 2026-08-09 (operator reversal). The default was briefly `schedule`, on the reading
-that batch latency was acceptable and webhooks were therefore unearned complexity. Reversed
-to `webhook` on explicit instruction: near-real-time is wanted. The decoupling itself is
-retained — only the default value moved. It is what still lets Mode B run scheduled, and what
-lets an operator drop to a schedule later without touching transport code.*
+*Amended twice, and the second amendment is the load-bearing one.* **(1)** The default was
+briefly `schedule`, then reversed to `webhook` on explicit operator instruction because
+near-real-time was wanted. **(2)** Reversed back to `schedule` on 2026-08-09 after steward
+story 8-1's dev session raised an `intent_gap` and **verification against GitHub's own docs
+proved the webhook default was not merely expensive but impossible as specified**: there is
+no `project_v2_item` / `projects_v2_item` event usable in a workflow's `on:` block. The
+`projects_v2_item` webhook exists, but reaches a workflow only via an **external receiver**
+(a GitHub App with org-level Projects read access, or a webhook endpoint) that then calls
+`repository_dispatch`. So `webhook`-by-default would have silently mandated hosting,
+credentials and cost for every adopter — the opposite of the zero-infrastructure floor the
+operator asked for. The near-real-time capability is **not** discarded; it is opt-in.
+
+*The decoupling is what made this a one-value change rather than a redesign — which is the
+whole reason AD-1 fixed it in the first place. Rejected: keeping `webhook` as the default and
+mandating a receiver. Rejected: deleting the webhook path, which would throw away the
+near-real-time capability the operator explicitly asked for.*
 
 *Rejected: adopting Mode B as the default to obtain batch cadence — it buys cadence with a
 PostgreSQL instance the operator explicitly excluded. Also rejected: collapsing the
@@ -199,7 +212,9 @@ SEED — verified at authoring; the code owns this once it exists.
 
 | Element | Choice |
 |---|---|
-| Default transport runtime | GitHub Actions (`on: project_v2_item` webhook) + Jira Automations |
+| Default transport runtime | GitHub Actions on **`on: schedule`** + Jira Automations — zero infrastructure |
+| Opt-in near-real-time (GitHub→Jira) | **external receiver** (GitHub App with org-level Projects read access, or a webhook endpoint) consuming the `projects_v2_item` webhook and calling **`repository_dispatch`** to reach the workflow. **There is no `project_v2_item` `on:` trigger** — verified against GitHub's docs 2026-08-09 |
+| Opt-in near-real-time (Jira→GitHub) | Jira Automation → `repository_dispatch` (already the correct bridge; unchanged) |
 | Mode B ingestion | `dlt` |
 | Mode B store | PostgreSQL |
 | Credential source | Steward `keys` surface |

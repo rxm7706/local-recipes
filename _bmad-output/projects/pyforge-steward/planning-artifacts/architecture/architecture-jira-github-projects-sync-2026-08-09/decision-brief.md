@@ -29,18 +29,33 @@ The two modes actually differ along **two independent axes** that the labels fus
 - **Trigger** — what starts a run (a webhook, a schedule, or a human)
 
 Once separated, the requirement stops being a trade. **The default is transport=serverless
-with trigger=`webhook` — true Mode A, real-time, zero infrastructure.** Mode B stays opt-in.
+with trigger=`schedule` — zero infrastructure, batch cadence — and `trigger=webhook` is a
+fully supported opt-in** for adopters willing to run a receiver. Mode B stays opt-in too.
 
-### Why this reads as a reversal in the memlog
+### Why this reads as two reversals in the memlog, and why the second one is different
 
-The first cut of this architecture defaulted the trigger to `schedule`, on the reading that
-batch latency was acceptable and webhooks were therefore complexity nobody had asked for.
-That was **reversed on explicit instruction**: near-real-time is wanted.
+The first cut defaulted the trigger to `schedule`, on the reading that batch latency was
+acceptable and webhooks were complexity nobody had asked for. That was **reversed on explicit
+instruction**: near-real-time is wanted.
 
-The decoupling survived the reversal, and it is worth keeping for two reasons that have
+It was then **reversed back**, and this time not on preference but on fact. Steward story 8-1's
+dev session refused to build, raising an `intent_gap`, and verification against GitHub's own
+documentation proved the webhook default was **not merely expensive but impossible as
+written**: there is no `project_v2_item` / `projects_v2_item` event that can appear in a
+workflow's `on:` block. The webhook is real, but it reaches a workflow only through an
+**external receiver** — a GitHub App with org-level Projects read access, or a webhook
+endpoint — which must then call `repository_dispatch`.
+
+So `webhook`-by-default did not mean "real-time at zero infrastructure." It meant **every
+adopter must host and credential a receiver** — precisely the cost the zero-infrastructure
+floor existed to avoid. Near-real-time is not withdrawn; it is opt-in, and the Jira→GitHub
+direction already used `repository_dispatch` correctly all along.
+
+The decoupling survived both reversals, and it is worth keeping for two reasons that have
 nothing to do with which default won. It is what lets **Mode B run scheduled** — the axis has
 to exist for Mode B to be describable at all — and it is what lets a deployment **fall back to
-a schedule** for recovery without a second implementation (see AD-9).
+a schedule** for recovery without a second implementation (see AD-9). It is also why this
+correction moved **one value**, not a design.
 
 ### What the reversal costs, honestly
 
