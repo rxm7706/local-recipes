@@ -357,6 +357,16 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
     one. The docstring previously said "at module level", which the code has
     never actually implemented.
 
+    The one direction it UNDER-flags (stated in review pass 4; the note above
+    described only the over-flagging): it reads `ast.Import`/`ast.ImportFrom`
+    nodes, so a dynamic import — `importlib.import_module("django")`,
+    `__import__`, `exec` — is invisible to it. No code in this package does
+    that, and every sibling guard here shares the limitation, so it is not
+    treated as a defect; it is written down because dynamic import is the
+    idiomatic way to reach an OPTIONAL dependency, which makes it the first
+    shape a later Epic 9 story is likely to reach for — and it is the one
+    shape this guard would not catch.
+
     AST-based (imports only), identical rationale to
     `test_no_rotation_scheduler_exists`/
     `test_no_third_party_provider_api_client_imported` -- this module's own
@@ -403,10 +413,21 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
     failing first to say why. That environment is exactly the one the story's
     last acceptance criterion is about, and it has no live instance yet -- so
     this static guard is the only thing standing in for it.
+
+    `__init__.py` joined the list in review pass 4. It is the one file in the
+    package that executes on EVERY import of any submodule, so a django
+    import there produces exactly the failure described above -- and it was
+    covered by neither guard: the one above skips all of `dashboard/`, and
+    this one named only the two submodules. Mutation-proved at the time:
+    appending `import django` to `__init__.py` left all seven dashboard guard
+    tests green while a django-blocked import of
+    `pyforge.steward.dashboard.middleware` failed with `ImportError`. Its own
+    docstring asserts it is django-free, which is precisely the class of
+    prose-only claim this test exists to replace with a mechanism.
     """
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
     offenders: list[str] = []
-    for name in ("middleware.py", "declarations.py"):
+    for name in ("__init__.py", "middleware.py", "declarations.py"):
         path = dashboard_dir / name
         assert path.exists(), f"{name} is missing from {dashboard_dir}"
         own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
@@ -421,7 +442,7 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
         )
     assert not offenders, (
         f"django/channels import found in a module documented as framework-free "
-        f"(AD-8) — these two must import cleanly without the [dashboard] extra: "
+        f"(AD-8) — these must import cleanly without the [dashboard] extra: "
         f"{offenders}"
     )
 
@@ -563,10 +584,24 @@ def test_django_pin_matches_the_dashboard_extra():
     extra_pin = extra_pins[0].replace(" ", "")
 
     # PKG_ROOT is <repo>/src/shared/packages/pyforge-steward/src/pyforge, so
-    # the repo root carrying pixi.toml is five parents up.
+    # the repo root carrying pixi.toml is five parents up. Skipped rather
+    # than crashed when it is not there (review pass 4): this is the only
+    # assertion in this file that reaches OUTSIDE the package -- every other
+    # file-reading test stops at `PKG_ROOT.parents[1]` -- so a bare
+    # `read_text()` made the package's own suite raise `FileNotFoundError`
+    # anywhere the monorepo layout is absent. Ledger entry DW-1-3-14 is an
+    # open item about this package behaving correctly "in a package installed
+    # outside a checkout", so that is a planned environment, not a
+    # hypothetical one; a cross-manifest pin check simply has nothing to
+    # compare there.
+    import pytest
+
     repo_root = PKG_ROOT.parents[5]
-    pixi_manifest = tomllib.loads(
-        (repo_root / "pixi.toml").read_text(encoding="utf-8"))
+    pixi_path = repo_root / "pixi.toml"
+    if not pixi_path.is_file():
+        pytest.skip(f"no monorepo pixi.toml at {pixi_path} — nothing to cross-check the pin against")
+
+    pixi_manifest = tomllib.loads(pixi_path.read_text(encoding="utf-8"))
     feature_pin = pixi_manifest["feature"]["pyforge-steward"]["dependencies"]["django"]
 
     # Distribution names are case-insensitive (PEP 503); the SPECIFIER is what

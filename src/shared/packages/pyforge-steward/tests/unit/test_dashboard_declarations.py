@@ -194,3 +194,82 @@ def test_access_declaration_rejects_whitespace_only_fields():
 
     with pytest.raises(ValueError, match=r"roles\[1\]"):
         AccessDeclaration(access_column="region", roles=("admin", "  "))
+
+
+@pytest.mark.parametrize(
+    "bad_name",
+    ["X-Forwarded-User\n", "X-Forwarded-User\r\n", "X-Forwarded-User\r"],
+)
+def test_trusted_ingress_rejects_a_header_name_with_a_trailing_newline(bad_name):
+    """Review pass 4: the RFC-token guard was anchored with `$`, and Python's
+    `$` also matches immediately BEFORE a trailing newline — so
+    `"X-Forwarded-User\\n"` satisfied it, matched no header on the wire, and
+    therefore switched AD-4's refusal OFF (the ingress check only runs for a
+    header actually found). Reproduced end-to-end before the fix: an identity
+    header from an UNDECLARED peer reached the wrapped app with no exception.
+
+    A trailing newline is the likeliest artifact of the config-file/env-var
+    provenance the guard was written for. The pass-3 cases pinned an
+    *embedded* newline, which the character class already rejected — which is
+    exactly why the trailing one survived three passes.
+    """
+    with pytest.raises(ValueError, match="not a valid HTTP header name"):
+        TrustedIngress(
+            addresses=("10.0.0.1",),
+            identity_header=bad_name,
+            role_header="X-Forwarded-Role",
+        )
+
+
+@pytest.mark.parametrize("bad_address", ["   ", "\t", "\n"])
+def test_trusted_ingress_rejects_a_whitespace_only_address(bad_address):
+    """Review pass 4: only `""` was rejected, so `("   ",)` declared a trusted
+    ingress that can never match any peer — every identity-bearing request
+    from the legitimate proxy refused, with a message naming the peer and no
+    hint that the DECLARATION is what is wrong.
+    """
+    with pytest.raises(ValueError, match=r"addresses\[0\]"):
+        TrustedIngress(
+            addresses=(bad_address,),
+            identity_header="X-Forwarded-User",
+            role_header="X-Forwarded-Role",
+        )
+
+
+def test_trusted_ingress_rejects_a_whitespace_padded_address():
+    """Review pass 4: `"10.0.0.1 "` constructed cleanly and then matched
+    nothing, because the ASGI peer host it is compared against never carries
+    padding. Same config-file provenance as the header-name case; rejected
+    rather than trimmed so the declaration means what it says.
+
+    This constrains only surrounding whitespace — never the address FORM
+    (CIDR, hostname, IPv6 spellings), which stays with Story 9.5 on the
+    deferred-work ledger.
+    """
+    with pytest.raises(ValueError, match="leading/trailing whitespace"):
+        TrustedIngress(
+            addresses=("10.0.0.1 ",),
+            identity_header="X-Forwarded-User",
+            role_header="X-Forwarded-Role",
+        )
+
+    # The forms that story may still choose to support are NOT forbidden here.
+    for tolerated in ("10.0.0.0/24", "proxy.internal", "::ffff:10.0.0.1"):
+        TrustedIngress(
+            addresses=(tolerated,),
+            identity_header="X-Forwarded-User",
+            role_header="X-Forwarded-Role",
+        )
+
+
+def test_access_declaration_rejects_whitespace_padded_fields():
+    """Review pass 4: pass 3 rejected whitespace-ONLY values but left padding,
+    so `" region "` and `"admin\\n"` constructed and would only fail in
+    whichever later story compares them against a real column or an extracted
+    role header — neither of which carries padding.
+    """
+    with pytest.raises(ValueError, match="leading/trailing whitespace"):
+        AccessDeclaration(access_column=" region ", roles=("admin",))
+
+    with pytest.raises(ValueError, match=r"roles\[1\]"):
+        AccessDeclaration(access_column="region", roles=("admin", "viewer\n"))

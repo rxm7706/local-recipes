@@ -367,3 +367,47 @@ def test_header_names_are_matched_case_insensitively_on_the_wire():
 
     assert calls[0]["dashboard_identity"] == "alice"
     assert calls[0]["dashboard_role"] == "admin"
+
+
+def test_whitespace_only_identity_header_establishes_no_identity():
+    """Review pass 4: passes 2 and 3 closed the present-but-EMPTY identity
+    header, but the guard they used was truthiness — and `"   "` is truthy.
+    So a whitespace-only header landed on the scope as a real identity
+    (reproduced: `dashboard_identity == '   '`), which is worse than `''`:
+    it also sails past the downstream `if identity:` check those passes
+    assumed would catch a blank one.
+
+    Only the BLANK test widens here. A real identity value is still stored
+    verbatim — trimming or normalizing one is the identity-model decision
+    deferred to Story 9.3's audit rows.
+    """
+    events: list[dict] = []
+    calls: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app(calls), TRUSTED)
+    scope = _scope("10.0.0.1", headers=[("X-Forwarded-User", "   ")])
+
+    asyncio.run(middleware(scope, _receive, _fake_send(events)))
+
+    assert calls, "a blank identity degrades to no identity — it is not a refusal"
+    assert "dashboard_identity" not in scope
+    assert "dashboard_role" not in scope
+
+
+def test_whitespace_only_role_header_establishes_no_role():
+    """Review pass 4: the same shape on the field that carries PRIVILEGE.
+    Pass 3 fixed the empty role; `"\\t"` stayed truthy and was set verbatim —
+    and `AccessDeclaration` raises on a whitespace-only role name, so the
+    middleware was manufacturing a role an adopter cannot declare.
+    """
+    events: list[dict] = []
+    calls: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app(calls), TRUSTED)
+    scope = _scope(
+        "10.0.0.1",
+        headers=[("X-Forwarded-User", "alice"), ("X-Forwarded-Role", "  ")],
+    )
+
+    asyncio.run(middleware(scope, _receive, _fake_send(events)))
+
+    assert scope["dashboard_identity"] == "alice"
+    assert scope["dashboard_role"] is None

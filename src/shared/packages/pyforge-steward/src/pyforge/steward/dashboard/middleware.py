@@ -80,8 +80,12 @@ class UntrustedIngressError(Exception):
     policy, not this module's: some abort the connection, others render a
     generic 500. Guaranteeing a specific on-the-wire outcome end-to-end is
     the deployment perimeter's job (Story 9.5) and the proof suite's to
-    demonstrate (Story 9.6); see
-    ``_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md``.
+    demonstrate (Story 9.6); see the deferred-work ledger — drafted run-local
+    and promoted into
+    ``_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md``
+    when this story lands, as this package's `__init__` docstring explains
+    (review pass 4: naming only the tracked path asserted the entries were
+    already there, and they are not yet).
 
     The message names the offending peer but deliberately NOT the declared
     ingress list, and the ambiguity subclass reports a count rather than the
@@ -216,19 +220,31 @@ class DashboardIdentityMiddleware:
             )
 
         identity = identities[0]
-        if not identity:
+        if not identity.strip():
             # Header present but carrying no identity. CAP-1 degrades to a
             # known-unprivileged identity, which is the no-identity-set state
             # -- never an empty-string identity a downstream consumer has to
             # remember is falsy-but-present.
+            #
+            # `.strip()`, not truthiness (review pass 4): pass 2/3 closed the
+            # `''` case, but `'   '` is TRUTHY, so a whitespace-only header
+            # sailed past a truthiness gate and landed on the scope -- worse
+            # than `''`, because it also sails past the downstream `if
+            # identity:` guard those passes assumed. Only the BLANK test is
+            # widened here; the value itself is still stored verbatim, since
+            # trimming/normalizing a real identity is the identity-model
+            # decision deferred to Story 9.3's audit rows.
             await self.app(scope, receive, send)
             return
 
         scope["dashboard_identity"] = identity
-        # `or None` for the same reason the identity above is not allowed to
-        # be `''` (review pass 3): a present-but-empty role header would
-        # otherwise set a falsy-but-present role, the exact state the identity
-        # path was changed to avoid -- and one `AccessDeclaration` forbids
-        # declaring, since an empty role name raises there.
-        scope["dashboard_role"] = (roles[0] or None) if roles else None
+        # A blank role establishes no role, for the same reason and by the
+        # same `.strip()` test as the identity above (review pass 3 for `''`,
+        # widened to whitespace-only in pass 4): a falsy-but-present role is
+        # the exact state the identity path was changed to avoid -- and one
+        # `AccessDeclaration` forbids declaring, since it raises on both an
+        # empty and a whitespace-only role name, so the middleware would
+        # otherwise manufacture a role an adopter is not allowed to declare.
+        role = roles[0] if roles else ""
+        scope["dashboard_role"] = role if role.strip() else None
         await self.app(scope, receive, send)

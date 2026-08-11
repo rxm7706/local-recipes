@@ -322,3 +322,115 @@ def test_timeout_zero_is_still_allowed_as_caching_disabled():
     assert get_master_dataset("zero-timeout-key", fetch, cache=backend, timeout=0) == {"rows": []}
     assert backend.get("zero-timeout-key") is None, "timeout=0 means nothing is retained"
     assert calls == [1]
+
+
+def test_a_key_in_the_lock_namespace_is_refused():
+    """Review pass 4: pass 1 moved the lock key from a suffix to the
+    `dashboard-fetch-lock:` PREFIX so a caller key could not collide with it,
+    but nothing stopped a caller key from starting WITH that prefix. Caching
+    data at `"dashboard-fetch-lock:sales"` occupies precisely the lock slot
+    for `"sales"`, and the next caller for `"sales"` reads that data frame as
+    a permanently-held lock. Reproduced as a hang before this guard.
+    """
+    backend = _fresh_backend()
+    with pytest.raises(ValueError, match="reserved lock-key prefix"):
+        get_master_dataset(f"{_LOCK_PREFIX}sales", lambda: "DATA", cache=backend)
+
+
+def test_timeout_rejects_bool_but_still_allows_zero():
+    """Review pass 4: `lock_timeout`'s guard excludes `bool` explicitly;
+    `timeout`'s (added in pass 3) did not. `timeout=False` IS an int to
+    `isinstance`, reaches the backend as `0` — "expire immediately" — and
+    silently caches nothing (reproduced), which is the same silent-void
+    consequence the `lock_timeout` guard exists to refuse.
+
+    `timeout=0` stays allowed on purpose: that is a caller explicitly
+    disabling caching (pass 2 rejected treating it as a defect), and it is
+    asserted here so this guard cannot quietly broaden into a behavior change.
+    """
+    backend = _fresh_backend()
+    with pytest.raises(TypeError, match="timeout must be"):
+        get_master_dataset("bool-timeout", lambda: "V", cache=backend, timeout=False)
+
+    assert get_master_dataset("zero-timeout", lambda: "V", cache=backend, timeout=0) == "V"
+
+
+def test_winning_the_lock_rechecks_the_key_before_fetching():
+    """Review pass 4: the second check of double-checked locking was missing.
+    Between a caller's own miss and its `cache.add()`, another fetcher can
+    complete and populate the key; without a re-read this call fetched anyway
+    and then OVERWROTE the fresher value with its own staler one (reproduced:
+    the cache ended up holding `STALE`, not `FRESH`).
+
+    Simulated deterministically rather than by thread timing: the backend
+    populates the data key at the exact instant the lock is won.
+    """
+    backend = _fresh_backend()
+    key = "double-checked-locking"
+    calls: list[int] = []
+
+    class PopulateWhenLockWon(LocMemCache):
+        armed = True
+
+        def add(self, add_key, value, **kwargs):
+            won = super().add(add_key, value, **kwargs)
+            if won and PopulateWhenLockWon.armed:
+                PopulateWhenLockWon.armed = False
+                super().set(key, "FRESH-from-the-other-fetcher")
+            return won
+
+    racing = PopulateWhenLockWon(f"double-check-{time.monotonic_ns()}", {})
+
+    def fetch():
+        calls.append(1)
+        return "STALE-from-us"
+
+    result = get_master_dataset(key, fetch, cache=racing)
+
+    assert calls == [], "the key was already populated when the lock was won — fetch must not run"
+    assert result == "FRESH-from-the-other-fetcher"
+    assert racing.get(key) == "FRESH-from-the-other-fetcher", "a stale fetch must not overwrite it"
+
+
+def test_a_backend_that_never_grants_the_lock_raises_instead_of_spinning():
+    """Review pass 4: `time.sleep` lived ONLY inside the "lock is visibly
+    held" poll loop, so when `add()` reported failure while the lock key read
+    as absent, that loop's body never ran and the outer loop retried with no
+    delay at all — an unbounded busy loop that never returned and never
+    fetched (measured: 1.1M backend operations in 2s, 0 fetches, thread still
+    alive).
+
+    Not hypothetical: Django's `DatabaseCache._base_set` ends in a bare
+    `except DatabaseError: return False`, so write contention presents exactly
+    this way while reads keep working.
+    """
+    from pyforge.steward.dashboard.cache import LockUnavailableError
+
+    class NeverGrantsTheLock(LocMemCache):
+        operations = 0
+
+        def add(self, *args, **kwargs):
+            NeverGrantsTheLock.operations += 1
+            return False
+
+        def get(self, add_key, default=None, **kwargs):
+            NeverGrantsTheLock.operations += 1
+            return super().get(add_key, default, **kwargs)
+
+    backend = NeverGrantsTheLock(f"no-lock-{time.monotonic_ns()}", {})
+    calls: list[int] = []
+
+    started = time.monotonic()
+    with pytest.raises(LockUnavailableError, match="could not acquire or observe"):
+        get_master_dataset("ungrantable", lambda: calls.append(1), cache=backend, lock_timeout=1)
+    elapsed = time.monotonic() - started
+
+    assert calls == [], "fetch() is never reached in this state"
+    # Bounded by _MAX_WAIT_MULTIPLIER * lock_timeout, and it SLEEPS between
+    # attempts rather than spinning: the old busy loop issued hundreds of
+    # thousands of operations per second, this issues a handful per second.
+    assert 2 <= elapsed < 10, f"expected the wait to be bounded by the deadline, took {elapsed}s"
+    assert NeverGrantsTheLock.operations < 500, (
+        f"the retry path must sleep between attempts, not spin — "
+        f"{NeverGrantsTheLock.operations} backend operations in {elapsed:.1f}s"
+    )

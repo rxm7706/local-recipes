@@ -24,7 +24,19 @@ from dataclasses import dataclass
 # newline) silently matches NO header -- which switches AD-4's refusal off
 # rather than failing, since the middleware only checks the ingress for a
 # header it actually found (review pass 3).
-_HTTP_TOKEN_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
+#
+# Anchored with `\Z`, not `$` (review pass 4). Python's `$` also matches
+# immediately BEFORE a trailing newline, so `"X-Forwarded-User\n"` satisfied
+# the `^...$` form of this check and constructed cleanly -- and a trailing
+# newline is the single likeliest artifact of the config-file/env-var
+# provenance this guard was written for (`read_text()`, `readline()`, a
+# mounted secret file). Reproduced end-to-end: an identity header from an
+# UNDECLARED peer was passed straight through to the wrapped app with no
+# refusal, which is verbatim the failure the paragraph above says this
+# regex exists to prevent. The suite's cases pinned an EMBEDDED newline,
+# which the character class already rejected -- which is why the trailing
+# one survived three passes.
+_HTTP_TOKEN_RE = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+\Z")
 
 
 @dataclass(frozen=True)
@@ -51,6 +63,16 @@ class AccessDeclaration:
                 "AccessDeclaration.access_column must not be empty or "
                 "whitespace-only — a dashboard cannot declare row-level "
                 "access without naming the column that carries it"
+            )
+        # Padding too (review pass 4): `" region "` passed the emptiness
+        # check above and would only fail in whichever later story compares
+        # it against a real dataset column. Rejected rather than trimmed, so
+        # the declaration means exactly what it says.
+        if self.access_column != self.access_column.strip():
+            raise ValueError(
+                f"AccessDeclaration.access_column {self.access_column!r} "
+                f"carries leading/trailing whitespace — a padded column name "
+                f"matches no column in the master dataset"
             )
         if not isinstance(self.roles, tuple):
             raise TypeError(
@@ -80,6 +102,12 @@ class AccessDeclaration:
                 raise ValueError(
                     f"AccessDeclaration.roles[{index}] must not be empty or "
                     f"whitespace-only — an unnamed role cannot be filtered by"
+                )
+            if role != role.strip():
+                raise ValueError(
+                    f"AccessDeclaration.roles[{index}] {role!r} carries "
+                    f"leading/trailing whitespace — the role value extracted "
+                    f"from a header never does, so it can never match"
                 )
 
 
@@ -131,10 +159,29 @@ class TrustedIngress:
                     f"declaration can never match and would refuse every "
                     f"request"
                 )
-            if not address:
+            # Blank and whitespace-PADDED elements too (review pass 4), not
+            # just `""`. `("   ",)` and `("10.0.0.1 ",)` both constructed and
+            # then matched no peer, so the legitimate proxy's every
+            # identity-bearing request was refused with a message naming the
+            # peer and no hint that the DECLARATION is what is malformed --
+            # the same "a typo becomes 'refuse every request' with no
+            # diagnostic" consequence cited for the element-type check above,
+            # from the same config-file provenance as the header-name check
+            # below. This constrains only surrounding whitespace, never the
+            # address FORM (CIDR/hostname/IPv6 spellings), which stays with
+            # Story 9.5's ingress model on the deferred-work ledger.
+            if not address.strip():
                 raise ValueError(
-                    f"TrustedIngress.addresses[{index}] must not be empty — an "
-                    f"empty address can never match a peer host"
+                    f"TrustedIngress.addresses[{index}] must not be empty or "
+                    f"whitespace-only — such an address can never match a peer "
+                    f"host, so it would refuse every identified request while "
+                    f"appearing to declare a trusted ingress"
+                )
+            if address != address.strip():
+                raise ValueError(
+                    f"TrustedIngress.addresses[{index}] {address!r} carries "
+                    f"leading/trailing whitespace — the ASGI peer host it is "
+                    f"compared against never does, so it can never match"
                 )
         for field_name, header in (
             ("identity_header", self.identity_header),

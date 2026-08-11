@@ -17,8 +17,24 @@ Python (the ASGI3 callable shape is protocol, not framework, per AD-8) and
 import cleanly with or without the extra. No other module in
 `pyforge.steward` may import this package, `django`, or `channels`; pinned by
 `tests/meta/test_invariants.py`, which since review pass 3 also pins the
-narrower claim above — that `middleware.py` and `declarations.py` themselves
-stay django-free — rather than leaving it to these docstrings.
+narrower claim above — that `middleware.py`, `declarations.py` and this
+`__init__` itself stay django-free (this file was added to that guard in
+review pass 4: it executes on EVERY import of the package, so a `django`
+import here would turn both framework-free test modules into collection
+errors with nothing failing first to say why) — rather than leaving it to
+these docstrings.
+
+**Where the deferrals live.** Several docstrings in this package defer a
+question to "the deferred-work ledger". That ledger follows the same
+two-stage path as this story's spec: entries are drafted into the run-local,
+gitignored ``_bmad-output/…/implementation-artifacts/deferred-work.md`` while
+the story is in flight, and are promoted into the tracked
+``_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md``
+when the story lands. Review pass 3 repointed those docstrings from the
+run-local path (absent from every clone) to the tracked one; review pass 4
+found the tracked ledger carries no Story 9.1 entries *yet*, so naming it
+alone stated something a reader could check and find false. Both halves are
+named here instead, and the promotion is itself recorded on the ledger.
 """
 
 from __future__ import annotations
