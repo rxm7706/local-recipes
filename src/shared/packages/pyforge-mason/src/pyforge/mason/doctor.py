@@ -38,6 +38,13 @@ straight to `json.dumps`, which cannot serialize a `Path`; converting once
 here keeps that conversion out of `render.py`, which owns formatting, not
 domain knowledge about what `resolve.py`'s outcomes look like.
 
+Story 2.1 moves `DoctorReport` itself out of this module and into
+`models.py` -- the architecture's one sanctioned pre-existing-shape move
+(Consistency Conventions). It is re-exported below via `from .models import
+DoctorReport`, so the pre-existing `from pyforge.mason.doctor import
+DoctorReport` import (`tests/unit/test_cli.py`) keeps resolving unchanged,
+and `build_report`'s composition logic is otherwise untouched.
+
 Story 3.1's Engine protocol supersedes only `engines/__init__.py`'s
 probe-only seed (see that module's docstring); this module's composition
 shape is unaffected by that later story.
@@ -46,31 +53,12 @@ shape is unaffected by that later story.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import Path
 
 from . import __version__
-from .engines import EngineStatus, probe_known_engines
+from .engines import probe_known_engines
+from .models import DoctorReport
 from .resolve import STEP_NOT_FOUND, resolve_cfe_interpreter, resolve_cfe_root
-
-
-@dataclass(frozen=True)
-class DoctorReport:
-    """`mason doctor`'s full self-diagnosis (FR-34): Mason's own version,
-    the resolved CFE root and which chain step found it, the selected
-    interpreter and which chain step selected it, the import-floor outcome,
-    which verbs are unavailable as a consequence, and every known engine's
-    presence/version."""
-
-    mason_version: str
-    cfe_root: str | None
-    cfe_root_step: str
-    cfe_interpreter: str
-    cfe_interpreter_step: str
-    cfe_import_floor_satisfied: bool
-    cfe_import_floor_missing: tuple[str, ...]
-    unavailable_verbs: tuple[str, ...]
-    engines: tuple[EngineStatus, ...]
 
 
 def build_report(

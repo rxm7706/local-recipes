@@ -686,6 +686,18 @@ demonstrated by test, never asserted.
 **Status:** backlog
 
 ### Story 8.3: Idempotent update processing
+
+> **Intent contract re-issued 2026-08-11 (operator decision).** This story's own dev pass
+> built both specified tests (314 passing), and its blind adversarial review then found the
+> frozen contract itself inaccurate: it claimed the opposite-identifier redelivery "covers
+> AD-9's out-of-order arrival". It does not — AD-9 rule 2 is **stale-value convergence** ("a
+> late delivery about a superseded value converges to the current one rather than overwriting
+> it"), while redelivering via the other identifier only proves **entry-point symmetry**. Per
+> the intent_gap protocol the session reverted rather than patch its own contract, and halted.
+> Resolution (operator, "relabel + add the real AD-9 rule 2 test now"): both false claims are
+> corrected AND a third test is added with its own fixture — a delivery carrying a superseded
+> value arrives after the pair converged on a newer one, and the engine must converge to the
+> CURRENT value, writing nothing. **Nothing in the suite proves AD-9 rule 2 today.**
 **FR/AD:** FR-29 • **Effort:** S • **Deps:** S-8.1
 **Given** an identical payload delivered twice **Then** both systems are byte-identical to
 a single delivery.
