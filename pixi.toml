@@ -168,7 +168,7 @@ pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # -> built c
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
-django = ">=5.2,<6"                       # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. Same floor as [feature.local-recipes.dependencies]'s django pin (line ~1241) and pyforge-steward's own pyproject.toml `dashboard` extra -- keep all three in sync
+django = ">=5.2,<6"                       # Story 9.1: the `[dashboard]` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical pyforge-warden edge) -- NOT a pyforge-steward package run-dep, so external conda installs stay dashboard-optional. MUST stay byte-identical to pyforge-steward's own pyproject.toml `dashboard` extra; that pair is enforced by tests/meta/test_invariants.py::test_django_pin_matches_the_dashboard_extra. [feature.local-recipes.dependencies] separately pins django ">=5.2.15,<6.0" (line ~1241) -- a NARROWER pin in the same 5.2 LTS line, deliberately not identical and not synced here
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."

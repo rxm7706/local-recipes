@@ -331,8 +331,15 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
     for path in steward_dir.rglob("*.py"):
         if dashboard_dir in path.parents:
             continue
+        # Derive each file's OWN package rather than assuming every file sits
+        # directly in `pyforge.steward` (review pass 2). `rglob` descends into
+        # subpackages, and a hardcoded depth resolves their relative imports
+        # wrong in both directions -- a real `from ..dashboard import cache`
+        # in `steward/sub/` would have resolved to `pyforge.dashboard` and
+        # gone unflagged, which is the failure mode a guard must never have.
+        own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
         offenders += _find_banned_dashboard_imports(
-            path.read_text(encoding="utf-8"), ("pyforge", "steward"), path.name
+            path.read_text(encoding="utf-8"), own_package_parts, path.name
         )
     assert not offenders, f"dashboard/django/channels import found outside dashboard/: {offenders}"
 
@@ -353,3 +360,95 @@ def test_dashboard_import_guard_catches_symbol_and_relative_import_shapes():
         assert offenders, f"expected {source!r} to be flagged as a dashboard import"
 
     assert not _find_banned_dashboard_imports(legitimate_import, ("pyforge", "steward"), "synthetic.py")
+
+
+def test_dashboard_import_guard_resolves_relative_imports_from_a_subpackage():
+    """Review pass 2: the guard hardcoded `("pyforge","steward")` for every
+    file `rglob` reached, so once `steward/` gains any subpackage besides
+    `dashboard/`, relative-import resolution was wrong in both directions.
+
+    Proven by execution from a subpackage's point of view. `steward/sub/`
+    has no files today, which is exactly why this would have gone unnoticed
+    until a later Epic 9 story added one -- and its failure mode is a silent
+    false negative, the worst kind for a guard to have.
+    """
+    from_subpackage = ("pyforge", "steward", "sub")
+
+    # `from ..dashboard import cache` inside `steward/sub/` IS the banned
+    # import (`..` -> pyforge.steward). Previously resolved to
+    # `pyforge.dashboard` and sailed through.
+    assert _find_banned_dashboard_imports(
+        "from ..dashboard import cache\n", from_subpackage, "sub/mod.py"
+    ), "a genuine relative dashboard import from a subpackage must be flagged"
+
+    # `from . import dashboard` inside `steward/sub/` means
+    # `pyforge.steward.sub.dashboard` -- a DIFFERENT module that is not
+    # banned. Previously flagged as a false positive.
+    assert not _find_banned_dashboard_imports(
+        "from . import dashboard\n", from_subpackage, "sub/mod.py"
+    ), "a sibling module that merely shares the name must not be flagged"
+
+
+def test_dashboard_appconfig_is_ad13_compliant():
+    """Story 9.1 ships `apps.py` early specifically so Story 9.3's audit model
+    inherits a compliant AD-13 scaffold instead of retrofitting one. Nothing
+    imported it (review pass 2), so a typo in `name` or `label` -- or the
+    module simply not importing -- would have shipped silently and surfaced
+    a story later, which defeats the entire reason for shipping it early.
+
+    Skipped rather than failed without the `[dashboard]` extra: `apps.py` is
+    the one module in this package that genuinely requires `django`.
+    """
+    import pytest
+
+    pytest.importorskip("django", reason="apps.py requires pyforge-steward[dashboard]")
+
+    from pyforge.steward.dashboard.apps import DashboardConfig
+
+    assert DashboardConfig.name == "pyforge.steward.dashboard"
+    assert DashboardConfig.default_auto_field == "django.db.models.BigAutoField"
+
+    # AD-13's label rule: explicit, and never colliding with a contrib label.
+    # Django derives the label from the module basename by default, which for
+    # this package would be the very common "dashboard".
+    assert DashboardConfig.label == "pyforge_steward_dashboard"
+    assert DashboardConfig.label not in {
+        "admin", "auth", "contenttypes", "sessions", "messages", "staticfiles", "dashboard",
+    }
+
+
+def test_django_pin_matches_the_dashboard_extra():
+    """The django floor is hand-typed in two files -- pyproject.toml's
+    `[dashboard]` extra and root pixi.toml's
+    `[feature.pyforge-steward.dependencies]`. Review pass 1 closed "nothing
+    keeps these in sync" with a cross-reference comment; review pass 2 found
+    that comment had ALREADY drifted (it claimed the same floor as a third,
+    deliberately narrower pin). A comment is not a mechanism -- this is.
+
+    Deliberately scoped to that pair. `[feature.local-recipes.dependencies]`
+    pins a narrower `>=5.2.15,<6.0` for unrelated reasons (wagtail/coderedcms)
+    and is NOT required to match.
+    """
+    try:
+        import tomllib
+    except ImportError:                       # pragma: no cover
+        import tomli as tomllib               # type: ignore[no-redef]
+
+    manifest = tomllib.loads(
+        (PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    extra = (manifest["project"]["optional-dependencies"])["dashboard"]
+    extra_pins = [spec for spec in extra if spec.replace(" ", "").startswith("django")]
+    assert len(extra_pins) == 1, f"expected exactly one django pin in the extra, got {extra_pins!r}"
+    extra_pin = extra_pins[0].replace(" ", "")
+
+    # PKG_ROOT is <repo>/src/shared/packages/pyforge-steward/src/pyforge, so
+    # the repo root carrying pixi.toml is five parents up.
+    repo_root = PKG_ROOT.parents[5]
+    pixi_manifest = tomllib.loads(
+        (repo_root / "pixi.toml").read_text(encoding="utf-8"))
+    feature_pin = pixi_manifest["feature"]["pyforge-steward"]["dependencies"]["django"]
+
+    assert extra_pin == f"django{feature_pin}".replace(" ", ""), (
+        f"django pin drift: pyproject `[dashboard]` extra says {extra_pin!r}, "
+        f"pixi.toml `[feature.pyforge-steward.dependencies]` says {feature_pin!r}"
+    )

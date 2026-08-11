@@ -78,3 +78,51 @@ def test_trusted_ingress_rejects_a_non_latin1_header_name():
     """
     with pytest.raises(ValueError, match="identity_header"):
         TrustedIngress(addresses=("10.0.0.1",), identity_header="X-Forwarded-User-🚀", role_header="X-Forwarded-Role")
+
+
+def test_trusted_ingress_rejects_a_non_string_address():
+    """Review pass 2 (reproduced by execution): `addresses=(b"10.0.0.1",)`
+    passed both the tuple check and the emptiness check, then silently
+    matched no peer at all -- the middleware compares against
+    `scope["client"][0]`, which is always a `str`. A one-character typo
+    became "refuse every request", with no diagnostic anywhere.
+    """
+    with pytest.raises(TypeError, match=r"addresses\[0\]"):
+        TrustedIngress(
+            addresses=(b"10.0.0.1",), identity_header="X-Forwarded-User", role_header="X-Forwarded-Role"
+        )
+
+
+def test_trusted_ingress_rejects_an_empty_address_element():
+    with pytest.raises(ValueError, match=r"addresses\[1\]"):
+        TrustedIngress(
+            addresses=("10.0.0.1", ""), identity_header="X-Forwarded-User", role_header="X-Forwarded-Role"
+        )
+
+
+def test_trusted_ingress_rejects_a_non_string_header_name():
+    """Previously raised `AttributeError` from the latin-1 check's `.encode`
+    rather than the loud, named error this module exists to produce.
+    """
+    with pytest.raises(TypeError, match="identity_header"):
+        TrustedIngress(addresses=("10.0.0.1",), identity_header=123, role_header="X-Forwarded-Role")
+
+
+def test_access_declaration_rejects_non_string_role_elements():
+    """Review pass 1's tuple check closed the bare-string hazard for the
+    CONTAINER; review pass 2 found the elements still unchecked, so
+    `roles=(1, None)` constructed cleanly and would only fail in whichever
+    later story finally consumes the vocabulary.
+    """
+    with pytest.raises(TypeError, match=r"roles\[0\]"):
+        AccessDeclaration(access_column="region", roles=(1, None))
+
+
+def test_access_declaration_rejects_an_empty_role_element():
+    with pytest.raises(ValueError, match=r"roles\[1\]"):
+        AccessDeclaration(access_column="region", roles=("admin", ""))
+
+
+def test_access_declaration_rejects_a_non_string_access_column():
+    with pytest.raises(TypeError, match="access_column"):
+        AccessDeclaration(access_column=123, roles=("admin",))

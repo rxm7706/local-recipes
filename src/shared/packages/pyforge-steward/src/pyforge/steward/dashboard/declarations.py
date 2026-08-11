@@ -32,6 +32,11 @@ class AccessDeclaration:
     roles: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        if not isinstance(self.access_column, str):
+            raise TypeError(
+                f"AccessDeclaration.access_column must be a string, got "
+                f"{type(self.access_column).__name__}"
+            )
         if not self.access_column:
             raise ValueError(
                 "AccessDeclaration.access_column must not be empty — a "
@@ -51,6 +56,22 @@ class AccessDeclaration:
                 "cannot declare row-level access without a role vocabulary "
                 "to filter by"
             )
+        # Element types, not just the container's (review pass 2): the tuple
+        # check above closed the bare-string hazard, but `roles=(1, None)`
+        # still constructed and would only fail in whichever later story
+        # finally consumes the vocabulary.
+        for index, role in enumerate(self.roles):
+            if not isinstance(role, str):
+                raise TypeError(
+                    f"AccessDeclaration.roles[{index}] must be a string, got "
+                    f"{type(role).__name__} — a non-string role can never "
+                    f"match an extracted role header"
+                )
+            if not role:
+                raise ValueError(
+                    f"AccessDeclaration.roles[{index}] must not be empty — an "
+                    f"unnamed role cannot be filtered by"
+                )
 
 
 @dataclass(frozen=True)
@@ -85,6 +106,33 @@ class TrustedIngress:
                 "trusted ingress leaves AD-4's refusal with nothing to "
                 "check against"
             )
+        # Element types (review pass 2): `addresses=(b"10.0.0.1",)` passed
+        # both checks above, then silently matched no peer at all -- the
+        # middleware compares against `scope["client"][0]`, always a `str` --
+        # turning a typo into "refuse every request" with no diagnostic.
+        for index, address in enumerate(self.addresses):
+            if not isinstance(address, str):
+                raise TypeError(
+                    f"TrustedIngress.addresses[{index}] must be a string, got "
+                    f"{type(address).__name__} — the ASGI peer host it is "
+                    f"compared against is always a string, so a non-string "
+                    f"declaration can never match and would refuse every "
+                    f"request"
+                )
+            if not address:
+                raise ValueError(
+                    f"TrustedIngress.addresses[{index}] must not be empty — an "
+                    f"empty address can never match a peer host"
+                )
+        for field_name, header in (
+            ("identity_header", self.identity_header),
+            ("role_header", self.role_header),
+        ):
+            if not isinstance(header, str):
+                raise TypeError(
+                    f"TrustedIngress.{field_name} must be a string, got "
+                    f"{type(header).__name__}"
+                )
         if not self.identity_header:
             raise ValueError(
                 "TrustedIngress.identity_header must not be empty — the "
