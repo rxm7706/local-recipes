@@ -249,3 +249,107 @@ def test_no_cost_integration_sdk_imported_in_budget():
                 if name.lower() in banned_modules:
                     offenders.append(f"{path.name}:{node.lineno} imports {name!r}")
     assert not offenders, f"cost-integration SDK import found (AD-6: budget v1 is a stub): {offenders}"
+
+
+_DASHBOARD_BANNED_MODULES = {"django", "channels"}
+_DASHBOARD_BANNED_DOTTED_PREFIX = "pyforge.steward.dashboard"
+
+
+def _is_banned_dashboard_dotted(name: str) -> bool:
+    return name == _DASHBOARD_BANNED_DOTTED_PREFIX or name.startswith(
+        _DASHBOARD_BANNED_DOTTED_PREFIX + "."
+    )
+
+
+def _find_banned_dashboard_imports(source: str, own_package_parts: tuple[str, ...], label: str) -> list[str]:
+    """Return one string per offending import statement in `source`.
+
+    `own_package_parts` is the dotted package the source file itself lives
+    in (e.g. `("pyforge", "steward")`), used to resolve relative imports
+    (`node.level`) to an absolute dotted path.
+    """
+    import ast
+
+    def _resolved_module(node: ast.ImportFrom) -> str | None:
+        if node.level == 0:
+            return node.module
+        parts = list(own_package_parts[: len(own_package_parts) - (node.level - 1)]) if node.level > 1 \
+            else list(own_package_parts)
+        if node.module:
+            parts += node.module.split(".")
+        return ".".join(parts) if parts else None
+
+    offenders: list[str] = []
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                top = alias.name.split(".")[0]
+                if top in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(alias.name):
+                    offenders.append(f"{label}:{node.lineno} imports {alias.name!r}")
+        elif isinstance(node, ast.ImportFrom):
+            resolved = _resolved_module(node)
+            if resolved:
+                top = resolved.split(".")[0]
+                if top in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(resolved):
+                    offenders.append(f"{label}:{node.lineno} imports from {resolved!r}")
+                    continue
+            # The banned target may be named as an imported SYMBOL rather
+            # than as part of the module path, e.g.
+            # `from pyforge.steward import dashboard`.
+            for alias in node.names:
+                full = f"{resolved}.{alias.name}" if resolved else alias.name
+                top = full.split(".")[0]
+                if top in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(full):
+                    offenders.append(f"{label}:{node.lineno} imports {full!r}")
+    return offenders
+
+
+def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
+    """Story 9.1: `pyforge.steward.dashboard` ships ONLY behind the
+    `pyforge-steward[dashboard]` optional extra, never a base dependency.
+    A base-package module importing `pyforge.steward.dashboard`, `django`,
+    or `channels` at module level would silently make the extra mandatory
+    for every existing duty, breaking an install that never opted into
+    `[dashboard]`.
+
+    AST-based (imports only), identical rationale to
+    `test_no_rotation_scheduler_exists`/
+    `test_no_third_party_provider_api_client_imported` -- this module's own
+    docstrings and comments name "django" and "channels" freely in prose,
+    which a text scan would misflag as evidence of importing them.
+
+    The detection logic lives in `_find_banned_dashboard_imports` above,
+    shared with `test_dashboard_import_guard_catches_symbol_and_relative_
+    import_shapes` below, which proves by execution (not by reading this
+    docstring) that the two blind spots review pass 1 found are actually
+    fixed.
+    """
+    steward_dir = PKG_ROOT / "steward"
+    dashboard_dir = steward_dir / "dashboard"
+    offenders: list[str] = []
+    for path in steward_dir.rglob("*.py"):
+        if dashboard_dir in path.parents:
+            continue
+        offenders += _find_banned_dashboard_imports(
+            path.read_text(encoding="utf-8"), ("pyforge", "steward"), path.name
+        )
+    assert not offenders, f"dashboard/django/channels import found outside dashboard/: {offenders}"
+
+
+def test_dashboard_import_guard_catches_symbol_and_relative_import_shapes():
+    """Review pass 1 (Blind Hunter + Edge Case Hunter): the first version of
+    `_find_banned_dashboard_imports` only inspected `ast.ImportFrom.module`,
+    so two real import shapes sailed through undetected. Proven here by
+    execution against synthetic source, not by reading the implementation.
+    """
+    symbol_import = "from pyforge.steward import dashboard\n"
+    relative_import = "from . import dashboard\n"
+    relative_submodule_import = "from .dashboard import cache\n"
+    legitimate_import = "from pyforge.steward import keys\n"
+
+    for source in (symbol_import, relative_import, relative_submodule_import):
+        offenders = _find_banned_dashboard_imports(source, ("pyforge", "steward"), "synthetic.py")
+        assert offenders, f"expected {source!r} to be flagged as a dashboard import"
+
+    assert not _find_banned_dashboard_imports(legitimate_import, ("pyforge", "steward"), "synthetic.py")

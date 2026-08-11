@@ -17,6 +17,16 @@ authors = [{ name = "rxm7706" }]
 # library.
 dependencies = ["PyYAML"]
 
+[project.optional-dependencies]
+# Story 9.1 (AD-1/AD-13): pyforge.steward.dashboard ships ONLY behind this
+# extra, never a base dependency -- mirrors the pyforge-atlas -> pyforge-warden
+# `[gate]` extra precedent verbatim. Floor matches the architecture Stack
+# table's "Django 5.2 LTS" and root pixi.toml's existing
+# `[feature.local-recipes.dependencies]` pin (keep both in sync) -- 5.2 is
+# already resolved and used elsewhere in this estate (wagtail/coderedcms),
+# not merely aspirational.
+dashboard = ["django>=5.2,<6"]
+
 [project.scripts]
 steward = "pyforge.steward.cli:main"
 
