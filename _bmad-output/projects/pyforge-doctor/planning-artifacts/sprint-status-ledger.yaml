@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 46
+# stories: 47
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -34,6 +34,7 @@ development_status:
   5-2-render-the-verdict-through-a-doctor-verb: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
   6-10-independence-is-structural-for-every-source: done
+  6-11-the-classifier-recognizes-a-spike-report: backlog
   6-2-a-source-registry-doctor-owns: done
   6-3-the-repo-runtime-split-survives-the-move: done
   6-4-the-ledger-verdicts-come-home: done
