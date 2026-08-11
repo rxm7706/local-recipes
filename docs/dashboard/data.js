@@ -522,7 +522,7 @@ window.DASHBOARD_DATA = {
         "median": 101,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-11 00:40 UTC"
+        "phaseAsOf": "2026-08-11 01:01 UTC"
       },
       "velocity": {
         "derived": true,
@@ -852,7 +852,17 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "13.1",
+        "title": "The state layer survives a second writer",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1786409132,
+        "median": 98,
+        "lo": 29,
+        "hi": 417,
+        "phaseAsOf": "2026-08-11 01:01 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 53 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -919,7 +929,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "13.1"
       },
       "epics": [
@@ -1236,7 +1246,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "13.1",
-              "pending",
+              "active",
               "The state layer survives a second writer"
             ],
             [
@@ -1292,7 +1302,7 @@ window.DASHBOARD_DATA = {
         "median": 97,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-11 00:40 UTC"
+        "phaseAsOf": "2026-08-11 01:01 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2211,7 +2221,7 @@ window.DASHBOARD_DATA = {
         "median": 46,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-11 00:40 UTC"
+        "phaseAsOf": "2026-08-11 01:01 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2711,7 +2721,7 @@ window.DASHBOARD_DATA = {
         "median": 64,
         "lo": 19,
         "hi": 360,
-        "phaseAsOf": "2026-08-11 00:40 UTC"
+        "phaseAsOf": "2026-08-11 01:01 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3693,7 +3703,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 00:40 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 01:01 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4549,7 +4559,7 @@ window.DASHBOARD_DATA = {
       "title": "The dashboard derives project paths — slug ≠ directory stops being a bug factory",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-09",
+      "updated": "2026-08-10",
       "dream": "dashboard-project-path-derivation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
     },
@@ -8872,7 +8882,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-09T22:10",
+          "spec": "2026-08-10T19:57",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9190,7 +9200,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-09",
           "deck": "",
-          "spec": "2026-08-10T09:42",
+          "spec": "2026-08-10T19:57",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12957,7 +12967,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
+        "state": "drift",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -12980,65 +12990,9 @@ window.DASHBOARD_DATA = {
     }
   },
   "backlog": {
-    "rows": [
-      {
-        "slug": "conda-forge-expert-rebuild",
-        "title": "Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice",
-        "status": "specified",
-        "owner": "mason",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
-        }
-      },
-      {
-        "slug": "deferred-work-visibility",
-        "title": "A deferral that nobody can see is a deferral that never happened",
-        "status": "specified",
-        "owner": "doctor",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility"
-        }
-      },
-      {
-        "slug": "herald-moments-2-4-live-backend",
-        "title": "Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered",
-        "status": "specified",
-        "owner": "herald",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
-        }
-      },
-      {
-        "slug": "jira-github-projects-sync",
-        "title": "A ticket moves once, both boards know",
-        "status": "specified",
-        "owner": "steward",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync"
-        }
-      },
-      {
-        "slug": "secure-live-dashboards",
-        "title": "A dashboard can be handed to the company without being rebuilt",
-        "status": "specified",
-        "owner": "steward",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards"
-        }
-      }
-    ],
+    "rows": [],
     "blocked": 0,
-    "byOwner": {
-      "mason": 1,
-      "doctor": 1,
-      "herald": 1,
-      "steward": 2
-    },
+    "byOwner": {},
     "practices": [
       {
         "slug": "agent-portability",
@@ -13115,8 +13069,8 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "paused 13.1",
-        "load": 1,
+        "line": "in flight 13.1",
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -13450,7 +13404,7 @@ window.DASHBOARD_DATA = {
           "practice": 2
         },
         "line": "in flight 2.1",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -13523,7 +13477,7 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "in flight 7.1",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -13606,7 +13560,7 @@ window.DASHBOARD_DATA = {
           "practice": 1
         },
         "line": "in flight 8.2",
-        "load": 2,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -15403,6 +15357,12 @@ window.DASHBOARD_DATA = {
         "startEpoch": 1786407963
       },
       {
+        "station": "Herald",
+        "story": "13.1",
+        "phase": "dev",
+        "startEpoch": 1786409132
+      },
+      {
         "station": "Marshal",
         "story": "7.1",
         "phase": "dev",
@@ -15429,8 +15389,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 00:40 UTC",
-    "generatedEpoch": 1786408853
+    "generatedAt": "2026-08-11 01:01 UTC",
+    "generatedEpoch": 1786410095
   },
   "storySpecs": [
     {
