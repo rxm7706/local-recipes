@@ -123,7 +123,7 @@ contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-61 Dream files as of 2026-08-10, of which 42 are mapped below — the 19 omitted are
+63 Dream files as of 2026-08-11, of which 44 are mapped below — the 19 omitted are
 archived per-station satellites folded into their parent Dream on 2026-08-08 (see
 **Dream-level-only consolidation**). The **frontmatter is the source of truth**; this table is a
 curated map, and its Status column is now synced from frontmatter rather than hand-copied.
@@ -194,6 +194,8 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`deferred-work-visibility.md`](deferred-work-visibility.md) | specified | `deferred_work_check` matches deferrals by `DW-*` id, but `bmad-dev-auto` writes bare `- source_spec:` bullets with no id — **470 anonymous vs 33 identified**, so the gate covers 6.6% of what it claims. Both sides must move, in order: writer, then grandfathering, then the gate. Sequenced behind doctor 6-9. |
 | [`artifact-chain-reconciliation.md`](artifact-chain-reconciliation.md) | realized | The pause-and-audit at 267/335, spanning **all of PyForge** — all 61 Dreams, all artifacts, all stages, all code: cited verdicts per story, done-claim sampling on all eight stations (completed ones first-class — three of the four queued decomposition chains extend them), AC→test coverage, two-sided correction pre-authorized (artifact↔code), nothing silent. CAP-1..8, serial: steward → mason → marshal → completed five → full inventory. |
 | [`fleet-status-supervisor-fallback.md`](fleet-status-supervisor-fallback.md) | dreamt | `derive_home_state`'s first branch reports `"unsupervised"` whenever the supervisor sidecar pid is dead, before ever checking whether the underlying engine is still doing anything — collapsing "sidecar died, engine fine" and "actually needs a re-spin" into the same word. Wants a fallback liveness signal for the `supervisor_alive is False` case. |
+| [`adaptive-model-tiering.md`](adaptive-model-tiering.md) | dreamt | FR-51's model-tiering chain (Story 6.1: `spec_difficulty.py`, `cli/spin.py`'s difficulty resolution, `render_policy_toml`'s tier-batching) is fully built and wired into `marshal factory spin` — but zero story declares a `difficulty:`, zero project populates a real `model_tier_map`, and nothing escalates a struggling retry's model. Wants the mechanism actually fed, plus a retry-triggered floor-raise. |
+| [`horizontal-run-concurrency.md`](horizontal-run-concurrency.md) | dreamt | `scm.max_parallel = 1` in Marshal's rendered policy isn't a Marshal default — vendored `bmad_loop` 0.9.0 hard-clamps any requested value to 1 at policy load ("Phase 5" fan-out unbuilt upstream), silently, with no upstream-register entry tracking the gap. Wants the clamp surfaced, the gap registered, and Marshal-side readiness assessed for when it ships. |
 | [`bmad-drift-new-artifact-shape.md`](bmad-drift-new-artifact-shape.md) | dreamt | `pyforge.doctor.sources.factory::classify()` HARD-fails any project file it has no rule for — working as designed (fourteen shapes 2026-07-28, eleven more 2026-08-08, each closed by one git-reviewed rule), but Marshal Story 7.6's spike report (`planning-artifacts/spike-0-copier-api-fit-report.md`, PR #427) is a shape it hasn't seen yet, HARD-failing `detectors-ci`. Wants one more classification rule for the spike-report shape. |
 
 **Applications**
