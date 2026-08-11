@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 129
+# stories: 157
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -52,6 +52,22 @@ development_status:
   13-5-a-spec-cannot-declare-a-surface-it-has-no-contract-for: done
   13-6-the-presumed-set-is-worked-down-by-measurement: done
   13-7-the-producer-reconciles-the-surface-it-drifts: done
+  14-1-the-leaf-exists-and-is-provably-a-leaf: backlog
+  14-2-atomic-write-has-one-implementation: backlog
+  14-3-one-lattice-one-envelope-one-exception-root: backlog
+  14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated: backlog
+  15-1-one-command-refreshes-the-fleets-homes: backlog
+  15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check: backlog
+  16-1-one-resolver-derived-sources-loud-failures: backlog
+  17-1-the-detectors-remaining-blind-spots-are-fixture-pinned-with-an-incident-log: backlog
+  17-2-the-dreams-hygiene-mode-exists: backlog
+  17-3-chain-completeness-audit-mode-reports-layers: backlog
+  17-4-orchestrated-regeneration-that-cannot-lose-code-status: backlog
+  18-1-marshals-capabilities-become-named-typed-tools: backlog
+  18-2-parity-and-coverage-are-gated-numbers: backlog
+  19-1-one-generator-produces-every-stations-test-architecture: backlog
+  19-2-the-shared-test-support-kit: backlog
+  19-3-coverage-gates-that-name-the-module: backlog
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done
@@ -101,8 +117,8 @@ development_status:
   6-8-upstream-contribution-register: done
   6-9-tool-surface-rendering-and-preflight-probe: done
   7-1-the-seed-module-tree-inside-pyforge-marshal: backlog
-  7-2-error-taxonomy-and-exit-codes: backlog
-  7-3-the-fs-write-primitive-and-the-never-write-guard: backlog
+  7-2-error-taxonomy-and-exit-codes: blocked
+  7-3-the-fs-write-primitive-and-the-never-write-guard: blocked
   7-4-manifest-schema-loader-and-model-version-ranges: backlog
   7-5-the-v1-extraction-manifest: backlog
   7-6-spike-0-copier-api-fit: backlog
@@ -127,6 +143,18 @@ development_status:
   epic-12-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
+  epic-14: backlog
+  epic-14-retrospective: optional
+  epic-15: backlog
+  epic-15-retrospective: optional
+  epic-16: backlog
+  epic-16-retrospective: optional
+  epic-17: backlog
+  epic-17-retrospective: optional
+  epic-18: backlog
+  epic-18-retrospective: optional
+  epic-19: backlog
+  epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
   epic-3: done
