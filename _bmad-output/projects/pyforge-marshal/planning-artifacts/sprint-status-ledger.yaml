@@ -120,8 +120,8 @@ development_status:
   7-2-error-taxonomy-and-exit-codes: blocked
   7-3-the-fs-write-primitive-and-the-never-write-guard: blocked
   7-4-manifest-schema-loader-and-model-version-ranges: done
-  7-5-the-v1-extraction-manifest: backlog
-  7-6-spike-0-copier-api-fit: backlog
+  7-5-the-v1-extraction-manifest: done
+  7-6-spike-0-copier-api-fit: done
   8-1-marker-grammar-and-the-per-format-registry: backlog
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: backlog
   8-3-span-substitution-the-update-primitive: backlog
