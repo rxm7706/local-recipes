@@ -350,3 +350,23 @@ def test_long_numeric_prerelease_stays_inside_in_range():
     since = ModelVersion.parse("1.0.0-" + "1" * 4999)
     until = ModelVersion.parse("1.0.0-" + "2" * 5000)
     assert in_range(version, since, until) is True
+
+
+@pytest.mark.parametrize("component", ["major", "minor", "patch"])
+def test_unrenderable_numeric_component_is_rejected_at_construction(component):
+    """``parse`` already converts an over-long numeric component to
+    ``InvalidVersionError``, but ``__post_init__`` -- the second, unguarded
+    entry point -- accepted any ``int``, and CPython refuses to RENDER one
+    past 4300 digits. ``__str__`` then blew up while FORMATTING this
+    module's own AC-mandated error ("until (...) must be strictly greater
+    than since (...)") instead of reporting it."""
+    with pytest.raises(ValueError, match=rf"^{component} has an unusable numeric component: "):
+        ModelVersion(**{"major": 0, "minor": 0, "patch": 0, component: 10**5000})
+
+
+def test_every_constructible_version_is_renderable():
+    """The invariant behind the guard above: if a ModelVersion exists, any
+    message that interpolates it can be formatted."""
+    version = ModelVersion(major=10**300, minor=0, patch=0)
+    assert str(version).startswith("1" + "0" * 300)
+    assert ModelVersion.parse(str(version)) == version

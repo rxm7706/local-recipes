@@ -604,7 +604,13 @@ def test_non_mapping_artifacts_entry_raises_manifest_error(tmp_path):
         artifacts:
           - "just a string, not a mapping"
     """
-    with pytest.raises(ManifestError, match=r"artifacts\[0\]"):
+    with pytest.raises(
+        ManifestError,
+        match=(
+            r"^artifacts\[0\]: entry must be a mapping,"
+            r" got 'just a string, not a mapping'$"
+        ),
+    ):
         load_manifest(_write(tmp_path, text))
 
 
@@ -626,15 +632,29 @@ def test_non_mapping_region_raises_manifest_error(tmp_path):
 
 
 def test_missing_file_raises_manifest_error(tmp_path):
-    with pytest.raises(ManifestError, match="could not read"):
+    with pytest.raises(
+        ManifestError, match=r"^manifest: could not read .*does-not-exist\.yaml: "
+    ):
         load_manifest(tmp_path / "does-not-exist.yaml")
 
 
 def test_malformed_yaml_raises_manifest_error(tmp_path):
     path = tmp_path / "bad.yaml"
     path.write_text(": not: valid: yaml: [", encoding="utf-8")
-    with pytest.raises(ManifestError, match="invalid YAML"):
+    with pytest.raises(ManifestError, match=r"^manifest: invalid YAML in .*bad\.yaml: "):
         load_manifest(path)
+
+
+def test_deeply_nested_yaml_raises_manifest_error(tmp_path):
+    """PyYAML's composer recurses per nesting level, so a deeply nested
+    document blew the stack with a raw RecursionError -- the same escape
+    class as UnicodeDecodeError, on the very input (malformed YAML) the
+    ManifestError-only contract names."""
+    text = 'model_version: "1.0.0"\nartifacts: ' + "[" * 500 + "]" * 500 + "\n"
+    with pytest.raises(
+        ManifestError, match=r"^manifest: .* is nested too deeply to parse$"
+    ):
+        load_manifest(_write(tmp_path, text))
 
 
 def test_error_message_disambiguates_second_bad_entry_by_index(tmp_path):
@@ -653,7 +673,10 @@ def test_error_message_disambiguates_second_bad_entry_by_index(tmp_path):
             applies_to: init
             rationale: r
     """
-    with pytest.raises(ManifestError, match=r"artifacts\[1\]"):
+    with pytest.raises(
+        ManifestError,
+        match=r"^artifacts\[1\]: id must be a non-empty, non-blank str, got None$",
+    ):
         load_manifest(_write(tmp_path, text))
 
 
@@ -665,7 +688,11 @@ def test_duplicate_top_level_key_raises_manifest_error(tmp_path):
     manifest with two `model_version:` lines would load as a different
     document than the one a human reviewed in the diff."""
     text = 'model_version: "1.0.0"\nmodel_version: "9.9.9"\nartifacts: []\n'
-    with pytest.raises(ManifestError, match="duplicate key"):
+    with pytest.raises(
+        ManifestError,
+        # (?s) -- the YAML error's own file/line/column detail spans lines.
+        match=r"(?s)^manifest: invalid YAML in .*found duplicate key 'model_version'",
+    ):
         load_manifest(_write(tmp_path, text))
 
 
@@ -680,7 +707,12 @@ def test_duplicate_key_within_entry_raises_manifest_error(tmp_path):
             applies_to: init
             rationale: r
     """
-    with pytest.raises(ManifestError, match="duplicate key"):
+    # `manifest: `, not `foo: ` -- a YAML-level failure is composed before
+    # any entry structure exists to address, which is what ManifestError's
+    # docstring promises.
+    with pytest.raises(
+        ManifestError, match=r"(?s)^manifest: invalid YAML in .*found duplicate key 'path'"
+    ):
         load_manifest(_write(tmp_path, text))
 
 
@@ -813,7 +845,10 @@ def test_empty_never_write_pattern_raises_manifest_error(tmp_path):
     """Every other string field here is non-empty; an empty pattern
     reaching S-7.3's guard could match every path."""
     text = 'model_version: "1.0.0"\nnever_write: [""]\nartifacts: []\n'
-    with pytest.raises(ManifestError, match=r"^manifest: never_write must be a list of non-blank str"):
+    with pytest.raises(
+        ManifestError,
+        match=r"^manifest: never_write\[0\] must be a non-empty, non-blank str, got ''$",
+    ):
         load_manifest(_write(tmp_path, text))
 
 
@@ -825,7 +860,9 @@ def test_non_utf8_file_raises_manifest_error(tmp_path):
     the `OSError`/`YAMLError` handlers."""
     path = tmp_path / "manifest.yaml"
     path.write_bytes(b'model_version: "\xff\xfe1.0.0"\n')
-    with pytest.raises(ManifestError, match="is not valid UTF-8"):
+    with pytest.raises(
+        ManifestError, match=r"^manifest: .*manifest\.yaml is not valid UTF-8: "
+    ):
         load_manifest(path)
 
 
@@ -833,7 +870,9 @@ def test_unusable_model_version_component_raises_manifest_error(tmp_path):
     """A grammatically valid but absurd component (CPython refuses int()
     past 4300 digits) must not escape as a raw ValueError."""
     text = f'model_version: "{"1" * 5000}.0.0"\nartifacts: []\n'
-    with pytest.raises(ManifestError, match="^manifest: model_version:"):
+    with pytest.raises(
+        ManifestError, match=r"^manifest: model_version: .*has an unusable numeric component: "
+    ):
         load_manifest(_write(tmp_path, text))
 
 
@@ -854,7 +893,11 @@ def test_schema_dataclasses_are_frozen_and_hashable():
     for obj, field_name in ((region, "name"), (entry, "id"), (manifest, "never_write")):
         with pytest.raises(dataclasses.FrozenInstanceError):
             setattr(obj, field_name, "mutated")
-    assert {region, entry, manifest}  # hashable
+    # `assert {region, entry, manifest}` would be vacuous -- a non-empty set
+    # literal is always truthy, so the assertion itself could never fail and
+    # a `__hash__ = None` regression would surface as an unnamed TypeError.
+    for obj in (region, entry, manifest):
+        assert isinstance(hash(obj), int)
 
 
 # --- _StrictLoader rejects AUTHORED duplicates, not merge-key overrides -------
@@ -980,9 +1023,30 @@ def test_whitespace_only_region_name_raises_manifest_error(tmp_path):
 def test_whitespace_only_never_write_pattern_raises_manifest_error(tmp_path):
     text = 'model_version: "1.0.0"\nnever_write: ["   "]\nartifacts: []\n'
     with pytest.raises(
-        ManifestError, match=r"^manifest: never_write must be a list of non-blank str"
+        ManifestError,
+        match=r"^manifest: never_write\[0\] must be a non-empty, non-blank str, got '   '$",
     ):
         load_manifest(_write(tmp_path, text))
+
+
+def test_never_write_error_names_the_offending_pattern(tmp_path):
+    """The one error in the module that named neither a locator nor the
+    offending value. On S-7.5's real deny-list, "one of these is wrong" is
+    a manual bisect -- the same defect already fixed at `artifacts[N]`,
+    `regions[N] (name)` and `since:`/`until:`."""
+    text = 'model_version: "1.0.0"\nnever_write: ["a", 42, "b"]\nartifacts: []\n'
+    with pytest.raises(
+        ManifestError,
+        match=r"^manifest: never_write\[1\] must be a non-empty, non-blank str, got 42$",
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_never_write_pattern_is_stored_stripped(tmp_path):
+    """A deny-pattern carrying stray padding matches nothing, so a rule
+    that reads as present in the diff would silently protect no path."""
+    text = 'model_version: "1.0.0"\nnever_write: ["  AGENTS.md  "]\nartifacts: []\n'
+    assert load_manifest(_write(tmp_path, text)).never_write == ("AGENTS.md",)
 
 
 # --- region errors name the offending region ----------------------------------
@@ -1011,7 +1075,7 @@ def test_region_error_names_the_offending_region(tmp_path):
                 anchor: ["## Three"]
     """
     with pytest.raises(
-        ManifestError, match=r"^foo: regions\[1\] \(two\): anchor must be a non-empty tuple"
+        ManifestError, match=r"^foo: regions\[1\] \(two\): anchor must be a non-empty list of str"
     ):
         load_manifest(_write(tmp_path, text))
 
@@ -1074,3 +1138,272 @@ def test_unquoted_model_version_parses_as_a_float_and_is_rejected(tmp_path):
         ManifestError, match=r"^manifest: model_version: version must be a str, got 1.0$"
     ):
         load_manifest(_write(tmp_path, "model_version: 1.0\nartifacts: []\n"))
+
+
+# --- whitespace is not part of an identity --------------------------------------
+
+
+def test_padded_id_is_stripped_and_collides_with_its_bare_twin(tmp_path):
+    """Deciding validity on `.strip()` while STORING the padding made
+    surrounding whitespace significant to identity and to nothing else:
+    `id: "foo"` and `id: " foo "` loaded as two distinct entries that render
+    identically, defeating the AC's duplicate-id rule and leaving neither
+    reachable by `explain foo`."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: "foo"
+            class: copied-seeded
+            path: "a.md"
+            applies_to: both
+            rationale: r
+          - id: "  foo  "
+            class: copied-seeded
+            path: "b.md"
+            applies_to: both
+            rationale: r
+    """
+    with pytest.raises(ManifestError, match=r"^foo: duplicate id$"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_padded_text_fields_are_stored_stripped(tmp_path):
+    """A padded `path` would reach S-7.3's guard matching no pattern and no
+    file; a padded `pin`/`legacy_of` would never match its counterpart."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: "  foo  "
+            class: referenced
+            path: "  AGENTS.md  "
+            applies_to: both
+            rationale: "  because  "
+            pin: "  >=3.7b  "
+            legacy_of: "  old-id  "
+    """
+    entry = load_manifest(_write(tmp_path, text)).entries[0]
+    assert (entry.id, entry.path, entry.rationale) == ("foo", "AGENTS.md", "because")
+    assert (entry.pin, entry.legacy_of) == (">=3.7b", "old-id")
+
+
+def test_blank_anchor_item_raises_manifest_error(tmp_path):
+    """An anchor is AD-56's literal line-prefix matcher, so a
+    whitespace-only one matches the first indented line in the target file
+    and splices the managed region at an arbitrary position -- the same
+    "matches everything" hazard that disqualifies an empty `never_write`
+    pattern. This was the one string field the non-blank sweep missed."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: html
+            regions:
+              - name: tiers
+                anchor: ["   "]
+    """
+    with pytest.raises(
+        ManifestError,
+        match=r"^foo: regions\[0\] \(tiers\): anchor must contain only non-blank str",
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_anchor_item_keeps_its_own_leading_whitespace(tmp_path):
+    """Unlike an id or a path, an anchor's leading whitespace is
+    significant -- an author may deliberately anchor on an indented line --
+    so a non-blank anchor is NOT stripped."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: html
+            regions:
+              - name: tiers
+                anchor: ["    - nested item"]
+    """
+    entry = load_manifest(_write(tmp_path, text)).entries[0]
+    assert entry.regions[0].anchor == ("    - nested item",)
+
+
+# --- a field the class does not take is reported as such ------------------------
+
+
+def test_regions_on_a_non_hybrid_class_is_reported_before_region_shape(tmp_path):
+    """Building the regions first reported `anchor must be a non-empty
+    list` -- telling the author to repair a region the class forbids
+    outright."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: copied-seeded
+            path: "a.md"
+            applies_to: both
+            rationale: r
+            regions:
+              - name: tiers
+                anchor: []
+    """
+    with pytest.raises(
+        ManifestError,
+        match=r"^foo: regions are only valid on hybrid-managed-region entries,"
+        r" got class 'copied-seeded'$",
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_unrecognized_class_still_reports_itself_before_the_regions_gate(tmp_path):
+    """The early regions gate must not shadow the class error itself."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: bogus-class
+            path: "a.md"
+            applies_to: both
+            rationale: r
+            regions:
+              - name: tiers
+                anchor: []
+    """
+    with pytest.raises(ManifestError, match=r"^foo: .*not a valid ArtifactClass"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_wrong_typed_pin_on_a_non_referenced_class_reports_the_class_rule(tmp_path):
+    """`pin: 5` on a `copied-managed` entry read "pin must be a non-empty,
+    non-blank str", sending the author to fix the type of a field they must
+    delete."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: copied-managed
+            path: "a.md"
+            applies_to: both
+            rationale: r
+            pin: 5
+    """
+    with pytest.raises(
+        ManifestError, match=r"^foo: pin is only valid on referenced entries, got 5$"
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+# --- a repeated merge key is an authored duplicate ------------------------------
+
+
+def test_repeated_merge_key_raises_manifest_error(tmp_path):
+    """PyYAML resolves two `<<:` keys last-wins; the equivalent
+    `<<: [*a, *b]` sequence spelling resolves first-wins. Two spellings of
+    "inherit from a and b" producing opposite artifacts is exactly what
+    `_StrictLoader` exists to prevent, and the merge exemption was written
+    for ONE merge key overriding an inherited value."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - &a
+            id: base_a
+            class: copied-seeded
+            path: "from-a.md"
+            applies_to: both
+            rationale: r
+          - &b
+            id: base_b
+            class: copied-seeded
+            path: "from-b.md"
+            applies_to: both
+            rationale: r
+          - <<: *a
+            <<: *b
+            id: merged
+    """
+    with pytest.raises(
+        ManifestError, match=r"(?s)^manifest: invalid YAML in .*found duplicate merge key '<<'"
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_merge_key_sequence_is_accepted_and_resolves_first_wins(tmp_path):
+    """The sanctioned way to merge several anchors stays legal."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - &a
+            id: base_a
+            class: copied-seeded
+            path: "from-a.md"
+            applies_to: both
+            rationale: r
+          - &b
+            id: base_b
+            class: copied-seeded
+            path: "from-b.md"
+            applies_to: both
+            rationale: r
+          - <<: [*a, *b]
+            id: merged
+    """
+    manifest = load_manifest(_write(tmp_path, text))
+    merged = next(entry for entry in manifest.entries if entry.id == "merged")
+    assert merged.path == "from-a.md"
+
+
+# --- dataclass-level type guards (direct construction) --------------------------
+
+
+def test_region_anchor_rejects_non_str_items():
+    with pytest.raises(ValueError, match=r"anchor must contain only non-blank str"):
+        Region(name="tiers", anchor=(1, 2))  # pyright: ignore[reportArgumentType]
+
+
+def test_entry_regions_rejects_non_region_items():
+    with pytest.raises(ValueError, match=r"regions must contain only Region instances"):
+        ManifestEntry(
+            id="foo",
+            artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+            path="x",
+            applies_to=AppliesTo.INIT,
+            rationale="r",
+            format="html",
+            regions=("not-a-region",),  # pyright: ignore[reportArgumentType]
+        )
+
+
+@pytest.mark.parametrize("bound", ["since", "until"])
+def test_entry_bounds_reject_non_model_version(bound):
+    with pytest.raises(ValueError, match=rf"{bound} must be a ModelVersion or None, got '1.0.0'"):
+        ManifestEntry(
+            id="foo",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="x",
+            applies_to=AppliesTo.INIT,
+            rationale="r",
+            **{bound: "1.0.0"},  # pyright: ignore[reportArgumentType]
+        )
+
+
+def test_manifest_rejects_non_model_version():
+    with pytest.raises(ValueError, match=r"model_version must be a ModelVersion, got '1.0.0'"):
+        Manifest(
+            model_version="1.0.0",  # pyright: ignore[reportArgumentType]
+            never_write=(),
+            entries=(),
+        )
+
+
+def test_manifest_rejects_non_entry_items():
+    with pytest.raises(ValueError, match=r"entries must contain only ManifestEntry instances"):
+        Manifest(
+            model_version=ModelVersion.parse("1.0.0"),
+            never_write=(),
+            entries=("not-an-entry",),  # pyright: ignore[reportArgumentType]
+        )

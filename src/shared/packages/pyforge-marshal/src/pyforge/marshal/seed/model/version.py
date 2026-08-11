@@ -144,8 +144,22 @@ class ModelVersion:
         numerically yet unequal by ``__eq__``, so the pair is neither <, >,
         nor ==, and ``sorted``/``bisect`` silently misbehave."""
         for name, value in (("major", self.major), ("minor", self.minor), ("patch", self.patch)):
-            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            if isinstance(value, bool) or not isinstance(value, int):
                 raise ValueError(f"{name} must be a non-negative int, got {value!r}")
+            try:
+                text = str(value)
+            except ValueError as exc:
+                # `parse` already converts an over-long numeric component to
+                # InvalidVersionError, but this second entry point accepted
+                # any `int` -- and CPython refuses to RENDER one past 4300
+                # digits, so `__str__` (and therefore every operator-facing
+                # message that interpolates a version, including this
+                # module's own `until (...) must be strictly greater than
+                # since (...)`) blew up while formatting the error instead
+                # of reporting it.
+                raise ValueError(f"{name} has an unusable numeric component: {exc}") from exc
+            if value < 0:
+                raise ValueError(f"{name} must be a non-negative int, got {text}")
         for name, value, pattern in (
             ("prerelease", self.prerelease, _PRERELEASE_IDENTIFIER_PATTERN),
             ("build", self.build, _BUILD_IDENTIFIER_PATTERN),

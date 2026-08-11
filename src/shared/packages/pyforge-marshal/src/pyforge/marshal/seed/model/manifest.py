@@ -98,9 +98,17 @@ class AppliesTo(StrEnum):
 
 class ManifestError(Exception):
     """Raised by ``load_manifest`` for any schema violation. The message is
-    always prefixed with a locator: ``"<id>: "`` (the offending entry's id),
-    ``"artifacts[N]: "`` (an entry whose own ``id`` could not be read, so it
-    is addressed by position), or ``"manifest: "`` (a top-level failure)."""
+    always prefixed with exactly one of three mutually exclusive locators:
+    ``"<id>: "`` (the offending entry's id), ``"artifacts[N]: "`` (an entry
+    whose own ``id`` could not be read, so it is addressed by position), or
+    ``"manifest: "`` (a top-level failure). A consumer may route on the
+    prefix.
+
+    A YAML-level parse failure (unreadable file, bad encoding, malformed
+    syntax, a repeated key) is always ``"manifest: "``, even when the
+    offending line sits inside an entry: PyYAML fails while composing the
+    document, before any entry structure exists to address. Its own message
+    carries the file/line/column."""
 
 
 class _StrictLoader(yaml.SafeLoader):
@@ -128,11 +136,27 @@ class _StrictLoader(yaml.SafeLoader):
         # runs ``flatten_mapping()``, which splices a merge key's inherited
         # pairs into ``node.value`` in place, so a post-delegation scan sees
         # the merged result rather than the document.
-        authored_key_nodes = [
-            key_node
-            for key_node, _ in node.value
-            if key_node.tag != "tag:yaml.org,2002:merge"
-        ]
+        authored_key_nodes = []
+        merge_key_node = None
+        for key_node, _ in node.value:
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                # ONE merge key is the sanctioned override idiom. A SECOND
+                # is a duplicate the author really did write, and PyYAML
+                # resolves it last-wins -- the exact opposite of the
+                # equivalent `<<: [*a, *b]` sequence spelling, which the
+                # merge spec resolves first-wins. Two spellings of "inherit
+                # from a and b" producing opposite artifacts is precisely
+                # what this loader exists to prevent.
+                if merge_key_node is not None:
+                    raise yaml.constructor.ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        "found duplicate merge key '<<' (use `<<: [*a, *b]` to merge several)",
+                        key_node.start_mark,
+                    )
+                merge_key_node = key_node
+                continue
+            authored_key_nodes.append(key_node)
         mapping = super().construct_mapping(node, deep=deep)
         seen: set[Any] = set()
         for key_node in authored_key_nodes:
@@ -178,7 +202,7 @@ def _reject_unknown_keys(raw_mapping: dict, allowed: frozenset[str], what: str) 
         raise ValueError(f"unrecognized {what} key(s): {', '.join(unknown)}")
 
 
-def _require_text(name: str, value: Any, *, suffix: str = "") -> None:
+def _require_text(name: str, value: Any, *, suffix: str = "") -> str:
     """Every identity-bearing string field in this schema must carry actual
     content. ``.strip()``, not merely ``!= ""``: a whitespace-only value
     passes a bare truthiness check while defeating the field's entire
@@ -187,9 +211,19 @@ def _require_text(name: str, value: Any, *, suffix: str = "") -> None:
     addressed by ``explain <id>``, and a blank ``path`` reaches S-7.3's
     write guard indistinguishable from a real target. The module already
     rejects an EMPTY ``never_write`` pattern for exactly this reason; a
-    whitespace-only one is the same hazard one space away."""
+    whitespace-only one is the same hazard one space away.
+
+    Returns the STRIPPED value, which the caller stores. Deciding validity
+    on ``.strip()`` while keeping the padding would make surrounding
+    whitespace significant to identity and to nothing else: ``id: "foo"``
+    and ``id: " foo "`` would be two distinct entries that render
+    identically, defeating the AC's duplicate-id rule outright and leaving
+    neither reachable by ``explain foo`` -- and ``path: " AGENTS.md"``
+    would reach S-7.3's guard as a path that matches no pattern and no
+    file."""
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty, non-blank str{suffix}, got {value!r}")
+    return value.strip()
 
 
 @dataclass(frozen=True)
@@ -202,12 +236,24 @@ class Region:
     anchor: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        _require_text("region name", self.name)
+        object.__setattr__(self, "name", _require_text("region name", self.name))
         object.__setattr__(self, "anchor", tuple(self.anchor) if isinstance(self.anchor, list) else self.anchor)
         if not isinstance(self.anchor, tuple) or not self.anchor:
-            raise ValueError(f"anchor must be a non-empty tuple, got {self.anchor!r}")
-        if not all(isinstance(item, str) and item for item in self.anchor):
-            raise ValueError(f"anchor must contain only non-empty str, got {self.anchor!r}")
+            # "list", not "tuple": every neighbouring message in this module
+            # speaks the wire format the author actually writes, and the
+            # likeliest slip here is `anchor: "## Tiers"` -- a YAML author
+            # cannot write a Python tuple.
+            raise ValueError(f"anchor must be a non-empty list of str, got {self.anchor!r}")
+        # Non-BLANK, like every other string field here. An anchor is
+        # AD-56's literal line-prefix matcher, so a whitespace-only one
+        # matches the first indented line in the target file and splices the
+        # managed region at an arbitrary position -- the same "matches
+        # everything" hazard that already disqualifies an empty
+        # `never_write` pattern. The value itself is NOT stripped: unlike an
+        # id or a path, an anchor's own leading whitespace is significant
+        # (an author may deliberately anchor on an indented line).
+        if not all(isinstance(item, str) and item.strip() for item in self.anchor):
+            raise ValueError(f"anchor must contain only non-blank str, got {self.anchor!r}")
 
 
 @dataclass(frozen=True)
@@ -228,15 +274,11 @@ class ManifestEntry:
     legacy_of: str | None = None
 
     def __post_init__(self) -> None:
-        _require_text("id", self.id)
+        object.__setattr__(self, "id", _require_text("id", self.id))
         object.__setattr__(self, "artifact_class", ArtifactClass(self.artifact_class))
-        _require_text("path", self.path)
+        object.__setattr__(self, "path", _require_text("path", self.path))
         object.__setattr__(self, "applies_to", AppliesTo(self.applies_to))
-        _require_text("rationale", self.rationale)
-
-        for name, value in (("pin", self.pin), ("format", self.format), ("legacy_of", self.legacy_of)):
-            if value is not None:
-                _require_text(name, value, suffix=" or None")
+        object.__setattr__(self, "rationale", _require_text("rationale", self.rationale))
 
         object.__setattr__(
             self, "regions", tuple(self.regions) if isinstance(self.regions, list) else self.regions
@@ -259,6 +301,12 @@ class ManifestEntry:
         # failure this schema exists to prevent: an author who puts
         # `regions:` on a `copied-managed` entry believes a region is
         # managed, and nothing ever tells them it is not.
+        #
+        # This gate runs BEFORE the per-field content check below: a field
+        # the class does not take at all must be reported as such, not as a
+        # shape complaint about its value. `pin: 5` on a `copied-managed`
+        # entry otherwise read "pin must be a non-empty, non-blank str",
+        # sending the author to fix the type of a field they must delete.
         if self.artifact_class is ArtifactClass.REFERENCED:
             if not self.pin:
                 raise ValueError("referenced entries require a non-empty pin")
@@ -278,6 +326,10 @@ class ManifestEntry:
                 raise ValueError(
                     f"regions are only valid on hybrid-managed-region entries, got {self.regions!r}"
                 )
+
+        for name, value in (("pin", self.pin), ("format", self.format), ("legacy_of", self.legacy_of)):
+            if value is not None:
+                object.__setattr__(self, name, _require_text(name, value, suffix=" or None"))
 
         for name, value in (("since", self.since), ("until", self.until)):
             if value is not None and not isinstance(value, ModelVersion):
@@ -312,6 +364,12 @@ class Manifest:
             raise ValueError(
                 f"never_write must contain only non-blank str, got {self.never_write!r}"
             )
+        # Stripped on store, like every other text field: a deny-pattern
+        # carrying stray padding matches nothing, so a rule that reads as
+        # present in the diff silently protects no path at all.
+        object.__setattr__(
+            self, "never_write", tuple(item.strip() for item in self.never_write)
+        )
         object.__setattr__(
             self, "entries", tuple(self.entries) if isinstance(self.entries, list) else self.entries
         )
@@ -367,11 +425,29 @@ def _parse_bound(field_name: str, raw_value: Any) -> ModelVersion | None:
 
 def _build_entry(raw_entry: dict) -> ManifestEntry:
     _reject_unknown_keys(raw_entry, _ENTRY_KEYS, "entry")
+    # Resolve the class FIRST: it decides whether a `regions:` block is
+    # legal at all, and the regions below are built before `ManifestEntry`
+    # exists to check either rule. `ManifestEntry.__post_init__` re-runs
+    # this -- it is the real type boundary -- and `ArtifactClass()` is
+    # idempotent on its own member.
+    raw_class: Any = raw_entry.get("class")
+    artifact_class = ArtifactClass(raw_class)
     raw_regions = raw_entry.get("regions")
     if raw_regions is None:
         raw_regions = []
     if not isinstance(raw_regions, list):
         raise ValueError(f"regions must be a list, got {raw_regions!r}")
+    # Report a regions block the class does not take BEFORE validating the
+    # shape of its contents. `ManifestEntry.__post_init__` owns this rule,
+    # but it cannot reach it: the regions are built here first, so a
+    # `copied-seeded` entry with a malformed region reported "anchor must be
+    # a non-empty list" -- telling the author to repair a region the class
+    # forbids outright.
+    if raw_regions and artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
+        raise ValueError(
+            "regions are only valid on hybrid-managed-region entries,"
+            f" got class {artifact_class.value!r}"
+        )
     built_regions: list[Region] = []
     for region_index, raw_region in enumerate(raw_regions):
         # Locate the offending region, the same way the loader locates the
@@ -393,13 +469,12 @@ def _build_entry(raw_entry: dict) -> ManifestEntry:
     # Same rationale as _build_region above: ManifestEntry.__post_init__ is
     # the real type boundary, validating every one of these at runtime.
     raw_id: Any = raw_entry.get("id")
-    raw_class: Any = raw_entry.get("class")
     raw_path: Any = raw_entry.get("path")
     raw_applies_to: Any = raw_entry.get("applies_to")
     raw_rationale: Any = raw_entry.get("rationale")
     return ManifestEntry(
         id=raw_id,
-        artifact_class=raw_class,
+        artifact_class=artifact_class,
         path=raw_path,
         applies_to=raw_applies_to,
         rationale=raw_rationale,
@@ -442,6 +517,12 @@ def load_manifest(path: Path) -> Manifest:
         raise ManifestError(f"manifest: {path} is not valid UTF-8: {exc}") from exc
     except yaml.YAMLError as exc:
         raise ManifestError(f"manifest: invalid YAML in {path}: {exc}") from exc
+    except RecursionError as exc:
+        # PyYAML's composer recurses per nesting level, so a deeply nested
+        # document blows the stack instead of reporting a YAMLError -- the
+        # same escape class as UnicodeDecodeError above, and malformed YAML
+        # is exactly what this contract promises to report.
+        raise ManifestError(f"manifest: {path} is nested too deeply to parse") from exc
 
     if not isinstance(raw_document, dict):
         raise ManifestError(
@@ -470,13 +551,19 @@ def load_manifest(path: Path) -> Manifest:
     raw_never_write = raw_document.get("never_write")
     if raw_never_write is None:
         raw_never_write = []
-    if not isinstance(raw_never_write, list) or not all(
-        isinstance(item, str) and item.strip() for item in raw_never_write
-    ):
+    if not isinstance(raw_never_write, list):
+        raise ManifestError("manifest: never_write must be a list of non-blank str")
+    for pattern_index, raw_pattern in enumerate(raw_never_write):
         # Non-blank, like every other string field here: an empty (or
         # whitespace-only) pattern reaching S-7.3's guard could match every
-        # path.
-        raise ManifestError("manifest: never_write must be a list of non-blank str")
+        # path. Named by position and by value, like every other error this
+        # module raises -- on S-7.5's real list, an unlocated "one of these
+        # is wrong" is a manual bisect.
+        if not isinstance(raw_pattern, str) or not raw_pattern.strip():
+            raise ManifestError(
+                f"manifest: never_write[{pattern_index}] must be a non-empty, non-blank str,"
+                f" got {raw_pattern!r}"
+            )
     never_write = tuple(raw_never_write)
 
     raw_artifacts = raw_document.get("artifacts")
@@ -489,8 +576,13 @@ def load_manifest(path: Path) -> Manifest:
     entries: list[ManifestEntry] = []
     for index, raw_entry in enumerate(raw_artifacts):
         if not isinstance(raw_entry, dict):
+            # `artifacts[N]: `, NOT `manifest: artifacts[N]: ` -- the class
+            # docstring promises three MUTUALLY EXCLUSIVE locator prefixes,
+            # and this was the one raise emitting two at once, so a consumer
+            # routing on `startswith("manifest: ")` classified an entry
+            # failure as a top-level one.
             raise ManifestError(
-                f"manifest: artifacts[{index}] must be a mapping, got {raw_entry!r}"
+                f"artifacts[{index}]: entry must be a mapping, got {raw_entry!r}"
             )
         raw_id = raw_entry.get("id")
         # `.strip()`, matching `_require_text`: a whitespace-only id is
