@@ -213,6 +213,27 @@ def _load_index_document(index_path: Path) -> dict[str, object]:
     return document
 
 
+def _require_existing_index(index_path: Path, missing: str) -> None:
+    """Refuse, with ``missing`` as the message, when no index file exists --
+    for the mutating calls that can only ever operate on an existing notice
+    (``publish_notice``/``close_notice``/``archive_rename``, unlike
+    ``author_notice``, which legitimately creates the index).
+
+    Exists purely to run BEFORE ``locking.locked``: acquiring the lock
+    creates ``index_path``'s parent directory and the sidecar ``.lock``
+    file, so without this an operator running one of those commands from
+    the wrong directory would litter it with an empty ``.herald/`` tree on
+    a pure error path that had no filesystem side effect at all before
+    Story 13.1. The message is passed in so each caller keeps the exact
+    refusal its own in-lock check would have produced -- this is a
+    fail-fast, not a new error contract. The in-lock checks stay where they
+    are: this one is racy by construction (the index can appear between
+    here and the lock), which only ever means falling through to those
+    authoritative checks."""
+    if not index_path.exists():
+        raise errors.HeraldError(missing)
+
+
 def _write_index_document(index_path: Path, document: dict[str, object]) -> None:
     """Atomic write (temp file in the same directory, then ``os.replace``)
     -- mirrors ``state.write``'s crash-safety, including its limit: neither
@@ -436,9 +457,7 @@ def author_notice(
             )
 
         existing_raw = document["notices"].get(component)
-        existing = (
-            _entry_to_notice(existing_raw) if existing_raw is not None else None
-        )
+        existing = _entry_to_notice(existing_raw) if existing_raw is not None else None
         if existing is not None and existing.status != "draft":
             raise errors.HeraldError(
                 f"notice for {component!r} is already {existing.status}; cannot "
@@ -523,6 +542,7 @@ def publish_notice(
     index_path = (
         index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     )
+    _require_existing_index(index_path, f"no notice found for component {component!r}")
     lock_path = locking.lock_path_for(index_path)
     with locking.locked(lock_path):
         timestamp = now if now is not None else _now_iso()
@@ -572,6 +592,7 @@ def close_notice(
     index_path = (
         index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     )
+    _require_existing_index(index_path, f"no notice found for component {component!r}")
     lock_path = locking.lock_path_for(index_path)
     with locking.locked(lock_path):
         timestamp = now if now is not None else _now_iso()
@@ -715,6 +736,10 @@ def archive_rename(
         raise errors.HeraldError("cannot redirect a component to itself")
     index_path = (
         index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
+    )
+    _require_existing_index(
+        index_path,
+        f"cannot redirect to {new_component!r}: no notice exists for it yet",
     )
     lock_path = locking.lock_path_for(index_path)
     with locking.locked(lock_path):

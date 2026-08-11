@@ -1144,3 +1144,208 @@ def test_revalidate_all_refuses_duplicate_claim_ids(tmp_path):
 
     with pytest.raises(errors.HeraldError, match="duplicate claim ids"):
         claims.revalidate_all(claims_path, validate=_ok)
+
+
+def test_publish_does_not_revert_a_concurrently_changed_thesis(tmp_path):
+    """``publish`` resolves its final thesis from the FRESH in-lock read, not
+    from the pre-validation one.
+
+    Deriving it from the pre-lock read makes ``publish`` a lost-update path
+    for the field an operator is most likely to be editing: publishing with
+    no ``--thesis`` while a concurrent writer sets a new one republishes the
+    stale text AND files the newer text into ``edit_history`` as though it
+    were the superseded version -- inverting the two. Exactly the class of
+    silent lost update ``DW-1-4-2`` exists to close, on a field the
+    evidence-focused fix did not cover."""
+    claims_path = tmp_path / "claims.json"
+    ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
+    claims.create(
+        claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1"
+    )
+    stored = claims.read_all(claims_path)
+    stored[0] = replace(stored[0], thesis="thesis-old")
+    claims._write_all(claims_path, stored)
+
+    def validate_then_edit_thesis(url: str):
+        # A concurrent writer lands a newer thesis during the unlocked
+        # HTTP-validation window.
+        concurrent = claims.read_all(claims_path)
+        concurrent[0] = replace(concurrent[0], thesis="thesis-new")
+        claims._write_all(claims_path, concurrent)
+        return _ok(url)
+
+    published = claims.publish(
+        claims_path,
+        "id-1",
+        validate=validate_then_edit_thesis,
+        now=_fixed_now("2026-08-10T00:00:00+00:00"),
+    )
+
+    assert published.thesis == "thesis-new", (
+        "published the pre-validation thesis over a concurrent writer's newer one"
+    )
+    assert [v.thesis for v in published.edit_history] == [], (
+        "filed the NEWER thesis into edit_history as if it were superseded"
+    )
+    assert claims.read_all(claims_path)[0].thesis == "thesis-new"
+
+
+def test_publish_still_archives_the_previous_thesis_when_one_is_supplied(tmp_path):
+    """The counterpart to the test above: an explicitly supplied ``--thesis``
+    still wins, and the value it replaces -- read fresh, under the lock --
+    is what lands in ``edit_history``."""
+    claims_path = tmp_path / "claims.json"
+    claims.create(claims_path, project_name="proj", id_factory=lambda: "id-1")
+    stored = claims.read_all(claims_path)
+    stored[0] = replace(stored[0], thesis="thesis-old")
+    claims._write_all(claims_path, stored)
+
+    published = claims.publish(
+        claims_path,
+        "id-1",
+        thesis="thesis-explicit",
+        now=_fixed_now("2026-08-10T00:00:00+00:00"),
+    )
+
+    assert published.thesis == "thesis-explicit"
+    assert [v.thesis for v in published.edit_history] == ["thesis-old"]
+
+
+def test_publish_refuses_when_a_concurrent_writer_clears_the_thesis(tmp_path):
+    """The pre-lock thesis check is a fail-fast, not the decision: when a
+    concurrent writer clears the thesis during the unlocked validation
+    window, the in-lock re-resolution has nothing to publish and must refuse
+    with the same message rather than persist ``thesis=None``."""
+    claims_path = tmp_path / "claims.json"
+    ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
+    claims.create(
+        claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1"
+    )
+    stored = claims.read_all(claims_path)
+    stored[0] = replace(stored[0], thesis="thesis-old")
+    claims._write_all(claims_path, stored)
+
+    def validate_then_clear_thesis(url: str):
+        concurrent = claims.read_all(claims_path)
+        concurrent[0] = replace(concurrent[0], thesis=None)
+        claims._write_all(claims_path, concurrent)
+        return _ok(url)
+
+    with pytest.raises(errors.HeraldError, match="has no thesis"):
+        claims.publish(claims_path, "id-1", validate=validate_then_clear_thesis)
+
+    assert claims.read_all(claims_path)[0].status == "draft"
+
+
+def test_revalidate_does_not_stamp_updated_at_when_evidence_is_emptied_concurrently(
+    tmp_path,
+):
+    """The every-result-discarded guard must key off what this run actually
+    VALIDATED, not off the fresh read.
+
+    A concurrent writer that empties the evidence tuple leaves
+    ``fresh_claim.evidence`` falsy, so a guard written as
+    ``if fresh_claim.evidence and not any(carried)`` skips exactly the case
+    it exists to catch and stamps ``updated_at`` for a validation whose
+    every result was thrown away."""
+    claims_path = tmp_path / "claims.json"
+    ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
+    claims.create(
+        claims_path,
+        project_name="proj",
+        evidence=(ev,),
+        id_factory=lambda: "id-1",
+        now=_fixed_now("2020-01-01T00:00:00+00:00"),
+    )
+    original_updated_at = claims.read_all(claims_path)[0].updated_at
+
+    def validate_then_empty_evidence(url: str):
+        concurrent = claims.read_all(claims_path)
+        concurrent[0] = replace(concurrent[0], evidence=())
+        claims._write_all(claims_path, concurrent)
+        return _ok(url)
+
+    out = claims.revalidate(
+        claims_path,
+        "id-1",
+        validate=validate_then_empty_evidence,
+        now=_fixed_now("2026-08-10T00:00:00+00:00"),
+    )
+
+    assert out.updated_at == original_updated_at
+    assert claims.read_all(claims_path)[0].updated_at == original_updated_at
+
+
+def test_revalidate_all_does_not_stamp_updated_at_when_evidence_is_emptied(tmp_path):
+    """``revalidate_all``'s twin of the case above."""
+    claims_path = tmp_path / "claims.json"
+    ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
+    claims.create(
+        claims_path,
+        project_name="proj",
+        evidence=(ev,),
+        id_factory=lambda: "id-1",
+        now=_fixed_now("2020-01-01T00:00:00+00:00"),
+    )
+    original_updated_at = claims.read_all(claims_path)[0].updated_at
+
+    def validate_then_empty_evidence(url: str):
+        concurrent = claims.read_all(claims_path)
+        concurrent[0] = replace(concurrent[0], evidence=())
+        claims._write_all(claims_path, concurrent)
+        return _ok(url)
+
+    out = claims.revalidate_all(
+        claims_path,
+        validate=validate_then_empty_evidence,
+        now=_fixed_now("2026-08-10T00:00:00+00:00"),
+    )
+
+    assert out[0].updated_at == original_updated_at
+    assert claims.read_all(claims_path)[0].updated_at == original_updated_at
+
+
+def test_revalidate_still_stamps_updated_at_for_a_claim_with_no_evidence(tmp_path):
+    """The guard above must NOT catch a claim that simply has no evidence:
+    nothing was validated, but nothing was discarded either, so it keeps the
+    ordinary ``updated_at`` stamp it had before Story 13.1. Guards the fix
+    for the emptied-concurrently case against overshooting into a behavior
+    change for the plain single-writer path."""
+    claims_path = tmp_path / "claims.json"
+    claims.create(
+        claims_path,
+        project_name="proj",
+        id_factory=lambda: "id-1",
+        now=_fixed_now("2020-01-01T00:00:00+00:00"),
+    )
+
+    out = claims.revalidate(
+        claims_path, "id-1", now=_fixed_now("2026-08-10T00:00:00+00:00")
+    )
+
+    assert out.updated_at == "2026-08-10T00:00:00+00:00"
+
+
+def test_revalidate_all_refuses_a_duplicate_id_written_during_validation(tmp_path):
+    """The duplicate-id guard must run against the FRESH in-lock read too.
+
+    Checked only against the pre-lock read, a duplicate written during the
+    unlocked HTTP window sails past it -- and the in-lock loop, which looks
+    results up in the fresh list, then applies one claim's single validation
+    outcome (and this run's ``updated_at``) to BOTH same-id claims. That is
+    precisely the collapse the guard exists to refuse, reached by the one
+    path the guard did not cover."""
+    claims_path = tmp_path / "claims.json"
+    ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
+    claims.create(
+        claims_path, project_name="one", evidence=(ev,), id_factory=lambda: "id-1"
+    )
+
+    def validate_then_clone_the_claim(url: str):
+        concurrent = claims.read_all(claims_path)
+        twin = replace(concurrent[0], project_name="clone-of-one")  # same id
+        claims._write_all(claims_path, [*concurrent, twin])
+        return _ok(url)
+
+    with pytest.raises(errors.HeraldError, match="duplicate claim ids"):
+        claims.revalidate_all(claims_path, validate=validate_then_clone_the_claim)

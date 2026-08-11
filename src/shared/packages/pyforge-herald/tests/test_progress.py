@@ -359,3 +359,74 @@ def test_two_concurrent_upserts_for_different_stations_both_land(
 
     stations = {r.station for r in original_read_all(progress_path)}
     assert stations == {"warden", "atlas"}
+
+
+def test_write_all_is_not_silently_discarded_by_a_concurrent_upsert(
+    tmp_path: Path, monkeypatch
+):
+    """``write_all`` is public, so it must take the same lock ``upsert``
+    does. An advisory lock only serializes the writers that all take it: a
+    lock-free public whole-document write lands in the middle of ``upsert``'s
+    read-modify-write span and is then clobbered by ``upsert``'s own
+    ``os.replace`` -- computed from a read taken before it -- reopening
+    exactly the lost-update race this module's Concurrency note claims is
+    closed.
+
+    Deterministic interleaving, no timing race: the monkeypatched delay in
+    ``read_all`` signals the instant ``upsert`` has read (so it is provably
+    inside its critical section) and then holds there long enough for the
+    ``write_all`` caller to run its whole write during the pause. Unlocked,
+    ``write_all``'s document is overwritten and vanishes; locked, it waits
+    out ``upsert`` and lands intact as the later of two serialized writes."""
+    progress_path = tmp_path / "progress.json"
+    original_read_all = progress_module.read_all
+    upsert_has_read = threading.Event()
+
+    def delayed_read_all(path):
+        records = original_read_all(path)
+        upsert_has_read.set()
+        time.sleep(0.2)
+        return records
+
+    monkeypatch.setattr(progress_module, "read_all", delayed_read_all)
+
+    def upserter() -> None:
+        upsert(
+            progress_path,
+            station="warden",
+            date="2026-08-08",
+            shipped_capabilities=[],
+            compute_hours=0,
+            token_spend=0,
+            wall_clock_hours=0,
+            unblock_narrative="",
+        )
+
+    def wholesale_writer() -> None:
+        assert upsert_has_read.wait(timeout=5), "upsert never reached its read"
+        write_all(
+            progress_path,
+            [
+                Progress(
+                    id="fixed-id",
+                    station="atlas",
+                    date="2026-08-08",
+                    created_at="2026-08-08T00:00:00+00:00",
+                    updated_at="2026-08-08T00:00:00+00:00",
+                )
+            ],
+        )
+
+    t1 = threading.Thread(target=upserter)
+    t2 = threading.Thread(target=wholesale_writer)
+    t1.start()
+    t2.start()
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer never finished"
+
+    stations = [r.station for r in original_read_all(progress_path)]
+    assert stations == ["atlas"], (
+        f"write_all's whole-document write was silently discarded by a "
+        f"concurrent upsert: {stations}"
+    )

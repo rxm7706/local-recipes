@@ -492,9 +492,16 @@ def publish(
     would pass through unvalidated (a concurrent writer changed it during
     the unlocked HTTP window) aborts the whole call with
     ``errors.ClaimStateError`` instead -- a claim is never persisted as
-    ``published`` carrying evidence this call did not itself validate."""
+    ``published`` carrying evidence this call did not itself validate.
+
+    ``thesis`` is likewise resolved against the FRESH in-lock read, not the
+    pre-validation one: falling back to the pre-lock ``claim.thesis`` would
+    publish a stale thesis over one a concurrent writer set during the
+    unlocked HTTP window, and file that writer's NEWER text into
+    ``edit_history`` as though it were the superseded version."""
     if validate is None:
         validate = evidence_mod.validate_for_publish
+    no_thesis = f"claim {claim_id!r} has no thesis; supply --thesis to publish"
     claims = read_all(claims_path)
     index = next((i for i, c in enumerate(claims) if c.id == claim_id), None)
     if index is None:
@@ -504,11 +511,12 @@ def publish(
         raise errors.ClaimStateError(
             f"claim {claim_id!r} is already {claim.status!r}; only a draft claim can be published"
         )
-    final_thesis = thesis if thesis is not None else claim.thesis
-    if not final_thesis:
-        raise errors.HeraldError(
-            f"claim {claim_id!r} has no thesis; supply --thesis to publish"
-        )
+    # Fail fast, before spending HTTP requests on evidence links, on a call
+    # that has no thesis to publish. Advisory only: the value actually
+    # written is recomputed from the fresh in-lock read below, so this
+    # pre-lock read decides nothing.
+    if not (thesis if thesis is not None else claim.thesis):
+        raise errors.HeraldError(no_thesis)
     timestamp = now()
     timestamp_iso = timestamp.isoformat()
     broken: list[str] = []
@@ -581,6 +589,17 @@ def publish(
                 f"while this publish was validating links; nothing was written -- "
                 f"re-run publish to validate the current evidence"
             )
+        # Resolved here, not from the pre-lock read: `claim.thesis` is a
+        # snapshot from before the unlocked validation window, so publishing
+        # it would silently revert a thesis a concurrent writer set during
+        # that window -- and push the newer text into `edit_history` as the
+        # superseded one, inverting the two.
+        final_thesis = thesis if thesis is not None else fresh_claim.thesis
+        if not final_thesis:
+            # The pre-lock check passed, so a concurrent writer cleared the
+            # thesis during the validation window. Same refusal, same
+            # message -- publishing an empty thesis is never allowed.
+            raise errors.HeraldError(no_thesis)
         edit_history = fresh_claim.edit_history
         if fresh_claim.thesis is not None and fresh_claim.thesis != final_thesis:
             edit_history = (
@@ -599,6 +618,26 @@ def publish(
         fresh_claims[fresh_index] = updated
         _write_all(claims_path, fresh_claims)
         return updated
+
+
+def _require_unique_ids(claims_path: Path, claims: list[Claim]) -> None:
+    """Refuse a claims document holding two claims with the same id.
+
+    ``revalidate_all`` keys its validation results by claim id, which is
+    only sound while ids are unique: two claims sharing one would collapse
+    onto a single map entry and let one claim's HTTP outcome overwrite the
+    other's. ``create`` generates a uuid4 per claim, so this only happens
+    with an injected ``id_factory`` or a hand-edited/merged ``claims.json``
+    -- refuse structurally rather than silently corrupting one of them.
+
+    Called twice per ``revalidate_all``: once on the pre-lock read (which
+    builds the map) and once on the fresh in-lock read (which consumes it),
+    because a duplicate can be written between the two."""
+    if len({c.id for c in claims}) != len(claims):
+        raise errors.HeraldError(
+            f"{claims_path} holds duplicate claim ids; refusing to revalidate "
+            f"until they are unique"
+        )
 
 
 def _revalidated_entry(
@@ -669,13 +708,21 @@ def revalidate(
             i < len(original_evidence) and e == original_evidence[i]
             for i, e in enumerate(fresh_claim.evidence)
         ]
-        if fresh_claim.evidence and not any(carried):
-            # Every entry was changed by a concurrent writer during the
-            # unlocked validation window, so the discard-stale rule dropped
-            # every one of this run's results. Leave the claim byte-for-byte
-            # unchanged (including `updated_at`: stamping it would claim a
-            # validation that never happened) -- same rule `revalidate_all`
-            # applies to a claim it never validated.
+        if original_evidence and not any(carried):
+            # This run validated something, and a concurrent writer changed
+            # (or removed) every one of those entries during the unlocked
+            # window, so the discard-stale rule dropped every result. Leave
+            # the claim byte-for-byte unchanged (including `updated_at`:
+            # stamping it would claim a validation that never landed) --
+            # same rule `revalidate_all` applies to a claim it never
+            # validated. Guarded on `original_evidence`, NOT on
+            # `fresh_claim.evidence`: a concurrent writer emptying the
+            # evidence tuple leaves the fresh one falsy, which would skip
+            # this branch and stamp `updated_at` for exactly the
+            # every-result-discarded case it exists to catch. A claim that
+            # had no evidence to begin with is a different thing entirely --
+            # nothing was discarded, so it still gets its ordinary
+            # `updated_at` stamp, unchanged from before this story.
             return fresh_claim
         revalidated_evidence = tuple(
             results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence)
@@ -722,17 +769,7 @@ def revalidate_all(
     timestamp = now()
     timestamp_iso = timestamp.isoformat()
     claims = read_all(claims_path)
-    if len({c.id for c in claims}) != len(claims):
-        # Keying the validation results by claim id is only sound while ids
-        # are unique: two claims sharing an id would collapse onto one entry
-        # and let one claim's HTTP outcome overwrite the other's. `create`
-        # generates a uuid4 per claim, so this only happens with an injected
-        # `id_factory` or a hand-edited/merged `claims.json` -- refuse
-        # structurally rather than silently corrupting one of them.
-        raise errors.HeraldError(
-            f"{claims_path} holds duplicate claim ids; refusing to revalidate "
-            f"until they are unique"
-        )
+    _require_unique_ids(claims_path, claims)
     validated_by_claim: dict[str, tuple[tuple[Evidence, ...], tuple[Evidence, ...]]] = {
         c.id: (
             c.evidence,
@@ -747,6 +784,14 @@ def revalidate_all(
     lock_path = locking.lock_path_for(claims_path)
     with locking.locked(lock_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
+        # Re-checked against the FRESH read, not just the pre-lock one: the
+        # duplicate this guard exists to refuse can be written during the
+        # unlocked validation window, and the loop below looks results up in
+        # `fresh_claims`. Checking only the stale read would let exactly the
+        # collapse this guards against through -- both same-id claims
+        # matching one map entry, so one claim's HTTP outcome (and this
+        # run's `updated_at`) lands on a claim that was never validated.
+        _require_unique_ids(claims_path, fresh_claims)
         updated_claims = []
         for claim in fresh_claims:
             if claim.id not in validated_by_claim:
@@ -762,11 +807,15 @@ def revalidate_all(
                 i < len(original_evidence) and e == original_evidence[i]
                 for i, e in enumerate(claim.evidence)
             ]
-            if claim.evidence and not any(carried):
-                # Every entry changed concurrently, so every result was
-                # discarded -- same reasoning as the never-validated branch
-                # just above: do not stamp `updated_at` for a validation that
-                # never landed.
+            if original_evidence and not any(carried):
+                # Every entry this run validated was changed (or removed)
+                # concurrently, so every result was discarded -- same
+                # reasoning as the never-validated branch just above: do not
+                # stamp `updated_at` for a validation that never landed.
+                # Guarded on `original_evidence` rather than
+                # `claim.evidence` for the reason `revalidate` spells out:
+                # a concurrent writer emptying the tuple would otherwise
+                # slip past this branch.
                 updated_claims.append(claim)
                 continue
             revalidated_evidence = tuple(

@@ -338,9 +338,7 @@ def test_two_concurrent_authors_for_different_components_both_land(
         time.sleep(0.2)
         return document
 
-    monkeypatch.setattr(
-        notices, "_load_index_document", delayed_load_index_document
-    )
+    monkeypatch.setattr(notices, "_load_index_document", delayed_load_index_document)
 
     barrier = threading.Barrier(2)
 
@@ -355,7 +353,35 @@ def test_two_concurrent_authors_for_different_components_both_land(
     t1.join(timeout=5)
     t2.join(timeout=5)
 
-    components = {
-        n.component for n in notices.list_notices(tmp_path, status="all")
-    }
+    components = {n.component for n in notices.list_notices(tmp_path, status="all")}
     assert components == {"component-a", "component-b"}
+
+
+@pytest.mark.parametrize(
+    ("call", "message"),
+    [
+        (lambda root: notices.publish_notice(root, "nope"), "no notice found"),
+        (lambda root: notices.close_notice(root, "nope"), "no notice found"),
+        (
+            lambda root: notices.archive_rename(root, "old-name", "new-name"),
+            "no notice exists for it yet",
+        ),
+    ],
+    ids=["publish", "close", "rename"],
+)
+def test_mutating_calls_leave_no_files_behind_when_no_index_exists(
+    tmp_path: Path, call, message
+):
+    """Story 13.1 regression: acquiring the lock creates ``index_path``'s
+    parent directory and the sidecar ``.lock`` file, so a mutating call that
+    can only ever fail (no notice index exists at all -- an operator in the
+    wrong directory) would litter that directory with an empty ``.herald/``
+    tree on a pure error path that had no filesystem side effect before the
+    lock existed. These three refuse BEFORE locking; ``author_notice`` is
+    deliberately excluded, since creating the index is its job."""
+    with pytest.raises(HeraldError, match=message):
+        call(tmp_path)
+
+    assert list(tmp_path.iterdir()) == [], (
+        "a failed mutating call left files behind where there was no index"
+    )

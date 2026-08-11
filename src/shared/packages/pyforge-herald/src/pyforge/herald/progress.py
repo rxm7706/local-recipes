@@ -36,6 +36,14 @@ a second concurrent ``upsert`` call for the same ``progress_path`` blocks
 until the first releases the lock, so two writers targeting different
 ``(station, date)`` keys in the same file can never silently drop one
 update.
+
+``write_all`` -- this module's other public writer -- takes the same lock,
+since an advisory lock only serializes the writers that all take it and a
+lock-free public whole-document write would reopen the same lost-update
+race against a concurrent ``upsert``. ``upsert`` calls the private
+``_write_all_unlocked`` from inside its own critical section instead:
+``locking.locked`` is deliberately not reentrant, so calling the locked
+public entry point there would self-deadlock.
 """
 
 from __future__ import annotations
@@ -203,7 +211,25 @@ def write_all(progress_path: Path, records: list[Progress]) -> None:
     """Persist ``records`` wholesale, atomically (temp file + ``os.replace``),
     mirroring ``state.write``'s crash-safety pattern. Sorted by
     ``(station, date)`` before writing so the on-disk file is deterministic
-    across runs regardless of insertion order."""
+    across runs regardless of insertion order.
+
+    Takes the same ``locking.locked`` lock ``upsert`` does (Story 13.1).
+    An advisory lock only serializes writers that all take it, so a public
+    whole-document writer that skipped it would clobber a concurrent
+    ``upsert`` exactly as before the lock existed -- the very race this
+    module's Concurrency note claims is closed. ``upsert`` itself calls
+    ``_write_all_unlocked`` instead, because ``locked`` is deliberately not
+    reentrant and ``upsert`` already holds this lock across its own
+    read-modify-write span."""
+    lock_path = locking.lock_path_for(progress_path)
+    with locking.locked(lock_path):
+        _write_all_unlocked(progress_path, records)
+
+
+def _write_all_unlocked(progress_path: Path, records: list[Progress]) -> None:
+    """``write_all``'s body, without taking the lock -- for callers that
+    already hold it (``upsert``). Never call this from outside a
+    ``locking.locked`` block."""
     ordered = sorted(records, key=lambda r: (r.station, r.date))
     document = [asdict(r) for r in ordered]
     try:
@@ -283,7 +309,7 @@ def upsert(
                     updated_at=timestamp,
                 )
                 records[index] = updated
-                write_all(progress_path, records)
+                _write_all_unlocked(progress_path, records)
                 return updated
         created = Progress(
             id=new_id(),
@@ -298,7 +324,7 @@ def upsert(
             updated_at=timestamp,
         )
         records.append(created)
-        write_all(progress_path, records)
+        _write_all_unlocked(progress_path, records)
         return created
 
 

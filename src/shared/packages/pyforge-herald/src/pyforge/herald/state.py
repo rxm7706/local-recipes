@@ -216,6 +216,17 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
     lock, so two writers targeting different slugs in the same file can
     never silently drop one update.
 
+    That guarantee covers this function's own span and no more. A caller
+    that reads state, does network I/O, and only then calls ``write`` --
+    ``deck_pipeline``'s ``_record_pull_etag``/``push_exports``, which build
+    their replacement ``etags`` map from a ``state.read`` taken before the
+    pull/push -- still has a read-modify-write span this lock cannot close,
+    because it starts in the caller. Two concurrent ``herald deck pull``
+    invocations for the same slug can therefore still drop one artifact's
+    etag. Tracked separately in the deferred-work ledger; closing it means
+    hoisting the lock into the caller or giving this module a
+    patch-one-artifact entry point.
+
     Refuses up front -- as ``errors.HeraldError`` naming the slug -- a
     non-string ``slug``, a ``state`` that is not a ``DeckState`` at all, or
     a ``DeckState`` whose fields do not match their

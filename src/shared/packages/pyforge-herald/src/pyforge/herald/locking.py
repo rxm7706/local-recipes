@@ -151,9 +151,10 @@ def locked(lock_path: Path) -> Iterator[None]:
     Every failure along the way -- an unwritable parent directory, a lock
     file that cannot be opened, the OS-level lock call itself failing --
     raises ``errors.HeraldError`` naming ``lock_path`` rather than a raw
-    ``OSError`` (AD-6). Release is best-effort: the descriptor is closed
-    either way once the ``with`` block exits, and a release failure never
-    masks an exception the protected block itself raised."""
+    ``OSError`` (AD-6). Teardown is best-effort: the descriptor is closed
+    either way once the ``with`` block exits, and neither the release nor
+    the close can mask an exception the protected block itself raised, or
+    surface as a raw ``OSError`` from a call that otherwise succeeded."""
     could_not_acquire = f"lock {lock_path} could not be acquired"
     try:
         lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -171,4 +172,11 @@ def locked(lock_path: Path) -> Iterator[None]:
             with contextlib.suppress(OSError):
                 _release(fd)
     finally:
-        os.close(fd)
+        # Suppressed for the same reason `_release` is: a teardown failure
+        # (EIO on an odd filesystem, EBADF) must not replace the real
+        # exception the guarded block raised, nor leak a raw `OSError` out
+        # of a call this module documents as raising `HeraldError` only
+        # (AD-6). The fd is released by the OS regardless -- on Linux
+        # `close` frees the descriptor even when it reports an error.
+        with contextlib.suppress(OSError):
+            os.close(fd)

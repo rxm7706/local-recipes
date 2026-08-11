@@ -7,6 +7,8 @@ proving the lock actually closes their module's lost-update race).
 
 from __future__ import annotations
 
+import errno
+import os
 import subprocess
 import sys
 import threading
@@ -154,25 +156,53 @@ def test_locked_excludes_a_second_os_process(tmp_path: Path):
         stdout=subprocess.PIPE,
         text=True,
     )
+    acquired = threading.Event()
+    release = threading.Event()
+    failures: list[BaseException] = []
+
+    def _try_acquire() -> None:
+        # A full `with` block, and every exception recorded: `acquired`
+        # staying clear because `locked` RAISED looks identical to it
+        # staying clear because `locked` correctly BLOCKED, so an
+        # unrecorded failure would make this test pass against a lock that
+        # does not work at all. Entering the contextmanager by hand
+        # (`.__enter__()` with no matching `__exit__`) would also strand
+        # the lock and its descriptor for the rest of the session.
+        try:
+            with locking.locked(lock_path):
+                acquired.set()
+                release.wait(timeout=5)
+        except BaseException as exc:  # noqa: BLE001 - re-raised via `failures`
+            failures.append(exc)
+
+    t = threading.Thread(target=_try_acquire, daemon=True)
     try:
         assert _readline_or_fail(proc).strip() == "ACQUIRED"
 
-        acquired = threading.Event()
-        t = threading.Thread(
-            target=lambda: [locking.locked(lock_path).__enter__(), acquired.set()],
-            daemon=True,
-        )
         t.start()
         # The other PROCESS holds the lock, so this must not succeed.
         assert not acquired.wait(timeout=1.0), (
             "acquired a lock held by another OS process -- the lock is "
             "thread-local, not process-level"
         )
+        assert not failures, (
+            f"locked() raised instead of blocking on a lock another process "
+            f"holds: {failures[0]!r}"
+        )
     finally:
+        release.set()
         if proc.stdout is not None:
             proc.stdout.close()
         proc.kill()
         proc.wait(timeout=5)
+        # The holder is gone, so the waiter can now take and release the
+        # lock -- joined so it cannot outlive the test holding it. Guarded
+        # on `ident` because an assertion above can fail before `t.start()`,
+        # and joining an unstarted thread raises RuntimeError, which would
+        # replace the real failure.
+        if t.ident is not None:
+            t.join(timeout=5)
+            assert not t.is_alive(), "waiter thread never finished"
 
 
 def test_locked_releases_when_the_guarded_block_raises(tmp_path: Path):
@@ -199,6 +229,36 @@ def test_locked_releases_when_the_guarded_block_raises(tmp_path: Path):
     assert acquired_again.is_set(), (
         "lock stayed held after the guarded block raised -- next acquire wedged"
     )
+
+
+def test_a_failing_teardown_never_masks_the_guarded_block(tmp_path: Path, monkeypatch):
+    """``locked`` closes its descriptor in a ``finally``, so an ``os.close``
+    that fails (EIO on an odd filesystem, EBADF) would replace whatever
+    exception the guarded block raised -- and surface as a raw ``OSError``
+    out of a module that documents ``HeraldError`` as its only failure mode
+    (AD-6). Both teardown steps are suppressed; the fd is freed by the OS
+    either way."""
+    lock_path = tmp_path / "doc.lock"
+    real_close = os.close
+    closed: list[int] = []
+
+    def failing_close(fd: int) -> None:
+        closed.append(fd)
+        real_close(fd)
+        raise OSError(errno.EIO, "close failed")
+
+    monkeypatch.setattr(locking.os, "close", failing_close)
+
+    with (
+        pytest.raises(HeraldError, match="the real failure"),
+        locking.locked(lock_path),
+    ):
+        raise HeraldError("the real failure")
+    assert closed, "the descriptor was never closed"
+
+    # ...and a clean block does not surface the teardown failure either.
+    with locking.locked(lock_path):
+        pass
 
 
 def test_lock_path_for_refuses_a_path_with_no_file_name():
