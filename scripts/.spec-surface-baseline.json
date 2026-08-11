@@ -2617,6 +2617,14 @@
   },
   "memlog": "ebfae3f0274b502e47d0eb493bd5b9483fa55fe9"
  },
+ "pyforge-marshal/spec-quick-dev-reconciliation": {
+  "files": {
+   "scripts/promote_sprint_status.py": "f3f59ad191e3b7ac951ba6e3da2b867f2b112e65",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py": "a4200d60ee6d983773b62e3bf9b49d850374b402",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "f3ef606b558f2f4499723f9553af9f99186ae5ed"
+  },
+  "memlog": "4ba080990e76c9ea3758e6b3c343ee0a701c134d"
+ },
  "pyforge-marshal/spec-regenerable-factory": {
   "files": {
    "scripts/bmad_drift_check.py": "fae156871fae513af110fb3984c8112f7180adac",
@@ -2625,6 +2633,12 @@
    "scripts/spec_surface_check.py": "f3521e7307085268b1d0d3f7271db1176ba53382"
   },
   "memlog": "c2aff9a70d13a74891d8c40871b0da089840d518"
+ },
+ "pyforge-marshal/spec-risk-tiered-review-depth": {
+  "files": {
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py": "65ec8062cec7f4fac70ebac9e35ee25dec7cd940"
+  },
+  "memlog": "e3c395d320392913cdc39a5d52e7d7195b0018c1"
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {

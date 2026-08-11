@@ -1303,7 +1303,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 31 of 123 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 31 of 125 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1442,12 +1442,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "71/123",
+            "71/125",
             "stories complete",
             "var(--done)"
           ],
           [
-            "52",
+            "54",
             "remaining",
             ""
           ]
@@ -1502,7 +1502,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "3.11"
+        "at": "2.8"
       },
       "epics": [
         {
@@ -1609,6 +1609,11 @@ window.DASHBOARD_DATA = {
               "2.7",
               "done",
               "A gate binds to the spec's Success signal *(added 2026-08-01 — FR-64 / AD-49)*"
+            ],
+            [
+              "2.8",
+              "pending",
+              "A low-risk story's review runs lighter, never absent *(added 2026-08-11 — FR-185)*"
             ]
           ]
         },
@@ -1807,6 +1812,11 @@ window.DASHBOARD_DATA = {
               "5.8",
               "pending",
               "A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — FR-181)*"
+            ],
+            [
+              "5.9",
+              "pending",
+              "A story finished by hand isn't invisible to the ledger *(added 2026-08-11 — FR-186)*"
             ]
           ]
         },
@@ -3748,7 +3758,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 11:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 12:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4342,6 +4352,16 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "quick-dev-reconciliation",
+      "title": "Two ways to finish a story, and Marshal has only ever heard of one",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-quick-dev-reconciliation"
+      }
+    },
+    {
       "slug": "regenerable-factory",
       "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
       "status": "realized",
@@ -4349,6 +4369,16 @@ window.DASHBOARD_DATA = {
       "type": "practice",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
+      }
+    },
+    {
+      "slug": "risk-tiered-review-depth",
+      "title": "A one-line doc fix and a cross-module rewrite get the identical review",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth"
       }
     },
     {
@@ -4829,6 +4859,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
     },
     {
+      "slug": "quick-dev-reconciliation",
+      "project": "pyforge-marshal",
+      "title": "Two ways to finish a story, and Marshal has only ever heard of one",
+      "caps": 4,
+      "companions": 0,
+      "updated": "2026-08-11",
+      "dream": "quick-dev-reconciliation",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-quick-dev-reconciliation"
+    },
+    {
       "slug": "regenerable-factory",
       "project": "pyforge-marshal",
       "title": "regenerable-factory program",
@@ -4837,6 +4877,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-10",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
+    },
+    {
+      "slug": "risk-tiered-review-depth",
+      "project": "pyforge-marshal",
+      "title": "A one-line doc fix and a cross-module rewrite get the identical review",
+      "caps": 4,
+      "companions": 0,
+      "updated": "2026-08-11",
+      "dream": "risk-tiered-review-depth",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth"
     },
     {
       "slug": "sprint-status-auto-promote",
@@ -5804,7 +5854,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 71,
-          "total": 123
+          "total": 125
         },
         {
           "slug": "wasm-analytics-stack",
@@ -5868,9 +5918,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 34,
+    "live": 36,
     "reached": 8,
-    "gaps": 32,
+    "gaps": 34,
     "findings": 19,
     "rows": [
       {
@@ -6360,7 +6410,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "71/123",
+        "progress": "71/125",
         "complete": 13,
         "of": 13
       },
@@ -11003,6 +11053,112 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "quick-dev-reconciliation",
+        "slug": "quick-dev-reconciliation",
+        "project": "pyforge-marshal",
+        "dream": "quick-dev-reconciliation",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-11",
+          "deck": "",
+          "spec": "2026-08-11",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-11",
+          "deck": "",
+          "spec": "2026-08-11T06:44",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "quick-dev-reconciliation",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 1,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-11",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
         "label": "regenerable-factory",
         "slug": "regenerable-factory",
         "project": "pyforge-marshal",
@@ -11112,6 +11268,112 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 3,
         "of": 4
+      },
+      {
+        "label": "risk-tiered-review-depth",
+        "slug": "risk-tiered-review-depth",
+        "project": "pyforge-marshal",
+        "dream": "risk-tiered-review-depth",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-11",
+          "deck": "",
+          "spec": "2026-08-11",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-11",
+          "deck": "",
+          "spec": "2026-08-11T06:46",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "risk-tiered-review-depth",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-11",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "sprint-status-auto-promote",
@@ -13546,9 +13808,32 @@ window.DASHBOARD_DATA = {
     }
   },
   "backlog": {
-    "rows": [],
+    "rows": [
+      {
+        "slug": "quick-dev-reconciliation",
+        "title": "Two ways to finish a story, and Marshal has only ever heard of one",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-quick-dev-reconciliation"
+        }
+      },
+      {
+        "slug": "risk-tiered-review-depth",
+        "title": "A one-line doc fix and a cross-module rewrite get the identical review",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth"
+        }
+      }
+    ],
     "blocked": 0,
-    "byOwner": {},
+    "byOwner": {
+      "marshal": 2
+    },
     "practices": [
       {
         "slug": "agent-portability",
@@ -13661,17 +13946,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 28,
+        "total": 30,
         "counts": {
-          "dreamt": 3,
+          "dreamt": 5,
           "pitched": 0,
           "specified": 0,
           "realized": 6,
           "archived": 15,
           "practice": 4
         },
-        "line": "paused 3.11",
-        "load": 0,
+        "line": "paused 2.8",
+        "load": 2,
         "blocked": 0,
         "dreams": [
           {
@@ -13803,6 +14088,20 @@ window.DASHBOARD_DATA = {
           {
             "slug": "horizontal-run-concurrency",
             "title": "One story in flight at a time, silently, by an upstream stub",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "quick-dev-reconciliation",
+            "title": "Two ways to finish a story, and Marshal has only ever heard of one",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "risk-tiered-review-depth",
+            "title": "A one-line doc fix and a cross-module rewrite get the identical review",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -16047,8 +16346,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: sync tracked ledger for Story 6.11 + stamp its new spec baseline"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 11:54 UTC",
-    "generatedEpoch": 1786449262
+    "generatedAt": "2026-08-11 12:04 UTC",
+    "generatedEpoch": 1786449842
   },
   "storySpecs": [
     {
@@ -16160,6 +16459,16 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md"
           },
           {
+            "slug": "spec-quick-dev-reconciliation",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-quick-dev-reconciliation/SPEC.md"
+          },
+          {
+            "slug": "spec-risk-tiered-review-depth",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth/SPEC.md"
+          },
+          {
             "slug": "spec-sprint-status-auto-promote",
             "status": "draft",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md"
@@ -16171,9 +16480,9 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 71,
-        "backlog": 49,
+        "backlog": 51,
         "blocked": 3,
-        "total": 123,
+        "total": 125,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
           "7-2-error-taxonomy-and-exit-codes",
@@ -16375,9 +16684,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 281,
-      "backlog": 90,
+      "backlog": 92,
       "blocked": 6,
-      "total": 377
+      "total": 379
     }
   },
   "fleetProgress": {
@@ -16417,11 +16726,11 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "marshal",
-        "stories": 123,
+        "stories": 125,
         "done": 71,
         "blocked": 3,
         "epics": 19,
-        "epicsDone": 5,
+        "epicsDone": 4,
         "complete": false,
         "running": false,
         "projected": 71
@@ -16472,11 +16781,11 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 377,
+      "stories": 379,
       "done": 281,
       "blocked": 6,
       "epics": 74,
-      "epicsDone": 50
+      "epicsDone": 49
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {

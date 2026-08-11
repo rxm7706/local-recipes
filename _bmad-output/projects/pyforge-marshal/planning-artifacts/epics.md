@@ -88,10 +88,10 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | Epic | Title | User value delivered | Stories | Effort |
 |---|---|---|---|---|
 | **E1** | Provisioned, verified loop homes | The operator can create an isolated, policy-composed, preflight-verified place for a loop to run — and prove two of them are isolated | 12 | ~15 days |
-| **E2** | Gates you can run | The operator or CI can evaluate the gate standalone and get a verdict that never false-greens | 7 | ~9 days |
+| **E2** | Gates you can run | The operator or CI can evaluate the gate standalone and get a verdict that never false-greens | 8 | ~9 days |
 | **E3** | Supervised unattended runs | The operator can launch a gated run detached and have it watched — idle strands caught, budgets enforced, escalations surfaced | 13 | ~14 days |
 | **E4** | Landing with a durable paper trail | The operator can land a wave and have every merged story's spec survive teardown, automatically | 15 | ~10 days |
-| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 8 | ~5 days |
+| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 9 | ~5 days |
 | **E6** | Portability proven | The operator can run the method on another agent and hold a dated artifact proving it | 9 | ~12 days |
 | **E7** | Foundation & the write guard | The seed installer has its module tree, an error taxonomy, and a write primitive nothing can route around | 6 | ~7 days |
 | **E8** | The managed-region engine | A team's own file can carry a tool-owned span that upgrades without touching the rest | 5 | ~8 days |
@@ -106,7 +106,7 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E17** | Instruments verified, chains regenerable | Detector blind spots pinned; chain regeneration one invocation | 4 | (new 2026-08-10) |
 | **E18** | The governed tool surface | Marshal's capabilities as typed tools; parity/coverage gated | 2 | (new 2026-08-10) |
 | **E19** | The testing charter, enforced | One TEA generator, shared kit, coverage gates | 3 | (new 2026-08-10) |
-| **Total** | | | **123** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
+| **Total** | | | **125** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
 *Story counts re-verified 2026-08-10 (FR-128..163 decomposition): headings and
 `sprint-status-ledger.yaml` story keys agree at **119** (E1-E6 = 60, E7-E12 = 36, E13 = 7,
@@ -120,8 +120,11 @@ Treat the day figures as understated pending a full re-estimate. **Story 5.8 add
 deliberately left untouched by this addition) brought E1-E6 to 61 and the total to 120.
 **Stories 3.11-3.13 added 2026-08-11** (FR-182/183/184, queued via the same Dream/Spec chain —
 `docs/dreams/adaptive-model-tiering.md` and `docs/dreams/horizontal-run-concurrency.md` — same
-"not yet in `sprint-status-ledger.yaml`" caveat) bring E1-E6 to 64 and the total to **123**;
-the ledger will re-agree on its next sync.*
+"not yet in `sprint-status-ledger.yaml`" caveat) brought E1-E6 to 64 and the total to 123.
+**Stories 2.8 and 5.9 added 2026-08-11** (FR-185 review-depth tiering, FR-186 quick-dev
+ledger reconciliation — same Dream/Spec-chain convention, same deliberate exclusion from
+`sprint-status-ledger.yaml` pending its next sync) bring E2 to 8, E5 to 9, E1-E6 to 65, and
+the total to **125**; the ledger will re-agree on its next sync.*
 
 **Epics 7-12 were a separate document until 2026-08-08** (`epics-genesis-installer.md`, now
 archived). They were always Marshal's own — the installer's buildable half moved here on
@@ -551,6 +554,56 @@ So that a test quietly removed after the spec was tracked shows up as a contract
 **When** its gate is evaluated
 **Then** the missing binding is reported explicitly as a finding, never evaluated silently against nothing
 **And** an untraceable or mismatched binding cannot be waived to green — it participates in the closed admission lattice (AD-31) like every other criterion
+
+---
+
+### Story 2.8: A low-risk story's review runs lighter, never absent *(added 2026-08-11 — FR-185)*
+
+As the operator,
+I want a story mechanically classified as low-risk to run review at reduced cost — fewer
+cycles, or a cheaper pass — while the independent reviewer still runs on every story with no
+exception,
+So that an unattended run stops paying full review price for a change that is obviously
+mechanical.
+
+**Type:** feature • **Effort:** M • **Deps:** S-2.4 • **FR/AD:** FR-185
+
+**Why now.** `gate_mode = "none"`'s own comment (cloned into all 9 loop homes) already draws
+the line — human approval is skippable, the independent reviewer is not — but `max_dev_
+attempts`/`max_review_cycles` are flat, repo-wide ceilings (`core/policy.py` `DEFAULT_
+POLICY`), identical for a one-line doc fix and a cross-module rewrite. `classify_doc_only_
+declaration` (Story 2.4, FR-23) already proves the idiom this needs — a pure function of a
+story's own declaration plus an observed fact — but today it feeds only gate pass/fail for
+the no-diff case, never review scheduling. Any mechanism reaching toward review depth has to
+be checked against `DW-AD23-3` by name first: the upstream `max_followup_reviews` default of
+`1` silently damped five real, reviewer-recommended follow-ups across three projects into a
+gitignored ledger before the repo-wide value was raised to `2` with the incident documented
+inline (`_bmad-output/policy-defaults.toml`). A tightened cap for a low-risk tier must not
+reopen that hole.
+
+**Acceptance Criteria:**
+
+**Given** a story's own declaration and its observed diff shape
+**When** the story is classified before review runs
+**Then** classification is a pure function of already-gathered facts — no I/O, no model call,
+no hidden state — mirroring `classify_doc_only_declaration`'s own shape
+**And** the classification is recorded in the run record, never a silent choice
+**Given** any classified story, regardless of tier
+**When** review runs
+**Then** the independent reviewer runs unconditionally — the `gate_mode = "none"` human
+approval-only boundary is unchanged, and no tier ever causes review to be skipped
+**Given** a story classified into a lower-risk tier
+**When** its review cycles are bounded
+**Then** it may run fewer cycles or a cheaper review pass than the repo-wide default, and a
+higher-risk or unclassified story is never granted a *smaller* allowance than today's flat
+ceiling
+**Given** a reviewer-recommended follow-up on a story at ANY tier, including the lowest
+**When** `deferred-work-check` runs
+**Then** the follow-up is captured with the same completeness guarantee every tier already
+gets — a test reproduces the `DW-AD23-3` shape (a follow-up surfaced under a tightened cap)
+and proves it is captured, never silently dropped, for every defined tier
+**And** `max_followup_reviews` (or an equivalent cap) is never lowered, for any tier, below
+what `deferred-work-check` can still fully capture
 
 ---
 
@@ -1408,6 +1461,56 @@ hand-maintained flag or an operator override
 **And** the two failure shapes are distinguishable from `marshal status`'s own output, so an
 operator or `fleet-picture` never again needs the `ps`/`tmux ls`/`state.json` cross-check by
 hand to tell them apart
+
+---
+
+### Story 5.9: A story finished by hand isn't invisible to the ledger *(added 2026-08-11 — FR-186)*
+
+As the operator,
+I want a story completed and merged via `bmad-quick-dev` — with no `bmad-loop` run ever
+touching it — reconciled into the tracked ledger the same way a loop-landed story is,
+So that mixing `bmad-quick-dev` and `bmad-loop` within one station never leaves Marshal's own
+state out of sync with what actually happened.
+
+**Type:** feature • **Effort:** M • **Deps:** S-5.4, S-4.1 • **FR/AD:** FR-186; AD-5, AD-33
+**Surface:** `core/status.py`, `scripts/promote_sprint_status.py`
+
+**Why now.** A repo-wide grep of `src/shared/packages/pyforge-marshal/` for `quick-dev`/
+`quick_dev` returns zero matches — every reference lives in planning prose, none in `core/`,
+`cli/`, `adapters/`, or a schema. `sprint-status-ledger.yaml`'s `development_status:` map is a
+flat `done | backlog` vocabulary that only ever advances on a signal `bmad-loop` itself emits
+(`scripts/promote_sprint_status.py`'s own docstring: "bmad-loop marks a story `done` at DEV
+completion"). A story hand-implemented via `bmad-quick-dev` — real, tested, merged to `main`
+— never calls that path, so its key reads `backlog` forever unless an operator hand-edits a
+generated file. Story 5.4 already reports the converse case (a story marked done with no
+corresponding merge) as a named discrepancy; this is the mirror case Story 5.4 does not yet
+cover — a real merge with no ledger signal — and it is the concrete blocker to letting an
+operator hand-pick a story for `bmad-quick-dev` while that station's loop is between stories,
+or mid-run on a different one, without Marshal's own tracked state silently going stale.
+
+**Acceptance Criteria:**
+
+**Given** a backlog story merged to the integration branch with no corresponding `bmad-loop`
+run/journal record
+**When** ledger reconciliation runs
+**Then** the story is detected as completed outside the loop, from git (the repository fact)
+plus existing spec/story-identity artifacts alone — never a new hand-maintained flag (AD-5,
+AD-33)
+**And** its key advances out of `backlog` in `sprint-status-ledger.yaml` (or the mechanism
+feeding it), with the completion path recorded as `bmad-quick-dev`, distinct from a
+`bmad-loop` completion
+**And** `marshal status` / the fleet dashboard shows the completion path with no operator
+hand-edit and no commit-subject archaeology
+**Given** a quick-dev'd story's spec
+**When** its story is detected as done
+**Then** the spec is promoted/tracked under the same durability guarantee Story 4.1 already
+gives a loop-landed story's spec
+**Given** a live `bmad-loop` run on a station, mid-run on a different story
+**When** a separate story on that station is reconciled as quick-dev-completed
+**Then** the reconciliation neither reads from nor writes to the live run's own journal, and a
+test proves the live run's state is unaffected
+**And** this story does not change `bmad-quick-dev` itself, and does not decide whether
+Marshal ever invokes it on an operator's behalf (PRD Q-16 stays open)
 
 ## Epic 6: Portability proven
 
