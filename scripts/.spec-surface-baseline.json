@@ -2101,6 +2101,16 @@
   },
   "memlog": "ed0ea665331dd74474c3b25c53f8678dde66bb1b"
  },
+ "pyforge-marshal/spec-adaptive-model-tiering": {
+  "files": {
+   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "26b9baa7887ae39d55bb75aebeac31b849183a1b",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "8e59743b01f61e4a945d36c6aee6859a6bafdf22",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "5d4953950acdf7f5da55253bfda005f75ee2d3e6",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py": "9214d3e2da36d91c1f4b4ddd2b8dd34e8ecb255c",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_difficulty.py": "27c83322339aac081499fa5162a25c73885d2e6c"
+  },
+  "memlog": "63b24cad42c1ef154401f2bba49c82e83ab5e5f6"
+ },
  "pyforge-marshal/spec-agent-portability": {
   "files": {},
   "memlog": "ea59e744bd275fcf8060dc653d57ad56405f70fc"
@@ -2393,6 +2403,13 @@
  "pyforge-marshal/spec-genesis-installer-name-retirement": {
   "files": {},
   "memlog": "bfb490b49180834832d60446b6a993553830bbc3"
+ },
+ "pyforge-marshal/spec-horizontal-run-concurrency": {
+  "files": {
+   "_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json": "435d5f7411fa1cbd82df08f881c6bfabea3fd7db",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "8e59743b01f61e4a945d36c6aee6859a6bafdf22"
+  },
+  "memlog": "783013f48a84d1964351225915f4dba5b21f244d"
  },
  "pyforge-marshal/spec-loop-home-fleet-refresh": {
   "files": {},
