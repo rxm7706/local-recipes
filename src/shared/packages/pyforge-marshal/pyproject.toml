@@ -73,6 +73,7 @@ source_modules = [
     "pyforge.marshal.cli",
     "pyforge.marshal.core",
     "pyforge.marshal.ports",
+    "pyforge.marshal.seed",
     "pyforge.marshal.supervisor",
 ]
 forbidden_modules = ["bmad_loop"]
@@ -87,7 +88,7 @@ forbidden_modules = ["bmad_loop"]
 # not about whether a caller may use harness_bmadloop.py's public API (the
 # whole point of the seam) -- true regardless of indirect-checking, so this
 # flag makes the contract's enforcement match its stated intent rather than
-# loosen it: cli/core/ports/supervisor still may never themselves write
+# loosen it: cli/core/ports/seed/supervisor still may never themselves write
 # `import bmad_loop`.
 allow_indirect_imports = true
 
