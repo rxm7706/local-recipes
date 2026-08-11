@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -311,3 +313,118 @@ def test_publish_follows_a_redirect(tmp_path: Path):
     # publish the wrong (draft) entry.
     with pytest.raises(HeraldError, match="already published"):
         notices.publish_notice(tmp_path, "old-name")
+
+
+# --- Story 13.1: concurrency (closing DW-1-4-2) -----------------------------
+
+
+def test_two_concurrent_authors_for_different_components_both_land(
+    tmp_path: Path, monkeypatch
+):
+    """Story 13.1 regression: two ``author_notice`` calls for different
+    components racing the same index file must both survive -- forced,
+    deterministic interleaving (not a timing-dependent sleep race).
+    Mirrors ``test_state.py``'s technique: a monkeypatched delay right
+    after ``_load_index_document``'s read gives the other (unlocked)
+    author's whole read-modify-write cycle room to run during the pause;
+    locked, a second author cannot even begin its own read until the first
+    has released the lock. Fails against the pre-fix (unlocked) code,
+    passes against the fixed code -- confirmed locally by commenting out
+    ``author_notice``'s ``locking.locked`` call."""
+    original_load_index_document = notices._load_index_document
+
+    def delayed_load_index_document(index_path):
+        document = original_load_index_document(index_path)
+        time.sleep(0.2)
+        return document
+
+    monkeypatch.setattr(notices, "_load_index_document", delayed_load_index_document)
+
+    barrier = threading.Barrier(2)
+
+    def author(component: str) -> None:
+        barrier.wait(timeout=5)
+        _author(tmp_path, component=component)
+
+    t1 = threading.Thread(target=author, args=("component-a",))
+    t2 = threading.Thread(target=author, args=("component-b",))
+    t1.start()
+    t2.start()
+    # Bounded joins plus an explicit liveness assertion: without it a genuine
+    # deadlock regression fails below with a confusing content mismatch that
+    # reads as a lost update rather than a hang, and leaves two abandoned
+    # threads still holding the lock for the rest of the session.
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
+
+    components = {n.component for n in notices.list_notices(tmp_path, status="all")}
+    assert components == {"component-a", "component-b"}
+
+
+@pytest.mark.parametrize(
+    ("call", "message"),
+    [
+        (lambda root: notices.publish_notice(root, "nope"), "no notice found"),
+        (lambda root: notices.close_notice(root, "nope"), "no notice found"),
+        (
+            lambda root: notices.archive_rename(root, "old-name", "new-name"),
+            "no notice exists for it yet",
+        ),
+    ],
+    ids=["publish", "close", "rename"],
+)
+def test_mutating_calls_leave_no_files_behind_when_no_index_exists(
+    tmp_path: Path, call, message
+):
+    """Story 13.1 regression: acquiring the lock creates ``index_path``'s
+    parent directory and the sidecar ``.lock`` file, so a mutating call that
+    can only ever fail (no notice index exists at all -- an operator in the
+    wrong directory) would litter that directory with an empty ``.herald/``
+    tree on a pure error path that had no filesystem side effect before the
+    lock existed. These three refuse BEFORE locking; ``author_notice`` is
+    deliberately excluded, since creating the index is its job."""
+    with pytest.raises(HeraldError, match=message):
+        call(tmp_path)
+
+    assert list(tmp_path.iterdir()) == [], (
+        "a failed mutating call left files behind where there was no index"
+    )
+
+
+@pytest.mark.parametrize(
+    ("call", "wrong_message"),
+    [
+        (lambda root: notices.publish_notice(root, "auth-api-v1"), "no notice found"),
+        (lambda root: notices.close_notice(root, "auth-api-v1"), "no notice found"),
+        (
+            lambda root: notices.archive_rename(root, "auth-api-v1", "auth-api-v2"),
+            "no notice exists for it yet",
+        ),
+    ],
+    ids=["publish", "close", "rename"],
+)
+def test_an_unreadable_index_is_never_reported_as_a_missing_notice(
+    tmp_path: Path, call, wrong_message
+):
+    """The pre-lock fail-fast must distinguish "no index" from "the index
+    cannot be read".
+
+    A ``Path.exists()`` check cannot: it returns ``False`` whenever the stat
+    itself fails (symlink loop, unsearchable parent, EACCES, EIO), so an
+    index that is present but unreadable would be reported as a missing
+    notice -- sending the operator after the wrong problem, and silently
+    replacing the ``could not be read`` error these calls raised before
+    Story 13.1. ``state.read``'s docstring records the same hazard as the
+    reason it has no ``exists()`` pre-check either.
+
+    A self-referential symlink is the uid-independent way to make ``stat``
+    fail with something other than ENOENT (a ``chmod`` test would pass
+    trivially under root)."""
+    index_path = tmp_path / ".herald" / "notices-index.json"
+    index_path.parent.mkdir(parents=True)
+    index_path.symlink_to(index_path)
+
+    with pytest.raises(HeraldError, match="could not be read") as excinfo:
+        call(tmp_path)
+    assert wrong_message not in str(excinfo.value)
