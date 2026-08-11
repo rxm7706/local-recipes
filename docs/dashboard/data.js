@@ -517,12 +517,12 @@ window.DASHBOARD_DATA = {
         "key": "7.1",
         "title": "The emitter mints identity at defer time",
         "phase": "review",
-        "attempt": "1",
+        "attempt": "3",
         "startEpoch": 1786407963,
-        "median": 90,
+        "median": 91,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-11 01:18 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -582,12 +582,12 @@ window.DASHBOARD_DATA = {
           ],
           [
             "7.1",
-            43
+            81
           ]
         ],
         "foot": [
           [
-            "~90 min",
+            "~91 min",
             "median / story",
             "var(--done)"
           ],
@@ -611,8 +611,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 1719,
-        "totalLabel": "~28.6 h active compute",
+        "total": 1757,
+        "totalLabel": "~29.3 h active compute",
         "note": "Derived from 14 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 101,
@@ -628,12 +628,12 @@ window.DASHBOARD_DATA = {
           "6.8": 139,
           "6.9": 217,
           "6.10": 58,
-          "7.1": 43
+          "7.1": 81
         },
         "epicMin": {
           "E1": 715,
           "E6": 961,
-          "E7": 43
+          "E7": 81
         }
       },
       "lineState": {
@@ -867,7 +867,7 @@ window.DASHBOARD_DATA = {
         "median": 98,
         "lo": 29,
         "hi": 417,
-        "phaseAsOf": "2026-08-11 01:18 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1308,7 +1308,7 @@ window.DASHBOARD_DATA = {
         "median": 94,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-11 01:18 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2233,7 +2233,7 @@ window.DASHBOARD_DATA = {
         "median": 46,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-11 01:18 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2730,20 +2730,10 @@ window.DASHBOARD_DATA = {
         "E3",
         "E4"
       ],
-      "inflight": {
-        "key": "8.3",
-        "title": "Idempotent update processing",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786410856,
-        "median": 65,
-        "lo": 37,
-        "hi": 360,
-        "phaseAsOf": "2026-08-11 01:18 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 40 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 15 of 40 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -2800,16 +2790,20 @@ window.DASHBOARD_DATA = {
           [
             "8.2",
             61
+          ],
+          [
+            "8.3",
+            20
           ]
         ],
         "foot": [
           [
-            "~65 min",
+            "~61 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "37–360 min",
+            "20–360 min",
             "observed range",
             ""
           ],
@@ -2828,9 +2822,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 1585,
-        "totalLabel": "~26.4 h active compute",
-        "note": "Derived from 14 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 1605,
+        "totalLabel": "~26.8 h active compute",
+        "note": "Derived from 15 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 69,
           "1.3": 79,
@@ -2845,18 +2839,19 @@ window.DASHBOARD_DATA = {
           "7.4": 86,
           "7.5": 43,
           "8.1": 287,
-          "8.2": 61
+          "8.2": 61,
+          "8.3": 20
         },
         "epicMin": {
           "E1": 508,
           "E5": 42,
           "E6": 141,
           "E7": 546,
-          "E8": 348
+          "E8": 368
         }
       },
       "lineState": {
-        "state": "in flight",
+        "state": "paused",
         "at": "8.3"
       },
       "epics": [
@@ -3058,7 +3053,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.3",
-              "active",
+              "pending",
               "Idempotent update processing"
             ],
             [
@@ -3721,7 +3716,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 01:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 01:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6541,7 +6536,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T10:10",
+          "spec": "2026-08-10T20:53",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6624,7 +6619,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T10:10",
+            "at": "2026-08-10T20:53",
             "other": "2026-08-01"
           }
         ],
@@ -9218,7 +9213,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-09",
           "deck": "",
-          "spec": "2026-08-10T20:02",
+          "spec": "2026-08-10T20:55",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -13577,7 +13572,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 1
         },
-        "line": "in flight 8.3",
+        "line": "paused 8.3",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -13642,13 +13637,13 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 215,
+    "open": 219,
     "done": 21,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
-      "medium": 4,
+      "medium": 8,
       "low": 21,
       "unspecified": 189
     },
@@ -15199,7 +15194,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 9,
+        "open": 13,
         "done": 1,
         "triaged": 3,
         "entries": [
@@ -15269,6 +15264,34 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-FU-7-1-2",
             "title": "The `DW-FU-{story}` shape this story mints for non-mason stations already has an established, different meaning",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-3",
+            "title": "`bmad-loop-sweep`'s canonical deferred-work format mandates a different id scheme and a dedupe check for the very file t",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-4",
+            "title": "Three stations fall into the emitter's \"every other station\" default whose tracked ledgers use mason's shape exclusively",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-5",
+            "title": "Minting an id converts every new Tier-3 defer into a hard `tier3-only-deferral` FAIL of the always-on deferred-work gate",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-6",
+            "title": "The minted entry carries no `status:`, and giving it an id heading makes it look already-canonical to the one mechanism ",
             "status": "open",
             "severity": "medium",
             "triaged": false
@@ -15405,24 +15428,18 @@ window.DASHBOARD_DATA = {
         "story": "2.2",
         "phase": "dev",
         "startEpoch": 1786411001
-      },
-      {
-        "station": "Steward",
-        "story": "8.3",
-        "phase": "dev",
-        "startEpoch": 1786410856
       }
     ],
     "lastShipped": {
-      "station": "marshal",
-      "story": "7.1",
-      "epoch": 1786410176,
-      "sha": "f2f4b7692",
-      "subject": "Merge bmad-loop/20260810-192255-dbc6/7-1-the-seed-module-tree-inside-pyforge-marshal into loop/pyforge-marshal (bmad-loo"
+      "station": "mason",
+      "story": "2.1",
+      "epoch": 1786410996,
+      "sha": "39b02c369",
+      "subject": "Merge bmad-loop/20260810-193147-b96d/2-1-the-cfe-port into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 01:18 UTC",
-    "generatedEpoch": 1786411119
+    "generatedAt": "2026-08-11 01:55 UTC",
+    "generatedEpoch": 1786413334
   },
   "storySpecs": [
     {
