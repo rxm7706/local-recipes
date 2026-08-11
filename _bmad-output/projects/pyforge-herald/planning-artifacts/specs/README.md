@@ -7,8 +7,8 @@ specs are durable (tracked), NOT Tier-3." After a story merges, its spec is
 promoted from the run's `implementation-artifacts/` into this directory and
 committed here as the source of record.
 
-**Status (2026-08-08):** all 47 stories (Epics 1-12) have a spec here — no
-promotion gap.
+**Status (2026-08-11):** all 48 stories through Epic 13's first promoted spec
+(13.1) have a spec here — no promotion gap.
 
 This directory also holds a Dream-level Spec for a Herald-owned satellite
 Dream (`spec-herald-moments-2-4-live-backend/SPEC.md`, distinct from the
