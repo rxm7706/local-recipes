@@ -2132,9 +2132,9 @@
  "pyforge-marshal/spec-dashboard-project-path-derivation": {
   "files": {
    "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
-   "docs/dashboard/index.html": "ab517db53ee93c50ed28a5e3fc6d126eea449962"
+   "docs/dashboard/index.html": "5fe4e1832ca1dffe7a0350d52d768ffd1cc35198"
   },
-  "memlog": "df954e1591ecca3fc7bb310703298ab28b8e3054"
+  "memlog": "3b046447705fc0651b4367babbd7d669f70306a1"
  },
  "pyforge-marshal/spec-dream-to-code-model-self-verification": {
   "files": {
@@ -2152,7 +2152,7 @@
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
    "docs/dashboard/check_render.js": "a24955d88fc73dc6ba2e790d843a99619aebae59",
    "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
-   "docs/dashboard/index.html": "ab517db53ee93c50ed28a5e3fc6d126eea449962",
+   "docs/dashboard/index.html": "5fe4e1832ca1dffe7a0350d52d768ffd1cc35198",
    "docs/dashboard/kedro-viz/.vite/manifest.json": "a792c3db598433602b258c3a62adb718e0999a38",
    "docs/dashboard/kedro-viz/404.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/api/deploy-viz-metadata": "d1d2447dda80afe6b86726adcff01310786474d2",
@@ -2360,7 +2360,7 @@
    "docs/dashboard/kedro-viz/index.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081"
   },
-  "memlog": "785ef062f9b204d420375b462187c0e978db1fa9"
+  "memlog": "09b531c2b684f9b75df707f82004c4094d7cc990"
  },
  "pyforge-marshal/spec-fidelity-enforcement": {
   "files": {},
