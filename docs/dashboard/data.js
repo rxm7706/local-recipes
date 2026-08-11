@@ -3728,7 +3728,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 11:26 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 11:36 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6073,7 +6073,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T11:28",
+          "spec": "2026-08-11T11:33",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-02",
@@ -6156,7 +6156,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T11:28",
+            "at": "2026-08-11T11:33",
             "other": "2026-08-02"
           }
         ],
@@ -7767,7 +7767,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-11T09:17",
+          "spec": "2026-08-11T11:33",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -15641,8 +15641,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260810-194532-e993/13-2-the-serverless-intermediate-decision-recorded into loop/pyforge-herald (bmad-l"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 11:26 UTC",
-    "generatedEpoch": 1786447591
+    "generatedAt": "2026-08-11 11:36 UTC",
+    "generatedEpoch": 1786448184
   },
   "storySpecs": [
     {
