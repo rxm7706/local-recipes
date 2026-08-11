@@ -43,7 +43,7 @@ development_status:
   7-4-state-outlives-the-container: done
   7-5-the-image-proves-itself-at-build-time: done
   8-1-bidirectional-propagation: done
-  8-2-zero-loop-guarantee: backlog
+  8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: backlog
   8-4-fail-loud-fail-alone: blocked
   8-5-explicit-status-vocabulary-translation: blocked
