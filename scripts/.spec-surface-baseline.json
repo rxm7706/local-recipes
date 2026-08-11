@@ -2567,10 +2567,10 @@
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
-   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
+   "docs/dashboard/generate.py": "b19acbf9fb420ca45a28fe0334538c76a3319c08",
    "scripts/promote_sprint_status.py": "f3f59ad191e3b7ac951ba6e3da2b867f2b112e65"
   },
-  "memlog": "4e7e2c354a078a7fcc65e6ebb11f62993679e04a"
+  "memlog": "f0dc9b77b68c8c16600bb188363502c98fbb1338"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {
