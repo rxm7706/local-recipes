@@ -61,3 +61,14 @@ sibling ledgers and the detector both use.
   evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260809-231234-a3cb`. 1-10 also ran to both ceilings — dev attempt 2/2 and review cycle 3/3 — and cleared on its LAST cycle rather than escalating, which is exactly the profile where an independent pass is worth spending.
   promoted: 2026-08-10 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there) under THIS ledger's own `DW-<story>-<n>` convention (`DW-1-3-1`, `DW-1-4-1`, `DW-1-4-2`), which differs from doctor's and atlas's `DW-FU-<story>`; the station's own precedent wins. A generic `DW-1` would collide with the next damped story, and Tier-3 is gitignored so the entry would not survive a clone. Marshal Story 4.13 — landed earlier today in PR #381 — exists to make this promotion an obligation of the story rather than archaeology someone performs later.
   status: open
+
+### DW-2: Follow-up review still recommended for 2-2-the-seam-guard after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-2-2-the-seam-guard.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-193147-b96d; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass, mason 2-2 / marshal 7-4)
+
