@@ -285,3 +285,69 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 
 **Status:** done  ·  **Ledger key:** `12-4-automation-troubleshooting-guide`
 
+## Epic 13: The live backend — a ship records itself
+
+**Value delivered.** The full-spec version of Moments 2-4 the 2026-08-08 pivot deferred: a
+real database, a webhook endpoint CI calls, and scheduled jobs — so an unrecorded ship stops
+being indistinguishable from no ship. Decomposes `spec-herald-moments-2-4-live-backend`.
+**Operator go: 2026-08-10, in-session** ("herald live-backend"), answering the Spec's own
+leading question (is there real pull?) — the prior session's queue record is corroborating,
+not load-bearing.
+
+**Two Spec constraints this epic must not lose** (both dropped by an earlier draft and
+restored on blind review):
+1. **The concurrency prerequisite is real and first.** Every shipped storage module inherits
+   `state.py`'s unlocked whole-file read-modify-write (DW-1-4-2): two writers silently drop
+   an update. That is a live bug the moment ANY second writer exists — including this epic's
+   own webhook. S-13.1 is a hard prerequisite, not a nicety.
+2. **The serverless intermediates come first, or their skip is justified in writing.** The
+   Spec names cheaper steps (`herald snapshot`, telemetry-derived defaults, locking +
+   hook-triggered CLI) and says the full backend "should not be built ahead of them without
+   new justification". S-13.2 carries that decision as its first AC.
+
+**Cross-station dependency:** hosting adopts Steward's pattern (decided 2026-08-09) —
+`spec-secure-live-dashboards`, decomposed as steward Epic 9. S-13.4's webhook rides that
+pattern's trust boundary; it depends on `steward:S-9.1`.
+
+### Story 13.1: The state layer survives a second writer
+**Type:** foundation • **Effort:** M • **Deps:** none • **FR/AD:** LB-prereq (Spec Constraint 1)
+**Surface:** `src/pyforge/herald/state.py`, `progress.py`, `claims.py`, `notices.py`, tests
+**Given** two concurrent writers **Then** no update is silently lost — the unlocked
+whole-file read-modify-write is replaced by a real locking/transactional layer, proven by a
+concurrency test that fails against today's code. **First AC: the recorded SQLite-vs-per-file
+`fcntl` decision** (the Spec's open question, resolved here). **PREREQUISITE for 13.2-13.5.**
+
+### Story 13.2: The serverless-intermediate decision, recorded
+**Type:** decision • **Effort:** S • **Deps:** S-13.1 • **FR/AD:** Spec Constraint 2
+**Surface:** the Spec's memlog + this epic
+**Given** the Spec's named cheaper steps (`herald snapshot`, telemetry-derived defaults,
+hook-triggered CLI) **Then** each is either built here or its skip carries written
+justification measured against the full backend's cost — the Spec forbids building ahead of
+them silently. No further story dispatches until this decision is recorded.
+
+### Story 13.3: DB-backed storage behind the existing seam, with migrations
+**Type:** feature • **Effort:** L • **Deps:** S-13.2 • **FR/AD:** LB-1
+**Surface:** `src/pyforge/herald/{progress,claims,notices}.py`, new storage module, migrations
+**Given** the three local file stores **Then** the database carries the same
+Progress/Claims/Notice schemas behind the existing pure function seam — CLI/web-tab contract
+unchanged in shape, notices' git-tracked markdown stays the durable copy, **and migrations
+ship with it** (LB-1's clause an earlier draft dropped).
+
+### Story 13.4: The webhook endpoint CI calls
+**Type:** feature • **Effort:** L • **Deps:** S-13.3, steward:S-9.1 • **FR/AD:** LB-2
+**Surface:** new endpoint module, HMAC verification, retry/backoff, operator alerts
+**Given** a merge or PR-close **Then** `/api/herald/webhooks/on-ship` and `on-pr-close`
+create the records the CLI verbs create today, with HMAC verification, retry/backoff and
+operator-alert delivery. **First AC records WHICH CI system and events trigger it** (the
+Spec's second open question). Rides Steward's identity/trust boundary — never a bespoke one.
+
+### Story 13.5: The scheduler enforces what was displayed
+**Type:** feature • **Effort:** M • **Deps:** S-13.3 • **FR/AD:** LB-3
+**Surface:** scheduled-job module + config
+**Given** the 7-day evidence-staleness window **Then** the weekly aggregation and evidence
+revalidation actually run on schedule rather than being operator-remembered.
+
+### Story 13.6: A ship records itself, end to end
+**Type:** feature • **Effort:** M • **Deps:** S-13.4, S-13.5 • **FR/AD:** LB-2 + LB-3 composed
+**Given** a real merge on a station **Then** progress and a success-claim draft exist with no
+human action, demonstrated live — the Dream's whole point, proven rather than asserted.
