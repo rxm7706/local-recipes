@@ -516,7 +516,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 15 of 32 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 15 of 33 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -591,12 +591,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "30/32",
+            "30/33",
             "stories complete",
             "var(--done)"
           ],
           [
-            "2",
+            "3",
             "remaining",
             ""
           ]
@@ -633,7 +633,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "7.3"
+        "at": "6.11"
       },
       "epics": [
         {
@@ -809,6 +809,11 @@ window.DASHBOARD_DATA = {
               "6.10",
               "done",
               "Independence is structural, for every source"
+            ],
+            [
+              "6.11",
+              "pending",
+              "The classifier recognizes a spike report *(added 2026-08-11 — FR-16)*"
             ]
           ]
         },
@@ -3728,7 +3733,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 11:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 11:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3783,6 +3788,16 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-console"
       },
       "archived_reason": "retired"
+    },
+    {
+      "slug": "bmad-drift-new-artifact-shape",
+      "title": "A spike report is not a corrupt file, and the classifier can't yet tell the difference",
+      "status": "dreamt",
+      "owner": "doctor",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape"
+      }
     },
     {
       "slug": "bmad-loop-forward-dependency-blindness",
@@ -4447,6 +4462,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-10",
       "dream": "upstream-discovery",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
+    },
+    {
+      "slug": "bmad-drift-new-artifact-shape",
+      "project": "pyforge-doctor",
+      "title": "`bmad_drift`'s classifier has no rule yet for a spike-report artifact",
+      "caps": 2,
+      "companions": 0,
+      "updated": "2026-08-11",
+      "dream": "bmad-drift-new-artifact-shape",
+      "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape"
     },
     {
       "slug": "deferred-work-visibility",
@@ -5678,7 +5703,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "line 2 — consolidative wrap",
           "done": 30,
-          "total": 32
+          "total": 33
         },
         {
           "slug": "pyforge-scribe",
@@ -5788,9 +5813,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 31,
+    "live": 32,
     "reached": 8,
-    "gaps": 29,
+    "gaps": 30,
     "findings": 19,
     "rows": [
       {
@@ -6042,7 +6067,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "30/32",
+        "progress": "30/33",
         "complete": 14,
         "of": 14
       },
@@ -7415,6 +7440,112 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 3,
         "of": 4
+      },
+      {
+        "label": "bmad-drift-new-artifact-shape",
+        "slug": "bmad-drift-new-artifact-shape",
+        "project": "pyforge-doctor",
+        "dream": "bmad-drift-new-artifact-shape",
+        "owner": "doctor",
+        "stages": {
+          "dream": "2026-08-11",
+          "deck": "",
+          "spec": "2026-08-11",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-11",
+          "deck": "",
+          "spec": "2026-08-11T06:37",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "bmad-drift-new-artifact-shape",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 1,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-11",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "deferred-work-visibility",
@@ -13632,16 +13763,16 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "doctor",
-        "total": 3,
+        "total": 4,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 1,
           "realized": 1,
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 7.3",
+        "line": "paused 6.11",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -13649,6 +13780,13 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-doctor-dependency-health",
             "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-drift-new-artifact-shape",
+            "title": "A spike report is not a corrupt file, and the classifier can't yet tell the difference",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -15621,15 +15759,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "herald",
-      "story": "13.2",
-      "epoch": 1786444898,
-      "sha": "c46f187a2",
-      "subject": "Merge bmad-loop/20260810-194532-e993/13-2-the-serverless-intermediate-decision-recorded into loop/pyforge-herald (bmad-l"
+      "station": "doctor",
+      "story": "6.11",
+      "epoch": 1786448632,
+      "sha": "f8aca20a3",
+      "subject": "doctor: dream + spec + Story 6.11 for the classifier's spike-report gap"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 11:43 UTC",
-    "generatedEpoch": 1786448602
+    "generatedAt": "2026-08-11 11:48 UTC",
+    "generatedEpoch": 1786448890
   },
   "storySpecs": [
     {
@@ -15837,6 +15975,37 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-bmad-drift-new-artifact-shape",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape/SPEC.md"
+          },
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          }
+        ],
+        "done": 30,
+        "backlog": 3,
+        "blocked": 0,
+        "total": 33,
+        "next": "6-11-the-classifier-recognizes-a-spike-report",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "6-11-the-classifier-recognizes-a-spike-report",
+          "7-3-the-detector-sees-anonymous-tier-3-entries",
+          "7-4-one-severity-both-sides"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "herald",
         "project": "pyforge-herald",
         "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
@@ -15861,31 +16030,6 @@ window.DASHBOARD_DATA = {
           "13-3-db-backed-storage-behind-the-existing-seam-with-migrations",
           "13-5-the-scheduler-enforces-what-was-displayed",
           "13-6-a-ship-records-itself-end-to-end"
-        ],
-        "state": "ready"
-      },
-      {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          }
-        ],
-        "done": 30,
-        "backlog": 2,
-        "blocked": 0,
-        "total": 32,
-        "next": "7-3-the-detector-sees-anonymous-tier-3-entries",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "7-3-the-detector-sees-anonymous-tier-3-entries",
-          "7-4-one-severity-both-sides"
         ],
         "state": "ready"
       },
@@ -15940,9 +16084,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 281,
-      "backlog": 86,
+      "backlog": 87,
       "blocked": 6,
-      "total": 373
+      "total": 374
     }
   },
   "fleetProgress": {
@@ -15960,11 +16104,11 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "doctor",
-        "stories": 32,
+        "stories": 33,
         "done": 30,
         "blocked": 0,
         "epics": 7,
-        "epicsDone": 6,
+        "epicsDone": 5,
         "complete": false,
         "running": false,
         "projected": 30
@@ -16037,11 +16181,11 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 373,
+      "stories": 374,
       "done": 281,
       "blocked": 6,
       "epics": 74,
-      "epicsDone": 52
+      "epicsDone": 51
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
