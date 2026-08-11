@@ -8,6 +8,7 @@ matching ``test_seed_model_manifest.py``'s own house style.
 from __future__ import annotations
 
 import dataclasses
+import importlib
 
 import pytest
 from pyforge.marshal.seed.model.artifact import CLASS_BEHAVIOR, Artifact, describe
@@ -169,9 +170,18 @@ _PRD_TABLE = {
 
 @pytest.mark.parametrize("artifact_class", _PRODUCT_CLASSES)
 def test_class_behavior_transcribes_the_prd_classification_table_verbatim(artifact_class):
-    """Every prose column, every class -- transcription drift on any single
+    """Every prose column, every class -- an accidental edit to any single
     field fails a specific, named case rather than passing silently because
-    a different field/class happened to be the one spot-checked."""
+    a different field/class happened to be the one spot-checked.
+
+    Scope, stated honestly: `_PRD_TABLE` is a hand-transcription pinned
+    beside the module's own, so this guards `CLASS_BEHAVIOR` against being
+    edited in isolation -- it does NOT detect drift in the other direction.
+    Nothing here reads `prd.md`, and nothing can: the PRD is a planning
+    artifact outside the wheel, so a unit test that parsed it would fail on
+    any installed-package run. If the PRD's classification-rule table is
+    ever amended, BOTH literals must be updated by hand and no test will
+    say so."""
     behavior = CLASS_BEHAVIOR[artifact_class]
     definition, update_behavior, hand_edit_behavior = _PRD_TABLE[artifact_class]
     assert behavior.definition == definition
@@ -187,7 +197,9 @@ def test_artifact_rejects_a_behavior_that_does_not_match_the_entrys_own_class():
     review (validate in `__post_init__`, not only in the factory)."""
     entry = _ENTRY_BY_CLASS[ArtifactClass.REFERENCED]
     wrong_behavior = CLASS_BEHAVIOR[ArtifactClass.HYBRID_MANAGED_REGION]
-    with pytest.raises(ValueError, match=r"bmad-loop: behavior is HYBRID_MANAGED_REGION's, not REFERENCED's"):
+    with pytest.raises(
+        ValueError, match=r"bmad-loop: behavior is hybrid-managed-region's, not referenced's"
+    ):
         Artifact(entry=entry, behavior=wrong_behavior)
 
 
@@ -247,3 +259,21 @@ def test_class_behavior_table_is_read_only():
         CLASS_BEHAVIOR[ArtifactClass.COPIED_SEEDED] = CLASS_BEHAVIOR[  # type: ignore[index]
             ArtifactClass.REFERENCED
         ]
+
+
+def test_no_mutable_module_level_alias_backs_the_read_only_table():
+    """A `MappingProxyType` is a read-only VIEW, not a copy: while the table
+    was also bound to a module-level `_CLASS_BEHAVIOR`, `import
+    _CLASS_BEHAVIOR; _CLASS_BEHAVIOR[cls] = other` was fully visible through
+    `CLASS_BEHAVIOR` -- so the test above passed while the exact corruption
+    its own docstring describes stayed reachable. The literal is now built
+    inline; nothing else in the module may bind it."""
+    module = importlib.import_module("pyforge.marshal.seed.model.artifact")
+    mutable_aliases = [
+        name
+        for name, value in vars(module).items()
+        if isinstance(value, dict) and set(value) <= set(ArtifactClass)
+    ]
+    assert mutable_aliases == [], (
+        f"the class-behavior table must not be reachable under a mutable name: {mutable_aliases}"
+    )

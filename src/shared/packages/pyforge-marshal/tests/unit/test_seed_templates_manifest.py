@@ -143,10 +143,13 @@ def test_dedup_target_appears_exactly_once(manifest, path):
 
 
 def test_claude_md_is_hybrid_not_also_generated_derived(manifest):
-    """The PRD's GENERATED-DERIVED table names CLAUDE.md, but its own
-    summary sentence ('all three inspected: GEMINI.md, .cursor/rules/specs.mdc,
-    .github/copilot-instructions.md') deliberately excludes it -- CLAUDE.md
-    is HYBRID only."""
+    """The PRD does not settle this one: its GENERATED-DERIVED table names
+    CLAUDE.md, and the summary sentence under that table counts 'the four
+    agent-adapter files' before naming only three ('all three inspected:
+    GEMINI.md, .cursor/rules/specs.mdc, .github/copilot-instructions.md').
+    AD-63 is the dispositive source -- '`CLAUDE.md` and `AGENTS.md` receive
+    it as a managed region (FR-117); Cursor, Gemini, and Copilot files are
+    whole-file generated-derived' -- so CLAUDE.md is HYBRID only."""
     (entry,) = [entry for entry in manifest.entries if entry.path == "CLAUDE.md"]
     assert entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
 
@@ -289,3 +292,47 @@ def test_referenced_entries_all_use_the_unrendered_path_sentinel(manifest):
     for entry in referenced_entries:
         assert entry.path == _UNRENDERED_PATH
         assert entry.pin, f"{entry.id}: referenced entry must carry a non-empty pin"
+
+
+def test_referenced_pins_match_the_live_environment_exactly(manifest):
+    """The pin IS the payload of a referenced entry -- it is the whole of
+    what FR-95's floor check reads -- yet a non-emptiness assertion was its
+    only guard, while every other number in this file is pinned exactly
+    (class counts, `never_write`, anchors, `applies_to` sets).
+
+    That gap already cost one high-severity defect: `bmad-loop` shipped
+    `>=0.8.1` while `pixi.toml` declared `>=0.9.0` and `pyforge-marshal`'s
+    own `pyproject.toml` requires `bmad-loop>=0.9.0,<0.10` -- i.e. the
+    manifest certified an environment in which the tool performing the check
+    cannot install. The whole suite was green. A silent revert would be
+    green again.
+
+    These values are the live `pixi.toml` constraints (the Boundaries' rule
+    where `pixi.toml` and the PRD disagree). Changing one here is fine --
+    changing it *only* here, or *only* in the manifest, is what this
+    catches.
+    """
+    expected = {
+        "bmad-method": ">=6.10.0",
+        "bmad-loop": ">=0.9.0",
+        "copier": ">=9.17,<10",
+        "tmux": ">=3.7b_",
+        "bmad-installed-skills": ">=6.10.0",
+        "pixi": ">=0.76.1",
+        "bmad-builder": ">=2.1.0",
+        "bmad-method-test-architecture-enterprise": ">=1.19.1",
+        "bmad-creative-intelligence-suite": ">=0.2.1",
+        "bmad-skill-forge": ">=6.10.0",
+        "bmad-dashboard": ">=1.2.2.dev0",
+        "bmad-manticore": ">=2.0.0.dev0",
+        "bmad-labs-skills": ">=1.0.0.dev0",
+        "bmad-utility-skills": ">=2.0.0",
+        "bmad-method-wds-expansion": ">=0.4.3",
+        "bmad-module-template": ">=0.1.0",
+    }
+    actual = {
+        entry.id: entry.pin
+        for entry in manifest.entries
+        if entry.artifact_class is ArtifactClass.REFERENCED
+    }
+    assert actual == expected

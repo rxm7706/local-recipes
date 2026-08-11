@@ -53,7 +53,16 @@ class ClassBehavior:
     hand_edit_behavior: str
 
 
-_CLASS_BEHAVIOR: dict[ArtifactClass, ClassBehavior] = {
+# Read-only, and with NO module-level mutable name behind it: every other
+# value in this module is a frozen dataclass ("immutable value objects" per
+# the module docstring), but the table that decides all of them was a plain
+# dict -- and because ``Artifact.__post_init__`` validates against this same
+# table, a rebound entry would corrupt ``describe()`` and still pass its own
+# guard, undetectably from inside. A ``MappingProxyType`` over a dict that
+# stays reachable under its own name does not close that: the proxy is a
+# read-only VIEW, so mutating the underlying dict is fully visible through
+# it. The literal is therefore built inline and never bound elsewhere.
+CLASS_BEHAVIOR: Mapping[ArtifactClass, ClassBehavior] = MappingProxyType({
     ArtifactClass.REFERENCED: ClassBehavior(
         definition=(
             "Not materialized. The repo depends on it by version range; it "
@@ -88,14 +97,7 @@ _CLASS_BEHAVIOR: dict[ArtifactClass, ClassBehavior] = {
         update_behavior="only the span is replaced",
         hand_edit_behavior="`check` reports hash mismatch on the span only",
     ),
-}
-
-# Read-only view: every other value in this module is a frozen dataclass
-# ("immutable value objects" per the module docstring), but the table that
-# decides all of them was a plain dict -- and because ``Artifact.__post_init__``
-# validates against this same table, a rebound entry would corrupt
-# ``describe()`` and still pass its own guard, undetectably from inside.
-CLASS_BEHAVIOR: Mapping[ArtifactClass, ClassBehavior] = MappingProxyType(_CLASS_BEHAVIOR)
+})
 
 
 @dataclass(frozen=True)
@@ -147,9 +149,15 @@ class Artifact:
             (cls for cls, behavior in CLASS_BEHAVIOR.items() if behavior == self.behavior),
             None,
         )
-        actual_name = actual_class.name if actual_class is not None else "an unrecognized class"
+        # `.value`, not `.name`: `manifest.py` states the package convention
+        # ("every neighbouring message in this module speaks the wire format
+        # the author actually writes"), the branch three lines above already
+        # follows it, and the author reads these classes as
+        # `class: hybrid-managed-region` in YAML -- never as a Python member
+        # name.
+        actual_name = actual_class.value if actual_class is not None else "an unrecognized class"
         raise ValueError(
-            f"{self.entry.id}: behavior is {actual_name}'s, not {self.entry.artifact_class.name}'s"
+            f"{self.entry.id}: behavior is {actual_name}'s, not {self.entry.artifact_class.value}'s"
         )
 
 

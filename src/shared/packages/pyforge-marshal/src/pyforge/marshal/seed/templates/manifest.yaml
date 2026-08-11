@@ -14,7 +14,16 @@
 # Two deliberate dedups (see the companion doc's own Design Notes): the
 # `.gitignore` model block and `CLAUDE.md`'s tier head-matter are each ONE
 # hybrid-managed-region entry, not also a copied-managed / generated-derived
-# entry -- their own PRD rows say so once read past the summary table.
+# entry. The two rest on DIFFERENT sources, and only the first on the PRD:
+#   - `.gitignore`: its own PRD copied-managed row resolves it outright --
+#     "delivered as a managed region in a repo-owned `.gitignore`".
+#   - `CLAUDE.md`: the PRD does NOT resolve it. Its generated-derived table
+#     lists CLAUDE.md, and the summary sentence under that table counts "the
+#     four agent-adapter files" before naming only three, so the PRD points
+#     both ways. AD-63 is the dispositive source: "`CLAUDE.md` and
+#     `AGENTS.md` receive it as a managed region (FR-117); Cursor, Gemini,
+#     and Copilot files are whole-file generated-derived" -- exactly the
+#     three whole-file adapters carried below.
 
 model_version: "1.0.0"
 
