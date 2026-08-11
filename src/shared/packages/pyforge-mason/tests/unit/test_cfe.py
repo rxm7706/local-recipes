@@ -11,7 +11,14 @@ Story 2.1 extends this file with CAPTURE-mode coverage: `_extract_json`'s
 tolerant-parsing paths, `_invoke_captured`'s I/O-matrix behavior (mocked),
 and `validate_recipe`/`submit_pr` end-to-end against Story 1.9's
 `fake_cfe_root` fixture, real subprocess, no mocking (mirroring
-`test_fake_cfe_root_fixture.py`'s own style for that half)."""
+`test_fake_cfe_root_fixture.py`'s own style for that half).
+
+Story 2.3 extends this file with the AD-14 sentinel-credential test. It is
+the one place `probe_import_floor` runs against a real interpreter rather
+than a mock -- narrowing the Story 1.6 paragraph's "mocked throughout" to
+that story's own tests (follow-up review, Blind Hunter): proving a
+credential never surfaces in a returned result is only worth anything
+against the real subprocess boundary it would have to cross."""
 
 from __future__ import annotations
 
@@ -1382,17 +1389,23 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     CFE only through the inherited process environment -- never surfaced
     back into a returned result's own fields. A sentinel value set via
     `monkeypatch.setenv` proves this for the three call sites the spec
-    names: `probe_import_floor` (whose `ImportFloorResult` carries no
-    stdout/stderr -- the assertion there is only that the call succeeds
-    normally with the sentinel present) and `validate_recipe`/`submit_pr`
-    (both against Story 1.9's `fake_cfe_root` fixture, real subprocess, no
-    mocking -- mirroring this file's existing fake-root tests)."""
+    names: `probe_import_floor` and `validate_recipe`/`submit_pr` (all three
+    against Story 1.9's `fake_cfe_root` fixture where applicable, real
+    subprocess, no mocking -- mirroring this file's existing fake-root
+    tests).
+
+    `probe_import_floor`'s assertion is over its result's actual FIELDS
+    (`interpreter`, `missing`), not `isinstance` (follow-up review, Blind
+    Hunter): both of `probe_import_floor`'s return paths construct an
+    `ImportFloorResult`, so the original `isinstance` check could not fail
+    and paid for a real subprocess to assert nothing."""
     _clear_fixture_env(monkeypatch)
     sentinel = "JFROG-SENTINEL-9f3e7a1c"
     monkeypatch.setenv("JFROG_API_KEY", sentinel)
 
     floor_result = probe_import_floor(sys.executable)
-    assert isinstance(floor_result, ImportFloorResult)
+    assert sentinel not in floor_result.interpreter
+    assert not any(sentinel in name for name in floor_result.missing)
 
     validate_result = validate_recipe(
         [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,

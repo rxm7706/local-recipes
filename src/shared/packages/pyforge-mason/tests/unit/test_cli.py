@@ -763,21 +763,40 @@ def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, 
 
 
 @pytest.mark.parametrize("flags", [[], ["--quiet"], ["--verbose"]], ids=["default", "quiet", "verbose"])
-def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, capsys, flags):
+def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, capsys, tmp_path, flags):
     """AD-14: a JFROG_* credential must never surface in `mason doctor`'s
     output at ANY verbosity (review pass, Edge Case Hunter: the original
-    version only exercised --verbose despite this exact claim, leaving the
-    default and --quiet paths unproven). `doctor.build_report` is mocked to
-    a fixed report (existing doctor-test pattern, matching
-    `test_env_var_value_never_appears_in_captured_stderr_log_output` above)
-    since Mason never reads a JFROG_* variable in the first place (spec
-    Never boundary) -- this guards against a future regression where output
-    at any of the three verbosity levels, or the report itself, starts
-    echoing the ambient environment."""
+    version only exercised --verbose despite this exact claim).
+
+    `doctor.build_report` is deliberately NOT mocked (follow-up review, both
+    reviewers, reproduced): it is the only function in the `doctor` path
+    that receives `os.environ` at all, so patching it made this test's own
+    claim -- that the *report* never echoes the ambient environment --
+    structurally unreachable. With the mock in place, a `build_report` that
+    folded `environ` into the report printed `JFROG_API_KEY=<sentinel>` to
+    stdout while all three parametrized cases still passed.
+
+    Hermeticity follows `test_doctor.py::test_build_report_against_the_real
+    _resolve_and_probe_chain`'s established pattern (AD-16): `PATH` points at
+    an empty directory so every engine probe reliably reports absent, and the
+    CFE-root walk starts from an empty `tmp_path`, while `resolve.py`'s
+    chains and `cfe.py`'s real subprocess probe stay genuinely unmocked. The
+    `MASON_*` deletes keep the three verbosity cases from collapsing into one
+    when the runner's own shell has them set (follow-up review, Edge Case
+    Hunter)."""
+    for name in ("MASON_QUIET", "MASON_VERBOSE", "MASON_FORMAT", "MASON_CFE_ROOT",
+                 "MASON_CFE_PYTHON"):
+        monkeypatch.delenv(name, raising=False)
+    empty_path_dir = tmp_path / "empty-path"
+    empty_path_dir.mkdir()
+    monkeypatch.setenv("PATH", str(empty_path_dir))
+    monkeypatch.chdir(tmp_path)
+
     sentinel = "JFROG-SENTINEL-9f3e7a1c"
     monkeypatch.setenv("JFROG_API_KEY", sentinel)
-    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
-        assert main(["doctor", *flags]) == EXIT_OK
+
+    assert main(["doctor", *flags]) == EXIT_OK
+
     out = capsys.readouterr()
     assert sentinel not in out.out
     assert sentinel not in out.err
