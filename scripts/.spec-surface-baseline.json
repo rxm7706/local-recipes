@@ -2552,9 +2552,9 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "bd094688e43a629ffee75daffd59af19f71d6fd5",
-   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0"
+   "docs/dashboard/generate.py": "b19acbf9fb420ca45a28fe0334538c76a3319c08"
   },
-  "memlog": "89ef90dcfc644afe186b316d0b26b0f6a2242773"
+  "memlog": "ebfae3f0274b502e47d0eb493bd5b9483fa55fe9"
  },
  "pyforge-marshal/spec-regenerable-factory": {
   "files": {
