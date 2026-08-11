@@ -35,7 +35,7 @@ development_status:
   12-3-operator-runbook: done
   12-4-automation-troubleshooting-guide: done
   13-1-the-state-layer-survives-a-second-writer: done
-  13-2-the-serverless-intermediate-decision-recorded: backlog
+  13-2-the-serverless-intermediate-decision-recorded: done
   13-3-db-backed-storage-behind-the-existing-seam-with-migrations: backlog
   13-4-the-webhook-endpoint-ci-calls: blocked
   13-5-the-scheduler-enforces-what-was-displayed: backlog

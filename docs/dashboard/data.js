@@ -899,12 +899,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "48/53",
+            "49/53",
             "stories complete",
             "var(--done)"
           ],
           [
-            "5",
+            "4",
             "remaining",
             ""
           ]
@@ -932,7 +932,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "13.2"
+        "at": "13.3"
       },
       "epics": [
         {
@@ -1253,7 +1253,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "13.2",
-              "pending",
+              "done",
               "The serverless-intermediate decision, recorded"
             ],
             [
@@ -3728,7 +3728,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 11:09 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 11:13 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5668,7 +5668,7 @@ window.DASHBOARD_DATA = {
           "stories": 17,
           "state": "running",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
-          "done": 48,
+          "done": 49,
           "total": 53
         },
         {
@@ -6165,7 +6165,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "48/53",
+        "progress": "49/53",
         "complete": 14,
         "of": 14
       },
@@ -13240,7 +13240,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "paused 13.2",
+        "line": "paused 13.3",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -15606,15 +15606,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "steward",
-      "story": "9.1",
-      "epoch": 1786443566,
-      "sha": "cdb7512dd",
-      "subject": "Merge bmad-loop/20260810-193158-7f2b/9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant into loop/p"
+      "station": "herald",
+      "story": "13.2",
+      "epoch": 1786444898,
+      "sha": "c46f187a2",
+      "subject": "Merge bmad-loop/20260810-194532-e993/13-2-the-serverless-intermediate-decision-recorded into loop/pyforge-herald (bmad-l"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 11:09 UTC",
-    "generatedEpoch": 1786446581
+    "generatedAt": "2026-08-11 11:13 UTC",
+    "generatedEpoch": 1786446821
   },
   "storySpecs": [
     {
@@ -15631,9 +15631,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-herald",
-      "done": 48,
+      "done": 49,
       "tracked": 48,
-      "gap": 0
+      "gap": 1
     },
     {
       "station": "pyforge-marshal",
@@ -15834,16 +15834,15 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend/SPEC.md"
           }
         ],
-        "done": 48,
-        "backlog": 4,
+        "done": 49,
+        "backlog": 3,
         "blocked": 1,
         "total": 53,
-        "next": "13-2-the-serverless-intermediate-decision-recorded",
+        "next": "13-3-db-backed-storage-behind-the-existing-seam-with-migrations",
         "blockedKeys": [
           "13-4-the-webhook-endpoint-ci-calls"
         ],
         "backlogKeys": [
-          "13-2-the-serverless-intermediate-decision-recorded",
           "13-3-db-backed-storage-behind-the-existing-seam-with-migrations",
           "13-5-the-scheduler-enforces-what-was-displayed",
           "13-6-a-ship-records-itself-end-to-end"
@@ -15925,8 +15924,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 280,
-      "backlog": 86,
+      "done": 281,
+      "backlog": 85,
       "blocked": 6,
       "total": 372
     }
@@ -15958,13 +15957,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "herald",
         "stories": 53,
-        "done": 48,
+        "done": 49,
         "blocked": 1,
         "epics": 13,
         "epicsDone": 12,
         "complete": false,
         "running": false,
-        "projected": 48
+        "projected": 49
       },
       {
         "key": "marshal",
@@ -16024,7 +16023,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 372,
-      "done": 280,
+      "done": 281,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 53
@@ -16032,7 +16031,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 280
+      "projected": 281
     }
   }
 };
