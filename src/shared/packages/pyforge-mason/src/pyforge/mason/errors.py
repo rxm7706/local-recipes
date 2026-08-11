@@ -126,3 +126,43 @@ class CfeUnresolvedError(MasonError):
         # `CfeUnresolvedError(*self.args)` would raise `TypeError` on every
         # deepcopy/pickle round-trip.
         return (self.__class__, ())
+
+
+class CfeTimeoutError(MasonError):
+    """A CAPTURE-mode CFE invocation (`cfe.py::_invoke_captured`) exceeded
+    its mandatory timeout (FR-4, AD-4, NFR-14).
+
+    `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
+    is what guarantees "no orphaned process" here (spec Always boundary) --
+    this class only names the failure; it does not itself do any process
+    cleanup. `script` is the `_CFE_SCRIPTS` table key (e.g.
+    `"validate_recipe"`), not a filesystem path -- the same key a caller
+    passed to a named adapter function, so the message points at something a
+    user or a future `--cfe-timeout` override can act on. `timeout` is the
+    number of seconds that elapsed before the child was killed, echoed
+    verbatim into the message so a user can decide whether to raise it.
+    """
+
+    def __init__(self, script: str, timeout: float) -> None:
+        self.script = script
+        self.timeout = timeout
+        message = (
+            f"CFE script {script!r} did not complete within its {timeout}s "
+            "timeout and was killed; increase --cfe-timeout/MASON_CFE_TIMEOUT "
+            "if this operation is expected to take longer"
+        )
+        super().__init__("cfe:timeout", message)
+
+    def __reduce__(self):
+        # Mirrors `CfeUnresolvedError.__reduce__` above (review pass,
+        # 2026-08-11): `Exception.__reduce__` reconstructs via
+        # `cls(*self.args)`, and `MasonError.__init__` sets `self.args =
+        # (identifier, message)` -- two items, coincidentally the same count
+        # this class's own constructor takes, but the WRONG two values
+        # (`"cfe:timeout"` and the built message string, not `script` and
+        # `timeout`). Without this override, `CfeTimeoutError(*self.args)`
+        # would not raise, but would silently reconstruct with
+        # `self.script == "cfe:timeout"` and `self.timeout` bound to a
+        # message string, corrupting every deepcopy/pickle round-trip
+        # instead of failing loudly.
+        return (self.__class__, (self.script, self.timeout))
