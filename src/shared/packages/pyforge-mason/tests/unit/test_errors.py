@@ -4,7 +4,9 @@ Story 1.6 extends this file with `CfeImportFloorError` coverage: its
 identifier and a message naming every missing module plus the interpreter
 path. Story 1.7 extends it again with `CfeUnresolvedError` coverage: its
 fixed identifier and message naming all four `resolve.py` step names plus
-how to satisfy the first three."""
+how to satisfy the first three. Story 2.1 extends it again with
+`CfeTimeoutError` coverage: its identifier and a message naming both the
+timed-out script's key and the timeout value."""
 
 from __future__ import annotations
 
@@ -13,7 +15,9 @@ import pickle
 
 import pytest
 
-from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError, MasonError
+from pyforge.mason.errors import (
+    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, MasonError,
+)
 
 
 def test_valid_identifier_constructs_and_stores_attributes():
@@ -192,5 +196,64 @@ def test_cfe_unresolved_error_survives_pickle_round_trip():
     original = CfeUnresolvedError()
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, CfeUnresolvedError)
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 2.1: CfeTimeoutError -----------------------------------------------
+
+def test_cfe_timeout_error_identifier():
+    exc = CfeTimeoutError(script="validate_recipe", timeout=120.0)
+    assert exc.identifier == "cfe:timeout"
+
+
+def test_cfe_timeout_error_stores_attributes():
+    exc = CfeTimeoutError(script="submit_pr", timeout=300.0)
+    assert exc.script == "submit_pr"
+    assert exc.timeout == 300.0
+
+
+def test_cfe_timeout_error_message_names_the_script_key_and_timeout_value():
+    exc = CfeTimeoutError(script="validate_recipe", timeout=120.0)
+    message = str(exc)
+    assert "validate_recipe" in message
+    assert "120.0" in message
+
+
+def test_cfe_timeout_error_is_a_mason_error():
+    assert issubclass(CfeTimeoutError, MasonError)
+    with pytest.raises(MasonError):
+        raise CfeTimeoutError(script="submit_pr", timeout=300.0)
+
+
+def test_cfe_timeout_error_str_format_is_identifier_colon_space_message():
+    exc = CfeTimeoutError(script="validate_recipe", timeout=45.5)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_cfe_timeout_error_survives_deepcopy():
+    """Review pass (2026-08-11): unlike `CfeUnresolvedError` (whose
+    zero-argument constructor immediately mismatches `self.args`'s two
+    items and raises `TypeError` without a `__reduce__` override), this
+    class's constructor also takes two arguments -- so without the override
+    below, `cls(*self.args)` would NOT raise, but would silently reconstruct
+    with `script == "cfe:timeout"` (the identifier) and `timeout` bound to
+    the built message string (not a number), corrupting the clone instead
+    of failing loudly."""
+    original = CfeTimeoutError(script="validate_recipe", timeout=120.0)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, CfeTimeoutError)
+    assert clone.script == original.script
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_cfe_timeout_error_survives_pickle_round_trip():
+    original = CfeTimeoutError(script="submit_pr", timeout=300.0)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, CfeTimeoutError)
+    assert clone.script == original.script
+    assert clone.timeout == original.timeout
     assert clone.identifier == original.identifier
     assert clone.message == original.message
