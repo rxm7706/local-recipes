@@ -742,11 +742,11 @@ artifact)
 
 ## Epic 7: Deferred-work visibility
 
-> **Audit-proposed decomposition (Phase 3, 2026-08-10), pending operator confirmation at
-> re-spin.** Authored from the operator-approved decomposition queue recorded 2026-08-10
-> (prior session). Stories are `backlog`; the owning Spec **remains in `DEFERRED_SPECS`**
-> deliberately — de-registering that gate is the operator's call, not the audit's. Nothing
-> here dispatches without an explicit `marshal factory spin` plus that confirmation.
+> **CONFIRMED by the operator, 2026-08-10 (in-session)** — the Phase-3 hold is lifted:
+> `spec-deferred-work-visibility` is de-registered from `DEFERRED_SPECS` (its landed
+> decomposition is this epic; 6-9's sequencing dependency landed as PR #394; the four
+> questions closed at PR #396). Stories dispatch in order 7.1 → 7.2 → 7.3 → 7.4 on the
+> next `marshal factory spin pyforge-doctor`.
 
 **Value delivered.** `deferred_work_check`'s guarantee becomes real: every deferral carries
 identity from birth, anonymous Tier-3 entries are seen, and the 470-entry blind backlog is

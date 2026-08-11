@@ -73,10 +73,11 @@ OPEN_SPEC_STATUSES = frozenset({"draft", "ready", "in-progress"})
 #: Specs deliberately NOT decomposed, each with the reason it is exempt --
 #: copied verbatim from scripts/chain_completeness_check.py so a station's
 #: recorded exemption is not silently dropped by the port.
-# NOTE: this dict is DUPLICATED in `scripts/chain_completeness_check.py` (the shim doctor
-# story 6-9 retires). Until 6-9 lands, BOTH copies must be edited together -- on 2026-08-10
-# the shim gained two entries this copy did not, and the divergence was invisible because
-# only the shim is wired to the pixi task today. Edit one, edit the other.
+# NOTE (updated 2026-08-10): the former duplicate in `scripts/chain_completeness_check.py`
+# is GONE — 6-9 landed (PR #394) and deleted the shim, so this dict is now the sole copy.
+# An entry leaves this dict only when its Spec is decomposed into the owning station's
+# epics AND the operator confirms dispatch (precedent: spec-deferred-work-visibility,
+# de-registered 2026-08-10 on explicit operator confirmation of doctor Epic 7).
 DEFERRED_SPECS: dict[str, str] = {
     "spec-agentic-sdlc-autonomy":
         "a standing position, explicitly 'not a deliverable' by its own text — "
@@ -92,15 +93,6 @@ DEFERRED_SPECS: dict[str, str] = {
         "layer content. Its Spec scopes to ONE pilot slice with an explicit re-scope "
         "gate; decomposing the whole rebuild before that spike would plan work nobody "
         "has shown is possible",
-    "spec-deferred-work-visibility":
-        "sequenced behind doctor 6-9, deliberately and by its own Spec. The target it would "
-        "change — `deferred_work_check` — is one of the `scripts/*_check.py` shims that 6-9 "
-        "retires, so decomposing now plans edits to a file about to move and would write the "
-        "fix twice. The Spec also carries four genuinely open questions (the detector's home "
-        "after 6-9, the grandfathering cut-off date, whether `bmad-dev-auto` mints ids or the "
-        "detector infers them, and what a `twin` even means for an entry with no id to twin "
-        "against) — the third changes which side of the writer/gate pair moves first, which is "
-        "the whole sequencing decision. Revisit once 6-9 lands",
     "spec-artifact-chain-reconciliation":
         "executed serially in the operator's main session by its own SPEC constraint (the "
         "quick-dev shape) — decomposing it into marshal's PRD/epics would place audit "
