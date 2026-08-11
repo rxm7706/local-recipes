@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-180, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
+updated: 2026-08-11  # FR-181 added to § 7.2 (docs/dreams/fleet-status-supervisor-fallback.md, spec-fleet-status-supervisor-fallback): a dead supervisor sidecar consults a fallback engine-liveness signal before reporting "unsupervised". Queued as Story 5.8 (epics.md, PR #425); this closes the chain-completeness INV-A gap that PR #425 left open (the FR entry, not the Dream/Spec/Story chain, was the missing piece). ONE FR space now FR-1..FR-181, no gaps.
+# 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-180, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
 # 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
 # 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
@@ -448,6 +449,15 @@ Preflight refuses a loop home that is behind `main`, and reports one that has di
 - **AHEAD is not BEHIND.** A home carrying unlanded story merges is the ordinary mid-run state and must not be refused.
 - **FR-173 is amended to include the push.** Returning the station branch to `main` locally is not enough: provisioning reads **origin**, so a re-provisioned home would clone a stale branch. Measured the same day — seven homes sat 33–74 commits behind on origin after their work had already landed.
 - Any probe failure yields no finding: a diagnostic must never become a refusal.
+
+#### FR-181: A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — `docs/dreams/fleet-status-supervisor-fallback.md`)*
+When the supervisor sidecar is dead, `derive_home_state` consults a second, independent liveness signal for the run's engine before reporting `"unsupervised"`, so a dead sidecar behind a demonstrably live engine reads differently from a run that actually needs a re-spin.
+**Consequences:**
+- `derive_home_state`'s first branch (`if not finished and supervisor_alive is False: return "unsupervised"`) returns before ever checking whether the harness itself has an in-flight task; `supervisor_alive` probes only the sidecar Marshal spawns, never the underlying `bmad-loop` engine process it watches.
+- **Narrows a false positive, never softens a real one.** A run whose engine is also gone still reports `"unsupervised"` — the existing rule that a dead supervisor is never reported as healthy stays intact.
+- The fallback signal is itself derived from journals/process state (AD-5), never a hand-maintained flag or an operator override.
+- The two failure shapes (sidecar-dead-engine-alive vs. sidecar-dead-engine-dead) are distinguishable from `marshal status`/`fleet-picture`'s own output, so an operator never again needs the `ps`/`tmux ls`/`state.json` cross-check by hand.
+- *Motivating evidence: measured 2026-08-11 — 5 stations resumed via bare `bmad-loop resume` (which never spawns a fresh sidecar) reported `unsupervised — needs re-spin` for the rest of their run's life, although each was independently verified alive via `ps`/`tmux ls`/`state.json`. Story 5.8 (Epic 5) queues the implementation; the concrete fallback signal is a story-level design decision, not resolved here.*
 
 ---
 
