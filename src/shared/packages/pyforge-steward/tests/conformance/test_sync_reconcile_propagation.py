@@ -779,3 +779,327 @@ def test_parse_baseline_rejects_a_falsy_non_string_value_instead_of_treating_it_
         _parse_baseline(0, side="jira issue", identifier="PROJ-1")
     with pytest.raises(SyncAPIError, match="malformed baseline field"):
         _parse_baseline(False, side="jira issue", identifier="PROJ-1")
+
+
+# ── Epic 8 Story 8.2: the zero-loop guarantee, proven by N round trips ──────
+#
+# CAP-2 claims propagation "holds by construction" (AD-5 amended/AD-10), but
+# until now no test ever called `reconcile()` more than once against the
+# same stateful transport. These tests seed exactly one human-made change,
+# then call `reconcile()` repeatedly against the SAME `FakeTransport`
+# instance and assert every later call is a true no-op with zero new WRITES
+# (the first call propagates for the two one-sided tests; for the
+# convergent-same-value test, round 1 is itself already a no-op -- nothing
+# to propagate, since both sides already agree). `reconcile()` re-reads both
+# sides on every call by design (AD-9: "a webhook or schedule tick is only
+# ever a wake-up, never a value source"), so `transport.calls` (raw reads+writes)
+# necessarily grows every round even in a genuinely no-op round; the
+# property being proven is zero new writes, so every assertion below
+# snapshots `len(transport.write_calls())`, never raw `len(transport.calls)`.
+
+
+def test_zero_loop_github_initiated_n_round_trips():
+    """GH status differs from its baseline; Jira matches its own baseline.
+    Round 1 propagates GH's change to Jira and refreshes both baselines;
+    rounds 2-5 must each independently be a true no-op with zero new
+    writes."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # matches current -- jira unchanged
+        },
+        jira_transitions=[
+            {"id": "31", "to": {"name": "In Progress"}},
+            {"id": "21", "to": {"name": "To Do"}},
+        ],
+    )
+
+    first = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+    assert first.ok is True
+    assert first.details["decision"] == "push_to_jira"
+    assert _jira_status(transport) == "In Progress"
+    writes_after_first = len(transport.write_calls())
+
+    for round_number in range(2, 6):  # rounds 2-5
+        result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+        assert result.ok is True, f"round {round_number}"
+        assert result.details["decision"] == "no_op", f"round {round_number}"
+        assert len(transport.write_calls()) == writes_after_first, f"round {round_number}"
+
+
+def test_zero_loop_jira_initiated_n_round_trips():
+    """Same shape as the GitHub-initiated round trip, mirrored: Jira status
+    differs from its baseline, GH matches its own baseline. Round 1
+    propagates Jira's change to GitHub and refreshes both baselines; rounds
+    2-5 must each independently be a true no-op with zero new writes."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do"}',  # matches current -- gh unchanged
+        },
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+    )
+
+    first = reconcile(jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
+    assert first.ok is True
+    assert first.details["decision"] == "push_to_github"
+    assert transport.github_fields["gh_status"] == "In Progress"
+    writes_after_first = len(transport.write_calls())
+
+    for round_number in range(2, 6):  # rounds 2-5
+        result = reconcile(jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
+        assert result.ok is True, f"round {round_number}"
+        assert result.details["decision"] == "no_op", f"round {round_number}"
+        assert len(transport.write_calls()) == writes_after_first, f"round {round_number}"
+
+
+def test_zero_loop_convergent_same_value_n_round_trips():
+    """Both sides differ from their own baseline but already agree with each
+    other. Round 1 makes zero API writes to either tracked field (already
+    converged) but still refreshes both stale baselines; rounds 2-5 must
+    each independently be a true no-op with zero new writes."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "Blocked",
+            "gh_baseline": '{"status": "In Progress"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "Blocked"},  # already matches gh's value
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+        jira_transitions=[],
+    )
+
+    first = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+    assert first.ok is True
+    assert first.details["decision"] == "no_op"
+    assert _status_push_calls(transport) == []  # zero writes to either tracked field
+    assert len(_baseline_write_calls(transport)) == 2  # both stale baselines still refreshed
+    writes_after_first = len(transport.write_calls())
+
+    for round_number in range(2, 6):  # rounds 2-5
+        result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+        assert result.ok is True, f"round {round_number}"
+        assert result.details["decision"] == "no_op", f"round {round_number}"
+        assert len(transport.write_calls()) == writes_after_first, f"round {round_number}"
+
+
+def test_zero_loop_survives_a_baseline_refresh_failure():
+    """Covers the non-atomic baseline-refresh failure path (`sync.py:869-880`),
+    required by the audit's dispatch note (`epics.md:664-665`,
+    `implementation-readiness-report-20260810.md:15`). Reuses
+    `test_baseline_exceeding_the_field_size_ceiling_is_a_named_failure_after_the_value_push`'s
+    fixture shape -- a status value over Jira's 255-char baseline-field
+    ceiling (`_JIRA_BASELINE_FIELD_CEILING`) -- driven through 3
+    `reconcile()` ticks against the SAME transport.
+
+    Tick 1 already fails (`ok is False`, "Mode B" in summary): the value
+    push (the Jira transition) already succeeded before the baseline
+    refresh fired and failed, so there is no successful round 1 to snapshot
+    writes after -- snapshot `len(transport.write_calls())` AFTER tick 1
+    instead. Ticks 2-3 must each independently assert `ok is False` again
+    (the convergence check downgrades the would-be push to `no_op` on these
+    ticks, since both sides already hold the pushed value from tick 1, but
+    the baseline refresh is retried and fails again for the same reason)
+    and `len(transport.write_calls())` unchanged from its value after tick
+    1 -- proving this persistent-failure steady state never re-propagates
+    the pushed value, even though it never self-heals without
+    operator/Mode-B intervention."""
+    long_status = "X" * 300  # comfortably over Jira's 255-char ceiling, under GitHub's 1024
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": long_status,
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # unchanged
+        },
+        jira_transitions=[{"id": "99", "to": {"name": long_status}}],
+    )
+
+    first = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+    assert first.ok is False
+    assert "Mode B" in first.summary
+    assert _jira_status(transport) == long_status  # the value push already completed
+    writes_after_first = len(transport.write_calls())
+
+    for tick_number in range(2, 4):  # ticks 2-3
+        result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+        assert result.ok is False, f"tick {tick_number}"
+        assert len(transport.write_calls()) == writes_after_first, f"tick {tick_number}"
+
+
+# ── Epic 8 Story 8.3: idempotent redelivery, proven byte-identical (CAP-3) ──
+#
+# CAP-3 claims re-processing the same update twice leaves both systems
+# byte-identical to a single delivery (AD-9: "redelivery must be a no-op ...
+# out-of-order arrival must not regress state"). 8.2 proved the zero-loop
+# property via N round trips through the SAME identifier, checked by write
+# COUNT only; this story adds proofs 8.2 never attempted: (1) full end-state
+# dict-equality across a duplicate delivery, not merely a write-count check,
+# and (2) entry-point symmetry -- a redelivery arriving via the OPPOSITE
+# identifier from the one that made the first call is still a true no-op.
+# A third test covers AD-9 rule 2 directly (stale-value convergence, distinct
+# from entry-point symmetry -- see the re-issued intent contract): a genuine
+# intervening state change between two real convergences, followed by a late/
+# out-of-order redelivery nominally "about" the now-superseded first value,
+# must converge on the CURRENT value, never regress toward the stale one.
+# `dry_run` stays False throughout (Boundaries & Constraints); `reconcile()`'s
+# internals are never mocked -- observed only through `DutyResult` and the
+# transport's own state/call log, matching this file's existing idiom.
+
+
+def test_idempotent_redelivery_same_identifier_is_byte_identical():
+    """CAP-3's literal claim: redelivering the identical GH-initiated change
+    via the SAME identifier that made the first call must leave both sides'
+    full field state byte-identical -- not just a write-count check -- to
+    the state captured immediately after the first delivery."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # matches current -- jira unchanged
+        },
+        jira_transitions=[
+            {"id": "31", "to": {"name": "In Progress"}},
+            {"id": "21", "to": {"name": "To Do"}},
+        ],
+    )
+
+    first = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+    assert first.ok is True
+    assert first.details["decision"] == "push_to_jira"
+    github_snapshot = dict(transport.github_fields)
+    jira_snapshot = dict(transport.jira_fields)
+    writes_after_first = len(transport.write_calls())
+
+    second = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)  # redelivery
+
+    assert second.ok is True
+    assert second.details["decision"] == "no_op"
+    assert second.details["target_value"] is None
+    assert second.details["baseline"] is None
+    assert len(transport.write_calls()) == writes_after_first
+    assert transport.github_fields == github_snapshot
+    assert transport.jira_fields == jira_snapshot
+
+
+def test_idempotent_redelivery_via_the_opposite_identifier_does_not_regress():
+    """Entry-point symmetry (NOT AD-9 rule 2 -- re-issued 2026-08-11): a
+    Jira-initiated change propagates to GitHub via `jira_issue_key`, then the
+    same already-converged pair is redelivered via `github_item_id`, the
+    OPPOSITE identifier from the one that made the first call. Genuinely new
+    ground relative to 8.2, whose round trips always reused the same
+    identifier across every round -- proves idempotency holds regardless of
+    which side's channel redelivers the notification."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do"}',  # matches current -- gh unchanged
+        },
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+    )
+
+    first = reconcile(jira_issue_key="PROJ-1", config=CONFIG, transport=transport)
+    assert first.ok is True
+    assert first.details["decision"] == "push_to_github"
+    github_snapshot = dict(transport.github_fields)
+    jira_snapshot = dict(transport.jira_fields)
+    writes_after_first = len(transport.write_calls())
+
+    second = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)  # opposite identifier
+
+    assert second.ok is True
+    assert second.details["decision"] == "no_op"
+    assert second.details["target_value"] is None
+    assert second.details["baseline"] is None
+    assert len(transport.write_calls()) == writes_after_first
+    assert transport.github_fields == github_snapshot
+    assert transport.jira_fields == jira_snapshot
+
+
+def test_late_delivery_about_a_superseded_value_does_not_regress_state_ad9_rule2():
+    """AD-9 rule 2: "a late delivery about a superseded value converges to
+    the current one rather than overwriting it." `reconcile()` takes no
+    delivered-value parameter -- it always re-reads current state against
+    each side's own baseline (AD-5: never a timestamp, never the payload) --
+    so a late delivery "about" a superseded value can only be represented by
+    a GENUINE INTERVENING STATE CHANGE between two real convergences: GH
+    moves once (propagates, baselines refresh to the first new value), then
+    GH moves AGAIN to a second value (propagates again, baselines refresh to
+    the second), then a redelivery call -- nominally "about" the now-
+    superseded first value -- must land on the CURRENT (second) value, never
+    regress toward the first."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',
+        },
+        jira_transitions=[
+            {"id": "31", "to": {"name": "In Progress"}},
+            {"id": "41", "to": {"name": "Blocked"}},
+        ],
+    )
+
+    # Delivery 1 (in-order): propagates "In Progress"; both baselines
+    # refresh to it. This is the value a late, out-of-order notification
+    # will (stalely) describe.
+    first = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+    assert first.ok is True
+    assert first.details["decision"] == "push_to_jira"
+
+    # Genuine intervening state change: GH moves AGAIN, to "Blocked" -- a
+    # second, later real event the earlier notification knows nothing about.
+    transport.github_fields["gh_status"] = "Blocked"
+    second = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+    assert second.ok is True
+    assert second.details["decision"] == "push_to_jira"
+    github_snapshot = dict(transport.github_fields)
+    jira_snapshot = dict(transport.jira_fields)
+    writes_after_second = len(transport.write_calls())
+
+    # The late/out-of-order delivery: nominally "about" the now-superseded
+    # "In Progress" value, but reconcile() never consumes a delivered
+    # value -- it must converge on the CURRENT value ("Blocked"), never
+    # regress to it.
+    late = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert late.ok is True
+    assert late.details["decision"] == "no_op"
+    assert late.details["target_value"] is None
+    assert late.details["baseline"] is None
+    assert len(transport.write_calls()) == writes_after_second
+    assert transport.github_fields == github_snapshot
+    assert transport.jira_fields == jira_snapshot

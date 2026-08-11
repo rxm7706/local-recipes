@@ -82,17 +82,6 @@ DEFERRED_SPECS: dict[str, str] = {
     "spec-agentic-sdlc-autonomy":
         "a standing position, explicitly 'not a deliverable' by its own text — "
         "there is nothing to decompose and an FR would manufacture one",
-    "spec-herald-moments-2-4-live-backend":
-        "archive-leaning by its OWN first open question ('is there real pull for this at "
-        "all?'), and it names a hard prerequisite — replacing state.py's unlocked "
-        "read-modify-write — that blocks it regardless. Decomposing it would commit the "
-        "station to work its own Spec doubts. Revisit when the premise is settled",
-    "spec-conda-forge-expert-rebuild":
-        "feasibility unresolved: its own open questions ask whether skf-create-skill can "
-        "drive code-scale compilation (~41K LOC / 67 scripts) at all, versus knowledge-"
-        "layer content. Its Spec scopes to ONE pilot slice with an explicit re-scope "
-        "gate; decomposing the whole rebuild before that spike would plan work nobody "
-        "has shown is possible",
     "spec-artifact-chain-reconciliation":
         "executed serially in the operator's main session by its own SPEC constraint (the "
         "quick-dev shape) — decomposing it into marshal's PRD/epics would place audit "
@@ -102,19 +91,6 @@ DEFERRED_SPECS: dict[str, str] = {
         "tracked and detector-checked there. Revisit if the audit becomes a standing "
         "practice (its own open question) — a recurring cadence would deserve board "
         "representation",
-    "spec-secure-live-dashboards":
-        "TWO of this entry's three successive reasons have now expired, and the reason is "
-        "narrowed again rather than left stale. (1) Packaging was settled by the 2026-08-09 "
-        "architecture run — AD-1 library + subcommand split on the process boundary, AD-2 the "
-        "library provides while the subcommand verifies — and the Spec moved to `ready`. "
-        "(2) The dependency question is settled too, as of 2026-08-10: the unified-container "
-        "architecture landed and its AD-1 rules that the ASGI stack "
-        "(django/channels/daphne/asgiref) ships as the `pyforge-steward[dashboard]` OPTIONAL "
-        "EXTRA and never as a base dependency, so `pyforge-container` composing the eight "
-        "station features by name no longer drags it into the whole-Guild image. What remains "
-        "is scheduling alone: steward Epic 8 is unbuilt (0/5) and a third open epic would only "
-        "sit in backlog. Revisit when Epic 8 completes — there is no longer an unanswered "
-        "design question in front of this",
 }
 
 _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
