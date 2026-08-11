@@ -33,10 +33,34 @@ independently rather than import.
 
 Story 2.1 extends this same file with CFE's full script-invocation adapter
 table (AD-3: "every CFE script Mason uses is declared once in a module-level
-table in this file"), `CfeResult`, and JSON-stdout extraction (AD-4). None of
-that exists yet -- this story adds only `CFE_IMPORT_FLOOR`,
-`ImportFloorResult`, `probe_import_floor`, `ensure_import_floor`,
-`ensure_cfe_root`, and `run_streamed`.
+table in this file"), a private CAPTURE-mode invocation helper
+(`_invoke_captured`), tolerant JSON-from-stdout extraction (`_extract_json`),
+and two public named adapters (`validate_recipe`, `submit_pr`) that each
+return the new `CfeResult` (`models.py`).
+
+`_CFE_SCRIPTS` maps an adapter's own key (e.g. `"validate_recipe"`) to the
+script's filename relative to a resolved CFE root's
+`.claude/scripts/conda-forge-expert/` -- a caller never passes a script
+name or path; it calls the named adapter and the adapter looks up its own
+key. This is a local re-declaration of that same subpath `resolve.py`'s
+`_CFE_MARKER` and `errors.py`'s `CfeUnresolvedError._MESSAGE` already spell
+out -- the sanctioned `_ENV_CFE_ROOT`/`_ENV_CFE_PYTHON`-style duplication
+pattern documented in those modules, since AD-2 forbids this file from
+importing a private constant out of either of them, and because `cfe.py` is
+the one module AD-3's carve-out does not restrict in the first place.
+
+CAPTURE mode (`_invoke_captured`, this story) and STREAM mode
+(`run_streamed`, above) are AD-25's two invocation modes, not one
+generalized over the other: CAPTURE buffers stdout whole and parses it for
+a short, JSON-returning operation; STREAM forwards stderr live and never
+parses stdout at all, for an operation expected to run long. `_invoke_
+captured` therefore duplicates a small amount of `run_streamed`'s own
+timeout-validation logic rather than sharing a helper with it -- the
+Consistency Conventions forbid a shared `utils`/`helpers` module, and
+`run_streamed` is shipped, reviewed, tested code this story does not touch.
+A non-zero return code is data on the returned `CfeResult`, never raised as
+an exception (AD-4) -- only timeout expiry raises, as the new, distinct
+`CfeTimeoutError`.
 
 `CFE_IMPORT_FLOOR` maps each floor dependency's pip/conda *distribution*
 name to its Python *import* name -- the two differ for `pyyaml` (imports as
@@ -66,15 +90,19 @@ from __future__ import annotations
 
 import codecs
 import functools
+import json
 import math
+import re
 import subprocess
 import sys
 import threading
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TextIO
 
-from .errors import CfeImportFloorError, CfeUnresolvedError
+from .errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
+from .models import CfeResult
 from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND
 
 CFE_IMPORT_FLOOR: dict[str, str] = {
@@ -572,3 +600,220 @@ def run_streamed(
                 pass
 
     return proc.returncode, "".join(captured_stdout)
+
+
+# --- Story 2.1: CAPTURE-mode invocation (AD-3, AD-4, AD-25) -----------------
+
+_CFE_SCRIPTS: dict[str, str] = {
+    "validate_recipe": "validate_recipe.py",
+    "submit_pr": "submit_pr.py",
+}
+"""Every CFE script Mason invokes, declared exactly once (AD-3): adapter key
+-> script filename, relative to a resolved CFE root's
+`.claude/scripts/conda-forge-expert/`. A named adapter function below (e.g.
+`validate_recipe`) looks up its own key here; no caller anywhere passes a
+script name or path directly. Two entries only -- `validate_recipe.py` and
+`submit_pr.py` -- because Story 1.9's fixture stubs exactly these two
+scripts and which specific script backs each of Stories 2.4-2.10 is still
+open (epic context); adding a table entry ahead of that decision would be
+unfalsifiable against this story's own fixtures (spec Never boundary)."""
+
+_JSON_LINE_START_PATTERN = re.compile(r"^[ \t]*[{\[]", re.MULTILINE)
+"""Matches the first `{` or `[` that starts a line (optionally indented),
+skipping any leading non-JSON progress line CFE's scripts sometimes print
+before their JSON body -- ports `_extract_json_from_stdout()`'s matching
+strategy from `.claude/tools/conda_forge_server.py` (not imported: AD-3
+reserves CFE path/invocation knowledge to this file alone, and that shim
+isn't even part of the installed `pyforge.mason` package -- importing it
+would give `cfe.py` a second, ungoverned CFE-invocation path besides this
+file's own subprocess calls, review pass 2026-08-11: the original comment
+here cited AD-15, which governs writes to that surface, not reads)."""
+
+
+def _extract_json(stdout: str) -> object | None:
+    """Tolerantly extract a JSON value from `stdout` (FR-4).
+
+    Tries the whole string first -- the common case, where the child's only
+    output is its JSON result. On failure, falls back to a line-anchored
+    search for the first `{`/`[` that starts a (possibly indented) line and
+    parses from there, tolerating exactly one inherited quirk of CFE's
+    scripts: a leading, non-JSON progress line before the real body (e.g.
+    `submit_pr`'s fork-sync status line). Unlike the MCP server's own
+    version of this extraction, which raises `json.JSONDecodeError` when
+    nothing parses, this function returns `None` in every failure case --
+    FR-4 says a parsed body is present "when one is present," so its absence
+    (no JSON anywhere in `stdout`, or a line-start match whose tail still
+    isn't valid JSON) is a normal outcome recorded on `CfeResult.json_body`,
+    never an exception this adapter layer must catch.
+    """
+    try:
+        return json.loads(stdout)
+    except json.JSONDecodeError:
+        pass
+
+    match = _JSON_LINE_START_PATTERN.search(stdout)
+    if match is None:
+        return None
+
+    # match.start() points at the beginning of the match, which INCLUDES any
+    # leading spaces/tabs the pattern's `[ \t]*` consumed -- walk past them
+    # here so json.loads() below is not handed a leading-whitespace slice.
+    start = match.start()
+    while start < len(stdout) and stdout[start] in " \t":
+        start += 1
+
+    try:
+        return json.loads(stdout[start:])
+    except json.JSONDecodeError:
+        return None
+
+
+def _invoke_captured(
+    script_key: str,
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float,
+) -> CfeResult:
+    """Run `_CFE_SCRIPTS[script_key]` under `interpreter` as a CAPTURE-mode
+    subprocess and return a `CfeResult` (AD-3, AD-4, AD-25). Private: every
+    public caller is a named adapter function below that supplies its own
+    `script_key` -- this function is never called with a caller-supplied
+    script name (spec Always boundary).
+
+    `args` must not be a bare `str`/`bytes` or `None` -- the same
+    `run_streamed`-established guard (review pass, 2026-08-11): passed as
+    text, `*args` below would explode it into one-character argv elements
+    (`"--json"` becomes `"-"`, `"-"`, `"j"`, `"s"`, ...), silently sending
+    the wrapped script a garbled invocation instead of raising a clear
+    error naming the mistake.
+
+    `timeout` is validated finite and positive before anything spawns,
+    mirroring `run_streamed`'s own guard above: a direct caller (e.g. a
+    future use-case that bypasses `cli.py`'s `_parse_finite_float`) may pass
+    an invalid value, and `nan`/`inf`/non-positive all describe a timeout
+    that either never expires or expires before the child has any chance to
+    run.
+
+    `[interpreter, str(script_path), *args]` is run as a list argv, never
+    `shell=True` (AD-2/AD-4). `encoding="utf-8", errors="replace"` is pinned
+    explicitly rather than a bare `text=True` -- the same rationale
+    `run_streamed`'s own docstring documents: a locale-derived default
+    silently mangles a valid UTF-8 JSON body under `LC_ALL=C`.
+    `stdin=subprocess.DEVNULL` mirrors `run_streamed`'s "never hang on an
+    unexpectedly-interactive child" rule. `check=False`: a non-zero return
+    code is data on the returned `CfeResult`, never raised (AD-4).
+
+    On `subprocess.TimeoutExpired`, raises `CfeTimeoutError` naming
+    `script_key` and `timeout` -- `subprocess.run`'s own timeout handling
+    already killed and reaped the child before raising that exception, so
+    "no orphaned process" holds without this function doing any cleanup of
+    its own. Every other outcome -- including a non-zero exit, or stdout
+    with no parseable JSON at all -- returns normally.
+    """
+    if args is None or isinstance(args, (str, bytes)):
+        raise TypeError(
+            f"_invoke_captured(args=...) must be a sequence of arguments, not "
+            f"{'None' if args is None else type(args).__name__} -- got {args!r}"
+        )
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+        raise TypeError(
+            f"_invoke_captured(timeout=...) must be a number of seconds, not "
+            f"{type(timeout).__name__} -- got {timeout!r}"
+        )
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError(
+            f"_invoke_captured(timeout=...) must be a finite, positive number -- got {timeout!r}"
+        )
+
+    script_path = root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS[script_key]
+
+    try:
+        completed = subprocess.run(
+            [interpreter, str(script_path), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdin=subprocess.DEVNULL,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        # subprocess.run's own timeout handling has already killed and
+        # reaped the child by the time this exception reaches here -- this
+        # translation adds no cleanup of its own, only a typed, actionable
+        # error in place of the raw stdlib exception (spec Always boundary).
+        raise CfeTimeoutError(script=script_key, timeout=timeout) from None
+
+    return CfeResult(
+        returncode=completed.returncode,
+        stdout=completed.stdout,
+        stderr=completed.stderr,
+        json_body=_extract_json(completed.stdout),
+    )
+
+
+_VALIDATE_RECIPE_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `validate_recipe` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `validate_recipe`'s tool wrapper never overrides)."""
+
+_SUBMIT_PR_TIMEOUT_SECONDS = 300.0
+"""Mirrors the real MCP server's own `submit_pr` default
+(`.claude/tools/conda_forge_server.py::submit_pr`'s explicit
+`timeout=300  # 5 min for clone + push`)."""
+
+
+def validate_recipe(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `validate_recipe.py` (AD-3's `validate_recipe` adapter,
+    FR-1, FR-7, FR-8) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no recipe-semantics interpretation of its own
+    (AD-1). `timeout` defaults to `_VALIDATE_RECIPE_TIMEOUT_SECONDS` when
+    `None`, matching the real MCP server's own per-operation default for
+    this operation (see that constant's docstring).
+    """
+    return _invoke_captured(
+        "validate_recipe",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _VALIDATE_RECIPE_TIMEOUT_SECONDS,
+    )
+
+
+def submit_pr(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `submit_pr.py` (AD-3's `submit_pr` adapter, FR-1, FR-13)
+    and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no submission-flow composition of its own (Story
+    2.9's two-phase `prepare_pr --prepare-only` / `submit_pr` scope, spec
+    Never boundary). `timeout` defaults to `_SUBMIT_PR_TIMEOUT_SECONDS` when
+    `None`, matching the real MCP server's own per-operation default for
+    this operation (see that constant's docstring) -- longer than
+    `validate_recipe`'s, since this operation clones and pushes a git
+    branch before opening a pull request.
+    """
+    return _invoke_captured(
+        "submit_pr",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _SUBMIT_PR_TIMEOUT_SECONDS,
+    )

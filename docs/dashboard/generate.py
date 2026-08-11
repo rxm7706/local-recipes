@@ -2405,6 +2405,39 @@ def scan_guild(dreams: list[dict], projects: dict | None = None,
 
 # ---- backlog (what a station owns that is not building and not done) --------
 
+def _decomposed_satellites(dreams: list[dict]) -> set[str]:
+    """Dream slugs whose Spec is decomposed into their owner station's epics.
+
+    The same test `chain-completeness` INV-A applies (`spec-<slug>` named in the
+    station's own prose), read here so the console's "is it building?" question is
+    answered by the chain rather than by a hand-maintained station map. A Dream with
+    no owner, no project tree, or an unreadable epics.md simply is not counted --
+    absence of evidence stays absence, never a claim of motion.
+    """
+    out: set[str] = set()
+    for d in dreams:
+        owner = d.get("owner") or ""
+        slug = d.get("slug") or ""
+        if not owner or not slug or owner == "guild":
+            continue
+        pa = REPO_ROOT / f"_bmad-output/projects/pyforge-{owner}/planning-artifacts"
+        # INV-A's own test, mirrored EXACTLY: `spec-<slug>` OR the bare slug, across the
+        # station's PRD + epics prose (board.py `_check_project_chain_completeness`).
+        # A narrower `spec-<slug>`-only match missed steward's Epic 8, which decomposes
+        # `jira-github-projects-sync` while citing it through its architecture document
+        # rather than its spec filename -- an epic with a story RUNNING at the time the
+        # panel still called that Dream "owned, not started".
+        prose = ""
+        for doc in list(pa.glob("prds/*/prd.md")) + list(pa.glob("epics*.md")):
+            try:
+                prose += doc.read_text(encoding="utf-8")
+            except OSError:
+                continue
+        if f"spec-{slug}" in prose or slug in prose:
+            out.add(slug)
+    return out
+
+
 def scan_backlog(dreams: list[dict], projects: dict) -> dict:
     """Dreams a station owns that are neither building nor finished.
 
@@ -2426,6 +2459,16 @@ def scan_backlog(dreams: list[dict], projects: dict) -> dict:
     building = {PROGRAM_DREAM[k] for k, v in projects.items()
                 if k in PROGRAM_DREAM and (v.get("lineState") or {}).get("state")
                 in ("in flight", "paused")}
+    # PROGRAM_DREAM maps a project to its STATION Dream, so the set above can only
+    # ever hold the 9 station slugs -- a SATELLITE Dream (one whose work lives inside
+    # a station's epics rather than in its own build line) was structurally unable to
+    # read as building, and sat in BACKLOG forever no matter how far it got. Live
+    # 2026-08-11: four satellites were decomposed into mason E6 / doctor E7 / herald
+    # E13 / steward E9 with ledger stories and their stations RUNNING, and the panel
+    # still called all four "owned, not started". Derive the missing half from the
+    # same signal chain-completeness INV-A uses -- is `spec-<slug>` referenced by the
+    # owner station's epics? -- rather than from a slug map that cannot grow.
+    building |= _decomposed_satellites(dreams)
     rows = []
     for d in dreams:
         if d.get("type") == "practice" or d["status"] in ("realized", "archived"):

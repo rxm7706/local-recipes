@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 49
+# stories: 58
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -43,10 +43,17 @@ development_status:
   7-4-state-outlives-the-container: done
   7-5-the-image-proves-itself-at-build-time: done
   8-1-bidirectional-propagation: done
-  8-2-zero-loop-guarantee: backlog
+  8-2-zero-loop-guarantee: done
   8-3-idempotent-update-processing: backlog
-  8-4-fail-loud-fail-alone: backlog
-  8-5-explicit-status-vocabulary-translation: backlog
+  8-4-fail-loud-fail-alone: blocked
+  8-5-explicit-status-vocabulary-translation: blocked
+  9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: backlog
+  9-2-an-unauthorized-page-is-absent-not-hidden: backlog
+  9-3-the-audit-trail-records-what-was-seen: backlog
+  9-4-export-gated-server-side: backlog
+  9-5-the-perimeter-ships-with-the-pattern: backlog
+  9-6-isolation-proven-by-tests-that-cannot-pass-vacuously: backlog
+  9-7-hosted-or-static-no-fork: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -63,3 +70,5 @@ development_status:
   epic-7-retrospective: optional
   epic-8: in-progress
   epic-8-retrospective: optional
+  epic-9: backlog
+  epic-9-retrospective: optional

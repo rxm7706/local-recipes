@@ -215,10 +215,17 @@
   .prow + .prow { border-top: 1px solid var(--line-soft); }
   .pname { font-family: var(--mono); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .pname .pdot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  /* DEFAULTS FIRST: the per-station map below covers only warden/atlas, so every other
+     station fell through to `.pr` — a class with no rule — and rendered an invisible dot
+     and an invisible (correctly-sized) progress fill. Six of eight stations read as 0%
+     while showing the right percentage in text. Derive-don't-declare: default here,
+     override per station below. (2026-08-11)*/
+  .pdot { background: var(--accent); }
   .pw .pdot { background: var(--warden); } .pa .pdot { background: var(--atlas); }
   .pbar { height: 12px; border-radius: 4px; background: var(--pending-ground); border: 1px solid var(--line);
     overflow: hidden; position: relative; }
-  .pbar-fill { height: 100%; border-radius: 3px 0 0 3px; }
+  .pbar-fill { height: 100%; border-radius: 3px 0 0 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-dim)); }
   .pw .pbar-fill { background: linear-gradient(90deg, var(--warden), var(--accent-dim)); }
   .pa .pbar-fill { background: linear-gradient(90deg, var(--atlas), #9a95f8); }
   .pfrac { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-soft);

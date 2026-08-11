@@ -1,7 +1,7 @@
 ---
 id: SPEC-herald-moments-2-4-live-backend
 spec: herald-moments-2-4-live-backend
-status: draft
+status: ready
 owner-dream: docs/dreams/herald-moments-2-4-live-backend.md
 surface:
   # Authorizes FUTURE work — none of this exists today. Herald's shipped v1 is a
@@ -30,12 +30,15 @@ open_questions:
   - "What actually triggers CI to call the webhook — which CI system, and which events? The AUTHENTICATION half is now answered: the adopted pattern's AD-9 requires a verifiable HMAC signature, and a machine caller is never granted a human role."
 ---
 
-> **Draft — deferred, unbuilt.** This Spec exists to satisfy INV-1 (every Dream carries a
+> **Ready — decomposed as herald Epic 13 (2026-08-10, operator go in-session).** This Spec exists to satisfy INV-1 (every Dream carries a
 > Spec) for a Dream that is real but deliberately deferred. It is the contract for the
 > full live-backend version of Herald's Moments 2–4 (Progress / Success / Operations)
 > that Epics 8–10 originally specced and were explicitly scaled down from on 2026-08-08
 > (see the whole-build retro §4). Nothing here is required for, or blocks, the shipped v1.
-> `status: draft` means: authorized to be planned when prioritized, not scheduled.
+> `status: ready`: the leading question (is there real pull?) was answered by the operator on
+> 2026-08-10; Epic 13 carries the concurrency prerequisite FIRST and the
+> serverless-intermediates decision as S-13.2. The two remaining open questions are story ACs
+> (13.1 SQLite-vs-fcntl; 13.4 which CI events), not gates.
 
 # herald-moments-2-4-live-backend
 
