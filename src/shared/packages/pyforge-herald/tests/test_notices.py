@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -311,3 +313,49 @@ def test_publish_follows_a_redirect(tmp_path: Path):
     # publish the wrong (draft) entry.
     with pytest.raises(HeraldError, match="already published"):
         notices.publish_notice(tmp_path, "old-name")
+
+
+# --- Story 13.1: concurrency (closing DW-1-4-2) -----------------------------
+
+
+def test_two_concurrent_authors_for_different_components_both_land(
+    tmp_path: Path, monkeypatch
+):
+    """Story 13.1 regression: two ``author_notice`` calls for different
+    components racing the same index file must both survive -- forced,
+    deterministic interleaving (not a timing-dependent sleep race).
+    Mirrors ``test_state.py``'s technique: a monkeypatched delay right
+    after ``_load_index_document``'s read gives the other (unlocked)
+    author's whole read-modify-write cycle room to run during the pause;
+    locked, a second author cannot even begin its own read until the first
+    has released the lock. Fails against the pre-fix (unlocked) code,
+    passes against the fixed code -- confirmed locally by commenting out
+    ``author_notice``'s ``locking.locked`` call."""
+    original_load_index_document = notices._load_index_document
+
+    def delayed_load_index_document(index_path):
+        document = original_load_index_document(index_path)
+        time.sleep(0.2)
+        return document
+
+    monkeypatch.setattr(
+        notices, "_load_index_document", delayed_load_index_document
+    )
+
+    barrier = threading.Barrier(2)
+
+    def author(component: str) -> None:
+        barrier.wait(timeout=5)
+        _author(tmp_path, component=component)
+
+    t1 = threading.Thread(target=author, args=("component-a",))
+    t2 = threading.Thread(target=author, args=("component-b",))
+    t1.start()
+    t2.start()
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+
+    components = {
+        n.component for n in notices.list_notices(tmp_path, status="all")
+    }
+    assert components == {"component-a", "component-b"}

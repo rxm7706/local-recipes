@@ -6,11 +6,13 @@ convention (and its test suite's shape)."""
 
 from __future__ import annotations
 
+import threading
+import time
 from datetime import date
 from pathlib import Path
 
 import pytest
-
+from pyforge.herald import progress as progress_module
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.progress import (
     DEFAULT_PROGRESS_PATH,
@@ -308,3 +310,52 @@ def test_write_all_round_trips_field_for_field(tmp_path: Path):
     )
     write_all(progress_path, [record])
     assert read_all(progress_path) == [record]
+
+
+def test_two_concurrent_upserts_for_different_stations_both_land(
+    tmp_path: Path, monkeypatch
+):
+    """Story 13.1 regression: two ``upsert`` calls for different
+    ``(station, date)`` keys racing the same file must both survive --
+    forced, deterministic interleaving (not a timing-dependent sleep
+    race). Mirrors ``test_state.py``'s technique: a monkeypatched delay
+    right after ``read_all``'s read gives the other (unlocked) writer's
+    whole read-modify-write cycle room to run during the pause; locked, a
+    second writer cannot even begin its own read until the first has
+    released the lock. Fails against the pre-fix (unlocked) code, passes
+    against the fixed code -- confirmed locally by commenting out
+    ``upsert``'s ``locking.locked`` call."""
+    progress_path = tmp_path / "progress.json"
+    original_read_all = progress_module.read_all
+
+    def delayed_read_all(path):
+        records = original_read_all(path)
+        time.sleep(0.2)
+        return records
+
+    monkeypatch.setattr(progress_module, "read_all", delayed_read_all)
+
+    barrier = threading.Barrier(2)
+
+    def writer(station: str) -> None:
+        barrier.wait(timeout=5)
+        upsert(
+            progress_path,
+            station=station,
+            date="2026-08-08",
+            shipped_capabilities=[],
+            compute_hours=0,
+            token_spend=0,
+            wall_clock_hours=0,
+            unblock_narrative="",
+        )
+
+    t1 = threading.Thread(target=writer, args=("warden",))
+    t2 = threading.Thread(target=writer, args=("atlas",))
+    t1.start()
+    t2.start()
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+
+    stations = {r.station for r in original_read_all(progress_path)}
+    assert stations == {"warden", "atlas"}
