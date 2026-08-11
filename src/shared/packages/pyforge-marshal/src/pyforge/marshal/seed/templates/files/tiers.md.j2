@@ -1,0 +1,14 @@
+| Tier | Location | Purpose | Git |
+|---|---|---|---|
+| **0 — Dream** | `docs/dreams/*.md` | The raw human aspiration / starting point (BMAD — *Build More Architect Dreams*); Herald renders it into a deck, and BMAD turns it into the spec | tracked, permanent |
+| **1 — Intake spec (LEGACY)** | `docs/specs/*.md` | Former hand-authored spec tier — kept for existing efforts, **superseded by Tier 2**; author no new files here | tracked, phasing out |
+| **2 — Spec & planning (BMAD)** | `_bmad-output/projects/<slug>/planning-artifacts/` | The `bmad-spec` output + PRD, architecture, API/interface specs, epics+stories, gate reports — produced from the Dream. **The active spec lives here.** | tracked, permanent |
+| **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` (BMAD); your own tool dir for others | story files, sprint YAMLs, test outputs, retros | **local-only / gitignored** |
+
+**Rules:**
+- The **active spec is a BMAD artifact in Tier 2** — produced from a Tier-0 Dream. Don't hand-author
+  a new spec in the legacy `docs/specs/` (Tier 1), and never drop one into a Tier-3 output dir.
+- Each tool writes its working output into **its own** area (BMAD → `implementation-artifacts/`;
+  Cursor → `.cursor/`; etc.) and **reads the spec from the BMAD planning folder** (Tier 2) — or a
+  legacy `docs/specs/` file for an existing effort.
+- `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**

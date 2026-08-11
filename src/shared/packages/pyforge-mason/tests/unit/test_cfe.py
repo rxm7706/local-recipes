@@ -5,7 +5,24 @@ throughout (AD-16: no test in this suite requires a real interpreter to
 probe).
 
 Story 1.7 extends this file with `ensure_cfe_root`'s raise/no-raise paths
-over every `resolve.py` step."""
+over every `resolve.py` step.
+
+Story 2.1 extends this file with CAPTURE-mode coverage: `_extract_json`'s
+tolerant-parsing paths, `_invoke_captured`'s I/O-matrix behavior (mocked),
+and `validate_recipe`/`submit_pr` end-to-end against Story 1.9's
+`fake_cfe_root` fixture, real subprocess, no mocking (mirroring
+`test_fake_cfe_root_fixture.py`'s own style for that half).
+
+Story 2.3 extends this file with the AD-14 sentinel-credential test, which
+runs `probe_import_floor` against a real interpreter rather than a mock --
+narrowing the Story 1.6 paragraph's "mocked throughout" to that story's own
+tests (follow-up review, Blind Hunter): proving a credential never surfaces
+in a returned result is only worth anything against the real subprocess
+boundary it would have to cross. (It is not the ONLY such place, as this
+paragraph originally claimed -- `test_doctor.py::test_build_report_never_
+raises_against_a_real_unresolved_environment` and Story 2.3's own
+`test_cli.py` sentinel test both reach the real probe too; fourth review
+pass, Blind Hunter.)"""
 
 from __future__ import annotations
 
@@ -17,16 +34,19 @@ import subprocess
 import sys
 import threading
 import time
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from pyforge.mason import cfe as cfe_module
 from pyforge.mason.cfe import (
-    CFE_IMPORT_FLOOR, ImportFloorResult, _build_probe_script,
-    ensure_cfe_root, ensure_import_floor, probe_import_floor, run_streamed,
+    CFE_IMPORT_FLOOR, _CFE_SCRIPTS, ImportFloorResult, _build_probe_script,
+    _extract_json, _invoke_captured, ensure_cfe_root, ensure_import_floor,
+    probe_import_floor, run_streamed, submit_pr, validate_recipe,
 )
-from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
+from pyforge.mason.errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
+from pyforge.mason.models import CfeResult
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot,
 )
@@ -1009,3 +1029,431 @@ def test_run_streamed_rejects_a_bad_sink_before_spawning_a_child(monkeypatch):
         run_streamed([sys.executable, "-c", "pass"], timeout=15.0, stderr_sink=object())
 
     assert spawned == []
+
+
+# --- Story 2.1: _extract_json -----------------------------------------------
+
+def test_extract_json_parses_whole_stdout_when_it_is_valid_json():
+    assert _extract_json('{"ok": true}') == {"ok": True}
+
+
+def test_extract_json_finds_json_after_a_leading_progress_line():
+    stdout = "Syncing fork with upstream conda-forge/staged-recipes ...\n{\"ok\": true}\n"
+    assert _extract_json(stdout) == {"ok": True}
+
+
+def test_extract_json_finds_an_indented_json_line_too():
+    stdout = "progress\n    {\"ok\": true}\n"
+    assert _extract_json(stdout) == {"ok": True}
+
+
+def test_extract_json_finds_a_json_array_after_a_progress_line():
+    stdout = "progress\n[1, 2, 3]\n"
+    assert _extract_json(stdout) == [1, 2, 3]
+
+
+def test_extract_json_returns_none_for_plain_text_with_no_json_anywhere():
+    assert _extract_json("just some plain text, nothing structured here\n") is None
+
+
+def test_extract_json_returns_none_when_a_line_start_match_is_still_not_valid_json():
+    # A line starts with '{' but its content never parses as JSON.
+    assert _extract_json("noise\n{not: valid, json\n") is None
+
+
+def test_extract_json_returns_none_for_empty_stdout():
+    assert _extract_json("") is None
+
+
+# --- Story 2.1: _CFE_SCRIPTS table -------------------------------------------
+
+def test_cfe_scripts_table_has_exactly_the_two_story_1_9_fixture_entries():
+    """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr` --
+    Story 1.9's fixture only stubs these two, and which script backs each of
+    Stories 2.4-2.10 is still open."""
+    assert _CFE_SCRIPTS == {
+        "validate_recipe": "validate_recipe.py",
+        "submit_pr": "submit_pr.py",
+    }
+
+
+# --- Story 2.1: _invoke_captured -- mocked I/O-matrix coverage --------------
+
+def _completed(returncode: int = 0, stdout: str = "", stderr: str = "") -> subprocess.CompletedProcess:
+    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout, stderr=stderr)
+
+
+def test_invoke_captured_returns_parsed_json_body_on_whole_stdout_json():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(returncode=0, stdout='{"passed": true}', stderr=""),
+    ):
+        result = _invoke_captured(
+            "validate_recipe", [], root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result == CfeResult(
+        returncode=0, stdout='{"passed": true}', stderr="", json_body={"passed": True},
+    )
+
+
+def test_invoke_captured_extracts_json_after_a_leading_progress_line():
+    stdout = "Syncing fork with upstream conda-forge/staged-recipes ...\n{\"success\": true}\n"
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(returncode=0, stdout=stdout, stderr=""),
+    ):
+        result = _invoke_captured(
+            "submit_pr", [], root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result.json_body == {"success": True}
+
+
+def test_invoke_captured_reports_json_body_none_for_plain_text_stdout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(returncode=0, stdout="not json at all", stderr=""),
+    ):
+        result = _invoke_captured(
+            "validate_recipe", [], root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result.json_body is None
+    assert result.returncode == 0
+    assert result.stdout == "not json at all"
+
+
+def test_invoke_captured_non_zero_returncode_with_json_body_is_data_not_raised():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1, stdout='{"error": "bad recipe"}', stderr="traceback...",
+        ),
+    ):
+        result = _invoke_captured(
+            "validate_recipe", [], root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result.returncode == 1
+    assert result.json_body == {"error": "bad recipe"}
+    assert result.stderr == "traceback..."
+
+
+def test_invoke_captured_timeout_expired_raises_cfe_timeout_error_naming_script_and_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd=["python", "validate_recipe.py"], timeout=5.0),
+    ):
+        with pytest.raises(CfeTimeoutError) as excinfo:
+            _invoke_captured(
+                "validate_recipe", [], root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            )
+
+    assert excinfo.value.script == "validate_recipe"
+    assert excinfo.value.timeout == 5.0
+
+
+def test_invoke_captured_timeout_leaves_no_orphaned_process_per_subprocess_runs_own_contract():
+    """`subprocess.run`'s own `timeout=` handling kills and reaps the child
+    before raising `TimeoutExpired` -- `_invoke_captured` adds no cleanup of
+    its own (spec Always boundary), so this asserts only that the
+    translation happens without swallowing or re-wrapping any other
+    exception type."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd=["python"], timeout=5.0),
+    ):
+        with pytest.raises(CfeTimeoutError):
+            _invoke_captured(
+                "submit_pr", [], root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            )
+
+
+# --- Story 2.1: _invoke_captured -- invocation shape ------------------------
+
+def test_invoke_captured_runs_interpreter_script_path_then_args_as_list_argv():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        _invoke_captured(
+            "validate_recipe", ["--json", "recipes/foo"],
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    args, kwargs = mock_run.call_args
+    argv = args[0]
+    expected_script = str(
+        Path("/fake/root") / ".claude" / "scripts" / "conda-forge-expert" / "validate_recipe.py"
+    )
+    assert argv == ["/fake/python", expected_script, "--json", "recipes/foo"]
+    assert kwargs.get("shell", False) is False
+    assert kwargs["stdin"] == subprocess.DEVNULL
+    assert kwargs["encoding"] == "utf-8"
+    assert kwargs["errors"] == "replace"
+    assert kwargs["timeout"] == 5.0
+    assert kwargs.get("check") is False
+    assert kwargs.get("capture_output") is True
+    # Review pass (2026-08-11): pins the spec's Never-boundary claim that
+    # credential isolation (Story 2.3) is already satisfied today because
+    # `env` is never passed -- `subprocess.run`'s own default (`env=None`)
+    # inherits the parent process environment unmodified. A future edit
+    # that "helpfully" adds an explicit `env=os.environ.copy()` would
+    # otherwise pass every other assertion in this test unnoticed.
+    assert "env" not in kwargs or kwargs["env"] is None
+
+
+@pytest.mark.parametrize("bad_timeout", [float("nan"), float("inf"), float("-inf"), 0.0, -5.0])
+def test_invoke_captured_rejects_a_non_finite_or_non_positive_timeout(bad_timeout):
+    with pytest.raises(ValueError, match="finite, positive"):
+        _invoke_captured(
+            "validate_recipe", [],
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=bad_timeout,
+        )
+
+
+@pytest.mark.parametrize("bad_timeout", [None, "120", object(), True])
+def test_invoke_captured_rejects_a_non_numeric_timeout(bad_timeout):
+    with pytest.raises(TypeError, match=r"_invoke_captured\(timeout=\.\.\.\)"):
+        _invoke_captured(
+            "validate_recipe", [],
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=bad_timeout,
+        )
+
+
+@pytest.mark.parametrize("bad_args", [None, "--json recipes/foo", b"--json"])
+def test_invoke_captured_rejects_a_bare_str_bytes_or_none_args(bad_args):
+    # Review pass (2026-08-11): mirrors run_streamed's own established
+    # argv guard -- a bare str/bytes handed to `*args` below would explode
+    # into one-character argv elements instead of raising a clear error.
+    with pytest.raises(TypeError, match=r"_invoke_captured\(args=\.\.\.\)"):
+        _invoke_captured(
+            "validate_recipe", bad_args,
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+
+# --- Story 2.1: validate_recipe / submit_pr -- per-operation default timeouts
+
+def test_validate_recipe_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        validate_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_submit_pr_defaults_to_a_300_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        submit_pr([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 300.0
+
+
+def test_validate_recipe_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        validate_recipe([], root=Path("/fake/root"), interpreter="/fake/python", timeout=7.5)
+
+    assert mock_run.call_args.kwargs["timeout"] == 7.5
+
+
+def test_submit_pr_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        submit_pr([], root=Path("/fake/root"), interpreter="/fake/python", timeout=1.5)
+
+    assert mock_run.call_args.kwargs["timeout"] == 1.5
+
+
+def test_validate_recipe_invokes_its_own_table_entry_not_submit_prs():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        validate_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("validate_recipe.py")
+
+
+def test_submit_pr_invokes_its_own_table_entry_not_validate_recipes():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        submit_pr([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("submit_pr.py")
+
+
+# --- Story 2.1: real end-to-end against Story 1.9's fake_cfe_root fixture --
+# --- (no mocking -- mirrors test_fake_cfe_root_fixture.py's own style) -----
+
+_FIXTURE_ENV_VARS = ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE")
+
+
+def _clear_fixture_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`_invoke_captured` passes no `env=` to `subprocess.run` (it inherits
+    the ambient process environment unmodified -- spec Never boundary), so a
+    stray `MASON_FIXTURE_*` variable already set in the runner's own shell
+    could otherwise silently override one of these tests' expectations."""
+    for var in _FIXTURE_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+def test_validate_recipe_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = validate_recipe([], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0)
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "passed": True, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": True,
+    }
+
+
+def test_submit_pr_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = submit_pr([], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0)
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True,
+        "recipe": "example-recipe",
+        "branch": "add-example-recipe",
+        "github_user": "example-user",
+        "pr_url": "https://github.com/example/example/pull/1",
+        "message": "PR created: https://github.com/example/example/pull/1",
+    }
+
+
+def test_submit_pr_against_fake_cfe_root_tolerates_a_leading_progress_line(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_PROGRESS_LINE", "Syncing fork with upstream conda-forge/staged-recipes ...",
+    )
+
+    result = submit_pr([], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0)
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True,
+        "recipe": "example-recipe",
+        "branch": "add-example-recipe",
+        "github_user": "example-user",
+        "pr_url": "https://github.com/example/example/pull/1",
+        "message": "PR created: https://github.com/example/example/pull/1",
+    }
+
+
+def test_validate_recipe_against_fake_cfe_root_with_nonzero_exit_returns_data_not_raise(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    result = validate_recipe([], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0)
+
+    assert result.returncode == 1
+    assert result.json_body == {
+        "passed": True, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": True,
+    }
+
+
+def test_validate_recipe_against_fake_cfe_root_with_plain_text_stdout_reports_json_body_none(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_STDOUT", "plain text, not json")
+
+    result = validate_recipe([], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0)
+
+    assert result.returncode == 0
+    assert result.json_body is None
+    assert "plain text, not json" in result.stdout
+
+
+# --- Story 2.3: credential isolation -- sentinel-credential test (AD-14) ---
+
+
+def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, monkeypatch):
+    """AD-14: Mason never reads a JFROG_* variable, and a credential reaches
+    CFE only through the inherited process environment -- never surfaced
+    back into a returned result's own fields. A sentinel value set via
+    `monkeypatch.setenv` proves this for the three call sites the spec
+    names: `probe_import_floor` and `validate_recipe`/`submit_pr` (all three
+    against Story 1.9's `fake_cfe_root` fixture where applicable, real
+    subprocess, no mocking -- mirroring this file's existing fake-root
+    tests).
+
+    **The POSITIVE control is what gives this test teeth** (third review
+    pass, both reviewers, reproduced). Without it the test could not fail:
+    the fake root's stubs emit a canned constant that never reads the
+    ambient environment, so `result.stdout`/`stderr`/`json_body` were
+    incapable of carrying the sentinel no matter what Mason did -- Blind
+    Hunter changed `_invoke_captured` to pass `env={}` to `subprocess.run`
+    (Mason scrubbing the child's environment wholesale, the exact inverse of
+    AD-14) and this test stayed green. Setting `MASON_FIXTURE_STDOUT` makes
+    the stub echo a value that can ONLY have come from the inherited
+    environment, so the "credentials DO reach CFE" half of AD-14 is now
+    asserted at runtime rather than only structurally by the Guard 3 AST
+    scans -- and that same `env={}` mutation now reds this test.
+
+    `probe_import_floor`'s assertion is over its result's actual FIELDS
+    (`interpreter`, `missing`), not `isinstance` (follow-up review, Blind
+    Hunter): both of `probe_import_floor`'s return paths construct an
+    `ImportFloorResult`, so the original `isinstance` check could not fail.
+    Both fields remain structurally incapable of carrying child output
+    (`interpreter` is the argument echoed back; `missing` is always a subset
+    of `cfe.py`'s own `CFE_IMPORT_FLOOR` keys), so this half is a
+    shape assertion over the spec's third named call site, not a leak
+    assertion -- the leak-detecting force lives in the two `CfeResult`
+    checks below and the positive control above.
+
+    The `stderr` assertion is a tripwire, not a proof, and is disclosed as
+    such (fourth review pass, Edge Case Hunter): `_stub_support.emit` has no
+    stderr channel at all, so `result.stderr` is always `""` under this
+    fixture and that assertion cannot currently fail. It is kept because it
+    costs nothing and becomes real the moment the fixture grows one; the
+    stream that carries this test's actual force is `stdout`/`json_body`,
+    which the positive control proves is live. Giving the stub a
+    `MASON_FIXTURE_STDERR` knob purely to make the assertion bite would
+    expand Story 1.9's shared fixture to re-prove, on a second stream, the
+    same inheritance the first stream already establishes."""
+    _clear_fixture_env(monkeypatch)
+    sentinel = "JFROG-SENTINEL-9f3e7a1c"
+    monkeypatch.setenv("JFROG_API_KEY", sentinel)
+
+    inheritance_marker = "INHERITED-ENV-4b21d0e8"
+    monkeypatch.setenv("MASON_FIXTURE_STDOUT", f'{{"inherited": "{inheritance_marker}"}}')
+
+    floor_result = probe_import_floor(sys.executable)
+    assert sentinel not in floor_result.interpreter
+    assert not any(sentinel in name for name in floor_result.missing)
+
+    validate_result = validate_recipe(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+    submit_result = submit_pr(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    for result in (validate_result, submit_result):
+        # Positive: the child really did inherit the parent's environment.
+        assert result.json_body == {"inherited": inheritance_marker}
+        # Negative: and the credential sitting beside it never came back.
+        assert sentinel not in result.stdout
+        assert sentinel not in result.stderr
+        assert sentinel not in str(result.json_body)

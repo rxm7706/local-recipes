@@ -699,3 +699,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260809-231524-abb9`. 4-14 also cleared on its LAST review cycle (rev 3 of 3), which is the profile where an independent pass earns its cost.
   promoted: 2026-08-10 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there) under this ledger's own `DW-FU-<story>` convention (`DW-FU-2-6`, `DW-FU-3-3`, `DW-FU-3-4`, `DW-FU-3-5`). A generic `DW-8` would collide with the next damped story.
   status: open
+
+### DW-9: Follow-up review still recommended for 7-4-manifest-schema-loader-and-model-version-ranges after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-7-4-manifest-schema-loader-and-model-version-ranges.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-192255-dbc6; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass, mason 2-2 / marshal 7-4)
+

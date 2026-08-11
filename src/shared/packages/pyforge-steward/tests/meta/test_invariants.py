@@ -249,3 +249,364 @@ def test_no_cost_integration_sdk_imported_in_budget():
                 if name.lower() in banned_modules:
                     offenders.append(f"{path.name}:{node.lineno} imports {name!r}")
     assert not offenders, f"cost-integration SDK import found (AD-6: budget v1 is a stub): {offenders}"
+
+
+_DASHBOARD_BANNED_MODULES = {"django", "channels"}
+_DASHBOARD_BANNED_DOTTED_PREFIX = "pyforge.steward.dashboard"
+# Sentinel for a relative import whose level climbs past the top-level
+# package -- unresolvable, and therefore reported rather than guessed at.
+_DASHBOARD_UNRESOLVABLE_RELATIVE = "<unresolvable-relative-import>"
+
+
+def _is_banned_dashboard_dotted(name: str) -> bool:
+    return name == _DASHBOARD_BANNED_DOTTED_PREFIX or name.startswith(
+        _DASHBOARD_BANNED_DOTTED_PREFIX + "."
+    )
+
+
+def _find_banned_dashboard_imports(
+    source: str,
+    own_package_parts: tuple[str, ...],
+    label: str,
+    *,
+    ban_dashboard_package: bool = True,
+) -> list[str]:
+    """Return one string per offending import statement in `source`.
+
+    `ban_dashboard_package` selects which rule is being enforced. Outside
+    `dashboard/` (the default) importing the dashboard package is itself the
+    violation. INSIDE `dashboard/`, only `django`/`channels` are of interest —
+    a module there importing its own siblings is normal, so the caller turns
+    that half off.
+
+    `own_package_parts` is the dotted package the source file itself lives
+    in (e.g. `("pyforge", "steward")`), used to resolve relative imports
+    (`node.level`) to an absolute dotted path.
+
+    A relative level that climbs past the top-level package is reported as an
+    offender rather than silently truncated (review pass 3): the arithmetic
+    below would otherwise turn `from ...dashboard import cache` in
+    `pyforge/steward/` into the bare `"dashboard"` and let it through. Such an
+    import cannot execute at all (Python raises "attempted relative import
+    beyond top-level package"), so flagging it reports broken code instead of
+    losing it -- a guard must never resolve an import it cannot account for
+    into something that looks innocent.
+    """
+    import ast
+
+    def _is_banned(name: str) -> bool:
+        if name.split(".")[0] in _DASHBOARD_BANNED_MODULES:
+            return True
+        return ban_dashboard_package and _is_banned_dashboard_dotted(name)
+
+    def _resolved_module(node: ast.ImportFrom) -> str | None:
+        if node.level == 0:
+            return node.module
+        keep = len(own_package_parts) - (node.level - 1)
+        if keep <= 0:
+            return _DASHBOARD_UNRESOLVABLE_RELATIVE
+        parts = list(own_package_parts[:keep])
+        if node.module:
+            parts += node.module.split(".")
+        return ".".join(parts) if parts else None
+
+    offenders: list[str] = []
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if _is_banned(alias.name):
+                    offenders.append(f"{label}:{node.lineno} imports {alias.name!r}")
+        elif isinstance(node, ast.ImportFrom):
+            resolved = _resolved_module(node)
+            if resolved == _DASHBOARD_UNRESOLVABLE_RELATIVE:
+                offenders.append(
+                    f"{label}:{node.lineno} has a relative import climbing "
+                    f"past the top-level package (level {node.level}) — "
+                    f"unresolvable, so it cannot be cleared of importing "
+                    f"dashboard/django/channels"
+                )
+                continue
+            if resolved:
+                if _is_banned(resolved):
+                    offenders.append(f"{label}:{node.lineno} imports from {resolved!r}")
+                    continue
+            # The banned target may be named as an imported SYMBOL rather
+            # than as part of the module path, e.g.
+            # `from pyforge.steward import dashboard`.
+            for alias in node.names:
+                full = f"{resolved}.{alias.name}" if resolved else alias.name
+                if _is_banned(full):
+                    offenders.append(f"{label}:{node.lineno} imports {full!r}")
+    return offenders
+
+
+def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
+    """Story 9.1: `pyforge.steward.dashboard` ships ONLY behind the
+    `pyforge-steward[dashboard]` optional extra, never a base dependency.
+    A base-package module importing `pyforge.steward.dashboard`, `django`,
+    or `channels` would silently make the extra mandatory for every existing
+    duty, breaking an install that never opted into `[dashboard]`.
+
+    Scope note (corrected in review pass 3): this flags EVERY import of those
+    names anywhere in the file, not only module-level ones — `ast.walk`
+    descends into function bodies, `if TYPE_CHECKING:` blocks and
+    `try/except ImportError` shapes alike. That is deliberate and matches the
+    three sibling guards in this file: it over-flags rather than under-flags,
+    and a lazy or optional import is not exempted today because nothing needs
+    one. The docstring previously said "at module level", which the code has
+    never actually implemented.
+
+    The one direction it UNDER-flags (stated in review pass 4; the note above
+    described only the over-flagging): it reads `ast.Import`/`ast.ImportFrom`
+    nodes, so a dynamic import — `importlib.import_module("django")`,
+    `__import__`, `exec` — is invisible to it. No code in this package does
+    that, and every sibling guard here shares the limitation, so it is not
+    treated as a defect; it is written down because dynamic import is the
+    idiomatic way to reach an OPTIONAL dependency, which makes it the first
+    shape a later Epic 9 story is likely to reach for — and it is the one
+    shape this guard would not catch.
+
+    AST-based (imports only), identical rationale to
+    `test_no_rotation_scheduler_exists`/
+    `test_no_third_party_provider_api_client_imported` -- this module's own
+    docstrings and comments name "django" and "channels" freely in prose,
+    which a text scan would misflag as evidence of importing them.
+
+    The detection logic lives in `_find_banned_dashboard_imports` above,
+    shared with `test_dashboard_import_guard_catches_symbol_and_relative_
+    import_shapes` below, which proves by execution (not by reading this
+    docstring) that the two blind spots review pass 1 found are actually
+    fixed.
+    """
+    steward_dir = PKG_ROOT / "steward"
+    dashboard_dir = steward_dir / "dashboard"
+    offenders: list[str] = []
+    for path in steward_dir.rglob("*.py"):
+        if dashboard_dir in path.parents:
+            continue
+        # Derive each file's OWN package rather than assuming every file sits
+        # directly in `pyforge.steward` (review pass 2). `rglob` descends into
+        # subpackages, and a hardcoded depth resolves their relative imports
+        # wrong in both directions -- a real `from ..dashboard import cache`
+        # in `steward/sub/` would have resolved to `pyforge.dashboard` and
+        # gone unflagged, which is the failure mode a guard must never have.
+        own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
+        offenders += _find_banned_dashboard_imports(
+            path.read_text(encoding="utf-8"), own_package_parts, path.name
+        )
+    assert not offenders, f"dashboard/django/channels import found outside dashboard/: {offenders}"
+
+
+def test_dashboard_middleware_and_declarations_stay_django_free():
+    """Review pass 3: the guard above SKIPS everything under `dashboard/`, so
+    nothing pinned the narrower claim that `middleware.py` and
+    `declarations.py` import neither `django` nor `channels` -- even though
+    `__init__.py`, both modules' own docstrings, and the story spec's Design
+    Notes all assert it, and `tests/unit/test_dashboard_middleware.py` /
+    `test_dashboard_declarations.py` rely on it by importing them with no
+    `pytest.importorskip`.
+
+    Without this, a later Epic 9 story adding `from django.http import ...`
+    to `middleware.py` would turn those two test modules into collection
+    ERRORS in any environment without the `[dashboard]` extra, with nothing
+    failing first to say why. That environment is exactly the one the story's
+    last acceptance criterion is about, and it has no live instance yet -- so
+    this static guard is the only thing standing in for it.
+
+    `__init__.py` joined the list in review pass 4. It is the one file in the
+    package that executes on EVERY import of any submodule, so a django
+    import there produces exactly the failure described above -- and it was
+    covered by neither guard: the one above skips all of `dashboard/`, and
+    this one named only the two submodules. Mutation-proved at the time:
+    appending `import django` to `__init__.py` left all seven dashboard guard
+    tests green while a django-blocked import of
+    `pyforge.steward.dashboard.middleware` failed with `ImportError`. Its own
+    docstring asserts it is django-free, which is precisely the class of
+    prose-only claim this test exists to replace with a mechanism.
+    """
+    dashboard_dir = PKG_ROOT / "steward" / "dashboard"
+    offenders: list[str] = []
+    for name in ("__init__.py", "middleware.py", "declarations.py"):
+        path = dashboard_dir / name
+        assert path.exists(), f"{name} is missing from {dashboard_dir}"
+        own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
+        offenders += _find_banned_dashboard_imports(
+            path.read_text(encoding="utf-8"),
+            own_package_parts,
+            path.name,
+            # Inside `dashboard/`, importing a sibling is normal -- only the
+            # framework half of the ban applies here. (`middleware.py` really
+            # does `from .declarations import TrustedIngress`.)
+            ban_dashboard_package=False,
+        )
+    assert not offenders, (
+        f"django/channels import found in a module documented as framework-free "
+        f"(AD-8) — these must import cleanly without the [dashboard] extra: "
+        f"{offenders}"
+    )
+
+    # And the guard is not vacuous: with the framework ban in force, a planted
+    # django import in the same position IS reported.
+    assert _find_banned_dashboard_imports(
+        "from django.http import HttpResponse\n",
+        ("pyforge", "steward", "dashboard"),
+        "middleware.py",
+        ban_dashboard_package=False,
+    ), "the framework-only guard must still catch a real django import"
+
+
+def test_dashboard_import_guard_flags_a_relative_import_past_the_top_package():
+    """Review pass 3: `from ...dashboard import cache` inside
+    `pyforge/steward/` climbed past the top-level package, and the level
+    arithmetic silently truncated it to the bare `"dashboard"` -- which is
+    not a banned name, so the import went unflagged. Proven by execution.
+
+    The import itself cannot run (Python raises "attempted relative import
+    beyond top-level package"), so the point is not that it is dangerous but
+    that a guard must never turn something it cannot resolve into something
+    that looks innocent.
+    """
+    offenders = _find_banned_dashboard_imports(
+        "from ...dashboard import cache\n", ("pyforge", "steward"), "synthetic.py"
+    )
+    assert offenders, "an unresolvable relative import must be reported, not silently truncated"
+    assert "unresolvable" in offenders[0]
+
+
+def test_dashboard_import_guard_catches_symbol_and_relative_import_shapes():
+    """Review pass 1 (Blind Hunter + Edge Case Hunter): the first version of
+    `_find_banned_dashboard_imports` only inspected `ast.ImportFrom.module`,
+    so two real import shapes sailed through undetected. Proven here by
+    execution against synthetic source, not by reading the implementation.
+    """
+    symbol_import = "from pyforge.steward import dashboard\n"
+    relative_import = "from . import dashboard\n"
+    relative_submodule_import = "from .dashboard import cache\n"
+    legitimate_import = "from pyforge.steward import keys\n"
+
+    for source in (symbol_import, relative_import, relative_submodule_import):
+        offenders = _find_banned_dashboard_imports(source, ("pyforge", "steward"), "synthetic.py")
+        assert offenders, f"expected {source!r} to be flagged as a dashboard import"
+
+    assert not _find_banned_dashboard_imports(legitimate_import, ("pyforge", "steward"), "synthetic.py")
+
+
+def test_dashboard_import_guard_resolves_relative_imports_from_a_subpackage():
+    """Review pass 2: the guard hardcoded `("pyforge","steward")` for every
+    file `rglob` reached, so once `steward/` gains any subpackage besides
+    `dashboard/`, relative-import resolution was wrong in both directions.
+
+    Proven by execution from a subpackage's point of view. `steward/sub/`
+    has no files today, which is exactly why this would have gone unnoticed
+    until a later Epic 9 story added one -- and its failure mode is a silent
+    false negative, the worst kind for a guard to have.
+    """
+    from_subpackage = ("pyforge", "steward", "sub")
+
+    # `from ..dashboard import cache` inside `steward/sub/` IS the banned
+    # import (`..` -> pyforge.steward). Previously resolved to
+    # `pyforge.dashboard` and sailed through.
+    assert _find_banned_dashboard_imports(
+        "from ..dashboard import cache\n", from_subpackage, "sub/mod.py"
+    ), "a genuine relative dashboard import from a subpackage must be flagged"
+
+    # `from . import dashboard` inside `steward/sub/` means
+    # `pyforge.steward.sub.dashboard` -- a DIFFERENT module that is not
+    # banned. Previously flagged as a false positive.
+    assert not _find_banned_dashboard_imports(
+        "from . import dashboard\n", from_subpackage, "sub/mod.py"
+    ), "a sibling module that merely shares the name must not be flagged"
+
+
+def test_dashboard_appconfig_is_ad13_compliant():
+    """Story 9.1 ships `apps.py` early specifically so Story 9.3's audit model
+    inherits a compliant AD-13 scaffold instead of retrofitting one. Nothing
+    imported it (review pass 2), so a typo in `name` or `label` -- or the
+    module simply not importing -- would have shipped silently and surfaced
+    a story later, which defeats the entire reason for shipping it early.
+
+    Skipped rather than failed without the `[dashboard]` extra: `apps.py` is
+    the one module in this package that genuinely requires `django`.
+    """
+    import pytest
+
+    pytest.importorskip("django", reason="apps.py requires pyforge-steward[dashboard]")
+
+    from pyforge.steward.dashboard.apps import DashboardConfig
+
+    assert DashboardConfig.name == "pyforge.steward.dashboard"
+    assert DashboardConfig.default_auto_field == "django.db.models.BigAutoField"
+
+    # AD-13's label rule: explicit, and never colliding with a contrib label.
+    # Django derives the label from the module basename by default, which for
+    # this package would be the very common "dashboard".
+    assert DashboardConfig.label == "pyforge_steward_dashboard"
+    assert DashboardConfig.label not in {
+        "admin", "auth", "contenttypes", "sessions", "messages", "staticfiles", "dashboard",
+    }
+
+
+def test_django_pin_matches_the_dashboard_extra():
+    """The django floor is hand-typed in two files -- pyproject.toml's
+    `[dashboard]` extra and root pixi.toml's
+    `[feature.pyforge-steward.dependencies]`. Review pass 1 closed "nothing
+    keeps these in sync" with a cross-reference comment; review pass 2 found
+    that comment had ALREADY drifted (it claimed the same floor as a third,
+    deliberately narrower pin). A comment is not a mechanism -- this is.
+
+    Deliberately scoped to that pair. `[feature.local-recipes.dependencies]`
+    pins a narrower `>=5.2.15,<6.0` for unrelated reasons (wagtail/coderedcms)
+    and is NOT required to match.
+
+    The distribution name is matched on a name boundary and case-insensitively
+    (review pass 3). A plain `startswith("django")` broke on two edits that are
+    each a matter of when, not if: the canonical PyPI spelling `Django` (as
+    `dependencies = ["PyYAML"]` above already uses) matched nothing, and any
+    `django-*` companion such as `django-htmx` matched a second time — either
+    way failing on spelling rather than on the drift this exists to catch.
+    """
+    import re
+    try:
+        import tomllib
+    except ImportError:                       # pragma: no cover
+        import tomli as tomllib               # type: ignore[no-redef]
+
+    manifest = tomllib.loads(
+        (PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    extra = (manifest["project"]["optional-dependencies"])["dashboard"]
+    # `django` as a whole distribution name: followed by a version specifier,
+    # an extras/marker delimiter, or nothing -- never by another name char, so
+    # `django-htmx` and `django_foo` do not match.
+    django_name = re.compile(r"^django(?![0-9A-Za-z._-])", re.IGNORECASE)
+    extra_pins = [spec for spec in extra if django_name.match(spec.replace(" ", ""))]
+    assert len(extra_pins) == 1, f"expected exactly one django pin in the extra, got {extra_pins!r}"
+    extra_pin = extra_pins[0].replace(" ", "")
+
+    # PKG_ROOT is <repo>/src/shared/packages/pyforge-steward/src/pyforge, so
+    # the repo root carrying pixi.toml is five parents up. Skipped rather
+    # than crashed when it is not there (review pass 4): this is the only
+    # assertion in this file that reaches OUTSIDE the package -- every other
+    # file-reading test stops at `PKG_ROOT.parents[1]` -- so a bare
+    # `read_text()` made the package's own suite raise `FileNotFoundError`
+    # anywhere the monorepo layout is absent. Ledger entry DW-1-3-14 is an
+    # open item about this package behaving correctly "in a package installed
+    # outside a checkout", so that is a planned environment, not a
+    # hypothetical one; a cross-manifest pin check simply has nothing to
+    # compare there.
+    import pytest
+
+    repo_root = PKG_ROOT.parents[5]
+    pixi_path = repo_root / "pixi.toml"
+    if not pixi_path.is_file():
+        pytest.skip(f"no monorepo pixi.toml at {pixi_path} — nothing to cross-check the pin against")
+
+    pixi_manifest = tomllib.loads(pixi_path.read_text(encoding="utf-8"))
+    feature_pin = pixi_manifest["feature"]["pyforge-steward"]["dependencies"]["django"]
+
+    # Distribution names are case-insensitive (PEP 503); the SPECIFIER is what
+    # must match byte-for-byte, so only the name's case is normalized away.
+    assert extra_pin.lower() == f"django{feature_pin}".replace(" ", "").lower(), (
+        f"django pin drift: pyproject `[dashboard]` extra says {extra_pin!r}, "
+        f"pixi.toml `[feature.pyforge-steward.dependencies]` says {feature_pin!r}"
+    )

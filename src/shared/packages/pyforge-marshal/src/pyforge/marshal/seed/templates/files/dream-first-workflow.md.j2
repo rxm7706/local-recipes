@@ -1,0 +1,11 @@
+1. **No non-trivial work without a Dream + spec.** Before implementing a feature, migration,
+   packaging effort, or refactor, a **Dream** must exist in `docs/dreams/<slug>.md`, and BMAD must
+   have produced its **spec** (via `bmad-spec` or the planning chain) in
+   `_bmad-output/projects/<slug>/planning-artifacts/`. Never code from a bare prompt.
+2. **Keep the spec's status current** as work proceeds (`draft → ready → in-progress → shipped`) —
+   no matter who does the work (Claude, Cursor, Gemini, Devin, Copilot, a human, or any agentic
+   framework). BMAD specs track status in the framework; legacy `docs/specs/*.md` track it in
+   `status:` frontmatter.
+3. **Autonomy.** Marshal (`bmad-loop` / `bmad-dev-auto`) can watch `docs/dreams/`, run `bmad-spec`
+   on a new Dream, and drive the build unattended — so "a Dream is written" can trigger "BMAD
+   creates the spec" with no human in the loop.

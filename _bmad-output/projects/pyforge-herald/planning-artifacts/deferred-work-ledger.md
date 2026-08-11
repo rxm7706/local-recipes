@@ -301,3 +301,13 @@ status: open
   summary: `deck_pipeline.seed` detects an already-seeded deck via a pre-flight check (state.py, then registry.py as a bootstrap fallback) — both run *before* any transport call. It does not, and cannot yet, detect a conflict *at write time*: DW-1-2-5 (Story 1.2) recorded that a conflicted `write_files`/`copy_files` answers as an ordinary success `Mapping` with an unpinned structured-conflict shape, and nothing in this repo has observed that wire shape live. `bridge-protocol.md`'s CAP-1 success criterion ("seeding over existing Design-side edits is refused with a structured conflict") is therefore only satisfied for the case this story's pre-flight check can see (a state entry or registry section already naming a linked project) — a scenario where the *pre-flight* check passes clean (no local record of any link) but the Design-side project already independently exists with content at the same name/path is not distinguished from a legitimate fresh seed.
   evidence: By construction — `seed`'s `create_project`/`create_support_js`/`copy_files`/`write_files` calls all use fresh-etag (`"0"`) preconditions per FR-24 and trust whatever the transport returns without inspecting the payload shape for a conflict marker. Consistent with the story's own documented judgment call (module docstring, judgment call 1) and DW-1-2-5's own "recorded so Story 1.4 [does not / a future story does not] assume a conflicted write raises" framing.
   status: open
+
+### DW-2: Follow-up review still recommended for 13-1-the-state-layer-survives-a-second-writer after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-13-1-the-state-layer-survives-a-second-writer.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-194532-e993; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass, herald 13-1)
