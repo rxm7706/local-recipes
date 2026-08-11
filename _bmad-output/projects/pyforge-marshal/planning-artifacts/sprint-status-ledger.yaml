@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 157
+# stories: 161
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -77,6 +77,9 @@ development_status:
   2-7-a-gate-binds-to-the-specs-success-signal: done
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
+  3-11-a-storys-declared-difficulty-actually-picks-its-model: backlog
+  3-12-a-struggling-retry-runs-under-a-stronger-model: backlog
+  3-13-the-parallel-fan-out-clamp-is-surfaced-not-silent: backlog
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: done
   3-3-detached-launch-with-scoped-story-selection: done
   3-4-supervisor-process-lifecycle: done
@@ -107,6 +110,7 @@ development_status:
   5-5-durability-as-a-reported-fleet-status-dimension: done
   5-6-marshal-check-the-detector-registry-through-the-front-door: done
   5-7-the-board-answers-how-much-is-left: done
+  5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine: backlog
   6-1-profile-driven-adapter-selection-project-scoped: done
   6-2-skill-tree-projection: done
   6-3-projection-drift-detection-that-can-actually-fail: done
