@@ -513,7 +513,17 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "7.1",
+        "title": "The emitter mints identity at defer time",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1786407963,
+        "median": 101,
+        "lo": 34,
+        "hi": 427,
+        "phaseAsOf": "2026-08-11 00:27 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 13 of 32 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -621,7 +631,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "7.1"
       },
       "epics": [
@@ -807,7 +817,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "7.1",
-              "pending",
+              "active",
               "The emitter mints identity at defer time"
             ],
             [
@@ -1237,7 +1247,17 @@ window.DASHBOARD_DATA = {
         "E5",
         "E6"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "7.1",
+        "title": "The seed module tree inside pyforge-marshal",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1786407775,
+        "median": 97,
+        "lo": 27,
+        "hi": 486,
+        "phaseAsOf": "2026-08-11 00:27 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 27 of 119 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -1417,7 +1437,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "7.1"
       },
       "epics": [
@@ -1763,7 +1783,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "7.1",
-              "pending",
+              "active",
               "The seed module tree inside pyforge-marshal"
             ],
             [
@@ -3576,7 +3596,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 00:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 00:27 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5778,7 +5798,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T11:28",
+          "spec": "2026-08-10T19:15",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
@@ -5861,7 +5881,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T11:28",
+            "at": "2026-08-10T19:15",
             "other": "2026-08-02"
           }
         ],
@@ -7264,7 +7284,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T07:08",
+          "spec": "2026-08-10T19:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8225,7 +8245,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T19:02",
+          "spec": "2026-08-10T19:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -13043,7 +13063,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "paused 7.1",
+        "line": "in flight 7.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -13405,7 +13425,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 7.1",
+        "line": "in flight 7.1",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -15278,7 +15298,20 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [],
+    "running": [
+      {
+        "station": "Doctor",
+        "story": "7.1",
+        "phase": "dev",
+        "startEpoch": 1786407963
+      },
+      {
+        "station": "Marshal",
+        "story": "7.1",
+        "phase": "dev",
+        "startEpoch": 1786407775
+      }
+    ],
     "lastShipped": {
       "station": "doctor",
       "story": "6.9",
@@ -15287,8 +15320,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 00:03 UTC",
-    "generatedEpoch": 1786406625
+    "generatedAt": "2026-08-11 00:27 UTC",
+    "generatedEpoch": 1786408077
   },
   "storySpecs": [
     {
@@ -15499,16 +15532,17 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 29,
-        "backlog": 4,
-        "blocked": 0,
+        "backlog": 2,
+        "blocked": 2,
         "total": 33,
         "next": "8-2-zero-loop-guarantee",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "8-2-zero-loop-guarantee",
-          "8-3-idempotent-update-processing",
+        "blockedKeys": [
           "8-4-fail-loud-fail-alone",
           "8-5-explicit-status-vocabulary-translation"
+        ],
+        "backlogKeys": [
+          "8-2-zero-loop-guarantee",
+          "8-3-idempotent-update-processing"
         ],
         "state": "ready"
       },
@@ -15585,8 +15619,8 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 267,
-      "backlog": 89,
-      "blocked": 3,
+      "backlog": 87,
+      "blocked": 5,
       "total": 359
     }
   },
@@ -15662,7 +15696,7 @@ window.DASHBOARD_DATA = {
         "key": "steward",
         "stories": 33,
         "done": 29,
-        "blocked": 0,
+        "blocked": 2,
         "epics": 8,
         "epicsDone": 7,
         "complete": false,
@@ -15684,7 +15718,7 @@ window.DASHBOARD_DATA = {
     "total": {
       "stories": 359,
       "done": 267,
-      "blocked": 3,
+      "blocked": 5,
       "epics": 72,
       "epicsDone": 53
     },
