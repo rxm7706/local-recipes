@@ -6,6 +6,7 @@ offending id/field), and the ``since``/``until`` version-range filter.
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
 from textwrap import dedent
 
@@ -142,7 +143,7 @@ def test_duplicate_id_raises_manifest_error_naming_it(tmp_path):
             applies_to: init
             rationale: r2
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: duplicate id"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -156,7 +157,7 @@ def test_unrecognized_class_raises_manifest_error(tmp_path):
             applies_to: init
             rationale: r
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: .*not a valid ArtifactClass"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -171,7 +172,7 @@ def test_hybrid_missing_regions_raises_manifest_error(tmp_path):
             rationale: r
             format: html
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: .*require at least one region"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -187,7 +188,7 @@ def test_hybrid_empty_regions_list_raises_manifest_error(tmp_path):
             format: html
             regions: []
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: .*require at least one region"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -204,7 +205,7 @@ def test_hybrid_missing_format_raises_manifest_error(tmp_path):
               - name: tiers
                 anchor: ["## Tiers"]
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: .*require a non-empty format"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -218,7 +219,7 @@ def test_referenced_missing_pin_raises_manifest_error(tmp_path):
             applies_to: both
             rationale: r
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: .*require a non-empty pin"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -242,8 +243,22 @@ def test_missing_required_field_raises_manifest_error(tmp_path, missing_field):
         load_manifest(path)
 
 
-@pytest.mark.parametrize("bad_type_field", ["id", "path"])
-def test_wrong_type_required_field_raises_manifest_error(tmp_path, bad_type_field):
+@pytest.mark.parametrize(
+    ("bad_type_field", "expected_message"),
+    [
+        # Asserting the REASON, not merely that entry "foo" failed somehow:
+        # a bare match on the id passes for any rule firing, so a
+        # regression that swaps which check catches the value stays green.
+        ("id", r"^artifacts\[0\]: id must be a non-empty str"),
+        ("class", r"^foo: .*not a valid ArtifactClass"),
+        ("path", r"^foo: path must be a non-empty str"),
+        ("applies_to", r"^foo: .*not a valid AppliesTo"),
+        ("rationale", r"^foo: rationale must be a non-empty str"),
+    ],
+)
+def test_wrong_type_required_field_raises_manifest_error(
+    tmp_path, bad_type_field, expected_message
+):
     entry = {
         "id": "foo",
         "class": "copied-seeded",
@@ -255,7 +270,7 @@ def test_wrong_type_required_field_raises_manifest_error(tmp_path, bad_type_fiel
     document = {"model_version": "1.0.0", "artifacts": [entry]}
     path = tmp_path / "manifest.yaml"
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
-    with pytest.raises(ManifestError):
+    with pytest.raises(ManifestError, match=expected_message):
         load_manifest(path)
 
 
@@ -269,7 +284,7 @@ def test_invalid_applies_to_raises_manifest_error(tmp_path):
             applies_to: sometimes
             rationale: r
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: .*not a valid AppliesTo"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -284,7 +299,7 @@ def test_malformed_since_raises_manifest_error(tmp_path):
             rationale: r
             since: "not-a-version"
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: since: .*not a valid SemVer"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -299,7 +314,7 @@ def test_malformed_until_raises_manifest_error(tmp_path):
             rationale: r
             until: "not-a-version"
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: until: .*not a valid SemVer"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -308,7 +323,9 @@ def test_malformed_top_level_model_version_wraps_invalid_version_error(tmp_path)
         model_version: "not-a-version"
         artifacts: []
     """
-    with pytest.raises(ManifestError, match="manifest") as excinfo:
+    with pytest.raises(
+        ManifestError, match=r"^manifest: model_version: .*not a valid SemVer"
+    ) as excinfo:
         load_manifest(_write(tmp_path, text))
     assert excinfo.value.__cause__ is not None
 
@@ -325,7 +342,7 @@ def test_until_not_greater_than_since_raises_manifest_error(tmp_path):
             since: "1.0.0"
             until: "1.0.0"
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: until \(1\.0\.0\) must be strictly greater"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -341,13 +358,15 @@ def test_until_less_than_since_raises_manifest_error(tmp_path):
             since: "2.0.0"
             until: "1.0.0"
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(
+        ManifestError, match=r"^foo: until \(1\.0\.0\) must be strictly greater than since \(2\.0\.0\)"
+    ):
         load_manifest(_write(tmp_path, text))
 
 
 def test_non_mapping_top_level_document_raises_manifest_error(tmp_path):
     text = "- just\n- a\n- list\n"
-    with pytest.raises(ManifestError, match="manifest"):
+    with pytest.raises(ManifestError, match=r"^manifest: top-level document must be a mapping"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -623,3 +642,203 @@ def test_error_message_disambiguates_second_bad_entry_by_index(tmp_path):
     """
     with pytest.raises(ManifestError, match=r"artifacts\[1\]"):
         load_manifest(_write(tmp_path, text))
+
+
+# --- strict wire shape: no silently-dropped keys ------------------------------
+
+
+def test_duplicate_top_level_key_raises_manifest_error(tmp_path):
+    """PyYAML's default loader keeps the LAST duplicate key silently, so a
+    manifest with two `model_version:` lines would load as a different
+    document than the one a human reviewed in the diff."""
+    text = 'model_version: "1.0.0"\nmodel_version: "9.9.9"\nartifacts: []\n'
+    with pytest.raises(ManifestError, match="duplicate key"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_duplicate_key_within_entry_raises_manifest_error(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: copied-seeded
+            path: "one.md"
+            path: "two.md"
+            applies_to: init
+            rationale: r
+    """
+    with pytest.raises(ManifestError, match="duplicate key"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_unrecognized_top_level_key_raises_manifest_error(tmp_path):
+    """A misspelled `artifacts:` must not degrade into an empty manifest."""
+    text = 'model_version: "1.0.0"\nartefacts: []\n'
+    with pytest.raises(ManifestError, match=r"^manifest: unrecognized top-level key\(s\): artefacts"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_unrecognized_entry_key_raises_manifest_error(tmp_path):
+    """`untl:` would otherwise mean the entry silently never retires."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: copied-seeded
+            path: "x"
+            applies_to: init
+            rationale: r
+            untl: "2.0.0"
+    """
+    with pytest.raises(ManifestError, match=r"^foo: unrecognized entry key\(s\): untl"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_unrecognized_region_key_raises_manifest_error(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: markdown
+            regions:
+              - name: tiers
+                anchor: ["## Tiers"]
+                anchors: ["typo"]
+    """
+    with pytest.raises(ManifestError, match=r"^foo: unrecognized region key\(s\): anchors"):
+        load_manifest(_write(tmp_path, text))
+
+
+# --- class-appropriate fields -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("extra_yaml", "expected_message"),
+    [
+        ('pin: ">=1.0"', r"^foo: pin is only valid on referenced entries"),
+        ("format: markdown", r"^foo: format is only valid on hybrid-managed-region entries"),
+        (
+            'regions:\n              - {name: tiers, anchor: ["## Tiers"]}',
+            r"^foo: regions are only valid on hybrid-managed-region entries",
+        ),
+    ],
+)
+def test_field_on_wrong_class_raises_manifest_error(tmp_path, extra_yaml, expected_message):
+    """Requiring a field on its own class but ignoring it elsewhere is a
+    silent no-op: the author believes the region/pin is honored, and
+    nothing ever tells them otherwise."""
+    text = f"""\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: copied-managed
+            path: "x"
+            applies_to: init
+            rationale: r
+            {extra_yaml}
+    """
+    with pytest.raises(ManifestError, match=expected_message):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_duplicate_region_names_within_entry_raises_manifest_error(tmp_path):
+    """A region name is its identity in the marker wire format -- two
+    same-named regions give the writer two spans for one marker pair."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: markdown
+            regions:
+              - name: tiers
+                anchor: ["## Tiers"]
+              - name: tiers
+                anchor: ["## Other"]
+    """
+    with pytest.raises(ManifestError, match=r"^foo: region names must be unique"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_same_region_name_across_different_entries_is_allowed(tmp_path):
+    """Uniqueness is per-entry, not global -- CLAUDE.md and AGENTS.md may
+    both carry a region called `tiers`."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: agents-md
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: markdown
+            regions:
+              - name: tiers
+                anchor: ["## Tiers"]
+          - id: claude-md
+            class: hybrid-managed-region
+            path: "CLAUDE.md"
+            applies_to: both
+            rationale: r
+            format: markdown
+            regions:
+              - name: tiers
+                anchor: ["## Tiers"]
+    """
+    manifest = load_manifest(_write(tmp_path, text))
+    assert [entry.id for entry in manifest.entries] == ["agents-md", "claude-md"]
+
+
+def test_empty_never_write_pattern_raises_manifest_error(tmp_path):
+    """Every other string field here is non-empty; an empty pattern
+    reaching S-7.3's guard could match every path."""
+    text = 'model_version: "1.0.0"\nnever_write: [""]\nartifacts: []\n'
+    with pytest.raises(ManifestError, match="never_write must be a list of non-empty str"):
+        load_manifest(_write(tmp_path, text))
+
+
+# --- file-level failures stay inside the ManifestError contract ---------------
+
+
+def test_non_utf8_file_raises_manifest_error(tmp_path):
+    """UnicodeDecodeError is a ValueError, NOT an OSError, so it escaped
+    the `OSError`/`YAMLError` handlers."""
+    path = tmp_path / "manifest.yaml"
+    path.write_bytes(b'model_version: "\xff\xfe1.0.0"\n')
+    with pytest.raises(ManifestError, match="is not valid UTF-8"):
+        load_manifest(path)
+
+
+def test_unusable_model_version_component_raises_manifest_error(tmp_path):
+    """A grammatically valid but absurd component (CPython refuses int()
+    past 4300 digits) must not escape as a raw ValueError."""
+    text = f'model_version: "{"1" * 5000}.0.0"\nartifacts: []\n'
+    with pytest.raises(ManifestError, match="^manifest: model_version:"):
+        load_manifest(_write(tmp_path, text))
+
+
+# --- immutability -------------------------------------------------------------
+
+
+def test_schema_dataclasses_are_frozen_and_hashable():
+    """P-11 leans on these being immutable value objects."""
+    region = Region(name="tiers", anchor=("## Tiers",))
+    entry = ManifestEntry(
+        id="foo",
+        artifact_class=ArtifactClass.COPIED_SEEDED,
+        path="x",
+        applies_to=AppliesTo.INIT,
+        rationale="r",
+    )
+    manifest = Manifest(model_version=ModelVersion.parse("1.0.0"), never_write=(), entries=(entry,))
+    for obj, field_name in ((region, "name"), (entry, "id"), (manifest, "never_write")):
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            setattr(obj, field_name, "mutated")
+    assert {region, entry, manifest}  # hashable

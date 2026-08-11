@@ -234,3 +234,80 @@ def test_in_range_both_bounds_set():
     assert in_range(ModelVersion.parse("1.5.0"), since, until) is True
     assert in_range(ModelVersion.parse("2.0.0"), since, until) is False
     assert in_range(ModelVersion.parse("2.0.1"), since, until) is False
+
+
+# --- the grammar is validated on the FIELDS, not just on the parsed string ----
+
+
+@pytest.mark.parametrize(
+    "identifier",
+    [
+        "²",  # superscript two: .isdigit() is True, int() raises
+        "١",  # Arabic-Indic one: non-ASCII, outside the grammar
+        "01",  # leading zero: forbidden by SemVer 2.0.0
+        "",  # empty identifier
+        "al pha",  # illegal character
+    ],
+)
+def test_direct_construction_rejects_non_grammar_prerelease_identifier(identifier):
+    """`parse` is not the only way in -- tests, `dataclasses.replace`, and a
+    future state deserializer construct this directly. An identifier
+    outside the grammar breaks ORDERING itself, so it cannot be accepted."""
+    with pytest.raises(ValueError, match="not a valid SemVer 2.0.0 identifier"):
+        ModelVersion(major=1, minor=0, patch=0, prerelease=(identifier,))
+
+
+def test_direct_construction_rejects_non_grammar_build_identifier():
+    with pytest.raises(ValueError, match="not a valid SemVer 2.0.0 identifier"):
+        ModelVersion(major=1, minor=0, patch=0, build=("has space",))
+
+
+def test_comparison_is_total_for_every_constructible_version():
+    """Trichotomy: for any two constructible versions exactly one of <, >,
+    == holds. `("01",)` vs `("1",)` used to satisfy none of the three --
+    equal numerically, unequal by `__eq__` -- silently corrupting `sorted`."""
+    versions = [
+        ModelVersion.parse(text)
+        for text in ("1.0.0-alpha", "1.0.0-alpha.1", "1.0.0-1", "1.0.0-2", "1.0.0", "1.0.1")
+    ]
+    for left in versions:
+        for right in versions:
+            assert sum((left < right, left > right, left == right)) == 1
+
+
+def test_isdigit_only_identifiers_never_reach_the_int_comparator():
+    """Guard the comparator directly: even handed a superscript, it must
+    not raise the `int()` ValueError that `.isdigit()` alone invites."""
+    left = ModelVersion.parse("1.0.0-1")
+    right = object.__new__(ModelVersion)
+    object.__setattr__(right, "major", 1)
+    object.__setattr__(right, "minor", 0)
+    object.__setattr__(right, "patch", 0)
+    object.__setattr__(right, "prerelease", ("²",))
+    object.__setattr__(right, "build", ())
+    assert isinstance(left < right, bool)
+    assert isinstance(right < left, bool)
+
+
+# --- str() round-trips to the string parse() accepts --------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["1.2.3", "0.0.0", "1.0.0-alpha", "1.0.0-alpha.1", "1.0.0+build.1", "1.2.3-rc.1+exp.sha.5114f85"],
+)
+def test_str_round_trips_through_parse(text):
+    version = ModelVersion.parse(text)
+    assert str(version) == text
+    assert ModelVersion.parse(str(version)) == version
+
+
+def test_str_is_used_in_error_messages_not_the_dataclass_repr():
+    assert "ModelVersion(" not in str(ModelVersion.parse("1.0.0"))
+
+
+def test_parse_rejects_a_numeric_component_int_cannot_convert():
+    """CPython refuses int() past 4300 digits -- a raw ValueError there
+    would sail past every caller catching InvalidVersionError."""
+    with pytest.raises(InvalidVersionError, match="unusable numeric component"):
+        ModelVersion.parse("1" * 5000 + ".0.0")
