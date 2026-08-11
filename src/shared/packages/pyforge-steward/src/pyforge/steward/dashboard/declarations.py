@@ -15,7 +15,16 @@ installed.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+
+# RFC 9110 §5.1 `token`: the grammar a header *name* must satisfy to exist on
+# the wire at all. Validated because a name that is merely latin-1-encodable
+# but not a token (a trailing space from a config file, an embedded ":" or
+# newline) silently matches NO header -- which switches AD-4's refusal off
+# rather than failing, since the middleware only checks the ingress for a
+# header it actually found (review pass 3).
+_HTTP_TOKEN_RE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 
 
 @dataclass(frozen=True)
@@ -37,11 +46,11 @@ class AccessDeclaration:
                 f"AccessDeclaration.access_column must be a string, got "
                 f"{type(self.access_column).__name__}"
             )
-        if not self.access_column:
+        if not self.access_column.strip():
             raise ValueError(
-                "AccessDeclaration.access_column must not be empty — a "
-                "dashboard cannot declare row-level access without naming "
-                "the column that carries it"
+                "AccessDeclaration.access_column must not be empty or "
+                "whitespace-only — a dashboard cannot declare row-level "
+                "access without naming the column that carries it"
             )
         if not isinstance(self.roles, tuple):
             raise TypeError(
@@ -67,10 +76,10 @@ class AccessDeclaration:
                     f"{type(role).__name__} — a non-string role can never "
                     f"match an extracted role header"
                 )
-            if not role:
+            if not role.strip():
                 raise ValueError(
-                    f"AccessDeclaration.roles[{index}] must not be empty — an "
-                    f"unnamed role cannot be filtered by"
+                    f"AccessDeclaration.roles[{index}] must not be empty or "
+                    f"whitespace-only — an unnamed role cannot be filtered by"
                 )
 
 
@@ -79,13 +88,16 @@ class TrustedIngress:
     """AD-4: the trusted ingress and the identity/role header names.
 
     ``addresses`` is the declared set of peer addresses the proxy connects
-    from (matched against the ASGI ``scope["client"]`` peer host); an
-    identity header arriving on a connection from outside this set is what
-    `middleware.py`'s `DashboardIdentityMiddleware` refuses. ``identity_
-    header``/``role_header`` name the proxy headers that carry identity and
-    role — adopter-declared, never hardcoded, so the same dashboard runs
-    behind two proxies that use different header names by configuration
-    alone (CAP-1).
+    from, matched against whatever the ASGI server reports as
+    ``scope["client"]``; an identity header arriving on a connection from
+    outside this set is what `middleware.py`'s `DashboardIdentityMiddleware`
+    refuses. Note that ``scope["client"]`` is the *server's* claim about the
+    peer, not necessarily the TCP peer — see `middleware.py`'s module
+    docstring for the deployment precondition that claim depends on.
+    ``identity_header``/``role_header`` name the proxy headers that carry
+    identity and role — adopter-declared, never hardcoded, so the same
+    dashboard runs behind two proxies that use different header names by
+    configuration alone (CAP-1). They must be different names.
     """
 
     addresses: tuple[str, ...]
@@ -143,16 +155,45 @@ class TrustedIngress:
                 "TrustedIngress.role_header must not be empty — the "
                 "middleware has no header to extract role from"
             )
+        # Header NAME form, not just encodability (review pass 3). The
+        # latin-1 check this replaces caught only non-latin-1 names; a name
+        # that is latin-1 but not an RFC 9110 token -- `"X-Forwarded-User "`
+        # with a trailing space out of a config file or env var, or one
+        # carrying a ":" or newline -- constructed cleanly and then matched no
+        # header at all. That does not degrade to "no identity": it switches
+        # AD-4's refusal OFF, because the middleware only checks the ingress
+        # for a header it actually found, so an identity header from an
+        # UNTRUSTED peer stops being refused. A name that cannot exist on the
+        # wire must fail here, loudly, not silently disarm the trust boundary.
         for field_name, header in (
             ("identity_header", self.identity_header),
             ("role_header", self.role_header),
         ):
-            try:
-                header.encode("latin-1")
-            except UnicodeEncodeError as exc:
+            if not _HTTP_TOKEN_RE.match(header):
                 raise ValueError(
                     f"TrustedIngress.{field_name} {header!r} is not a valid "
-                    f"ASGI header name (must be latin-1-encodable) — this "
-                    f"must fail at declaration time, not on every live "
-                    f"request"
-                ) from exc
+                    f"HTTP header name (RFC 9110 token: letters, digits and "
+                    f"!#$%&'*+-.^_`|~ only — no spaces, colons, newlines or "
+                    f"non-ASCII) — such a name matches no header on the wire, "
+                    f"which would silently disable AD-4's ingress refusal "
+                    f"instead of failing here"
+                )
+
+        # The two headers must be DIFFERENT (review pass 3). Declaring one
+        # name for both makes the role a copy of the identity: a single
+        # `X-Forwarded-User: admin` then yields identity='admin' AND
+        # role='admin', so a caller whose name happens to match a privileged
+        # role in the adopter's vocabulary is granted it -- from a
+        # copy-paste typo, with nothing anywhere reporting it. Prior passes
+        # rejected cross-field validation as speculative hardening; this one
+        # has a demonstrated privilege consequence, which is the same
+        # consequence-driven rationale that admitted the element-type checks
+        # above.
+        if self.identity_header.lower() == self.role_header.lower():
+            raise ValueError(
+                f"TrustedIngress.identity_header and role_header must name "
+                f"different headers (both are {self.identity_header!r}) — one "
+                f"name for both makes the extracted role a copy of the "
+                f"identity, silently granting a caller any role that matches "
+                f"their own name"
+            )

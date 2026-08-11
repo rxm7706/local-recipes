@@ -126,3 +126,71 @@ def test_access_declaration_rejects_an_empty_role_element():
 def test_access_declaration_rejects_a_non_string_access_column():
     with pytest.raises(TypeError, match="access_column"):
         AccessDeclaration(access_column=123, roles=("admin",))
+
+
+@pytest.mark.parametrize(
+    "bad_header",
+    [
+        "X-Forwarded-User ",     # trailing space out of a config file / env var
+        " X-Forwarded-User",     # leading space
+        "X-Forwarded-User:",     # the colon, pasted along with the name
+        "X-Forwarded\nUser",     # embedded newline
+        "X Forwarded User",      # spaces instead of hyphens
+        "X-Forwarded-User-🚀",   # non-ASCII (the pass-2 latin-1 case, subsumed)
+    ],
+)
+def test_trusted_ingress_rejects_a_header_name_that_is_not_an_http_token(bad_header):
+    """Review pass 3: a header name that is merely latin-1-encodable but not
+    an RFC 9110 token constructed cleanly and then matched NO header — which
+    does not degrade to "no identity", it switches AD-4's refusal OFF, since
+    the ingress check only runs for a header actually found. Reproduced: with
+    `identity_header="X-Forwarded-User "`, an identity header arriving from an
+    UNTRUSTED peer was passed straight through to the wrapped app with no
+    exception at all.
+
+    A trailing space is the realistic trigger — header names routinely come
+    from config files and environment variables.
+    """
+    with pytest.raises(ValueError, match="identity_header"):
+        TrustedIngress(
+            addresses=("10.0.0.1",), identity_header=bad_header, role_header="X-Forwarded-Role"
+        )
+
+
+def test_trusted_ingress_rejects_the_same_name_for_both_headers():
+    """Review pass 3: declaring one name for both made the role a copy of the
+    identity — a single `X-Forwarded-User: admin` from the trusted proxy
+    yielded identity='admin' AND role='admin' (reproduced), so a caller whose
+    name matches a privileged role in the adopter's vocabulary is granted it.
+
+    Passes 1 and 2 rejected cross-field validation as speculative hardening;
+    this is the same check with a demonstrated privilege consequence, which is
+    the rationale that admitted the element-type checks in pass 2.
+    """
+    with pytest.raises(ValueError, match="different headers"):
+        TrustedIngress(
+            addresses=("10.0.0.1",),
+            identity_header="X-Forwarded-User",
+            role_header="X-Forwarded-User",
+        )
+
+    # Header names are case-insensitive on the wire, so a case variant is the
+    # same header, not a different one.
+    with pytest.raises(ValueError, match="different headers"):
+        TrustedIngress(
+            addresses=("10.0.0.1",),
+            identity_header="X-Forwarded-User",
+            role_header="x-forwarded-user",
+        )
+
+
+def test_access_declaration_rejects_whitespace_only_fields():
+    """Review pass 3: `"   "` passed the emptiness checks for both the access
+    column and a role element, so a whitespace-only declaration was accepted
+    and would only fail in whichever later story consumes it.
+    """
+    with pytest.raises(ValueError, match="access_column"):
+        AccessDeclaration(access_column="   ", roles=("admin",))
+
+    with pytest.raises(ValueError, match=r"roles\[1\]"):
+        AccessDeclaration(access_column="region", roles=("admin", "  "))

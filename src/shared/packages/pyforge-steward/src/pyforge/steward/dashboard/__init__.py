@@ -16,7 +16,9 @@ import `django` at all — `declarations.py` and `middleware.py` are plain
 Python (the ASGI3 callable shape is protocol, not framework, per AD-8) and
 import cleanly with or without the extra. No other module in
 `pyforge.steward` may import this package, `django`, or `channels`; pinned by
-`tests/meta/test_invariants.py`.
+`tests/meta/test_invariants.py`, which since review pass 3 also pins the
+narrower claim above — that `middleware.py` and `declarations.py` themselves
+stay django-free — rather than leaving it to these docstrings.
 """
 
 from __future__ import annotations

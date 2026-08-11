@@ -51,6 +51,15 @@ def _fresh_backend():
         f"{type(backend).__name__} -- another test module configured Django "
         f"settings first"
     )
+    # The isinstance check alone cannot detect the LIKELIEST collision (review
+    # pass 3): Django's own default CACHES is ALSO a LocMemCache, so a module
+    # that configured settings without CACHES would pass the assertion above
+    # while this file's raw-store inspection ran against a different store.
+    # Assert the declaration in force is the one at the top of this file.
+    assert settings.CACHES["default"].get("LOCATION") == "pyforge-steward-dashboard-test", (
+        f"another test module configured Django settings first: CACHES[default] "
+        f"is {settings.CACHES['default']!r}, not the backend declared in this file"
+    )
     backend.clear()
     return backend
 
@@ -240,3 +249,76 @@ def test_release_failure_never_masks_the_real_outcome():
 
     with pytest.raises(ValueError, match="the real fetch error"):
         get_master_dataset("bad-key", boom, cache=backend)
+
+
+def test_a_cache_write_failure_never_discards_a_successful_fetch():
+    """Review pass 3: pass 2 guarded the lock RELEASE but not the value
+    `set()`, so a backend blip on the write turned an already-successful
+    fetch into a hard failure and threw the fetched data away. A cache is an
+    accelerator; returning uncached data beats failing the request.
+    """
+    class ExplodingWrite:
+        """Delegates everything to a real backend, but fails writing the value."""
+
+        def __init__(self, inner):
+            self._inner = inner
+
+        def get(self, key, default=None):
+            return self._inner.get(key, default)
+
+        def add(self, key, value, timeout=None):
+            return self._inner.add(key, value, timeout=timeout)
+
+        def set(self, key, value, timeout=None):
+            if not key.startswith(_LOCK_PREFIX):
+                raise RuntimeError("backend blip while caching the value")
+            return self._inner.set(key, value, timeout=timeout)
+
+        def delete(self, key):
+            return self._inner.delete(key)
+
+    inner = _fresh_backend()
+    backend = ExplodingWrite(inner)
+
+    assert get_master_dataset("write-blip-key", lambda: {"rows": [1]}, cache=backend) == {"rows": [1]}
+    # Nothing was cached -- which is the accepted degradation, not an error.
+    assert inner.get("write-blip-key") is None
+
+
+@pytest.mark.parametrize("bad", ["300", object(), [30]])
+def test_timeout_type_is_validated_at_the_boundary(bad):
+    """Review pass 3: an unusable `timeout` type raised from deep inside the
+    backend only AFTER `fetch()` had run and its result had been discarded.
+    Same "validate at the boundary" argument as the `lock_timeout` guard one
+    line above it in the source.
+    """
+    backend = _fresh_backend()
+    calls = []
+
+    def fetch():
+        calls.append(1)
+        return {"rows": []}
+
+    with pytest.raises(TypeError, match="timeout"):
+        get_master_dataset("k", fetch, cache=backend, timeout=bad)
+
+    assert calls == [], "the bad timeout must be rejected before fetch() runs"
+
+
+def test_timeout_zero_is_still_allowed_as_caching_disabled():
+    """Deliberately NOT rejected: Django reads `timeout=0` as "expire
+    immediately", i.e. the caller explicitly turning caching off, which is
+    their call to make (a prior pass rejected this as a defect on exactly
+    that reasoning). Pinned so the new type guard above cannot quietly
+    broaden into a behavior change.
+    """
+    backend = _fresh_backend()
+    calls = []
+
+    def fetch():
+        calls.append(1)
+        return {"rows": []}
+
+    assert get_master_dataset("zero-timeout-key", fetch, cache=backend, timeout=0) == {"rows": []}
+    assert backend.get("zero-timeout-key") is None, "timeout=0 means nothing is retained"
+    assert calls == [1]

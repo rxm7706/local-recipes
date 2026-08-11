@@ -6,13 +6,23 @@ applied to what this function returns, after it leaves the cache — this
 module never accepts a role, never filters, and never writes a role-scoped
 key or a role-filtered value back to the cache backend (CAP-2 / AD-5).
 
-Concurrent misses for the same cache key collapse to exactly one upstream
-`fetch()` call. The primitive is `cache.add()` — acquire-if-absent — used as
-a lock: the first caller to `add()` the lock key wins the right to call
-`fetch()` and populate the real key; every other concurrent caller polls
-until either the value appears or the lock is released without one (the
-fetcher raised), in which case it races again to become the new fetcher
-rather than waiting forever.
+Concurrent misses for the same cache key collapse to one upstream `fetch()`
+call — for as long as the lock below is held, which is `lock_timeout`. The
+primitive is `cache.add()` — acquire-if-absent — used as a lock: the first
+caller to `add()` the lock key wins the right to call `fetch()` and populate
+the real key; every other concurrent caller polls until either the value
+appears or the lock is released without one (the fetcher raised), in which
+case it races again to become the new fetcher rather than waiting forever.
+
+That is a bound, not an absolute (stated plainly in review pass 3 — the
+opening claim here used to read "exactly one" unconditionally, which the
+`lock_timeout` paragraph further down then contradicted). A `fetch()` that
+runs longer than `lock_timeout` loses its exclusive claim partway through, so
+concurrent callers issue roughly `fetch_duration / lock_timeout` fetches
+rather than one: measured at 3 fetches for a 3s fetch under `lock_timeout=1`.
+The lock is never extended or heartbeated and the retry loop has no attempt
+cap, so sizing `lock_timeout` above the real fetch's ceiling is load-bearing,
+not advisory. The suite pins the fast-fetch case only.
 
 How well that holds depends on the backend, and the honest statement is
 narrower than "atomic everywhere" (corrected in review pass 2, which
@@ -31,7 +41,10 @@ disproved the original claim by execution):
 Choosing a backend that can actually carry the property — and refusing one
 that cannot when the deployment runs more than one worker, which is AD-5's
 other half — is the deployment perimeter's job (Story 9.5), not this
-module's; see `deferred-work.md`.
+module's; see
+``_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md``
+(the tracked ledger — review pass 3; this used to name the gitignored
+run-local `deferred-work.md`, a path absent from every clone).
 
 Each acquisition writes a random, per-call token as the lock's value and
 only deletes the lock if it still holds that same token (review pass 1):
@@ -52,7 +65,7 @@ over here.
 This function is synchronous and its waiter path sleeps. Calling it from an
 async consumer blocks that worker's whole event loop for the duration; an
 async variant belongs with the story that first puts it on an async hot path
-(see `deferred-work.md`).
+(see the tracked deferred-work ledger named above).
 """
 
 from __future__ import annotations
@@ -98,6 +111,17 @@ def get_master_dataset(
     voiding single-flight) and ``None`` as "cache forever" (so a hard-killed
     fetcher leaves a lock no timeout ever clears). Both are rejected here
     rather than discovered in production (review pass 2).
+
+    ``timeout`` is the DATA TTL, passed straight to ``cache.set``, so it
+    follows Django's own conventions: the ``DEFAULT_TIMEOUT`` sentinel (use
+    the backend's configured default), ``None`` (cache forever), or a number
+    of seconds. Only the TYPE is checked here (review pass 3) — an unusable
+    type such as ``"300"`` previously raised a `TypeError` from deep inside
+    the backend AFTER ``fetch()`` had already run and its result had been
+    thrown away, which is the same "validate at the boundary" argument the
+    ``lock_timeout`` guard above already makes. ``timeout=0`` is deliberately
+    still allowed: Django reads it as "expire immediately", i.e. the caller
+    explicitly disabling caching, which is their call to make.
     """
     if not isinstance(lock_timeout, int) or isinstance(lock_timeout, bool) or lock_timeout <= 0:
         raise ValueError(
@@ -105,6 +129,13 @@ def get_master_dataset(
             f"{lock_timeout!r} — 0 disables the lock entirely (every caller "
             f"wins) and None makes it immortal (a dead fetcher blocks every "
             f"waiter forever)"
+        )
+
+    if timeout is not DEFAULT_TIMEOUT and timeout is not None and not isinstance(timeout, (int, float)):
+        raise TypeError(
+            f"timeout must be DEFAULT_TIMEOUT, None, or a number of seconds, "
+            f"got {timeout!r} — anything else raises from inside the cache "
+            f"backend only AFTER fetch() has run and its result been discarded"
         )
 
     lock_key = f"{_LOCK_KEY_PREFIX}{key}"
@@ -118,7 +149,19 @@ def get_master_dataset(
         if cache.add(lock_key, token, timeout=lock_timeout):
             try:
                 value = fetch()
-                cache.set(key, value, timeout=timeout)
+                # A cache WRITE failure must not destroy a successful fetch
+                # (review pass 3). The data is already in hand; failing the
+                # whole request because the accelerator blipped is strictly
+                # worse than returning uncached data. Same reasoning as the
+                # release guard below — with the same limit: a persistent
+                # write failure degrades to a fetch per call, silently.
+                # (A blip on the READ or the lock `add()` above still
+                # propagates; making the cache wholly optional is a failure-
+                # semantics decision tied to the deferred backend choice.)
+                try:
+                    cache.set(key, value, timeout=timeout)
+                except Exception:  # noqa: BLE001 -- a cache miss beats an outage
+                    pass
                 return value
             finally:
                 # Only release the lock if it is still the one THIS call
