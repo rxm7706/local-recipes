@@ -6,6 +6,9 @@ publish, revalidate, and the atomic-write/round-trip discipline mirroring
 from __future__ import annotations
 
 import json
+import sys
+import threading
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -516,3 +519,174 @@ def test_referenced_by_claims_empty_when_no_claim_cites_it(tmp_path):
 
 def test_referenced_by_claims_on_missing_file_is_empty(tmp_path):
     assert claims.referenced_by_claims(tmp_path / "claims.json", "auth-api-v1") == []
+
+
+# --- Story 13.1: concurrency (closing DW-1-4-2) -----------------------------
+
+
+def _lock_is_currently_free(lock_path) -> bool:
+    """Independently attempts its OWN non-blocking acquire of ``lock_path``
+    -- ``True`` only if nothing else currently holds that same lock file's
+    exclusive lock. ``fcntl.flock``/``msvcrt.locking`` are per-open-file-
+    -description, not per-process, so a second, independent ``open()`` in
+    the SAME process still genuinely contends with a lock the process is
+    already holding via a different file object -- this is a direct proof,
+    not a simulation."""
+    try:
+        with open(lock_path, "a+b") as fh:
+            if sys.platform == "win32":
+                import msvcrt
+
+                fh.seek(0)
+                try:
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+                except OSError:
+                    return False
+                msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+                return True
+            else:
+                import fcntl
+
+                try:
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except OSError:
+                    return False
+                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+                return True
+    except OSError:
+        return False
+
+
+def test_two_concurrent_creates_for_different_projects_both_land(tmp_path, monkeypatch):
+    """Story 13.1 regression: two ``create`` calls racing the same
+    ``claims.json`` must both survive -- forced, deterministic interleaving
+    (not a timing-dependent sleep race). Mirrors ``test_state.py``'s
+    technique: a monkeypatched delay right after ``read_all``'s read gives
+    the other (unlocked) creator's whole read-modify-write cycle room to
+    run during the pause; locked, a second creator cannot even begin its
+    own read until the first has released the lock. Fails against the
+    pre-fix (unlocked) code, passes against the fixed code -- confirmed
+    locally by commenting out ``create``'s ``locking.locked`` call."""
+    path = tmp_path / "claims.json"
+    original_read_all = claims.read_all
+
+    def delayed_read_all(claims_path):
+        result = original_read_all(claims_path)
+        time.sleep(0.2)
+        return result
+
+    monkeypatch.setattr(claims, "read_all", delayed_read_all)
+
+    barrier = threading.Barrier(2)
+
+    def creator(project_name: str) -> None:
+        barrier.wait(timeout=5)
+        claims.create(path, project_name=project_name)
+
+    t1 = threading.Thread(target=creator, args=("alpha",))
+    t2 = threading.Thread(target=creator, args=("beta",))
+    t1.start()
+    t2.start()
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+
+    project_names = {c.project_name for c in original_read_all(path)}
+    assert project_names == {"alpha", "beta"}
+
+
+def test_publish_never_holds_the_lock_during_network_validation(tmp_path):
+    """Story 13.1: ``publish``'s lock must never span the network
+    validation call. Direct proof: the injected validator attempts its OWN
+    independent non-blocking acquire of the SAME lock file ``publish``
+    uses -- if ``publish`` were (incorrectly) holding the lock during
+    validation, this nested non-blocking attempt would fail."""
+    path = tmp_path / "claims.json"
+    claim = claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(type="test_results", url="https://ok", label="tests")
+        ],
+    )
+    lock_path = path.with_name(path.name + ".lock")
+    observed: list[bool] = []
+
+    class _Result:
+        is_valid = True
+
+    def _validate(url):
+        observed.append(_lock_is_currently_free(lock_path))
+        return _Result()
+
+    published = claims.publish(path, claim.id, thesis="Shipped it", validate=_validate)
+
+    assert observed == [True]
+    assert published.status == "published"
+
+
+def test_revalidate_all_never_holds_the_lock_during_network_validation(tmp_path):
+    """Same proof as ``publish``'s own test, for ``revalidate_all`` --
+    every evidence link across every claim is validated (real HTTP, in
+    principle) before the lock is ever acquired."""
+    path = tmp_path / "claims.json"
+    claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(type="test_results", url="https://ok", label="tests")
+        ],
+    )
+    lock_path = path.with_name(path.name + ".lock")
+    observed: list[bool] = []
+
+    class _Result:
+        is_valid = True
+
+    def _validate(url):
+        observed.append(_lock_is_currently_free(lock_path))
+        return _Result()
+
+    claims.revalidate_all(path, validate=_validate)
+
+    assert observed == [True]
+
+
+def test_revalidate_all_scopes_validation_results_per_claim_not_globally(tmp_path):
+    """Story 13.1 pass-2 regression: two DIFFERENT claims sharing a
+    field-identical evidence entry (same url/type/label) must each keep
+    the outcome of ITS OWN validation call, never a sibling claim's.
+    ``Evidence`` is a frozen, value-equal dataclass, so a flat
+    ``dict[Evidence, Evidence]`` built across every claim's evidence would
+    collide the two identical entries onto the same dict key, letting the
+    second claim's validation call silently overwrite the first's stored
+    result. This test FAILS against that flat-dict shape (both claims
+    would end up with the SECOND call's outcome) and PASSES against the
+    per-claim-scoped ``validated_by_claim`` fix."""
+    path = tmp_path / "claims.json"
+    shared_evidence = claims.Evidence(
+        type="test_results", url="https://ci.example/run-1", label="CI run"
+    )
+    claims.create(path, project_name="alpha", evidence=[shared_evidence])
+    claims.create(path, project_name="beta", evidence=[shared_evidence])
+
+    # Alternate is_valid by call order: the first evidence entry validated
+    # (alpha's, claims are read back in creation order) gets True, the
+    # second (beta's) gets False. Both entries are BYTE-IDENTICAL Evidence
+    # values, so only a per-claim-scoped map can keep the two outcomes
+    # distinct instead of collapsing onto one shared dict key.
+    call_count = 0
+
+    class _Result:
+        def __init__(self, is_valid: bool) -> None:
+            self.is_valid = is_valid
+
+    def _validate(url):
+        nonlocal call_count
+        call_count += 1
+        return _Result(is_valid=(call_count == 1))
+
+    updated = claims.revalidate_all(path, validate=_validate)
+    by_project = {c.project_name: c for c in updated}
+
+    assert by_project["alpha"].evidence[0].validated is True
+    assert by_project["beta"].evidence[0].validated is False
