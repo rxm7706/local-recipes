@@ -37,7 +37,13 @@ not a ``{id: {...}}`` mapping, even though AD-55/P-11 describe entries as
 "keyed by stable artifact id": PyYAML's default (safe) loader silently
 overwrites duplicate mapping keys, which would make "duplicate ids are a
 load-time error" unenforceable -- the addressing scheme AD-55 names is a
-downstream concern (state, ``explain <id>``), not the wire shape.
+downstream concern (state, ``explain <id>``), not the wire shape. That same
+silent-overwrite hazard applies to every OTHER mapping in the document
+(two ``model_version:`` keys, two ``path:`` keys in one entry), so parsing
+goes through ``_StrictLoader``, which rejects any repeated key. Keys are
+also a closed vocabulary at all three levels -- an unrecognized key is an
+error, never ignored, because a typo in an optional field (``untl:``) is
+otherwise undetectable in the only review this file ever gets: a git diff.
 
 ``since``/``until`` bounds are half-open (``[since, until)``,
 ``version.in_range``) -- an undocumented-upstream, this-story's-own
@@ -89,9 +95,69 @@ class AppliesTo(StrEnum):
 
 class ManifestError(Exception):
     """Raised by ``load_manifest`` for any schema violation. The message is
-    always prefixed ``"<id>: "`` (the offending entry's id) or
-    ``"manifest: "`` for a top-level failure or an entry whose own id could
-    not be determined."""
+    always prefixed with a locator: ``"<id>: "`` (the offending entry's id),
+    ``"artifacts[N]: "`` (an entry whose own ``id`` could not be read, so it
+    is addressed by position), or ``"manifest: "`` (a top-level failure)."""
+
+
+class _StrictLoader(yaml.SafeLoader):
+    """``SafeLoader`` that rejects a repeated mapping key rather than
+    silently keeping the last one.
+
+    This module's own wire shape (``artifacts`` as a LIST, not an
+    ``{id: {...}}`` mapping) exists precisely because PyYAML's default
+    loader drops duplicate keys silently -- but that hazard is not confined
+    to the entry list. A manifest with two ``model_version:`` keys, or an
+    entry with two ``path:`` keys, would otherwise load clean with the
+    SECOND value winning, so the file a human reviewed in the diff is not
+    the file the engine loaded. ``ConstructorError`` is a ``YAMLError``, so
+    ``load_manifest``'s existing handler reports it as a ``ManifestError``.
+    """
+
+    def construct_mapping(self, node: Any, deep: bool = False) -> dict:
+        mapping = super().construct_mapping(node, deep=deep)
+        seen: set[Any] = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+            seen.add(key)
+        return mapping
+
+
+# Closed key vocabularies. An unrecognized key is an error, never ignored:
+# the manifest is a hand-authored contract whose only reviewer is a git
+# diff, and a one-character typo in an OPTIONAL field is otherwise
+# undetectable -- `untl:` means the entry never retires, a misspelled
+# `legacy_of` or `pin` simply vanishes.
+_DOCUMENT_KEYS = frozenset({"model_version", "never_write", "artifacts"})
+_ENTRY_KEYS = frozenset(
+    {
+        "id",
+        "class",
+        "path",
+        "applies_to",
+        "rationale",
+        "pin",
+        "format",
+        "regions",
+        "since",
+        "until",
+        "legacy_of",
+    }
+)
+_REGION_KEYS = frozenset({"name", "anchor"})
+
+
+def _reject_unknown_keys(raw_mapping: dict, allowed: frozenset[str], what: str) -> None:
+    unknown = sorted(str(key) for key in raw_mapping if key not in allowed)
+    if unknown:
+        raise ValueError(f"unrecognized {what} key(s): {', '.join(unknown)}")
 
 
 @dataclass(frozen=True)
@@ -152,14 +218,38 @@ class ManifestEntry:
         for region in self.regions:
             if not isinstance(region, Region):
                 raise ValueError(f"regions must contain only Region instances, got {region!r}")
+        # A region's name is its identity in the `marshal-seed:*` marker
+        # wire format (AD-64) -- two same-named regions give the writer two
+        # conflicting spans for one marker pair, and the idempotency check
+        # can no longer tell which span it owns.
+        region_names = [region.name for region in self.regions]
+        if len(set(region_names)) != len(region_names):
+            raise ValueError(f"region names must be unique within an entry, got {region_names!r}")
 
-        if self.artifact_class is ArtifactClass.REFERENCED and not self.pin:
-            raise ValueError("referenced entries require a non-empty pin")
+        # Class-appropriate fields, both directions. Requiring a field on
+        # its own class but ignoring it everywhere else is the silent
+        # failure this schema exists to prevent: an author who puts
+        # `regions:` on a `copied-managed` entry believes a region is
+        # managed, and nothing ever tells them it is not.
+        if self.artifact_class is ArtifactClass.REFERENCED:
+            if not self.pin:
+                raise ValueError("referenced entries require a non-empty pin")
+        elif self.pin is not None:
+            raise ValueError(f"pin is only valid on referenced entries, got {self.pin!r}")
         if self.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
             if not self.format:
                 raise ValueError("hybrid-managed-region entries require a non-empty format")
             if not self.regions:
                 raise ValueError("hybrid-managed-region entries require at least one region")
+        else:
+            if self.format is not None:
+                raise ValueError(
+                    f"format is only valid on hybrid-managed-region entries, got {self.format!r}"
+                )
+            if self.regions:
+                raise ValueError(
+                    f"regions are only valid on hybrid-managed-region entries, got {self.regions!r}"
+                )
 
         for name, value in (("since", self.since), ("until", self.until)):
             if value is not None and not isinstance(value, ModelVersion):
@@ -207,6 +297,7 @@ class Manifest:
 def _build_region(raw_region: Any) -> Region:
     if not isinstance(raw_region, dict):
         raise ValueError(f"region must be a mapping, got {raw_region!r}")
+    _reject_unknown_keys(raw_region, _REGION_KEYS, "region")
     # Extracted as Any, not the raw dict's own inferred `Unknown | None` --
     # these values are validated at runtime by Region.__post_init__, which
     # is the actual type boundary here; a static str/tuple annotation on a
@@ -219,13 +310,22 @@ def _build_region(raw_region: Any) -> Region:
     )
 
 
-def _parse_bound(raw_value: Any) -> ModelVersion | None:
+def _parse_bound(field_name: str, raw_value: Any) -> ModelVersion | None:
     if raw_value is None:
         return None
-    return ModelVersion.parse(raw_value)
+    try:
+        return ModelVersion.parse(raw_value)
+    except InvalidVersionError as exc:
+        # Name the bound. With both `since` and `until` present, an
+        # un-prefixed message leaves the operator guessing which line to
+        # edit -- and the top-level path already does this correctly
+        # ("manifest: model_version: ..."), so the loader was inconsistent
+        # with itself.
+        raise ValueError(f"{field_name}: {exc}") from exc
 
 
 def _build_entry(raw_entry: dict) -> ManifestEntry:
+    _reject_unknown_keys(raw_entry, _ENTRY_KEYS, "entry")
     raw_regions = raw_entry.get("regions")
     if raw_regions is None:
         raw_regions = []
@@ -249,8 +349,8 @@ def _build_entry(raw_entry: dict) -> ManifestEntry:
         pin=raw_entry.get("pin"),
         format=raw_entry.get("format"),
         regions=regions,
-        since=_parse_bound(raw_entry.get("since")),
-        until=_parse_bound(raw_entry.get("until")),
+        since=_parse_bound("since", raw_entry.get("since")),
+        until=_parse_bound("until", raw_entry.get("until")),
         legacy_of=raw_entry.get("legacy_of"),
     )
 
@@ -259,20 +359,30 @@ def load_manifest(path: Path) -> Manifest:
     """Read, validate, and version-filter one manifest YAML document.
 
     Raises ``ManifestError`` for every AC-listed schema violation (see the
-    module docstring's two-layer explanation): an unreadable file or
-    malformed YAML, a malformed top-level ``model_version``, a non-mapping
-    document, a non-list ``never_write``, a non-list ``artifacts``, any
-    entry-level shape violation (missing/wrong-type required field, an
-    unrecognized ``class``, a ``hybrid-managed-region`` entry missing
-    ``format``/``regions``, a ``referenced`` entry missing ``pin``, an
-    unparseable ``since``/``until``, or ``until <= since``), and a
-    duplicate ``id`` across entries.
+    module docstring's two-layer explanation): an unreadable, non-UTF-8, or
+    malformed-YAML file, a repeated mapping key anywhere in the document, a
+    non-mapping document, an unrecognized key at any level, a malformed
+    top-level ``model_version``, a ``never_write`` that is not a list of
+    non-empty str, a non-list ``artifacts``, any entry-level shape
+    violation (missing/wrong-type required field, an unrecognized
+    ``class``, a ``hybrid-managed-region`` entry missing
+    ``format``/``regions``, a ``referenced`` entry missing ``pin``, a
+    ``pin``/``format``/``regions`` on a class that does not take one,
+    duplicate region names within an entry, an unparseable
+    ``since``/``until``, or ``until <= since``), and a duplicate ``id``
+    across entries.
     """
     try:
         with path.open("r", encoding="utf-8") as handle:
-            raw_document = yaml.safe_load(handle)
+            # _StrictLoader is a SafeLoader subclass -- no arbitrary-object
+            # construction, just SafeLoader plus duplicate-key rejection.
+            raw_document = yaml.load(handle, Loader=_StrictLoader)
     except OSError as exc:
         raise ManifestError(f"manifest: could not read {path}: {exc}") from exc
+    except UnicodeDecodeError as exc:
+        # A ValueError, NOT an OSError -- so a manifest saved in any
+        # non-UTF-8 encoding escaped the ManifestError-only contract.
+        raise ManifestError(f"manifest: {path} is not valid UTF-8: {exc}") from exc
     except yaml.YAMLError as exc:
         raise ManifestError(f"manifest: invalid YAML in {path}: {exc}") from exc
 
@@ -281,19 +391,28 @@ def load_manifest(path: Path) -> Manifest:
             f"manifest: top-level document must be a mapping, got {raw_document!r}"
         )
 
+    try:
+        _reject_unknown_keys(raw_document, _DOCUMENT_KEYS, "top-level")
+    except ValueError as exc:
+        raise ManifestError(f"manifest: {exc}") from exc
+
     raw_model_version: Any = raw_document.get("model_version")
     try:
         model_version = ModelVersion.parse(raw_model_version)
-    except InvalidVersionError as exc:
+    except ValueError as exc:
+        # ValueError, not just InvalidVersionError: its own superclass also
+        # covers the numeric components parse() cannot convert.
         raise ManifestError(f"manifest: model_version: {exc}") from exc
 
     raw_never_write = raw_document.get("never_write")
     if raw_never_write is None:
         raw_never_write = []
     if not isinstance(raw_never_write, list) or not all(
-        isinstance(item, str) for item in raw_never_write
+        isinstance(item, str) and item for item in raw_never_write
     ):
-        raise ManifestError("manifest: never_write must be a list of str")
+        # Non-empty, like every other string field here: an empty pattern
+        # reaching S-7.3's guard could match every path.
+        raise ManifestError("manifest: never_write must be a list of non-empty str")
     never_write = tuple(raw_never_write)
 
     raw_artifacts = raw_document.get("artifacts")
