@@ -703,3 +703,79 @@ unlinked one emits a named, greppable error.
 an unmapped value is a hard logged failure, never a pass-through inventing a state.
 **Status:** backlog
 
+## Epic 9: Secure live dashboards
+
+**Value delivered.** The reusable role-based live-dashboard pattern of
+`spec-secure-live-dashboards` (ready, 8 CAPs, architecture final 2026-08-09): identity at the
+ASGI boundary, declared row-isolation, role-built navigation, a see-what-was-seen audit
+trail, server-gated export, a shipped perimeter, non-vacuous proof tests, and hosted-or-static
+without a fork. Atlas's Vizro board is the first adopter, not the subject. ASGI stack ships as
+the `pyforge-steward[dashboard]` **optional extra** per unified-container AD-1 — never a base
+dependency.
+
+> **Operator override, recorded 2026-08-10 (in-session, "steward secure-dashboard").** The
+> registry's revisit condition for this Spec was *"Epic 8 completes"* — Epic 8 is **1/5** at
+> authoring (8-1 done; 8-2/8-3 dispatchable; 8-4/8-5 blocked NEEDS-RESPEC). The concern was
+> raised and the operator directed decomposition anyway. Consequence to schedule around: a
+> steward run will interleave Epic 8's remainder with this epic; nothing here depends on
+> Epic 8, so the interleave is a throughput choice, not a correctness risk.
+
+**Companion binding.** The Spec's `ARCHITECTURE-SPINE` companion is the build contract:
+AD-1 (optional extra), **AD-4** (refuse to start when identity headers arrive from outside
+declared ingress), **AD-5** (no role-filtered dataset in the shared cache), **AD-6**
+(API shape enforces filter-then-search), **AD-7** (retention declared, no default,
+deployment refused without it), **AD-11/AD-12** (per-message isolation), **AD-14** (SQLite
+dev / Postgres deploy). Each is cited by the story that owns it — an earlier draft cited
+only AD-1 and was refused on review.
+
+### Story 9.1: Identity at the boundary, declared isolation, and the cache invariant
+**Type:** foundation • **Effort:** L • **Deps:** none • **FR/AD:** CAP-1, CAP-2; AD-4, AD-5, AD-14
+**Surface:** ASGI middleware, adopter-declaration schema, cache layer
+**Given** a request **Then** identity and role arrive from the request at the ASGI boundary
+(the pattern authenticates no one) and the adopter DECLARES its access column and roles
+rather than implementing filtering. **AD-4:** identity headers arriving from outside the
+declared ingress refuse the start, not the request. **CAP-2's real invariant (AD-5):** two
+concurrent users of different roles produce **one** upstream fetch and **a role-filtered
+frame is never written back to the shared cache** — asserted by test, not documented.
+**AD-14:** SQLite in dev, Postgres in deployment.
+
+### Story 9.2: An unauthorized page is absent, not hidden
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-3; AD-6
+**Surface:** navigation builder, API surface
+**Given** a caller's role **Then** the navigation tree is constructed from it — a page the
+user cannot access does not exist in their tree — and the API shape enforces
+filter-then-search (AD-6), never search-then-filter.
+
+### Story 9.3: The audit trail records what was seen
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-4; AD-7, AD-11, AD-12
+**Surface:** audit-trail store, retention config
+**Given** any data load, filter, navigation or export **Then** a durable role-isolated trail
+entry records what was actually seen, not merely that an event fired; **retention is declared
+with no default and deployment is refused without it** (AD-7); per-message isolation holds
+(AD-11/12).
+
+### Story 9.4: Export gated server-side
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-5
+**Surface:** export endpoint
+**Given** an export request **Then** authorization is enforced server-side (no client-side
+gate is trusted) and the export may be encrypted.
+
+### Story 9.5: The perimeter ships with the pattern
+**Type:** infra • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-6; AD-1
+**Surface:** `pyforge-steward[dashboard]` extra, deployment manifests, edge config
+**Given** an adopter **Then** they receive a production-shaped runtime rather than assembling
+one: Django+Channels+Daphne via the optional extra **plus the edge that terminates TLS and
+enforces network policy** (CAP-6's clause an earlier draft dropped).
+
+### Story 9.6: Isolation proven by tests that cannot pass vacuously
+**Type:** test • **Effort:** L • **Deps:** S-9.2, S-9.3, S-9.4, S-9.5 • **FR/AD:** CAP-7
+**Surface:** proof suite
+**Given** the proof suite **Then** it impersonates distinct identities and **fails loudly if
+isolation is removed** — a suite that cannot fail is a failing suite; the cache invariant
+(9.1) and the retention refusal (9.3) each carry a mutation-proof case.
+
+### Story 9.7: Hosted or static, no fork
+**Type:** feature • **Effort:** M • **Deps:** S-9.1 • **FR/AD:** CAP-8
+**Surface:** static-export path
+**Given** a board needing no isolation **Then** the same definition publishes as a static
+GitHub-Pages site — mutually exclusive with role isolation, never a second codebase.
