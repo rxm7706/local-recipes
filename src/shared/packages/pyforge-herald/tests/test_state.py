@@ -6,10 +6,12 @@ never assumes a cwd, so no test here may either.
 
 from __future__ import annotations
 
+import threading
+import time
 from pathlib import Path
 
 import pytest
-
+from pyforge.herald import state as state_module
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.state import DEFAULT_STATE_PATH, DeckState, read, write
 
@@ -134,14 +136,14 @@ def test_write_blocked_by_a_plain_file_in_the_parent_path_raises_herald_error(
     tmp_path: Path,
 ):
     """A plain file where the `.herald` directory should be must surface as
-    a HeraldError, not a bare FileExistsError/NotADirectoryError. The
-    pre-write load is what trips (``open()`` through a plain-file parent
-    raises ``NotADirectoryError``, wrapped as "could not be read"); write's
-    own mkdir wrap would catch the same shape racing into place later."""
+    a HeraldError, not a bare FileExistsError/NotADirectoryError. The lock
+    acquisition (Story 13.1) now trips first -- it needs the same parent
+    directory to hold the sidecar `.lock` file -- and wraps the mkdir
+    failure as "could not be acquired" itself."""
     blocker = tmp_path / ".herald"
     blocker.write_text("not a directory")
     state_path = blocker / "bridge-state.json"
-    with pytest.raises(HeraldError, match="could not be read"):
+    with pytest.raises(HeraldError, match="could not be acquired"):
         write(state_path, "x", DeckState(project_id="p1", etags={}))
 
 
@@ -273,3 +275,53 @@ def test_write_refuses_a_state_that_is_not_a_deck_state(tmp_path: Path):
     with pytest.raises(HeraldError, match="must be a DeckState"):
         write(state_path, "x", {"project_id": "p1", "etags": {}})
     assert not state_path.exists()
+
+
+def test_two_concurrent_writers_for_different_slugs_both_land(
+    tmp_path: Path, monkeypatch
+):
+    """Story 13.1 regression: two ``write`` calls for different slugs
+    racing the same file must both survive -- forced, deterministic
+    interleaving (not a timing-dependent sleep race). A monkeypatched delay
+    is inserted right after ``_load_document`` reads the (pre-write)
+    document, so whichever writer reads first pauses long enough for the
+    other writer's own full read-modify-write cycle to run during that
+    pause -- unlocked, both readers see a document missing the other's
+    slug, and one writer's ``os.replace`` clobbers the other's; locked, a
+    second writer cannot even begin its read until the first has released
+    the lock (finished its own write), so both survive regardless of the
+    pause. Fails against the pre-fix (unlocked) code, passes against the
+    fixed code -- confirmed locally by commenting out ``write``'s
+    ``locking.locked`` call."""
+    state_path = tmp_path / "bridge-state.json"
+    original_load_document = state_module._load_document
+
+    def delayed_load_document(path):
+        document = original_load_document(path)
+        time.sleep(0.2)
+        return document
+
+    monkeypatch.setattr(state_module, "_load_document", delayed_load_document)
+
+    barrier = threading.Barrier(2)
+
+    def writer(slug: str, deck_state: DeckState) -> None:
+        barrier.wait(timeout=5)
+        write(state_path, slug, deck_state)
+
+    state_a = DeckState(project_id="p-a", etags={}, last_pull=None)
+    state_b = DeckState(project_id="p-b", etags={}, last_pull=None)
+    t1 = threading.Thread(target=writer, args=("a", state_a))
+    t2 = threading.Thread(target=writer, args=("b", state_b))
+    t1.start()
+    t2.start()
+    # Bounded joins plus an explicit liveness assertion: without it a genuine
+    # deadlock regression fails below with a confusing content mismatch that
+    # reads as a lost update rather than a hang, and leaves two abandoned
+    # threads still holding the lock for the rest of the session.
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
+
+    assert read(state_path, "a") == state_a
+    assert read(state_path, "b") == state_b
