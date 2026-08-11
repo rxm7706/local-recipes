@@ -3728,7 +3728,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 11:13 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 11:26 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6081,7 +6081,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-02",
           "epics": "2026-08-10",
-          "sprint": "2026-08-10",
+          "sprint": "2026-08-11",
           "tea": "2026-08-10",
           "gates": "2026-08-10",
           "code": "2026-08-07",
@@ -13125,7 +13125,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
+        "state": "green",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -13802,15 +13802,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 223,
+    "open": 227,
     "done": 22,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
-      "medium": 9,
+      "medium": 11,
       "low": 25,
-      "unspecified": 188
+      "unspecified": 190
     },
     "projects": [
       {
@@ -15203,7 +15203,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-steward",
         "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
-        "open": 22,
+        "open": 23,
         "done": 1,
         "triaged": 0,
         "entries": [
@@ -15367,13 +15367,20 @@ window.DASHBOARD_DATA = {
             "status": "done",
             "severity": "unspecified",
             "triaged": true
+          },
+          {
+            "id": "DW-9-1-1",
+            "title": "source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-9-1-identity-at-the-boundary-declared-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 15,
+        "open": 17,
         "done": 1,
         "triaged": 3,
         "entries": [
@@ -15488,6 +15495,78 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "medium",
             "triaged": false
+          },
+          {
+            "id": "DW-FU-7-2",
+            "title": "Whether the backlog's growth from 470 to 506 predates or postdates Story 7.1's merge is unverified, so this baseline nei",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-2-2",
+            "title": "A project whose Tier-3 file is deleted can never have its baseline entry lowered or zeroed via `--project`",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-mason",
+        "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
+        "open": 7,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-3-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-10-configuration-surface-logging-and-child-output-streaming.m",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2",
+            "title": "Follow-up review still recommended for 2-2-the-seam-guard after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-3-1",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-3-credential-isolation.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
@@ -15548,57 +15627,6 @@ window.DASHBOARD_DATA = {
             "triaged": false
           }
         ]
-      },
-      {
-        "project": "pyforge-mason",
-        "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
-        "open": 6,
-        "done": 0,
-        "triaged": 0,
-        "entries": [
-          {
-            "id": "DW-1-3-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-2",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-2",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-10-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-10-configuration-surface-logging-and-child-output-streaming.m",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-2",
-            "title": "Follow-up review still recommended for 2-2-the-seam-guard after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          }
-        ]
       }
     ]
   },
@@ -15613,8 +15641,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260810-194532-e993/13-2-the-serverless-intermediate-decision-recorded into loop/pyforge-herald (bmad-l"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 11:13 UTC",
-    "generatedEpoch": 1786446821
+    "generatedAt": "2026-08-11 11:26 UTC",
+    "generatedEpoch": 1786447591
   },
   "storySpecs": [
     {
