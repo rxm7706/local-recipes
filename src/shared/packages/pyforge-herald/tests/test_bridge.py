@@ -24,6 +24,7 @@ from pyforge.herald import (
     deck_pipeline,
     errors,
     evidence,
+    locking,
     notices,
     progress,
     registry,
@@ -139,6 +140,7 @@ _BRIDGE_CORE_MODULES = (
     watch,
     progress,
     notices,
+    locking,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -163,7 +165,11 @@ joins for the same reason again: it is a plain local-JSON persistence
 module with no transport or argv-parsing concerns of its own.
 ``notices.py`` (Epic 10, Moment 4) joins for the same reason again: local
 markdown/JSON storage only, no transport call and no inference SDK, so it
-has no legitimate reason to import either denylist below."""
+has no legitimate reason to import either denylist below. ``locking.py``
+(Story 13.1) joins for the same reason once more: a stdlib-only
+(``fcntl``/``msvcrt``) advisory-lock primitive shared by ``state.py``/
+``progress.py``/``claims.py``/``notices.py``'s read-modify-write spans --
+no transport call, no inference SDK, no argv parsing."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name

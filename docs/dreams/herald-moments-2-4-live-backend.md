@@ -2,7 +2,7 @@
 title: Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered
 type: dream
 owner: herald
-status: dreamt
+status: specified
 ---
 
 # Herald Moments 2-4 run on a real live backend, not local-storage/CLI-triggered
@@ -100,3 +100,7 @@ follow-up on top of it, not a replacement) · [[herald-moments-2-4-missing-surfa
   Flagged to the user rather than silently invented; user chose to build Epics 8-10's
   first pass scaled down to local-storage/CLI-triggered, and asked for this Dream to
   capture the full-spec live-backend version for later.
+
+- **2026-08-10** — Specified: operator go in-session ("herald live-backend"); Spec at
+  `ready`, decomposed as herald Epic 13 (6 stories) with the concurrency prerequisite as
+  S-13.1 and the Spec's serverless-intermediates brake preserved as S-13.2.
