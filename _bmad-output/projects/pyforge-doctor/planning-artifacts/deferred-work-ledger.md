@@ -116,3 +116,21 @@ Durability first; curation is owned follow-up work.
     archaeology someone performs later.
   severity: low
   status: open
+
+### DW-FU-7-1: The Review Triage Log's `addressed_findings` never itemizes `defer` entries by the id they were just minted
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
+  summary: The Review Triage Log's `addressed_findings` never itemizes `defer` entries by the id they were just minted, unlike `patch`/`bad_spec`, so a review pass and the DW id(s) it produced aren't linked anywhere in the spec file itself.
+  evidence: Found by review pass 1 (Blind Hunter, independent adversarial pass on this story's own diff). Confirmed by inspection of `step-04-review.md`'s Classify section (step 4): the triage-log template records only `intent_gap`/`bad_spec`/`patch`/`defer`/`reject` counts plus a free-text `addressed_findings` list, and only the `patch`/`bad_spec` triage branches (step 5) actually instruct listing specifics under `addressed_findings` — the `defer` branch never did, before or after this story's edit. Pre-existing (not introduced by this story's change to the `defer` bullet itself), but now more valuable to close since `defer` entries carry real, citable ids going forward. Deferred rather than patched in this pass: fixing it means extending the Classify section's shared triage-log format and step 5's `defer` branch — a change to a different part of the file than this story's own scoped edit — and deserves its own focused pass.
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass for doctor 7-1)
+
+
+### DW-FU-7-1-2: The `DW-FU-{story}` shape this story mints for non-mason stations already has an established, different meaning
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
+  summary: The `DW-FU-{story}` id shape this story mints for every non-mason station's generic `defer` findings is the exact same shape the pre-existing "follow-up review still recommended" promotion mechanism already uses exclusively, under a different field schema (`origin`/`severity`/`reason`/`status` there vs. `source_spec`/`summary`/`evidence` here) — collision-safe by suffix, but no longer distinguishable by id prefix alone.
+  evidence: Found by review pass 1 (Blind Hunter). Confirmed by inspection of all four `### DW-FU-*` entries currently in `_bmad-output/planning-artifacts/deferred-work-ledger.md` (`DW-FU-6-4`, `DW-FU-6-5`, `DW-FU-6-6`, `DW-FU-6-8`) — every one carries `summary: Follow-up review still recommended for ...` and a `promoted:` annotation; none is a generic defer. This story's own convention (`DW-FU-{story}` for doctor/atlas/marshal/warden) is taken literally from the epic/SPEC text (`_bmad-output/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`'s Constraints section), which does not address this overlap. Not patched in this pass: the epic's convention is explicit and was operator-confirmed the same day as this story, so resolving the overlap (e.g. giving generic defers a distinct discriminator) is a deliberate planning-level decision above this story's remit, not something an unattended pass should silently override.
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass for doctor 7-1)
+
