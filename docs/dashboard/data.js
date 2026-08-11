@@ -3728,7 +3728,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 10:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 11:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4484,7 +4484,7 @@ window.DASHBOARD_DATA = {
       "title": "herald-moments-2-4-live-backend",
       "caps": 5,
       "companions": 0,
-      "updated": "2026-08-10",
+      "updated": "2026-08-11",
       "dream": "herald-moments-2-4-live-backend",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
     },
@@ -4924,7 +4924,7 @@ window.DASHBOARD_DATA = {
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-10",
+      "updated": "2026-08-11",
       "dream": "pyforge-steward",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
     },
@@ -5791,7 +5791,7 @@ window.DASHBOARD_DATA = {
     "live": 31,
     "reached": 8,
     "gaps": 29,
-    "findings": 18,
+    "findings": 19,
     "rows": [
       {
         "label": "atlas",
@@ -6161,8 +6161,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "48/53",
@@ -6576,11 +6576,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-10",
-          "sprint": "2026-08-10",
-          "tea": "2026-08-10",
+          "sprint": "2026-08-11",
+          "tea": "2026-08-11",
           "gates": "2026-08-10",
-          "code": "2026-08-07",
-          "verify": "2026-08-07",
+          "code": "2026-08-11",
+          "verify": "2026-08-11",
           "retro": "2026-08-08"
         },
         "sub": {
@@ -6653,11 +6653,18 @@ window.DASHBOARD_DATA = {
             "than": "prd",
             "at": "2026-08-11T10:42",
             "other": "2026-08-01"
+          },
+          {
+            "kind": "feeds",
+            "stage": "code",
+            "than": "retro",
+            "at": "2026-08-11",
+            "other": "2026-08-08"
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "32/40",
@@ -7760,7 +7767,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T19:35",
+          "spec": "2026-08-11T09:17",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -7831,8 +7838,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7937,8 +7944,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8044,8 +8051,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12080,8 +12087,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12186,8 +12193,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12297,8 +12304,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12403,8 +12410,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12514,8 +12521,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12625,8 +12632,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -15606,8 +15613,8 @@ window.DASHBOARD_DATA = {
       "subject": "marshal: dream + spec + Story 5.8 for the supervisor-liveness fallback gap"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 10:54 UTC",
-    "generatedEpoch": 1786445664
+    "generatedAt": "2026-08-11 11:03 UTC",
+    "generatedEpoch": 1786446215
   },
   "storySpecs": [
     {
@@ -15625,8 +15632,8 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-herald",
       "done": 48,
-      "tracked": 47,
-      "gap": 1
+      "tracked": 48,
+      "gap": 0
     },
     {
       "station": "pyforge-marshal",
