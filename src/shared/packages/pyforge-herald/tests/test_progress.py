@@ -354,8 +354,13 @@ def test_two_concurrent_upserts_for_different_stations_both_land(
     t2 = threading.Thread(target=writer, args=("atlas",))
     t1.start()
     t2.start()
+    # Bounded joins plus an explicit liveness assertion: without it a genuine
+    # deadlock regression fails below with a confusing content mismatch that
+    # reads as a lost update rather than a hang, and leaves two abandoned
+    # threads still holding the lock for the rest of the session.
     t1.join(timeout=5)
     t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
 
     stations = {r.station for r in original_read_all(progress_path)}
     assert stations == {"warden", "atlas"}

@@ -350,8 +350,13 @@ def test_two_concurrent_authors_for_different_components_both_land(
     t2 = threading.Thread(target=author, args=("component-b",))
     t1.start()
     t2.start()
+    # Bounded joins plus an explicit liveness assertion: without it a genuine
+    # deadlock regression fails below with a confusing content mismatch that
+    # reads as a lost update rather than a hang, and leaves two abandoned
+    # threads still holding the lock for the rest of the session.
     t1.join(timeout=5)
     t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
 
     components = {n.component for n in notices.list_notices(tmp_path, status="all")}
     assert components == {"component-a", "component-b"}
@@ -385,3 +390,41 @@ def test_mutating_calls_leave_no_files_behind_when_no_index_exists(
     assert list(tmp_path.iterdir()) == [], (
         "a failed mutating call left files behind where there was no index"
     )
+
+
+@pytest.mark.parametrize(
+    ("call", "wrong_message"),
+    [
+        (lambda root: notices.publish_notice(root, "auth-api-v1"), "no notice found"),
+        (lambda root: notices.close_notice(root, "auth-api-v1"), "no notice found"),
+        (
+            lambda root: notices.archive_rename(root, "auth-api-v1", "auth-api-v2"),
+            "no notice exists for it yet",
+        ),
+    ],
+    ids=["publish", "close", "rename"],
+)
+def test_an_unreadable_index_is_never_reported_as_a_missing_notice(
+    tmp_path: Path, call, wrong_message
+):
+    """The pre-lock fail-fast must distinguish "no index" from "the index
+    cannot be read".
+
+    A ``Path.exists()`` check cannot: it returns ``False`` whenever the stat
+    itself fails (symlink loop, unsearchable parent, EACCES, EIO), so an
+    index that is present but unreadable would be reported as a missing
+    notice -- sending the operator after the wrong problem, and silently
+    replacing the ``could not be read`` error these calls raised before
+    Story 13.1. ``state.read``'s docstring records the same hazard as the
+    reason it has no ``exists()`` pre-check either.
+
+    A self-referential symlink is the uid-independent way to make ``stat``
+    fail with something other than ENOENT (a ``chmod`` test would pass
+    trivially under root)."""
+    index_path = tmp_path / ".herald" / "notices-index.json"
+    index_path.parent.mkdir(parents=True)
+    index_path.symlink_to(index_path)
+
+    with pytest.raises(HeraldError, match="could not be read") as excinfo:
+        call(tmp_path)
+    assert wrong_message not in str(excinfo.value)

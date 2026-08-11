@@ -239,14 +239,29 @@ def test_a_failing_teardown_never_masks_the_guarded_block(tmp_path: Path, monkey
     (AD-6). Both teardown steps are suppressed; the fd is freed by the OS
     either way."""
     lock_path = tmp_path / "doc.lock"
+    real_open = os.open
     real_close = os.close
+    ours: set[int] = set()
     closed: list[int] = []
 
+    def tracking_open(*args, **kwargs) -> int:
+        fd = real_open(*args, **kwargs)
+        ours.add(fd)
+        return fd
+
     def failing_close(fd: int) -> None:
-        closed.append(fd)
+        # Scoped to the descriptors `locked` itself opened. `locking.os` IS
+        # the global `os` module, so an unconditional patch would make every
+        # `os.close` in the interpreter fail for the duration of this test --
+        # safe only by accident today, and a trap for anything later added to
+        # this test body (a subprocess, a tempfile error path, a capfd read).
         real_close(fd)
+        if fd not in ours:
+            return
+        closed.append(fd)
         raise OSError(errno.EIO, "close failed")
 
+    monkeypatch.setattr(locking.os, "open", tracking_open)
     monkeypatch.setattr(locking.os, "close", failing_close)
 
     with (
@@ -274,6 +289,30 @@ def test_lock_path_for_refuses_a_path_with_no_file_name():
     for bad in (Path("/"), Path(".")):
         with pytest.raises(HeraldError, match="not a file path"):
             locking.lock_path_for(bad)
+
+
+def test_locked_raises_herald_error_when_the_lock_call_itself_fails(
+    tmp_path: Path, monkeypatch
+):
+    """The OTHER acquisition-failure wrap: everything else here trips on
+    ``mkdir``/``os.open``, so nothing drove the ``_acquire`` branch -- the
+    one the Windows ``EDEADLOCK``-only retry exists to make reachable. A
+    permanent lock failure (EACCES, EBADF, EINVAL, a volume without
+    byte-range locking) must surface as ``HeraldError`` naming the lock
+    path, never as the raw ``OSError`` ``_acquire`` re-raises."""
+    lock_path = tmp_path / "doc.lock"
+
+    def failing_acquire(fd: int) -> None:
+        raise OSError(errno.EINVAL, "lock unsupported on this volume")
+
+    monkeypatch.setattr(locking, "_acquire", failing_acquire)
+
+    with (
+        pytest.raises(HeraldError, match=str(lock_path)) as excinfo,
+        locking.locked(lock_path),
+    ):
+        pytest.fail("the guarded block must not run when acquire fails")
+    assert isinstance(excinfo.value.__cause__, OSError)
 
 
 def test_locked_raises_herald_error_on_unwritable_parent_directory(tmp_path: Path):

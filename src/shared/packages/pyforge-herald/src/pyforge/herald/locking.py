@@ -47,6 +47,20 @@ that cannot be opened, the OS-level lock call itself failing) raise
 ``errors.HeraldError`` naming the lock path, matching every other
 structural-failure path in this package (AD-6) rather than leaking a raw
 ``OSError``.
+
+Lock *teardown* failures deliberately do not, and that asymmetry is worth
+stating plainly because this story's spec asks for both directions. Release
+and close both run in a ``finally`` after the guarded block, where raising
+would replace whatever exception that block itself raised -- turning an
+accurate "claims.json could not be written" into a misleading "close
+failed", and leaking a raw ``OSError`` out of a module documenting
+``HeraldError`` as its only failure mode. Both are therefore suppressed:
+the AD-6 intent behind the spec's bullet (never surface a raw ``OSError``)
+is honored, its literal "raise on release failure" is not. The trade-off is
+that a release failure is silent; in practice ``flock(LOCK_UN)`` /
+``msvcrt.locking(LK_UNLCK)`` fail only on an already-invalid descriptor,
+and the immediately following close (or, failing that, process exit)
+releases the lock regardless.
 """
 
 from __future__ import annotations
@@ -176,7 +190,12 @@ def locked(lock_path: Path) -> Iterator[None]:
         # (EIO on an odd filesystem, EBADF) must not replace the real
         # exception the guarded block raised, nor leak a raw `OSError` out
         # of a call this module documents as raising `HeraldError` only
-        # (AD-6). The fd is released by the OS regardless -- on Linux
-        # `close` frees the descriptor even when it reports an error.
+        # (AD-6). On Linux the fd is freed even when `close` reports an
+        # error, so nothing leaks there. Windows gives no such guarantee,
+        # so a failing close there could strand this descriptor -- and with
+        # it the byte-range lock -- until the process exits; that is
+        # accepted as the lesser harm against masking the guarded block's
+        # real exception, and it resolves on exit like every other lock
+        # this module takes.
         with contextlib.suppress(OSError):
             os.close(fd)

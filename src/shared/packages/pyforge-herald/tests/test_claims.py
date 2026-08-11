@@ -597,8 +597,13 @@ def test_two_concurrent_creates_for_different_projects_both_land(tmp_path, monke
     t2 = threading.Thread(target=creator, args=("beta",))
     t1.start()
     t2.start()
+    # Bounded joins plus an explicit liveness assertion: without it a genuine
+    # deadlock regression fails below with a confusing content mismatch that
+    # reads as a lost update rather than a hang, and leaves two abandoned
+    # threads still holding the lock for the rest of the session.
     t1.join(timeout=5)
     t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
 
     project_names = {c.project_name for c in original_read_all(path)}
     assert project_names == {"alpha", "beta"}
@@ -754,8 +759,13 @@ def test_concurrent_publish_on_the_same_claim_rejects_the_second_caller(
     t2 = threading.Thread(target=publisher, args=("thesis-b",))
     t1.start()
     t2.start()
+    # Bounded joins plus an explicit liveness assertion: without it a genuine
+    # deadlock regression fails below with a confusing content mismatch that
+    # reads as a lost update rather than a hang, and leaves two abandoned
+    # threads still holding the lock for the rest of the session.
     t1.join(timeout=5)
     t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
 
     assert len(results) == 1, "exactly one concurrent publish() must succeed"
     assert len(state_errors) == 1, (
@@ -1303,6 +1313,93 @@ def test_revalidate_all_does_not_stamp_updated_at_when_evidence_is_emptied(tmp_p
 
     assert out[0].updated_at == original_updated_at
     assert claims.read_all(claims_path)[0].updated_at == original_updated_at
+
+
+def test_revalidate_does_not_stamp_updated_at_when_evidence_appears_concurrently(
+    tmp_path,
+):
+    """The mirror image of the emptied-concurrently case: a claim that had
+    NO evidence when this run read it, given evidence by a concurrent writer
+    during the unlocked window.
+
+    Zero ``validate`` calls were made, so not one of the entries about to be
+    written was checked by this run -- stamping ``updated_at`` would assert a
+    validation that never happened, the same defect the emptied-concurrently
+    guard closes from the other direction. A guard keyed only on
+    ``original_evidence`` misses it, because the tuple this run validated is
+    the empty one."""
+    claims_path = tmp_path / "claims.json"
+    claims.create(
+        claims_path,
+        project_name="proj",
+        id_factory=lambda: "id-1",
+        now=_fixed_now("2020-01-01T00:00:00+00:00"),
+    )
+    original_updated_at = claims.read_all(claims_path)[0].updated_at
+    added = claims.Evidence(url="https://example.com/a", type="other", label="A")
+
+    def now_then_add_evidence():
+        # `revalidate` calls now() after its pre-lock read and before the
+        # lock -- the only seam available here, since a claim with no
+        # evidence never calls `validate` at all.
+        concurrent = claims.read_all(claims_path)
+        concurrent[0] = replace(concurrent[0], evidence=(added,))
+        claims._write_all(claims_path, concurrent)
+        return datetime.fromisoformat("2026-08-10T00:00:00+00:00")
+
+    out = claims.revalidate(claims_path, "id-1", now=now_then_add_evidence)
+
+    assert out.updated_at == original_updated_at
+    stored = claims.read_all(claims_path)[0]
+    assert stored.updated_at == original_updated_at
+    assert stored.evidence == (added,), "the concurrent writer's entry was clobbered"
+    assert stored.evidence[0].validated_at is None, (
+        "an entry this run never validated carries this run's validation stamp"
+    )
+
+
+def test_revalidate_all_does_not_stamp_updated_at_when_evidence_appears(tmp_path):
+    """``revalidate_all``'s twin of the case above -- and proof it stays
+    per-claim: the sibling claim this run DID validate is still updated
+    normally."""
+    claims_path = tmp_path / "claims.json"
+    checked = claims.Evidence(url="https://example.com/b", type="other", label="B")
+    claims.create(
+        claims_path,
+        project_name="proj",
+        id_factory=lambda: "id-1",
+        now=_fixed_now("2020-01-01T00:00:00+00:00"),
+    )
+    claims.create(
+        claims_path,
+        project_name="proj",
+        evidence=(checked,),
+        id_factory=lambda: "id-2",
+        now=_fixed_now("2020-01-01T00:00:00+00:00"),
+    )
+    original_updated_at = claims.read_all(claims_path)[0].updated_at
+    added = claims.Evidence(url="https://example.com/a", type="other", label="A")
+
+    def validate_then_add_evidence(url: str):
+        # Called only for id-2's entry; id-1 has nothing to validate. Use it
+        # as the seam that gives id-1 evidence mid-window.
+        stored = claims.read_all(claims_path)
+        stored[0] = replace(stored[0], evidence=(added,))
+        claims._write_all(claims_path, stored)
+        return _ok(url)
+
+    out = claims.revalidate_all(
+        claims_path,
+        validate=validate_then_add_evidence,
+        now=_fixed_now("2026-08-10T00:00:00+00:00"),
+    )
+
+    by_id = {c.id: c for c in out}
+    assert by_id["id-1"].updated_at == original_updated_at
+    assert by_id["id-1"].evidence == (added,)
+    assert by_id["id-1"].evidence[0].validated_at is None
+    assert by_id["id-2"].updated_at == "2026-08-10T00:00:00+00:00"
+    assert by_id["id-2"].evidence[0].validated is True
 
 
 def test_revalidate_still_stamps_updated_at_for_a_claim_with_no_evidence(tmp_path):

@@ -315,8 +315,13 @@ def test_two_concurrent_writers_for_different_slugs_both_land(
     t2 = threading.Thread(target=writer, args=("b", state_b))
     t1.start()
     t2.start()
+    # Bounded joins plus an explicit liveness assertion: without it a genuine
+    # deadlock regression fails below with a confusing content mismatch that
+    # reads as a lost update rather than a hang, and leaves two abandoned
+    # threads still holding the lock for the rest of the session.
     t1.join(timeout=5)
     t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
 
     assert read(state_path, "a") == state_a
     assert read(state_path, "b") == state_b

@@ -51,9 +51,11 @@ means the two files can never drift out of sync with each other the way a
 second stored copy of the same fact could.
 
 **Concurrency (Story 13.1, closing ``DW-1-4-2``).** ``create`` has no
-network step, so it locks its whole function body (``locking.locked`` on a
-sidecar ``<claims_path>.lock`` file), the same convention ``state.py``/
-``progress.py`` use. ``publish``/``revalidate``/``revalidate_all`` each
+network step, so it locks its whole read-modify-write span (``locking.locked``
+on a sidecar ``<claims_path>.lock`` file), the same convention ``state.py``/
+``progress.py`` use -- everything except its pure, no-I/O argument checks,
+which run before the lock so a call that cannot succeed fails fast instead
+of contending first (see ``create``'s own docstring). ``publish``/``revalidate``/``revalidate_all`` each
 call ``evidence_mod.validate_link``/``validate_for_publish`` per evidence
 entry -- a real HTTP request -- so the lock must never span that network
 I/O (a lock held across a live HTTP call would block every other claims
@@ -708,21 +710,29 @@ def revalidate(
             i < len(original_evidence) and e == original_evidence[i]
             for i, e in enumerate(fresh_claim.evidence)
         ]
-        if original_evidence and not any(carried):
-            # This run validated something, and a concurrent writer changed
-            # (or removed) every one of those entries during the unlocked
-            # window, so the discard-stale rule dropped every result. Leave
-            # the claim byte-for-byte unchanged (including `updated_at`:
-            # stamping it would claim a validation that never landed) --
+        if (original_evidence or fresh_claim.evidence) and not any(carried):
+            # Not one of this run's results survived onto the claim about to
+            # be written, so `updated_at` would assert a validation that
+            # never landed. Leave the claim byte-for-byte unchanged -- the
             # same rule `revalidate_all` applies to a claim it never
-            # validated. Guarded on `original_evidence`, NOT on
-            # `fresh_claim.evidence`: a concurrent writer emptying the
-            # evidence tuple leaves the fresh one falsy, which would skip
-            # this branch and stamp `updated_at` for exactly the
-            # every-result-discarded case it exists to catch. A claim that
-            # had no evidence to begin with is a different thing entirely --
-            # nothing was discarded, so it still gets its ordinary
-            # `updated_at` stamp, unchanged from before this story.
+            # validated. Two distinct concurrent edits reach here:
+            #   * `original_evidence` non-empty -- this run validated
+            #     entries and a concurrent writer changed (or removed)
+            #     every one of them, so the discard-stale rule dropped
+            #     every result. Guarded on `original_evidence` rather than
+            #     on `fresh_claim.evidence` because a writer *emptying* the
+            #     tuple leaves the fresh one falsy, which would otherwise
+            #     skip exactly the case this branch exists to catch.
+            #   * `fresh_claim.evidence` non-empty -- this run had nothing
+            #     to validate (the claim carried no evidence when it was
+            #     read) and a concurrent writer *added* entries during the
+            #     unlocked window. Zero validation calls were made, so
+            #     those entries are unchecked and must not be stamped as
+            #     though they had been.
+            # A claim that had no evidence at either point is a different
+            # thing entirely -- nothing was discarded and nothing appeared,
+            # so it still gets its ordinary `updated_at` stamp, unchanged
+            # from before this story.
             return fresh_claim
         revalidated_evidence = tuple(
             results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence)
@@ -807,15 +817,15 @@ def revalidate_all(
                 i < len(original_evidence) and e == original_evidence[i]
                 for i, e in enumerate(claim.evidence)
             ]
-            if original_evidence and not any(carried):
-                # Every entry this run validated was changed (or removed)
-                # concurrently, so every result was discarded -- same
-                # reasoning as the never-validated branch just above: do not
-                # stamp `updated_at` for a validation that never landed.
-                # Guarded on `original_evidence` rather than
-                # `claim.evidence` for the reason `revalidate` spells out:
-                # a concurrent writer emptying the tuple would otherwise
-                # slip past this branch.
+            if (original_evidence or claim.evidence) and not any(carried):
+                # Not one of this run's results for this claim survived --
+                # either every entry it validated was changed/removed
+                # concurrently, or it had nothing to validate and a
+                # concurrent writer added entries this run never checked.
+                # Same reasoning as the never-validated branch just above:
+                # do not stamp `updated_at` for a validation that never
+                # landed. See `revalidate`'s matching branch for why the
+                # guard reads both tuples rather than either one alone.
                 updated_claims.append(claim)
                 continue
             revalidated_evidence = tuple(

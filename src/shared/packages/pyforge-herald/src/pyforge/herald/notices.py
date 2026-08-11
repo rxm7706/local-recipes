@@ -36,12 +36,22 @@ together and always in lock-step:
 
 **Concurrency (Story 13.1, closing ``DW-1-4-2``).** ``author_notice``,
 ``publish_notice``, ``close_notice``, and ``archive_rename`` each lock their
-whole function body -- ``locking.locked`` on a sidecar
+whole read-modify-write span -- ``locking.locked`` on a sidecar
 ``<index_path>.lock`` file -- so the index write and the markdown write for
 one notice land inside a single critical section. A second concurrent call
 against the same ``index_path`` blocks until the first releases the lock,
 closing the writer-vs-writer markdown race as a side effect of closing the
 index race, rather than as a second, separate fix.
+
+Two kinds of check deliberately run BEFORE the lock rather than inside it,
+so the span above is the read-modify-write, not literally the whole
+function body: the pure ``notice_type``/``component`` argument checks (a
+call that cannot succeed should not contend on the lock first), and
+``_require_existing_index`` for the three calls that can only operate on an
+existing notice (see its docstring -- acquiring the lock creates the
+sidecar and its parent directory, which those calls' error paths never did
+before this story). Both are fail-fast only; the authoritative checks stay
+inside the lock.
 
 Two limits on that, both deliberate. The lock is keyed on ``index_path``
 while the markdown lands under ``repo_root``, so two callers sharing a
@@ -229,9 +239,26 @@ def _require_existing_index(index_path: Path, missing: str) -> None:
     fail-fast, not a new error contract. The in-lock checks stay where they
     are: this one is racy by construction (the index can appear between
     here and the lock), which only ever means falling through to those
-    authoritative checks."""
-    if not index_path.exists():
-        raise errors.HeraldError(missing)
+    authoritative checks.
+
+    Deliberately NOT ``index_path.exists()``, for the reason ``state.read``
+    spells out: ``Path.exists`` returns ``False`` whenever the *stat* fails
+    for any reason (an unsearchable parent, a symlink loop, EACCES, EIO),
+    so an index that exists but cannot be read would be reported as "no
+    notice found" -- pointing the operator at a missing notice instead of
+    the permissions fault they actually have, and silently replacing the
+    ``could not be read`` error this call raised before Story 13.1. Only a
+    definitively absent path (or a non-directory parent component) fails
+    fast here; every other stat failure falls through to the lock so the
+    authoritative in-lock ``_load_index_document`` produces its own,
+    accurate error. Falling through costs at most the sidecar this fast
+    path exists to avoid, on a path that is already broken."""
+    try:
+        index_path.stat()
+    except (FileNotFoundError, NotADirectoryError):
+        raise errors.HeraldError(missing) from None
+    except OSError:
+        return
 
 
 def _write_index_document(index_path: Path, document: dict[str, object]) -> None:
