@@ -848,17 +848,7 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": {
-        "key": "13.1",
-        "title": "The state layer survives a second writer",
-        "phase": "review",
-        "attempt": "1",
-        "startEpoch": 1786409132,
-        "median": 103,
-        "lo": 29,
-        "hi": 417,
-        "phaseAsOf": "2026-08-11 03:36 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 6 of 53 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -885,7 +875,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "13.1",
-            128
+            229
           ]
         ],
         "foot": [
@@ -914,8 +904,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 840,
-        "totalLabel": "~14.0 h active compute",
+        "total": 941,
+        "totalLabel": "~15.7 h active compute",
         "note": "Derived from 6 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 60,
@@ -923,11 +913,11 @@ window.DASHBOARD_DATA = {
           "1.3": 29,
           "1.4": 108,
           "1.5": 417,
-          "13.1": 128
+          "13.1": 229
         },
         "epicMin": {
           "E1": 712,
-          "E13": 128
+          "E13": 229
         }
       },
       "lineState": {
@@ -3702,7 +3692,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 03:36 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 04:50 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6036,7 +6026,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-02",
           "epics": "2026-08-10",
           "sprint": "2026-08-10",
-          "tea": "2026-08-08",
+          "tea": "2026-08-10",
           "gates": "2026-08-10",
           "code": "2026-08-07",
           "verify": "2026-08-07",
@@ -13624,14 +13614,14 @@ window.DASHBOARD_DATA = {
   },
   "openwork": {
     "open": 223,
-    "done": 21,
+    "done": 22,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 9,
-      "low": 24,
-      "unspecified": 189
+      "low": 25,
+      "unspecified": 188
     },
     "projects": [
       {
@@ -14799,7 +14789,7 @@ window.DASHBOARD_DATA = {
         "project": "pyforge-herald",
         "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
         "open": 26,
-        "done": 4,
+        "done": 5,
         "triaged": 21,
         "entries": [
           {
@@ -14980,9 +14970,9 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-1-4-2",
             "title": "`state.py`'s `write()` does an unlocked read-modify-write of the whole slug-keyed document (read…",
-            "status": "open",
+            "status": "done",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-1-4-3",
@@ -15010,6 +15000,13 @@ window.DASHBOARD_DATA = {
             "title": "Write-level conflict detection (the wire shape DW-1-2-5 could not pin) is out of `seed`'s scope",
             "status": "open",
             "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2",
+            "title": "Follow-up review still recommended for 13-1-the-state-layer-survives-a-second-writer after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
             "triaged": false
           }
         ]
@@ -15418,24 +15415,17 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [
-      {
-        "station": "Herald",
-        "story": "13.1",
-        "phase": "review",
-        "startEpoch": 1786409132
-      }
-    ],
+    "running": [],
     "lastShipped": {
-      "station": "steward",
-      "story": "8.3",
-      "epoch": 1786415392,
-      "sha": "936948161",
-      "subject": "Merge bmad-loop/20260810-193158-7f2b/8-3-idempotent-update-processing into loop/pyforge-steward (bmad-loop)"
+      "station": "marshal",
+      "story": "7.4",
+      "epoch": 1786418793,
+      "sha": "4cf8ae531",
+      "subject": "Merge bmad-loop/20260810-192255-dbc6/7-4-manifest-schema-loader-and-model-version-ranges into loop/pyforge-marshal (bmad"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 03:36 UTC",
-    "generatedEpoch": 1786419366
+    "generatedAt": "2026-08-11 04:50 UTC",
+    "generatedEpoch": 1786423821
   },
   "storySpecs": [
     {
