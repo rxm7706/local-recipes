@@ -6,6 +6,8 @@ publish, revalidate, and the atomic-write/round-trip discipline mirroring
 from __future__ import annotations
 
 import json
+import threading
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -516,3 +518,48 @@ def test_referenced_by_claims_empty_when_no_claim_cites_it(tmp_path):
 
 def test_referenced_by_claims_on_missing_file_is_empty(tmp_path):
     assert claims.referenced_by_claims(tmp_path / "claims.json", "auth-api-v1") == []
+
+
+def test_two_concurrent_creates_do_not_lose_either_claim(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    """Regression proof for DW-1-4-2: two threads each ``create`` a claim
+    for a different project into the SAME claims file at ~the same
+    instant. Without ``locking.locked`` wrapping ``create``'s whole
+    ``read_all``-through-``_write_all`` span, thread B's read can race
+    ahead of thread A's replace, so B's own replace silently discards A's
+    claim.
+
+    A ``threading.Barrier`` makes both threads enter ``create`` at the same
+    instant, and monkeypatching a deliberate delay into ``read_all`` widens
+    the race window deterministically -- forced interleaving, not a
+    timing-dependent sleep race. Verified locally (not asserted here, per
+    the story's own instructions) to FAIL if ``locking.locked`` is removed
+    from ``create``'s body, and to PASS with it in place."""
+    path = tmp_path / "claims.json"
+    original_read_all = claims.read_all
+
+    def delayed_read_all(claims_path):
+        result = original_read_all(claims_path)
+        time.sleep(0.05)
+        return result
+
+    monkeypatch.setattr(claims, "read_all", delayed_read_all)
+
+    barrier = threading.Barrier(2)
+
+    def creator(project_name: str) -> None:
+        barrier.wait()
+        claims.create(path, project_name=project_name)
+
+    threads = [
+        threading.Thread(target=creator, args=("proj-a",)),
+        threading.Thread(target=creator, args=("proj-b",)),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=5)
+    assert not any(t.is_alive() for t in threads)
+
+    assert {c.project_name for c in claims.read_all(path)} == {"proj-a", "proj-b"}

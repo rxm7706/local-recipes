@@ -63,7 +63,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import errors
+from . import errors, locking
 from . import evidence as evidence_mod
 
 DEFAULT_CLAIMS_PATH = Path(".herald/claims.json")
@@ -361,7 +361,12 @@ def create(
     """Create a draft ``Claim`` (Story 9.2, scaled down: a CLI command an
     operator runs by hand supplies exactly the fields the original spec's
     webhook payload would have extracted). Appends it to ``claims_path``
-    and returns it."""
+    and returns it.
+
+    The ``read_all``-through-``_write_all`` span holds an exclusive
+    ``locking.locked`` advisory lock on a ``claims_path``-sidecar ``.lock``
+    file (Story 13.1, closing ``DW-1-4-2``), so a second concurrent writer
+    serializes instead of racing and silently losing an update."""
     if not project_name.strip():
         raise errors.HeraldError("project_name must not be empty")
     for e in evidence:
@@ -383,9 +388,10 @@ def create(
         evidence=tuple(evidence),
         edit_history=(),
     )
-    claims = read_all(claims_path)
-    claims.append(claim)
-    _write_all(claims_path, claims)
+    with locking.locked(claims_path.with_name(claims_path.name + ".lock")):
+        claims = read_all(claims_path)
+        claims.append(claim)
+        _write_all(claims_path, claims)
     return claim
 
 
@@ -413,65 +419,71 @@ def publish(
     ``evidence_mod.validate_for_publish`` *inside* the function body, not as
     a parameter default -- a parameter default is bound once at import
     time, which would freeze in the pre-monkeypatch function object and
-    make ``evidence.validate_for_publish`` unpatchable from a test."""
+    make ``evidence.validate_for_publish`` unpatchable from a test.
+
+    The ``read_all``-through-``_write_all`` span holds an exclusive
+    ``locking.locked`` advisory lock on a ``claims_path``-sidecar ``.lock``
+    file (Story 13.1, closing ``DW-1-4-2``), so a second concurrent writer
+    serializes instead of racing and silently losing an update."""
     if validate is None:
         validate = evidence_mod.validate_for_publish
-    claims = read_all(claims_path)
-    index = next((i for i, c in enumerate(claims) if c.id == claim_id), None)
-    if index is None:
-        raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
-    claim = claims[index]
-    if claim.status != "draft":
-        raise errors.ClaimStateError(
-            f"claim {claim_id!r} is already {claim.status!r}; only a draft claim can be published"
+    with locking.locked(claims_path.with_name(claims_path.name + ".lock")):
+        claims = read_all(claims_path)
+        index = next((i for i, c in enumerate(claims) if c.id == claim_id), None)
+        if index is None:
+            raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
+        claim = claims[index]
+        if claim.status != "draft":
+            raise errors.ClaimStateError(
+                f"claim {claim_id!r} is already {claim.status!r}; only a draft claim can be published"
+            )
+        final_thesis = thesis if thesis is not None else claim.thesis
+        if not final_thesis:
+            raise errors.HeraldError(
+                f"claim {claim_id!r} has no thesis; supply --thesis to publish"
+            )
+        timestamp = now()
+        broken: list[str] = []
+        for e in claim.evidence:
+            if e.type == "notice":
+                # A "notice" evidence entry's `url` holds a Notice component
+                # name, not an HTTP URL (see module docstring) -- nothing to
+                # HEAD, so it is trivially valid rather than run through the
+                # HTTP-based `validate`.
+                continue
+            try:
+                validate(e.url)
+            except errors.EvidenceLinkError as exc:
+                broken.append(f"{e.url} ({exc})")
+        if broken:
+            # Regression: raising on the FIRST broken link meant an operator
+            # fixing evidence one publish-attempt at a time hit the next
+            # broken link on each retry instead of seeing the full list once.
+            raise errors.EvidenceLinkError(
+                f"claim {claim_id!r} has {len(broken)} broken evidence link(s): "
+                f"{'; '.join(broken)}. Fix or remove before publishing."
+            )
+        validated_evidence = tuple(
+            replace(e, validated=True, validated_at=timestamp.isoformat())
+            for e in claim.evidence
         )
-    final_thesis = thesis if thesis is not None else claim.thesis
-    if not final_thesis:
-        raise errors.HeraldError(
-            f"claim {claim_id!r} has no thesis; supply --thesis to publish"
+        edit_history = claim.edit_history
+        if claim.thesis is not None and claim.thesis != final_thesis:
+            edit_history = (
+                *edit_history,
+                ThesisVersion(thesis=claim.thesis, edited_at=timestamp.isoformat()),
+            )
+        updated = replace(
+            claim,
+            status="published",
+            thesis=final_thesis,
+            published_at=timestamp.isoformat(),
+            updated_at=timestamp.isoformat(),
+            evidence=validated_evidence,
+            edit_history=edit_history,
         )
-    timestamp = now()
-    broken: list[str] = []
-    for e in claim.evidence:
-        if e.type == "notice":
-            # A "notice" evidence entry's `url` holds a Notice component
-            # name, not an HTTP URL (see module docstring) -- nothing to
-            # HEAD, so it is trivially valid rather than run through the
-            # HTTP-based `validate`.
-            continue
-        try:
-            validate(e.url)
-        except errors.EvidenceLinkError as exc:
-            broken.append(f"{e.url} ({exc})")
-    if broken:
-        # Regression: raising on the FIRST broken link meant an operator
-        # fixing evidence one publish-attempt at a time hit the next
-        # broken link on each retry instead of seeing the full list once.
-        raise errors.EvidenceLinkError(
-            f"claim {claim_id!r} has {len(broken)} broken evidence link(s): "
-            f"{'; '.join(broken)}. Fix or remove before publishing."
-        )
-    validated_evidence = tuple(
-        replace(e, validated=True, validated_at=timestamp.isoformat())
-        for e in claim.evidence
-    )
-    edit_history = claim.edit_history
-    if claim.thesis is not None and claim.thesis != final_thesis:
-        edit_history = (
-            *edit_history,
-            ThesisVersion(thesis=claim.thesis, edited_at=timestamp.isoformat()),
-        )
-    updated = replace(
-        claim,
-        status="published",
-        thesis=final_thesis,
-        published_at=timestamp.isoformat(),
-        updated_at=timestamp.isoformat(),
-        evidence=validated_evidence,
-        edit_history=edit_history,
-    )
-    claims[index] = updated
-    _write_all(claims_path, claims)
+        claims[index] = updated
+        _write_all(claims_path, claims)
     return updated
 
 
@@ -505,25 +517,31 @@ def revalidate(
 
     ``validate`` is resolved to ``evidence_mod.validate_link`` inside the
     function body -- see ``publish``'s docstring for why this can't be a
-    parameter default."""
+    parameter default.
+
+    The ``read_all``-through-``_write_all`` span holds an exclusive
+    ``locking.locked`` advisory lock on a ``claims_path``-sidecar ``.lock``
+    file (Story 13.1, closing ``DW-1-4-2``), so a second concurrent writer
+    serializes instead of racing and silently losing an update."""
     if validate is None:
         validate = evidence_mod.validate_link
-    claims = read_all(claims_path)
-    index = next((i for i, c in enumerate(claims) if c.id == claim_id), None)
-    if index is None:
-        raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
-    claim = claims[index]
-    timestamp = now()
-    revalidated_evidence = tuple(
-        _revalidated_entry(e, validate=validate, timestamp_iso=timestamp.isoformat())
-        for e in claim.evidence
-    )
-    updated = replace(
-        claim, evidence=revalidated_evidence, updated_at=timestamp.isoformat()
-    )
-    claims[index] = updated
-    _write_all(claims_path, claims)
-    return updated
+    with locking.locked(claims_path.with_name(claims_path.name + ".lock")):
+        claims = read_all(claims_path)
+        index = next((i for i, c in enumerate(claims) if c.id == claim_id), None)
+        if index is None:
+            raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
+        claim = claims[index]
+        timestamp = now()
+        revalidated_evidence = tuple(
+            _revalidated_entry(e, validate=validate, timestamp_iso=timestamp.isoformat())
+            for e in claim.evidence
+        )
+        updated = replace(
+            claim, evidence=revalidated_evidence, updated_at=timestamp.isoformat()
+        )
+        claims[index] = updated
+        _write_all(claims_path, claims)
+        return updated
 
 
 def revalidate_all(
@@ -538,26 +556,32 @@ def revalidate_all(
 
     ``validate`` is resolved to ``evidence_mod.validate_link`` inside the
     function body -- see ``publish``'s docstring for why this can't be a
-    parameter default."""
+    parameter default.
+
+    The ``read_all``-through-``_write_all`` span holds an exclusive
+    ``locking.locked`` advisory lock on a ``claims_path``-sidecar ``.lock``
+    file (Story 13.1, closing ``DW-1-4-2``), so a second concurrent writer
+    serializes instead of racing and silently losing an update."""
     if validate is None:
         validate = evidence_mod.validate_link
     timestamp = now()
-    claims = read_all(claims_path)
-    updated_claims = []
-    for claim in claims:
-        revalidated_evidence = tuple(
-            _revalidated_entry(
-                e, validate=validate, timestamp_iso=timestamp.isoformat()
+    with locking.locked(claims_path.with_name(claims_path.name + ".lock")):
+        claims = read_all(claims_path)
+        updated_claims = []
+        for claim in claims:
+            revalidated_evidence = tuple(
+                _revalidated_entry(
+                    e, validate=validate, timestamp_iso=timestamp.isoformat()
+                )
+                for e in claim.evidence
             )
-            for e in claim.evidence
-        )
-        updated_claims.append(
-            replace(
-                claim, evidence=revalidated_evidence, updated_at=timestamp.isoformat()
+            updated_claims.append(
+                replace(
+                    claim, evidence=revalidated_evidence, updated_at=timestamp.isoformat()
+                )
             )
-        )
-    _write_all(claims_path, updated_claims)
-    return updated_claims
+        _write_all(claims_path, updated_claims)
+        return updated_claims
 
 
 def is_stale(

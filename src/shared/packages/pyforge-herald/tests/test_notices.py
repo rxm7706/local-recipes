@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -311,3 +313,53 @@ def test_publish_follows_a_redirect(tmp_path: Path):
     # publish the wrong (draft) entry.
     with pytest.raises(HeraldError, match="already published"):
         notices.publish_notice(tmp_path, "old-name")
+
+
+def test_two_concurrent_authors_for_different_components_do_not_lose_either_notice(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Regression proof for DW-1-4-2: two threads each ``author_notice`` a
+    different component into the SAME index file at ~the same instant.
+    Without ``locking.locked`` wrapping ``author_notice``'s whole
+    index-load-through-both-writes span, thread B's index load can race
+    ahead of thread A's index replace, so B's own replace silently
+    discards A's notice entry (the markdown files themselves never
+    collide -- they are per-component paths -- but the shared index is
+    exactly the race DW-1-4-2 describes).
+
+    A ``threading.Barrier`` makes both threads enter ``author_notice`` at
+    the same instant, and monkeypatching a deliberate delay into
+    ``_load_index_document`` widens the race window deterministically --
+    forced interleaving, not a timing-dependent sleep race. Verified
+    locally (not asserted here, per the story's own instructions) to FAIL
+    if ``locking.locked`` is removed from ``author_notice``'s body, and to
+    PASS with it in place."""
+    import pyforge.herald.notices as notices_module
+
+    original_load = notices_module._load_index_document
+
+    def delayed_load(index_path: Path) -> dict[str, object]:
+        document = original_load(index_path)
+        time.sleep(0.05)
+        return document
+
+    monkeypatch.setattr(notices_module, "_load_index_document", delayed_load)
+
+    barrier = threading.Barrier(2)
+
+    def author(component: str) -> None:
+        barrier.wait()
+        _author(tmp_path, component=component)
+
+    threads = [
+        threading.Thread(target=author, args=("comp-a",)),
+        threading.Thread(target=author, args=("comp-b",)),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=5)
+    assert not any(t.is_alive() for t in threads)
+
+    found = {n.component for n in notices.list_notices(tmp_path, status="all")}
+    assert found == {"comp-a", "comp-b"}

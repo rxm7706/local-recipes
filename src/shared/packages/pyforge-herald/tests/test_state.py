@@ -6,10 +6,13 @@ never assumes a cwd, so no test here may either.
 
 from __future__ import annotations
 
+import threading
+import time
 from pathlib import Path
 
 import pytest
 
+from pyforge.herald import state
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.state import DEFAULT_STATE_PATH, DeckState, read, write
 
@@ -134,14 +137,17 @@ def test_write_blocked_by_a_plain_file_in_the_parent_path_raises_herald_error(
     tmp_path: Path,
 ):
     """A plain file where the `.herald` directory should be must surface as
-    a HeraldError, not a bare FileExistsError/NotADirectoryError. The
-    pre-write load is what trips (``open()`` through a plain-file parent
-    raises ``NotADirectoryError``, wrapped as "could not be read"); write's
-    own mkdir wrap would catch the same shape racing into place later."""
+    a HeraldError, not a bare FileExistsError/NotADirectoryError. Story 13.1
+    moved the failure locus: ``write``'s whole load-through-replace span now
+    runs inside ``locking.locked``, whose own ``mkdir`` on the identical
+    blocked parent directory trips FIRST (as a lock-acquisition failure) --
+    ``_load_document``'s ``open()`` call never gets a turn. Same underlying
+    cause (``blocker`` is a plain file, not a directory), same
+    ``HeraldError`` contract, different message prefix."""
     blocker = tmp_path / ".herald"
     blocker.write_text("not a directory")
     state_path = blocker / "bridge-state.json"
-    with pytest.raises(HeraldError, match="could not be read"):
+    with pytest.raises(HeraldError, match="could not be acquired"):
         write(state_path, "x", DeckState(project_id="p1", etags={}))
 
 
@@ -273,3 +279,48 @@ def test_write_refuses_a_state_that_is_not_a_deck_state(tmp_path: Path):
     with pytest.raises(HeraldError, match="must be a DeckState"):
         write(state_path, "x", {"project_id": "p1", "etags": {}})
     assert not state_path.exists()
+
+
+def test_two_concurrent_writes_for_different_slugs_do_not_lose_either_update(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Regression proof for DW-1-4-2: two threads each ``write`` a
+    different slug to the SAME state file at ~the same instant. Without
+    ``locking.locked`` wrapping ``write``'s whole load-through-``os.replace``
+    span, thread B's load of the document can race ahead of thread A's
+    replace, so B's own replace silently discards A's update.
+
+    A ``threading.Barrier`` makes both threads enter ``write`` at the same
+    instant, and monkeypatching a deliberate delay into ``_load_document``
+    widens the race window deterministically -- forced interleaving, not a
+    timing-dependent sleep race. Verified locally (not asserted here, per
+    the story's own instructions) to FAIL if ``locking.locked`` is removed
+    from ``write``'s body, and to PASS with it in place."""
+    state_path = tmp_path / "bridge-state.json"
+    original_load_document = state._load_document
+
+    def delayed_load_document(path: Path) -> dict[str, object]:
+        document = original_load_document(path)
+        time.sleep(0.05)
+        return document
+
+    monkeypatch.setattr(state, "_load_document", delayed_load_document)
+
+    barrier = threading.Barrier(2)
+
+    def writer(slug: str) -> None:
+        barrier.wait()
+        write(state_path, slug, DeckState(project_id=slug, etags={}, last_pull=None))
+
+    threads = [
+        threading.Thread(target=writer, args=("a",)),
+        threading.Thread(target=writer, args=("b",)),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=5)
+    assert not any(t.is_alive() for t in threads)
+
+    assert read(state_path, "a") == DeckState(project_id="a", etags={}, last_pull=None)
+    assert read(state_path, "b") == DeckState(project_id="b", etags={}, last_pull=None)
