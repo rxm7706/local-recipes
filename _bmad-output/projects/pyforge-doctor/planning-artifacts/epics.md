@@ -116,7 +116,7 @@ The station that owns the sprint ledger stops being the station that grades it. 
 
 ### Epic 6: Every verdict comes home (Charter §6, generalized — added 2026-08-08)
 Epic 5 applied §6 to one artifact. An ownership audit found the clause violated fleet-wide: 10 of 13 repo-level detectors judge an artifact another station produces, and none belongs to Doctor. This epic re-homes those 10 as Doctor sources, each structurally barred from importing the station it judges — and does it behind a profile, because the verb they land on is already over its budget.
-**FRs covered:** FR-15
+**FRs covered:** FR-15, FR-16 (added 2026-08-11, queued via the Dream/Spec chain — Story 6.11)
 
 ---
 
@@ -739,6 +739,46 @@ artifact)
 **And** a newly added source with no declared subject fails the test
 
 **Status:** done
+
+### Story 6.11: The classifier recognizes a spike report *(added 2026-08-11 — FR-16)*
+
+As the operator,
+I want `pyforge.doctor.sources.factory::classify()` to recognize a design-spike's PASS/FAIL
+report written to a project's `planning-artifacts/` root,
+So that a legitimate, story-mandated artifact shape stops HARD-failing `detectors-ci` as
+`uncovered` the way every unrecognized shape already has, twice before this one.
+
+**Type:** change • **Effort:** XS • **Deps:** S-6.8 • **FR/AD:** FR-16
+
+**Why now.** On 2026-08-11 (PR #427, Marshal Story 7.6) Marshal's own landing agent
+confirmed `_bmad-output/projects/pyforge-marshal/planning-artifacts/spike-0-copier-api-fit-report.md`
+trips `check_coverage`'s `uncovered` HARD finding, and that the fix belongs in this
+classifier, out of scope for a marshal-package landing. `classify()`'s own history already
+covers this exact class of gap twice — fourteen shapes added 2026-07-28, eleven more
+2026-08-08 — each closed by one small, dated, git-reviewed rule in the same function. This
+is the third occurrence, not a new kind of problem.
+
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`
+(`classify()`)
+
+**Acceptance Criteria:**
+
+**Given** a file under `_bmad-output/projects/pyforge-marshal/` matching the design-spike
+report convention (`planning-artifacts/spike-0-copier-api-fit-report.md` today; the exact
+rule scope — literally `spike-*-report.md` at `planning-artifacts/` root, or a pattern that
+also anticipates a future `Spike-1`/`Spike-2` — is this story's own design decision, per
+`spec-bmad-drift-new-artifact-shape`'s open question)
+**When** `classify()` runs
+**Then** it returns a named classification instead of `UNKNOWN`, with a dated comment
+recording this story and the 2026-08-11 incident, matching the file's own established
+convention for every prior carve-out
+**And** `check_coverage` no longer reports that file as `uncovered`
+**And** `check_coverage`'s fail-closed default is otherwise unchanged — a file that still
+matches no rule, including a spike-report look-alike outside the agreed pattern, still HARD
+fails
+**And** re-running `check_coverage` against the live `pyforge-marshal` tree returns zero
+`uncovered` findings, and `pixi run -e local-recipes detectors-ci` reports clean for
+`bmad-drift`
 
 ## Epic 7: Deferred-work visibility
 
