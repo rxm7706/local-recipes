@@ -116,10 +116,10 @@ development_status:
   6-7-entry-file-family-drift-check-detect-only: done
   6-8-upstream-contribution-register: done
   6-9-tool-surface-rendering-and-preflight-probe: done
-  7-1-the-seed-module-tree-inside-pyforge-marshal: backlog
+  7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: blocked
   7-3-the-fs-write-primitive-and-the-never-write-guard: blocked
-  7-4-manifest-schema-loader-and-model-version-ranges: backlog
+  7-4-manifest-schema-loader-and-model-version-ranges: done
   7-5-the-v1-extraction-manifest: backlog
   7-6-spike-0-copier-api-fit: backlog
   8-1-marker-grammar-and-the-per-format-registry: backlog
