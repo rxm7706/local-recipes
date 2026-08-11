@@ -72,3 +72,11 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, mason 2-2 / marshal 7-4)
 
+
+### DW-2-3-1
+
+- source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-3-credential-isolation.md`
+  summary: follow-up review still recommended for 2-3 after the damping cap was spent — an independent pass is owed on the AD-14 credential-isolation guard.
+  evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260810-193147-b96d`. The story ran to 3 review cycles, each closing real bypasses (env aliasing, indirect mutation methods, non-assignment binding targets, explicit-environment spawn functions), which is the profile where an independent pass is worth spending.
+  promoted: 2026-08-11 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there) under this ledger's own `DW-<epic>-<story>-<n>` convention, renamed to avoid colliding with the next damped story (bmad-loop always emits a generic id).
+  status: open

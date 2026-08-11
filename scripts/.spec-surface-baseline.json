@@ -2370,6 +2370,13 @@
   "files": {},
   "memlog": "bd17dacbade2a30e5838affedcc181f46697766e"
  },
+ "pyforge-marshal/spec-fleet-status-supervisor-fallback": {
+  "files": {
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "46fe78f3e6de76096f23bb9713d6d4fb84eb0cb0",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "f3ef606b558f2f4499723f9553af9f99186ae5ed"
+  },
+  "memlog": "717f7777f4afaf2e9ff0cd01f709c077637b31d3"
+ },
  "pyforge-marshal/spec-genesis-installer": {
   "files": {},
   "memlog": "618b5c16ac3e267bed5f9e8562928a610a90f005"
