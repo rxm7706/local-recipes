@@ -188,3 +188,19 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
+
+### DW-FU-7-2: Whether the backlog's growth from 470 to 506 predates or postdates Story 7.1's merge is unverified, so this baseline neither confirms nor refutes whether 7.1 stopped new anonymous entries
+- source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-2-grandfather-the-470-at-a-dated-cut-off.md`
+  summary: Whether the backlog's growth from 470 to 506 predates or postdates Story 7.1's merge is unverified, so this baseline neither confirms nor refutes whether 7.1 stopped new anonymous entries.
+  evidence: Found by review pass 1 (Blind Hunter). The epic's 470 figure was measured 2026-08-10T19:15 (per spec-deferred-work-visibility's own `.memlog.md`); Story 7.1 ("the emitter mints identity at defer time") merged at 2026-08-10 21:06:04, after that measurement; this story's own stamp (2026-08-11) measures 506, a growth of 36 across the window. Story 7.2's own Design Notes already explain why 506 differs from 470 in general terms (the backlog is "a live, growing thing") and that explanation was already reviewed and accepted -- but it does not address WHEN the growth happened relative to 7.1's merge, which is the one fact that would show whether 7.1's fix is actually holding. Tier-3 entries carry no timestamp field, so this cannot be answered from the data alone without a dedicated investigation (e.g. diffing each project's Tier-3 file at the 7.1 merge commit against its current state). Not patched in this pass: this story's Never clause explicitly forbids triaging or wiring the backlog, and confirming 7.1's efficacy is a distinct question from stamping the current count -- but real and worth a focused follow-up, since a "yes, still growing after 7.1" answer would be a live regression in already-shipped work.
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass, doctor 7-2)
+
+### DW-FU-7-2-2: A project whose Tier-3 file is deleted can never have its baseline entry lowered or zeroed via `--project`
+- source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-2-grandfather-the-470-at-a-dated-cut-off.md`
+  summary: A project whose Tier-3 file is deleted can never have its baseline entry lowered or zeroed via `--project`, because the unknown-project validation only consults currently-discoverable projects, not the union of the committed baseline and the currently-discoverable set.
+  evidence: Found by Blind Hunter and Edge Case Hunter independently (Blind Hunter's finding, Edge Case Hunter's related finding #6). Confirmed by reading `scripts/deferred_work_baseline.py::main`: `unknown = sorted(set(args.project) - set(current))` checks only `_live_state()`'s locally-discoverable projects; a project already present in the committed baseline but whose Tier-3 file no longer exists (backlog fully resolved and the file deleted, or a not-yet-backlinked worktree) is reported "unknown project(s)" and cannot be re-baselined at a lower or zero count -- its stamped count becomes a permanent ceiling. This is the mirror image of the already-fixed "bare mode silently drops an invisible project" defect (this story's own review pass 1 patched that one); the fix there was to always merge and never drop, but that same merge now means there is no path to deliberately LOWER a count once stamped, only to raise or leave it. Out of scope for this pass: this story's Never clause forbids triaging the backlog and this scenario (a known project's Tier-3 scratch disappearing entirely while the project itself remains active) has not occurred yet in this repo -- but it is a real gap Story 7.3 or a future maintenance pass should account for before relying on the baseline as authoritative for a shrinking count.
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass, doctor 7-2)
