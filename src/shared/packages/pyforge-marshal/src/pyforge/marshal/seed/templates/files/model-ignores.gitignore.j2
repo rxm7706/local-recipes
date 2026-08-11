@@ -1,0 +1,21 @@
+# BMAD: personal config (user-scoped) and per-developer artifacts.
+# Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
+# Note: project-scoped implementation-artifacts are gitignored (per-developer scratch).
+_bmad/custom/.active-project
+_bmad-output/projects/*/implementation-artifacts/
+# ...and the same path as a SYMLINK. The trailing-slash rule above matches only
+# real directories, so in a bmad-loop home -- where `bmad-loop-worktree` creates
+# implementation-artifacts as a Tier-3 backlink to the main checkout -- the path
+# comes back untracked, and `bmad-loop run` refuses to start on a dirty worktree.
+# No trailing slash = matches the symlink too.
+_bmad-output/projects/*/implementation-artifacts
+
+# bmad-loop / upstream-tooling seam: root artifact dirs are LOCAL symlinks to the
+# active project's dirs (re-point on `bmad-switch`).
+_bmad-output/planning-artifacts
+_bmad-output/implementation-artifacts
+_bmad-output/projects/*/.bmad-config.user.toml
+
+# bmad-loop runtime scratch: run worktrees and their cache, never tracked.
+.bmad-loop/runs/
+.bmad-loop/cache/
