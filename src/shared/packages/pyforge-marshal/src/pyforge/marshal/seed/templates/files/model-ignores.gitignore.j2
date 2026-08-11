@@ -19,3 +19,13 @@ _bmad-output/projects/*/.bmad-config.user.toml
 # bmad-loop runtime scratch: run worktrees and their cache, never tracked.
 .bmad-loop/runs/
 .bmad-loop/cache/
+# Derived harness policy: rendered whole from the canonical EffectivePolicy on
+# every `marshal config --write-harness-policy` run (AD-12/AD-35). The model
+# classifies it generated-derived, so leaving it tracked leaves every adopting
+# repo permanently dirty -- the same failure the symlink rule above prevents.
+.bmad-loop/policy.toml
+
+# The plan artifact (AD-57): derived, cheap to regenerate, and a committed
+# stale plan is a hazard -- so the plan file is ignored, but NOT the whole
+# `.marshal/` directory: `.marshal/seed-state.yml` is git-tracked (AD-52).
+.marshal/plan.json

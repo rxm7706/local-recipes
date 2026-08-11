@@ -26,7 +26,9 @@ Same ``@dataclass(frozen=True)`` idiom as ``manifest.py`` and
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 
 from .manifest import ArtifactClass, ManifestEntry
 
@@ -51,7 +53,7 @@ class ClassBehavior:
     hand_edit_behavior: str
 
 
-CLASS_BEHAVIOR: dict[ArtifactClass, ClassBehavior] = {
+_CLASS_BEHAVIOR: dict[ArtifactClass, ClassBehavior] = {
     ArtifactClass.REFERENCED: ClassBehavior(
         definition=(
             "Not materialized. The repo depends on it by version range; it "
@@ -88,6 +90,13 @@ CLASS_BEHAVIOR: dict[ArtifactClass, ClassBehavior] = {
     ),
 }
 
+# Read-only view: every other value in this module is a frozen dataclass
+# ("immutable value objects" per the module docstring), but the table that
+# decides all of them was a plain dict -- and because ``Artifact.__post_init__``
+# validates against this same table, a rebound entry would corrupt
+# ``describe()`` and still pass its own guard, undetectably from inside.
+CLASS_BEHAVIOR: Mapping[ArtifactClass, ClassBehavior] = MappingProxyType(_CLASS_BEHAVIOR)
+
 
 @dataclass(frozen=True)
 class Artifact:
@@ -100,13 +109,38 @@ class Artifact:
     entry's own class's behavior swapped for another's) -- ``__post_init__``
     closes that the same way ``Manifest``/``ManifestEntry`` validate their
     own invariants at construction time (Story 7.4 review), not only in a
-    factory a caller could bypass."""
+    factory a caller could bypass.
+
+    Both fields are type-checked first, for the same reason
+    ``Manifest.__post_init__`` type-checks its own members: without it a
+    non-``ManifestEntry`` raises ``AttributeError`` from the class lookup
+    rather than the ``ValueError`` this package's callers catch, and a
+    ``None`` behavior paired with an ``unclassified-deferred`` entry would
+    slip through the pairing check entirely (``CLASS_BEHAVIOR.get`` returns
+    ``None`` for that class, so ``None == None`` short-circuits) -- leaving
+    an ``Artifact`` whose ``behavior`` is ``None`` for a future ``explain``
+    to dereference."""
 
     entry: ManifestEntry
     behavior: ClassBehavior
 
     def __post_init__(self) -> None:
+        if not isinstance(self.entry, ManifestEntry):
+            raise ValueError(
+                f"entry must be a ManifestEntry, got {type(self.entry).__name__}"
+            )
+        if not isinstance(self.behavior, ClassBehavior):
+            raise ValueError(
+                f"{self.entry.id}: behavior must be a ClassBehavior, got "
+                f"{type(self.behavior).__name__}"
+            )
         expected = CLASS_BEHAVIOR.get(self.entry.artifact_class)
+        if expected is None:
+            raise ValueError(
+                f"{self.entry.id}: class {self.entry.artifact_class.value!r} has no "
+                "ClassBehavior -- it describes only its own rationale, so it cannot "
+                "be paired into an Artifact"
+            )
         if self.behavior == expected:
             return
         actual_class = next(

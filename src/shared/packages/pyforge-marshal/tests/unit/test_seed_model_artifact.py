@@ -189,3 +189,61 @@ def test_artifact_rejects_a_behavior_that_does_not_match_the_entrys_own_class():
     wrong_behavior = CLASS_BEHAVIOR[ArtifactClass.HYBRID_MANAGED_REGION]
     with pytest.raises(ValueError, match=r"bmad-loop: behavior is HYBRID_MANAGED_REGION's, not REFERENCED's"):
         Artifact(entry=entry, behavior=wrong_behavior)
+
+
+def test_artifact_rejects_a_none_behavior_for_an_unclassified_deferred_entry():
+    """The mismatch guard above compared `self.behavior` against
+    `CLASS_BEHAVIOR.get(...)`, which returns `None` for
+    `unclassified-deferred` -- so `None == None` short-circuited and an
+    `Artifact` whose `behavior` is `None` constructed cleanly, exactly the
+    mismatched pairing the guard exists to prevent. A future `explain` would
+    then raise `AttributeError` on `.update_behavior`, one layer away from
+    the validation."""
+    entry = ManifestEntry(
+        id="claude-skills",
+        artifact_class=ArtifactClass.UNCLASSIFIED_DEFERRED,
+        path=".claude/skills/**",
+        applies_to=AppliesTo.BOTH,
+        rationale="too repo-specific to classify confidently at V1",
+    )
+    with pytest.raises(ValueError, match=r"^claude-skills: behavior must be a ClassBehavior, got NoneType"):
+        Artifact(entry=entry, behavior=None)  # type: ignore[arg-type]
+
+
+def test_artifact_rejects_an_unclassified_deferred_entry_even_with_a_real_behavior():
+    """Passing the type check is not enough: `unclassified-deferred` has no
+    class contract at all, so no `ClassBehavior` is the right one for it."""
+    entry = ManifestEntry(
+        id="pixi-toml-tasks",
+        artifact_class=ArtifactClass.UNCLASSIFIED_DEFERRED,
+        path="pixi.toml",
+        applies_to=AppliesTo.BOTH,
+        rationale="task blocks are model-adjacent but too repo-specific at V1",
+    )
+    with pytest.raises(
+        ValueError,
+        match=r"^pixi-toml-tasks: class 'unclassified-deferred' has no ClassBehavior",
+    ):
+        Artifact(entry=entry, behavior=CLASS_BEHAVIOR[ArtifactClass.REFERENCED])
+
+
+@pytest.mark.parametrize("bad_entry", [None, "agents-md", 7])
+def test_artifact_rejects_a_non_manifest_entry_with_value_error(bad_entry):
+    """`Manifest.__post_init__` isinstance-checks its own members and raises
+    `ValueError`; `Artifact` held one and checked nothing, so a wrong type
+    surfaced as `AttributeError` from the class lookup -- uncatchable by a
+    caller following this package's documented `ValueError` convention."""
+    with pytest.raises(ValueError, match=r"^entry must be a ManifestEntry, got "):
+        Artifact(entry=bad_entry, behavior=CLASS_BEHAVIOR[ArtifactClass.REFERENCED])  # type: ignore[arg-type]
+
+
+def test_class_behavior_table_is_read_only():
+    """Every other value in `artifact.py` is a frozen dataclass, but the
+    table that decides all of them was a plain mutable dict -- and because
+    `Artifact.__post_init__` validates against the SAME table, a rebound
+    entry would corrupt `describe()` and still pass its own guard, leaving
+    the corruption undetectable from inside the module."""
+    with pytest.raises(TypeError):
+        CLASS_BEHAVIOR[ArtifactClass.COPIED_SEEDED] = CLASS_BEHAVIOR[  # type: ignore[index]
+            ArtifactClass.REFERENCED
+        ]

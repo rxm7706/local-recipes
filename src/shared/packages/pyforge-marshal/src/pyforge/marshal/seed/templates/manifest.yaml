@@ -8,8 +8,8 @@
 # (FR-66..FR-71) and architecture AD-55 are the normative contracts this
 # file is judged against.
 #
-# 43 entries: 16 referenced, 5 copied-managed, 6 copied-seeded,
-# 9 generated-derived, 4 hybrid-managed-region, 3 unclassified-deferred.
+# 43 entries: 16 referenced, 5 copied-managed, 5 copied-seeded,
+# 10 generated-derived, 4 hybrid-managed-region, 3 unclassified-deferred.
 #
 # Two deliberate dedups (see the companion doc's own Design Notes): the
 # `.gitignore` model block and `CLAUDE.md`'s tier head-matter are each ONE
@@ -43,10 +43,11 @@ artifacts:
     applies_to: both
     rationale: >-
       Marshal's orchestrator; Genesis declares the floor, Marshal operates
-      it. The live environment runs 0.9.0, but the floor is deliberately
-      not bumped without a load-bearing feature behind it -- raising a
-      floor without one invents a requirement.
-    pin: ">=0.8.1"
+      it. The floor is 0.9.0 because that is the load-bearing requirement:
+      pyforge-marshal's own pyproject.toml declares `bmad-loop>=0.9.0,<0.10`
+      as a hard runtime dependency, so a repo at 0.8.1 cannot install the
+      tool doing the checking. Matches the live pixi.toml.
+    pin: ">=0.9.0"
   - id: copier
     class: referenced
     path: "n/a"
@@ -81,11 +82,16 @@ artifacts:
       custom agents & workflows (BMB); added in the 2026-07-31 re-audit --
       the Dream promised it and the V1 inventory classified it nowhere.
     pin: ">=2.1.0"
-  - id: bmad-test-architecture-enterprise
+  - id: bmad-method-test-architecture-enterprise
     class: referenced
     path: "n/a"
     applies_to: both
-    rationale: risk-based test strategy (TEA); added in the 2026-07-31 re-audit
+    rationale: >-
+      risk-based test strategy (TEA); added in the 2026-07-31 re-audit.
+      Spelled as the real package name -- `id` is the only handle FR-95's
+      presence/floor check has on a referenced entry (there is no separate
+      `package` field), so an abbreviated id reports a missing dependency
+      that is in fact installed and at floor.
     pin: ">=1.19.1"
   - id: bmad-creative-intelligence-suite
     class: referenced
