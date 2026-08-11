@@ -40,7 +40,12 @@ envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 relay argparse's own code, clamp anything foreign) -- individual
 subcommand handlers (e.g. ``config.run_config``) are the ones that build
 and print an envelope; this module only dispatches to them and relays
-their returned int.
+their returned int. ``seed`` (Story 7.1, AD-70) is Epic 7's first top-level
+sibling, with six nested verb actions (``init``/``adopt``/``check``/
+``update``/``explain``/``version``), dispatching to ``cli/seed.py``: every
+verb is a stub in this story, printing a not-yet-implemented message naming
+itself and exiting clean -- real detect/plan/apply/Copier logic lands in
+Stories 7.2-7.6.
 
 Story 5.6 also adds a context-resolution step ahead of dispatch:
 ``_resolve_context`` gathers a ``core.context.MarshalContext`` (project
@@ -125,6 +130,7 @@ from . import gate as gate_cli
 from . import init as init_cli
 from . import land as land_cli
 from . import retire as retire_cli
+from . import seed as seed_cli
 from . import spin as spin_cli
 from . import status as status_cli
 from . import upstream as upstream_cli
@@ -254,6 +260,7 @@ def _build_parser() -> argparse.ArgumentParser:
     check_cli.add_check_subparser(subparsers)
     adapters_cli.add_adapters_subparser(subparsers)
     upstream_cli.add_upstream_subparser(subparsers)
+    seed_cli.add_seed_subparser(subparsers)
     return parser
 
 

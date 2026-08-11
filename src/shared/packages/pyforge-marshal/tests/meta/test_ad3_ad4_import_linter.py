@@ -71,6 +71,7 @@ def test_ad3_harness_seam_contract_shape():
         "pyforge.marshal.cli",
         "pyforge.marshal.core",
         "pyforge.marshal.ports",
+        "pyforge.marshal.seed",
         "pyforge.marshal.supervisor",
     }
     assert contract["forbidden_modules"] == ["bmad_loop"]
