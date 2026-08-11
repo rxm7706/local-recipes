@@ -45,8 +45,8 @@ development_status:
   8-1-bidirectional-propagation: done
   8-2-zero-loop-guarantee: backlog
   8-3-idempotent-update-processing: backlog
-  8-4-fail-loud-fail-alone: backlog
-  8-5-explicit-status-vocabulary-translation: backlog
+  8-4-fail-loud-fail-alone: blocked
+  8-5-explicit-status-vocabulary-translation: blocked
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
