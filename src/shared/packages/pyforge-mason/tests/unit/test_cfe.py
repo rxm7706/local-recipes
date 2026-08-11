@@ -1394,14 +1394,35 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     subprocess, no mocking -- mirroring this file's existing fake-root
     tests).
 
+    **The POSITIVE control is what gives this test teeth** (third review
+    pass, both reviewers, reproduced). Without it the test could not fail:
+    the fake root's stubs emit a canned constant that never reads the
+    ambient environment, so `result.stdout`/`stderr`/`json_body` were
+    incapable of carrying the sentinel no matter what Mason did -- Blind
+    Hunter changed `_invoke_captured` to pass `env={}` to `subprocess.run`
+    (Mason scrubbing the child's environment wholesale, the exact inverse of
+    AD-14) and this test stayed green. Setting `MASON_FIXTURE_STDOUT` makes
+    the stub echo a value that can ONLY have come from the inherited
+    environment, so the "credentials DO reach CFE" half of AD-14 is now
+    asserted at runtime rather than only structurally by the Guard 3 AST
+    scans -- and that same `env={}` mutation now reds this test.
+
     `probe_import_floor`'s assertion is over its result's actual FIELDS
     (`interpreter`, `missing`), not `isinstance` (follow-up review, Blind
     Hunter): both of `probe_import_floor`'s return paths construct an
-    `ImportFloorResult`, so the original `isinstance` check could not fail
-    and paid for a real subprocess to assert nothing."""
+    `ImportFloorResult`, so the original `isinstance` check could not fail.
+    Both fields remain structurally incapable of carrying child output
+    (`interpreter` is the argument echoed back; `missing` is always a subset
+    of `cfe.py`'s own `CFE_IMPORT_FLOOR` keys), so this half is a
+    shape assertion over the spec's third named call site, not a leak
+    assertion -- the leak-detecting force lives in the two `CfeResult`
+    checks below and the positive control above."""
     _clear_fixture_env(monkeypatch)
     sentinel = "JFROG-SENTINEL-9f3e7a1c"
     monkeypatch.setenv("JFROG_API_KEY", sentinel)
+
+    inheritance_marker = "INHERITED-ENV-4b21d0e8"
+    monkeypatch.setenv("MASON_FIXTURE_STDOUT", f'{{"inherited": "{inheritance_marker}"}}')
 
     floor_result = probe_import_floor(sys.executable)
     assert sentinel not in floor_result.interpreter
@@ -1415,6 +1436,9 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     )
 
     for result in (validate_result, submit_result):
+        # Positive: the child really did inherit the parent's environment.
+        assert result.json_body == {"inherited": inheritance_marker}
+        # Negative: and the credential sitting beside it never came back.
         assert sentinel not in result.stdout
         assert sentinel not in result.stderr
         assert sentinel not in str(result.json_body)

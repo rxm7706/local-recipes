@@ -762,11 +762,19 @@ def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, 
 # --- Story 2.3: credential isolation (AD-14) --------------------------------
 
 
-@pytest.mark.parametrize("flags", [[], ["--quiet"], ["--verbose"]], ids=["default", "quiet", "verbose"])
+@pytest.mark.parametrize(
+    "flags",
+    [[], ["--quiet"], ["--verbose"], ["--format", "json"], ["--verbose", "--format", "json"]],
+    ids=["default", "quiet", "verbose", "json", "verbose-json"],
+)
 def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, capsys, tmp_path, flags):
     """AD-14: a JFROG_* credential must never surface in `mason doctor`'s
     output at ANY verbosity (review pass, Edge Case Hunter: the original
-    version only exercised --verbose despite this exact claim).
+    version only exercised --verbose despite this exact claim) or in EITHER
+    output format (third review pass, Blind Hunter: `--format json` is the
+    documented machine-consumed contract surface and `render_json` was never
+    exercised with the sentinel set -- latent only because `render_text`
+    happens to print the same `data` keys today).
 
     `doctor.build_report` is deliberately NOT mocked (follow-up review, both
     reviewers, reproduced): it is the only function in the `doctor` path

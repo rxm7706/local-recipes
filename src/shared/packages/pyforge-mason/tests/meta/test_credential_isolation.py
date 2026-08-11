@@ -17,19 +17,38 @@ exemption) matches `JFROG_[A-Z0-9_]*`, case-insensitively. Scoped to string
 CONSTANT VALUES only, not identifier positions (unlike AD-1's guard): FR-6's
 rule is "no module reads a JFROG_* variable," and an env-var read always
 names the variable as a string (`os.environ.get("JFROG_API_KEY")`), never as
-a Python identifier. `+`-concatenated chains of string constants are folded
-before matching (follow-up review, both reviewers), since `"JFROG" +
-"_API_KEY"` names the variable just as literally as one token does; the
-parser already folds the adjacent-literal spelling (`"JFROG" "_API_KEY"`)
-into a single constant. Known, accepted residual, disclosed rather than
-chased: a name assembled by `%`/`.format()`/`str.join`, or read via
-`getattr`, still evades a constant scan -- open-ended dataflow analysis is
-out of proportion here, and no such shape exists in this codebase.
+a Python identifier. The trailing `_...` is OPTIONAL: a bare `JFROG` prefix
+is how a whole credential family is read at once
+(`{k: v for k, v in os.environ.items() if k.startswith("JFROG")}`), which
+reads every `JFROG_*` variable while naming none of them (third review pass,
+Edge Case Hunter, reproduced). `+`-concatenated chains of string constants
+are folded before matching (follow-up review, both reviewers), since
+`"JFROG" + "_API_KEY"` names the variable just as literally as one token
+does; the parser already folds the adjacent-literal spelling (`"JFROG"
+"_API_KEY"`) into a single constant. Folding applies to the outermost
+*foldable* chain, not the outermost chain: `"JFROG" + "_API_KEY" + suffix`
+has an unfoldable outer node whose left operand folds perfectly well, and
+the first cut skipped that inner chain as "nested" and missed the read
+entirely (third review pass, both reviewers, reproduced). A leaf that
+matches on its own is still reported when the fold it belongs to does not
+match, so folding can only ever ADD detections -- `"staging" +
+"JFROG_API_KEY"` folds to text the alnum lookbehind rejects while the leaf
+alone is a plain violation (third review pass, Blind Hunter, reproduced).
+Known, accepted residuals, disclosed rather than chased: a name assembled by
+`%`/`.format()`/`str.join`/an f-string, or read via `getattr`, still evades
+a constant scan -- open-ended dataflow analysis is out of proportion here,
+and no such shape exists in this codebase.
 
 **Guard 2 -- HTTP-client import.** No `import`/`from ... import` of
 `requests`, `httpx`, `urllib.request`, or `http.client` -- including the
 "parent, then submodule" spelling (`from urllib import request`, `from http
-import client`). Absolute imports only: a *relative* import (`from
+import client`) and any SUBMODULE of a banned name (`import
+requests.sessions`, `from requests.sessions import Session`, `import
+httpx._client`). Submodule matching is the difference between a guard and a
+speed bump: `import requests.sessions` binds the name `requests` with
+`requests.get` fully callable, and an exact-set membership test scanned it
+clean -- one dotted suffix defeated the whole guard (third review pass, both
+reviewers, reproduced). Absolute imports only: a *relative* import (`from
 .requests import helper`, `ImportFrom.level > 0`) names a local Mason module
 that merely shares a banned name and is not the third-party client this
 guard bans (follow-up review, both reviewers -- it was a false positive).
@@ -75,21 +94,44 @@ on the real `cfe.py`) -- rewriting that one call's `env=` to `{}`, or to a
 targeted `JFROG_*`-stripping comprehension, defeated AD-14 at the single
 site that can defeat it while every guard test stayed green.
 
-*3b -- process-environment mutation.* No module mutates `os.environ`
-(subscript assign/delete, or `update`/`setdefault`/`pop`/`popitem`/`clear`)
-or calls `os.putenv`/`os.unsetenv`. Mutating the parent's environment before
-a spawn overrides what the child inherits just as effectively as `env=`, and
-is the more idiomatic way to do it -- 3a alone scanned clean through it
-(follow-up review, both reviewers, reproduced).
+*3b -- process-environment mutation.* No module mutates `os.environ` (or
+`os.environb`, the bytes view of the identical POSIX environment) by
+subscript assign/delete, by `|=`, by
+`update`/`setdefault`/`pop`/`popitem`/`clear`, or by
+`os.putenv`/`os.unsetenv`. Mutating the parent's environment before a spawn
+overrides what the child inherits just as effectively as `env=`, and is the
+more idiomatic way to do it -- 3a alone scanned clean through it (follow-up
+review, both reviewers, reproduced). Binding targets are walked
+recursively (tuple/list/starred unpacking, `for` targets, `with ... as`
+targets), mirroring `test_no_recipe_knowledge.py::_bound_names_in_target`:
+the first cut inspected only top-level targets, so
+`os.environ['JFROG_API_KEY'], ok = token, True` scanned clean (third review
+pass, both reviewers, reproduced).
+
+*3c -- explicit-environment process replacement.* No module calls the
+`os.exec*e`/`os.spawn*e`/`os.posix_spawn[p]` family AT ALL. These are the
+stdlib calls that take an explicit environment rather than inheriting one,
+and Mason has no legitimate use for any of them -- `cfe.py`'s `run_streamed`
+is the sanctioned spawn primitive (AD-3). They are banned unconditionally
+rather than scanned for an `env=` keyword because the environment argument
+is positional for all of them and positional-ONLY for
+`os.posix_spawn`/`posix_spawnp`, so no keyword scan can reach it.
+
+This replaces an earlier, FACTUALLY WRONG disclosure (third review pass,
+both reviewers, reproduced): that residual claimed `env` is
+"positional-only" for `os.execve` and that
+`test_adapter_sole_caller.py`'s AD-3 guard "already bans them outside
+`cfe.py`". Both halves are false. `inspect.signature(os.execve)` is
+`(path, argv, env)` -- positional-OR-keyword, so `os.execve(p, argv,
+env={...})` is accepted -- and AD-3 flags a spawn call only when one of its
+arguments names a CFE path or a `_CFE_SCRIPTS` filename, so a spawn carrying
+a credential dict but no CFE path is invisible to it. A residual accepted on
+the strength of protection that was not there is worse than no disclosure.
 
 Known, accepted residuals for Guard 3, not attempted here: `**kwargs`
-unpacking, or `env` passed *positionally* rather than by keyword (which is
-also the only way `os.execve`/`os.posix_spawn` accept it -- those are
-positional-only in CPython, so a keyword-name scan cannot reach them, and
-`test_adapter_sole_caller.py`'s AD-3 guard already bans them outside
-`cfe.py`). Open-ended dataflow analysis is out of proportion for this guard,
-and none of these shapes appears anywhere in this codebase's actual call
-sites today.
+unpacking, and `env` passed positionally to a `subprocess` API. Open-ended
+dataflow analysis is out of proportion for this guard, and neither shape
+appears anywhere in this codebase's actual call sites today.
 """
 
 from __future__ import annotations
@@ -151,7 +193,9 @@ def _parse_file(path: Path) -> ast.Module:
 
 # --- Guard 1: no JFROG_* environment-variable name anywhere -----------------
 
-_JFROG_ENV_VAR_PATTERN = re.compile(r"(?<![0-9A-Za-z])JFROG_[A-Z0-9_]*", re.IGNORECASE)
+_JFROG_ENV_VAR_PATTERN = re.compile(
+    r"(?<![0-9A-Za-z])JFROG(?:_[A-Z0-9_]*)?(?![0-9A-Za-z])", re.IGNORECASE
+)
 """Explicit alphanumeric lookbehind (excluding `_`), NOT `\\b` (review pass,
 Edge Case Hunter): `_` is a word character, so `\\b` never fires beside one
 and a prefixed name like `STAGING_JFROG_API_KEY` sailed through the original
@@ -160,7 +204,13 @@ already documents fixing for its own gotcha/v1-field entries (via the same
 "exclude alnum, but not underscore" lookaround), reintroduced here despite
 this file's own module docstring claiming to mirror that guard.
 Case-insensitive (review pass, Blind Hunter): `jfrog_api_key` names the same
-credential-shaped variable, lowercased."""
+credential-shaped variable, lowercased.
+The `_...` suffix is OPTIONAL, with a matching alnum lookahead (third review
+pass, Edge Case Hunter): requiring the trailing underscore meant
+`os.environ.items() ... if k.startswith("JFROG")` -- the idiomatic way to
+read a whole credential FAMILY at once -- scanned clean while naming no
+single variable. The lookahead keeps the bare form from matching inside an
+unrelated alphanumeric word."""
 
 
 def _first_statement_docstring_ids(body: list[ast.stmt]) -> set[int]:
@@ -250,36 +300,51 @@ def _add_chain_leaves(node: ast.BinOp) -> list[ast.expr] | None:
     return leaves if collect(node) else None
 
 
-def _folded_concatenations(tree: ast.Module) -> tuple[list[tuple[ast.BinOp, str]], set[int]]:
-    """Every OUTERMOST foldable `+`-chain paired with the one text it
-    evaluates to, plus the `id()`s of the constants those chains consumed
-    (follow-up review, both reviewers: `os.environ.get("JFROG" + "_API_KEY")`
-    scanned clean because `ast.walk` sees each half separately and neither
-    matches alone).
+def _folded_concatenations(
+    tree: ast.Module,
+) -> tuple[list[tuple[ast.BinOp, str, list[ast.expr]]], set[int]]:
+    """Every outermost FOLDABLE `+`-chain paired with the one text it
+    evaluates to and its own leaves, plus the `id()`s of the constants those
+    chains consumed (follow-up review, both reviewers:
+    `os.environ.get("JFROG" + "_API_KEY")` scanned clean because `ast.walk`
+    sees each half separately and neither matches alone).
 
-    Both halves of the return value exist to keep one expression counted
-    once. Inner chain nodes are skipped because the outermost node already
-    carries the whole folded text; the consumed leaves are skipped by the
-    caller's constant pass for the same reason -- otherwise `"JFROG_" +
-    "API" + "_KEY"` reports twice, once folded and once for the leaf
-    `"JFROG_"` that happens to match on its own."""
-    nested_ids: set[int] = set()
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.BinOp) or not isinstance(node.op, ast.Add):
-            continue
-        for operand in (node.left, node.right):
-            if isinstance(operand, ast.BinOp) and isinstance(operand.op, ast.Add):
-                nested_ids.add(id(operand))
+    "Outermost foldable", not "outermost" (third review pass, both
+    reviewers, reproduced): the first cut marked every `+`-operand that was
+    itself a `+`-chain as nested BEFORE knowing whether its parent folded,
+    so `"JFROG" + "_API_KEY" + suffix` -- an unfoldable outer node over a
+    perfectly foldable inner one -- skipped the inner chain as nested,
+    folded nothing, and scanned clean. One extra operand defeated the whole
+    fix. Nesting is now derived only from chains that actually fold.
 
-    folded: list[tuple[ast.BinOp, str]] = []
-    consumed_ids: set[int] = set()
+    `consumed_ids` exists to keep one expression counted once: the caller
+    skips these leaves in its plain constant pass, so `"JFROG_" + "API" +
+    "_KEY"` reports once (folded) rather than twice (folded, plus the leaf
+    `"JFROG_"` that happens to match alone). The caller re-scans the leaves
+    itself when the FOLD does not match, so this can only ever add
+    detections -- see `_find_jfrog_env_var_references`."""
+    foldable: dict[int, tuple[ast.BinOp, list[ast.expr]]] = {}
     for node in ast.walk(tree):
-        if not isinstance(node, ast.BinOp) or id(node) in nested_ids:
+        if not isinstance(node, ast.BinOp):
             continue
         leaves = _add_chain_leaves(node)
-        if leaves is None:
+        if leaves is not None:
+            foldable[id(node)] = (node, leaves)
+
+    nested_ids: set[int] = set()
+    for node, _leaves in foldable.values():
+        for operand in (node.left, node.right):
+            if id(operand) in foldable:
+                nested_ids.add(id(operand))
+
+    folded: list[tuple[ast.BinOp, str, list[ast.expr]]] = []
+    consumed_ids: set[int] = set()
+    for node_id, (node, leaves) in foldable.items():
+        if node_id in nested_ids:
             continue
-        folded.append((node, "".join(_constant_text_value(leaf) or "" for leaf in leaves)))
+        folded.append(
+            (node, "".join(_constant_text_value(leaf) or "" for leaf in leaves), leaves)
+        )
         consumed_ids |= {id(leaf) for leaf in leaves}
     return folded, consumed_ids
 
@@ -301,8 +366,28 @@ def _find_jfrog_env_var_references(root: Path) -> list[Violation]:
                     Violation(path, node.lineno, CATEGORY_ENV_VAR_NAME, match.group())
                 )
 
-        for chain, text in folded:
+        for chain, text, leaves in folded:
             match = _JFROG_ENV_VAR_PATTERN.search(text)
+            if match is None:
+                # The fold did not match, but a LEAF still can: `"staging" +
+                # "JFROG_API_KEY"` folds to `stagingJFROG_API_KEY`, which the
+                # alnum lookbehind correctly rejects, while the leaf alone is
+                # a plain violation the constant pass would have caught if
+                # folding had not consumed it (third review pass, Blind
+                # Hunter, reproduced -- folding was a NET WEAKENING for this
+                # shape). Reported once per chain, so the "one expression,
+                # one violation" property the fixtures pin still holds.
+                match = next(
+                    (
+                        m
+                        for m in (
+                            _JFROG_ENV_VAR_PATTERN.search(_constant_text_value(leaf) or "")
+                            for leaf in leaves
+                        )
+                        if m is not None
+                    ),
+                    None,
+                )
             if match is not None:
                 violations.append(
                     Violation(path, chain.lineno, CATEGORY_ENV_VAR_NAME, match.group())
@@ -323,8 +408,23 @@ over the banned set itself, so dropping `"requests"` from it also deleted the
 only fixture proving `requests` is detected -- a real `import requests` in
 `resolve.py` then scanned clean with the whole meta suite green. A derived
 floor would delete itself the same way. Mirrors
-`test_adapter_sole_caller.py::_REQUIRED_SPAWN_CALL_NAMES`, whose own deferred
-entry (`DW-1-10`) already documents this exact duplication rationale."""
+`test_adapter_sole_caller.py::_REQUIRED_SPAWN_CALL_NAMES`, which carries this
+same duplication rationale inline at its own definition (third review pass,
+Edge Case Hunter: the first cut cited ledger entry `DW-1-10` for it, which is
+actually about an owed follow-up review of Story 1.10 and says nothing about
+set duplication -- verified against the ledger)."""
+
+
+def _is_banned_http_module(name: str) -> bool:
+    """True for a banned client itself or ANY submodule of one (third review
+    pass, both reviewers, reproduced): `import requests.sessions` binds the
+    name `requests` with `requests.get` fully callable, and `from
+    requests.sessions import Session` hands back a complete session object --
+    both scanned clean under exact set membership, which made one dotted
+    suffix the cheapest possible defeat of this guard."""
+    return any(
+        name == banned or name.startswith(f"{banned}.") for banned in _BANNED_HTTP_IMPORTS
+    )
 
 
 def _find_http_client_imports(root: Path) -> list[Violation]:
@@ -334,7 +434,7 @@ def _find_http_client_imports(root: Path) -> list[Violation]:
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name in _BANNED_HTTP_IMPORTS:
+                    if _is_banned_http_module(alias.name):
                         violations.append(
                             Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, alias.name)
                         )
@@ -348,17 +448,20 @@ def _find_http_client_imports(root: Path) -> list[Violation]:
                 and node.level == 0
                 and node.module is not None
             ):
-                if node.module in _BANNED_HTTP_IMPORTS:
+                if _is_banned_http_module(node.module):
                     violations.append(
                         Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, node.module)
                     )
+                    continue
                 # The "parent, then submodule" spelling of the two dotted
                 # names -- `from urllib import request` / `from http import
                 # client` reach the identical submodule as `import
-                # urllib.request` / `import http.client`.
+                # urllib.request` / `import http.client`. Only reached when
+                # the module itself is clean, so one import is never counted
+                # twice.
                 for alias in node.names:
                     dotted = f"{node.module}.{alias.name}"
-                    if dotted in _BANNED_HTTP_IMPORTS:
+                    if _is_banned_http_module(dotted):
                         violations.append(
                             Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, dotted)
                         )
@@ -377,6 +480,8 @@ _ENV_OVERRIDE_CALL_NAMES = frozenset(
         "check_output",
         "create_subprocess_exec",
         "create_subprocess_shell",
+        "subprocess_exec",
+        "subprocess_shell",
         "run_streamed",
     }
 )
@@ -386,9 +491,13 @@ guard accepts. Every spawn API in this project's reach that takes `env` as a
 KEYWORD. The original set held only `run`/`Popen`/`run_streamed` (the three
 the spec's I/O matrix names by example), so `subprocess.check_output(...,
 env={...})` -- a plain, unexotic override -- scanned clean (follow-up review,
-Edge Case Hunter, reproduced). `os.execve`/`os.posix_spawn` are deliberately
-absent: they take env positionally-only, so no keyword scan can reach them
-(module docstring residuals)."""
+Edge Case Hunter, reproduced). `asyncio`'s low-level
+`loop.subprocess_exec`/`subprocess_shell` forward `**kwargs` straight to
+`subprocess.Popen`, so `env=` is a genuine keyword there; both names are
+already in `test_adapter_sole_caller.py::_REQUIRED_SPAWN_CALL_NAMES` and
+were missing here (third review pass, Blind Hunter, reproduced). The
+`os.exec*`/`os.spawn*` family is deliberately absent from THIS set and
+banned outright by `_BANNED_EXPLICIT_ENV_SPAWN_FUNCTIONS` below instead."""
 
 _REQUIRED_ENV_OVERRIDE_CALL_NAMES = frozenset(
     {
@@ -399,6 +508,8 @@ _REQUIRED_ENV_OVERRIDE_CALL_NAMES = frozenset(
         "check_output",
         "create_subprocess_exec",
         "create_subprocess_shell",
+        "subprocess_exec",
+        "subprocess_shell",
         "run_streamed",
     }
 )
@@ -406,6 +517,51 @@ _REQUIRED_ENV_OVERRIDE_CALL_NAMES = frozenset(
 and `test_adapter_sole_caller.py::_REQUIRED_SPAWN_CALL_NAMES`: narrowing the
 recognized set must also delete the name here, with the rationale in that
 diff."""
+
+CATEGORY_EXPLICIT_ENV_SPAWN = "explicit-env-spawn"
+
+_BANNED_EXPLICIT_ENV_SPAWN_FUNCTIONS = frozenset(
+    {
+        "execle",
+        "execlpe",
+        "execve",
+        "execvpe",
+        "spawnle",
+        "spawnlpe",
+        "spawnve",
+        "spawnvpe",
+        "posix_spawn",
+        "posix_spawnp",
+    }
+)
+"""The `os` spawn/exec calls that take an EXPLICIT environment rather than
+inheriting one -- banned outright, not scanned for an `env=` keyword (third
+review pass, both reviewers, reproduced). The environment argument is
+positional for all of them and positional-ONLY for
+`os.posix_spawn`/`posix_spawnp`, so no keyword-name scan can reach it, and
+`os.posix_spawn(path, argv, {"JFROG_API_KEY": tok})` was a complete,
+one-line AD-14 break that every guard in this file reported clean. An
+outright ban needs no arity analysis and costs nothing: `cfe.py`'s
+`run_streamed` is Mason's sanctioned spawn primitive (AD-3), so no module
+has any legitimate use for these. The non-`e` variants (`execv`, `spawnl`,
+...) are absent because they cannot carry an environment at all -- AD-3's
+own guard owns them."""
+
+_REQUIRED_EXPLICIT_ENV_SPAWN_FUNCTIONS = frozenset(
+    {
+        "execle",
+        "execlpe",
+        "execve",
+        "execvpe",
+        "spawnle",
+        "spawnlpe",
+        "spawnve",
+        "spawnvpe",
+        "posix_spawn",
+        "posix_spawnp",
+    }
+)
+"""Independently spelled floor, same rationale as `_REQUIRED_HTTP_IMPORTS`."""
 
 _SANCTIONED_PASS_THROUGH_ENV_EXPR = "dict(env) if env is not None else None"
 """The one `env=` expression the Guard-3 allowlist accepts, compared as
@@ -443,9 +599,20 @@ def _is_bare_none_literal(value: ast.expr) -> bool:
     return isinstance(value, ast.Constant) and value.value is None
 
 
-def _run_streamed_function_def(tree: ast.Module) -> ast.FunctionDef | None:
+def _run_streamed_function_def(
+    tree: ast.Module,
+) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    """`AsyncFunctionDef` too (third review pass, Edge Case Hunter,
+    reproduced): matching only `ast.FunctionDef` fails CLOSED -- an `async
+    def run_streamed` reds the guard on the sanctioned call itself rather
+    than opening a hole -- but a false positive whose cheapest repair is to
+    weaken the guard is exactly the failure mode this file designs against,
+    and `_docstring_string_ids` above already handles both node types."""
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == "run_streamed":
+        if (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "run_streamed"
+        ):
             return node
     return None
 
@@ -501,18 +668,56 @@ _ENV_MUTATING_METHODS = frozenset(
 )
 _ENV_MUTATING_FUNCTIONS = frozenset({"putenv", "unsetenv"})
 
+_REQUIRED_ENV_MUTATING_METHODS = frozenset(
+    {"update", "setdefault", "pop", "popitem", "clear", "__setitem__", "__delitem__"}
+)
+_REQUIRED_ENV_MUTATING_FUNCTIONS = frozenset({"putenv", "unsetenv"})
+"""Independently-spelled floors for Guard 3b, mirroring
+`_REQUIRED_HTTP_IMPORTS`/`_REQUIRED_ENV_OVERRIDE_CALL_NAMES` (third review
+pass, Blind Hunter): 3b was the only guard in this file without one. It is
+protected today only incidentally, because
+`test_detector_fires_on_each_process_environment_mutation` hardcodes its
+mutation strings instead of deriving them -- a future tidy-up to
+`@parametrize(sorted(_ENV_MUTATING_METHODS))` would reintroduce exactly the
+self-deleting-fixture bug this file already documents twice."""
+
+_ENV_MAPPING_NAMES = frozenset({"environ", "environb"})
+"""`os.environb` is the BYTES view of the identical POSIX environment and
+`putenv`s through it, so `os.environb[b"JFROG_API_KEY"] = tok` overrides
+what a spawned child inherits exactly as `os.environ[...]` does -- and an
+exact `== "environ"` match scanned it clean (third review pass, both
+reviewers, reproduced against a real child process)."""
+
 
 def _is_os_environ(node: ast.expr) -> bool:
-    """`os.environ` (attribute form) or a bare `environ` name imported from
-    `os` -- matched by name only, the same receiver-resolution residual the
-    rest of this file accepts."""
+    """`os.environ`/`os.environb` (attribute form) or the bare imported name
+    -- matched by name only, the same receiver-resolution residual the rest
+    of this file accepts."""
     if isinstance(node, ast.Attribute):
-        return node.attr == "environ"
-    return isinstance(node, ast.Name) and node.id == "environ"
+        return node.attr in _ENV_MAPPING_NAMES
+    return isinstance(node, ast.Name) and node.id in _ENV_MAPPING_NAMES
 
 
 def _is_os_environ_subscript(node: ast.expr) -> bool:
     return isinstance(node, ast.Subscript) and _is_os_environ(node.value)
+
+
+def _mutated_env_targets(node: ast.expr | None) -> list[ast.expr]:
+    """Every `os.environ[...]` subscript reachable from a binding target,
+    recursing through tuple/list/starred unpacking -- mirroring
+    `test_no_recipe_knowledge.py::_bound_names_in_target`, which already
+    recurses for exactly this reason (third review pass, both reviewers,
+    reproduced): the first cut inspected only top-level targets, so
+    `os.environ['JFROG_API_KEY'], ok = token, True` scanned clean."""
+    if node is None:
+        return []
+    if _is_os_environ_subscript(node):
+        return [node]
+    if isinstance(node, (ast.Tuple, ast.List)):
+        return [found for elt in node.elts for found in _mutated_env_targets(elt)]
+    if isinstance(node, ast.Starred):
+        return _mutated_env_targets(node.value)
+    return []
 
 
 def _find_env_mutation_violations(root: Path) -> list[Violation]:
@@ -530,9 +735,40 @@ def _find_env_mutation_violations(root: Path) -> list[Violation]:
                 targets = list(node.targets)
             elif isinstance(node, (ast.AugAssign, ast.AnnAssign)):
                 targets = [node.target]
-            if any(_is_os_environ_subscript(target) for target in targets):
+            elif isinstance(node, (ast.For, ast.AsyncFor)):
+                targets = [node.target]
+            elif isinstance(node, ast.withitem):
+                targets = [node.optional_vars] if node.optional_vars else []
+            matched = [t for target in targets for t in _mutated_env_targets(target)]
+            if matched:
+                # The matched TARGET's lineno, not the statement's:
+                # `ast.withitem` carries no `lineno` at all, so anchoring on
+                # the statement raised `AttributeError` out of the scanner
+                # instead of reporting the violation. Every `expr` node has
+                # one, and the target is the more precise anchor anyway.
                 violations.append(
-                    Violation(path, node.lineno, CATEGORY_ENV_MUTATION, "os.environ[...]")
+                    Violation(
+                        path,
+                        matched[0].lineno,
+                        CATEGORY_ENV_MUTATION,
+                        f"{ast.unparse(matched[0])} (assignment target)",
+                    )
+                )
+                continue
+            # `os.environ |= {...}` -- the operator that IS `update`
+            # (`MutableMapping.__ior__` calls `self.update`, which reaches
+            # `os._Environ.__setitem__` and `putenv`). Its target is the bare
+            # `os.environ` attribute, not a subscript, so it fell through
+            # both branches and scanned clean (third review pass, both
+            # reviewers, reproduced).
+            if isinstance(node, ast.AugAssign) and _is_os_environ(node.target):
+                violations.append(
+                    Violation(
+                        path,
+                        node.lineno,
+                        CATEGORY_ENV_MUTATION,
+                        f"os.environ {type(node.op).__name__}=",
+                    )
                 )
                 continue
             if not isinstance(node, ast.Call):
@@ -545,13 +781,18 @@ def _find_env_mutation_violations(root: Path) -> list[Violation]:
             ):
                 violations.append(
                     Violation(
-                        path, node.lineno, CATEGORY_ENV_MUTATION, f"os.environ.{func.attr}()"
+                        path, node.lineno, CATEGORY_ENV_MUTATION, f"{ast.unparse(func)}()"
                     )
                 )
             elif _call_name(node) in _ENV_MUTATING_FUNCTIONS:
+                # Reported as its own source text, not as `os.<name>()`
+                # (third review pass, Blind Hunter): this branch matches a
+                # bare call NAME with no receiver check -- deliberately
+                # conservative, but it must not name a module it never
+                # confirmed was involved.
                 violations.append(
                     Violation(
-                        path, node.lineno, CATEGORY_ENV_MUTATION, f"os.{_call_name(node)}()"
+                        path, node.lineno, CATEGORY_ENV_MUTATION, f"{ast.unparse(func)}()"
                     )
                 )
     return violations
@@ -566,15 +807,34 @@ def _find_env_override_violations(root: Path) -> list[Violation]:
             _allowlisted_popen_call_ids(tree) if path.resolve() == cfe_path else set()
         )
         for node in ast.walk(tree):
-            if not isinstance(node, ast.Call) or not _is_call_of_interest(node):
+            if not isinstance(node, ast.Call):
+                continue
+            if _call_name(node) in _BANNED_EXPLICIT_ENV_SPAWN_FUNCTIONS:
+                violations.append(
+                    Violation(
+                        path,
+                        node.lineno,
+                        CATEGORY_EXPLICIT_ENV_SPAWN,
+                        f"{ast.unparse(node.func)}()",
+                    )
+                )
+                continue
+            if not _is_call_of_interest(node):
                 continue
             if id(node) in allowlisted_ids:
                 continue
             env_value = _env_kwarg_value(node)
             if env_value is None or _is_bare_none_literal(env_value):
                 continue
+            # `ast.unparse`, not `ast.dump` (third review pass, Blind Hunter,
+            # reproduced): this guard's most likely real-world red is a
+            # benign reformat of `cfe.py`'s sanctioned pass-through, and a
+            # raw `IfExp(test=Name(id='env', ...))` dump gave a maintainer no
+            # signal distinguishing "you broke AD-14" from "you reformatted a
+            # line" -- the message must name the expected expression, since
+            # "the cheapest repair under a red guard is to weaken the guard".
             violations.append(
-                Violation(path, node.lineno, CATEGORY_ENV_OVERRIDE, ast.dump(env_value))
+                Violation(path, node.lineno, CATEGORY_ENV_OVERRIDE, ast.unparse(env_value))
             )
     return violations
 
@@ -617,10 +877,12 @@ def test_no_unallowlisted_env_override_in_the_real_tree():
     _assert_scanning_something(PKG_ROOT)
     violations = _find_env_override_violations(PKG_ROOT)
     assert not violations, (
-        "AD-14: env= on subprocess.run/Popen/run_streamed must be absent or "
-        "the bare literal None, except cfe.py's own run_streamed-internal "
-        "Popen call; found:\n"
-        + "\n".join(f"  {v.path}:{v.lineno} env={v.detail}" for v in violations)
+        "AD-14: env= on a spawn call must be absent or the bare literal "
+        "None, and no module may call the os.exec*e/spawn*e/posix_spawn "
+        "family at all. The ONE allowlisted site is cfe.py's own "
+        "run_streamed-internal Popen call, whose env= must unparse to "
+        f"exactly {_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Found:\n"
+        + "\n".join(f"  {v.path}:{v.lineno} [{v.category}] {v.detail}" for v in violations)
     )
 
 
@@ -654,6 +916,48 @@ def test_env_override_call_names_covers_the_required_floor():
         f"was specified with; missing: {sorted(missing)}. Widening the set is "
         "free; narrowing it must also delete the name from "
         "_REQUIRED_ENV_OVERRIDE_CALL_NAMES, with the rationale in that diff."
+    )
+
+
+def test_explicit_env_spawn_functions_covers_the_required_floor():
+    missing = _REQUIRED_EXPLICIT_ENV_SPAWN_FUNCTIONS - _BANNED_EXPLICIT_ENV_SPAWN_FUNCTIONS
+    assert not missing, (
+        "the explicit-environment spawn ban no longer covers every os.exec*e/"
+        f"spawn*e/posix_spawn name it was specified with; missing: "
+        f"{sorted(missing)}."
+    )
+
+
+def test_env_mutating_names_cover_the_required_floor():
+    missing = (_REQUIRED_ENV_MUTATING_METHODS - _ENV_MUTATING_METHODS) | (
+        _REQUIRED_ENV_MUTATING_FUNCTIONS - _ENV_MUTATING_FUNCTIONS
+    )
+    assert not missing, (
+        "the process-environment mutation guard no longer recognizes every "
+        f"mutating name it was specified with; missing: {sorted(missing)}."
+    )
+
+
+def test_the_real_cfe_py_allowlist_entry_is_still_live():
+    """The allowlist must never go stale (third review pass, Blind Hunter,
+    reproduced): deleting the `env=` line from the real `cfe.py` entirely --
+    so `run_streamed`'s `env` parameter is accepted and silently ignored, and
+    `_SANCTIONED_PASS_THROUGH_ENV_EXPR` matches nothing in the tree -- left
+    every guard test in this file green. A carve-out nobody exercises is a
+    carve-out that quietly comes to cover whatever that file grows next.
+    Mirrors `test_adapter_sole_caller.py::
+    test_cfe_path_allowlist_is_exactly_ad3s_two_live_carve_outs`."""
+    cfe_path = PKG_ROOT / "cfe.py"
+    assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
+
+    allowlisted = _allowlisted_popen_call_ids(_parse_file(cfe_path))
+
+    assert len(allowlisted) == 1, (
+        "AD-14's single allowlist entry is dead: cfe.py's run_streamed no "
+        "longer contains exactly one Popen call whose env= unparses to "
+        f"{_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Either the sanctioned "
+        "pass-through was rewritten (a real AD-14 change -- justify it) or "
+        "the allowlist is now covering nothing and must be deleted."
     )
 
 
@@ -825,6 +1129,73 @@ def test_a_multi_part_concatenation_is_reported_once_not_once_per_operand(tmp_pa
     assert len(violations) == 1
 
 
+def test_detector_fires_on_a_bare_jfrog_prefix_filter(tmp_path):
+    """Third review pass (Edge Case Hunter): reading a whole credential
+    FAMILY by its bare `JFROG` prefix reads every `JFROG_*` variable while
+    naming none of them, and the required trailing `_` let it scan clean."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(
+        "import os\n"
+        'CREDS = {k: v for k, v in os.environ.items() if k.startswith("JFROG")}\n',
+        encoding="utf-8",
+    )
+
+    violations = _find_jfrog_env_var_references(root)
+
+    assert any(v.category == CATEGORY_ENV_VAR_NAME for v in violations)
+
+
+def test_a_bare_jfrog_inside_an_alphanumeric_word_is_not_flagged(tmp_path):
+    """The optional-suffix form keeps its alnum lookahead: `JFROGGY` is not
+    a credential variable, and dropping the trailing guard would have made
+    the bare form match inside any word starting with those five letters."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "clean.py").write_text('LABEL = "JFROGGY"\n', encoding="utf-8")
+
+    assert _find_jfrog_env_var_references(root) == []
+
+
+def test_detector_fires_on_a_foldable_chain_nested_in_an_unfoldable_one(tmp_path):
+    """Third review pass (both reviewers): `"JFROG" + "_API_KEY" + suffix`
+    parses as `(("JFROG" + "_API_KEY") + suffix)`. The outer chain is
+    unfoldable (`suffix` is a `Name`), and the first cut had already marked
+    the perfectly-foldable inner chain as "nested" before knowing that -- so
+    nothing folded and neither leaf matched alone. One extra operand defeated
+    the entire concatenation fix."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(
+        "import os\n"
+        "suffix = ''\n"
+        'KEY = os.environ.get("JFROG" + "_API_KEY" + suffix)\n',
+        encoding="utf-8",
+    )
+
+    violations = _find_jfrog_env_var_references(root)
+
+    assert any(v.category == CATEGORY_ENV_VAR_NAME for v in violations)
+
+
+def test_a_leaf_matching_alone_is_still_flagged_when_its_fold_does_not_match(tmp_path):
+    """Third review pass (Blind Hunter): `"staging" + "JFROG_API_KEY"` folds
+    to `stagingJFROG_API_KEY`, which the alnum lookbehind correctly rejects
+    -- and the first cut then suppressed the leaf `"JFROG_API_KEY"` as
+    "consumed", so adding the fold made this shape LESS detectable than
+    before. Folding must only ever add detections."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(
+        'import os\nKEY = os.environ.get("staging" + "JFROG_API_KEY")\n',
+        encoding="utf-8",
+    )
+
+    violations = _find_jfrog_env_var_references(root)
+
+    assert len(violations) == 1
+
+
 def test_a_non_string_concatenation_is_not_folded(tmp_path):
     """`1 + 2` (or any chain with a non-string-ish leaf) has no text to
     match -- folding must not crash or invent one."""
@@ -880,6 +1251,55 @@ def test_clean_module_produces_zero_http_import_matches(tmp_path):
     root.mkdir()
     (root / "clean.py").write_text(
         "import subprocess\nfrom pathlib import Path\n", encoding="utf-8",
+    )
+
+    assert _find_http_client_imports(root) == []
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "import requests.sessions",
+        "import httpx._client",
+        "from requests.sessions import Session",
+        "from urllib.request import urlopen",
+    ],
+)
+def test_detector_fires_on_a_submodule_of_a_banned_http_client(tmp_path, statement):
+    """Third review pass (both reviewers, reproduced): `import
+    requests.sessions` binds the name `requests` with `requests.get` fully
+    callable, and `from requests.sessions import Session` hands back a
+    complete session object -- both scanned clean under exact set
+    membership. One dotted suffix was the cheapest possible defeat of this
+    guard, and no declared residual covered it."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(f"{statement}\n", encoding="utf-8")
+
+    violations = _find_http_client_imports(root)
+
+    assert any(v.category == CATEGORY_HTTP_IMPORT for v in violations)
+
+
+def test_a_submodule_import_is_reported_once_not_twice(tmp_path):
+    """`from requests.sessions import Session` matches both the module name
+    and the module-plus-alias dotted form; only one violation is right."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(
+        "from requests.sessions import Session\n", encoding="utf-8",
+    )
+
+    assert len(_find_http_client_imports(root)) == 1
+
+
+def test_a_module_merely_prefixed_by_a_banned_name_is_not_flagged(tmp_path):
+    """Submodule matching is on a dotted boundary, not a bare string
+    prefix: `requestsx` and `httpxray` are unrelated third-party names."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "clean.py").write_text(
+        "import requestsx\nfrom httpxray import Tracer\n", encoding="utf-8",
     )
 
     assert _find_http_client_imports(root) == []
@@ -1108,6 +1528,64 @@ def test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_call(
     assert any(v.category == CATEGORY_ENV_OVERRIDE for v in violations)
 
 
+@pytest.mark.parametrize("name", sorted(_REQUIRED_EXPLICIT_ENV_SPAWN_FUNCTIONS))
+def test_detector_fires_on_each_explicit_environment_spawn_function(tmp_path, name):
+    """Third review pass (both reviewers, reproduced): these take the
+    environment POSITIONALLY (positional-ONLY for `os.posix_spawn`), so the
+    `env=` keyword scan could not reach them, and
+    `os.posix_spawn(path, argv, {"JFROG_API_KEY": tok})` was a complete
+    one-line AD-14 break that every guard reported clean. The earlier
+    docstring excused this on two grounds now verified FALSE:
+    `inspect.signature(os.execve)` is `(path, argv, env)` -- keyword-capable
+    -- and `test_adapter_sole_caller.py`'s AD-3 guard only fires when a
+    spawn's arguments name a CFE path or script."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(
+        f'import os\nos.{name}("/bin/sh", ["sh"], {{"JFROG_API_KEY": "x"}})\n',
+        encoding="utf-8",
+    )
+
+    violations = _find_env_override_violations(root)
+
+    assert any(v.category == CATEGORY_EXPLICIT_ENV_SPAWN for v in violations)
+
+
+def test_an_inheriting_spawn_variant_is_not_flagged(tmp_path):
+    """The ban covers only the variants that take an EXPLICIT environment
+    (`*e`-suffixed, plus `posix_spawn`). `os.execv`/`os.spawnv` cannot carry
+    one at all -- AD-3's own guard owns those, and flagging them here would
+    duplicate a different architecture decision."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "clean.py").write_text(
+        'import os\nos.execv("/bin/sh", ["sh"])\n', encoding="utf-8",
+    )
+
+    assert _find_env_override_violations(root) == []
+
+
+def test_allowlist_permits_an_async_run_streamed(tmp_path):
+    """Third review pass (Edge Case Hunter, reproduced): matching only
+    `ast.FunctionDef` meant an `async def run_streamed` voided the allowlist
+    and red the guard on the sanctioned call itself -- a false positive
+    whose cheapest repair is to weaken the guard."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "cfe.py").write_text(
+        "import subprocess\n"
+        "\n"
+        "\n"
+        "async def run_streamed(argv, *, timeout, env=None):\n"
+        "    return subprocess.Popen(\n"
+        "        argv, env=dict(env) if env is not None else None,\n"
+        "    )\n",
+        encoding="utf-8",
+    )
+
+    assert _find_env_override_violations(root) == []
+
+
 def test_allowlist_is_matched_by_path_not_bare_filename(tmp_path):
     """The allowlist resolves `root/"cfe.py"`, not any file *named*
     `cfe.py`: a same-named module nested elsewhere in the tree must still be
@@ -1158,6 +1636,64 @@ def test_detector_fires_on_each_process_environment_mutation(tmp_path, mutation)
         f"import os\nimport subprocess\n{mutation}\nsubprocess.run(['x'])\n",
         encoding="utf-8",
     )
+
+    violations = _find_env_mutation_violations(root)
+
+    assert any(v.category == CATEGORY_ENV_MUTATION for v in violations)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "os.environ |= {'JFROG_API_KEY': 't'}",
+        "os.environb[b'JFROG_API_KEY'] = b't'",
+        "os.environb.update({b'A': b'b'})",
+        "os.environ['JFROG_API_KEY'], ok = 't', True",
+        "[os.environ['A']] = ['b']",
+    ],
+    ids=["ior", "environb-subscript", "environb-update", "tuple-target", "list-target"],
+)
+def test_detector_fires_on_each_indirect_process_environment_mutation(tmp_path, mutation):
+    """Third review pass (both reviewers, reproduced against real child
+    processes). Three distinct holes in one family:
+
+    * `os.environ |= {...}` is the operator that IS `update`
+      (`MutableMapping.__ior__` -> `os._Environ.__setitem__` -> `putenv`),
+      but its target is the bare attribute rather than a subscript, so it
+      fell through every branch.
+    * `os.environb` is the BYTES view of the identical POSIX environment; an
+      exact `== "environ"` name match scanned it clean.
+    * Unpacking targets were only inspected one level deep, so
+      `os.environ['JFROG_API_KEY'], ok = token, True` scanned clean --
+      `test_no_recipe_knowledge.py::_bound_names_in_target` already recurses
+      for exactly this reason."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(
+        f"import os\nimport subprocess\n{mutation}\nsubprocess.run(['x'])\n",
+        encoding="utf-8",
+    )
+
+    violations = _find_env_mutation_violations(root)
+
+    assert any(v.category == CATEGORY_ENV_MUTATION for v in violations)
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "for os.environ['A'] in ['b']:\n    pass",
+        "with open('f') as os.environ['A']:\n    pass",
+    ],
+    ids=["for-target", "with-target"],
+)
+def test_detector_fires_on_a_binding_target_that_is_not_an_assignment(tmp_path, statement):
+    """`for` and `with ... as` targets bind exactly like an assignment does
+    -- exotic spellings, but they mutate the real environment (third review
+    pass, Edge Case Hunter, reproduced)."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "sneaky.py").write_text(f"import os\n{statement}\n", encoding="utf-8")
 
     violations = _find_env_mutation_violations(root)
 
