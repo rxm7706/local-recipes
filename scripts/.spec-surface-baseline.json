@@ -2151,7 +2151,7 @@
   "files": {
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
    "docs/dashboard/check_render.js": "a24955d88fc73dc6ba2e790d843a99619aebae59",
-   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
+   "docs/dashboard/generate.py": "b19acbf9fb420ca45a28fe0334538c76a3319c08",
    "docs/dashboard/index.html": "5fe4e1832ca1dffe7a0350d52d768ffd1cc35198",
    "docs/dashboard/kedro-viz/.vite/manifest.json": "a792c3db598433602b258c3a62adb718e0999a38",
    "docs/dashboard/kedro-viz/404.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
@@ -2360,7 +2360,7 @@
    "docs/dashboard/kedro-viz/index.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081"
   },
-  "memlog": "09b531c2b684f9b75df707f82004c4094d7cc990"
+  "memlog": "1e7099fdc62df68637d6951a65456bcc8dd527eb"
  },
  "pyforge-marshal/spec-fidelity-enforcement": {
   "files": {},
