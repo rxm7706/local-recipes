@@ -757,3 +757,80 @@ def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, 
         assert main(["doctor", "--verbose"]) == EXIT_OK
     err = capsys.readouterr().err
     assert marker not in err
+
+
+# --- Story 2.3: credential isolation (AD-14) --------------------------------
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [[], ["--quiet"], ["--verbose"], ["--format", "json"], ["--verbose", "--format", "json"]],
+    ids=["default", "quiet", "verbose", "json", "verbose-json"],
+)
+def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, capsys, tmp_path, flags):
+    """AD-14: a JFROG_* credential must never surface in `mason doctor`'s
+    output at ANY verbosity (review pass, Edge Case Hunter: the original
+    version only exercised --verbose despite this exact claim) or in EITHER
+    output format (third review pass, Blind Hunter: `--format json` is the
+    documented machine-consumed contract surface and `render_json` was never
+    exercised with the sentinel set -- latent only because `render_text`
+    happens to print the same `data` keys today).
+
+    `doctor.build_report` is deliberately NOT mocked (follow-up review, both
+    reviewers, reproduced): it is the only function in the `doctor` path
+    that receives `os.environ` at all, so patching it made this test's own
+    claim -- that the *report* never echoes the ambient environment --
+    structurally unreachable. With the mock in place, a `build_report` that
+    folded `environ` into the report printed `JFROG_API_KEY=<sentinel>` to
+    stdout while all three parametrized cases still passed.
+
+    Hermeticity follows `test_doctor.py::
+    test_build_report_never_raises_against_a_real_unresolved_environment`'s
+    established pattern (AD-16): `PATH` points at an empty directory so every
+    engine probe reliably reports absent, and the CFE-root walk starts from
+    an empty `tmp_path`, while `resolve.py`'s chains and `cfe.py`'s real
+    subprocess probe stay genuinely unmocked. The `MASON_*` deletes are that
+    hermeticity, not case separation: a stale `MASON_CFE_ROOT`/`MASON_FORMAT`
+    in the runner's shell would change what is rendered (fourth review pass,
+    Blind Hunter -- the earlier claim that they "keep the three verbosity
+    cases from collapsing into one" was false in both directions; see
+    below).
+
+    The three verbosity ids exercise ONE render path today, deliberately and
+    knowingly (fourth review pass, both reviewers, reproduced): `--quiet`
+    and `--verbose` reach only `_configure_logging`, `render.py` has no
+    verbosity branch at all, and nothing in the package emits a log record
+    yet (`conftest.py`'s own docstring), so all three produce byte-identical
+    output. They are kept as forward coverage for the AC's "at ANY
+    verbosity" -- the moment a verbosity-conditional render path lands, this
+    test covers it without being rewritten -- while the `format` axis is the
+    one that genuinely differs today. The pre-existing
+    `test_env_var_value_never_appears_in_captured_stderr_log_output` above
+    owns the log-stream surface.
+
+    The POSITIVE control is what keeps the sentinel assertions from passing
+    vacuously: an absence assertion over empty output proves nothing, so the
+    report must first be shown to have actually rendered."""
+    for name in ("MASON_QUIET", "MASON_VERBOSE", "MASON_FORMAT", "MASON_CFE_ROOT",
+                 "MASON_CFE_PYTHON"):
+        monkeypatch.delenv(name, raising=False)
+    empty_path_dir = tmp_path / "empty-path"
+    empty_path_dir.mkdir()
+    monkeypatch.setenv("PATH", str(empty_path_dir))
+    monkeypatch.chdir(tmp_path)
+
+    sentinel = "JFROG-SENTINEL-9f3e7a1c"
+    monkeypatch.setenv("JFROG_API_KEY", sentinel)
+
+    assert main(["doctor", *flags]) == EXIT_OK
+
+    out = capsys.readouterr()
+    # Positive control first: `mason_version` is a `DoctorReport` field that
+    # both renderers emit (`render_text` prints one line per `data` key,
+    # `render_json` puts the same keys in the envelope's `data`), so this
+    # fails the moment the report stops reaching stdout -- without it, the
+    # two absence assertions below would pass just as happily against empty
+    # output (fourth review pass, both reviewers).
+    assert "mason_version" in out.out
+    assert sentinel not in out.out
+    assert sentinel not in out.err

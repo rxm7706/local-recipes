@@ -11,7 +11,18 @@ Story 2.1 extends this file with CAPTURE-mode coverage: `_extract_json`'s
 tolerant-parsing paths, `_invoke_captured`'s I/O-matrix behavior (mocked),
 and `validate_recipe`/`submit_pr` end-to-end against Story 1.9's
 `fake_cfe_root` fixture, real subprocess, no mocking (mirroring
-`test_fake_cfe_root_fixture.py`'s own style for that half)."""
+`test_fake_cfe_root_fixture.py`'s own style for that half).
+
+Story 2.3 extends this file with the AD-14 sentinel-credential test, which
+runs `probe_import_floor` against a real interpreter rather than a mock --
+narrowing the Story 1.6 paragraph's "mocked throughout" to that story's own
+tests (follow-up review, Blind Hunter): proving a credential never surfaces
+in a returned result is only worth anything against the real subprocess
+boundary it would have to cross. (It is not the ONLY such place, as this
+paragraph originally claimed -- `test_doctor.py::test_build_report_never_
+raises_against_a_real_unresolved_environment` and Story 2.3's own
+`test_cli.py` sentinel test both reach the real probe too; fourth review
+pass, Blind Hunter.)"""
 
 from __future__ import annotations
 
@@ -1372,3 +1383,77 @@ def test_validate_recipe_against_fake_cfe_root_with_plain_text_stdout_reports_js
     assert result.returncode == 0
     assert result.json_body is None
     assert "plain text, not json" in result.stdout
+
+
+# --- Story 2.3: credential isolation -- sentinel-credential test (AD-14) ---
+
+
+def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, monkeypatch):
+    """AD-14: Mason never reads a JFROG_* variable, and a credential reaches
+    CFE only through the inherited process environment -- never surfaced
+    back into a returned result's own fields. A sentinel value set via
+    `monkeypatch.setenv` proves this for the three call sites the spec
+    names: `probe_import_floor` and `validate_recipe`/`submit_pr` (all three
+    against Story 1.9's `fake_cfe_root` fixture where applicable, real
+    subprocess, no mocking -- mirroring this file's existing fake-root
+    tests).
+
+    **The POSITIVE control is what gives this test teeth** (third review
+    pass, both reviewers, reproduced). Without it the test could not fail:
+    the fake root's stubs emit a canned constant that never reads the
+    ambient environment, so `result.stdout`/`stderr`/`json_body` were
+    incapable of carrying the sentinel no matter what Mason did -- Blind
+    Hunter changed `_invoke_captured` to pass `env={}` to `subprocess.run`
+    (Mason scrubbing the child's environment wholesale, the exact inverse of
+    AD-14) and this test stayed green. Setting `MASON_FIXTURE_STDOUT` makes
+    the stub echo a value that can ONLY have come from the inherited
+    environment, so the "credentials DO reach CFE" half of AD-14 is now
+    asserted at runtime rather than only structurally by the Guard 3 AST
+    scans -- and that same `env={}` mutation now reds this test.
+
+    `probe_import_floor`'s assertion is over its result's actual FIELDS
+    (`interpreter`, `missing`), not `isinstance` (follow-up review, Blind
+    Hunter): both of `probe_import_floor`'s return paths construct an
+    `ImportFloorResult`, so the original `isinstance` check could not fail.
+    Both fields remain structurally incapable of carrying child output
+    (`interpreter` is the argument echoed back; `missing` is always a subset
+    of `cfe.py`'s own `CFE_IMPORT_FLOOR` keys), so this half is a
+    shape assertion over the spec's third named call site, not a leak
+    assertion -- the leak-detecting force lives in the two `CfeResult`
+    checks below and the positive control above.
+
+    The `stderr` assertion is a tripwire, not a proof, and is disclosed as
+    such (fourth review pass, Edge Case Hunter): `_stub_support.emit` has no
+    stderr channel at all, so `result.stderr` is always `""` under this
+    fixture and that assertion cannot currently fail. It is kept because it
+    costs nothing and becomes real the moment the fixture grows one; the
+    stream that carries this test's actual force is `stdout`/`json_body`,
+    which the positive control proves is live. Giving the stub a
+    `MASON_FIXTURE_STDERR` knob purely to make the assertion bite would
+    expand Story 1.9's shared fixture to re-prove, on a second stream, the
+    same inheritance the first stream already establishes."""
+    _clear_fixture_env(monkeypatch)
+    sentinel = "JFROG-SENTINEL-9f3e7a1c"
+    monkeypatch.setenv("JFROG_API_KEY", sentinel)
+
+    inheritance_marker = "INHERITED-ENV-4b21d0e8"
+    monkeypatch.setenv("MASON_FIXTURE_STDOUT", f'{{"inherited": "{inheritance_marker}"}}')
+
+    floor_result = probe_import_floor(sys.executable)
+    assert sentinel not in floor_result.interpreter
+    assert not any(sentinel in name for name in floor_result.missing)
+
+    validate_result = validate_recipe(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+    submit_result = submit_pr(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    for result in (validate_result, submit_result):
+        # Positive: the child really did inherit the parent's environment.
+        assert result.json_body == {"inherited": inheritance_marker}
+        # Negative: and the credential sitting beside it never came back.
+        assert sentinel not in result.stdout
+        assert sentinel not in result.stderr
+        assert sentinel not in str(result.json_body)
