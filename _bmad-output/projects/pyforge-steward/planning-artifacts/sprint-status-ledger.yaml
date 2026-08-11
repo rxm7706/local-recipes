@@ -47,7 +47,7 @@ development_status:
   8-3-idempotent-update-processing: done
   8-4-fail-loud-fail-alone: blocked
   8-5-explicit-status-vocabulary-translation: blocked
-  9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: backlog
+  9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: backlog
   9-3-the-audit-trail-records-what-was-seen: backlog
   9-4-export-gated-server-side: backlog

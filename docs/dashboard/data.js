@@ -2818,12 +2818,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "31/40",
+            "32/40",
             "stories complete",
             "var(--done)"
           ],
           [
-            "9",
+            "8",
             "remaining",
             ""
           ]
@@ -3086,7 +3086,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "9.1",
-              "pending",
+              "done",
               "Identity at the boundary, declared isolation, and the cache invariant"
             ],
             [
@@ -3728,7 +3728,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 10:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 10:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4834,7 +4834,7 @@ window.DASHBOARD_DATA = {
       "title": "mason CLI — the packaging factory, made portable",
       "caps": 13,
       "companions": 5,
-      "updated": "2026-08-10",
+      "updated": "2026-08-11",
       "dream": "pyforge-mason",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason"
     },
@@ -5695,7 +5695,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "running",
           "note": "next free slot",
-          "done": 31,
+          "done": 32,
           "total": 40
         },
         {
@@ -6319,8 +6319,8 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-02",
           "epics": "2026-08-02",
-          "sprint": "2026-08-10",
-          "tea": "2026-08-10",
+          "sprint": "2026-08-11",
+          "tea": "2026-08-11",
           "gates": "2026-08-10",
           "code": "2026-08-09",
           "verify": "2026-08-09",
@@ -6410,8 +6410,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "13/42",
@@ -6568,7 +6568,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T20:53",
+          "spec": "2026-08-11T10:42",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6651,7 +6651,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T20:53",
+            "at": "2026-08-11T10:42",
             "other": "2026-08-01"
           }
         ],
@@ -6660,7 +6660,7 @@ window.DASHBOARD_DATA = {
         "age": 1,
         "stale": false,
         "version": "0.1.0",
-        "progress": "31/40",
+        "progress": "32/40",
         "complete": 14,
         "of": 14
       },
@@ -11018,8 +11018,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11124,8 +11124,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11230,8 +11230,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11336,8 +11336,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11442,8 +11442,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11550,8 +11550,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11656,8 +11656,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-10",
-        "age": 1,
+        "updated": "2026-08-11",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -15606,8 +15606,8 @@ window.DASHBOARD_DATA = {
       "subject": "marshal: dream + spec + Story 5.8 for the supervisor-liveness fallback gap"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 10:53 UTC",
-    "generatedEpoch": 1786445582
+    "generatedAt": "2026-08-11 10:54 UTC",
+    "generatedEpoch": 1786445664
   },
   "storySpecs": [
     {
@@ -15648,9 +15648,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 31,
+      "done": 32,
       "tracked": 18,
-      "gap": 13
+      "gap": 14
     },
     {
       "station": "pyforge-warden",
@@ -15795,17 +15795,16 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 31,
-        "backlog": 7,
+        "done": 32,
+        "backlog": 6,
         "blocked": 2,
         "total": 40,
-        "next": "9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant",
+        "next": "9-2-an-unauthorized-page-is-absent-not-hidden",
         "blockedKeys": [
           "8-4-fail-loud-fail-alone",
           "8-5-explicit-status-vocabulary-translation"
         ],
         "backlogKeys": [
-          "9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant",
           "9-2-an-unauthorized-page-is-absent-not-hidden",
           "9-3-the-audit-trail-records-what-was-seen",
           "9-4-export-gated-server-side",
@@ -15919,8 +15918,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 277,
-      "backlog": 89,
+      "done": 278,
+      "backlog": 88,
       "blocked": 6,
       "total": 372
     }
@@ -15996,13 +15995,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 40,
-        "done": 31,
+        "done": 32,
         "blocked": 2,
         "epics": 9,
         "epicsDone": 7,
         "complete": false,
         "running": false,
-        "projected": 31
+        "projected": 32
       },
       {
         "key": "warden",
@@ -16018,7 +16017,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 372,
-      "done": 277,
+      "done": 278,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 53
@@ -16026,7 +16025,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 277
+      "projected": 278
     }
   }
 };
