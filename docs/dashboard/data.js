@@ -522,7 +522,7 @@ window.DASHBOARD_DATA = {
         "median": 101,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-11 00:34 UTC"
+        "phaseAsOf": "2026-08-11 00:40 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1292,7 +1292,7 @@ window.DASHBOARD_DATA = {
         "median": 97,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-11 00:34 UTC"
+        "phaseAsOf": "2026-08-11 00:40 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2211,7 +2211,7 @@ window.DASHBOARD_DATA = {
         "median": 46,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-11 00:34 UTC"
+        "phaseAsOf": "2026-08-11 00:40 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2711,7 +2711,7 @@ window.DASHBOARD_DATA = {
         "median": 64,
         "lo": 19,
         "hi": 360,
-        "phaseAsOf": "2026-08-11 00:34 UTC"
+        "phaseAsOf": "2026-08-11 00:40 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3693,7 +3693,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 00:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 00:40 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4439,7 +4439,7 @@ window.DASHBOARD_DATA = {
       "title": "herald-moments-2-4-live-backend",
       "caps": 5,
       "companions": 0,
-      "updated": "2026-08-09",
+      "updated": "2026-08-10",
       "dream": "herald-moments-2-4-live-backend",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend"
     },
@@ -4889,7 +4889,7 @@ window.DASHBOARD_DATA = {
       "title": "All six open questions were ANSWERED by the architecture run of 2026-08-09 and by",
       "caps": 8,
       "companions": 0,
-      "updated": "2026-08-09",
+      "updated": "2026-08-10",
       "dream": "secure-live-dashboards",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards"
     },
@@ -6025,8 +6025,8 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-02",
-          "epics": "2026-08-08",
-          "sprint": "2026-08-08",
+          "epics": "2026-08-10",
+          "sprint": "2026-08-10",
           "tea": "2026-08-08",
           "gates": "2026-08-10",
           "code": "2026-08-07",
@@ -7703,9 +7703,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-08",
+          "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-09T19:58",
+          "spec": "2026-08-10T19:35",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10786,7 +10786,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T17:55",
+          "spec": "2026-08-10T19:35",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12277,7 +12277,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-09T20:09",
+          "spec": "2026-08-10T19:35",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -15429,8 +15429,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 00:34 UTC",
-    "generatedEpoch": 1786408459
+    "generatedAt": "2026-08-11 00:40 UTC",
+    "generatedEpoch": 1786408853
   },
   "storySpecs": [
     {
@@ -15648,16 +15648,17 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 47,
-        "backlog": 6,
-        "blocked": 0,
+        "backlog": 5,
+        "blocked": 1,
         "total": 53,
         "next": "13-1-the-state-layer-survives-a-second-writer",
-        "blockedKeys": [],
+        "blockedKeys": [
+          "13-4-the-webhook-endpoint-ci-calls"
+        ],
         "backlogKeys": [
           "13-1-the-state-layer-survives-a-second-writer",
           "13-2-the-serverless-intermediate-decision-recorded",
           "13-3-db-backed-storage-behind-the-existing-seam-with-migrations",
-          "13-4-the-webhook-endpoint-ci-calls",
           "13-5-the-scheduler-enforces-what-was-displayed",
           "13-6-a-ship-records-itself-end-to-end"
         ],
@@ -15741,8 +15742,8 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 267,
-      "backlog": 100,
-      "blocked": 5,
+      "backlog": 99,
+      "blocked": 6,
       "total": 372
     }
   },
@@ -15774,7 +15775,7 @@ window.DASHBOARD_DATA = {
         "key": "herald",
         "stories": 53,
         "done": 47,
-        "blocked": 0,
+        "blocked": 1,
         "epics": 13,
         "epicsDone": 12,
         "complete": false,
@@ -15840,7 +15841,7 @@ window.DASHBOARD_DATA = {
     "total": {
       "stories": 372,
       "done": 267,
-      "blocked": 5,
+      "blocked": 6,
       "epics": 74,
       "epicsDone": 53
     },
