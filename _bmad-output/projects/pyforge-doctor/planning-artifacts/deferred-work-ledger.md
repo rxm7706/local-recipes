@@ -169,3 +169,22 @@ Durability first; curation is owned follow-up work.
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
+### DW-5: Follow-up review still recommended for 7-1-the-emitter-mints-identity-at-defer-time after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-7-1-the-emitter-mints-identity-at-defer-time.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-192603-53da; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass, doctor 7-1 review)
+
+
+### DW-FU-7-1-7: marshal's promoter cannot suffix around an id collision, so a minted id that reuses a promoted-follow-up id silently cancels a real promotion
+- source_spec: `{project-root}/_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
+  summary: marshal's promoter cannot suffix around an id collision, so a minted id that reuses a promoted-follow-up id silently cancels a real promotion.
+  evidence: Found by review pass 4 (Blind Hunter). Verified by direct inspection of `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/deferred_work.py`: `promoted_id()` is documented as having "no numeric counter" and returns the follow-up shape built from `render_filename_slug(story_key)` alone, while `deferrals_to_promote()` skips any candidate whose `promoted_id` already appears as a complete token in the tracked text (`_tracked_promoted_ids`, `_PROMOTED_ID_TOKEN_RE`). The emitter can suffix around a collision; the promoter cannot. So once an emitter-minted entry for a story is promoted into the tracked ledger, a genuine `review-budget-followup` deferral for that same story is dropped by `marshal land` with no error, and its Tier-3 generic id then reds the deferred-work gate with nothing able to close it. Live today for this very story: `DW-FU-7-1` is already in doctor's tracked ledger. This is causally distinct from `DW-FU-7-1-2`, and in fact falsifies that entry's stated premise -- it records the overlap as "collision-safe by suffix", which holds only on the emitter side. Not patched in this pass: Story 7.1's Never clause scopes the promotion mechanism out ("Never touch the tracked ledger, the promotion mechanism..."), and the shape mapping itself is operator-confirmed in the epic. Resolving it is a planning-level decision on `DW-FU-7-1-2`'s ground, now with the harder constraint that suffixing is not a workaround.
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass, doctor 7-1 review)
+
