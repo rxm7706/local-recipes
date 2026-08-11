@@ -3728,7 +3728,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 11:36 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 11:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4504,7 +4504,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-herald",
       "caps": 3,
       "companions": 6,
-      "updated": "2026-08-10",
+      "updated": "2026-08-11",
       "dream": "pyforge-herald",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
     },
@@ -5724,7 +5724,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 71,
-          "total": 119
+          "total": 120
         },
         {
           "slug": "wasm-analytics-stack",
@@ -6199,7 +6199,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-08-10T18:50",
           "research": "2026-08-08",
           "brief": "2026-08-02",
-          "prd": "2026-08-09",
+          "prd": "2026-08-11",
           "ux": "",
           "arch": "2026-08-10",
           "context": "2026-06-20",
@@ -13148,22 +13148,9 @@ window.DASHBOARD_DATA = {
     }
   },
   "backlog": {
-    "rows": [
-      {
-        "slug": "fleet-status-supervisor-fallback",
-        "title": "A dead supervisor and a dead engine report identically — and only one of them needs help",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-status-supervisor-fallback"
-        }
-      }
-    ],
+    "rows": [],
     "blocked": 0,
-    "byOwner": {
-      "marshal": 1
-    },
+    "byOwner": {},
     "practices": [
       {
         "slug": "agent-portability",
@@ -13286,7 +13273,7 @@ window.DASHBOARD_DATA = {
           "practice": 4
         },
         "line": "paused 5.8",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -15641,8 +15628,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260810-194532-e993/13-2-the-serverless-intermediate-decision-recorded into loop/pyforge-herald (bmad-l"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 11:36 UTC",
-    "generatedEpoch": 1786448184
+    "generatedAt": "2026-08-11 11:43 UTC",
+    "generatedEpoch": 1786448602
   },
   "storySpecs": [
     {
@@ -15755,9 +15742,9 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 71,
-        "backlog": 45,
+        "backlog": 46,
         "blocked": 3,
-        "total": 119,
+        "total": 120,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
           "7-2-error-taxonomy-and-exit-codes",
@@ -15953,9 +15940,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 281,
-      "backlog": 85,
+      "backlog": 86,
       "blocked": 6,
-      "total": 372
+      "total": 373
     }
   },
   "fleetProgress": {
@@ -15995,11 +15982,11 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "marshal",
-        "stories": 119,
+        "stories": 120,
         "done": 71,
         "blocked": 3,
         "epics": 19,
-        "epicsDone": 7,
+        "epicsDone": 6,
         "complete": false,
         "running": false,
         "projected": 71
@@ -16050,11 +16037,11 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 372,
+      "stories": 373,
       "done": 281,
       "blocked": 6,
       "epics": 74,
-      "epicsDone": 53
+      "epicsDone": 52
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
