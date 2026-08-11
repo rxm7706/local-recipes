@@ -64,6 +64,12 @@ _SEMVER_PATTERN = re.compile(
     re.ASCII,
 )
 
+# Single-identifier forms, for validating a directly-constructed
+# ModelVersion (parse() gets this for free from _SEMVER_PATTERN, but
+# __post_init__ is a second, unguarded entry point -- see its docstring).
+_PRERELEASE_IDENTIFIER_PATTERN = re.compile(_PRERELEASE_IDENTIFIER, re.ASCII)
+_BUILD_IDENTIFIER_PATTERN = re.compile(_BUILD_IDENTIFIER, re.ASCII)
+
 
 class InvalidVersionError(ValueError):
     """Raised by ``ModelVersion.parse`` when a string does not conform to
@@ -72,7 +78,13 @@ class InvalidVersionError(ValueError):
 
 
 def _is_numeric_identifier(identifier: str) -> bool:
-    return identifier.isdigit()
+    # `.isdigit()` alone is a trap: it is True for characters `int()` cannot
+    # parse (superscripts like "²", other Unicode digit forms), so a bare
+    # `.isdigit()` guard hands `int()` a string it raises on. Same reason
+    # `adapters/harness_bmadloop.py` rejects it. `__post_init__` already
+    # confines identifiers to the ASCII grammar; this is the belt to that
+    # braces, keeping the comparator total for any input that reaches it.
+    return identifier.isascii() and identifier.isdecimal()
 
 
 def _compare_prerelease_identifier(left: str, right: str) -> int:
@@ -104,12 +116,27 @@ class ModelVersion:
     build: tuple[str, ...] = field(default=(), compare=False)
 
     def __post_init__(self) -> None:
+        """Validate the SemVer 2.0.0 grammar on the FIELDS, not just on the
+        parsed string. ``parse`` is not the only way in -- tests, a future
+        state deserializer, and ``dataclasses.replace`` all construct this
+        directly -- and an identifier that violates the grammar breaks
+        ordering itself: ``("01",)`` vs ``("1",)`` compares equal
+        numerically yet unequal by ``__eq__``, so the pair is neither <, >,
+        nor ==, and ``sorted``/``bisect`` silently misbehave."""
         for name, value in (("major", self.major), ("minor", self.minor), ("patch", self.patch)):
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 raise ValueError(f"{name} must be a non-negative int, got {value!r}")
-        for name, value in (("prerelease", self.prerelease), ("build", self.build)):
+        for name, value, pattern in (
+            ("prerelease", self.prerelease, _PRERELEASE_IDENTIFIER_PATTERN),
+            ("build", self.build, _BUILD_IDENTIFIER_PATTERN),
+        ):
             if not isinstance(value, tuple) or not all(isinstance(item, str) for item in value):
                 raise ValueError(f"{name} must be a tuple of str, got {value!r}")
+            for item in value:
+                if pattern.fullmatch(item) is None:
+                    raise ValueError(
+                        f"{name} identifier {item!r} is not a valid SemVer 2.0.0 identifier"
+                    )
 
     @staticmethod
     def parse(text: str) -> ModelVersion:
@@ -127,13 +154,32 @@ class ModelVersion:
             )
         prerelease_text = match.group("prerelease")
         build_text = match.group("build")
+        try:
+            core = tuple(int(match.group(name)) for name in ("major", "minor", "patch"))
+        except ValueError as exc:
+            # A grammatically valid but absurd component (CPython refuses
+            # int() past 4300 digits) would otherwise escape as a raw
+            # ValueError, past every caller catching InvalidVersionError.
+            raise InvalidVersionError(f"{text!r} has an unusable numeric component: {exc}") from exc
         return ModelVersion(
-            major=int(match.group("major")),
-            minor=int(match.group("minor")),
-            patch=int(match.group("patch")),
+            major=core[0],
+            minor=core[1],
+            patch=core[2],
             prerelease=tuple(prerelease_text.split(".")) if prerelease_text else (),
             build=tuple(build_text.split(".")) if build_text else (),
         )
+
+    def __str__(self) -> str:
+        """Round-trip back to the SemVer string ``parse`` accepts. Without
+        this, every operator-facing message that interpolates a version
+        (this module's own ``until``/``since`` error, and any later story
+        writing ``model_version`` to state) prints the dataclass repr."""
+        text = f"{self.major}.{self.minor}.{self.patch}"
+        if self.prerelease:
+            text += "-" + ".".join(self.prerelease)
+        if self.build:
+            text += "+" + ".".join(self.build)
+        return text
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, ModelVersion):
