@@ -78,13 +78,34 @@ class InvalidVersionError(ValueError):
 
 
 def _is_numeric_identifier(identifier: str) -> bool:
-    # `.isdigit()` alone is a trap: it is True for characters `int()` cannot
-    # parse (superscripts like "²", other Unicode digit forms), so a bare
-    # `.isdigit()` guard hands `int()` a string it raises on. Same reason
-    # `adapters/harness_bmadloop.py` rejects it. `__post_init__` already
-    # confines identifiers to the ASCII grammar; this is the belt to that
-    # braces, keeping the comparator total for any input that reaches it.
+    # `.isdigit()` alone is a trap: it is True for characters that are not
+    # decimal at all (superscripts like "²", other Unicode digit forms), so
+    # a bare `.isdigit()` guard classifies a non-decimal string as numeric.
+    # Same reason `adapters/harness_bmadloop.py` rejects it.
+    # `__post_init__` already confines identifiers to the ASCII grammar;
+    # this is the belt to that braces.
     return identifier.isascii() and identifier.isdecimal()
+
+
+def _compare_numeric_identifier(left: str, right: str) -> int:
+    """Compare two decimal identifier strings numerically WITHOUT ``int()``.
+
+    SemVer 2.0.0 puts no length bound on a numeric pre-release identifier,
+    but CPython refuses ``int()`` past 4300 digits -- so converting here
+    would raise a raw ``ValueError`` straight out of ``__lt__``, and (via
+    ``in_range``) straight past ``load_manifest``'s ``ManifestError``-only
+    contract. Comparing as digit strings is total for every length: with
+    leading zeros removed, the longer string is always the larger number,
+    and equal-length decimal strings compare numerically in lexicographic
+    order. The ``lstrip`` also keeps the relation correct for a
+    leading-zero identifier the grammar should have rejected, so this stays
+    total even if a future entry point skips validation.
+    """
+    left_digits = left.lstrip("0") or "0"
+    right_digits = right.lstrip("0") or "0"
+    if len(left_digits) != len(right_digits):
+        return -1 if len(left_digits) < len(right_digits) else 1
+    return (left_digits > right_digits) - (left_digits < right_digits)
 
 
 def _compare_prerelease_identifier(left: str, right: str) -> int:
@@ -95,8 +116,7 @@ def _compare_prerelease_identifier(left: str, right: str) -> int:
     left_numeric = _is_numeric_identifier(left)
     right_numeric = _is_numeric_identifier(right)
     if left_numeric and right_numeric:
-        left_int, right_int = int(left), int(right)
-        return (left_int > right_int) - (left_int < right_int)
+        return _compare_numeric_identifier(left, right)
     if left_numeric != right_numeric:
         return -1 if left_numeric else 1
     return (left > right) - (left < right)

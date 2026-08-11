@@ -311,3 +311,42 @@ def test_parse_rejects_a_numeric_component_int_cannot_convert():
     would sail past every caller catching InvalidVersionError."""
     with pytest.raises(InvalidVersionError, match="unusable numeric component"):
         ModelVersion.parse("1" * 5000 + ".0.0")
+
+
+def test_long_numeric_prerelease_identifiers_compare_without_int():
+    """SemVer 2.0.0 puts no length bound on a numeric pre-release
+    identifier, but CPython refuses ``int()`` past 4300 digits -- so an
+    ``int()``-based comparator raised a raw ValueError straight out of
+    ``__lt__``. Ordering must still be correct, not merely non-raising."""
+    smaller = ModelVersion.parse("1.0.0-" + "1" * 5000)
+    larger = ModelVersion.parse("1.0.0-" + "2" * 5000)
+    longer = ModelVersion.parse("1.0.0-" + "1" * 5001)
+    assert smaller < larger
+    assert not larger < smaller
+    assert smaller < longer  # more digits == larger number
+    assert smaller == ModelVersion.parse("1.0.0-" + "1" * 5000)
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        ("1.0.0-1", "1.0.0-2"),
+        ("1.0.0-2", "1.0.0-10"),  # numeric, NOT lexicographic
+        ("1.0.0-9", "1.0.0-" + "1" * 4400),
+        ("1.0.0-" + "9" * 4400, "1.0.0-" + "1" * 4401),
+    ],
+)
+def test_numeric_prerelease_ordering_is_numeric_at_every_length(left, right):
+    assert ModelVersion.parse(left) < ModelVersion.parse(right)
+    assert not ModelVersion.parse(right) < ModelVersion.parse(left)
+
+
+def test_long_numeric_prerelease_stays_inside_in_range():
+    """The comparator is reached through ``in_range`` by
+    ``load_manifest``'s post-validation filter, which sits outside every
+    ``try/except`` -- a raw ValueError there escapes the loader's
+    ManifestError-only contract entirely."""
+    version = ModelVersion.parse("1.0.0-" + "1" * 5000)
+    since = ModelVersion.parse("1.0.0-" + "1" * 4999)
+    until = ModelVersion.parse("1.0.0-" + "2" * 5000)
+    assert in_range(version, since, until) is True

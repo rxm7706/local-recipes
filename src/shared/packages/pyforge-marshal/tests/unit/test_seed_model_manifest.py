@@ -224,10 +224,21 @@ def test_referenced_missing_pin_raises_manifest_error(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "missing_field",
-    ["id", "class", "path", "applies_to", "rationale"],
+    ("missing_field", "expected_message"),
+    [
+        # Anchored on the REASON, not merely on "something failed": a bare
+        # `pytest.raises(ManifestError)` passes for any load failure at
+        # all, so a regression that changes WHICH rule fires stays green.
+        ("id", r"^artifacts\[0\]: id must be a non-empty, non-blank str, got None"),
+        ("class", r"^foo: None is not a valid ArtifactClass"),
+        ("path", r"^foo: path must be a non-empty, non-blank str, got None"),
+        ("applies_to", r"^foo: None is not a valid AppliesTo"),
+        ("rationale", r"^foo: rationale must be a non-empty, non-blank str, got None"),
+    ],
 )
-def test_missing_required_field_raises_manifest_error(tmp_path, missing_field):
+def test_missing_required_field_raises_manifest_error(
+    tmp_path, missing_field, expected_message
+):
     entry = {
         "id": "foo",
         "class": "copied-seeded",
@@ -239,7 +250,7 @@ def test_missing_required_field_raises_manifest_error(tmp_path, missing_field):
     document = {"model_version": "1.0.0", "artifacts": [entry]}
     path = tmp_path / "manifest.yaml"
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
-    with pytest.raises(ManifestError):
+    with pytest.raises(ManifestError, match=expected_message):
         load_manifest(path)
 
 
@@ -249,11 +260,11 @@ def test_missing_required_field_raises_manifest_error(tmp_path, missing_field):
         # Asserting the REASON, not merely that entry "foo" failed somehow:
         # a bare match on the id passes for any rule firing, so a
         # regression that swaps which check catches the value stays green.
-        ("id", r"^artifacts\[0\]: id must be a non-empty str"),
+        ("id", r"^artifacts\[0\]: id must be a non-empty, non-blank str"),
         ("class", r"^foo: .*not a valid ArtifactClass"),
-        ("path", r"^foo: path must be a non-empty str"),
+        ("path", r"^foo: path must be a non-empty, non-blank str"),
         ("applies_to", r"^foo: .*not a valid AppliesTo"),
-        ("rationale", r"^foo: rationale must be a non-empty str"),
+        ("rationale", r"^foo: rationale must be a non-empty, non-blank str"),
     ],
 )
 def test_wrong_type_required_field_raises_manifest_error(
@@ -557,7 +568,9 @@ def test_falsy_non_list_never_write_raises_manifest_error(tmp_path):
         never_write: 0
         artifacts: []
     """
-    with pytest.raises(ManifestError, match="never_write"):
+    with pytest.raises(
+        ManifestError, match=r"^manifest: never_write must be a list of non-blank str"
+    ):
         load_manifest(_write(tmp_path, text))
 
 
@@ -566,7 +579,7 @@ def test_falsy_non_list_artifacts_raises_manifest_error(tmp_path):
         model_version: "1.0.0"
         artifacts: false
     """
-    with pytest.raises(ManifestError, match="artifacts"):
+    with pytest.raises(ManifestError, match=r"^manifest: artifacts must be a list$"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -581,7 +594,7 @@ def test_falsy_non_list_regions_raises_manifest_error(tmp_path):
             rationale: r
             regions: 0
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: regions must be a list, got 0$"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -608,7 +621,7 @@ def test_non_mapping_region_raises_manifest_error(tmp_path):
             regions:
               - "just a string, not a mapping"
     """
-    with pytest.raises(ManifestError, match="foo"):
+    with pytest.raises(ManifestError, match=r"^foo: regions\[0\]: region must be a mapping"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -709,7 +722,7 @@ def test_unrecognized_region_key_raises_manifest_error(tmp_path):
                 anchor: ["## Tiers"]
                 anchors: ["typo"]
     """
-    with pytest.raises(ManifestError, match=r"^foo: unrecognized region key\(s\): anchors"):
+    with pytest.raises(ManifestError, match=r"^foo: regions\[0\] \(tiers\): unrecognized region key\(s\): anchors"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -800,7 +813,7 @@ def test_empty_never_write_pattern_raises_manifest_error(tmp_path):
     """Every other string field here is non-empty; an empty pattern
     reaching S-7.3's guard could match every path."""
     text = 'model_version: "1.0.0"\nnever_write: [""]\nartifacts: []\n'
-    with pytest.raises(ManifestError, match="never_write must be a list of non-empty str"):
+    with pytest.raises(ManifestError, match=r"^manifest: never_write must be a list of non-blank str"):
         load_manifest(_write(tmp_path, text))
 
 
@@ -842,3 +855,222 @@ def test_schema_dataclasses_are_frozen_and_hashable():
         with pytest.raises(dataclasses.FrozenInstanceError):
             setattr(obj, field_name, "mutated")
     assert {region, entry, manifest}  # hashable
+
+
+# --- _StrictLoader rejects AUTHORED duplicates, not merge-key overrides -------
+
+
+def test_yaml_merge_key_override_is_accepted(tmp_path):
+    """`<<: *anchor` is legal YAML whose entire purpose is that an explicit
+    key wins, and it is the idiom a human reaches for in a file of
+    near-identical entries. Scanning the node AFTER SafeConstructor's own
+    `flatten_mapping()` splices the inherited pairs in reported the
+    override as a duplicate, pointing at a line the author never repeated.
+    """
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - &base
+            id: base
+            class: copied-seeded
+            path: "a"
+            applies_to: both
+            rationale: r
+          - <<: *base
+            id: bar
+            path: "b"
+    """
+    manifest = load_manifest(_write(tmp_path, text))
+    assert [(entry.id, entry.path) for entry in manifest.entries] == [("base", "a"), ("bar", "b")]
+    # Inherited-but-not-overridden keys still arrive.
+    assert manifest.entries[1].rationale == "r"
+
+
+def test_authored_duplicate_key_inside_a_merged_entry_still_rejected(tmp_path):
+    """The merge-key allowance must not reopen the hazard it sits next to:
+    a key the author genuinely wrote twice is still an error."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - &base
+            id: base
+            class: copied-seeded
+            path: "a"
+            applies_to: both
+            rationale: r
+          - <<: *base
+            id: bar
+            id: baz
+    """
+    with pytest.raises(ManifestError, match="found duplicate key 'id'"):
+        load_manifest(_write(tmp_path, text))
+
+
+# --- whitespace-only is not "non-empty" ---------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("blank_field", "expected_message"),
+    [
+        # A blank `rationale` satisfies AD-55's reviewability requirement
+        # without being reviewable; a blank `path` reaches S-7.3's guard
+        # indistinguishable from a real target; a blank `id` cannot be
+        # addressed by `explain <id>` -- and, having no visible characters,
+        # cannot even label its own error, so it falls back to the index.
+        ("id", r"^artifacts\[0\]: id must be a non-empty, non-blank str"),
+        ("path", r"^foo: path must be a non-empty, non-blank str"),
+        ("rationale", r"^foo: rationale must be a non-empty, non-blank str"),
+    ],
+)
+def test_whitespace_only_required_field_raises_manifest_error(
+    tmp_path, blank_field, expected_message
+):
+    entry = {
+        "id": "foo",
+        "class": "copied-seeded",
+        "path": "x",
+        "applies_to": "init",
+        "rationale": "r",
+    }
+    entry[blank_field] = "   "
+    document = {"model_version": "1.0.0", "artifacts": [entry]}
+    path = tmp_path / "manifest.yaml"
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    with pytest.raises(ManifestError, match=expected_message):
+        load_manifest(path)
+
+
+def test_whitespace_only_optional_field_raises_manifest_error(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: referenced
+            path: "n/a"
+            applies_to: both
+            rationale: r
+            pin: "   "
+    """
+    with pytest.raises(
+        ManifestError, match=r"^foo: pin must be a non-empty, non-blank str or None"
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_whitespace_only_region_name_raises_manifest_error(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: html
+            regions:
+              - name: "  "
+                anchor: ["## Tiers"]
+    """
+    with pytest.raises(
+        ManifestError, match=r"^foo: regions\[0\]: region name must be a non-empty, non-blank str"
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_whitespace_only_never_write_pattern_raises_manifest_error(tmp_path):
+    text = 'model_version: "1.0.0"\nnever_write: ["   "]\nartifacts: []\n'
+    with pytest.raises(
+        ManifestError, match=r"^manifest: never_write must be a list of non-blank str"
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+# --- region errors name the offending region ----------------------------------
+
+
+def test_region_error_names_the_offending_region(tmp_path):
+    """An entry may carry several regions; reporting only which ENTRY
+    failed leaves the operator to guess which region to edit -- the same
+    defect already fixed one level up (`artifacts[N]`) and one field over
+    (`since:`/`until:`)."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: html
+            regions:
+              - name: one
+                anchor: ["## One"]
+              - name: two
+                anchor: []
+              - name: three
+                anchor: ["## Three"]
+    """
+    with pytest.raises(
+        ManifestError, match=r"^foo: regions\[1\] \(two\): anchor must be a non-empty tuple"
+    ):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_region_error_falls_back_to_the_index_when_the_name_is_unusable(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: html
+            regions:
+              - name: one
+                anchor: ["## One"]
+              - "not-a-mapping"
+    """
+    with pytest.raises(ManifestError, match=r"^foo: regions\[1\]: region must be a mapping"):
+        load_manifest(_write(tmp_path, text))
+
+
+# --- id uniqueness holds on the in-memory path too -----------------------------
+
+
+def test_manifest_rejects_duplicate_entry_ids_when_constructed_directly():
+    """The module documents these dataclasses as constructible on their own
+    ("tests, a future in-memory manifest builder"), but unique ids -- the
+    invariant every downstream consumer keys on -- were enforced only in
+    `load_manifest`."""
+    entries = tuple(
+        ManifestEntry(
+            id="dup",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path=path,
+            applies_to=AppliesTo.BOTH,
+            rationale="r",
+        )
+        for path in ("a", "b")
+    )
+    with pytest.raises(ValueError, match=r"entry ids must be unique, got duplicates: \['dup'\]"):
+        Manifest(model_version=ModelVersion.parse("1.0.0"), never_write=(), entries=entries)
+
+
+# --- top-level model_version: the two likeliest authoring mistakes -------------
+
+
+def test_missing_model_version_key_raises_manifest_error(tmp_path):
+    """Reported as a missing REQUIRED key, not as `parse(None)`'s type
+    error ("version must be a str, got None"), which reads as a bug report
+    rather than an instruction to add the line."""
+    with pytest.raises(ManifestError, match=r"^manifest: model_version: required key is missing$"):
+        load_manifest(_write(tmp_path, "artifacts: []\n"))
+
+
+def test_unquoted_model_version_parses_as_a_float_and_is_rejected(tmp_path):
+    """`model_version: 1.0` is a YAML float, not a version string."""
+    with pytest.raises(
+        ManifestError, match=r"^manifest: model_version: version must be a str, got 1.0$"
+    ):
+        load_manifest(_write(tmp_path, "model_version: 1.0\nartifacts: []\n"))

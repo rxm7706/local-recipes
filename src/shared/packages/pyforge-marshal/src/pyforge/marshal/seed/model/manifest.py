@@ -7,10 +7,12 @@ Never bullet) and turns it into typed, validated data. Every later seed
 story (7.5's real manifest, 7.3's write guard, detect/plan/migrate) trusts
 ``load_manifest``'s output rather than re-parsing YAML itself.
 
-``ArtifactClass`` is the six-member classification vocabulary the
-extraction-manifest's own five product classes plus ``unclassified-deferred``
-resolve to (a V1-only escape hatch for artifacts "too repo-specific to
-classify confidently", extraction-manifest's own closing section).
+``ArtifactClass`` has six members: the extraction-manifest's five product
+classes (``referenced``, ``copied-managed``, ``copied-seeded``,
+``generated-derived``, ``hybrid-managed-region``) plus
+``unclassified-deferred`` -- a V1-only escape hatch for artifacts "too
+repo-specific to classify confidently" (extraction-manifest's own closing
+section).
 
 Two validation layers, matching ``core/model.py``'s own idiom:
 ``Region``/``ManifestEntry``/``Manifest`` are ``@dataclass(frozen=True)``
@@ -20,13 +22,14 @@ in-memory manifest builder). ``load_manifest`` is a thin YAML-shape adapter
 around that: per-entry fields route through ``_build_entry`` into
 ``ManifestEntry``'s ``__post_init__`` for the real checking, with no
 parallel field-by-field re-validation of its own that could drift from the
-dataclass's own rules. The two top-level collection fields
-(``never_write``, ``artifacts``) are the one deliberate exception: they get
-their own loader-side shape check, because the final ``Manifest(...)``
-construction below is not itself wrapped in a ``ValueError``-to-
-``ManifestError`` translation (unlike ``_build_entry``, which is) -- without
-that pre-check a malformed top-level field would raise a raw ``ValueError``
-instead of ``ManifestError``. Either way, every raised ``ManifestError`` is
+dataclass's own rules. The TOP-LEVEL document is the deliberate exception:
+its shape (a mapping), its key vocabulary, its ``model_version``, and its
+two collection fields (``never_write``, ``artifacts``) are all checked by
+the loader itself, because the final ``Manifest(...)`` construction below
+is not wrapped in a ``ValueError``-to-``ManifestError`` translation (unlike
+``_build_entry``, which is) -- without those pre-checks a malformed
+top-level field would raise a raw ``ValueError`` instead of
+``ManifestError``. Either way, every raised ``ManifestError`` is
 prefixed with the offending id (or ``"manifest"`` for a top-level failure,
 or ``"artifacts[N]"`` for an entry whose own ``id`` could not be
 determined) -- the AC's "raise ManifestError naming the offending id"
@@ -73,9 +76,9 @@ from .version import InvalidVersionError, ModelVersion, in_range
 
 
 class ArtifactClass(StrEnum):
-    """The extraction-manifest's classification vocabulary (six members:
-    the five product classes plus ``unclassified-deferred``, its own V1
-    escape hatch)."""
+    """The extraction-manifest's classification vocabulary: its five
+    product classes, plus ``unclassified-deferred`` (its own V1 escape
+    hatch) -- six members in total."""
 
     REFERENCED = "referenced"
     COPIED_MANAGED = "copied-managed"
@@ -112,12 +115,27 @@ class _StrictLoader(yaml.SafeLoader):
     SECOND value winning, so the file a human reviewed in the diff is not
     the file the engine loaded. ``ConstructorError`` is a ``YAMLError``, so
     ``load_manifest``'s existing handler reports it as a ``ManifestError``.
+
+    Only keys the author actually wrote are checked. A YAML merge key
+    (``<<: *anchor``) exists precisely so an explicit key may override an
+    inherited one, and it is the idiom a human reaches for in a file of
+    near-identical entries -- rejecting it would be a false positive on
+    legal YAML, reported against a line the author never duplicated.
     """
 
     def construct_mapping(self, node: Any, deep: bool = False) -> dict:
+        # Snapshot the authored keys BEFORE delegating: ``SafeConstructor``
+        # runs ``flatten_mapping()``, which splices a merge key's inherited
+        # pairs into ``node.value`` in place, so a post-delegation scan sees
+        # the merged result rather than the document.
+        authored_key_nodes = [
+            key_node
+            for key_node, _ in node.value
+            if key_node.tag != "tag:yaml.org,2002:merge"
+        ]
         mapping = super().construct_mapping(node, deep=deep)
         seen: set[Any] = set()
-        for key_node, _ in node.value:
+        for key_node in authored_key_nodes:
             key = self.construct_object(key_node, deep=deep)
             if key in seen:
                 raise yaml.constructor.ConstructorError(
@@ -160,6 +178,20 @@ def _reject_unknown_keys(raw_mapping: dict, allowed: frozenset[str], what: str) 
         raise ValueError(f"unrecognized {what} key(s): {', '.join(unknown)}")
 
 
+def _require_text(name: str, value: Any, *, suffix: str = "") -> None:
+    """Every identity-bearing string field in this schema must carry actual
+    content. ``.strip()``, not merely ``!= ""``: a whitespace-only value
+    passes a bare truthiness check while defeating the field's entire
+    purpose -- a blank ``rationale`` satisfies AD-55's reviewability
+    requirement without being reviewable, a blank ``id`` cannot be
+    addressed by ``explain <id>``, and a blank ``path`` reaches S-7.3's
+    write guard indistinguishable from a real target. The module already
+    rejects an EMPTY ``never_write`` pattern for exactly this reason; a
+    whitespace-only one is the same hazard one space away."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a non-empty, non-blank str{suffix}, got {value!r}")
+
+
 @dataclass(frozen=True)
 class Region:
     """One hybrid-managed-region declaration: a name and an ordered anchor
@@ -170,8 +202,7 @@ class Region:
     anchor: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.name, str) or not self.name:
-            raise ValueError(f"region name must be a non-empty str, got {self.name!r}")
+        _require_text("region name", self.name)
         object.__setattr__(self, "anchor", tuple(self.anchor) if isinstance(self.anchor, list) else self.anchor)
         if not isinstance(self.anchor, tuple) or not self.anchor:
             raise ValueError(f"anchor must be a non-empty tuple, got {self.anchor!r}")
@@ -197,18 +228,15 @@ class ManifestEntry:
     legacy_of: str | None = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.id, str) or not self.id:
-            raise ValueError(f"id must be a non-empty str, got {self.id!r}")
+        _require_text("id", self.id)
         object.__setattr__(self, "artifact_class", ArtifactClass(self.artifact_class))
-        if not isinstance(self.path, str) or not self.path:
-            raise ValueError(f"path must be a non-empty str, got {self.path!r}")
+        _require_text("path", self.path)
         object.__setattr__(self, "applies_to", AppliesTo(self.applies_to))
-        if not isinstance(self.rationale, str) or not self.rationale:
-            raise ValueError(f"rationale must be a non-empty str, got {self.rationale!r}")
+        _require_text("rationale", self.rationale)
 
         for name, value in (("pin", self.pin), ("format", self.format), ("legacy_of", self.legacy_of)):
-            if value is not None and (not isinstance(value, str) or not value):
-                raise ValueError(f"{name} must be a non-empty str or None, got {value!r}")
+            if value is not None:
+                _require_text(name, value, suffix=" or None")
 
         object.__setattr__(
             self, "regions", tuple(self.regions) if isinstance(self.regions, list) else self.regions
@@ -279,9 +307,11 @@ class Manifest:
             tuple(self.never_write) if isinstance(self.never_write, list) else self.never_write,
         )
         if not isinstance(self.never_write, tuple) or not all(
-            isinstance(item, str) for item in self.never_write
+            isinstance(item, str) and item.strip() for item in self.never_write
         ):
-            raise ValueError(f"never_write must contain only str, got {self.never_write!r}")
+            raise ValueError(
+                f"never_write must contain only non-blank str, got {self.never_write!r}"
+            )
         object.__setattr__(
             self, "entries", tuple(self.entries) if isinstance(self.entries, list) else self.entries
         )
@@ -292,6 +322,17 @@ class Manifest:
                 raise ValueError(
                     f"entries must contain only ManifestEntry instances, got {entry!r}"
                 )
+        # Id uniqueness belongs to BOTH layers. `load_manifest` enforces it
+        # too (that is where the AC's "raise ManifestError naming the
+        # duplicate id" contract lives), but this class is documented as
+        # constructible on its own -- and unique ids are the invariant every
+        # downstream consumer keys on (`by_id` lookup, `explain <id>`, state
+        # addressing), so the in-memory path must not be the one way to
+        # build a manifest that violates it.
+        ids = [entry.id for entry in self.entries]
+        if len(set(ids)) != len(ids):
+            duplicates = sorted({entry_id for entry_id in ids if ids.count(entry_id) > 1})
+            raise ValueError(f"entry ids must be unique, got duplicates: {duplicates}")
 
 
 def _build_region(raw_region: Any) -> Region:
@@ -331,7 +372,23 @@ def _build_entry(raw_entry: dict) -> ManifestEntry:
         raw_regions = []
     if not isinstance(raw_regions, list):
         raise ValueError(f"regions must be a list, got {raw_regions!r}")
-    regions = tuple(_build_region(raw_region) for raw_region in raw_regions)
+    built_regions: list[Region] = []
+    for region_index, raw_region in enumerate(raw_regions):
+        # Locate the offending region, the same way the loader locates the
+        # offending entry (`artifacts[N]`) and `_parse_bound` locates the
+        # offending bound. Without it, an entry carrying several regions
+        # reports only which ENTRY failed, leaving the operator to guess
+        # which of its regions to edit.
+        region_label = f"regions[{region_index}]"
+        if isinstance(raw_region, dict):
+            raw_region_name = raw_region.get("name")
+            if isinstance(raw_region_name, str) and raw_region_name.strip():
+                region_label = f"{region_label} ({raw_region_name})"
+        try:
+            built_regions.append(_build_region(raw_region))
+        except ValueError as exc:
+            raise ValueError(f"{region_label}: {exc}") from exc
+    regions = tuple(built_regions)
 
     # Same rationale as _build_region above: ManifestEntry.__post_init__ is
     # the real type boundary, validating every one of these at runtime.
@@ -360,17 +417,17 @@ def load_manifest(path: Path) -> Manifest:
 
     Raises ``ManifestError`` for every AC-listed schema violation (see the
     module docstring's two-layer explanation): an unreadable, non-UTF-8, or
-    malformed-YAML file, a repeated mapping key anywhere in the document, a
-    non-mapping document, an unrecognized key at any level, a malformed
-    top-level ``model_version``, a ``never_write`` that is not a list of
-    non-empty str, a non-list ``artifacts``, any entry-level shape
-    violation (missing/wrong-type required field, an unrecognized
-    ``class``, a ``hybrid-managed-region`` entry missing
+    malformed-YAML file, a repeated authored mapping key anywhere in the
+    document, a non-mapping document, an unrecognized key at any level, a
+    missing or malformed top-level ``model_version``, a ``never_write``
+    that is not a list of non-blank str, a non-list ``artifacts``, any
+    entry-level shape violation (missing/wrong-type/blank required field,
+    an unrecognized ``class``, a ``hybrid-managed-region`` entry missing
     ``format``/``regions``, a ``referenced`` entry missing ``pin``, a
-    ``pin``/``format``/``regions`` on a class that does not take one,
-    duplicate region names within an entry, an unparseable
-    ``since``/``until``, or ``until <= since``), and a duplicate ``id``
-    across entries.
+    ``pin``/``format``/``regions`` on a class that does not take one, a
+    malformed region, duplicate region names within an entry, an
+    unparseable ``since``/``until``, or ``until <= since``), and a
+    duplicate ``id`` across entries.
     """
     try:
         with path.open("r", encoding="utf-8") as handle:
@@ -396,6 +453,12 @@ def load_manifest(path: Path) -> Manifest:
     except ValueError as exc:
         raise ManifestError(f"manifest: {exc}") from exc
 
+    if "model_version" not in raw_document:
+        # A missing REQUIRED key, reported as such. Falling through to
+        # `parse(None)` would report it as a type error ("version must be a
+        # str, got None"), which reads as a bug report rather than an
+        # instruction to add the line.
+        raise ManifestError("manifest: model_version: required key is missing")
     raw_model_version: Any = raw_document.get("model_version")
     try:
         model_version = ModelVersion.parse(raw_model_version)
@@ -408,11 +471,12 @@ def load_manifest(path: Path) -> Manifest:
     if raw_never_write is None:
         raw_never_write = []
     if not isinstance(raw_never_write, list) or not all(
-        isinstance(item, str) and item for item in raw_never_write
+        isinstance(item, str) and item.strip() for item in raw_never_write
     ):
-        # Non-empty, like every other string field here: an empty pattern
-        # reaching S-7.3's guard could match every path.
-        raise ManifestError("manifest: never_write must be a list of non-empty str")
+        # Non-blank, like every other string field here: an empty (or
+        # whitespace-only) pattern reaching S-7.3's guard could match every
+        # path.
+        raise ManifestError("manifest: never_write must be a list of non-blank str")
     never_write = tuple(raw_never_write)
 
     raw_artifacts = raw_document.get("artifacts")
@@ -429,7 +493,13 @@ def load_manifest(path: Path) -> Manifest:
                 f"manifest: artifacts[{index}] must be a mapping, got {raw_entry!r}"
             )
         raw_id = raw_entry.get("id")
-        entry_label = raw_id if isinstance(raw_id, str) and raw_id else f"artifacts[{index}]"
+        # `.strip()`, matching `_require_text`: a whitespace-only id is
+        # truthy, so a bare truthiness test would label the error with an
+        # invisible locator ("   : id must be ...") instead of falling back
+        # to the entry's position.
+        entry_label = (
+            raw_id if isinstance(raw_id, str) and raw_id.strip() else f"artifacts[{index}]"
+        )
         try:
             entry = _build_entry(raw_entry)
         except ValueError as exc:
