@@ -519,10 +519,10 @@ window.DASHBOARD_DATA = {
         "phase": "review",
         "attempt": "3",
         "startEpoch": 1786407963,
-        "median": 90,
+        "median": 91,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-11 01:54 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -867,7 +867,7 @@ window.DASHBOARD_DATA = {
         "median": 98,
         "lo": 29,
         "hi": 417,
-        "phaseAsOf": "2026-08-11 01:54 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1308,7 +1308,7 @@ window.DASHBOARD_DATA = {
         "median": 94,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-11 01:54 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2233,7 +2233,7 @@ window.DASHBOARD_DATA = {
         "median": 46,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-11 01:54 UTC"
+        "phaseAsOf": "2026-08-11 01:55 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3716,7 +3716,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-11 01:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 01:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -9213,7 +9213,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-09",
           "deck": "",
-          "spec": "2026-08-10T20:20",
+          "spec": "2026-08-10T20:55",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -13637,13 +13637,13 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 215,
+    "open": 219,
     "done": 21,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
-      "medium": 4,
+      "medium": 8,
       "low": 21,
       "unspecified": 189
     },
@@ -15194,7 +15194,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 9,
+        "open": 13,
         "done": 1,
         "triaged": 3,
         "entries": [
@@ -15264,6 +15264,34 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-FU-7-1-2",
             "title": "The `DW-FU-{story}` shape this story mints for non-mason stations already has an established, different meaning",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-3",
+            "title": "`bmad-loop-sweep`'s canonical deferred-work format mandates a different id scheme and a dedupe check for the very file t",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-4",
+            "title": "Three stations fall into the emitter's \"every other station\" default whose tracked ledgers use mason's shape exclusively",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-5",
+            "title": "Minting an id converts every new Tier-3 defer into a hard `tier3-only-deferral` FAIL of the always-on deferred-work gate",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-6",
+            "title": "The minted entry carries no `status:`, and giving it an id heading makes it look already-canonical to the one mechanism ",
             "status": "open",
             "severity": "medium",
             "triaged": false
@@ -15410,8 +15438,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260810-193147-b96d/2-1-the-cfe-port into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-11 01:54 UTC",
-    "generatedEpoch": 1786413248
+    "generatedAt": "2026-08-11 01:55 UTC",
+    "generatedEpoch": 1786413334
   },
   "storySpecs": [
     {
