@@ -36,7 +36,7 @@ import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from . import errors
+from . import errors, locking
 
 DEFAULT_STATE_PATH = Path(".herald/bridge-state.json")
 """AD-5's default location, relative to a repo root the caller resolves."""
@@ -208,11 +208,13 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
     half-written state file behind -- mirrors
     ``pyforge.warden.feeds.write_kev_cache``, including its limit: neither
     fsyncs, so surviving power loss is the filesystem's business, not a
-    guarantee this module makes. Atomic replacement is crash-safety, not
-    concurrency-safety: two concurrent writers each load-then-replace the
-    whole document, and the loser's update is silently lost -- no current
-    caller writes concurrently, and the future ``watch``-vs-manual-command
-    overlap is tracked in the deferred-work ledger.
+    guarantee this module makes. Atomic replacement alone is crash-safety,
+    not concurrency-safety, so the whole load-through-replace span below
+    also runs inside ``locking.locked`` on a sidecar ``<state_path>.lock``
+    file (Story 13.1, closing ``DW-1-4-2``): a second concurrent ``write``
+    call for the same ``state_path`` blocks until the first releases the
+    lock, so two writers targeting different slugs in the same file can
+    never silently drop one update.
 
     Refuses up front -- as ``errors.HeraldError`` naming the slug -- a
     non-string ``slug``, a ``state`` that is not a ``DeckState`` at all, or
@@ -243,43 +245,46 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
     problem = _fields_problem(state.project_id, state.etags, state.last_pull)
     if problem:
         raise errors.HeraldError(f"{could_not_write}: {problem}")
-    document = _load_document(state_path)
-    document[slug] = asdict(state)
-    try:
-        state_path.parent.mkdir(parents=True, exist_ok=True)
-        handle, tmp_name = tempfile.mkstemp(
-            dir=state_path.parent, prefix=f".{state_path.name}-", suffix=".tmp"
-        )
-    except OSError as exc:
-        raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-    try:
+    lock_path = locking.lock_path_for(state_path)
+    with locking.locked(lock_path):
+        document = _load_document(state_path)
+        document[slug] = asdict(state)
         try:
-            fh = os.fdopen(handle, "w", encoding="utf-8")
-        except BaseException:
-            # os.fdopen raised before taking ownership of the raw fd, so
-            # this is the only branch that may close it. Once fdopen
-            # returns, the file object owns the fd and the `with` below
-            # closes it -- closing here as well would hit whatever a
-            # concurrent thread had opened onto the recycled fd number.
-            os.close(handle)
-            raise
-        with fh:
-            json.dump(document, fh, indent=2, sort_keys=True)
-            fh.write("\n")
-        os.replace(tmp_name, state_path)
-    except BaseException as exc:
-        # Unlink the temp file so a failed write never leaks it.
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        if isinstance(exc, (OSError, TypeError, ValueError, RecursionError)):
-            # The up-front validation makes a json.dump TypeError /
-            # ValueError unreachable for this slug's own entry, and every
-            # other entry came from JSON (serializable by construction) --
-            # wrapped anyway: a raw leak through the AD-6 contract is worse
-            # than a redundant guard. RecursionError mirrors the load-side
-            # wrap: what json.load parsed under the limit, json.dump must
-            # not leak raw over it.
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            handle, tmp_name = tempfile.mkstemp(
+                dir=state_path.parent, prefix=f".{state_path.name}-", suffix=".tmp"
+            )
+        except OSError as exc:
             raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-        raise
+        try:
+            try:
+                fh = os.fdopen(handle, "w", encoding="utf-8")
+            except BaseException:
+                # os.fdopen raised before taking ownership of the raw fd, so
+                # this is the only branch that may close it. Once fdopen
+                # returns, the file object owns the fd and the `with` below
+                # closes it -- closing here as well would hit whatever a
+                # concurrent thread had opened onto the recycled fd number.
+                os.close(handle)
+                raise
+            with fh:
+                json.dump(document, fh, indent=2, sort_keys=True)
+                fh.write("\n")
+            os.replace(tmp_name, state_path)
+        except BaseException as exc:
+            # Unlink the temp file so a failed write never leaks it.
+            try:
+                os.unlink(tmp_name)
+            except OSError:
+                pass
+            if isinstance(exc, (OSError, TypeError, ValueError, RecursionError)):
+                # The up-front validation makes a json.dump TypeError /
+                # ValueError unreachable for this slug's own entry, and
+                # every other entry came from JSON (serializable by
+                # construction) -- wrapped anyway: a raw leak through the
+                # AD-6 contract is worse than a redundant guard.
+                # RecursionError mirrors the load-side wrap: what
+                # json.load parsed under the limit, json.dump must not
+                # leak raw over it.
+                raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
+            raise

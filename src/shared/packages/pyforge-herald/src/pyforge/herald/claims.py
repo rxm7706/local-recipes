@@ -49,6 +49,60 @@ which claims cite it) is a computed, un-persisted view --
 recomputing "who cites this component" from the claims file at read time
 means the two files can never drift out of sync with each other the way a
 second stored copy of the same fact could.
+
+**Concurrency (Story 13.1, closing ``DW-1-4-2``).** ``create`` has no
+network step, so it locks its whole function body (``locking.locked`` on a
+sidecar ``<claims_path>.lock`` file), the same convention ``state.py``/
+``progress.py`` use. ``publish``/``revalidate``/``revalidate_all`` each
+call ``evidence_mod.validate_link``/``validate_for_publish`` per evidence
+entry -- a real HTTP request -- so the lock must never span that network
+I/O (a lock held across a live HTTP call would block every other claims
+writer for its duration, a liveness regression this story is explicit
+about avoiding). Each instead validates every evidence link UNLOCKED
+first, then acquires the lock only around re-reading the fresh claims
+state, applying the already-computed validation results, and writing.
+
+**The pre-lock results are carried POSITIONALLY, never in a dict keyed by
+``Evidence`` value.** All three keep, per claim, the pre-validation
+evidence tuple (``original``) plus an index-aligned tuple of results, and
+inside the lock apply ``results[i]`` to the freshly-read
+``claim.evidence[i]`` only when ``i < len(original)`` AND
+``fresh.evidence[i] == original[i]``; any other fresh entry is left
+untouched. That equality check is the discard-stale rule: a concurrent
+writer that changed a specific evidence entry between the unlocked
+validation and the locked re-read keeps its own (newer) value rather than
+being clobbered with a now-stale result. Comparing at a fixed index (rather
+than looking an entry up by value) also survives a concurrently-changed
+evidence length or ordering.
+
+A ``dict[Evidence, Evidence]`` is wrong here even within ONE claim.
+``Evidence`` is a frozen, value-equal dataclass and ``create`` de-duplicates
+nothing (it validates only ``type``), so a single claim can legitimately
+carry two field-identical entries (same url/type/label). A value-keyed dict
+collapses them onto one key: two independent validation calls are made, but
+only the last result is retained and is then applied to BOTH entries -- a
+claim with a duplicated link whose first check succeeds and whose second
+hits a transient 429 would store ``[False, False]`` instead of
+``[True, False]``. Operating on one claim at a time does **not** make a
+value-keyed map safe.
+
+``revalidate_all`` additionally keys its per-claim structure by claim id
+(``dict[str, tuple[original, results]]``) so a lookup only ever searches
+within that SAME claim's own results -- never one structure shared across
+every claim's evidence, which would additionally let one claim's HTTP
+outcome overwrite a different claim's (two different claims can also cite a
+field-identical entry).
+
+``publish`` goes one step further than the discard-stale rule. Discarding
+is right for ``revalidate``/``revalidate_all``, whose purpose is to RECORD
+breakage rather than gate on it; it is not sufficient for ``publish``,
+whose contract is that a broken link blocks the publish and nothing is
+written. Passing a concurrently-changed entry through unvalidated would
+persist ``status="published"`` alongside evidence this call never checked
+(and which a concurrent ``revalidate`` may have just proved broken), so
+``publish`` re-verifies inside the lock that every entry it is about to
+write carries its own validation, and raises ``errors.ClaimStateError``
+(writing nothing) when any does not.
 """
 
 from __future__ import annotations
@@ -63,7 +117,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from . import errors
+from . import errors, locking
 from . import evidence as evidence_mod
 
 DEFAULT_CLAIMS_PATH = Path(".herald/claims.json")
@@ -361,7 +415,15 @@ def create(
     """Create a draft ``Claim`` (Story 9.2, scaled down: a CLI command an
     operator runs by hand supplies exactly the fields the original spec's
     webhook payload would have extracted). Appends it to ``claims_path``
-    and returns it."""
+    and returns it.
+
+    No network step, so the whole read-modify-write body below runs inside
+    ``locking.locked`` on a sidecar ``<claims_path>.lock`` file (Story 13.1)
+    -- see the module docstring's Concurrency section. The pure,
+    no-I/O argument checks just below are validated BEFORE the lock is
+    acquired: they depend on nothing but this call's own arguments, so a
+    call that is going to fail on basic validation fails fast without
+    first contending on the lock."""
     if not project_name.strip():
         raise errors.HeraldError("project_name must not be empty")
     for e in evidence:
@@ -369,24 +431,28 @@ def create(
             raise errors.HeraldError(
                 f"evidence type {e.type!r} must be one of {EVIDENCE_TYPES}"
             )
-    timestamp = now().isoformat()
-    claim = Claim(
-        id=id_factory(),
-        project_name=project_name,
-        status="draft",
-        thesis=None,
-        shipped_date=shipped_date if shipped_date is not None else today().isoformat(),
-        created_at=timestamp,
-        published_at=None,
-        closed_at=None,
-        updated_at=timestamp,
-        evidence=tuple(evidence),
-        edit_history=(),
-    )
-    claims = read_all(claims_path)
-    claims.append(claim)
-    _write_all(claims_path, claims)
-    return claim
+    lock_path = locking.lock_path_for(claims_path)
+    with locking.locked(lock_path):
+        timestamp = now().isoformat()
+        claim = Claim(
+            id=id_factory(),
+            project_name=project_name,
+            status="draft",
+            thesis=None,
+            shipped_date=(
+                shipped_date if shipped_date is not None else today().isoformat()
+            ),
+            created_at=timestamp,
+            published_at=None,
+            closed_at=None,
+            updated_at=timestamp,
+            evidence=tuple(evidence),
+            edit_history=(),
+        )
+        claims = read_all(claims_path)
+        claims.append(claim)
+        _write_all(claims_path, claims)
+        return claim
 
 
 def publish(
@@ -413,7 +479,20 @@ def publish(
     ``evidence_mod.validate_for_publish`` *inside* the function body, not as
     a parameter default -- a parameter default is bound once at import
     time, which would freeze in the pre-monkeypatch function object and
-    make ``evidence.validate_for_publish`` unpatchable from a test."""
+    make ``evidence.validate_for_publish`` unpatchable from a test.
+
+    Validates every evidence link UNLOCKED (a real HTTP request per entry)
+    before acquiring the lock -- the lock only ever spans the fresh
+    load/apply/write span that follows (Story 13.1; see the module
+    docstring's Concurrency section). The results are carried POSITIONALLY,
+    index-aligned with the evidence tuple they were computed from, and
+    applied back only where the freshly-read entry at that index still
+    equals the entry that was validated. Because ``publish``'s contract is
+    that a broken link blocks the publish, an entry the discard-stale rule
+    would pass through unvalidated (a concurrent writer changed it during
+    the unlocked HTTP window) aborts the whole call with
+    ``errors.ClaimStateError`` instead -- a claim is never persisted as
+    ``published`` carrying evidence this call did not itself validate."""
     if validate is None:
         validate = evidence_mod.validate_for_publish
     claims = read_all(claims_path)
@@ -431,18 +510,31 @@ def publish(
             f"claim {claim_id!r} has no thesis; supply --thesis to publish"
         )
     timestamp = now()
+    timestamp_iso = timestamp.isoformat()
     broken: list[str] = []
-    for e in claim.evidence:
+    # Index-aligned with `original_evidence` -- one result per evidence
+    # POSITION, never a dict keyed by `Evidence` value (see module
+    # docstring: a single claim may carry two field-identical entries, and
+    # a value-keyed map collapses them onto one result).
+    original_evidence = claim.evidence
+    results: list[Evidence] = []
+    for e in original_evidence:
         if e.type == "notice":
             # A "notice" evidence entry's `url` holds a Notice component
             # name, not an HTTP URL (see module docstring) -- nothing to
             # HEAD, so it is trivially valid rather than run through the
             # HTTP-based `validate`.
+            results.append(replace(e, validated=True, validated_at=timestamp_iso))
             continue
         try:
             validate(e.url)
         except errors.EvidenceLinkError as exc:
             broken.append(f"{e.url} ({exc})")
+            # Placeholder only, to keep `results` index-aligned: a
+            # non-empty `broken` raises just below, so it is never applied.
+            results.append(e)
+        else:
+            results.append(replace(e, validated=True, validated_at=timestamp_iso))
     if broken:
         # Regression: raising on the FIRST broken link meant an operator
         # fixing evidence one publish-attempt at a time hit the next
@@ -451,28 +543,62 @@ def publish(
             f"claim {claim_id!r} has {len(broken)} broken evidence link(s): "
             f"{'; '.join(broken)}. Fix or remove before publishing."
         )
-    validated_evidence = tuple(
-        replace(e, validated=True, validated_at=timestamp.isoformat())
-        for e in claim.evidence
-    )
-    edit_history = claim.edit_history
-    if claim.thesis is not None and claim.thesis != final_thesis:
-        edit_history = (
-            *edit_history,
-            ThesisVersion(thesis=claim.thesis, edited_at=timestamp.isoformat()),
+
+    lock_path = locking.lock_path_for(claims_path)
+    with locking.locked(lock_path):
+        fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
+        fresh_index = next(
+            (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
         )
-    updated = replace(
-        claim,
-        status="published",
-        thesis=final_thesis,
-        published_at=timestamp.isoformat(),
-        updated_at=timestamp.isoformat(),
-        evidence=validated_evidence,
-        edit_history=edit_history,
-    )
-    claims[index] = updated
-    _write_all(claims_path, claims)
-    return updated
+        if fresh_index is None:
+            raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
+        fresh_claim = fresh_claims[fresh_index]
+        if fresh_claim.status != "draft":
+            raise errors.ClaimStateError(
+                f"claim {claim_id!r} is already {fresh_claim.status!r}; only a "
+                f"draft claim can be published"
+            )
+        # Apply this call's results by INDEX, and only where the fresh
+        # entry at that index is still exactly the entry that was validated
+        # (the discard-stale rule -- see the module docstring).
+        carried = tuple(
+            i < len(original_evidence) and e == original_evidence[i]
+            for i, e in enumerate(fresh_claim.evidence)
+        )
+        validated_evidence = tuple(
+            results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence)
+        )
+        if not all(carried):
+            # Discarding a stale result is right for `revalidate`, whose
+            # job is to RECORD breakage. It is not enough here: passing a
+            # concurrently-changed entry through unvalidated would persist
+            # `status="published"` alongside evidence this call never
+            # checked (and which a concurrent `revalidate` may have just
+            # proved broken), silently bypassing publish's own broken-link
+            # gate. Write nothing and make the operator re-run instead.
+            raise errors.ClaimStateError(
+                f"claim {claim_id!r} had its evidence changed by another writer "
+                f"while this publish was validating links; nothing was written -- "
+                f"re-run publish to validate the current evidence"
+            )
+        edit_history = fresh_claim.edit_history
+        if fresh_claim.thesis is not None and fresh_claim.thesis != final_thesis:
+            edit_history = (
+                *edit_history,
+                ThesisVersion(thesis=fresh_claim.thesis, edited_at=timestamp_iso),
+            )
+        updated = replace(
+            fresh_claim,
+            status="published",
+            thesis=final_thesis,
+            published_at=timestamp_iso,
+            updated_at=timestamp_iso,
+            evidence=validated_evidence,
+            edit_history=edit_history,
+        )
+        fresh_claims[fresh_index] = updated
+        _write_all(claims_path, fresh_claims)
+        return updated
 
 
 def _revalidated_entry(
@@ -505,7 +631,16 @@ def revalidate(
 
     ``validate`` is resolved to ``evidence_mod.validate_link`` inside the
     function body -- see ``publish``'s docstring for why this can't be a
-    parameter default."""
+    parameter default.
+
+    Validates every evidence link UNLOCKED (real HTTP) before acquiring
+    the lock, exactly like ``publish`` -- see its docstring and the module
+    docstring's Concurrency section. The results are carried POSITIONALLY
+    (index-aligned with the evidence tuple they were computed from), never
+    in a dict keyed by ``Evidence`` value: operating on a single claim does
+    NOT make a value-keyed map safe, because one claim can carry two
+    field-identical entries whose two validation calls returned different
+    outcomes."""
     if validate is None:
         validate = evidence_mod.validate_link
     claims = read_all(claims_path)
@@ -514,16 +649,43 @@ def revalidate(
         raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
     claim = claims[index]
     timestamp = now()
-    revalidated_evidence = tuple(
-        _revalidated_entry(e, validate=validate, timestamp_iso=timestamp.isoformat())
-        for e in claim.evidence
+    timestamp_iso = timestamp.isoformat()
+    original_evidence = claim.evidence
+    results = tuple(
+        _revalidated_entry(e, validate=validate, timestamp_iso=timestamp_iso)
+        for e in original_evidence
     )
-    updated = replace(
-        claim, evidence=revalidated_evidence, updated_at=timestamp.isoformat()
-    )
-    claims[index] = updated
-    _write_all(claims_path, claims)
-    return updated
+
+    lock_path = locking.lock_path_for(claims_path)
+    with locking.locked(lock_path):
+        fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
+        fresh_index = next(
+            (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
+        )
+        if fresh_index is None:
+            raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
+        fresh_claim = fresh_claims[fresh_index]
+        carried = [
+            i < len(original_evidence) and e == original_evidence[i]
+            for i, e in enumerate(fresh_claim.evidence)
+        ]
+        if fresh_claim.evidence and not any(carried):
+            # Every entry was changed by a concurrent writer during the
+            # unlocked validation window, so the discard-stale rule dropped
+            # every one of this run's results. Leave the claim byte-for-byte
+            # unchanged (including `updated_at`: stamping it would claim a
+            # validation that never happened) -- same rule `revalidate_all`
+            # applies to a claim it never validated.
+            return fresh_claim
+        revalidated_evidence = tuple(
+            results[i] if carried[i] else e for i, e in enumerate(fresh_claim.evidence)
+        )
+        updated = replace(
+            fresh_claim, evidence=revalidated_evidence, updated_at=timestamp_iso
+        )
+        fresh_claims[fresh_index] = updated
+        _write_all(claims_path, fresh_claims)
+        return updated
 
 
 def revalidate_all(
@@ -538,26 +700,83 @@ def revalidate_all(
 
     ``validate`` is resolved to ``evidence_mod.validate_link`` inside the
     function body -- see ``publish``'s docstring for why this can't be a
-    parameter default."""
+    parameter default.
+
+    Validates every evidence link UNLOCKED (real HTTP) before acquiring the
+    lock, same as ``publish``/``revalidate``, carrying each claim's results
+    POSITIONALLY as an ``(original, results)`` index-aligned pair rather
+    than in a dict keyed by ``Evidence`` value (see the module docstring:
+    one claim can carry two field-identical entries, which a value-keyed
+    map collapses onto a single result).
+
+    That pair is additionally keyed by claim id
+    (``validated_by_claim: dict[str, tuple[tuple[Evidence, ...],
+    tuple[Evidence, ...]]]``) rather than held in one structure shared
+    across every claim's evidence. ``Evidence`` is a frozen, value-equal
+    dataclass, so two DIFFERENT claims citing a field-identical entry
+    (same url/type/label) would otherwise let one claim's validation
+    outcome silently overwrite another's; keying by claim id first means a
+    lookup only ever searches within that SAME claim's own results."""
     if validate is None:
         validate = evidence_mod.validate_link
     timestamp = now()
+    timestamp_iso = timestamp.isoformat()
     claims = read_all(claims_path)
-    updated_claims = []
-    for claim in claims:
-        revalidated_evidence = tuple(
-            _revalidated_entry(
-                e, validate=validate, timestamp_iso=timestamp.isoformat()
-            )
-            for e in claim.evidence
+    if len({c.id for c in claims}) != len(claims):
+        # Keying the validation results by claim id is only sound while ids
+        # are unique: two claims sharing an id would collapse onto one entry
+        # and let one claim's HTTP outcome overwrite the other's. `create`
+        # generates a uuid4 per claim, so this only happens with an injected
+        # `id_factory` or a hand-edited/merged `claims.json` -- refuse
+        # structurally rather than silently corrupting one of them.
+        raise errors.HeraldError(
+            f"{claims_path} holds duplicate claim ids; refusing to revalidate "
+            f"until they are unique"
         )
-        updated_claims.append(
-            replace(
-                claim, evidence=revalidated_evidence, updated_at=timestamp.isoformat()
-            )
+    validated_by_claim: dict[str, tuple[tuple[Evidence, ...], tuple[Evidence, ...]]] = {
+        c.id: (
+            c.evidence,
+            tuple(
+                _revalidated_entry(e, validate=validate, timestamp_iso=timestamp_iso)
+                for e in c.evidence
+            ),
         )
-    _write_all(claims_path, updated_claims)
-    return updated_claims
+        for c in claims
+    }
+
+    lock_path = locking.lock_path_for(claims_path)
+    with locking.locked(lock_path):
+        fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
+        updated_claims = []
+        for claim in fresh_claims:
+            if claim.id not in validated_by_claim:
+                # Created concurrently, after this run's pre-lock validation
+                # scan started -- this run never actually checked its
+                # evidence, so leave it byte-for-byte unchanged (including
+                # `updated_at`: stamping it would claim a validation that
+                # never happened).
+                updated_claims.append(claim)
+                continue
+            original_evidence, results = validated_by_claim[claim.id]
+            carried = [
+                i < len(original_evidence) and e == original_evidence[i]
+                for i, e in enumerate(claim.evidence)
+            ]
+            if claim.evidence and not any(carried):
+                # Every entry changed concurrently, so every result was
+                # discarded -- same reasoning as the never-validated branch
+                # just above: do not stamp `updated_at` for a validation that
+                # never landed.
+                updated_claims.append(claim)
+                continue
+            revalidated_evidence = tuple(
+                results[i] if carried[i] else e for i, e in enumerate(claim.evidence)
+            )
+            updated_claims.append(
+                replace(claim, evidence=revalidated_evidence, updated_at=timestamp_iso)
+            )
+        _write_all(claims_path, updated_claims)
+        return updated_claims
 
 
 def is_stale(
