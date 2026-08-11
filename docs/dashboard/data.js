@@ -1240,7 +1240,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 27 of 103 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 27 of 119 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1363,12 +1363,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "67/103",
+            "67/119",
             "stories complete",
             "var(--done)"
           ],
           [
-            "36",
+            "52",
             "remaining",
             ""
           ]
@@ -2011,6 +2011,122 @@ window.DASHBOARD_DATA = {
               "13.7",
               "done",
               "The producer reconciles the surface it drifts *(added 2026-08-09 — FR-174)*"
+            ]
+          ]
+        },
+        {
+          "badge": "E14",
+          "title": "The shared floor — pyforge-core",
+          "stories": [
+            [
+              "14.1",
+              "pending",
+              "The leaf exists and is provably a leaf"
+            ],
+            [
+              "14.2",
+              "pending",
+              "Atomic write has one implementation"
+            ],
+            [
+              "14.3",
+              "pending",
+              "One lattice, one envelope, one exception root"
+            ],
+            [
+              "14.4",
+              "pending",
+              "The subprocess seam is reconciled and sole ownership is gated"
+            ]
+          ]
+        },
+        {
+          "badge": "E15",
+          "title": "Fleet operations run themselves",
+          "stories": [
+            [
+              "15.1",
+              "pending",
+              "One command refreshes the fleet's homes"
+            ],
+            [
+              "15.2",
+              "pending",
+              "Landing promotes the ledger, and staleness is its own check"
+            ]
+          ]
+        },
+        {
+          "badge": "E16",
+          "title": "The board derives truth",
+          "stories": [
+            [
+              "16.1",
+              "pending",
+              "One resolver, derived sources, loud failures"
+            ]
+          ]
+        },
+        {
+          "badge": "E17",
+          "title": "Instruments verified, chains regenerable",
+          "stories": [
+            [
+              "17.1",
+              "pending",
+              "The detectors' remaining blind spots are fixture-pinned, with an incident log"
+            ],
+            [
+              "17.2",
+              "pending",
+              "The dreams hygiene mode exists"
+            ],
+            [
+              "17.3",
+              "pending",
+              "Chain-completeness audit mode reports layers"
+            ],
+            [
+              "17.4",
+              "pending",
+              "Orchestrated regeneration that cannot lose code status"
+            ]
+          ]
+        },
+        {
+          "badge": "E18",
+          "title": "The governed tool surface",
+          "stories": [
+            [
+              "18.1",
+              "pending",
+              "Marshal's capabilities become named, typed tools"
+            ],
+            [
+              "18.2",
+              "pending",
+              "Parity and coverage are gated numbers"
+            ]
+          ]
+        },
+        {
+          "badge": "E19",
+          "title": "The testing charter, enforced",
+          "stories": [
+            [
+              "19.1",
+              "pending",
+              "One generator produces every station's test architecture"
+            ],
+            [
+              "19.2",
+              "pending",
+              "The shared test-support kit"
+            ],
+            [
+              "19.3",
+              "pending",
+              "Coverage gates that name the module"
             ]
           ]
         }
@@ -3460,7 +3576,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-10 23:39 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-11 00:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5436,7 +5552,7 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 67,
-          "total": 103
+          "total": 119
         },
         {
           "slug": "wasm-analytics-stack",
@@ -5908,7 +6024,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-10T18:28",
+          "spec": "2026-08-10T18:50",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-09",
@@ -5992,7 +6108,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "67/103",
+        "progress": "67/119",
         "complete": 13,
         "of": 13
       },
@@ -8109,7 +8225,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T18:28",
+          "spec": "2026-08-10T19:02",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -15171,8 +15287,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor story 6.9 hand-landed via PR #394 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-10 23:39 UTC",
-    "generatedEpoch": 1786405195
+    "generatedAt": "2026-08-11 00:03 UTC",
+    "generatedEpoch": 1786406625
   },
   "storySpecs": [
     {
@@ -15280,11 +15396,13 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 67,
-        "backlog": 35,
-        "blocked": 1,
-        "total": 103,
+        "backlog": 49,
+        "blocked": 3,
+        "total": 119,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
+          "7-2-error-taxonomy-and-exit-codes",
+          "7-3-the-fs-write-primitive-and-the-never-write-guard",
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
         ],
         "backlogKeys": [
@@ -15467,9 +15585,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 267,
-      "backlog": 75,
-      "blocked": 1,
-      "total": 343
+      "backlog": 89,
+      "blocked": 3,
+      "total": 359
     }
   },
   "fleetProgress": {
@@ -15509,10 +15627,10 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "marshal",
-        "stories": 103,
+        "stories": 119,
         "done": 67,
-        "blocked": 1,
-        "epics": 13,
+        "blocked": 3,
+        "epics": 19,
         "epicsDone": 7,
         "complete": false,
         "running": false,
@@ -15564,10 +15682,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 343,
+      "stories": 359,
       "done": 267,
-      "blocked": 1,
-      "epics": 66,
+      "blocked": 3,
+      "epics": 72,
       "epicsDone": 53
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",

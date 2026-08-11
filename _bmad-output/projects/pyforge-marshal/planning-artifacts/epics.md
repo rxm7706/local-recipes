@@ -11,8 +11,8 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 13
-storyCount: 103  # 2026-08-08: epics-genesis-installer.md (E7-E12, 36 stories) merged in; verified against sprint-status-ledger.yaml. Was 50 (E1-E6), itself corrected 2026-08-01 from an original 40.
+epicCount: 19
+storyCount: 119  # 2026-08-08: epics-genesis-installer.md (E7-E12, 36 stories) merged in; verified against sprint-status-ledger.yaml. Was 50 (E1-E6), itself corrected 2026-08-01 from an original 40.
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -100,11 +100,17 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E11** | Derive, migrate & update | An installed repo takes a later model version with no hand edits | 6 | ~10 days |
 | **E12** | Packaging, oracle & hardening | The installer ships, runs offline, and proves it never writes where it must not | 6 | ~8 days |
 | **E13** | Surface drift reconciliation | The spec-surface gate can be cleared honestly, one spec at a time, and its signal trusted | 7 | (shipped) |
-| **Total** | | | **103** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
+| **E14** | The shared floor — pyforge-core | Five primitives written 3-20× become one enforced leaf; 14.1/14.2 gate seed 7.2/7.3 | 4 | (new 2026-08-10) |
+| **E15** | Fleet operations run themselves | Loop-home refresh + landing-promotes-ledger stop being hand rituals | 2 | (new 2026-08-10) |
+| **E16** | The board derives truth | One slug resolver, derived sources, loud failures | 1 | (new 2026-08-10) |
+| **E17** | Instruments verified, chains regenerable | Detector blind spots pinned; chain regeneration one invocation | 4 | (new 2026-08-10) |
+| **E18** | The governed tool surface | Marshal's capabilities as typed tools; parity/coverage gated | 2 | (new 2026-08-10) |
+| **E19** | The testing charter, enforced | One TEA generator, shared kit, coverage gates | 3 | (new 2026-08-10) |
+| **Total** | | | **119** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
-*Story counts re-verified 2026-08-10 (Phase 1 audit): this document's `### Story` headings
-and `sprint-status-ledger.yaml`'s story keys agree at **103** (E1-E6 = 60, E7-E12 = 36,
-E13 = 7). The 2026-08-08 note claiming "all three agree at 86" was false when written —
+*Story counts re-verified 2026-08-10 (FR-128..163 decomposition): headings and
+`sprint-status-ledger.yaml` story keys agree at **119** (E1-E6 = 60, E7-E12 = 36, E13 = 7,
+E14-E19 = 16). The 2026-08-08 note claiming "all three agree at 86" was false when written —
 E1/E3/E4/E5 counts and the E13 row were stale in this table while the headings and ledger
 already carried the larger truth. **Effort is NOT re-estimated**; E1-E6 figures
 still reflect the original per-epic scope and E7-E12 carry the installer's own estimates.
@@ -1450,9 +1456,11 @@ subpackage; `marshal seed <verb>` on the shipped tree; templates as package data
 re-issued, Part II's binding names re-issued (state `.marshal/seed-state.yml`), Story 7.1
 re-scoped to the seed module tree + subparser stub, S-12.1's wiring ACs re-issued, and
 every E7-E12 story now carries a `Surface:` line. Prose "Genesis" survives only as the
-capability's satellite-era name and binds nothing. **The block is dispatchable** (order:
-7.1 → 7.6 spike gate → E8..E12); 8-5 stays correctly blocked on its cross-epic dep
-(S-10.2).
+capability's satellite-era name and binds nothing. **The block is dispatchable WITH ONE CROSS-EPIC GATE** (added by the FR-128..163
+decomposition, PRD § 16.8): **S-14.1/S-14.2 (pyforge-core leaf + atomic write) land before
+S-7.2/S-7.3**, whose ACs would otherwise mint atomic-write copy #21 and lattice copy #6 —
+their Deps lines now carry it. Order: 7.1 → (14.1/14.2 →) 7.2/7.3 → 7.6 spike gate →
+E8..E12; 8-5 stays correctly blocked on its cross-epic dep (S-10.2).
 
 ### Story 7.1: The seed module tree inside pyforge-marshal
 
@@ -1489,8 +1497,10 @@ I want distinct, documented exit codes per failure mode,
 So that automation can distinguish "repo is non-conformant" from "you gave me bad arguments"
 from "Genesis broke."
 
-**Type:** foundation • **Effort:** XS • **Deps:** S-7.1 • **FR/AD:** FR-126, P-10
+**Type:** foundation • **Effort:** XS • **Deps:** S-7.1, S-14.3 (consume pyforge-core's lattice/exception root — PRD § 16.8 gate)• **FR/AD:** FR-126, P-10
 **Surface:** `seed/errors.py`, `tests/unit/test_seed_errors.py` — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
+
+> **Cross-epic gate (2026-08-10):** the exception hierarchy and exit-code lattice here CONSUME `pyforge.core` (S-14.3) — building them standalone would mint lattice copy #6.
 
 **Acceptance Criteria:**
 
@@ -1512,9 +1522,11 @@ I want every byte written to a target repo to pass through one guarded primitive
 So that the never-write set (Tier-0 Dreams, Tier-2 planning artifacts, Tier-3, legacy specs,
 BMAD installer files) is structurally unreachable rather than merely policy.
 
-**Type:** foundation • **Effort:** M • **Deps:** S-7.2 • **FR/AD/P:** FR-71, FR-100, AD-61,
+**Type:** foundation • **Effort:** M • **Deps:** S-7.2, S-14.2 (consume pyforge-core's atomic write — PRD § 16.8 gate)• **FR/AD/P:** FR-71, FR-100, AD-61,
 NFR-R4, P-01
 **Surface:** `seed/fs.py`, `tests/unit/test_seed_fs.py`, `tests/meta/` (never-write proof) — all under `src/shared/packages/pyforge-marshal/` (`src/pyforge/marshal/` prefix for modules)
+
+> **Cross-epic gate (2026-08-10):** `fs.write()`'s atomic write-temp+rename CONSUMES `pyforge.core` (S-14.2) — implementing it locally would mint copy #21.
 
 **Acceptance Criteria:**
 
@@ -2645,6 +2657,179 @@ baseline is precisely the laundering S-13.2 exists to end
 **And** matching stays per-file naming under S-13.2's literal rule — no blanket claim
 
 ---
+
+## Epic 14: The shared floor — pyforge-core
+
+**Goal:** FR-157..FR-163 (`spec-pyforge-core`): the five primitives written 3-20× across
+eight stations become one enforced leaf. **SEQUENCING (PRD § 16.8): S-14.1 and S-14.2 land
+BEFORE seed stories S-7.2/S-7.3**, which would otherwise mint copy #21 of atomic write and
+copy #6 of the verdict lattice. Decomposed 2026-08-10 from the audit's AF-R8 finding
+(operator-directed); convergence-checked — nothing here is already covered.
+
+### Story 14.1: The leaf exists and is provably a leaf
+**Type:** infra • **Effort:** S • **Deps:** none • **FR/AD:** FR-157; AD-66
+**Surface:** `src/shared/packages/pyforge-core/**` (new member), root `pixi.toml`
+**Given** the workspace **Then** `pyforge-core` exists as a pure-stdlib member and a
+meta-test fails the build if any of its modules imports from `pyforge.<station>`; every
+station stays independently conda-installable.
+
+### Story 14.2: Atomic write has one implementation
+**Type:** feature • **Effort:** M • **Deps:** S-14.1 • **FR/AD:** FR-158; AD-67
+**Surface:** `pyforge-core` + every measured copy's module (6 stations)
+**Given** the ~20 measured copies **Then** one `pyforge.core` implementation replaces ALL of
+them in the same story (AD-67: extraction retires the copy), with per-call-site durability
+semantics verified, not assumed uniform.
+
+### Story 14.3: One lattice, one envelope, one exception root
+**Type:** feature • **Effort:** L • **Deps:** S-14.1 • **FR/AD:** FR-159, FR-160, FR-161; AD-67, AD-68
+**Surface:** `pyforge-core`, warden/doctor/marshal report+verdict modules, herald/mason error roots
+**Given** the five verdict-lattice declarations, three report envelopes and two exception
+roots **Then** each collapses to one core declaration with observable behaviour frozen
+(AD-68): exit codes unchanged, captured real reports validate unchanged, no `except` clause
+widens (asserted by test).
+
+### Story 14.4: The subprocess seam is reconciled and sole ownership is gated
+**Type:** feature • **Effort:** M • **Deps:** S-14.2, S-14.3 • **FR/AD:** FR-162, FR-163; AD-69
+**Surface:** `pyforge-core`, marshal's 7 importing modules, one sole-ownership meta-test per primitive
+**Given** doctor's `cli_bridge` and marshal's `ProcessPort` **Then** one guard is chosen
+deliberately, Marshal's 7 modules route through it, steward's raw-propagation is folded in or
+recorded as a tested opt-out — and a sole-ownership meta-test per extracted primitive fails
+the build when a second implementation appears anywhere under `src/shared/packages/`.
+
+## Epic 15: Fleet operations run themselves
+
+**Goal:** FR-133..FR-139: the two hand-run rituals this audit performed repeatedly — loop-home
+refresh and ledger promotion — become checked machinery. Convergence: FR-139's monotonic half
+is ALREADY COVERED (`promote_sprint_status.py`'s terminal guard, shipped 2026-08-08, + the
+ledger-regression detector) — only its lock rides along; FR-137/138 are PARTIAL (story-status
+covers feed-vs-git; the landed-but-unpromoted direction is the gap).
+
+### Story 15.1: One command refreshes the fleet's homes
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-133, FR-134, FR-135; AD-21
+**Surface:** `cli/factory.py` or new `cli/refresh.py`, `core/context.py`
+**Given** the 8 loop homes **Then** one command reports each home's behind-count (an
+unreadable home is reported, never skipped), fast-forwards clean trees only (dirty homes
+refused by name; push targets `loop/<slug>` only), and re-renders the harness policy as a
+checked step — each step `done | skipped | failed`; an FF-without-render reports the home
+incompletely refreshed.
+
+### Story 15.2: Landing promotes the ledger, and staleness is its own check
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-136, FR-137, FR-138, FR-139 (lock residual); AD-71
+**Surface:** `cli/land.py`, `scripts/promote_sprint_status.py`, `pyforge.doctor.sources` (ledger direction)
+**Given** a story landing **Then** ledger promotion runs mechanically from the landing
+itself (deterministic trigger, never memory); a standalone check reports ledger-vs-git drift
+per key WITH DIRECTION (the landed-but-unpromoted direction story-status does not cover),
+reading merge history never the feed; concurrent promotions serialize on a lock (reusing the shipped `FsPort.acquire_advisory_lock` primitive, AD-42 — never a second lock implementation); the
+already-shipped downgrade refusal is regression-pinned, not rebuilt.
+
+## Epic 16: The board derives truth
+
+**Goal:** FR-140..FR-143: the dashboard's path plumbing stops being hand-glued.
+Convergence (corrected post-blind-review): **FR-128 is ALREADY COVERED** — `_stage_globs`
+has read the canonical `src/shared/packages/<slug>/tests/` tree since `2957718d4c`
+(2026-08-02, `generate.py:1724-1731`, citing the testing-charter's own CAP-1), and this
+branch's `data.js` shows atlas/warden TEA populated with `gaps: []`; no story minted. The
+FR-140..143 set is genuinely undelivered — `index.html` still carries a retired-slug
+special case.
+
+### Story 16.1: One resolver, derived sources, loud failures
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-140, FR-141, FR-142, FR-143
+**Surface:** `docs/dashboard/generate.py`, `docs/dashboard/index.html`, `docs/dashboard/data.js`
+**Given** the dashboard build **Then** slug→path resolution lives in ONE function with one
+exception table; `PROJECT_SOURCES` is discovered (a new station appears with no hand edit; a
+dissolved project resolves to its owner); resolution ships computed in `data.js` (the JS
+carries no slug special case — incl. removing the retired `pyforge-genesis` one); an
+unresolvable slug exits non-zero naming itself.
+
+## Epic 17: Instruments verified, chains regenerable
+
+**Goal:** FR-144..FR-152: gate the detectors themselves and make chain regeneration one
+invocation. Convergence (corrected post-blind-review): FR-144 is LARGELY COVERED (doctor's
+fixture suites) — the `covers-dreams:` pin ALREADY EXISTS; the true residual is the
+unparseable-frontmatter-becomes-a-finding behaviour, currently pinned as its opposite; FR-150 is PARTIAL (chain-completeness INV-A..D +
+dream-chain cover spec/board truth; the layer-presence report is the gap).
+
+### Story 17.1: The detectors' remaining blind spots are fixture-pinned, with an incident log
+**Type:** test • **Effort:** M • **Deps:** none • **FR/AD:** FR-144 (residual), FR-145, FR-146
+**Surface:** `src/shared/packages/pyforge-doctor/tests/`, a tracked detector-incident log companion
+**Given** the moved detectors **Then** **unparseable frontmatter surfaces as a finding**
+rather than degrading silently (the REAL FR-144 residual — today
+`test_sources_chain_dream_chain.py:682` pins the opposite, degrade-to-owner-none behaviour;
+this story changes it and re-pins; the `covers-dreams:` path is already pinned at
+`:147/:164/:657` — corrected post-blind-review); `bmad-drift`'s pin-missing/archive-misplaced/stray-file/spec-status-stale
+each gets a fixture (live-repo integrity tests stay); and a tracked incident log (date,
+detector, wrong claim, true value, root cause, fixing commit, pinning fixture) exists with a
+mandatory-entry rule in the same change that fixes a detector.
+
+### Story 17.2: The dreams hygiene mode exists
+**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** FR-147
+**Surface:** `pyforge.doctor.sources` (dream-chain source)
+**Given** the mode promised by the 2026-07-23 restructure **Then** it reports Dream-tier
+hygiene findings (vocab, table sync, realization-log presence) — the checks this audit's
+Phase 2b ran by hand.
+
+### Story 17.3: Chain-completeness audit mode reports layers
+**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** FR-150 (residual), FR-152; AD-72
+**Surface:** `pyforge.doctor.sources` (board/chain sources), seeded from `generate.py`'s existing layer computation (`:1859` — never a second derivation)
+**Given** a named project **Then** a read-only mode reports which chain layers
+(Dream/Spec/brief/PRD/architecture/epics/stories) exist and which are missing, invocable
+per-project without touching another's tree.
+
+### Story 17.4: Orchestrated regeneration that cannot lose code status
+**Type:** feature • **Effort:** L • **Deps:** S-17.3 • **FR/AD:** FR-148, FR-149, FR-151; AD-72
+**Surface:** new `cli/` verb + `core/` orchestration, `scripts/promote_sprint_status.py` guard reuse
+**Given** a project's chain **Then** regeneration is one invocation in dependency order;
+every `done` story key is byte-identical after it (only backlog epics restructure — the
+guard the ledger already enforces, applied to the generator); orphaned specs/epics are
+reported with review-gated cleanup, nothing deleted without review.
+
+## Epic 18: The governed tool surface
+
+**Goal:** FR-153..FR-156 (`spec-agent-tool-surface`): every factory capability reachable
+through one governed, typed surface. Convergence: FR-154's mechanism is ALREADY COVERED
+(`marshal init`'s rendered `.mcp.json` pattern, AD-43) — the surface itself is the gap
+(2026-07-28 measurement: 2-of-6 stations, Marshal at zero).
+
+### Story 18.1: Marshal's capabilities become named, typed tools
+**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** FR-153, FR-154 (mechanism already covered — marshal init's rendered .mcp.json)
+**Surface:** new `pyforge/marshal/mcp/` (or tools module), rendered per-home registration
+**Given** marshal's CLI surface **Then** its capabilities are exposed as named tools with
+typed arguments and structured answers, registered per-home via the existing rendered
+`.mcp.json` pattern — never a machine-absolute hand edit.
+
+### Story 18.2: Parity and coverage are gated numbers
+**Type:** test • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** FR-155, FR-156
+**Surface:** meta-test + a per-station coverage report
+**Given** the CLI and tool surfaces **Then** a capability present in one and absent from the
+other fails a check, and per-station tool-surface coverage is reported as a number — the
+2-of-6-with-Marshal-at-zero finding is why this is measured, not asserted.
+
+## Epic 19: The testing charter, enforced
+
+**Goal:** FR-129..FR-132 (+FR-130's kit): the fleet's test architecture becomes generated,
+current, and gated. Convergence: this epic IS the durable fix for the audit's
+test-architecture-stale-at-5-stations routing — the `bmad-document-project` sweep becomes
+S-19.1's first run.
+
+### Story 19.1: One generator produces every station's test architecture
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-129, FR-132
+**Surface:** `scripts/bmad_tea_playwright.py` (or successor), all 8 `test-architecture.md`
+**Given** the 8 stations **Then** one automation path produces every `test-architecture.md`
+(a `TBD` token in output is a failed run); regeneration is idempotent on an unchanged tree
+and produces a changed document when tests moved — its first real run replaces the audit's
+routed hand-sweep.
+
+### Story 19.2: The shared test-support kit
+**Type:** feature • **Effort:** M • **Deps:** S-14.1 (Q-26: own leaf vs pyforge-core module — decided here) • **FR/AD:** FR-130
+**Surface:** `pyforge-testing-kit` (or `pyforge.core.testing`), seeded from Marshal's four real mocks
+**Given** Marshal's CLI-runner/page-object/DB-factory/auth-HTTP-time mocks **Then** they ship
+as a shared kit (seeded, not rewritten) and at least one other station imports from it.
+
+### Story 19.3: Coverage gates that name the module
+**Type:** test • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** FR-131
+**Surface:** CI workflow + per-station thresholds
+**Given** a PR dropping a touched package below its station's threshold **Then** CI fails
+naming the uncovered module (unit >80% / integration >70%), not just printing a percentage.
 
 ## Story DAG (critical path and key dependencies)
 
