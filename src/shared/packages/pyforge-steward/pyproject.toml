@@ -17,6 +17,20 @@ authors = [{ name = "rxm7706" }]
 # library.
 dependencies = ["PyYAML"]
 
+[project.optional-dependencies]
+# Story 9.1 (AD-1/AD-13): pyforge.steward.dashboard ships ONLY behind this
+# extra, never a base dependency -- mirrors the pyforge-atlas -> pyforge-warden
+# `[gate]` extra precedent verbatim. Floor matches the architecture Stack
+# table's "Django 5.2 LTS"; 5.2 is already resolved and used elsewhere in this
+# estate (wagtail/coderedcms), not merely aspirational.
+#
+# MUST stay byte-identical to root pixi.toml's
+# `[feature.pyforge-steward.dependencies]` django pin. That pair is enforced
+# by tests/meta/test_invariants.py::test_django_pin_matches_the_dashboard_extra
+# rather than by a comment asking a human to remember (review pass 2 found the
+# previous comment here had already drifted from the file it named).
+dashboard = ["django>=5.2,<6"]
+
 [project.scripts]
 steward = "pyforge.steward.cli:main"
 
