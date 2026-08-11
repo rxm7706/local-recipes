@@ -6,11 +6,12 @@ convention (and its test suite's shape)."""
 
 from __future__ import annotations
 
+import threading
 from datetime import date
 from pathlib import Path
 
 import pytest
-
+from pyforge.herald import progress as progress_module
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.progress import (
     DEFAULT_PROGRESS_PATH,
@@ -308,3 +309,75 @@ def test_write_all_round_trips_field_for_field(tmp_path: Path):
     )
     write_all(progress_path, [record])
     assert read_all(progress_path) == [record]
+
+
+# --- Story 13.1: concurrent writers (DW-1-4-2) ------------------------------
+
+
+def test_two_concurrent_upserts_for_different_stations_neither_update_is_lost(
+    tmp_path: Path, monkeypatch
+):
+    """Regression for DW-1-4-2: two ``upsert`` calls for different stations
+    at ~the same time must not silently lose one writer's update.
+
+    Deterministic forced interleaving (mirrors ``test_state.py``'s
+    equivalent test): ``writer-a``'s pause point is a
+    ``threading.Event``-gated monkeypatch of ``read_all``, landing
+    precisely between its read and its atomic-replace. Locally verified
+    this fails (loses the ``marshal`` record) with ``upsert``'s
+    ``locking.locked`` wrap commented out, and passes with it restored."""
+    progress_path = tmp_path / "progress.json"
+    writer_a_reading = threading.Event()
+    release_writer_a = threading.Event()
+    real_read_all = progress_module.read_all
+
+    def delayed_read_all(path):
+        records = real_read_all(path)
+        if threading.current_thread().name == "writer-a":
+            writer_a_reading.set()
+            assert release_writer_a.wait(timeout=5), "writer-a was never released"
+        return records
+
+    monkeypatch.setattr(progress_module, "read_all", delayed_read_all)
+
+    def upsert_a():
+        upsert(
+            progress_path,
+            station="warden",
+            date="2026-08-08",
+            shipped_capabilities=[],
+            compute_hours=1.0,
+            token_spend=100,
+            wall_clock_hours=1.0,
+            unblock_narrative="",
+        )
+
+    def upsert_b():
+        upsert(
+            progress_path,
+            station="marshal",
+            date="2026-08-08",
+            shipped_capabilities=[],
+            compute_hours=2.0,
+            token_spend=200,
+            wall_clock_hours=2.0,
+            unblock_narrative="",
+        )
+
+    t_a = threading.Thread(target=upsert_a, name="writer-a")
+    t_b = threading.Thread(target=upsert_b, name="writer-b")
+
+    t_a.start()
+    assert writer_a_reading.wait(timeout=5), "writer-a never reached its read step"
+    t_b.start()
+    # Bounded window, not a sleep race -- see test_state.py's equivalent
+    # test for the full rationale.
+    t_b.join(timeout=0.5)
+    release_writer_a.set()
+    t_a.join(timeout=5)
+    t_b.join(timeout=5)
+    assert not t_a.is_alive()
+    assert not t_b.is_alive()
+
+    stations = {r.station for r in read_all(progress_path)}
+    assert stations == {"warden", "marshal"}

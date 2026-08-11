@@ -44,6 +44,17 @@ alone was judged sufficient: ``revisions`` alone loses the actual before/
 after text; git history alone gives no fast in-index answer to "has this
 been edited" without a shell out.
 
+**Concurrency (Story 13.1, resolving `DW-1-4-2`).** Each of the four
+mutating entry points below (`author_notice`, `publish_notice`,
+`close_notice`, `archive_rename`) holds its whole body -- index load,
+markdown write, index write -- under `locking.locked` on a sidecar
+`<index_path>.lock` file. Locking the *whole function*, not just
+`_write_index_document`, means the index write and the markdown write for
+one notice land inside a single critical section, closing the
+markdown-file race as a side effect rather than as a separate fix; a
+second concurrent call blocks and serializes instead of racing this one's
+read-modify-write.
+
 **Redirects (Story 10.3, scaled down).** ``notices/redirects`` in the index
 document maps an old component name to its new one. This is file-based
 bookkeeping only -- **not an HTTP redirect**, since no server exists to
@@ -73,7 +84,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-from . import errors
+from . import errors, locking
 
 NOTICE_TYPES: tuple[str, ...] = ("deprecation", "fix", "eol")
 NOTICE_STATUSES: tuple[str, ...] = ("draft", "published", "closed")
@@ -388,87 +399,96 @@ def author_notice(
     revision) -- never a published or closed one (those must go through
     ``publish_notice``/``close_notice`` instead, or the operator authors a
     new notice under a different component). ``publish=True`` publishes
-    immediately, same as calling ``publish_notice`` right after."""
-    _validate_type(notice_type)
-    _validate_component(component)
+    immediately, same as calling ``publish_notice`` right after.
+
+    The whole body runs under ``locking.locked`` (Story 13.1, resolving
+    ``DW-1-4-2``, see module docstring's Concurrency section) -- the index
+    write and the markdown write both land inside one critical section."""
     index_path = (
         index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     )
-    notices_dir = (
-        notices_dir if notices_dir is not None else repo_root / DEFAULT_NOTICES_DIR
-    )
-    timestamp = now if now is not None else _now_iso()
-
-    document = _load_index_document(index_path)
-    redirects = document["redirects"]
-    if component in redirects:
-        raise errors.HeraldError(
-            f"component {component!r} is a redirect to "
-            f"{redirects[component]!r}; author the notice under that name"
+    lock_path = index_path.with_name(index_path.name + ".lock")
+    with locking.locked(lock_path):
+        _validate_type(notice_type)
+        _validate_component(component)
+        notices_dir = (
+            notices_dir if notices_dir is not None else repo_root / DEFAULT_NOTICES_DIR
         )
+        timestamp = now if now is not None else _now_iso()
 
-    existing_raw = document["notices"].get(component)
-    existing = _entry_to_notice(existing_raw) if existing_raw is not None else None
-    if existing is not None and existing.status != "draft":
-        raise errors.HeraldError(
-            f"notice for {component!r} is already {existing.status}; cannot "
-            f"re-author it (author a new notice under a different "
-            f"component, or use `herald notice close` first)"
-        )
-
-    created_at = existing.created_at if existing is not None else timestamp
-    relative_path = str(
-        _notice_path(Path("notices"), notice_type, component, created_at)
-    )
-    revisions = (*(existing.revisions if existing is not None else ()),) + (
-        {"edited_at": timestamp, "summary": "re-authored" if existing else "authored"},
-    )
-
-    status = "published" if publish else "draft"
-    published_at = timestamp if publish else None
-
-    notice = Notice(
-        type=notice_type,
-        component=component,
-        what=what,
-        why=why,
-        migration=migration,
-        deadline=deadline,
-        reason_link=reason_link,
-        status=status,
-        path=relative_path,
-        created_at=created_at,
-        published_at=published_at,
-        revisions=revisions,
-    )
-    # Markdown written BEFORE the index (regression fix): a markdown-write
-    # failure here now leaves the index untouched -- no phantom "live"
-    # entry pointing at a file that was never created. The reverse order
-    # only ever risked an orphaned, harmless markdown file with no index
-    # entry (invisible to every read path, since get/list/the web export
-    # only ever consult the index).
-    _write_markdown(repo_root, notice)
-    document["notices"][component] = _notice_to_entry(notice)
-    _write_index_document(index_path, document)
-    if (
-        existing is not None
-        and existing.path != relative_path
-        and (repo_root / existing.path).exists()
-    ):
-        # Regression: re-authoring a draft with a changed `notice_type`
-        # relocates its markdown path (the type is part of the path), but
-        # the OLD file was never removed -- a stale, git-diffable "record"
-        # carrying the old content sat alongside the new one indefinitely,
-        # indistinguishable from a real current notice to anyone browsing
-        # `notices/` directly. Removed now that the new file has landed.
-        try:
-            (repo_root / existing.path).unlink()
-        except OSError as exc:
+        document = _load_index_document(index_path)
+        redirects = document["redirects"]
+        if component in redirects:
             raise errors.HeraldError(
-                f"stale notice markdown file {repo_root / existing.path} "
-                f"could not be removed after re-authoring under a new "
-                f"path: {exc}"
-            ) from exc
+                f"component {component!r} is a redirect to "
+                f"{redirects[component]!r}; author the notice under that name"
+            )
+
+        existing_raw = document["notices"].get(component)
+        existing = _entry_to_notice(existing_raw) if existing_raw is not None else None
+        if existing is not None and existing.status != "draft":
+            raise errors.HeraldError(
+                f"notice for {component!r} is already {existing.status}; cannot "
+                f"re-author it (author a new notice under a different "
+                f"component, or use `herald notice close` first)"
+            )
+
+        created_at = existing.created_at if existing is not None else timestamp
+        relative_path = str(
+            _notice_path(Path("notices"), notice_type, component, created_at)
+        )
+        revisions = (*(existing.revisions if existing is not None else ()),) + (
+            {
+                "edited_at": timestamp,
+                "summary": "re-authored" if existing else "authored",
+            },
+        )
+
+        status = "published" if publish else "draft"
+        published_at = timestamp if publish else None
+
+        notice = Notice(
+            type=notice_type,
+            component=component,
+            what=what,
+            why=why,
+            migration=migration,
+            deadline=deadline,
+            reason_link=reason_link,
+            status=status,
+            path=relative_path,
+            created_at=created_at,
+            published_at=published_at,
+            revisions=revisions,
+        )
+        # Markdown written BEFORE the index (regression fix): a markdown-write
+        # failure here now leaves the index untouched -- no phantom "live"
+        # entry pointing at a file that was never created. The reverse order
+        # only ever risked an orphaned, harmless markdown file with no index
+        # entry (invisible to every read path, since get/list/the web export
+        # only ever consult the index).
+        _write_markdown(repo_root, notice)
+        document["notices"][component] = _notice_to_entry(notice)
+        _write_index_document(index_path, document)
+        if (
+            existing is not None
+            and existing.path != relative_path
+            and (repo_root / existing.path).exists()
+        ):
+            # Regression: re-authoring a draft with a changed `notice_type`
+            # relocates its markdown path (the type is part of the path), but
+            # the OLD file was never removed -- a stale, git-diffable "record"
+            # carrying the old content sat alongside the new one indefinitely,
+            # indistinguishable from a real current notice to anyone browsing
+            # `notices/` directly. Removed now that the new file has landed.
+            try:
+                (repo_root / existing.path).unlink()
+            except OSError as exc:
+                raise errors.HeraldError(
+                    f"stale notice markdown file {repo_root / existing.path} "
+                    f"could not be removed after re-authoring under a new "
+                    f"path: {exc}"
+                ) from exc
     return notice
 
 
@@ -480,32 +500,39 @@ def publish_notice(
     now: str | None = None,
 ) -> Notice:
     """``draft -> published`` (Story 10.6). Refuses a component with no
-    notice, an already-published one, or a closed one."""
+    notice, an already-published one, or a closed one.
+
+    The whole body runs under ``locking.locked`` -- see ``author_notice``'s
+    docstring."""
     index_path = (
         index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     )
-    timestamp = now if now is not None else _now_iso()
-    document = _load_index_document(index_path)
-    resolved = _resolve_component(document["redirects"], component)
-    entry = document["notices"].get(resolved)
-    if entry is None:
-        raise errors.HeraldError(f"no notice found for component {component!r}")
-    notice = _entry_to_notice(entry)
-    if notice.status == "published":
-        raise errors.HeraldError(f"notice for {resolved!r} is already published")
-    if notice.status == "closed":
-        raise errors.HeraldError(f"notice for {resolved!r} is closed; cannot publish")
-    notice = replace(
-        notice,
-        status="published",
-        published_at=timestamp,
-        revisions=notice.revisions
-        + ({"edited_at": timestamp, "summary": "published"},),
-    )
-    # Markdown before index -- see author_notice's own comment for why.
-    _write_markdown(repo_root, notice)
-    document["notices"][resolved] = _notice_to_entry(notice)
-    _write_index_document(index_path, document)
+    lock_path = index_path.with_name(index_path.name + ".lock")
+    with locking.locked(lock_path):
+        timestamp = now if now is not None else _now_iso()
+        document = _load_index_document(index_path)
+        resolved = _resolve_component(document["redirects"], component)
+        entry = document["notices"].get(resolved)
+        if entry is None:
+            raise errors.HeraldError(f"no notice found for component {component!r}")
+        notice = _entry_to_notice(entry)
+        if notice.status == "published":
+            raise errors.HeraldError(f"notice for {resolved!r} is already published")
+        if notice.status == "closed":
+            raise errors.HeraldError(
+                f"notice for {resolved!r} is closed; cannot publish"
+            )
+        notice = replace(
+            notice,
+            status="published",
+            published_at=timestamp,
+            revisions=notice.revisions
+            + ({"edited_at": timestamp, "summary": "published"},),
+        )
+        # Markdown before index -- see author_notice's own comment for why.
+        _write_markdown(repo_root, notice)
+        document["notices"][resolved] = _notice_to_entry(notice)
+        _write_index_document(index_path, document)
     return notice
 
 
@@ -521,35 +548,41 @@ def close_notice(
     """``published -> closed`` (Story 10.6). A closed notice stays archived
     and visible (``list``/``get`` still find it) but flagged
     ``status == "closed"`` as no-longer-current. Refuses a draft (must be
-    published first) or an already-closed notice."""
+    published first) or an already-closed notice.
+
+    The whole body runs under ``locking.locked`` -- see ``author_notice``'s
+    docstring."""
     index_path = (
         index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     )
-    timestamp = now if now is not None else _now_iso()
-    document = _load_index_document(index_path)
-    resolved = _resolve_component(document["redirects"], component)
-    entry = document["notices"].get(resolved)
-    if entry is None:
-        raise errors.HeraldError(f"no notice found for component {component!r}")
-    notice = _entry_to_notice(entry)
-    if notice.status == "draft":
-        raise errors.HeraldError(
-            f"notice for {resolved!r} is still a draft; publish it before closing"
+    lock_path = index_path.with_name(index_path.name + ".lock")
+    with locking.locked(lock_path):
+        timestamp = now if now is not None else _now_iso()
+        document = _load_index_document(index_path)
+        resolved = _resolve_component(document["redirects"], component)
+        entry = document["notices"].get(resolved)
+        if entry is None:
+            raise errors.HeraldError(f"no notice found for component {component!r}")
+        notice = _entry_to_notice(entry)
+        if notice.status == "draft":
+            raise errors.HeraldError(
+                f"notice for {resolved!r} is still a draft; publish it before closing"
+            )
+        if notice.status == "closed":
+            raise errors.HeraldError(f"notice for {resolved!r} is already closed")
+        notice = replace(
+            notice,
+            status="closed",
+            closed_at=timestamp,
+            closed_by=closed_by or UNKNOWN_OPERATOR,
+            close_reason=reason,
+            revisions=notice.revisions
+            + ({"edited_at": timestamp, "summary": "closed"},),
         )
-    if notice.status == "closed":
-        raise errors.HeraldError(f"notice for {resolved!r} is already closed")
-    notice = replace(
-        notice,
-        status="closed",
-        closed_at=timestamp,
-        closed_by=closed_by or UNKNOWN_OPERATOR,
-        close_reason=reason,
-        revisions=notice.revisions + ({"edited_at": timestamp, "summary": "closed"},),
-    )
-    # Markdown before index -- see author_notice's own comment for why.
-    _write_markdown(repo_root, notice)
-    document["notices"][resolved] = _notice_to_entry(notice)
-    _write_index_document(index_path, document)
+        # Markdown before index -- see author_notice's own comment for why.
+        _write_markdown(repo_root, notice)
+        document["notices"][resolved] = _notice_to_entry(notice)
+        _write_index_document(index_path, document)
     return notice
 
 
@@ -649,23 +682,28 @@ def archive_rename(
     File-based bookkeeping only -- **not an HTTP redirect** (no server
     exists to serve one). Requires ``new_component`` to already have a
     notice (nothing to redirect to otherwise) and refuses redirecting a
-    component onto itself or overwriting an existing redirect silently."""
-    _validate_component(old_component)
-    _validate_component(new_component)
-    if old_component == new_component:
-        raise errors.HeraldError("cannot redirect a component to itself")
+    component onto itself or overwriting an existing redirect silently.
+
+    The whole body runs under ``locking.locked`` -- see ``author_notice``'s
+    docstring."""
     index_path = (
         index_path if index_path is not None else repo_root / DEFAULT_INDEX_PATH
     )
-    document = _load_index_document(index_path)
-    if new_component not in document["notices"]:
-        raise errors.HeraldError(
-            f"cannot redirect to {new_component!r}: no notice exists for it yet"
-        )
-    if old_component in document["redirects"]:
-        raise errors.HeraldError(
-            f"component {old_component!r} already redirects to "
-            f"{document['redirects'][old_component]!r}"
-        )
-    document["redirects"][old_component] = new_component
-    _write_index_document(index_path, document)
+    lock_path = index_path.with_name(index_path.name + ".lock")
+    with locking.locked(lock_path):
+        _validate_component(old_component)
+        _validate_component(new_component)
+        if old_component == new_component:
+            raise errors.HeraldError("cannot redirect a component to itself")
+        document = _load_index_document(index_path)
+        if new_component not in document["notices"]:
+            raise errors.HeraldError(
+                f"cannot redirect to {new_component!r}: no notice exists for it yet"
+            )
+        if old_component in document["redirects"]:
+            raise errors.HeraldError(
+                f"component {old_component!r} already redirects to "
+                f"{document['redirects'][old_component]!r}"
+            )
+        document["redirects"][old_component] = new_component
+        _write_index_document(index_path, document)

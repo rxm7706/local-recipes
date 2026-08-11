@@ -28,11 +28,13 @@ one record per station per calendar day. ``upsert`` enforces this: a second
 rather than accumulating duplicates.
 
 **Concurrency.** Same atomic-write pattern as ``state.py``/``deck_pipeline.py``:
-write to a temp file in the same directory, then ``os.replace``. This is
-crash-safety, not concurrency-safety -- two concurrent writers each
-load-then-replace the whole document, and the loser's update is silently
-lost, exactly like ``state.py``'s own documented limit. No current caller
-writes concurrently.
+write to a temp file in the same directory, then ``os.replace``. That alone
+is crash-safety, not concurrency-safety -- two concurrent writers each
+load-then-replace the whole document, and the loser's update would
+silently be lost. ``upsert`` closes that gap (Story 13.1, resolving
+``DW-1-4-2``) by holding its ``read_all``/mutate/``write_all`` span under
+``locking.locked`` on a sidecar ``<progress_path>.lock`` file, mirroring
+``state.write``'s identical fix.
 """
 
 from __future__ import annotations
@@ -46,7 +48,7 @@ from datetime import UTC, datetime
 from datetime import date as date_cls
 from pathlib import Path
 
-from . import errors
+from . import errors, locking
 
 DEFAULT_PROGRESS_PATH = Path(".herald/progress.json")
 """Mirrors ``state.DEFAULT_STATE_PATH``'s convention: relative to a repo
@@ -254,47 +256,55 @@ def upsert(
     compute_hours/token_spend/wall_clock_hours can meaningfully be
     negative, and without this check a typo'd flag was silently stored
     and rendered as-is (e.g. "-5h compute") with no indication anything
-    was wrong."""
+    was wrong.
+
+    The ``read_all``/mutate/``write_all`` span is held under
+    ``locking.locked`` (Story 13.1, resolving ``DW-1-4-2``): a sidecar
+    ``<progress_path>.lock`` file, so a second concurrent ``upsert`` for a
+    different station/date blocks and serializes instead of racing this
+    one -- see ``state.write``'s identical rationale."""
     if compute_hours < 0:
         raise errors.HeraldError("compute_hours must not be negative")
     if token_spend < 0:
         raise errors.HeraldError("token_spend must not be negative")
     if wall_clock_hours < 0:
         raise errors.HeraldError("wall_clock_hours must not be negative")
-    records = read_all(progress_path)
-    timestamp = now_iso()
-    for index, existing in enumerate(records):
-        if existing.station == station and existing.date == date:
-            updated = Progress(
-                id=existing.id,
-                station=station,
-                date=date,
-                shipped_capabilities=list(shipped_capabilities),
-                compute_hours=compute_hours,
-                token_spend=token_spend,
-                wall_clock_hours=wall_clock_hours,
-                unblock_narrative=unblock_narrative,
-                created_at=existing.created_at,
-                updated_at=timestamp,
-            )
-            records[index] = updated
-            write_all(progress_path, records)
-            return updated
-    created = Progress(
-        id=new_id(),
-        station=station,
-        date=date,
-        shipped_capabilities=list(shipped_capabilities),
-        compute_hours=compute_hours,
-        token_spend=token_spend,
-        wall_clock_hours=wall_clock_hours,
-        unblock_narrative=unblock_narrative,
-        created_at=timestamp,
-        updated_at=timestamp,
-    )
-    records.append(created)
-    write_all(progress_path, records)
-    return created
+    lock_path = progress_path.with_name(progress_path.name + ".lock")
+    with locking.locked(lock_path):
+        records = read_all(progress_path)
+        timestamp = now_iso()
+        for index, existing in enumerate(records):
+            if existing.station == station and existing.date == date:
+                updated = Progress(
+                    id=existing.id,
+                    station=station,
+                    date=date,
+                    shipped_capabilities=list(shipped_capabilities),
+                    compute_hours=compute_hours,
+                    token_spend=token_spend,
+                    wall_clock_hours=wall_clock_hours,
+                    unblock_narrative=unblock_narrative,
+                    created_at=existing.created_at,
+                    updated_at=timestamp,
+                )
+                records[index] = updated
+                write_all(progress_path, records)
+                return updated
+        created = Progress(
+            id=new_id(),
+            station=station,
+            date=date,
+            shipped_capabilities=list(shipped_capabilities),
+            compute_hours=compute_hours,
+            token_spend=token_spend,
+            wall_clock_hours=wall_clock_hours,
+            unblock_narrative=unblock_narrative,
+            created_at=timestamp,
+            updated_at=timestamp,
+        )
+        records.append(created)
+        write_all(progress_path, records)
+        return created
 
 
 def latest_for_station(progress_path: Path, station: str) -> Progress | None:

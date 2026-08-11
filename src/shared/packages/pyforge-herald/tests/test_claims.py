@@ -6,7 +6,10 @@ publish, revalidate, and the atomic-write/round-trip discipline mirroring
 from __future__ import annotations
 
 import json
+import sys
+import threading
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 from pyforge.herald import claims, errors
@@ -516,3 +519,143 @@ def test_referenced_by_claims_empty_when_no_claim_cites_it(tmp_path):
 
 def test_referenced_by_claims_on_missing_file_is_empty(tmp_path):
     assert claims.referenced_by_claims(tmp_path / "claims.json", "auth-api-v1") == []
+
+
+# --- Story 13.1: concurrent writers (DW-1-4-2) ------------------------------
+
+
+def test_two_concurrent_creates_neither_update_is_lost(tmp_path, monkeypatch):
+    """Regression for DW-1-4-2: two ``create`` calls at ~the same time must
+    not silently lose one writer's claim.
+
+    Deterministic forced interleaving (mirrors ``test_state.py``'s
+    equivalent test): ``writer-a``'s pause point is a
+    ``threading.Event``-gated monkeypatch of ``read_all``, landing
+    precisely between its read and its atomic-replace. Locally verified
+    this fails (loses the ``marshal`` claim) with ``create``'s
+    ``locking.locked`` wrap commented out, and passes with it restored."""
+    path = tmp_path / "claims.json"
+    writer_a_reading = threading.Event()
+    release_writer_a = threading.Event()
+    real_read_all = claims.read_all
+
+    def delayed_read_all(claims_path):
+        stored = real_read_all(claims_path)
+        if threading.current_thread().name == "writer-a":
+            writer_a_reading.set()
+            assert release_writer_a.wait(timeout=5), "writer-a was never released"
+        return stored
+
+    monkeypatch.setattr(claims, "read_all", delayed_read_all)
+
+    def create_a():
+        claims.create(path, project_name="warden")
+
+    def create_b():
+        claims.create(path, project_name="marshal")
+
+    t_a = threading.Thread(target=create_a, name="writer-a")
+    t_b = threading.Thread(target=create_b, name="writer-b")
+
+    t_a.start()
+    assert writer_a_reading.wait(timeout=5), "writer-a never reached its read step"
+    t_b.start()
+    # Bounded window, not a sleep race -- see test_state.py's equivalent
+    # test for the full rationale.
+    t_b.join(timeout=0.5)
+    release_writer_a.set()
+    t_a.join(timeout=5)
+    t_b.join(timeout=5)
+    assert not t_a.is_alive()
+    assert not t_b.is_alive()
+
+    names = {c.project_name for c in claims.read_all(path)}
+    assert names == {"warden", "marshal"}
+
+
+def _lock_is_currently_free(lock_path: Path) -> bool:
+    """True if no one else currently holds an exclusive lock on
+    ``lock_path`` -- a raw, NON-blocking attempt on a freshly opened file
+    handle (a distinct open-file-description from whatever `locking.locked`
+    may be holding, so a real held lock is detected even from this same
+    thread/process), released immediately after. Hand-rolled rather than
+    reusing `locking.locked` deliberately: that call blocks, which would
+    hang this check exactly when it needs to report "held" fastest."""
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "a+b") as fh:
+        if sys.platform == "win32":
+            import msvcrt
+
+            fh.seek(0)
+            try:
+                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+            except OSError:
+                return False
+            msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+            return True
+        else:
+            import fcntl
+
+            try:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                return False
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            return True
+
+
+def test_publish_validates_evidence_links_before_acquiring_the_lock(tmp_path):
+    """AC: ``publish`` must never hold the lock during network I/O. Proven
+    directly (not inferred from timing) -- the monkeypatched ``validate``
+    attempts its own non-blocking acquire of the SAME lock file `publish`
+    uses; if `publish` were (still, or again) holding that lock while
+    calling `validate`, the nested attempt would fail. Locally verified
+    this fails with `publish`'s evidence-validation loop moved inside the
+    `with locking.locked(...)` block, and passes with validation restored
+    to run before the lock is acquired."""
+    path = tmp_path / "claims.json"
+    claim = claims.create(
+        path,
+        project_name="warden",
+        evidence=[
+            claims.Evidence(type="test_results", url="https://ok-1", label="a"),
+            claims.Evidence(type="test_results", url="https://ok-2", label="b"),
+        ],
+    )
+    lock_path = path.with_name(path.name + ".lock")
+    lock_was_free_during_call: list[bool] = []
+
+    def _validate(url):
+        lock_was_free_during_call.append(_lock_is_currently_free(lock_path))
+        return object()
+
+    published = claims.publish(path, claim.id, thesis="Shipped it", validate=_validate)
+
+    assert lock_was_free_during_call == [True, True]
+    assert published.status == "published"
+
+
+def test_revalidate_all_validates_evidence_links_before_acquiring_the_lock(tmp_path):
+    """Same property as the ``publish`` test above, for ``revalidate_all``
+    (the other network-validating entry point, and the one the story's own
+    Design Notes calls out as iterating "every stored claim's every
+    entry")."""
+    path = tmp_path / "claims.json"
+    claims.create(
+        path,
+        project_name="warden",
+        evidence=[claims.Evidence(type="test_results", url="https://ok", label="a")],
+    )
+    lock_path = path.with_name(path.name + ".lock")
+    lock_was_free_during_call: list[bool] = []
+
+    class _Result:
+        is_valid = True
+
+    def _validate(url):
+        lock_was_free_during_call.append(_lock_is_currently_free(lock_path))
+        return _Result()
+
+    claims.revalidate_all(path, validate=_validate)
+
+    assert lock_was_free_during_call == [True]

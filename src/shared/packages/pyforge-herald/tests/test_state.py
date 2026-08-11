@@ -6,10 +6,11 @@ never assumes a cwd, so no test here may either.
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 
 import pytest
-
+from pyforge.herald import state as state_module
 from pyforge.herald.errors import HeraldError
 from pyforge.herald.state import DEFAULT_STATE_PATH, DeckState, read, write
 
@@ -134,14 +135,16 @@ def test_write_blocked_by_a_plain_file_in_the_parent_path_raises_herald_error(
     tmp_path: Path,
 ):
     """A plain file where the `.herald` directory should be must surface as
-    a HeraldError, not a bare FileExistsError/NotADirectoryError. The
-    pre-write load is what trips (``open()`` through a plain-file parent
-    raises ``NotADirectoryError``, wrapped as "could not be read"); write's
-    own mkdir wrap would catch the same shape racing into place later."""
+    a HeraldError, not a bare FileExistsError/NotADirectoryError. Since
+    Story 13.1, the sidecar lock's own `mkdir` is what trips FIRST (it runs
+    before the load): `locking.locked`'s wrap ("lock file ... could not be
+    opened") wins the race that the pre-fix load-side wrap ("could not be
+    read") used to win alone -- still a structural `HeraldError` naming a
+    real path either way, never a raw `FileExistsError`/`NotADirectoryError`."""
     blocker = tmp_path / ".herald"
     blocker.write_text("not a directory")
     state_path = blocker / "bridge-state.json"
-    with pytest.raises(HeraldError, match="could not be read"):
+    with pytest.raises(HeraldError, match="lock file"):
         write(state_path, "x", DeckState(project_id="p1", etags={}))
 
 
@@ -273,3 +276,61 @@ def test_write_refuses_a_state_that_is_not_a_deck_state(tmp_path: Path):
     with pytest.raises(HeraldError, match="must be a DeckState"):
         write(state_path, "x", {"project_id": "p1", "etags": {}})
     assert not state_path.exists()
+
+
+# --- Story 13.1: concurrent writers (DW-1-4-2) ------------------------------
+
+
+def test_two_concurrent_writers_for_different_slugs_neither_update_is_lost(
+    tmp_path: Path, monkeypatch
+):
+    """Regression for DW-1-4-2: two ``write`` calls for different slugs at
+    ~the same time must not silently lose one writer's update.
+
+    Deterministic forced interleaving, not a timing-dependent sleep race:
+    ``writer-a``'s pause point is a ``threading.Event``-gated monkeypatch of
+    ``_load_document``, landing precisely between its read and its
+    atomic-replace. Locally verified this fails (loses ``"b"``) with
+    ``write``'s ``locking.locked`` wrap commented out, and passes with it
+    restored."""
+    state_path = tmp_path / "bridge-state.json"
+    writer_a_reading = threading.Event()
+    release_writer_a = threading.Event()
+    real_load_document = state_module._load_document
+
+    def delayed_load_document(path):
+        document = real_load_document(path)
+        if threading.current_thread().name == "writer-a":
+            writer_a_reading.set()
+            assert release_writer_a.wait(timeout=5), "writer-a was never released"
+        return document
+
+    monkeypatch.setattr(state_module, "_load_document", delayed_load_document)
+
+    def write_a():
+        write(state_path, "a", DeckState(project_id="p-a", etags={}, last_pull=None))
+
+    def write_b():
+        write(state_path, "b", DeckState(project_id="p-b", etags={}, last_pull=None))
+
+    t_a = threading.Thread(target=write_a, name="writer-a")
+    t_b = threading.Thread(target=write_b, name="writer-b")
+
+    t_a.start()
+    assert writer_a_reading.wait(timeout=5), "writer-a never reached its read step"
+    t_b.start()
+    # Bounded window, not a sleep race: gives pre-fix (unlocked) code time
+    # to run writer-b's WHOLE read-modify-write to completion while
+    # writer-a is still paused (reproducing the lost-update race); the
+    # fixed/locked code keeps writer-b blocked acquiring the lock
+    # throughout this window regardless -- it cannot acquire it until
+    # writer-a releases below, so this wait never races the assertions.
+    t_b.join(timeout=0.5)
+    release_writer_a.set()
+    t_a.join(timeout=5)
+    t_b.join(timeout=5)
+    assert not t_a.is_alive()
+    assert not t_b.is_alive()
+
+    assert read(state_path, "a") is not None
+    assert read(state_path, "b") is not None

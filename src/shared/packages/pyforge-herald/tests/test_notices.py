@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 
 import pytest
@@ -311,3 +312,63 @@ def test_publish_follows_a_redirect(tmp_path: Path):
     # publish the wrong (draft) entry.
     with pytest.raises(HeraldError, match="already published"):
         notices.publish_notice(tmp_path, "old-name")
+
+
+# --- Story 13.1: concurrent writers (DW-1-4-2) ------------------------------
+
+
+def test_two_concurrent_authors_for_different_components_neither_update_is_lost(
+    tmp_path: Path, monkeypatch
+):
+    """Regression for DW-1-4-2: two ``author_notice`` calls for different
+    components at ~the same time must not silently lose one writer's
+    update -- and must not corrupt the index (both the JSON write and the
+    markdown write live inside the same locked critical section).
+
+    Deterministic forced interleaving (mirrors ``test_state.py``'s
+    equivalent test): ``writer-a``'s pause point is a
+    ``threading.Event``-gated monkeypatch of ``_load_index_document``,
+    landing precisely between its read and its atomic-replace. Locally
+    verified this fails (loses the ``notice-b`` entry) with
+    ``author_notice``'s ``locking.locked`` wrap commented out, and passes
+    with it restored."""
+    import pyforge.herald.notices as notices_module
+
+    writer_a_reading = threading.Event()
+    release_writer_a = threading.Event()
+    real_load_index_document = notices_module._load_index_document
+
+    def delayed_load_index_document(index_path):
+        document = real_load_index_document(index_path)
+        if threading.current_thread().name == "writer-a":
+            writer_a_reading.set()
+            assert release_writer_a.wait(timeout=5), "writer-a was never released"
+        return document
+
+    monkeypatch.setattr(
+        notices_module, "_load_index_document", delayed_load_index_document
+    )
+
+    def author_a():
+        _author(tmp_path, component="notice-a")
+
+    def author_b():
+        _author(tmp_path, component="notice-b")
+
+    t_a = threading.Thread(target=author_a, name="writer-a")
+    t_b = threading.Thread(target=author_b, name="writer-b")
+
+    t_a.start()
+    assert writer_a_reading.wait(timeout=5), "writer-a never reached its read step"
+    t_b.start()
+    # Bounded window, not a sleep race -- see test_state.py's equivalent
+    # test for the full rationale.
+    t_b.join(timeout=0.5)
+    release_writer_a.set()
+    t_a.join(timeout=5)
+    t_b.join(timeout=5)
+    assert not t_a.is_alive()
+    assert not t_b.is_alive()
+
+    components = {n.component for n in notices.list_notices(tmp_path, status="all")}
+    assert components == {"notice-a", "notice-b"}
