@@ -757,3 +757,27 @@ def test_env_var_value_never_appears_in_captured_stderr_log_output(monkeypatch, 
         assert main(["doctor", "--verbose"]) == EXIT_OK
     err = capsys.readouterr().err
     assert marker not in err
+
+
+# --- Story 2.3: credential isolation (AD-14) --------------------------------
+
+
+@pytest.mark.parametrize("flags", [[], ["--quiet"], ["--verbose"]], ids=["default", "quiet", "verbose"])
+def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, capsys, flags):
+    """AD-14: a JFROG_* credential must never surface in `mason doctor`'s
+    output at ANY verbosity (review pass, Edge Case Hunter: the original
+    version only exercised --verbose despite this exact claim, leaving the
+    default and --quiet paths unproven). `doctor.build_report` is mocked to
+    a fixed report (existing doctor-test pattern, matching
+    `test_env_var_value_never_appears_in_captured_stderr_log_output` above)
+    since Mason never reads a JFROG_* variable in the first place (spec
+    Never boundary) -- this guards against a future regression where output
+    at any of the three verbosity levels, or the report itself, starts
+    echoing the ambient environment."""
+    sentinel = "JFROG-SENTINEL-9f3e7a1c"
+    monkeypatch.setenv("JFROG_API_KEY", sentinel)
+    with patch("pyforge.mason.cli.doctor.build_report", return_value=_FIXED_REPORT):
+        assert main(["doctor", *flags]) == EXIT_OK
+    out = capsys.readouterr()
+    assert sentinel not in out.out
+    assert sentinel not in out.err

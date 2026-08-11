@@ -1372,3 +1372,36 @@ def test_validate_recipe_against_fake_cfe_root_with_plain_text_stdout_reports_js
     assert result.returncode == 0
     assert result.json_body is None
     assert "plain text, not json" in result.stdout
+
+
+# --- Story 2.3: credential isolation -- sentinel-credential test (AD-14) ---
+
+
+def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, monkeypatch):
+    """AD-14: Mason never reads a JFROG_* variable, and a credential reaches
+    CFE only through the inherited process environment -- never surfaced
+    back into a returned result's own fields. A sentinel value set via
+    `monkeypatch.setenv` proves this for the three call sites the spec
+    names: `probe_import_floor` (whose `ImportFloorResult` carries no
+    stdout/stderr -- the assertion there is only that the call succeeds
+    normally with the sentinel present) and `validate_recipe`/`submit_pr`
+    (both against Story 1.9's `fake_cfe_root` fixture, real subprocess, no
+    mocking -- mirroring this file's existing fake-root tests)."""
+    _clear_fixture_env(monkeypatch)
+    sentinel = "JFROG-SENTINEL-9f3e7a1c"
+    monkeypatch.setenv("JFROG_API_KEY", sentinel)
+
+    floor_result = probe_import_floor(sys.executable)
+    assert isinstance(floor_result, ImportFloorResult)
+
+    validate_result = validate_recipe(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+    submit_result = submit_pr(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    for result in (validate_result, submit_result):
+        assert sentinel not in result.stdout
+        assert sentinel not in result.stderr
+        assert sentinel not in str(result.json_body)
