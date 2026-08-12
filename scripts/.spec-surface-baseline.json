@@ -333,9 +333,9 @@
  },
  "pyforge-doctor/spec-bmad-drift-new-artifact-shape": {
   "files": {
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "0d5e603a03fcaa2fc7ce425792d93a23c7d9bbc2"
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "54552ae735da7a453267985a656bafc672c52771"
   },
-  "memlog": "8ab1d37484741cfcb6eebc178f8365454a9531d6"
+  "memlog": "2c8d7dc5bd8a2a1930547250ace89780f2284e7f"
  },
  "pyforge-doctor/spec-deferred-work-visibility": {
   "files": {},
