@@ -775,6 +775,37 @@ tier) covers the one failure mode that write can still hit -- an
 unwritable loop home -- degrading to whatever policy was already on disk
 rather than aborting the launch.
 
+Story 5.9 ("a story finished by hand is not invisible to the ledger",
+AD-5/AD-29/AD-33) adds the fourteenth real caller's own new codes to
+``cli/deploy.py``'s existing ``MRS-DEPLOY-*`` area for `marshal deploy
+reconcile-completions`: ``MRS-DEPLOY-024`` (``HarnessPort.ledger_story_
+statuses`` raised ``HarnessError`` reading the tracked ``sprint-status-
+ledger.yaml`` twin -- OR the SAME file's raw text could not be re-read via
+``FsPort.read_text`` moments later, to perform the actual rewrite; both are
+"Marshal cannot determine/apply the tracked ledger's own state" and fold
+into ONE code per AD-31's "same code, several triggering shapes, same
+tier" precedent, e.g. ``MRS-DEPLOY-003``/``MRS-STATUS-011``) classifies
+``Verdict.WARN``, the same "clean, reportable gap, never itself a failure"
+tier as ``MRS-STATUS-005``'s own identical tracked-ledger-unreadable
+precedent: the WHOLE run degrades to report-only (nothing can be advanced
+or promoted without knowing the ledger's own current state), but this is a
+paper-trail gap, never a blocking error. ``MRS-DEPLOY-025`` (the ledger's
+own durable WRITE failed -- ``FsPort.write_text_atomic`` or ``VcsPort.
+commit_paths`` raised, AFTER this run already determined which keys to
+advance) classifies ``Verdict.ERROR``, the same tier as ``MRS-DEPLOY-008``/
+``011``: a real write was attempted against an already-computed decision
+and did not complete; unlike ``024``, spec promotion for the SAME run's
+advanced keys is still attempted independently immediately afterward (this
+story's own "two dedicated commits, one per concern" Always bullet -- a
+failed ledger commit never blocks the separate spec-promotion commit).
+``MRS-DEPLOY-026`` (a key is corroborated as durably merged via a route
+Marshal did not drive -- quick-dev -- but carries NO entry at all in the
+tracked ledger's own ``development_status`` map) classifies ``Verdict.
+WARN``, the same tier as ``MRS-DEPLOY-001``/``004``/``009``/``012``'s own
+"reported, never blocks progression" paper-trail-gap precedent: this
+story's own Boundaries forbid ever inventing a new ledger row, so the gap
+is named per-key and the run continues advancing every OTHER eligible key.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -1200,6 +1231,17 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `Verdict.WARN`, mirroring `MRS-STATUS-009`'s identical "the read failed,
 # degrade every affected value to unknown, never a hard failure"
 # reasoning.
+#
+# Story 5.9 (a story finished by hand is not invisible to the ledger,
+# AD-5/AD-29/AD-33) adds three more MRS-DEPLOY-* codes for `marshal deploy
+# reconcile-completions`: MRS-DEPLOY-024 (the tracked ledger could not be
+# read, at either of its two read sites) at WARN, mirroring
+# MRS-STATUS-005; MRS-DEPLOY-025 (the ledger's own durable write --
+# FsPort.write_text_atomic or VcsPort.commit_paths -- failed after this
+# run already decided what to advance) at ERROR, mirroring
+# MRS-DEPLOY-008/011; MRS-DEPLOY-026 (a corroborated quick-dev-landed key
+# has no row at all in the tracked ledger) at WARN, mirroring
+# MRS-DEPLOY-001/004/009/012's "reported, never blocks" precedent.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1354,6 +1396,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-010",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
+        "MRS-DEPLOY-024",
+        "MRS-DEPLOY-025",
+        "MRS-DEPLOY-026",
     }
 )
 

@@ -715,6 +715,28 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Boundaries forbid this signal from changing marshal status's exit code.
 # Both mirror MRS-STATUS-009's identical "the read failed, degrade every
 # affected value to unknown, never a hard failure" reasoning.
+# Story 5.9 (a story finished by hand is not invisible to the ledger,
+# AD-5/AD-29/AD-33) adds three more MRS-DEPLOY-* codes for `marshal deploy
+# reconcile-completions`. MRS-DEPLOY-024 (the tracked sprint-status-
+# ledger.yaml could not be read -- either at the primary HarnessPort.
+# ledger_story_statuses classification read, or the secondary FsPort.
+# read_text re-read performed to apply the rewrite) classifies WARN,
+# mirroring MRS-STATUS-005's identical "a clean, reportable gap, never
+# itself a failure" tier: the whole run degrades to report-only, since
+# nothing can be honestly advanced or promoted without first knowing the
+# ledger's own current state. MRS-DEPLOY-025 (the ledger's own durable
+# write -- FsPort.write_text_atomic or VcsPort.commit_paths -- failed,
+# AFTER this run already computed which keys to advance) classifies ERROR,
+# the same tier as MRS-DEPLOY-008/011: a real write was attempted against
+# an already-decided action and did not complete; unlike 024, the SEPARATE
+# spec-promotion commit for the same run's advanced keys is still
+# attempted regardless (this story's own "two dedicated commits, one per
+# concern" Always bullet). MRS-DEPLOY-026 (a key corroborated as durably
+# merged via a route Marshal did not drive -- quick-dev -- carries no row
+# at all in the tracked ledger) classifies WARN, the same "reported, never
+# blocks progression" tier as MRS-DEPLOY-001/004/009/012: this story's own
+# Boundaries forbid ever inventing a new ledger row, so the gap is named
+# per key and every OTHER eligible key still advances.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -891,6 +913,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-010": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
+    "MRS-DEPLOY-024": Verdict.WARN,
+    "MRS-DEPLOY-025": Verdict.ERROR,
+    "MRS-DEPLOY-026": Verdict.WARN,
 }
 
 

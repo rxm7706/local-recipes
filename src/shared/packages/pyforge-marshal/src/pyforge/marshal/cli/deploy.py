@@ -188,6 +188,25 @@ true``, ``data.promoted: []``), never a hard error. The journal's own
 two-writer case (``_DeployRun``/``append_line``, AD-25/AD-28/AD-30) is
 explicitly untouched by this new lock -- a different, already-shipped
 concurrency answer.
+
+Story 5.9 ("a story finished by hand is not invisible to the ledger",
+AD-5/AD-29/AD-33) adds ``marshal deploy reconcile-completions`` -- the
+write-capable sibling of Story 5.4's read-only ``marshal status
+--reconcile-ledger``. A story completed and merged entirely via
+``bmad-quick-dev`` (no ``bmad-loop`` run ever touches it) never gets its
+tracked ``sprint-status-ledger.yaml`` key advanced out of ``backlog`` by
+anything else in this package. This command detects every such story from
+git plus corroborating Tier-3/tracked spec evidence alone (``core.
+promotion.merged_story_keys`` minus the NEW ``core.promotion.marshal_
+native_merged_keys``, corroborated by ``_scan_promotions``'s own already-
+shipped candidate scan -- reused, never re-derived), advances its ledger
+key to ``done`` in one dedicated commit, and promotes its Tier-3 spec
+(reusing ``_execute_promotion_plan``, the copy-then-commit executor
+extracted from ``run_promote`` for exactly this second caller) in a
+second, separate commit, scoped to only the keys this run itself
+advanced. It never reads or writes any run journal/``state.json`` (AD-5)
+-- the ONE ``HarnessPort`` method it ever calls is ``ledger_story_
+statuses``, an explicit-path read of the tracked ledger file alone.
 """
 
 from __future__ import annotations
@@ -204,7 +223,7 @@ from pathlib import Path
 
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness
+from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
@@ -265,6 +284,20 @@ _MRS_DEPLOY_018 = "MRS-DEPLOY-018"
 _MRS_DEPLOY_021 = "MRS-DEPLOY-021"
 _MRS_DEPLOY_022 = "MRS-DEPLOY-022"
 _MRS_DEPLOY_023 = "MRS-DEPLOY-023"
+_MRS_DEPLOY_024 = "MRS-DEPLOY-024"
+_MRS_DEPLOY_025 = "MRS-DEPLOY-025"
+_MRS_DEPLOY_026 = "MRS-DEPLOY-026"
+
+# Story 5.9's own local copies of `cli/status.py`'s ledger-path/status
+# literals -- mirrors this module's own established "each module owns its
+# own copy of these small literals" precedent (`cli/status.py`'s own
+# `_JOURNAL_FILENAME`/`_DONE_PHASE` comment names this exact convention,
+# citing `cli/retire.py` as its own prior instance) rather than reaching
+# into a sibling CLI module's PRIVATE `_LEDGER_RELPATH`/`_DONE_STATUS`
+# attributes. Must stay byte-identical to `cli/status.py`'s own copies --
+# both name the SAME tracked file and the SAME status vocabulary value.
+_LEDGER_RELPATH = "_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
+_LEDGER_DONE_STATUS = "done"
 
 # Story 4.9 (AD-42): how long run_promote waits for a concurrent promoter
 # to release the specs_dir lock before refusing cleanly (MRS-DEPLOY-023).
@@ -448,6 +481,37 @@ def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     refresh_feed_parser.set_defaults(handler=run_refresh_feed)
+
+    reconcile_completions_parser = deploy_subparsers.add_parser(
+        "reconcile-completions",
+        help=(
+            "Advance the ledger for stories completed by hand, outside "
+            "bmad-loop/land-story (Story 5.9, AD-5/AD-29/AD-33)."
+        ),
+        description=(
+            "Detects, from git plus corroborating Tier-3/tracked spec "
+            "evidence alone, every story merged to main via a route "
+            "Marshal itself did not drive (today, exclusively a "
+            "human-run bmad-quick-dev session merged as a plain PR), "
+            "advances its tracked sprint-status-ledger.yaml key to done "
+            "in one dedicated commit, and promotes its Tier-3 spec "
+            "(reusing Story 4.1's own promotion scan) in a second, "
+            "separate commit."
+        ),
+    )
+    reconcile_completions_parser.add_argument(
+        "--project",
+        default=None,
+        metavar="SLUG",
+        help=f"The active project slug; falls back to ${ENV_ACTIVE_PROJECT} when omitted.",
+    )
+    reconcile_completions_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    reconcile_completions_parser.set_defaults(handler=run_reconcile_completions)
 
 
 def _discover_candidates(fs: FsPort, tier3_dir: Path) -> tuple[SpecCandidate, ...]:
@@ -705,6 +769,174 @@ def unreachable_promotions_for_slug(
     return tuple(sorted(keys))
 
 
+def _execute_promotion_plan(
+    to_promote: tuple[SpecCandidate, ...],
+    *,
+    project_slug: str,
+    fs: FsPort,
+    vcs: VcsPort,
+    root: Path,
+    specs_dir: Path,
+    deploy_run: "_DeployRun",
+    findings: list[Finding],
+    data: dict[str, object],
+) -> list[str]:
+    """The shared copy-then-commit executor behind BOTH ``run_promote`` and
+    ``run_reconcile_completions`` (Story 5.9's own Code Map: "extracting
+    run_promote's existing copy+commit loop into a shared
+    ``_execute_promotion_plan`` helper both call"). Extracted VERBATIM from
+    ``run_promote``'s own original inline implementation, not rewritten:
+    identical lock/copy/commit/journal behavior -- the only difference
+    between the two callers is WHICH ``SpecCandidate``\\ s they pass in
+    ``to_promote``. ``run_promote`` passes every durable, not-yet-promoted
+    candidate ``_scan_promotions`` found; ``run_reconcile_completions``
+    passes only the subset whose key THIS run's own ``core.status.
+    quick_dev_completions`` actually advanced (Story 5.9's own Boundaries:
+    "spec promotion commits only the promoted spec paths, scoped to
+    exactly the keys advanced this run -- not every durable spec ``deploy
+    promote`` would otherwise catch").
+
+    Acquires the SAME ``specs_dir`` advisory lock (Story 4.9, AD-42) ONLY
+    when ``to_promote`` is non-empty (nothing to serialize otherwise);
+    copies each candidate's Tier-3 bytes into ``specs_dir`` preserving its
+    own descriptive filename (never collapsed to a bare ``spec-<key>.md``,
+    per ``run_promote``'s own established "human-readable title" rule);
+    and commits the whole batch in ONE dedicated ``deploy-promote-commit``-
+    kind commit (AD-29: "a single promote-N-specs run is one paper-trail
+    event"), guarded by an intent/outcome pair (Story 4.6, AD-6/AD-21/
+    AD-28) written through the caller's OWN ``deploy_run`` -- a caller-
+    scoped ``_DeployRun`` instance, so the two callers' own journal writers
+    never collide (``_deploy_writer_id``'s own per-action prefix already
+    guarantees this).
+
+    ``data["lock_contended"]`` is mutated in place, in the caller's own
+    envelope ``data`` dict, ONLY when lock acquisition itself fails --
+    mirrors ``run_promote``'s pre-existing "the envelope shape never
+    varies across the two outcomes" contract (the caller initializes it
+    ``False`` before this function ever runs; this function never sets it
+    back to ``False``). A ``copy_file``/``commit_paths`` failure appends
+    the SAME ``MRS-DEPLOY-003`` this module already registers for the
+    promotion write path (AD-31: "the same code, several triggering
+    shapes, same tier"), never a new code -- unchanged from
+    ``run_promote``'s own pre-extraction behavior.
+
+    Returns the sorted list of promoted story-key ``str``\\ s (possibly
+    empty, including when ``to_promote`` is empty or the lock could not be
+    acquired) -- never raises."""
+    promoted: list[str] = []
+    if not to_promote:
+        return promoted
+
+    # Story 4.9 (AD-42): the lock guards ONLY the write section -- copy_
+    # file's loop plus commit_paths -- never the read-only scan that built
+    # `to_promote` (cheap, safe to run unlocked/concurrently, per that
+    # story's own Design Notes). Acquired here, not earlier: "nothing to
+    # promote" (an empty `to_promote`) never touches the lock at all.
+    try:
+        lock = fs.acquire_advisory_lock(specs_dir, timeout_s=_PROMOTE_LOCK_TIMEOUT_S)
+    except FsError as exc:
+        data["lock_contended"] = True
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_023,
+                severity=Severity.WARN,
+                message=(
+                    f"cannot acquire the promotion lock on "
+                    f"{str(specs_dir)!r} within {_PROMOTE_LOCK_TIMEOUT_S}s "
+                    f"-- another promote is plausibly running "
+                    f"concurrently for {project_slug!r}; nothing was "
+                    f"promoted this run, re-run promote later: {exc}"
+                ),
+            )
+        )
+        return promoted
+
+    commit_targets: list[Path] = []
+    try:
+        for spec_candidate in to_promote:
+            # Preserve the Tier-3 file's own descriptive filename (e.g.
+            # "spec-2-3-frozen-surface-scope-check-narrowing-only.md")
+            # rather than deriving a bare "spec-<key>.md" -- every prior
+            # promotion in this archive (Epic 3's 8 specs, promoted by
+            # hand) used the source's own title slug, and a bare rename
+            # here would be the one promoted spec in the whole tracked
+            # archive without a human-readable title (live finding, first
+            # real run of this command against this repo, 2026-08-06).
+            dest = specs_dir / Path(spec_candidate.path).name
+            try:
+                fs.copy_file(Path(spec_candidate.path), dest)
+            except FsError as exc:
+                findings.append(
+                    Finding(
+                        code=_MRS_DEPLOY_003,
+                        severity=Severity.ERROR,
+                        message=(
+                            f"cannot copy {spec_candidate.path!r} into "
+                            f"the tracked archive at {str(dest)!r}: {exc}"
+                        ),
+                    )
+                )
+                continue
+            commit_targets.append(dest)
+            promoted.append(str(spec_candidate.story_key))
+
+        if commit_targets:
+            message = (
+                f"marshal: promote {len(commit_targets)} story spec(s) to "
+                "tracked artifacts"
+            )
+            # Story 4.6 (AD-6): an `intent` entry BEFORE the irreversible
+            # `commit_paths` call, an `outcome` AFTER it succeeds. A
+            # journal-write failure for the intent itself means no paper
+            # trail exists for the write about to happen -- `deploy_run
+            # .write` already reports it via a Finding; `commit_paths`
+            # still runs (a promote is not gated on its OWN journal write
+            # succeeding, matching this codebase's existing "best-effort
+            # journaling of an already-decided action" posture, e.g.
+            # `_journal_manual_landing`'s own post-merge journal write). A
+            # `commit_paths` failure leaves the intent open -- no outcome
+            # is written, per the story's own I/O matrix ("that step
+            # reports failed; intent for it stays open").
+            intent_id = deploy_run.write(
+                findings,
+                kind=_PROMOTE_COMMIT_KIND,
+                phase=Phase.INTENT,
+                payload={"action": "commit_paths", "story_keys": sorted(promoted)},
+            )
+            try:
+                vcs.commit_paths(root, tuple(commit_targets), message)
+            except VcsCommandError as exc:
+                findings.append(
+                    Finding(
+                        code=_MRS_DEPLOY_003,
+                        severity=Severity.ERROR,
+                        message=f"cannot commit promoted specs: {exc}",
+                    )
+                )
+            else:
+                if intent_id is not None:
+                    deploy_run.write(
+                        findings,
+                        kind=_PROMOTE_COMMIT_KIND,
+                        phase=Phase.OUTCOME,
+                        payload={
+                            "action": "commit_paths",
+                            "story_keys": sorted(promoted),
+                            "commit_message": message,
+                        },
+                        intent_id=intent_id,
+                    )
+    finally:
+        # Story 4.9: released AFTER commit_paths returns, success or
+        # failure alike -- the smallest section that actually needs
+        # serialization is "decide what to promote" (the scan, already run
+        # unlocked) through "the promotion is durably committed" (that
+        # story's own Design Notes).
+        fs.release_advisory_lock(lock)
+
+    return promoted
+
+
 def run_promote(
     args: argparse.Namespace,
     *,
@@ -775,114 +1007,17 @@ def run_promote(
         findings.extend(plan.gaps)
         gap_count = len(plan.gaps)
 
-        commit_targets: list[Path] = []
-        if plan.to_promote:
-            # Story 4.9 (AD-42): the lock guards ONLY the write section --
-            # copy_file's loop plus commit_paths -- never the read-only
-            # `scan` above (cheap, safe to run unlocked/concurrently, per
-            # this story's own Design Notes). Acquired here, not earlier:
-            # "nothing to promote" (an empty `plan.to_promote`) never
-            # touches the lock at all (I/O matrix).
-            try:
-                lock = fs.acquire_advisory_lock(specs_dir, timeout_s=_PROMOTE_LOCK_TIMEOUT_S)
-            except FsError as exc:
-                data["lock_contended"] = True
-                findings.append(
-                    Finding(
-                        code=_MRS_DEPLOY_023,
-                        severity=Severity.WARN,
-                        message=(
-                            f"cannot acquire the promotion lock on "
-                            f"{str(specs_dir)!r} within {_PROMOTE_LOCK_TIMEOUT_S}s "
-                            f"-- another promote is plausibly running "
-                            f"concurrently for {project_slug!r}; nothing was "
-                            f"promoted this run, re-run promote later: {exc}"
-                        ),
-                    )
-                )
-            else:
-                try:
-                    for spec_candidate in plan.to_promote:
-                        # Preserve the Tier-3 file's own descriptive filename
-                        # (e.g. "spec-2-3-frozen-surface-scope-check-narrowing-
-                        # only.md") rather than deriving a bare "spec-<key>.md" --
-                        # every prior promotion in this archive (Epic 3's 8
-                        # specs, promoted by hand) used the source's own title
-                        # slug, and a bare rename here would be the one
-                        # promoted spec in the whole tracked archive without a
-                        # human-readable title (live finding, first real run of
-                        # this command against this repo, 2026-08-06).
-                        dest = specs_dir / Path(spec_candidate.path).name
-                        try:
-                            fs.copy_file(Path(spec_candidate.path), dest)
-                        except FsError as exc:
-                            findings.append(
-                                Finding(
-                                    code=_MRS_DEPLOY_003,
-                                    severity=Severity.ERROR,
-                                    message=(
-                                        f"cannot copy {spec_candidate.path!r} into "
-                                        f"the tracked archive at {str(dest)!r}: {exc}"
-                                    ),
-                                )
-                            )
-                            continue
-                        commit_targets.append(dest)
-                        promoted.append(str(spec_candidate.story_key))
-
-                    if commit_targets:
-                        message = (
-                            f"marshal: promote {len(commit_targets)} story spec(s) to "
-                            "tracked artifacts"
-                        )
-                        # Story 4.6 (AD-6): an `intent` entry BEFORE the irreversible
-                        # `commit_paths` call, an `outcome` AFTER it succeeds. A
-                        # journal-write failure for the intent itself means no paper
-                        # trail exists for the write about to happen -- `deploy_run
-                        # .write` already reports it via a Finding; `commit_paths`
-                        # still runs (a promote is not gated on its OWN journal write
-                        # succeeding, matching this codebase's existing "best-effort
-                        # journaling of an already-decided action" posture, e.g.
-                        # `_journal_manual_landing`'s own post-merge journal write). A
-                        # `commit_paths` failure leaves the intent open -- no outcome
-                        # is written, per the story's own I/O matrix ("that step
-                        # reports failed; intent for it stays open").
-                        intent_id = deploy_run.write(
-                            findings,
-                            kind=_PROMOTE_COMMIT_KIND,
-                            phase=Phase.INTENT,
-                            payload={"action": "commit_paths", "story_keys": sorted(promoted)},
-                        )
-                        try:
-                            vcs.commit_paths(root, tuple(commit_targets), message)
-                        except VcsCommandError as exc:
-                            findings.append(
-                                Finding(
-                                    code=_MRS_DEPLOY_003,
-                                    severity=Severity.ERROR,
-                                    message=f"cannot commit promoted specs: {exc}",
-                                )
-                            )
-                        else:
-                            if intent_id is not None:
-                                deploy_run.write(
-                                    findings,
-                                    kind=_PROMOTE_COMMIT_KIND,
-                                    phase=Phase.OUTCOME,
-                                    payload={
-                                        "action": "commit_paths",
-                                        "story_keys": sorted(promoted),
-                                        "commit_message": message,
-                                    },
-                                    intent_id=intent_id,
-                                )
-                finally:
-                    # Story 4.9: released AFTER commit_paths returns, success
-                    # or failure alike -- the smallest section that actually
-                    # needs serialization is "decide what to promote" (scan,
-                    # already run unlocked) through "the promotion is
-                    # durably committed" (this story's own Design Notes).
-                    fs.release_advisory_lock(lock)
+        promoted = _execute_promotion_plan(
+            plan.to_promote,
+            project_slug=project_slug,
+            fs=fs,
+            vcs=vcs,
+            root=root,
+            specs_dir=specs_dir,
+            deploy_run=deploy_run,
+            findings=findings,
+            data=data,
+        )
 
     data["promoted"] = sorted(promoted)
     data["promoted_count"] = len(promoted)
@@ -929,14 +1064,28 @@ def _emit(
     data: dict[str, object],
     findings: list[Finding],
     render_text: Callable[[Mapping[str, object], tuple[Finding, ...]], str],
+    *,
+    data_version: int = 1,
 ) -> int:
-    """The one envelope-build-then-print tail both ``run_promote`` and
-    ``run_recover_spec`` (Story 4.2) share -- factored out rather than
-    duplicated a second time, matching AD-14's "one envelope for every
-    command" rule at the module's own call-site level too."""
+    """The one envelope-build-then-print tail every ``deploy`` subcommand
+    shares -- factored out rather than duplicated a second time, matching
+    AD-14's "one envelope for every command" rule at the module's own
+    call-site level too. ``data_version`` defaults to ``1`` (every payload
+    shape this module shipped before Story 5.9), mirroring ``cli/
+    status.py::_emit``'s own identical shape (that module's own Story 5.4
+    added the SAME optional keyword for the SAME reason: a genuinely NEW
+    payload shape, per AD-39, bumps its OWN version independently of the
+    envelope's ``schema_version``) -- ``run_reconcile_completions`` is this
+    module's own first caller to exist alongside that parameter, and its
+    payload is a first version of its own new shape, so it too passes the
+    default."""
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(
-        command=command, verdict=verdict_value, data=data, findings=tuple(findings)
+        command=command,
+        verdict=verdict_value,
+        data=data,
+        data_version=data_version,
+        findings=tuple(findings),
     )
 
     if args.format == "json":
@@ -3271,6 +3420,318 @@ def _render_text_refresh_feed(data: Mapping[str, object], findings: tuple[Findin
     else:
         resync_commands = data.get("resync_commands") or []
         lines.append(f"resync commands run: {len(resync_commands)}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+# =====================================================================
+# ``marshal deploy reconcile-completions`` (Story 5.9, AD-5/AD-29/AD-33):
+# "a story finished by hand is not invisible to the ledger". Detects,
+# from git plus corroborating Tier-3/tracked spec evidence alone, every
+# story merged to ``main`` via a route Marshal itself did not drive --
+# today, exclusively a human-run ``bmad-quick-dev`` session merged as a
+# plain GitHub PR, since nothing in ``pyforge.marshal`` invokes
+# ``bmad-quick-dev`` itself and this story does not change that (PRD Q-16
+# stays open) -- advances that story's key to ``done`` in the tracked
+# ``sprint-status-ledger.yaml`` twin in ONE dedicated commit, and promotes
+# its Tier-3 spec in a SECOND, separate commit (AD-29's "only promotion
+# paths" precedent, applied symmetrically to the ledger commit too).
+#
+# **CAP-4 isolation (AD-5).** The ONLY ``HarnessPort`` method this
+# function EVER calls is ``ledger_story_statuses`` -- an explicit-path
+# read of the TRACKED ledger file, never a run's own journal/``state.
+# json``. No ``run_status_snapshot``, no supervisor probe, no journal
+# fold of ANY loop home's own live run. A concurrent, unrelated
+# ``bmad-loop`` run on the SAME station is therefore untouched by
+# construction, not by a runtime check -- proven by
+# ``tests/unit/test_deploy.py``'s own fake ``HarnessPort`` whose other
+# methods raise ``AssertionError`` if ever called, plus a real temp-dir
+# journal file asserted byte-identical before and after.
+# =====================================================================
+
+
+def run_reconcile_completions(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+    harness: HarnessPort | None = None,
+) -> int:
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    harness = harness if harness is not None else BmadLoopHarness()
+
+    # Same is-not-None precedence as `run_promote`/`cli/gate.py::
+    # run_evaluate` -- an explicit `--project ""` must win over
+    # BMAD_ACTIVE_PROJECT.
+    project_slug = (
+        args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
+    )
+
+    root = repo_root()
+    data: dict[str, object] = {"slug": project_slug, "root": str(root)}
+    # Story 4.9 (AD-42): overwritten True only when `_execute_promotion_
+    # plan`'s own specs_dir advisory lock could not be acquired -- present
+    # on every run so the envelope shape never varies across outcomes,
+    # mirroring `run_promote`'s own identical field.
+    data["lock_contended"] = False
+    findings: list[Finding] = []
+
+    specs_dir = root / "_bmad-output" / "projects" / project_slug / "planning-artifacts" / "specs"
+
+    # CAP-1/CAP-3 (this story's own Design Notes): `_scan_promotions` is
+    # reused VERBATIM for BOTH the corroboration set below (CAP-1: "a git
+    # match alone never triggers a write -- ALSO corroborated by a valid,
+    # durable Tier-3 spec") and, further down, the promotion candidates
+    # themselves (CAP-3) -- never a second, independently-diverging spec
+    # check.
+    scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs)
+    findings.extend(scan.findings)
+
+    # CAP-1: durable per git's FULL three-pattern `merged_story_keys` (via
+    # `_scan_promotions`'s own internal call), AND backed by a valid,
+    # durable spec -- `plan.to_promote` (not yet promoted) UNION `already_
+    # promoted` (already durable, per this module's own established
+    # convention). `scan.plan is None` only when the REQUIRED local-`main`
+    # read failed (`MRS-DEPLOY-003`, already appended above via `scan.
+    # findings`) -- degrades to an empty corroboration set rather than a
+    # crash, letting that finding's own `Verdict.UNEVALUABLE` dominate the
+    # run's verdict naturally, with no special-cased early return needed.
+    corroborated_keys = frozenset(
+        str(candidate.story_key)
+        for candidate in (scan.plan.to_promote if scan.plan is not None else ())
+    ) | frozenset(str(key) for key in scan.already_promoted)
+
+    # CAP-1 (AD-24, AD-33): the two Marshal-DRIVEN merge-subject patterns
+    # only -- a key present here landed via `deploy land-story` or a
+    # bmad-loop-native merge, a route Story 5.4's own read-only sync
+    # already owns (this story's own Never bullet: "never fold this into
+    # ... Story 5.4's own sync"). Reuses the SAME `scan.combined_subjects`/
+    # `scan.template` `_scan_promotions` already gathered -- no second git
+    # read.
+    marshal_native_keys = frozenset(
+        str(key)
+        for key in promotion.marshal_native_merged_keys(
+            scan.combined_subjects, scan.template, project_slug
+        )
+    )
+
+    ledger_path = root / _LEDGER_RELPATH.format(slug=project_slug)
+
+    # AD-5's own "the whole detection path is git + the tracked ledger +
+    # Tier-3 spec files only" -- see this function's own module-docstring
+    # section above for the full CAP-4 isolation contract this single call
+    # site is the entirety of.
+    try:
+        raw_statuses = harness.ledger_story_statuses(ledger_path)
+    except HarnessError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_024,
+                severity=Severity.WARN,
+                message=(
+                    f"cannot read the tracked ledger for {project_slug!r} "
+                    f"at {ledger_path}: {exc} -- reconcile-completions "
+                    "cannot determine which stories are already done; "
+                    "this run advances nothing and promotes nothing"
+                ),
+                path=str(ledger_path),
+            )
+        )
+        data["missing_from_ledger"] = []
+        data["advanced"] = []
+        data["advanced_count"] = 0
+        data["promoted"] = []
+        data["promoted_count"] = 0
+        return _emit(
+            args,
+            "deploy reconcile-completions",
+            data,
+            findings,
+            _render_text_reconcile_completions,
+        )
+
+    # Builds the raw-key<->dot-form index (Code Map): every raw ledger key
+    # this run may later need to REWRITE (`render_ledger_advancements`
+    # takes the ledger's own raw key spelling, never Marshal's dot form) is
+    # recovered here, alongside the two dot-form sets `quick_dev_
+    # completions` needs. A raw key that fails to normalize (e.g. an epic
+    # marker like `"epic-1"`) is skipped from every set below -- mirrors
+    # `cli/status.py::_reconcile_ledger`'s own identical "skipped, never a
+    # crash" convention for the SAME raw ledger source.
+    raw_key_by_dot: dict[str, str] = {}
+    ledger_done_keys: set[str] = set()
+    ledger_all_keys: set[str] = set()
+    for raw_key, raw_status in raw_statuses:
+        try:
+            dot_key = str(identity.normalize(raw_key))
+        except MalformedStoryKeyError:
+            continue
+        ledger_all_keys.add(dot_key)
+        raw_key_by_dot[dot_key] = raw_key
+        if raw_status == _LEDGER_DONE_STATUS:
+            ledger_done_keys.add(dot_key)
+
+    # This story's own Boundaries: "never advance a key absent from the
+    # ledger map entirely (report it, MRS-DEPLOY-026, never invent a
+    # row)". `quick_dev_candidates` is the SAME `corroborated_keys -
+    # marshal_native_keys` difference `quick_dev_completions` computes
+    # internally below -- a trivial, unambiguous set difference over the
+    # identical two frozensets already built above, never a second
+    # decision that could diverge from it (see that function's own
+    # docstring for the full rationale).
+    quick_dev_candidates = corroborated_keys - marshal_native_keys
+    missing_from_ledger = sorted(quick_dev_candidates - frozenset(ledger_all_keys))
+    for key in missing_from_ledger:
+        findings.append(
+            Finding(
+                code=_MRS_DEPLOY_026,
+                severity=Severity.WARN,
+                message=(
+                    f"story {key} landed via a route Marshal did not "
+                    "drive (quick-dev) and is corroborated by a durable, "
+                    "valid Tier-3/tracked spec, but no matching key "
+                    "exists in the tracked sprint-status-ledger.yaml -- "
+                    "not advanced"
+                ),
+                path=key,
+            )
+        )
+    data["missing_from_ledger"] = missing_from_ledger
+
+    advanced_dot_keys = status.quick_dev_completions(
+        ledger_done_keys=frozenset(ledger_done_keys),
+        ledger_all_keys=frozenset(ledger_all_keys),
+        corroborated_keys=corroborated_keys,
+        marshal_native_keys=marshal_native_keys,
+    )
+    data["advanced"] = sorted(advanced_dot_keys)
+    data["advanced_count"] = len(advanced_dot_keys)
+
+    # Two dedicated commits, one per concern (this story's own Always
+    # bullet, AD-29's "only promotion paths" precedent applied
+    # symmetrically): this block commits ONLY the ledger path; spec
+    # promotion, further below, commits ONLY the promoted spec paths.
+    if advanced_dot_keys:
+        raw_keys_to_advance = frozenset(
+            raw_key_by_dot[dot_key]
+            for dot_key in advanced_dot_keys
+            if dot_key in raw_key_by_dot
+        )
+        # `FsPort.read_text` returns `None` for a missing path (never
+        # raises for that specific case) as well as raising `FsError` for
+        # any OTHER read failure -- both fold into the SAME `MRS-DEPLOY-
+        # 024` this function already uses for the primary harness-based
+        # read above (AD-31: "the same code, several triggering shapes,
+        # same tier"), since either way Marshal cannot apply the rewrite
+        # it already decided to make.
+        try:
+            ledger_text = fs.read_text(ledger_path)
+        except FsError as exc:
+            ledger_text = None
+            read_failure = str(exc)
+        else:
+            read_failure = None if ledger_text is not None else "file no longer exists"
+
+        if ledger_text is None:
+            findings.append(
+                Finding(
+                    code=_MRS_DEPLOY_024,
+                    severity=Severity.WARN,
+                    message=(
+                        f"cannot re-read the tracked ledger at "
+                        f"{ledger_path} to advance it: {read_failure} -- "
+                        "spec promotion for these keys is still attempted "
+                        "below"
+                    ),
+                    path=str(ledger_path),
+                )
+            )
+        else:
+            new_text = status.render_ledger_advancements(ledger_text, raw_keys_to_advance)
+            if new_text != ledger_text:
+                try:
+                    fs.write_text_atomic(ledger_path, new_text)
+                except FsError as exc:
+                    findings.append(
+                        Finding(
+                            code=_MRS_DEPLOY_025,
+                            severity=Severity.ERROR,
+                            message=(
+                                f"cannot write the advanced ledger at "
+                                f"{ledger_path}: {exc}"
+                            ),
+                        )
+                    )
+                else:
+                    message = (
+                        f"marshal: advance {len(raw_keys_to_advance)} "
+                        "quick-dev-completed story key(s) to done in the "
+                        "tracked ledger"
+                    )
+                    try:
+                        vcs.commit_paths(root, (ledger_path,), message)
+                    except VcsCommandError as exc:
+                        findings.append(
+                            Finding(
+                                code=_MRS_DEPLOY_025,
+                                severity=Severity.ERROR,
+                                message=f"cannot commit the advanced ledger: {exc}",
+                            )
+                        )
+
+    # Spec promotion, scoped to EXACTLY the keys this run advanced (this
+    # story's own Boundaries: "not every durable spec `deploy promote`
+    # would otherwise catch") -- attempted regardless of the ledger
+    # commit's own outcome directly above (the I/O matrix's own "spec
+    # promotion for other keys still attempted": two independent
+    # operations, per the "two dedicated commits" bullet).
+    to_promote_scoped = tuple(
+        candidate
+        for candidate in (scan.plan.to_promote if scan.plan is not None else ())
+        if str(candidate.story_key) in advanced_dot_keys
+    )
+    deploy_run = _DeployRun(fs, root, project_slug, _deploy_writer_id("reconcile-completions"))
+    promoted = _execute_promotion_plan(
+        to_promote_scoped,
+        project_slug=project_slug,
+        fs=fs,
+        vcs=vcs,
+        root=root,
+        specs_dir=specs_dir,
+        deploy_run=deploy_run,
+        findings=findings,
+        data=data,
+    )
+    data["promoted"] = sorted(promoted)
+    data["promoted_count"] = len(promoted)
+
+    return _emit(
+        args, "deploy reconcile-completions", data, findings, _render_text_reconcile_completions
+    )
+
+
+def _render_text_reconcile_completions(
+    data: Mapping[str, object], findings: tuple[Finding, ...]
+) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_refresh_feed`` convention."""
+    slug = data.get("slug") or "(no active project)"
+    advanced = data.get("advanced") or []
+    promoted = data.get("promoted") or []
+    lines = [
+        f"deploy reconcile-completions: {slug!r}",
+        f"advanced: {len(advanced)} ({', '.join(advanced) if advanced else 'none'})",
+        f"promoted: {len(promoted)} ({', '.join(promoted) if promoted else 'none'})",
+    ]
+    if data.get("lock_contended"):
+        lines.append(
+            "lock contended: promotion lock busy -- spec promotion skipped, re-run later"
+        )
     if findings:
         lines.append("findings:")
         for finding in findings:
