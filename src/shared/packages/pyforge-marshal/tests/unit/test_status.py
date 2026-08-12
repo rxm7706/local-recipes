@@ -1054,6 +1054,177 @@ class TestReconcileLedgerVsGit:
 
 
 # =============================================================================
+# Story 5.9 ("a story finished by hand is not invisible to the ledger"):
+# `core.status.quick_dev_completions`/`render_ledger_advancements` -- pure,
+# no I/O, no fixtures touching disk or git; every input is a plain value.
+# =============================================================================
+
+
+class TestQuickDevCompletions:
+    """``quick_dev_candidates`` models the CALLER's own already-computed
+    `corroborated_keys - marshal_native_keys` difference (review fix,
+    2026-08-12, low-severity: `quick_dev_completions`'s signature was
+    narrowed from four params to three -- it no longer re-derives that
+    difference internally, closing a two-places-compute-the-same-thing
+    desync risk; see `cli/deploy.py::run_reconcile_completions`, which
+    computes it exactly once and passes the same value to both this
+    function and its own `MRS-DEPLOY-026` finding)."""
+
+    def test_corroborated_non_native_present_in_ledger_not_done_is_advanced(self):
+        """The headline case: a quick-dev-completed story present in the
+        caller's own `quick_dev_candidates`, with a live ledger row not
+        yet done."""
+        result = status.quick_dev_completions(
+            ledger_done_keys=frozenset(),
+            ledger_all_keys=frozenset({"5.9"}),
+            quick_dev_candidates=frozenset({"5.9"}),
+        )
+        assert result == frozenset({"5.9"})
+
+    def test_marshal_native_key_is_excluded_by_the_callers_own_candidate_set(self):
+        """A key landed via `deploy land-story`/bmad-loop -- Story 5.4's
+        own sync already owns this case -- is excluded by the CALLER's own
+        `corroborated_keys - marshal_native_keys` computation before it
+        ever reaches this function; modeled here by simply never including
+        it in `quick_dev_candidates`."""
+        result = status.quick_dev_completions(
+            ledger_done_keys=frozenset(),
+            ledger_all_keys=frozenset({"4.3"}),
+            quick_dev_candidates=frozenset(),  # caller already excluded 4.3
+        )
+        assert result == frozenset()
+
+    def test_uncorroborated_key_is_excluded_even_if_present_in_ledger(self):
+        """A git match with no valid/durable spec -- possible cross-project
+        collision -- never triggers a write on its own; the caller never
+        adds it to `quick_dev_candidates` in the first place."""
+        result = status.quick_dev_completions(
+            ledger_done_keys=frozenset(),
+            ledger_all_keys=frozenset({"7.1"}),
+            quick_dev_candidates=frozenset(),
+        )
+        assert result == frozenset()
+
+    def test_key_absent_from_ledger_is_excluded_never_invented(self):
+        """This story's own Boundaries: "never advance a key absent from
+        the ledger map entirely" -- a candidate key with no ledger row at
+        all."""
+        result = status.quick_dev_completions(
+            ledger_done_keys=frozenset(),
+            ledger_all_keys=frozenset(),
+            quick_dev_candidates=frozenset({"9.1"}),
+        )
+        assert result == frozenset()
+
+    def test_already_done_key_is_a_clean_no_op(self):
+        """AD-21's convergence property: already `done` never re-advances,
+        never re-reports."""
+        result = status.quick_dev_completions(
+            ledger_done_keys=frozenset({"5.9"}),
+            ledger_all_keys=frozenset({"5.9"}),
+            quick_dev_candidates=frozenset({"5.9"}),
+        )
+        assert result == frozenset()
+
+    def test_mixed_batch_advances_only_the_eligible_keys(self):
+        """One key of each disqualifying shape, plus one genuinely
+        eligible key, in a single call -- proves the conditions combine
+        correctly, not just in isolation. `4.3` (Marshal-driven) is
+        modeled as already excluded from `quick_dev_candidates`, mirroring
+        what the caller's own `corroborated_keys - marshal_native_keys`
+        difference would produce."""
+        result = status.quick_dev_completions(
+            ledger_done_keys=frozenset({"1.1"}),  # already done
+            ledger_all_keys=frozenset({"1.1", "5.9"}),  # 9.1 has no row
+            quick_dev_candidates=frozenset({"1.1", "5.9", "9.1"}),
+        )
+        assert result == frozenset({"5.9"})
+
+    def test_empty_everything_is_empty(self):
+        assert (
+            status.quick_dev_completions(
+                ledger_done_keys=frozenset(),
+                ledger_all_keys=frozenset(),
+                quick_dev_candidates=frozenset(),
+            )
+            == frozenset()
+        )
+
+
+class TestRenderLedgerAdvancements:
+    _LEDGER = (
+        "# GENERATED -- do not hand-edit.\n"
+        "#\n"
+        "# project: marshal\n"
+        "development_status:\n"
+        "  1-1-package-spine: done\n"
+        "  5-8-a-dead-supervisor-sidecar: backlog\n"
+        "  5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger: backlog\n"
+    )
+
+    def test_no_raw_keys_returns_the_text_unchanged(self):
+        assert status.render_ledger_advancements(self._LEDGER, frozenset()) == self._LEDGER
+
+    def test_only_the_named_line_changes_byte_for_byte_otherwise(self):
+        raw_key = "5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger"
+        result = status.render_ledger_advancements(self._LEDGER, frozenset({raw_key}))
+
+        expected = self._LEDGER.replace(f"{raw_key}: backlog", f"{raw_key}: done")
+        assert result == expected
+        # Every OTHER line is untouched, including the sibling backlog row.
+        assert "5-8-a-dead-supervisor-sidecar: backlog" in result
+        assert "1-1-package-spine: done" in result
+        assert "# project: marshal" in result
+
+    def test_multiple_raw_keys_all_advance_in_one_pass(self):
+        result = status.render_ledger_advancements(
+            self._LEDGER,
+            frozenset(
+                {
+                    "5-8-a-dead-supervisor-sidecar",
+                    "5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger",
+                }
+            ),
+        )
+        assert "5-8-a-dead-supervisor-sidecar: done" in result
+        assert "5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger: done" in result
+        assert "1-1-package-spine: done" in result  # unaffected, already done
+
+    def test_a_key_already_done_is_rewritten_to_done_again_idempotently(self):
+        result = status.render_ledger_advancements(self._LEDGER, frozenset({"1-1-package-spine"}))
+        assert result == self._LEDGER  # `done` -> `done` is byte-identical
+
+    def test_unmatched_raw_key_is_silently_ignored_never_raises(self):
+        result = status.render_ledger_advancements(self._LEDGER, frozenset({"99-9-nonexistent"}))
+        assert result == self._LEDGER
+
+    def test_indentation_is_preserved(self):
+        raw_key = "5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger"
+        result = status.render_ledger_advancements(self._LEDGER, frozenset({raw_key}))
+        assert f"  {raw_key}: done" in result
+        assert f"   {raw_key}: done" not in result
+
+    def test_a_key_that_is_a_textual_prefix_of_another_never_cross_matches(self):
+        """Exact match on the WHOLE pre-colon segment, never a prefix
+        test -- a hypothetical "5-9" must never match the real
+        "5-9-a-story-finished-by-hand..." row."""
+        result = status.render_ledger_advancements(self._LEDGER, frozenset({"5-9"}))
+        assert result == self._LEDGER
+
+    def test_trailing_newline_is_preserved_exactly(self):
+        text = "development_status:\n  5-9-x: backlog\n"
+        result = status.render_ledger_advancements(text, frozenset({"5-9-x"}))
+        assert result == "development_status:\n  5-9-x: done\n"
+        assert result.endswith("\n")
+
+    def test_no_trailing_newline_is_preserved_exactly(self):
+        text = "development_status:\n  5-9-x: backlog"
+        result = status.render_ledger_advancements(text, frozenset({"5-9-x"}))
+        assert result == "development_status:\n  5-9-x: done"
+        assert not result.endswith("\n\n")
+
+
+# =============================================================================
 # Story 5.1: `cli/status.py`'s ``run_status`` -- I/O matrix, fake VcsPort/
 # HarnessPort/ProcessPort/ClockPort doubles (mirrors ``test_retire.py``'s
 # established shape); real ``LocalFs`` against a REAL ``tmp_path`` journal
