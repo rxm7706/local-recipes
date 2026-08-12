@@ -118,8 +118,11 @@ CONDA_ONLY_RUN_DEPS: dict[str, frozenset[str]] = {
 # in atlas's own tests/test_scaffold_layout.py.
 NAMESPACE = "pyforge"
 
-# Violations that already existed when this gate landed (2026-07-29) and whose
-# resolution is a decision for the owning package, not a manifest line.
+# Pre-existing violations -- present before the story that surfaced them --
+# whose resolution is a decision for the owning package, not a manifest line.
+# The gate itself landed 2026-07-29; entries have accrued since as later
+# stories in other packages hit the same shape and got baselined rather than
+# blocking an unrelated story's land (e.g. commit 20ad57a62f).
 #
 # This is a RATCHET, not an allowlist. `test_baseline_entries_are_still_violated`
 # fails when an entry stops being violated, so the list can only shrink and
@@ -160,6 +163,20 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "name to declare in [project.dependencies] the normal way. Closing "
             "it needs either promoting _http.py into a proper shared package or "
             "making the import lazy, not a manifest line."
+        ),
+        "django": (
+            "OPEN. Story 9.1 (AD-1/AD-13): pyforge.steward.dashboard ships ONLY "
+            "behind the [dashboard] extra, never a base dependency -- see "
+            "dashboard/__init__.py's docstring. apps.py (a Django AppConfig) and "
+            "cache.py (a Django cache backend) import django unconditionally at "
+            "module level because that IS their contract; what actually gates "
+            "whether either module is ever reached by an extras-less install is "
+            "tests/meta/test_invariants.py::"
+            "test_no_module_outside_dashboard_imports_dashboard_django_or_channels, "
+            "not this scanner. Declaring django as a hard [project.dependencies] "
+            "entry would defeat the extra and force it onto every steward "
+            "install. Closing this needs the scanner to recognize "
+            "framework-plugin modules, not a manifest line."
         ),
     },
 }
