@@ -15,7 +15,7 @@ Change Log, 2026-08-12). The root-cause fix — making `marshal land` render the
 detectable subject `deploy land-story` already does — was explicitly deferred as a follow-up,
 not a prerequisite, per the operator's own decision.
 
-A Dream (`docs/dreams/marshal-land-detectable-merge-subject.md`) and Spec
+A Dream (`docs/dreams/marshal-land-merge-subject.md`) and Spec
 (`_bmad-output/planning-artifacts/specs/spec-marshal-land-merge-subject/SPEC.md`) were produced
 for that follow-up. This proposal sequences the Spec into a Story slot so it is not lost to the
 backlog with no owning epic entry.
