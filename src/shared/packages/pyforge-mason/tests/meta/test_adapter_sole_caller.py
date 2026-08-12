@@ -690,7 +690,7 @@ def test_parse_cfe_script_filenames_reads_the_real_cfe_py():
     if a future story renames `_CFE_SCRIPTS` or restructures it, this test
     (not just the vacuity guard above) fails first."""
     assert _parse_cfe_script_filenames(PKG_ROOT / _CFE_MODULE_NAME) == frozenset(
-        {"validate_recipe.py", "submit_pr.py"}
+        {"validate_recipe.py", "submit_pr.py", "recipe-generator.py"}
     )
 
 
