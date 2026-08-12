@@ -689,9 +689,14 @@ def test_parse_cfe_script_filenames_reads_the_real_cfe_py():
     """Ties this guard's allowlist source directly to cfe.py's real table --
     if a future story renames `_CFE_SCRIPTS` or restructures it, this test
     (not just the vacuity guard above) fails first. Story 2.7 adds
-    `failure_analyzer.py` as the table's third entry."""
+    `failure_analyzer.py` as the table's third entry. Story 2.8 adds
+    `recipe_optimizer.py`/`vulnerability_scanner.py` as the fourth and
+    fifth."""
     assert _parse_cfe_script_filenames(PKG_ROOT / _CFE_MODULE_NAME) == frozenset(
-        {"validate_recipe.py", "submit_pr.py", "failure_analyzer.py"}
+        {
+            "validate_recipe.py", "submit_pr.py", "failure_analyzer.py",
+            "recipe_optimizer.py", "vulnerability_scanner.py",
+        }
     )
 
 

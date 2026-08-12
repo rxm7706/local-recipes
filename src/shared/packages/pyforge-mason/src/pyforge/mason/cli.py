@@ -29,6 +29,9 @@ design (OQ-A4) and is built separately, immediately after that loop. Story
 2.7 is the first to use that seam, registering ``recipe diagnose`` on
 ``_noun_verbs["recipe"]`` right after the loop — ``package``/``environment``
 stay behavior-identical (their own captured actions are never given a verb).
+Story 2.8 registers two more verbs on that same noun, ``recipe optimize``
+and ``recipe scan``, each a single required ``recipe_path`` positional
+mirroring ``diagnose``'s own ``log_path`` shape.
 
 argparse, not click/typer: FR-41 forbids a CLI-framework dependency, and the
 sibling stations dispatch the same way.
@@ -63,6 +66,11 @@ _NOUNS = {
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
 _RECIPE_DIAGNOSE_HELP = "diagnose a build-failure log via CFE's failure analyzer"
+_RECIPE_OPTIMIZE_HELP = "lint a recipe for quality findings via CFE's recipe optimizer"
+_RECIPE_SCAN_HELP = (
+    "scan a recipe's dependencies for known vulnerabilities via CFE's scanner "
+    "(makes an outbound network call to api.osv.dev by default)"
+)
 
 # AD-13: every global setting has a flag and an environment-variable form,
 # resolved uniformly flag -> environment -> default. These names are the
@@ -382,12 +390,39 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[global_flags],
     )
     diagnose_parser.add_argument("log_path", help="path to the build-failure log file")
+
+    # Story 2.8: mason recipe optimize/scan <recipe_path> -- both take a
+    # single required recipe_path positional, mirroring diagnose's own
+    # log_path shape (spec Code Map). `recipe_path` is passed straight
+    # through to CFE with no Mason-side existence check or interpretation
+    # (spec Always boundary), same as `log_path` above.
+    optimize_parser = _noun_verbs["recipe"].add_parser(
+        "optimize",
+        help=_RECIPE_OPTIMIZE_HELP,
+        description=_RECIPE_OPTIMIZE_HELP,
+        parents=[global_flags],
+    )
+    optimize_parser.add_argument(
+        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+    )
+
+    scan_parser = _noun_verbs["recipe"].add_parser(
+        "scan",
+        help=_RECIPE_SCAN_HELP,
+        description=_RECIPE_SCAN_HELP,
+        parents=[global_flags],
+    )
+    scan_parser.add_argument(
+        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+    )
+
     # Review pass (2026-08-12): `metavar="{}"` was never updated once a verb
     # was actually registered, so `mason recipe <bad-verb>` printed the
     # literal token `{}` in its usage/error text instead of `{diagnose}`.
     # Derived from `.choices` (populated in registration order by the
-    # `add_parser()` call above), not hardcoded, so a future story adding a
-    # second `recipe` verb updates this automatically.
+    # `add_parser()` calls above), not hardcoded, so a future story adding
+    # another `recipe` verb updates this automatically. Run once here, after
+    # every `recipe` verb above is registered, rather than after each one.
     _noun_verbs["recipe"].metavar = "{" + ",".join(_noun_verbs["recipe"].choices) + "}"
 
     return parser
@@ -492,13 +527,56 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_OK
 
-        # Unreachable now for every verb-noun pair except `recipe diagnose`
-        # above, handled by its own branch: `package`/`environment` still
-        # register no verbs at all, and `recipe` registers no verb beyond
-        # `diagnose`, so argparse itself rejects any other token here as an
-        # invalid choice before `ns.verb` could ever hold it. Kept only so a
-        # later story that populates another verb has somewhere to land its
-        # dispatch.
+        if ns.noun == "recipe" and ns.verb == "optimize":
+            # FR-11: delegates to CFE's recipe optimizer via recipe.py.
+            # `recipe.optimize` raises `CfeUnresolvedError` (unresolved CFE
+            # root) or `CfeImportFloorError` (interpreter missing
+            # `ruamel.yaml`) before any subprocess spawns (spec Always
+            # boundary) -- both are `MasonError` subclasses, caught by the
+            # dedicated/generic branches below respectively.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.optimize(
+                ns.recipe_path,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe optimize", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK
+
+        if ns.noun == "recipe" and ns.verb == "scan":
+            # FR-12: delegates to CFE's vulnerability scanner via recipe.py.
+            # Same CfeUnresolvedError/CfeImportFloorError gating as
+            # `optimize` above (interpreter missing `requests`/`pyyaml`).
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.scan(
+                ns.recipe_path,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe scan", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK
+
+        # Unreachable now for every verb-noun pair except `recipe
+        # diagnose`/`recipe optimize`/`recipe scan` above, each handled by
+        # its own branch: `package`/`environment` still register no verbs at
+        # all, and `recipe` registers no verb beyond those three, so
+        # argparse itself rejects any other token here as an invalid choice
+        # before `ns.verb` could ever hold it. Kept only so a later story
+        # that populates another verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

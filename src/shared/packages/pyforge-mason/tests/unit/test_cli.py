@@ -30,6 +30,18 @@ test block below mirrors the doctor pattern exactly: `recipe.diagnose` is
 mocked via `patch("pyforge.mason.cli.recipe.diagnose", ...)` for the
 dispatch/rendering/error-projection tests, plus one real, unmocked
 end-to-end test against Story 1.9's `fake_cfe_root` fixture (AD-16).
+
+Story 2.8 adds two more registered verbs, `recipe optimize`/`recipe scan`,
+mirroring `recipe diagnose`'s own test block exactly, plus one new
+error-projection test each: `CfeImportFloorError` -> `EXIT_FAILED` (via
+`main()`'s existing generic `MasonError` branch -- no dedicated branch, spec
+I/O matrix) -- these two verbs are the first to reach it, since
+`recipe.optimize`/`recipe.scan` are the first `recipe.py` use-cases that
+probe `cfe.probe_import_floor` and raise `CfeImportFloorError` themselves,
+scoped to their own operation-relevant subset. Their real end-to-end
+fixture tests therefore also fake the import floor via `cfe.
+probe_import_floor` (`monkeypatch.setattr`), not `subprocess.run` wholesale
+-- mirrors `test_recipe.py`'s identical Design Notes rationale.
 """
 
 from __future__ import annotations
@@ -53,7 +65,10 @@ from pyforge.mason.cli import (
 )
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
-from pyforge.mason.errors import CfeTimeoutError, CfeUnresolvedError, MasonError
+from pyforge.mason.cfe import ImportFloorResult
+from pyforge.mason.errors import (
+    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, MasonError,
+)
 from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
@@ -427,12 +442,14 @@ def test_recipe_diagnose_rejects_the_stdin_sentinel_as_a_usage_error(capsys):
 def test_recipe_diagnose_verb_metavar_reflects_the_registered_verb(capsys):
     """Review pass: `metavar="{}"` was never updated once a verb was
     actually registered, so `mason recipe <bad-verb>` printed the literal
-    token `{}` in its usage/error text instead of `{diagnose}`."""
+    token `{}` in its usage/error text instead of `{diagnose,optimize,scan}`.
+    Story 2.8 widens this from `{diagnose}` to all three registered verbs,
+    in registration order."""
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["recipe", "bogus-verb"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "{diagnose}" in err
+    assert "{diagnose,optimize,scan}" in err
     assert "argument {}:" not in err
 
 
@@ -454,6 +471,373 @@ def test_recipe_diagnose_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeyp
     assert doc["status"] == "ok"
     assert doc["data"]["json_body"]["success"] is True
     assert doc["data"]["json_body"]["error_class"] == "MODULE_NOT_FOUND_AT_TEST"
+
+
+# --- Story 2.8: `mason recipe optimize <recipe_path>` -----------------------
+
+_FIXED_OPTIMIZE_RESULT = CfeResult(
+    returncode=1,
+    stdout='{"success": true, "suggestions_found": 1, "suggestions": '
+    '[{"code": "ABT-001", "message": "Missing license_file.", '
+    '"suggestion": "Add license_file.", "confidence": 0.95}]}',
+    stderr="",
+    json_body={
+        "success": True, "suggestions_found": 1,
+        "suggestions": [{
+            "code": "ABT-001", "message": "Missing license_file.",
+            "suggestion": "Add license_file.", "confidence": 0.95,
+        }],
+    },
+)
+
+
+def test_recipe_optimize_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "optimize", "--help"])
+    assert exc.value.code == 0
+    assert "optimize" in capsys.readouterr().out
+
+
+def test_recipe_optimize_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "optimize"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_optimize_parses_the_recipe_path_positional():
+    ns = build_parser().parse_args(["recipe", "optimize", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "optimize"
+    assert ns.recipe_path == "recipes/foo"
+
+
+def test_recipe_optimize_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+
+    mock_optimize.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe optimize: ok" in out.out
+    assert "ABT-001" in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_optimize_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT):
+        assert main(["recipe", "optimize", "recipes/foo", "--format", "json"]) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe optimize"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_OPTIMIZE_RESULT)))
+
+
+def test_recipe_optimize_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    """Mirrors `test_recipe_diagnose_passes_log_path_and_resolved_flags_
+    through`: `cli.py` passes the raw `recipe_path` positional plus the
+    unresolved `--cfe-root`/`--cfe-python` flag values, the real
+    `os.environ`, and `Path.cwd()` -- `recipe.optimize` does its own
+    resolution."""
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main([
+            "recipe", "optimize", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_optimize.assert_called_once()
+    args, kwargs = mock_optimize.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_optimize_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main([
+            "recipe", "optimize", "recipes/foo", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_optimize_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+
+    assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_optimize_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+
+    assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_optimize_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.optimize",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "optimize", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_optimize_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.optimize",
+        side_effect=CfeTimeoutError(script="optimize_recipe", timeout=5.0),
+    ):
+        rc = main(["recipe", "optimize", "recipes/foo", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="optimize_recipe", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_optimize_cfe_import_floor_error_returns_exit_failed(capsys):
+    """`recipe optimize` is the first verb whose dispatch can reach
+    `CfeImportFloorError` (spec I/O matrix): unlike `CfeUnresolvedError`,
+    it has no dedicated exit-code branch -- it is a `MasonError` subclass,
+    so it degrades via that generic branch to `EXIT_FAILED` (spec I/O
+    matrix row: "Interpreter missing import floor ... EXIT_FAILED")."""
+    with patch(
+        "pyforge.mason.cli.recipe.optimize",
+        side_effect=CfeImportFloorError(missing=["ruamel.yaml"], interpreter="/fake/python"),
+    ):
+        rc = main(["recipe", "optimize", "recipes/foo"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(
+        CfeImportFloorError(missing=["ruamel.yaml"], interpreter="/fake/python")
+    )
+    assert "Traceback" not in err
+
+
+def test_recipe_optimize_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking of the subprocess boundary: the whole `recipe optimize`
+    path runs against Story 1.9's fixture CFE root (AD-16). The import
+    floor is faked via `cfe.probe_import_floor` (spec Design Notes), not
+    `subprocess.run` wholesale, which would also intercept the real
+    invocation against the fixture stub."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(
+        "pyforge.mason.cfe.probe_import_floor",
+        lambda interpreter: ImportFloorResult(interpreter=interpreter, missing=()),
+    )
+
+    rc = main([
+        "recipe", "optimize", "recipes/example",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe optimize"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["suggestions_found"] == 1
+
+
+# --- Story 2.8: `mason recipe scan <recipe_path>` ---------------------------
+
+_FIXED_SCAN_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"success": true, "mode": "osv-api", "total_vulnerabilities": 0, "results": []}',
+    stderr="",
+    json_body={"success": True, "mode": "osv-api", "total_vulnerabilities": 0, "results": []},
+)
+
+
+def test_recipe_scan_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "scan", "--help"])
+    assert exc.value.code == 0
+    assert "scan" in capsys.readouterr().out
+
+
+def test_recipe_scan_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "scan"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_scan_parses_the_recipe_path_positional():
+    ns = build_parser().parse_args(["recipe", "scan", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "scan"
+    assert ns.recipe_path == "recipes/foo"
+
+
+def test_recipe_scan_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
+
+    mock_scan.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe scan: ok" in out.out
+    assert "osv-api" in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_scan_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT):
+        assert main(["recipe", "scan", "recipes/foo", "--format", "json"]) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe scan"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_SCAN_RESULT)))
+
+
+def test_recipe_scan_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main([
+            "recipe", "scan", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_scan.assert_called_once()
+    args, kwargs = mock_scan.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_scan_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main([
+            "recipe", "scan", "recipes/foo", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_scan.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_scan_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
+
+    assert mock_scan.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_scan_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
+
+    assert mock_scan.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_scan_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.scan",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "scan", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_scan_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.scan",
+        side_effect=CfeTimeoutError(script="scan_for_vulnerabilities", timeout=5.0),
+    ):
+        rc = main(["recipe", "scan", "recipes/foo", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="scan_for_vulnerabilities", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_scan_cfe_import_floor_error_returns_exit_failed(capsys):
+    """Mirrors `recipe optimize`'s own version of this test -- `scan` is the
+    second verb whose dispatch can reach `CfeImportFloorError`, degrading
+    via the generic `MasonError` branch to `EXIT_FAILED`."""
+    with patch(
+        "pyforge.mason.cli.recipe.scan",
+        side_effect=CfeImportFloorError(
+            missing=["requests", "pyyaml"], interpreter="/fake/python",
+        ),
+    ):
+        rc = main(["recipe", "scan", "recipes/foo"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(
+        CfeImportFloorError(missing=["requests", "pyyaml"], interpreter="/fake/python")
+    )
+    assert "Traceback" not in err
+
+
+def test_recipe_scan_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """Mirrors `recipe optimize`'s own real-fixture end-to-end test: no
+    mocking of the subprocess boundary, import floor faked via
+    `cfe.probe_import_floor`."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(
+        "pyforge.mason.cfe.probe_import_floor",
+        lambda interpreter: ImportFloorResult(interpreter=interpreter, missing=()),
+    )
+
+    rc = main([
+        "recipe", "scan", "recipes/example",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe scan"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["total_vulnerabilities"] == 0
 
 
 @pytest.mark.parametrize("argv", [
