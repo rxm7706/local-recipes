@@ -148,8 +148,11 @@ CONDA_ONLY_RUN_DEPS: dict[str, frozenset[str]] = {
 # in atlas's own tests/test_scaffold_layout.py.
 NAMESPACE = "pyforge"
 
-# Violations that already existed when this gate landed (2026-07-29) and whose
-# resolution is a decision for the owning package, not a manifest line.
+# Pre-existing violations -- present before the story that surfaced them --
+# whose resolution is a decision for the owning package, not a manifest line.
+# The gate itself landed 2026-07-29; entries have accrued since as later
+# stories in other packages hit the same shape and got baselined rather than
+# blocking an unrelated story's land (e.g. commit 20ad57a62f).
 #
 # This is a RATCHET, not an allowlist. `test_baseline_entries_are_still_violated`
 # fails when an entry stops being violated, so the list can only shrink and
