@@ -39,7 +39,7 @@ DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget", "sync")
 
 _HELP = {
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
-    "deploy": "dashboard build/reconcile/status",
+    "deploy": "dashboard build/reconcile/status, dashboard-app deployment perimeter",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
     "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
@@ -138,8 +138,14 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `dashboard` (`--build`/`--dry-run`) and `status` verbs."""
-    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard,status}")
+    """Add the `dashboard` (`--build`/`--dry-run`), `status`, and `perimeter`
+    verbs. `perimeter` is a distinct, unrelated surface from `dashboard`
+    (Story 9.5, CAP-6) — it validates and renders the `pyforge.steward.
+    dashboard` Django app's deployment perimeter (AD-5 shareability +
+    daphne/nginx manifests), never the GitHub-Pages program console
+    `dashboard` builds/reconciles.
+    """
+    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard,status,perimeter}")
 
     dashboard = deploy_subs.add_parser(
         "dashboard", help="build/reconcile the GitHub Pages program-console dashboard"
@@ -153,6 +159,56 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
     deploy_subs.add_parser(
         "status", help="report the last commit that touched docs/dashboard/ (SHA, timestamp)"
+    )
+
+    perimeter = deploy_subs.add_parser(
+        "perimeter",
+        help=(
+            "validate the AD-5 cross-worker shareability of a dashboard "
+            "deployment topology and render its daphne+nginx manifests (CAP-6)"
+        ),
+    )
+    perimeter.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        metavar="N",
+        help="daphne worker count (default: 1 — a single worker may use in-process backends, AD-5)",
+    )
+    perimeter.add_argument(
+        "--cache-backend",
+        default="django.core.cache.backends.locmem.LocMemCache",
+        metavar="DOTTED_PATH",
+        help=(
+            "dotted class path an adopter's Django CACHES setting would name "
+            "(default: LocMemCache — single-worker only)"
+        ),
+    )
+    perimeter.add_argument(
+        "--channel-layer-backend",
+        default="channels.layers.InMemoryChannelLayer",
+        metavar="DOTTED_PATH",
+        help=(
+            "dotted class path an adopter's Django CHANNEL_LAYERS setting "
+            "would name (default: InMemoryChannelLayer — single-worker only)"
+        ),
+    )
+    perimeter.add_argument(
+        "--trusted-address",
+        action="append",
+        metavar="ADDR",
+        help="a trusted ingress peer address (repeatable) — required together with --output-dir",
+    )
+    perimeter.add_argument(
+        "--tls-cert", metavar="PATH", help="path to the TLS certificate — required together with --output-dir"
+    )
+    perimeter.add_argument(
+        "--tls-key", metavar="PATH", help="path to the TLS private key — required together with --output-dir"
+    )
+    perimeter.add_argument(
+        "--output-dir",
+        metavar="DIR",
+        help="write the rendered daphne unit + nginx edge config here (omit for validation-only)",
     )
 
 
