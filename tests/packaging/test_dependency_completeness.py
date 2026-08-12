@@ -161,6 +161,20 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "it needs either promoting _http.py into a proper shared package or "
             "making the import lazy, not a manifest line."
         ),
+        "django": (
+            "OPEN. Story 9.1 (AD-1/AD-13): pyforge.steward.dashboard ships ONLY "
+            "behind the [dashboard] extra, never a base dependency -- see "
+            "dashboard/__init__.py's docstring. apps.py (a Django AppConfig) and "
+            "cache.py (a Django cache backend) import django unconditionally at "
+            "module level because that IS their contract; what actually gates "
+            "whether either module is ever reached by an extras-less install is "
+            "tests/meta/test_invariants.py::"
+            "test_no_module_outside_dashboard_imports_dashboard_django_or_channels, "
+            "not this scanner. Declaring django as a hard [project.dependencies] "
+            "entry would defeat the extra and force it onto every steward "
+            "install. Closing this needs the scanner to recognize "
+            "framework-plugin modules, not a manifest line."
+        ),
     },
 }
 

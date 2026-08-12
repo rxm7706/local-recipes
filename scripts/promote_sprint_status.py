@@ -108,6 +108,53 @@ def regressions(existing: dict[str, str], incoming: dict[str, str]) -> list[tupl
     return out
 
 
+def repair_feed(
+    feed_path: Path,
+    incoming: dict[str, str],
+    twin_values: dict[str, str],
+) -> tuple[dict[str, str] | None, list[tuple[str, str, str]], list[str]]:
+    """The merge-then-write half of ``--repair-feed`` (extracted so
+    ``pyforge.marshal.cli.deploy::run_reconcile_completions`` (Story 5.9,
+    "a story finished by hand is not invisible to the ledger") can reuse
+    the SAME logic to close the Tier-3 divergence its own ledger-advancing
+    write creates, scoped to only the keys it just advanced, rather than
+    re-deriving it). ``incoming`` is the Tier-3 feed's own already-parsed
+    ``development_status`` map; ``twin_values`` is the tracked twin's own
+    state for whichever keys the CALLER cares about — ``main()``'s own
+    ``--repair-feed`` path below passes the twin's FULL map (every key),
+    while ``run_reconcile_completions`` passes ONLY the raw keys it just
+    wrote ``done`` for, so a scoped call never touches any OTHER
+    pre-existing divergence the twin may carry.
+
+    Computes ``regressions()`` (a terminal state the feed would lose) plus
+    ``missing`` (present in ``twin_values``, absent from ``incoming``
+    altogether — the same "absence is loss whatever the state" case
+    ``main()`` already guards, folded in here so a caller need run only
+    ONE function). When there is nothing to repair (both empty), returns
+    ``(None, [], [])`` and writes nothing. Otherwise folds ``twin_values``'
+    own state for every ``missing``/``lost`` key back into ``incoming``,
+    writes the merged map into ``feed_path`` — preserving everything in
+    the file before its own ``development_status:`` marker untouched —
+    and returns ``(merged, lost, missing)``.
+
+    Never commits: ``feed_path`` (the Tier-3 feed) is gitignored (Tier-3),
+    so there is nothing to commit — only ``sprint-status-ledger.yaml``,
+    the tracked twin, is ever git-committed, and that happens elsewhere."""
+    lost = regressions(twin_values, incoming)
+    missing = [k for k in twin_values if k not in incoming]
+    if not lost and not missing:
+        return None, lost, missing
+    merged = dict(incoming)
+    for k in missing:
+        merged[k] = twin_values[k]
+    for k, old, _new in lost:
+        merged[k] = old
+    feed_body = "".join(f"  {k}: {v}\n" for k, v in sorted(merged.items()))
+    head = feed_path.read_text(encoding="utf-8").split("development_status:")[0]
+    feed_path.write_text(head + "development_status:\n" + feed_body, encoding="utf-8")
+    return merged, lost, missing
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="sprint-ledger-sync",
@@ -186,21 +233,12 @@ def main(argv: list[str] | None = None) -> int:
             if (lost or missing) and args.repair_feed:
                 # The twin is the durable record; the feed is the lossy one. Push the
                 # twin's terminal states back into the feed so the two converge, then
-                # proceed with a now-clean promotion.
-                # Union, not just the terminal keys: a key the twin has and the feed
-                # lacks is lost information whatever its state. The first cut restored
-                # only `done` keys and silently dropped seven `epic-N-retrospective:
-                # optional` entries — benign, but still the twin's record vanishing
-                # through a command whose whole purpose is to preserve it.
-                merged = dict(statuses)
-                for k, v in existing.items():
-                    if k not in merged:
-                        merged[k] = v
-                for k, old, _new in lost:
-                    merged[k] = old
-                feed_body = "".join(f"  {k}: {v}\n" for k, v in sorted(merged.items()))
-                head = src.read_text(encoding="utf-8").split("development_status:")[0]
-                src.write_text(head + "development_status:\n" + feed_body, encoding="utf-8")
+                # proceed with a now-clean promotion. `repair_feed` (extracted so
+                # `pyforge.marshal.cli.deploy::run_reconcile_completions` can reuse the
+                # SAME merge-then-write logic, scoped to just its own advanced keys)
+                # recomputes `lost`/`missing` from `(statuses, existing)` — identical
+                # to what was already computed above, so the counts below are unchanged.
+                merged, lost, missing = repair_feed(src, statuses, existing)
                 print(f"  REPAIRED  {key}: restored {len(lost)} regressed + "
                       f"{len(missing)} missing key(s) into the Tier-3 feed from the "
                       f"tracked twin")
