@@ -715,6 +715,12 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Boundaries forbid this signal from changing marshal status's exit code.
 # Both mirror MRS-STATUS-009's identical "the read failed, degrade every
 # affected value to unknown, never a hard failure" reasoning.
+# Story 3.12 (retry escalation, AD-26, the spec-adaptive-model-tiering
+# Spec's own CAP-2) adds a thirteenth MRS-SPIN-* code, MRS-SPIN-016 (the
+# atomic write of the resumed run's floor-raised [adapter].model failed) at
+# WARN, mirroring MRS-SPIN-015's identical "a best-effort policy-toml
+# persistence step failed, an already-viable resume is never aborted over
+# it" tier.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -891,6 +897,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-010": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
+    "MRS-SPIN-016": Verdict.WARN,
 }
 
 

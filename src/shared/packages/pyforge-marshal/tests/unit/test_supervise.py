@@ -19,11 +19,13 @@ from pyforge.marshal.core.supervise import (
     evaluate_ceiling,
     evaluate_escalation,
     evaluate_idle,
+    evaluate_retry_escalation,
     idle_anchor,
     idle_since,
     rung_at,
     rung_index,
 )
+from pyforge.marshal.ports.harness import DeferredStory
 
 _T0 = datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
 
@@ -483,3 +485,66 @@ def test_evaluate_escalation_never_raises_on_unexpected_string_values():
         evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "ESCALATED")
         == EscalationStatus.RESOLVED
     )
+
+
+# --- evaluate_retry_escalation (Story 3.12, AD-20/AD-26) ------------------------
+
+
+def _deferred(story_key: str, *, attempt: int = 0, review_cycle: int = 0) -> DeferredStory:
+    return DeferredStory(
+        story_key=story_key,
+        reason=None,
+        attempt=attempt,
+        branch="",
+        worktree_path="",
+        spec_file=None,
+        review_cycle=review_cycle,
+    )
+
+
+def test_no_deferred_stories_is_false():
+    assert evaluate_retry_escalation((), max_dev_attempts=2, max_review_cycles=3) is False
+
+
+def test_a_single_story_below_both_ceilings_is_false():
+    deferred = (_deferred("3.6", attempt=1, review_cycle=1),)
+    assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is False
+
+
+def test_a_story_at_the_max_dev_attempts_ceiling_is_true():
+    deferred = (_deferred("3.6", attempt=2, review_cycle=0),)
+    assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is True
+
+
+def test_a_story_over_the_max_dev_attempts_ceiling_is_true():
+    deferred = (_deferred("3.6", attempt=5, review_cycle=0),)
+    assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is True
+
+
+def test_a_story_at_the_max_review_cycles_ceiling_is_true():
+    deferred = (_deferred("3.6", attempt=0, review_cycle=3),)
+    assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is True
+
+
+def test_a_story_over_the_max_review_cycles_ceiling_is_true():
+    deferred = (_deferred("3.6", attempt=0, review_cycle=9),)
+    assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is True
+
+
+def test_mixed_deferred_stories_true_if_any_one_crosses_its_own_ceiling():
+    """Run-level, not per-story: a single crossing story among several
+    non-crossing ones is enough to trigger the whole run's escalation."""
+    deferred = (
+        _deferred("3.5", attempt=0, review_cycle=0),
+        _deferred("3.6", attempt=2, review_cycle=0),
+        _deferred("3.7", attempt=0, review_cycle=1),
+    )
+    assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is True
+
+
+def test_mixed_deferred_stories_false_when_none_cross_their_own_ceiling():
+    deferred = (
+        _deferred("3.5", attempt=1, review_cycle=2),
+        _deferred("3.6", attempt=0, review_cycle=1),
+    )
+    assert evaluate_retry_escalation(deferred, max_dev_attempts=2, max_review_cycles=3) is False
