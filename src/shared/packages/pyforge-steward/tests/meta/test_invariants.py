@@ -427,7 +427,7 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
     """
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
     offenders: list[str] = []
-    for name in ("__init__.py", "middleware.py", "declarations.py"):
+    for name in ("__init__.py", "middleware.py", "declarations.py", "export.py"):
         path = dashboard_dir / name
         assert path.exists(), f"{name} is missing from {dashboard_dir}"
         own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
