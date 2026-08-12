@@ -91,7 +91,7 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E2** | Gates you can run | The operator or CI can evaluate the gate standalone and get a verdict that never false-greens | 8 | ~9 days |
 | **E3** | Supervised unattended runs | The operator can launch a gated run detached and have it watched — idle strands caught, budgets enforced, escalations surfaced | 13 | ~14 days |
 | **E4** | Landing with a durable paper trail | The operator can land a wave and have every merged story's spec survive teardown, automatically | 15 | ~10 days |
-| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 9 | ~5 days |
+| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 10 | ~5 days |
 | **E6** | Portability proven | The operator can run the method on another agent and hold a dated artifact proving it | 9 | ~12 days |
 | **E7** | Foundation & the write guard | The seed installer has its module tree, an error taxonomy, and a write primitive nothing can route around | 6 | ~7 days |
 | **E8** | The managed-region engine | A team's own file can carry a tool-owned span that upgrades without touching the rest | 5 | ~8 days |
@@ -106,7 +106,7 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E17** | Instruments verified, chains regenerable | Detector blind spots pinned; chain regeneration one invocation | 4 | (new 2026-08-10) |
 | **E18** | The governed tool surface | Marshal's capabilities as typed tools; parity/coverage gated | 2 | (new 2026-08-10) |
 | **E19** | The testing charter, enforced | One TEA generator, shared kit, coverage gates | 3 | (new 2026-08-10) |
-| **Total** | | | **125** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
+| **Total** | | | **126** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
 *Story counts re-verified 2026-08-10 (FR-128..163 decomposition): headings and
 `sprint-status-ledger.yaml` story keys agree at **119** (E1-E6 = 60, E7-E12 = 36, E13 = 7,
@@ -124,7 +124,11 @@ deliberately left untouched by this addition) brought E1-E6 to 61 and the total 
 **Stories 2.8 and 5.9 added 2026-08-11** (FR-185 review-depth tiering, FR-186 quick-dev
 ledger reconciliation — same Dream/Spec-chain convention, same deliberate exclusion from
 `sprint-status-ledger.yaml` pending its next sync) bring E2 to 8, E5 to 9, E1-E6 to 65, and
-the total to **125**; the ledger will re-agree on its next sync.*
+the total to 125. **Story 5.10 added 2026-08-12** (FR-187, `marshal land` detectable-merge-subject
+fix, sourced from `spec-marshal-land-merge-subject` — discovered during Story 5.9's own review,
+backlog, not a prerequisite for it — same deliberate exclusion from `sprint-status-ledger.yaml`
+pending its next sync) brings E5 to 10, E1-E6 to 66, and the total to **126**; the ledger will
+re-agree on its next sync.*
 
 **Epics 7-12 were a separate document until 2026-08-08** (`epics-genesis-installer.md`, now
 archived). They were always Marshal's own — the installer's buildable half moved here on
@@ -1511,6 +1515,47 @@ gives a loop-landed story's spec
 test proves the live run's state is unaffected
 **And** this story does not change `bmad-quick-dev` itself, and does not decide whether
 Marshal ever invokes it on an operator's behalf (PRD Q-16 stays open)
+
+### Story 5.10: `marshal land` renders a detectable merge subject *(added 2026-08-12 — FR-187, backlog)*
+
+As the operator,
+I want `marshal land`'s own merges to render the same templated, detectable merge subject
+`deploy land-story` already does,
+So that `marshal_native_merged_keys` classifies every Marshal-driven landing correctly, instead
+of `marshal land`'s landings being indistinguishable from a human's plain PR merge.
+
+**Type:** feature • **Effort:** S • **Deps:** S-5.9 • **FR/AD:** FR-187; AD-5, AD-24, AD-34
+**Surface:** `cli/land.py`, `ports/forge.py`, `adapters/forge_gh.py`
+
+**Why now.** Discovered 2026-08-12 during Story 5.9's review pass 2: `core.promotion.
+marshal_native_merged_keys` correctly classifies `deploy land-story`'s templated subject and
+bmad-loop's own native form, but `marshal land` (`cli/land.py::run_land`) merges via
+`forge.merge_pr` → `gh pr merge`, which lets GitHub auto-generate the subject — a shape
+byte-identical to a human's plain PR merge. Of the keys `merged_story_keys` finds outside the
+templated/native patterns, the large majority are `marshal land` landings, not genuine
+`bmad-quick-dev` sessions, so every consumer of this classification (fleet-picture, `marshal
+status`, `dashboard-drift-check`, Story 5.9's own `reconcile-completions`) currently mislabels
+them. Confirmed low-risk: `gh pr merge` already supports `-t/--subject` for every strategy
+(merge/squash/rebase). Not urgent — backlog, not a prerequisite for Story 5.9, which ships with
+the coarser `not-loop-native` label this story lets narrow automatically once it lands.
+
+**Acceptance Criteria:**
+
+**Given** a `marshal land` landing
+**When** it merges
+**Then** the merge commit's subject is the same templated form
+`identity.render_merge_subject(story_key, template)` produces (AD-24), applied via an optional
+`subject` parameter on `ForgePort.merge_pr` threaded to `gh pr merge -t` — never a separate,
+pre-merge PR-title-edit call
+**And** `core.promotion.marshal_native_merged_keys`, given that real subject, classifies the key
+as native — the same outcome it already produces for a `deploy land-story` merge
+**Given** `marshal land`'s existing default `landing_merge_strategy`, its gates, and every other
+step of `run_land`
+**When** this story ships
+**Then** none of them change — only the merge commit's subject line changes
+**And** this story does not retroactively relabel any ledger row already marked
+`done`/`not-loop-native` before it ships, and does not change `deploy land-story`,
+`bmad-quick-dev`, or Story 5.9's own `reconcile-completions` code
 
 ## Epic 6: Portability proven
 
