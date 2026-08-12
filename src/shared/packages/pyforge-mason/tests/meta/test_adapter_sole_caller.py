@@ -688,16 +688,17 @@ def test_cfe_path_allowlist_is_exactly_ad3s_two_live_carve_outs():
 def test_parse_cfe_script_filenames_reads_the_real_cfe_py():
     """Ties this guard's allowlist source directly to cfe.py's real table --
     if a future story renames `_CFE_SCRIPTS` or restructures it, this test
-    (not just the vacuity guard above) fails first. Story 2.7 adds
-    `failure_analyzer.py` as the table's third entry. Story 2.8 adds
-    `recipe_optimizer.py`/`vulnerability_scanner.py` as the fourth and
-    fifth. Story 2.10 adds `recipe_updater.py`/`github_updater.py` as the
-    sixth and seventh."""
+    (not just the vacuity guard above) fails first. Story 2.6 adds the two
+    build-adapter entries (`build_native`/`build_docker`) to the Story 1.9
+    fixture pair. Story 2.7 adds `failure_analyzer.py` as the table's fifth
+    entry. Story 2.8 adds `recipe_optimizer.py`/`vulnerability_scanner.py`
+    as the sixth and seventh. Story 2.10 adds `recipe_updater.py`/
+    `github_updater.py` as the eighth and ninth."""
     assert _parse_cfe_script_filenames(PKG_ROOT / _CFE_MODULE_NAME) == frozenset(
         {
-            "validate_recipe.py", "submit_pr.py", "failure_analyzer.py",
-            "recipe_optimizer.py", "vulnerability_scanner.py",
-            "recipe_updater.py", "github_updater.py",
+            "validate_recipe.py", "submit_pr.py", "native-build.sh",
+            "build-locally.py", "failure_analyzer.py", "recipe_optimizer.py",
+            "vulnerability_scanner.py", "recipe_updater.py", "github_updater.py",
         }
     )
 

@@ -25,13 +25,17 @@ it there, in the same function. (argparse forbids calling
 from outside ``build_parser()`` after the fact.) A single generic loop
 builds the three verb-bearing nouns, capturing each one's verb-subparsers
 action into a local ``_noun_verbs`` dict; ``doctor`` has no verb level by
-design (OQ-A4) and is built separately, immediately after that loop. Story
-2.7 is the first to use that seam, registering ``recipe diagnose`` on
-``_noun_verbs["recipe"]`` right after the loop — ``package``/``environment``
-stay behavior-identical (their own captured actions are never given a verb).
-Story 2.8 registers two more verbs on that same noun, ``recipe optimize``
-and ``recipe scan``, each a single required ``recipe_path`` positional
-mirroring ``diagnose``'s own ``log_path`` shape.
+design (OQ-A4) and is built separately, immediately after that loop.
+
+Story 2.6 registers the first real verb, ``recipe build``, on
+``_noun_verbs["recipe"]`` right after the loop -- the pattern the paragraph
+above describes, now exercised for real. Story 2.7 is the next to use that
+seam, registering ``recipe diagnose`` on ``_noun_verbs["recipe"]``
+— ``package``/``environment`` stay behavior-identical (their own captured
+actions are never given a verb). Story 2.8 registers two more verbs on
+that same noun, ``recipe optimize`` and ``recipe scan``, each a single
+required ``recipe_path`` positional mirroring ``diagnose``'s own
+``log_path`` shape.
 
 Story 2.9 registers a fourth verb, ``recipe submit``: the same
 ``recipe_path`` positional, plus two verb-own boolean flags, ``--yes`` and
@@ -80,6 +84,9 @@ _NOUNS = {
     "environment": "resolve conflicting worlds into one lockfile",
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
+_RECIPE_BUILD_HELP = (
+    "build a recipe (native by default; --docker + --config for CI-parity)"
+)
 _RECIPE_DIAGNOSE_HELP = "diagnose a build-failure log via CFE's failure analyzer"
 _RECIPE_OPTIMIZE_HELP = "lint a recipe for quality findings via CFE's recipe optimizer"
 _RECIPE_SCAN_HELP = (
@@ -384,10 +391,11 @@ def build_parser() -> argparse.ArgumentParser:
     noun_names = (*_NOUNS, "doctor")
     nouns = parser.add_subparsers(dest="noun", metavar="{" + ",".join(noun_names) + "}")
 
-    # Captured per noun (Story 2.7) so a verb can be registered on it below,
-    # in this same function — argparse forbids calling add_subparsers() a
-    # second time on one parser, so this cannot be done from outside
-    # build_parser() after the fact (module docstring's documented seam).
+    # Each noun's own verb-subparsers object, keyed by noun name — captured
+    # so a verb can be registered on it right after this loop, in this same
+    # function (argparse forbids calling add_subparsers() a second time on
+    # one parser, so this cannot be done from outside build_parser() after
+    # the fact — see module docstring's documented seam).
     _noun_verbs: dict[str, argparse._SubParsersAction] = {}
 
     for name, help_text in _NOUNS.items():
@@ -404,10 +412,32 @@ def build_parser() -> argparse.ArgumentParser:
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
 
-    # Story 2.7: mason recipe diagnose <log_path> — the first verb
-    # registered under any noun (FR-10). package/environment stay
+    # Story 2.6: mason recipe build <recipe_path> [--docker --config] — the
+    # first verb registered under any noun (FR-9). package/environment stay
     # behavior-identical to Story 1.2: their verb-subparsers actions above
     # are captured but never given a verb, so they remain usage errors.
+    # `parents=[global_flags]` here too, mirroring every other parser level
+    # — without it, a global flag given AFTER `build` (`mason recipe build
+    # <path> --format json`) would be rejected as unrecognized, since
+    # argparse hands the tokens following `build` to THIS parser, not an
+    # ancestor one.
+    recipe_build_parser = _noun_verbs["recipe"].add_parser(
+        "build", help=_RECIPE_BUILD_HELP, description=_RECIPE_BUILD_HELP,
+        parents=[global_flags],
+    )
+    recipe_build_parser.add_argument(
+        "recipe_path", metavar="RECIPE_PATH", help="path to the recipe (file or directory)",
+    )
+    recipe_build_parser.add_argument(
+        "--docker", action="store_true",
+        help="run the Docker/CI-parity build instead of the native default (requires --config)",
+    )
+    recipe_build_parser.add_argument(
+        "--config", metavar="CONFIG",
+        help="platform-variant config name for --docker (e.g. linux64)",
+    )
+
+    # Story 2.7: mason recipe diagnose <log_path>.
     diagnose_parser = _noun_verbs["recipe"].add_parser(
         "diagnose",
         help=_RECIPE_DIAGNOSE_HELP,
@@ -578,6 +608,51 @@ def main(argv: Sequence[str] | None = None) -> int:
             ns._noun_parser.print_help(file=sys.stderr)
             return EXIT_USAGE
 
+        if ns.noun == "recipe" and ns.verb == "build":
+            # A manual post-parse cross-check, not argparse-declarative
+            # (spec Always boundary): `--docker`/`--config` pairing is a
+            # relationship BETWEEN two flags, which argparse's own
+            # declarative validators (`required=`, `choices=`, a mutually
+            # exclusive group) cannot express directly. Checked, and
+            # rejected as EXIT_USAGE, before any CFE resolution is
+            # attempted — mirroring the bare-noun usage error's
+            # stderr/EXIT_USAGE convention above.
+            docker = ns.docker
+            # A whitespace-only `--config` is treated as absent (review
+            # pass), matching `_resolve_str`'s established "whitespace-only
+            # counts as not supplied" convention elsewhere in this file —
+            # so `--config ""`/`--config " "` reports the same clear
+            # "requires --config" message as omitting the flag entirely,
+            # rather than a misleading one claiming it was never given.
+            config = ns.config.strip() if ns.config is not None and ns.config.strip() else None
+            if docker and not config:
+                print("recipe build: --docker requires --config", file=sys.stderr)
+                return EXIT_USAGE
+            if config and not docker:
+                print("recipe build: --config requires --docker", file=sys.stderr)
+                return EXIT_USAGE
+
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.build(
+                ns.recipe_path,
+                docker=docker,
+                config=config,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT,
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            # A non-zero delegated build returncode is DATA on `result`,
+            # never raised (AD-4) — this branch always reports "ok"/
+            # EXIT_OK for a Mason-successful invocation, mirroring
+            # `doctor`'s "the gap is data" precedent above; `data.
+            # returncode` is the signal, not this command's own status.
+            render.write(fmt, sys.stdout, "recipe build", "ok", dataclasses.asdict(result), [])
+            return EXIT_OK
+
         if ns.noun == "recipe" and ns.verb == "diagnose":
             # FR-10: delegates to CFE's failure analyzer via recipe.py.
             # `recipe.diagnose` raises CfeUnresolvedError before any
@@ -737,11 +812,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_OK
 
-        # Unreachable now for every verb-noun pair except `recipe
-        # diagnose`/`recipe optimize`/`recipe scan`/`recipe submit`/`recipe
-        # update` above, each handled by its own branch: `package`/
+        # Unreachable now for every verb-noun pair except `recipe build`/
+        # `recipe diagnose`/`recipe optimize`/`recipe scan`/`recipe submit`/
+        # `recipe update` above, each handled by its own branch: `package`/
         # `environment` still register no verbs at all, and `recipe`
-        # registers no verb beyond those five, so argparse itself rejects
+        # registers no verb beyond those six, so argparse itself rejects
         # any other token here as an invalid choice before `ns.verb` could
         # ever hold it. Kept only so a later story that populates another
         # verb has somewhere to land its dispatch.

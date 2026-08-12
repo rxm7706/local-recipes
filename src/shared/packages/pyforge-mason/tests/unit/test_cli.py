@@ -25,7 +25,16 @@ imported bare name), so patching the function on its owning module reaches
 the call site with no gotcha, unlike `doctor.py`'s own patch targets (see
 `test_doctor.py`'s module docstring).
 
-Story 2.7 adds the first registered verb, `recipe diagnose`, and its own
+Story 2.6 registers the first real verb, `recipe build`, and extends this
+file with its end-to-end dispatch coverage: `recipe.build` is mocked the
+same way (`patch("pyforge.mason.cli.recipe.build", ...)`) to return a fixed
+`BuildResult`, text/JSON happy paths, the two `--docker`/`--config`
+usage-error cases (a manual post-parse cross-check, not argparse-
+declarative -- see `main()`'s own comment), and a failed-child-still-
+renders-"ok" case mirroring `doctor`'s established "the gap is data"
+precedent above.
+
+Story 2.7 adds a second registered verb, `recipe diagnose`, and its own
 test block below mirrors the doctor pattern exactly: `recipe.diagnose` is
 mocked via `patch("pyforge.mason.cli.recipe.diagnose", ...)` for the
 dispatch/rendering/error-projection tests, plus one real, unmocked
@@ -92,7 +101,7 @@ from pyforge.mason.errors import (
 from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
-from pyforge.mason.models import CfeResult, ShipState, ShipTargetResult
+from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
 
 _FIXED_REPORT = DoctorReport(
     mason_version="1.2.3+test",
@@ -1944,3 +1953,172 @@ def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, c
     assert "mason_version" in out.out
     assert sentinel not in out.out
     assert sentinel not in out.err
+
+
+# --- Story 2.6: `recipe build` verb dispatch --------------------------------
+
+_FIXED_BUILD_RESULT = BuildResult(
+    mode="native", config="linux64", returncode=0, stdout="built ok",
+    artifact_dir="build_artifacts/linux64",
+)
+
+
+def test_recipe_build_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "build", "--help"])
+    assert exc.value.code == 0
+    assert "build" in capsys.readouterr().out
+
+
+def test_recipe_build_happy_path_text_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe build: ok" in out.out
+    assert "artifact_dir: build_artifacts/linux64" in out.out
+    assert "returncode: 0" in out.out
+
+    mock_build.assert_called_once()
+    args, kwargs = mock_build.call_args
+    assert args[0] == "recipes/foo"
+    assert kwargs["docker"] is False
+    assert kwargs["config"] is None
+
+
+def test_recipe_build_happy_path_json_mode(capsys):
+    with patch("pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT):
+        assert main(["recipe", "build", "recipes/foo", "--format", "json"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert doc["command"] == "recipe build"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == dataclasses.asdict(_FIXED_BUILD_RESULT)
+
+
+def test_recipe_build_docker_flag_dispatches_with_config(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main(
+            ["recipe", "build", "recipes/foo", "--docker", "--config", "linux64"],
+        ) == EXIT_OK
+
+    kwargs = mock_build.call_args.kwargs
+    assert kwargs["docker"] is True
+    assert kwargs["config"] == "linux64"
+
+
+def test_recipe_build_docker_without_config_is_a_usage_error(capsys):
+    """spec I/O matrix: `--docker` without `--config` is a usage error
+    BEFORE any CFE resolution -- `recipe.build` must never even be called."""
+    with patch("pyforge.mason.cli.recipe.build") as mock_build:
+        rc = main(["recipe", "build", "recipes/foo", "--docker"])
+
+    assert rc == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert "--docker" in out.err
+    assert "--config" in out.err
+    mock_build.assert_not_called()
+
+
+def test_recipe_build_config_without_docker_is_a_usage_error(capsys):
+    with patch("pyforge.mason.cli.recipe.build") as mock_build:
+        rc = main(["recipe", "build", "recipes/foo", "--config", "linux64"])
+
+    assert rc == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert "--config" in out.err
+    assert "--docker" in out.err
+    mock_build.assert_not_called()
+
+
+def test_recipe_build_docker_with_a_blank_config_is_treated_as_missing(capsys):
+    """Review pass: a whitespace-only `--config` must report the same
+    "requires --config" usage error as omitting the flag entirely, matching
+    `_resolve_str`'s established "whitespace-only counts as not supplied"
+    convention -- not silently pass the pairing check and hand `cfe.
+    build_docker` a blank value."""
+    with patch("pyforge.mason.cli.recipe.build") as mock_build:
+        rc = main(["recipe", "build", "recipes/foo", "--docker", "--config", "   "])
+
+    assert rc == EXIT_USAGE
+    out = capsys.readouterr()
+    assert "--docker" in out.err
+    assert "--config" in out.err
+    mock_build.assert_not_called()
+
+
+def test_recipe_build_failed_child_still_renders_ok(capsys):
+    """A non-zero delegated build returncode is DATA, never raised (AD-4) --
+    `recipe build` itself still reports EXIT_OK, mirroring `doctor`'s
+    established "the gap is data" precedent."""
+    failed_result = BuildResult(
+        mode="native", config="linux64", returncode=1, stdout="build failed",
+        artifact_dir="build_artifacts/linux64",
+    )
+    with patch("pyforge.mason.cli.recipe.build", return_value=failed_result):
+        assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe build: ok" in out.out
+    assert "returncode: 1" in out.out
+
+
+def test_recipe_build_passes_cfe_flags_environ_and_cwd_through():
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main([
+            "recipe", "build", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+            "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    kwargs = mock_build.call_args.kwargs
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["cfe_timeout_arg"] == 30.0
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_build_cfe_timeout_and_flags_absent_pass_none_through():
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
+
+    kwargs = mock_build.call_args.kwargs
+    assert kwargs["cfe_root_arg"] is None
+    assert kwargs["cfe_python_arg"] is None
+    assert kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_build_cfe_unresolved_error_projects_to_exit_cfe_unavailable(capsys):
+    with patch("pyforge.mason.cli.recipe.build", side_effect=CfeUnresolvedError()):
+        rc = main(["recipe", "build", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+
+
+def test_recipe_build_global_flag_parses_after_the_verb_and_its_positional():
+    """`mason recipe build <path> --format json` -- a global flag given
+    AFTER the verb and its positional must still parse, since the `build`
+    verb parser also carries `global_flags` as a parent."""
+    ns = build_parser().parse_args(["recipe", "build", "recipes/foo", "--format", "json"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "build"
+    assert ns.recipe_path == "recipes/foo"
+    assert ns.format == "json"

@@ -51,10 +51,23 @@ floor is a *separate*, subprocess-based question answered by
 check cannot live in this module (see `cfe.py`'s module docstring).
 `_ENV_CFE_PYTHON` mirrors the `_ENV_CFE_ROOT` duplication pattern above, for
 the same inward-only dependency-direction reason.
+
+Story 2.6 adds a third, independent pure function in this same file:
+`detect_native_build_config`, mirroring the native build script's own
+five-way host-detection table (`uname -s`/`uname -m`, mapped to one of
+`linux64`/`linux_aarch64`/`osxarm64`/`osx64`/`win64`) via
+`platform.system()`/`platform.machine()` instead of shelling out to `uname`
+itself (AD-5 forbids process spawns here; `platform.system`/`platform.
+machine` are OS metadata lookups, not subprocess invocations). It has no
+not-found terminal *type* the way `resolve_cfe_root` does -- an
+unrecognized host simply returns `None` rather than raising, since
+`cfe.py`'s `build_native` adapter must still run its script and let it
+report its own failure via exit code, never a guessed config.
 """
 
 from __future__ import annotations
 
+import platform
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -172,3 +185,46 @@ def resolve_cfe_interpreter(
         return ResolvedCfeInterpreter(path=env_value.strip(), step=STEP_ENVIRONMENT)
 
     return ResolvedCfeInterpreter(path=sys.executable, step=STEP_RUNNING_INTERPRETER)
+
+
+_LINUX_X86_64_MACHINES = frozenset({"x86_64", "amd64"})
+_AARCH64_MACHINES = frozenset({"aarch64", "arm64"})
+"""Alternate `platform.machine()` spellings for the same architecture,
+mirroring the native build script's own `uname -m` alternation (e.g.
+`Linux/x86_64|Linux/amd64`) -- different libc/kernel builds report either
+spelling for the identical 64-bit x86/ARM architecture."""
+
+
+def detect_native_build_config() -> str | None:
+    """Detect the native-build platform-variant config name for the CURRENT
+    host, mirroring the native build script's own five-way `uname`-based
+    case table (FR-9). Pure -- no process spawn, no filesystem I/O -- and
+    non-overridable: there is no parameter, matching the spec Never
+    boundary that native mode has no `--platform`/config override (the
+    wrapped script has no such flag either).
+
+    Returns `None` for a host this table does not recognize -- never a
+    guess. `cfe.py`'s `build_native` adapter still runs its script
+    unconditionally on an unrecognized host and lets it report its own
+    failure via exit code; this function's only job is telling that adapter
+    what `build_artifacts/<config>/` to report, and reporting nothing beats
+    reporting a directory the script never actually used.
+    """
+    system = platform.system()
+    machine = platform.machine()
+
+    if system == "Linux":
+        if machine in _LINUX_X86_64_MACHINES:
+            return "linux64"
+        if machine in _AARCH64_MACHINES:
+            return "linux_aarch64"
+        return None
+    if system == "Darwin":
+        if machine in _AARCH64_MACHINES:
+            return "osxarm64"
+        if machine == "x86_64":
+            return "osx64"
+        return None
+    if system == "Windows":
+        return "win64"
+    return None
