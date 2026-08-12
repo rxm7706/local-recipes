@@ -219,7 +219,7 @@ def test_different_inputs_produce_different_hash():
     assert first.content_hash != second.content_hash
 
 
-def test_seed_view_returns_all_ten_seed_fields():
+def test_seed_view_returns_all_eleven_seed_fields():
     effective, _ = compose(project_slug="acme", project={}, flags={})
     seed = effective.seed_view()
     assert set(seed.keys()) == {
@@ -233,6 +233,7 @@ def test_seed_view_returns_all_ten_seed_fields():
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        "max_parallel",
     }
     assert all(isinstance(field, PolicyField) for field in seed.values())
 
@@ -250,6 +251,7 @@ def test_seed_fields_are_not_reachable_as_public_attributes():
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        "max_parallel",
     ):
         assert not hasattr(effective, key)
 
@@ -1240,6 +1242,119 @@ def test_budget_ceiling_defaults_clear_the_observed_workload():
     assert DEFAULT_POLICY["max_wall_clock_minutes_per_run"] > observed_max_run_minutes
 
 
+# --- max_parallel validation and the clamp-advisory finding (Story 3.13,
+# FR-184) -- the spec's own I/O & Edge-Case Matrix, one test per row. ---------
+
+
+def test_max_parallel_default_value_is_one():
+    """Pinned so a future accidental edit to DEFAULT_POLICY is caught by a
+    failing test: 1 matches both bmad_loop 0.9.0's own ScmPolicy.max_parallel
+    default and Marshal's own rendered .bmad-loop/policy.toml."""
+    assert DEFAULT_POLICY["max_parallel"] == 1
+
+
+def test_max_parallel_default_no_advisory():
+    """Matrix row 'Default': no max_parallel key set anywhere -- resolves to
+    1, no MRS-POLICY-007 advisory."""
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    field = effective.seed_view()["max_parallel"]
+    assert field.value == 1
+    assert field.layer is PolicyLayer.DEFAULT
+    assert findings == ()
+
+
+def test_max_parallel_requested_above_one_preserves_value_and_fires_clamp_advisory():
+    """Matrix row 'Requested >1': marshal-policy.toml sets max_parallel = 4
+    -- resolves to 4 (the value is PRESERVED, never silently floored by
+    Marshal itself), and a registered WARN finding names both the requested
+    value and bmad_loop 0.9.0's own unbuilt Phase 5 scheduler as cause. The
+    verdict stays in the OK half of the lattice (WARN only)."""
+    effective, findings = compose(
+        project_slug="acme", project={"max_parallel": 4}, flags={}
+    )
+    field = effective.seed_view()["max_parallel"]
+    assert field.value == 4
+    assert field.layer is PolicyLayer.PROJECT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-007"
+    assert findings[0].severity.value == "warn"
+    assert "max_parallel=4" in findings[0].message
+    assert "bmad_loop" in findings[0].message
+    assert "Phase 5" in findings[0].message
+    assert verdict.compute_verdict(findings) == Verdict.WARN
+
+
+def test_max_parallel_exactly_one_explicit_no_advisory():
+    """Matrix row 'Exactly 1': max_parallel = 1 explicitly -- resolves to 1,
+    no advisory (matches the harness's own effective behavior, so nothing
+    is reported)."""
+    effective, findings = compose(
+        project_slug="acme", project={"max_parallel": 1}, flags={}
+    )
+    field = effective.seed_view()["max_parallel"]
+    assert field.value == 1
+    assert field.layer is PolicyLayer.PROJECT
+    assert findings == ()
+
+
+@pytest.mark.parametrize("bad_value", ["four", 0, True, False, -1, 3.5, None])
+def test_max_parallel_malformed_values_fall_back_via_existing_machinery(bad_value):
+    """Matrix row 'Malformed': a non-int, a bool (int(True)=1 would silently
+    coerce), zero, or a negative value all fall back to the default of 1 via
+    the existing MRS-POLICY-003 malformed-seed-value finding -- and, since
+    the RESOLVED value is exactly 1 (never > 1), MRS-POLICY-007 never fires
+    alongside it."""
+    effective, findings = compose(
+        project_slug="acme", project={"max_parallel": bad_value}, flags={}
+    )
+    assert effective.seed_view()["max_parallel"].value == DEFAULT_POLICY["max_parallel"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+    codes = {f.code for f in findings}
+    assert "MRS-POLICY-007" not in codes
+
+
+def test_max_parallel_accepts_a_large_valid_int():
+    """The validator's floor is 1, not a ceiling -- an operator declaring
+    intent for a future, larger fan-out width must compose cleanly too."""
+    effective, findings = compose(
+        project_slug="acme", project={"max_parallel": 16}, flags={}
+    )
+    assert effective.seed_view()["max_parallel"].value == 16
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-007"
+
+
+def test_max_parallel_rejects_an_arbitrary_precision_int_without_raising():
+    """Review finding: mirrors ``test_budget_ceiling_rejects_an_arbitrary_
+    precision_int_without_raising`` -- an int too large to convert to a C
+    double would make ``_max_parallel_clamp_finding``'s own f-string
+    formatting raise ``compose()``'s malformed-CONTENT-never-raises contract
+    breaks for a value built by non-string arithmetic. Not reachable via a
+    real ``marshal-policy.toml`` (``tomllib``'s own parser hits the same
+    digit limit first), but ``_valid_parallel_count`` is the only int-typed
+    seed validator that did not already mirror this guard."""
+    huge = int("9" * 400)
+    assert huge > 1  # it is not the >= 1 floor that must reject this
+
+    effective, findings = compose(project_slug="acme", project={"max_parallel": huge}, flags={})
+
+    assert effective.seed_view()["max_parallel"].value == DEFAULT_POLICY["max_parallel"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
+def test_max_parallel_is_seed_reachable_only_via_seed_view():
+    """max_parallel is SEED (AD-26) like every other operator-tunable
+    numeric ceiling -- reachable only through seed_view(), never a public
+    EffectivePolicy attribute."""
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    assert not hasattr(effective, "max_parallel")
+    assert "max_parallel" in effective.seed_view()
+
+
 # --- the "excluded, not poisoned" fallback semantics -------------------------
 
 
@@ -1386,7 +1501,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
-                # All 10 seed keys present (an INCOMPLETE mapping would
+                # All 11 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
                 # per-value type check this test exists to exercise) --
                 # exactly one value ("gate_mode") is a bare str, not a
@@ -1409,6 +1524,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
                 "max_wall_clock_minutes_per_run": PolicyField(
                     value=600, layer="default", raw_source=600
                 ),
+                "max_parallel": PolicyField(value=1, layer="default", raw_source=1),
             },
         )
 
@@ -1453,6 +1569,7 @@ def test_schema_file_declares_the_twenty_keys():
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        "max_parallel",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
 
