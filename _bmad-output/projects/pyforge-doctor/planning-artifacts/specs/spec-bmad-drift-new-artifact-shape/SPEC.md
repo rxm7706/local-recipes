@@ -1,13 +1,12 @@
 ---
 spec: bmad-drift-new-artifact-shape
-status: draft
+status: shipped
 owner-dream: docs/dreams/bmad-drift-new-artifact-shape.md
 surface:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py
 sources:
   - ../../../../../../docs/dreams/bmad-drift-new-artifact-shape.md
-open_questions:
-  - "Exact rule scope (a story-level design decision, not resolved by the Dream): literally spike-*-report.md at planning-artifacts/ root, or a slightly wider pattern anticipating a future Spike-1/Spike-2 report following the same convention."
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
