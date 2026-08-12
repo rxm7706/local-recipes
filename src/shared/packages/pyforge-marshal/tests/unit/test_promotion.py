@@ -13,6 +13,7 @@ from pyforge.marshal.core.promotion import (
     extract_story_key_from_bmadloop_merge_subject,
     extract_story_key_from_github_merge_subject,
     is_valid_spec_text,
+    marshal_native_merged_keys,
     merged_story_keys,
 )
 
@@ -184,6 +185,83 @@ def test_merged_story_keys_tries_templated_pattern_before_github_pattern():
     though it would also superficially resemble neither GitHub shape."""
     subjects = ("Merge 5.5 into main",)
     assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(5, 5)})
+
+
+# --- marshal_native_merged_keys (Story 5.9) -----------------------------------
+
+
+def test_marshal_native_merged_keys_recognizes_the_templated_form():
+    """The AD-24 templated form -- `deploy land-story`'s own rendered
+    merge-subject signature -- is Marshal-driven and IS included."""
+    subjects = ("Merge 5.5 into main",)
+    assert marshal_native_merged_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
+        {StoryKey(5, 5)}
+    )
+
+
+def test_marshal_native_merged_keys_recognizes_the_bmadloop_native_form():
+    """bmad-loop's own native merge-commit shape is ALSO Marshal-driven
+    (Story 5.9's own Design Notes: "Marshal already knows") and IS
+    included."""
+    bmadloop_subject = (
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
+        "into loop/pyforge-marshal (bmad-loop)"
+    )
+    assert marshal_native_merged_keys(
+        (bmadloop_subject,), _TEMPLATE, _PROJECT_SLUG
+    ) == frozenset({StoryKey(2, 4)})
+
+
+def test_marshal_native_merged_keys_excludes_the_github_pr_form():
+    """The one real-world regression this function exists to prove: a
+    real GitHub PR-merge subject (this repo's own actually-observed shape
+    for a bmad-quick-dev-completed story landed by hand) is EXCLUDED --
+    that route is not Marshal-driven, and is the whole reason Story 5.9
+    exists."""
+    subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8)
+    assert marshal_native_merged_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset()
+
+
+def test_marshal_native_merged_keys_is_a_strict_subset_of_merged_story_keys():
+    """The story's own detection contract: `merged_story_keys - marshal_
+    native_merged_keys` names exactly the quick-dev route. Mixing all
+    three subject shapes in one call proves the narrowing, not merely the
+    exclusion of one shape in isolation."""
+    bmadloop_subject = (
+        "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
+        "into loop/pyforge-marshal (bmad-loop)"
+    )
+    subjects = ("Merge 5.5 into main", bmadloop_subject, _REAL_SUBJECT_2_3)
+
+    full = merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG)
+    native = marshal_native_merged_keys(subjects, _TEMPLATE, _PROJECT_SLUG)
+
+    assert full == frozenset({StoryKey(5, 5), StoryKey(2, 4), StoryKey(2, 3)})
+    assert native == frozenset({StoryKey(5, 5), StoryKey(2, 4)})
+    assert full - native == frozenset({StoryKey(2, 3)})
+
+
+def test_marshal_native_merged_keys_scopes_bmadloop_pattern_to_project_slug():
+    """The identical live cross-project collision `extract_story_key_from_
+    bmadloop_merge_subject`'s own docstring documents -- a DIFFERENT
+    project's bmad-loop merge must never be misread as this project's own
+    key."""
+    warden_subject = (
+        "Merge bmad-loop/20260724-055419-3c0e/6-8-baseline-grandfathering "
+        "into loop/pyforge-warden (bmad-loop)"
+    )
+    assert (
+        marshal_native_merged_keys((warden_subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset()
+    )
+
+
+def test_marshal_native_merged_keys_skips_non_merge_subjects():
+    subjects = (_REAL_SUBJECT_NOT_A_MERGE_1, _REAL_SUBJECT_NOT_A_MERGE_2)
+    assert marshal_native_merged_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset()
+
+
+def test_marshal_native_merged_keys_empty_subjects_returns_empty_set():
+    assert marshal_native_merged_keys((), _TEMPLATE, _PROJECT_SLUG) == frozenset()
 
 
 # --- count_conforming_subjects ------------------------------------------------

@@ -68,6 +68,7 @@ must not become an import edge.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1319,3 +1320,220 @@ def reconcile_ledger_vs_git(
             }
         )
     return tuple(discrepancies)
+
+
+# =============================================================================
+# Story 5.9 ("a story finished by hand is not invisible to the ledger",
+# AD-5/AD-29/AD-33): the two pure cores behind `marshal deploy
+# reconcile-completions` -- Story 5.4's own READ-ONLY sibling above
+# (`reconcile_ledger_vs_git`) diagnoses the SAME "ledger vs. git" gap but
+# never writes; this story's `not_loop_native_completions` decides WHICH
+# keys a write-capable command should advance, and `render_ledger_
+# advancements` performs the write as a pure text transform. The reported
+# completion-path label is `"not-loop-native"`, never `"bmad-quick-dev"`
+# (Spec Change Log, 2026-08-12): the detection mechanism only proves "not a
+# templated or bmad-loop-native merge subject", which `marshal land`'s own
+# plain-PR-shaped landings also satisfy -- see `core.promotion.
+# marshal_native_merged_keys`'s own docstring for the full rationale.
+# `cli/deploy.py::run_reconcile_completions` gathers every impure input
+# first -- `_scan_promotions`'s own already-shipped corroboration pipeline
+# (Story 4.1/4.2, reused verbatim, never re-derived), `core.promotion.
+# marshal_native_merged_keys`/`merged_story_keys` (the conjunction the
+# contract's own "a git match alone never triggers a write" bullet
+# requires), and `HarnessPort.ledger_story_statuses`'s raw `(raw_key,
+# raw_status)` pairs, all reduced to ALREADY-normalized dot-form `str` keys
+# via `core.identity.normalize` at the CLI boundary -- and hands the
+# resulting frozensets to `not_loop_native_completions` below. The ledger's
+# own raw TEXT (`HarnessPort.ledger_story_statuses` returns only PARSED
+# pairs, never the source bytes -- AD-3 forbids this module from importing
+# `bmad_loop` directly to get them, so the CLI reads it separately via
+# `FsPort.read_text`) is handed to `render_ledger_advancements`. Both
+# functions stay pure (AD-4): no I/O, no subprocess, no clock, no
+# `..adapters` import.
+# =============================================================================
+
+#: The literal ledger status value `render_ledger_advancements` writes.
+#: Deliberately a SEPARATE, identically-spelled constant from this module's
+#: own `_DONE_PHASE` above (both happen to be the string "done") rather
+#: than a shared reference -- `_DONE_PHASE` names a bmad-loop TASK phase
+#: (`TaskPhaseSnapshot.phase`), a wholly different vocabulary from the
+#: tracked ledger's own `development_status` map value, and this module's
+#: own `render_feed_key`/`render_filename_slug` precedent already
+#: establishes "distinct functions/constants for distinct external forms,
+#: even when today's spelling coincides" as this codebase's convention.
+_LEDGER_DONE_STATUS = "done"
+
+#: The one ledger row status `not_loop_native_completions` ever advances
+#: from. Deliberately narrower than "anything but `done`" (review fix,
+#: 2026-08-12, medium-severity): `blocked`/`in-progress`/`optional` are a
+#: DELIBERATE operator/process signal recorded in the ledger, and a
+#: git-plus-spec-corroborated completion signal must never silently
+#: overwrite one -- only a row nobody has touched yet (the ledger's own
+#: default un-started state) is safe to advance purely from that evidence.
+_LEDGER_BACKLOG_STATUS = "backlog"
+
+#: Splits ``render_ledger_advancements``'s own ``ledger_text`` on each of
+#: its line-ending characters, CAPTURING the separator so it survives in
+#: the result list (odd indices) untouched -- ``\r\n`` tried before the
+#: bare ``\r``/``\n`` alternatives so a Windows-style ending is captured
+#: whole, never split into two separate one-character separators.
+_LEDGER_LINE_SPLIT = re.compile(r"(\r\n|\r|\n)")
+
+
+def not_loop_native_completions(
+    ledger_backlog_keys: frozenset[str],
+    not_loop_native_candidates: frozenset[str],
+) -> frozenset[str]:
+    """Every dot-form story key `marshal deploy reconcile-completions`
+    should advance to `done` in the tracked ledger THIS run (Story 5.9,
+    AD-5/AD-33). Pure set arithmetic over two ALREADY-normalized dot-form
+    `frozenset[str]` arguments -- no `StoryKey`/`core.identity.normalize`
+    call happens here; the CLI boundary performs every raw-string-to-dot-
+    form conversion before calling this function, mirroring `reconcile_
+    ledger_vs_git`'s own identical "arguments are ALREADY-normalized str
+    forms" contract above. Named for the REPORTED label (Spec Change Log,
+    2026-08-12) -- `"not-loop-native"`, not `"bmad-quick-dev"` -- since the
+    caller's own `not_loop_native_candidates` set covers every route Marshal
+    itself did not drive, not only a genuine `bmad-quick-dev` session (see
+    the module comment above).
+
+    `not_loop_native_candidates` is the CALLER's own already-computed
+    `(corroborated_keys & full_merged_keys) - marshal_native_keys`
+    difference (Story 5.9's own CAP-1 corroboration set -- durable per
+    git's FULL three-pattern `core.promotion.merged_story_keys` (`&
+    full_merged_keys`: review fix, 2026-08-12, high-severity -- a tracked
+    spec alone, via `_already_promoted_keys`, is never sufficient; the
+    contract's own "a git match alone never triggers a write" bullet reads
+    both directions, and this conjunction is what keeps a spec with NO
+    merge evidence at all from being treated as corroborated), AND backed
+    by a valid, durable Tier-3/tracked spec -- MINUS `core.promotion.
+    marshal_native_merged_keys`'s own two-of-three-pattern durability
+    answer, i.e. every story landed via a route Marshal itself did not
+    drive). This function no longer re-derives that difference internally
+    (review fix, 2026-08-12, low-severity: the identical set difference
+    used to be computed independently in two places -- here and again
+    inline in `cli/deploy.py::run_reconcile_completions` for its own
+    `MRS-DEPLOY-026` finding -- not divergent today, but a future edit to
+    either could silently desync them; the caller now computes it exactly
+    once and passes the same value to both consumers).
+
+    A key is eligible when BOTH of the following hold:
+
+    1. It is in `not_loop_native_candidates` -- corroborated, backed by real
+       merge evidence, AND landed via a route Marshal did not drive (a
+       merged key with no valid spec at all is never corroborated -- this
+       story's own Boundaries: "a git match alone never triggers a
+       write"; a key landed via `deploy land-story` or a bmad-loop-native
+       merge is a route Marshal ALREADY knows about -- Story 5.4's own
+       read-only sync already owns that case, this story's own Never
+       bullet: "never fold this into ... Story 5.4's own sync").
+    2. Its CURRENT ledger row status, in `ledger_backlog_keys`, is
+       literally `backlog` -- never `done` (already converged, AD-21's
+       convergence property: a converged re-run produces zero changes and
+       exit 0, never re-reported, never re-committed) and never `blocked`/
+       `in-progress`/`optional` either (review fix, 2026-08-12,
+       medium-severity: see `_LEDGER_BACKLOG_STATUS`'s own comment). A
+       candidate absent from the ledger altogether is neither in
+       `ledger_backlog_keys` nor eligible here -- it is instead the
+       caller's own `MRS-DEPLOY-026` finding, computed by `cli/deploy.py`
+       from the SAME `not_loop_native_candidates` this function takes as an
+       argument, against its own separately-gathered `ledger_all_keys`.
+
+    Pure: no I/O, no `HarnessPort`, no `VcsPort` -- every argument is the
+    caller's own already-gathered, already-normalized fact."""
+    return frozenset(key for key in not_loop_native_candidates if key in ledger_backlog_keys)
+
+
+def render_ledger_advancements(
+    ledger_text: str, raw_keys: frozenset[str]
+) -> tuple[str, frozenset[str]]:
+    """A targeted LINE REWRITE of the tracked ``sprint-status-ledger.yaml``
+    twin's own text (Story 5.9, this story's own Boundaries: "a targeted
+    line rewrite, not a re-render"). For every ``development_status:`` map
+    entry whose RAW key (the caller's own already-resolved ledger key
+    spelling, e.g. ``"5-9-a-story-finished-by-hand-isnt-invisible-to-the-
+    ledger"`` -- NEVER Marshal's own dot-form ``StoryKey``, which this
+    ledger does not use as a map key at all) matches an entry in
+    ``raw_keys``, replaces ONLY that line's status TOKEN with ``done``,
+    preserving the line's own leading indentation, the key text, the
+    whitespace between the colon and the status, any trailing content
+    after the status (e.g. a ``# comment``), and the line's own original
+    line-ending character(s) (``\\n``/``\\r\\n``/none) verbatim -- review
+    fix, 2026-08-12, medium-severity: the earlier implementation dropped a
+    matched line's own trailing comment entirely and, on a CRLF-checked-out
+    file, silently downgraded exactly the matched line's ending to bare
+    ``\\n`` while every untouched line stayed ``\\r\\n``, producing a
+    file with MIXED endings -- both contradicted this function's own
+    "byte-identical otherwise" contract. Every OTHER line -- the header
+    comment block, every non-matching entry, blank lines, ordering -- is
+    reproduced BYTE-FOR-BYTE: this function never invents a new key, never
+    re-renders the map, never reorders entries, and never touches the
+    header ``scripts/promote_sprint_status.py``/``generate.py::parse_
+    sprint_status`` both depend on (this story's own Boundaries, verbatim).
+    No YAML library is used at all -- a full re-render is explicitly
+    forbidden by that same Boundaries bullet, so this is plain line-level
+    string manipulation, splitting on (and re-joining with) each line's own
+    ``\\r\\n``/``\\r``/``\\n`` separator via a capturing ``re.split`` so
+    every separator round-trips exactly as found, whether or not the file
+    mixes them.
+
+    Matching is EXACT, not a prefix test: each line is split on its FIRST
+    ``:`` (a raw ledger key is a hyphenated slug and never contains one),
+    and the text before it -- stripped of leading indentation only -- must
+    equal a ``raw_keys`` member exactly. A key that happens to be a
+    TEXTUAL PREFIX of another (e.g. a hypothetical ``"5-9"`` against a real
+    ``"5-9a-..."``) can therefore never cross-match, because the compared
+    text is the WHOLE pre-colon segment, never a truncated prefix of it.
+
+    Returns ``(new_text, matched_raw_keys)`` -- ``matched_raw_keys`` is the
+    SUBSET of ``raw_keys`` that actually had a matching line (review fix,
+    2026-08-12, high-severity: the caller used to publish its own pre-write
+    ELIGIBILITY set as "advanced", over-reporting a per-key match failure
+    and, on a whole-batch match failure, writing nothing, committing
+    nothing and emitting no finding at all -- the caller now derives
+    ``data["advanced"]`` from what this function actually matched, and
+    reports every requested-but-unmatched key via its own finding). A
+    ``raw_keys`` member with no matching line is silently left unmatched in
+    the TEXT -- this function never raises and never fabricates a row; it
+    is the CALLER's job to report an unmatched key, using the returned set,
+    never this function's. The caller's own precondition
+    (`not_loop_native_completions`'s own `ledger_backlog_keys` membership
+    check, satisfied before a raw key ever reaches this function) is what
+    makes an unmatched key the ordinary case of a TOCTOU against the raw
+    text rather than a routine occurrence; this function stays correct
+    even when that precondition is violated, by doing nothing for the
+    unmatched key rather than guessing at a line to rewrite.
+
+    Pure: no I/O, no ``HarnessPort``. ``ledger_text`` is the caller's own
+    already-read file content; the caller is responsible for writing the
+    result back (``FsPort.write_text_atomic``) and committing it
+    (``VcsPort.commit_paths``) -- this function only computes the new
+    text."""
+    if not raw_keys:
+        return ledger_text, frozenset()
+    remaining = set(raw_keys)
+    matched: set[str] = set()
+    # Alternating [content, separator, content, separator, ..., content] --
+    # only the CONTENT elements (even indices) are ever rewritten; every
+    # separator is carried through unmodified, whatever it is and however
+    # it mixes with its neighbors.
+    parts = _LEDGER_LINE_SPLIT.split(ledger_text)
+    for i in range(0, len(parts), 2):
+        content = parts[i]
+        stripped = content.lstrip(" ")
+        indent = content[: len(content) - len(stripped)]
+        colon_index = stripped.find(":")
+        key_part = stripped[:colon_index] if colon_index != -1 else None
+        if key_part is None or key_part not in remaining:
+            continue
+        rest = stripped[colon_index + 1 :]
+        rest_stripped = rest.lstrip(" ")
+        leading_ws = rest[: len(rest) - len(rest_stripped)] or " "
+        status_end = 0
+        while status_end < len(rest_stripped) and not rest_stripped[status_end].isspace():
+            status_end += 1
+        trailer = rest_stripped[status_end:]
+        parts[i] = f"{indent}{key_part}:{leading_ws}{_LEDGER_DONE_STATUS}{trailer}"
+        remaining.discard(key_part)
+        matched.add(key_part)
+    return "".join(parts), frozenset(matched)
