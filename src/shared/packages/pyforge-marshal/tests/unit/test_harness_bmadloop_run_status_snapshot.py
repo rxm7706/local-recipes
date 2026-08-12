@@ -56,6 +56,7 @@ def _task(
     *,
     defer_reason: str | None = None,
     attempt: int = 0,
+    review_cycle: int = 0,
     branch: str = "",
     worktree_path: str = "",
     spec_file: str | None = None,
@@ -67,6 +68,7 @@ def _task(
         "phase": phase,
         "defer_reason": defer_reason,
         "attempt": attempt,
+        "review_cycle": review_cycle,
         "branch": branch,
         "worktree_path": worktree_path,
         "spec_file": spec_file,
@@ -261,6 +263,44 @@ def test_multiple_deferred_stories_are_all_collected(harness, tmp_path):
 
     assert snapshot is not None
     assert {story.story_key for story in snapshot.deferred} == {"3.5", "3.6"}
+
+
+def test_a_deferred_storys_review_cycle_is_collected(harness, tmp_path):
+    """Story 3.12 (retry escalation, AD-26): ``review_cycle`` is read off
+    ``state.json`` the SAME way ``attempt`` is, one line above it -- the
+    second of the two counters ``core.supervise.evaluate_retry_escalation``
+    compares against a run's own configured ceilings."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "3.6": _task(
+                "3.6",
+                "deferred",
+                defer_reason="review kept requesting changes",
+                attempt=1,
+                review_cycle=4,
+            )
+        },
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.deferred[0].review_cycle == 4
+
+
+def test_a_deferred_storys_review_cycle_defaults_to_zero_when_absent(harness, tmp_path):
+    """``StoryTask.review_cycle`` itself defaults to 0 (bmad-loop's own
+    ``from_dict``) -- absent from a hand-written fixture's own task dict
+    reads back as 0, never ``None``, mirroring ``attempt``'s identical
+    default-int convention."""
+    _write_state(tmp_path, "acme-run-1", tasks={"3.6": _task("3.6", "deferred")})
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.deferred[0].review_cycle == 0
 
 
 def test_a_deferred_task_with_no_reason_reports_none(harness, tmp_path):

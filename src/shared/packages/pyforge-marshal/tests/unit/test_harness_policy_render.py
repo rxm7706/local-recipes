@@ -15,11 +15,13 @@ from __future__ import annotations
 import tomllib
 
 import pytest
+import tomlkit
 
 from pyforge.marshal.adapters.harness_bmadloop import (
     _SURFACE_RECONCILE_COMMAND,
     HarnessPolicyWriteError,
     render_policy_toml,
+    write_policy_document,
     write_policy_toml,
 )
 from pyforge.marshal.core.policy import compose
@@ -259,6 +261,59 @@ def test_write_policy_toml_wraps_oserror_in_harness_policy_write_error(tmp_path)
     effective = _compose()
     with pytest.raises(HarnessPolicyWriteError):
         write_policy_toml(effective, blocked)
+
+
+# --- write_policy_document: Story 3.12's narrow single-key patch write ---------
+
+
+def test_write_policy_document_writes_a_mutated_doc_and_preserves_comments(tmp_path):
+    """The whole point: an already-on-disk document (read via
+    ``tomlkit.parse``), mutated in place, is written back WITHOUT
+    re-deriving it from an ``EffectivePolicy`` -- every comment and every
+    other key survives untouched."""
+    effective = compose(project_slug="acme", project={}, flags={})[0]
+    text = render_policy_toml(effective)
+    doc = tomlkit.parse(text)
+    doc["adapter"]["model"] = "opus"
+
+    target = write_policy_document(doc, tmp_path)
+
+    assert target == tmp_path / ".bmad-loop" / "policy.toml"
+    written = target.read_text(encoding="utf-8")
+    assert tomllib.loads(written)["adapter"]["model"] == "opus"
+    # The trailing inline comment on that same line survives the patch.
+    assert "repo-wide override" in written
+    # Every other key is untouched -- proven by re-parsing and comparing
+    # against the ORIGINAL render with only the one key patched.
+    original = tomllib.loads(text)
+    original["adapter"]["model"] = "opus"
+    assert tomllib.loads(written) == original
+
+
+def test_write_policy_document_overwrites_preexisting_unrelated_content(tmp_path):
+    bmad_loop_dir = tmp_path / ".bmad-loop"
+    bmad_loop_dir.mkdir(parents=True)
+    target = bmad_loop_dir / "policy.toml"
+    target.write_text("this is unrelated pre-existing content\n", encoding="utf-8")
+    doc = tomlkit.parse(render_policy_toml(compose(project_slug="acme", project={}, flags={})[0]))
+
+    result = write_policy_document(doc, tmp_path)
+
+    assert result == target
+    written = target.read_text(encoding="utf-8")
+    assert "unrelated pre-existing content" not in written
+
+
+def test_write_policy_document_wraps_oserror_in_harness_policy_write_error(tmp_path):
+    """Mirrors ``write_policy_toml``'s identical contract -- a loop_home
+    that is a FILE, not a directory, cannot host a ``.bmad-loop``
+    subdirectory."""
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("occupied", encoding="utf-8")
+    doc = tomlkit.parse(render_policy_toml(compose(project_slug="acme", project={}, flags={})[0]))
+
+    with pytest.raises(HarnessPolicyWriteError):
+        write_policy_document(doc, blocked)
 
 
 # --- the CLI seam: nothing reachable called write_policy_toml -----------------

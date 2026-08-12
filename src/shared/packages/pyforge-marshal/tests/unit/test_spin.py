@@ -29,7 +29,7 @@ from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
-from pyforge.marshal.ports.harness import RunStatusSnapshot, SpinResult
+from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot, SpinResult
 
 _SCHEMA_PATH = (
     Path(__file__).resolve().parents[2]
@@ -2898,6 +2898,329 @@ def test_resume_cli_accepts_slug_and_format():
     assert args.slug == "acme"
     assert args.format == "json"
     assert args.handler is run_resume
+
+
+# --- Story 3.12: retry-escalation floor-raise (AD-26) --------------------------------
+
+
+_BASELINE_POLICY_TOML = (
+    "[limits]\n"
+    "max_dev_attempts = 2\n"
+    "max_review_cycles = 3\n"
+    "\n"
+    "[adapter]\n"
+    'model = "sonnet"\n'
+    "\n"
+    "[adapter.review]\n"
+    'model = "opus"\n'
+)
+
+
+def _deferred_story(
+    story_key: str, *, attempt: int = 0, review_cycle: int = 0
+) -> DeferredStory:
+    return DeferredStory(
+        story_key=story_key,
+        reason=None,
+        attempt=attempt,
+        branch="",
+        worktree_path="",
+        spec_file=None,
+        review_cycle=review_cycle,
+    )
+
+
+def _seed_resume_with_deferred(
+    home: Path, fs: FakeFs, harness: FakeHarness, *, deferred: tuple[DeferredStory, ...],
+    policy_toml: str = _BASELINE_POLICY_TOML,
+) -> None:
+    _seed_resolvable_prior_run(
+        home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=deferred,
+    )
+    fs.read_text_contents[home / ".bmad-loop" / "policy.toml"] = policy_toml
+
+
+def test_resume_escalates_a_struggling_deferred_story_to_the_review_model(home, capsys):
+    """The I/O matrix's own "Struggling story resumed" row -- also the
+    "undeclared story, unpopulated model_tier_map" row (today's majority
+    case): no tier map is involved at all, only the template's own baseline
+    sonnet/review-opus pair on disk, which is still a real floor to escalate
+    from, never a no-op."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_with_deferred(
+        home, fs, harness, deferred=(_deferred_story("3.6", attempt=2, review_cycle=0),)
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is True
+    assert intent["payload"]["escalated_stories"] == ["3.6"]
+    assert intent["payload"]["from_model"] == "sonnet"
+    assert intent["payload"]["to_model"] == "opus"
+    # Review finding: the decision must also be visible in the DEFAULT
+    # (text, non-JSON) output -- the surface an unattended operator
+    # actually reads.
+    out = capsys.readouterr().out
+    assert "escalated: True" in out
+    assert "escalated_stories: 3.6" in out
+    assert "from_model: 'sonnet'" in out
+    assert "to_model: 'opus'" in out
+    written = (home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8")
+    assert tomllib.loads(written)["adapter"]["model"] == "opus"
+    assert process.spawn_calls, "the resume must still proceed and spawn a supervisor"
+
+
+def test_resume_escalates_only_the_crossing_stories_among_several_deferred(home):
+    """Review finding: every prior resume-level scenario passed exactly one
+    ``DeferredStory`` -- this proves ``escalated_stories`` names EXACTLY the
+    subset that actually crossed its own ceiling, not every deferred story
+    in the run."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_with_deferred(
+        home,
+        fs,
+        harness,
+        deferred=(
+            _deferred_story("3.5", attempt=0, review_cycle=0),
+            _deferred_story("3.6", attempt=2, review_cycle=0),
+            _deferred_story("3.7", attempt=1, review_cycle=1),
+        ),
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is True
+    assert intent["payload"]["escalated_stories"] == ["3.6"]
+
+
+def test_resume_escalates_on_a_review_cycle_ceiling_through_the_full_pipeline(home):
+    """Review finding: ``evaluate_retry_escalation``'s own unit tests cover
+    the ``review_cycle >= max_review_cycles`` branch in isolation, but every
+    ``run_resume``-level scenario until now triggered only via ``attempt``
+    -- this exercises the review-cycle axis end to end through
+    ``_apply_retry_escalation``/the journal payload."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_with_deferred(
+        home, fs, harness, deferred=(_deferred_story("3.6", attempt=0, review_cycle=3),)
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is True
+    assert intent["payload"]["escalated_stories"] == ["3.6"]
+    assert intent["payload"]["from_model"] == "sonnet"
+    assert intent["payload"]["to_model"] == "opus"
+
+
+def test_resume_rejects_a_non_positive_max_dev_attempts_ceiling(home):
+    """Review finding (both reviewers, independently): an unguarded
+    ``max_dev_attempts = 0`` would make ``story.attempt >= 0`` trivially
+    true for every deferred story, escalating on EVERY resume regardless of
+    real struggle. ``render_policy_toml`` already floors this at render
+    time, but this read-back parses a file that could have been hand-edited
+    since -- the guard must hold here too."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    zero_ceiling_policy = (
+        "[limits]\n"
+        "max_dev_attempts = 0\n"
+        "max_review_cycles = 3\n"
+        "\n"
+        "[adapter]\n"
+        'model = "sonnet"\n'
+        "\n"
+        "[adapter.review]\n"
+        'model = "opus"\n'
+    )
+    _seed_resume_with_deferred(
+        home,
+        fs,
+        harness,
+        deferred=(_deferred_story("3.6", attempt=0, review_cycle=0),),
+        policy_toml=zero_ceiling_policy,
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is False
+    assert not (home / ".bmad-loop" / "policy.toml").exists(), "no write must occur"
+
+
+def test_resume_rejects_a_boolean_max_dev_attempts_ceiling(home):
+    """Review finding: ``bool`` is an ``int`` subclass in Python --
+    ``max_dev_attempts = true`` in a hand-edited TOML file would otherwise
+    silently pass ``isinstance(..., int)`` and become ceiling ``1``."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    boolean_ceiling_policy = (
+        "[limits]\n"
+        "max_dev_attempts = true\n"
+        "max_review_cycles = 3\n"
+        "\n"
+        "[adapter]\n"
+        'model = "sonnet"\n'
+        "\n"
+        "[adapter.review]\n"
+        'model = "opus"\n'
+    )
+    _seed_resume_with_deferred(
+        home,
+        fs,
+        harness,
+        deferred=(_deferred_story("3.6", attempt=1, review_cycle=0),),
+        policy_toml=boolean_ceiling_policy,
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is False
+    assert not (home / ".bmad-loop" / "policy.toml").exists(), "no write must occur"
+
+
+def test_resume_does_not_escalate_a_fresh_deferred_story(home):
+    """A deferred story whose attempt/review_cycle are both below their own
+    run's configured ceilings never triggers the floor-raise -- no write,
+    `escalated: false`."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_with_deferred(
+        home, fs, harness, deferred=(_deferred_story("3.6", attempt=1, review_cycle=0),)
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is False
+    assert intent["payload"]["escalated_stories"] is None
+    assert intent["payload"]["from_model"] is None
+    assert intent["payload"]["to_model"] is None
+    assert not (home / ".bmad-loop" / "policy.toml").exists(), "no write must occur"
+
+
+def test_resume_no_deferred_stories_never_escalates(home):
+    """`deferred == ()` (a resume with nothing currently deferred) is a
+    no-op, checked before any policy.toml read at all."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_with_deferred(home, fs, harness, deferred=())
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is False
+    assert not (home / ".bmad-loop" / "policy.toml").exists()
+
+
+def test_resume_already_escalated_policy_does_not_rewrite_or_refire(home):
+    """The mechanism's own "bounded" AC: an on-disk policy.toml whose
+    `[adapter].model` already equals `[adapter.review].model` produces no
+    write and no re-fire on a subsequent resume of a still-struggling
+    story."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    already_escalated = (
+        "[limits]\n"
+        "max_dev_attempts = 2\n"
+        "max_review_cycles = 3\n"
+        "\n"
+        "[adapter]\n"
+        'model = "opus"\n'
+        "\n"
+        "[adapter.review]\n"
+        'model = "opus"\n'
+    )
+    _seed_resume_with_deferred(
+        home,
+        fs,
+        harness,
+        deferred=(_deferred_story("3.6", attempt=5, review_cycle=0),),
+        policy_toml=already_escalated,
+    )
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is False
+    assert not (home / ".bmad-loop" / "policy.toml").exists(), "no write must occur"
+
+
+def test_resume_policy_write_failure_registers_mrs_spin_016_and_proceeds(home, capsys):
+    """An unwritable `.bmad-loop` directory must never abort an
+    already-viable resume -- it registers MRS-SPIN-016 (WARN) and the
+    resume still proceeds un-escalated, mirroring MRS-SPIN-015's identical
+    precedent for `run_spin`'s own model-tiering write."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resume_with_deferred(
+        home, fs, harness, deferred=(_deferred_story("3.6", attempt=2, review_cycle=0),)
+    )
+    # Occupy `.bmad-loop` with a plain file so write_policy_document's own
+    # `mkdir(parents=True, exist_ok=True)` raises OSError.
+    (home / ".bmad-loop").write_text("not a directory", encoding="utf-8")
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-016" in out
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is False
+    assert harness.resume_calls, "the resume must still proceed"
+    assert process.spawn_calls, "a supervisor must still be spawned"
+
+
+def test_resume_missing_status_snapshot_skips_escalation(home, capsys):
+    """The I/O matrix's own "status_snapshot unreadable" row: MRS-SPIN-012
+    already fires for this; escalation is skipped too, never attempted."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+    _seed_resolvable_prior_run(
+        home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness.run_status_snapshot_result = None
+    fs.read_text_contents[home / ".bmad-loop" / "policy.toml"] = _BASELINE_POLICY_TOML
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert "MRS-SPIN-012" in capsys.readouterr().out
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["escalated"] is False
+    assert not (home / ".bmad-loop" / "policy.toml").exists()
 
 
 # --- Story 6.1: profile-driven adapter selection, project-scoped (FR-48/FR-51/AD-19) ---

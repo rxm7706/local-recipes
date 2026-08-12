@@ -21,6 +21,19 @@ fields, used by ``supervisor/__main__.py`` at loop-end to detect an
 escalation exactly once, and by ``cli/spin.py``'s ``marshal factory resume``
 as its live refusal gate.
 
+Story 3.12 (retry escalation, architecture spine AD-20/AD-26) adds a FOURTH
+pure decision, ``evaluate_retry_escalation`` -- a bare ``bool`` (not a new
+``StrEnum``: the caller's only branch is "did any deferred story cross its
+own ceiling", with no third state analogous to ``CeilingStatus.APPROACHING``
+or ``EscalationStatus.RESOLVED`` for it to distinguish) over a run's own
+currently-``Phase.DEFERRED`` stories (``ports.harness.DeferredStory``,
+Story 3.7) against that run's own configured ``max_dev_attempts``/
+``max_review_cycles`` ceilings. Used by ``cli/spin.py``'s ``marshal factory
+resume`` to decide whether to floor-raise the resumed run's dev-stage model
+to its own review-stage model before relaunching (see that function's own
+docstring for the full mechanism -- reading and rewriting ``policy.toml`` is
+I/O this module never performs itself, AD-4).
+
 **Why this is pure (AD-20).** The decision itself must be a function over a
 ``Sequence[Sample]`` alone: no port, no clock call, no I/O -- every value it
 needs (the moment each sample was taken, what was observed) is a fact the
@@ -63,6 +76,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+
+from ..ports.harness import DeferredStory
 
 
 class LadderRung(StrEnum):
@@ -469,3 +484,61 @@ def evaluate_escalation(
     if paused_story_key is not None and task_phase == "escalated":
         return EscalationStatus.UNRESOLVED
     return EscalationStatus.RESOLVED
+
+
+# =============================================================================
+# Story 3.12: retry escalation (AD-20/AD-26) -- a FOURTH and unrelated pure
+# decision this module hosts, for the identical "no port, no clock call, no
+# I/O" reason evaluate_idle/evaluate_ceiling/evaluate_escalation above are
+# pure: the caller (cli/spin.py::run_resume) gathers `deferred` from a
+# HarnessPort.run_status_snapshot result and the two ceilings from its own
+# on-disk policy.toml read, and this function makes no decision from
+# anything but the values it is handed.
+# =============================================================================
+
+
+def evaluate_retry_escalation(
+    deferred: Sequence[DeferredStory], max_dev_attempts: int, max_review_cycles: int
+) -> bool:
+    """Pure: ``True`` iff ANY story in ``deferred`` has already reached its
+    own run's configured ceiling on either counter --
+    ``story.attempt >= max_dev_attempts or story.review_cycle >=
+    max_review_cycles``. No port, no clock call, no I/O.
+
+    A bare ``bool``, not a new ``StrEnum`` (unlike ``CeilingStatus``/
+    ``EscalationStatus`` above): the caller's only decision here is binary
+    -- floor-raise the run's dev-stage model, or don't -- with no
+    intermediate state analogous to ``CeilingStatus.APPROACHING`` (there is
+    no "approaching a retry ceiling" notion this story's own Spec asks for)
+    or ``EscalationStatus.RESOLVED`` (deferral has no comparable
+    resolved-but-not-yet-acted-on window) for a third member to distinguish.
+
+    Deliberately run-level, matching this Spec's own "one difficulty governs
+    a whole launch, never per-story mid-run granularity" constraint
+    (restated from the parent Spec's own Constraints): ANY crossing story is
+    sufficient to trigger the WHOLE resumed run's floor-raise, mirroring
+    ``FR-51``'s own existing tier-batching precedent
+    (``cli/spin.py::_resolve_governing_difficulty``) of one governing
+    decision per launch, never a per-story split. The caller alone is
+    responsible for then naming WHICH story/ies crossed (this function's own
+    ``bool`` return carries no such detail by design -- see
+    ``cli/spin.py``'s own retry-escalation helpers for how the journal's
+    ``escalated_stories`` field is derived from the identical condition).
+
+    An empty ``deferred`` (nothing currently deferred in this run) returns
+    ``False`` -- ``any()`` over an empty sequence is ``False`` by definition,
+    with no special-cased early return needed. ``max_dev_attempts``/
+    ``max_review_cycles`` carry no type/value guard beyond the plain ``>=``
+    comparison (unlike ``evaluate_ceiling``'s ``limit``): both are declared
+    plain ``int`` here, read by the caller straight off an on-disk
+    ``policy.toml``'s own ``[limits]`` table -- the SAME two SEED keys
+    ``render_policy_toml`` already floors at load time to ``>= 1``
+    (``bmad_loop`` 0.9.0 itself refuses to load a lower value), so a
+    well-formed on-disk file this function is ever handed real values from
+    can never carry a non-positive ceiling; mirrors ``evaluate_escalation``'s
+    own "no type guard beyond ordinary equality" reasoning for inputs whose
+    invalid-input class the caller's own contract already excludes."""
+    return any(
+        story.attempt >= max_dev_attempts or story.review_cycle >= max_review_cycles
+        for story in deferred
+    )

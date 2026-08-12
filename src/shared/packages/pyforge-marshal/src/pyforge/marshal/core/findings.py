@@ -1200,6 +1200,16 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `Verdict.WARN`, mirroring `MRS-STATUS-009`'s identical "the read failed,
 # degrade every affected value to unknown, never a hard failure"
 # reasoning.
+#
+# Story 3.12 (retry escalation, AD-26, the `spec-adaptive-model-tiering`
+# Spec's own CAP-2) adds a THIRTEENTH `MRS-SPIN-*` code, `MRS-SPIN-016`: the
+# atomic write of the resumed run's floor-raised `[adapter].model` (Story
+# 3.12's own `write_policy_document`) failed -- mirroring `MRS-SPIN-015`'s
+# identical "a best-effort policy-toml persistence step failed" precedent at
+# the SAME `Verdict.WARN` tier: the resume is already viable by the time
+# this step runs (the live escalation-refusal gate already passed), so a
+# lost floor-raise degrades the run to "resumed on the un-escalated model,"
+# never a reason to abort an otherwise-viable resume.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1354,6 +1364,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-010",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
+        "MRS-SPIN-016",
     }
 )
 
