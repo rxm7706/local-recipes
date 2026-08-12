@@ -269,7 +269,20 @@ class DeferredStory:
     the SAME fields ``StoryTask`` itself carries, unredacted (none is
     session-authored free text). ``spec_file`` is the artifact where
     whatever preserved work exists lives, or ``None`` when bmad-loop never
-    recorded one for this task."""
+    recorded one for this task.
+
+    Story 3.12 (retry escalation, AD-26) adds ``review_cycle: int = 0`` --
+    ``StoryTask``'s own same-named field, unredacted (a plain attempt
+    counter, not session-authored free text), added as a TRAILING default so
+    every existing positional-or-keyword call site keeps constructing this
+    type unchanged (mirrors ``TaskPhaseSnapshot.branch: str = ""``'s own
+    identical trailing-default precedent, Story 3.8). Together with
+    ``attempt``, this is the ONE pair ``core.supervise.
+    evaluate_retry_escalation`` compares against a run's own configured
+    ``max_dev_attempts``/``max_review_cycles`` ceilings -- never a new
+    hand-maintained flag (AD-26): both counters already exist in bmad-loop's
+    own ``state.json``, this dataclass simply exposes the second one this
+    package had not yet needed."""
 
     story_key: str
     reason: str | None
@@ -277,6 +290,7 @@ class DeferredStory:
     branch: str
     worktree_path: str
     spec_file: str | None
+    review_cycle: int = 0
 
 
 @dataclass(frozen=True)

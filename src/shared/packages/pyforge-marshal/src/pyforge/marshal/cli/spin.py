@@ -189,6 +189,35 @@ with no real caller would be speculative surface this story's own Code Map
 does not ask for; a factual inaccuracy in the intent-contract's own literal
 wording, recorded in the spec's Spec Change Log).
 
+Story 3.12 (retry escalation, AD-26, the ``spec-adaptive-model-tiering``
+Spec's own CAP-2) adds ``run_resume``'s last new step, AFTER the live
+escalation-refusal gate passes and BEFORE ``HarnessPort.resume`` is called:
+it reads the loop home's own on-disk ``.bmad-loop/policy.toml`` (via the
+injected ``FsPort``, mirroring the journal read a few lines above it --
+never a raw ``Path.read_text``) and, if any currently-deferred story
+(``status_snapshot.deferred``) has reached its own run's configured
+``max_dev_attempts``/``max_review_cycles`` ceiling
+(``core.supervise.evaluate_retry_escalation``) and the on-disk
+``[adapter].model`` does not already equal ``[adapter.review].model``,
+floor-raises the former to the latter and persists it via the new
+``adapters.harness_bmadloop.write_policy_document`` -- the ONE place a
+rewritten ``policy.toml`` can still change what model the NEXT
+``bmad-loop resume`` reads (``Engine.__init__`` assigns ``self.policy``
+exactly once per process; see that story's own spec Design Notes for the
+full "why the resume boundary" argument). Reads (never composes fresh via
+``policy.compose()``) so the floor-raise reflects exactly what THIS run was
+launched under, never a possibly-diverged current project policy. A floor-
+raise only, never a downgrade, and naturally idempotent (an already-equal
+pair writes nothing, so a still-struggling story's NEXT resume never
+re-fires). Deliberately independent of the AD-45 escalation-resolution
+fields above it: a story can be ``Phase.DEFERRED`` via the idle ladder's own
+``stop-and-retry`` rung (Story 3.5) with no escalation pause involved at
+all, so this reads straight off ``status_snapshot.deferred``, never
+``paused_story_key``/``task_phase``. A write failure degrades to
+``MRS-SPIN-016`` (``WARN``) -- the resume still proceeds, un-escalated,
+mirroring ``MRS-SPIN-015``'s identical "an already-viable resume is never
+aborted over a best-effort policy write" precedent.
+
 Registers ``MRS-SPIN-001`` through ``MRS-SPIN-012`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
@@ -209,6 +238,8 @@ process. ``MRS-SPIN-012`` (Story 3.7, added in review) is the third code
 ``resume`` alone raises, and the only ``WARN`` of the three: the live
 escalation gate could not read the run's status at all, so it proceeds
 without having confirmed anything -- ambiguity, never a refusal.
+``MRS-SPIN-016`` (Story 3.12) is the retry-escalation floor-raise's own
+write-failure code, described above.
 """
 
 from __future__ import annotations
@@ -225,12 +256,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import tomlkit
+
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
+    ADAPTER_REVIEW_MODEL_STOCK_DEFAULT,
     BmadLoopHarness,
     HarnessError,
     HarnessPolicyWriteError,
     render_policy_toml,
+    write_policy_document,
     write_policy_toml,
 )
 from ..adapters.process_posix import PosixProcess, ProcessError
@@ -253,10 +288,10 @@ from ..core.journal import (
 )
 from ..core.model import Finding, Severity, build_envelope
 from ..core.spec_difficulty import DifficultyParseError, parse_declared_difficulty
-from ..core.supervise import EscalationStatus, evaluate_escalation
+from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_retry_escalation
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
-from ..ports.harness import HarnessPort
+from ..ports.harness import DeferredStory, HarnessPort
 from ..ports.process import ProcessPort
 from .config import (
     PolicyIOError,
@@ -1725,6 +1760,138 @@ def _render_story_key_best_effort(raw: str | None) -> str | None:
         return raw
 
 
+_POLICY_TOML_RELATIVE_PATH = Path(".bmad-loop") / "policy.toml"
+
+
+def _crossing_deferred_story_keys(
+    deferred: Sequence[DeferredStory], max_dev_attempts: int, max_review_cycles: int
+) -> list[str]:
+    """The harness-native ``story_key`` of every ``deferred`` story crossing
+    its own ``max_dev_attempts``/``max_review_cycles`` ceiling -- the SAME
+    condition ``core.supervise.evaluate_retry_escalation`` folds into a bare
+    ``bool``. That classifier deliberately returns no story-level detail
+    (see its own docstring for why), but the ``run-resume`` journal's own
+    ``escalated_stories`` field (the AC's own "naming the trigger") needs
+    exactly that detail -- this is a reporting-only re-scan over the
+    IDENTICAL condition the classifier already evaluated, never a second,
+    independent decision (the classifier alone still decides WHETHER to
+    escalate; this only decides what to NAME once it has)."""
+    return [
+        story.story_key
+        for story in deferred
+        if story.attempt >= max_dev_attempts or story.review_cycle >= max_review_cycles
+    ]
+
+
+def _apply_retry_escalation(
+    fs: FsPort,
+    home: Path,
+    deferred: Sequence[DeferredStory],
+    findings: list[Finding],
+) -> tuple[bool, list[str], str | None, str | None]:
+    """Story 3.12's own CAP-2 mechanism (AD-26): reads the loop home's
+    ALREADY-ON-DISK ``.bmad-loop/policy.toml`` (never a fresh
+    ``policy.compose()`` -- see ``run_resume``'s own module-docstring
+    paragraph for why reading is the faithful source here), and if any
+    ``deferred`` story has reached its own run's configured ceiling
+    (``core.supervise.evaluate_retry_escalation``, read off that SAME
+    on-disk file's ``[limits]`` table) AND the on-disk ``[adapter].model``
+    does not already equal ``[adapter.review].model``, floor-raises the
+    former to the latter and persists it via
+    ``adapters.harness_bmadloop.write_policy_document``.
+
+    Returns ``(escalated, escalated_stories, from_model, to_model)`` --
+    ``escalated_stories``/``from_model``/``to_model`` are only ever non-empty/
+    non-``None`` when ``escalated`` is ``True``, mirroring the journal
+    payload's own "populate the detail fields only when true" shape.
+    ``escalated`` is ``False`` (never raises, never registers a finding) for
+    every degrading case that is NOT a write failure: an empty ``deferred``
+    (nothing to evaluate -- checked first, before any I/O, mirroring
+    ``_resolve_model_tiering``'s own "an empty preview is a no-op" guard),
+    an unreadable or malformed on-disk ``policy.toml``, a ``[limits]`` table
+    missing either ceiling key as a plain ``int``, no story actually
+    crossing its ceiling, an ``[adapter].model`` that cannot be read as a
+    non-empty string, or the floor-raise already being applied
+    (``from_model == to_model`` -- the mechanism's own "bounded, never
+    re-fires" idempotence). ``[adapter.review].model`` missing entirely
+    falls back to ``ADAPTER_REVIEW_MODEL_STOCK_DEFAULT`` (``_POLICY_TEMPLATE``'s
+    own baseline) -- never expected on a real rendered file (see that
+    constant's own docstring), but this read-back must not crash on one that
+    somehow lacks it.
+
+    A genuine write failure (``HarnessPolicyWriteError``) is the ONE case
+    that registers a finding here -- ``MRS-SPIN-016`` (``WARN``), naming the
+    attempted ``from_model -> to_model`` transition, mirroring
+    ``MRS-SPIN-015``'s identical "an already-viable resume/launch is never
+    aborted over a best-effort policy write" precedent -- and still returns
+    ``escalated=False``: the write did not actually take effect, so the
+    resume proceeds on whatever model was already on disk, exactly as the
+    spec's own I/O matrix names."""
+    if not deferred:
+        return False, [], None, None
+
+    policy_path = home / _POLICY_TOML_RELATIVE_PATH
+    try:
+        text = fs.read_text(policy_path)
+    except FsError:
+        return False, [], None, None
+    if text is None:
+        return False, [], None, None
+    try:
+        doc = tomlkit.parse(text)
+    except tomlkit.exceptions.ParseError:
+        return False, [], None, None
+
+    limits = doc.get("limits")
+    if not isinstance(limits, Mapping):
+        return False, [], None, None
+    max_dev_attempts = limits.get("max_dev_attempts")
+    max_review_cycles = limits.get("max_review_cycles")
+    if not isinstance(max_dev_attempts, int) or not isinstance(max_review_cycles, int):
+        return False, [], None, None
+
+    if not evaluate_retry_escalation(deferred, max_dev_attempts, max_review_cycles):
+        return False, [], None, None
+
+    adapter_table = doc.get("adapter")
+    if not isinstance(adapter_table, Mapping):
+        return False, [], None, None
+    from_model = adapter_table.get("model")
+    if not isinstance(from_model, str) or not from_model:
+        return False, [], None, None
+    review_table = adapter_table.get("review")
+    to_model = review_table.get("model") if isinstance(review_table, Mapping) else None
+    if not isinstance(to_model, str) or not to_model:
+        to_model = ADAPTER_REVIEW_MODEL_STOCK_DEFAULT
+
+    if from_model == to_model:
+        # Already escalated (or the two coincidentally already agree) --
+        # floor-raise-only, idempotent: no write, no re-fire (the spec's own
+        # "bounded" AC).
+        return False, [], None, None
+
+    doc["adapter"]["model"] = to_model
+    try:
+        write_policy_document(doc, home)
+    except HarnessPolicyWriteError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-016",
+                severity=Severity.WARN,
+                message=(
+                    f"could not persist the retry-escalation floor-raise "
+                    f"({from_model!r} -> {to_model!r}) to {policy_path}: "
+                    f"{exc} -- resuming un-escalated"
+                ),
+            )
+        )
+        return False, [], None, None
+
+    crossing = _crossing_deferred_story_keys(deferred, max_dev_attempts, max_review_cycles)
+    escalated_stories = [_render_story_key_best_effort(key) or key for key in crossing]
+    return True, escalated_stories, from_model, to_model
+
+
 def run_resume(
     args: argparse.Namespace,
     *,
@@ -1968,6 +2135,25 @@ def run_resume(
         # "asked, and there was none").
         data["resolution_reference"] = resolution_reference
 
+    # --- Story 3.12: retry-escalation floor-raise (AD-26) -------------------
+    # Independent of the AD-45 escalation-resolution fields just above: a
+    # story can be Phase.DEFERRED via the idle ladder's own stop-and-retry
+    # rung (Story 3.5) with no escalation pause involved at all, so this
+    # reads straight off status_snapshot.deferred, never paused_story_key/
+    # task_phase. status_snapshot is None exactly when MRS-SPIN-012 already
+    # fired above -- escalation is skipped too, the same "proceed without
+    # having confirmed anything" degrade that finding already describes.
+    escalated, escalated_stories, from_model, to_model = (
+        _apply_retry_escalation(fs, home, status_snapshot.deferred, findings)
+        if status_snapshot is not None
+        else (False, [], None, None)
+    )
+    data["escalated"] = escalated
+    if escalated:
+        data["escalated_stories"] = escalated_stories
+        data["from_model"] = from_model
+        data["to_model"] = to_model
+
     # --- mint a NEW Marshal run id, journal "run-resume" intent (AD-25/AD-45) ---
     writer_id = _writer_id()
     mint_moment = _now_utc()
@@ -2003,6 +2189,10 @@ def run_resume(
             "spec_file": spec_file,
             "resolution_reference": resolution_reference,
             "resolver": resolver,
+            "escalated": escalated,
+            "escalated_stories": escalated_stories if escalated else None,
+            "from_model": from_model if escalated else None,
+            "to_model": to_model if escalated else None,
         },
     )
     try:
