@@ -3442,7 +3442,7 @@
    "src/shared/packages/pyforge-mason/src/pyforge/mason/exit_codes.py": "0fd96d9de2522a3d97f62a184dd98d1f78979895",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/models.py": "1f25992a35ff2e8ead87e84bc0eb8f39260ce183",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/package.py": "da40c6b53215c0dfd6eb0840ec5258eb9a6a5a95",
-   "src/shared/packages/pyforge-mason/src/pyforge/mason/recipe.py": "078bf7f26a2e2a829f272ba1fb0d69a8af5609a6",
+   "src/shared/packages/pyforge-mason/src/pyforge/mason/recipe.py": "fdad049ed145fc82006302aad503213730ba3880",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/render.py": "c1a0f0967235bd4e0bd27ce2d71bb09f8ad45b62",
    "src/shared/packages/pyforge-mason/src/pyforge/mason/resolve.py": "7b82aee55cde172fa512b5c088c1c706522426db",
    "src/shared/packages/pyforge-mason/tests/conftest.py": "2cc4437a764ebde54e24a63f262a50345cedf4ff",
@@ -3461,7 +3461,7 @@
    "src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py": "5be8805bd2647b23142a388ffd258fa7a4ba6218",
    "src/shared/packages/pyforge-mason/tests/meta/test_no_recipe_knowledge.py": "504441196bfcb6b678d1bc7a2d47662a4c06fd7d",
    "src/shared/packages/pyforge-mason/tests/meta/test_render_ownership.py": "5fef0fba307cd487037e854a5a2751e06df92d9f",
-   "src/shared/packages/pyforge-mason/tests/unit/test_cfe.py": "071819fda0da61f68901a497f00ca2814365cdc9",
+   "src/shared/packages/pyforge-mason/tests/unit/test_cfe.py": "f67479361d9d729472d9634bad0e7af23eddfacd",
    "src/shared/packages/pyforge-mason/tests/unit/test_cli.py": "b098f584da9aee56263ece50aa723df95b208e60",
    "src/shared/packages/pyforge-mason/tests/unit/test_doctor.py": "3f847a3a28ea1bfa761accd758f7d959b57d9af9",
    "src/shared/packages/pyforge-mason/tests/unit/test_engines.py": "b72cd1a740e9c71ee372e3f5504f4f7b89edaad2",
@@ -3475,7 +3475,7 @@
    "src/shared/packages/pyforge-mason/tests/unit/test_render.py": "d312702d1da3dd0b848414a7ab832d3172bf0d5d",
    "src/shared/packages/pyforge-mason/tests/unit/test_resolve.py": "90e2273c0a11dd8281066ab58fa8a819a71a826b"
   },
-  "memlog": "8e4730cb3dac3b2a565e35f9ca58ea2376eddd31"
+  "memlog": "1794dd35961bae2bcf04cdf6aca2df31eb9dfd9c"
  },
  "pyforge-mason/spec-pyforge-mason-recipe-validator": {
   "files": {},

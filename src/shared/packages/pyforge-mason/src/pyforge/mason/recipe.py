@@ -50,14 +50,16 @@ scanner's `pyyaml`-missing path is **false-clean**
 (`{"success": true, "mode": "skipped", "scanned": 0, "unpinned_skipped":
 [...]}`, no `results` key -- indistinguishable from a genuinely clean scan),
 while its `requests`-missing path instead raises inside the script's own API
-call and is reported honestly (`{"success": false, "error": ..., "hint":
-...}`) -- not false-clean, but still gated early as a courtesy so a doomed
-call fails before spawning the subprocess. Scoping matters because a working
-call must not be rejected for lacking a package the invoked operation never
-imports (e.g. `optimize()` must not fail over a missing `truststore`) --
-gating on the whole floor would reintroduce, at a coarser grain, exactly the
-"reject a call that would have succeeded" failure `diagnose()`'s own
-docstring says was deliberately avoided by skipping the floor gate entirely.
+call and -- when no local CVE database exists yet at the path `pixi run
+update-cve-db` populates -- is reported honestly (`{"success": false,
+"error": ..., "hint": ...}`) -- not false-clean, but still gated early as a
+courtesy so a doomed call fails before spawning the subprocess. Scoping
+matters because a working call must not be rejected for lacking a package
+the invoked operation never imports (e.g. `optimize()` must not fail over a
+missing `truststore`) -- gating on the whole floor would reintroduce, at a
+coarser grain, exactly the "reject a call that would have succeeded" failure
+`diagnose()`'s own docstring says was deliberately avoided by skipping the
+floor gate entirely.
 `recipe_path` is passed straight through with no existence check or
 interpretation, mirroring `log_path` above (AD-1, spec Always boundary): no
 Mason-side reinterpretation of either script's own reporting, so a
@@ -206,13 +208,14 @@ def scan(
     absent. A missing `pyyaml` is **false-clean** -- `{"success": true,
     "mode": "skipped", "scanned": 0, "unpinned_skipped": [...]}`, no
     `results` key, indistinguishable from a genuinely clean scan. A missing
-    `requests` instead raises inside the scanner's own API call and is
-    reported honestly (`{"success": false, "error": ..., "hint": ...}`) --
-    not false-clean, but still gated here so the call fails before spawning
-    the subprocess rather than after. An interpreter missing only an
-    unrelated floor entry is NOT rejected. `cfe_timeout_arg` is passed
-    straight through as `cfe.scan_for_vulnerabilities`'s own `timeout`; that
-    adapter's own default (`_SCAN_FOR_VULNERABILITIES_TIMEOUT_SECONDS`)
+    `requests` instead raises inside the scanner's own API call and -- when
+    no local CVE database exists yet at the path `pixi run update-cve-db`
+    populates -- is reported honestly (`{"success": false, "error": ...,
+    "hint": ...}`) -- not false-clean, but still gated here so the call
+    fails before spawning the subprocess rather than after. An interpreter
+    missing only an unrelated floor entry is NOT rejected. `cfe_timeout_arg`
+    is passed straight through as `cfe.scan_for_vulnerabilities`'s own
+    `timeout`; that adapter's own default (`_SCAN_FOR_VULNERABILITIES_TIMEOUT_SECONDS`)
     applies only when this resolves to `None`.
     """
     resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)

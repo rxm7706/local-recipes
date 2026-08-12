@@ -1624,6 +1624,32 @@ def test_scan_for_vulnerabilities_reports_a_scan_error_body_as_data_not_raised()
     assert result.json_body == {"success": False, "error": "connection refused"}
 
 
+def test_scan_for_vulnerabilities_reports_a_missing_path_body_on_stderr_with_no_json_body():
+    """Unlike `optimize_recipe`'s missing-path body (stdout, parsed above), the
+    real wrapped scanner prints its `{"success": false, "error": ...}` body to
+    *stderr* on `FileNotFoundError` -- `_invoke_captured` only parses JSON
+    from `stdout` (`_extract_json(completed.stdout)`), so `json_body` is
+    `None` here even though the raw error text is present on `.stderr`
+    verbatim. Pins the asymmetry `recipe.py`'s module docstring documents
+    (unlike `test_scan_for_vulnerabilities_reports_a_scan_error_body_as_data_not_raised`
+    above, which puts its error on stdout and so cannot exercise this path)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout="",
+            stderr='{"success": false, "error": "Path not found: /no/such/recipe"}',
+        ),
+    ):
+        result = scan_for_vulnerabilities(
+            ["--json", "/no/such/recipe"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body is None
+    assert result.stderr == '{"success": false, "error": "Path not found: /no/such/recipe"}'
+
+
 # --- Story 2.8: scan_for_vulnerabilities -- real end-to-end against
 # --- fake_cfe_root -----------------------------------------------------------
 
