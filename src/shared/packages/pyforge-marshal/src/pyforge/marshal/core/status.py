@@ -690,6 +690,7 @@ def derive_home_state(
     paused_stage: str | None,
     tasks: tuple[TaskPhaseSnapshot, ...],
     supervisor_alive: bool | None,
+    engine_alive: bool | None = None,
 ) -> str:
     """The pure state-derivation core of ``marshal status`` (Story 5.1,
     FR-36/AD-5): one of ``FLEET_STATES`` above, from a run's own
@@ -705,13 +706,32 @@ def derive_home_state(
     once its watched harness process does, so checking liveness against an
     already-``finished`` run would misreport every ordinary completed run
     as ``"unsupervised"``. ``supervisor_alive is False`` and ``not
-    finished`` together are therefore the ONLY unsupervised trigger --
-    exactly the spec's own I/O matrix row ("a home whose supervisor pid is
-    dead, run not finished"). ``supervisor_alive is None`` (liveness could
-    not be probed, e.g. no pid was ever recovered) never triggers this
-    override on its own -- a caller with no pid to check ``cli/status.py``
-    degrades to the ``"unknown"``-shaped row via ``journal_unreadable``
-    instead of ever reaching this function with a real pid absent.
+    finished`` together are the trigger -- exactly the spec's own I/O
+    matrix row ("a home whose supervisor pid is dead, run not finished")
+    -- UNLESS ``engine_alive`` softens it (Story 5.8, below).
+    ``supervisor_alive is None`` (liveness could not be probed, e.g. no
+    pid was ever recovered) never triggers this override on its own -- a
+    caller with no pid to check ``cli/status.py`` degrades to the
+    ``"unknown"``-shaped row via ``journal_unreadable`` instead of ever
+    reaching this function with a real pid absent.
+
+    **``engine_alive`` is a one-directional softening signal (Story 5.8,
+    FR-36/AD-5)**: a bare ``bmad-loop resume`` that never re-spawns a
+    supervisor sidecar (or a crashed/``--foreground`` supervisor) leaves
+    ``supervisor_alive is False`` on a run whose engine is still working
+    -- the 2026-08-11 incident, 5 live stations misreported
+    ``"unsupervised"`` for a full session because the branch above fired
+    unconditionally. Only ``engine_alive is True`` (a CONFIRMED-alive
+    probe of the engine's own already-recovered pid) may soften the
+    branch above and fall through to the normal derivation below;
+    ``False`` (confirmed dead) or ``None`` (unprobed/unknown) still
+    return ``"unsupervised"`` -- mirrors this module's own repeated
+    "unproven is reported as the cautious state, never silently
+    softened" discipline (the same precedent ``supervisor_alive is None``
+    and ``is_run_live``'s own ``journal_unreadable`` handling already
+    establish elsewhere in this file). A caller that never passes
+    ``engine_alive`` (the default, ``None``) reproduces today's exact
+    behavior unchanged.
 
     Ordering below matches the spec's own I/O matrix exactly:
     ``finished`` -> ``"stopped"``; ``paused_stage == "escalation"`` ->
@@ -721,7 +741,7 @@ def derive_home_state(
     literal); otherwise -> ``"idle"`` (a run that exists but has no
     in-flight task right now -- e.g. between stories -- reads the same as
     "nothing to report" a caller with no run at all would report)."""
-    if not finished and supervisor_alive is False:
+    if not finished and supervisor_alive is False and engine_alive is not True:
         return "unsupervised"
     if finished:
         return "stopped"
@@ -778,7 +798,20 @@ class FleetHomeFacts:
     JOURNALED observed quantity (Story 3.6's own ``"budget-usage"``
     observation kind) -- never computed live (the spec's own Design
     Notes: NFR-14 forbids a live harness query per home), ``None`` when no
-    budget-relevant entry has been journaled yet for this run."""
+    budget-relevant entry has been journaled yet for this run.
+
+    ``engine_alive`` (Story 5.8, FR-36/AD-5) is
+    ``ProcessPort.is_alive(launch_pid)`` -- the SAME probe already used
+    for ``supervisor_alive`` above, applied to the DETACHED HARNESS
+    process's own already-recovered pid (``_RunJournalFacts.launch_pid``,
+    journaled by every ``run-launch``/``run-resume`` outcome entry)
+    rather than the supervisor sidecar's. Also never ``None`` once
+    ``journal_unreadable`` is ``False`` (the launch pid is, by
+    construction, always recovered by then). This is the fallback signal
+    ``derive_home_state`` consults to tell "supervisor sidecar crashed,
+    engine still working" (soften) apart from "the whole run is
+    genuinely dead" (still ``"unsupervised"``) -- see that function's own
+    docstring for the one-directional softening rule."""
 
     slug: str
     branch: str
@@ -788,6 +821,7 @@ class FleetHomeFacts:
     paused_stage: str | None = None
     tasks: tuple[TaskPhaseSnapshot, ...] = ()
     supervisor_alive: bool | None = None
+    engine_alive: bool | None = None
     elapsed_seconds: float | None = None
     budget_consumed: int | float | None = None
     # Story 5.3 (FR-38): `RunStatusSnapshot`'s own already-shipped
@@ -969,6 +1003,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         paused_stage=facts.paused_stage,
         tasks=facts.tasks,
         supervisor_alive=facts.supervisor_alive,
+        engine_alive=facts.engine_alive,
     )
     # Story 5.3 (FR-38): `escalation_artifact` prefers `escalated_spec_file`,
     # falling back to `escalated_task_phase` only when no spec file was

@@ -40,7 +40,12 @@ the SAME recovered ``harness_run_id``) supplies bmad-loop's own
 (Story 5.1's own new pure function) turns those facts into one of the
 closed 5-value state vocabulary, with ``ProcessPort.is_alive(pid)``
 (Story 3.4's own supervisor-liveness primitive) overriding every other
-derived state for a dead supervisor on a run that has not itself finished.
+derived state for a dead supervisor on a run that has not itself finished
+-- UNLESS the SAME probe, applied to the engine's own already-recovered
+launch pid, confirms the engine itself is still alive (Story 5.8: a dead
+supervisor sidecar does not by itself prove the run is dead; see
+``core.status.derive_home_state``'s own docstring for the one-directional
+softening rule).
 
 **A malformed/unreadable journal for one home never aborts the sweep**
 (mirrors ``marshal retire``'s own "one project's bad data never blocks the
@@ -415,16 +420,29 @@ def _gather_run_journal_facts(
     lines = text.split("\n")
     fold_result = fold(lines)
 
+    # Code review (2026-08-12, Blind Hunter, Story 5.8): the MOST RECENT
+    # OUTCOME entry, by timestamp, across BOTH kinds -- mirrors
+    # `supervisor_pid`'s own identical pattern just below. The previous
+    # version preferred the FIRST `_LAUNCH_KIND` match and never even
+    # looked at `_RESUME_KIND` once one was found, so `launch_pid` stayed
+    # pinned to a run's ORIGINAL launch pid forever, across any later
+    # `bmad-loop resume` -- silently stale for Story 5.8's own
+    # `engine_alive` probe, which needs the CURRENTLY watched process's
+    # pid, not the first one this run ever had.
     launch_pid: int | None = None
     launched_at: datetime | None = None
     harness_run_id: str | None = None
+    launch_pid_ts: str | None = None
     for kind in (_LAUNCH_KIND, _RESUME_KIND):
         for entry in fold_result.by_kind(kind):
             if entry.run_id != run_id or entry.phase is not Phase.OUTCOME:
                 continue
             candidate = entry.payload.get("pid")
-            if isinstance(candidate, int) and not isinstance(candidate, bool):
+            if not (isinstance(candidate, int) and not isinstance(candidate, bool)):
+                continue
+            if launch_pid_ts is None or entry.ts > launch_pid_ts:
                 launch_pid = candidate
+                launch_pid_ts = entry.ts
                 try:
                     launched_at = datetime.fromisoformat(entry.ts)
                 except ValueError:
@@ -432,9 +450,6 @@ def _gather_run_journal_facts(
                 candidate_run_id = entry.payload.get("harness_run_id")
                 if isinstance(candidate_run_id, str) and candidate_run_id:
                     harness_run_id = candidate_run_id
-                break
-        if launch_pid is not None:
-            break
 
     # The supervisor's OWN self-journaled liveness evidence -- the most
     # recent entry, by timestamp, across BOTH kinds (a heartbeat refreshes
@@ -681,6 +696,18 @@ def _gather_home_facts(
         else False
     )
 
+    # Story 5.8 (a dead supervisor sidecar must not hide a live engine,
+    # FR-36/AD-5): `journal_facts.launch_pid` -- the DETACHED HARNESS
+    # process's own pid, already recovered above (guaranteed non-`None`
+    # here; the `launch_pid is None` branch already returned) -- probed
+    # with the SAME `ProcessPort.is_alive` call used for the supervisor
+    # just above. No new file read, no new subprocess, no new pid to
+    # recover (AD-5): this pid was already in hand, at the cost of one
+    # extra `is_alive` liveness check (a bare pid-existence probe) per
+    # home. `derive_home_state` only softens its "supervisor dead"
+    # trigger when this reads `True`.
+    engine_alive = process.is_alive(journal_facts.launch_pid)
+
     elapsed_seconds: float | None = None
     if journal_facts.launched_at is not None:
         elapsed_seconds = (clock.now() - journal_facts.launched_at).total_seconds()
@@ -693,6 +720,7 @@ def _gather_home_facts(
         paused_stage=snapshot.paused_stage,
         tasks=snapshot.tasks,
         supervisor_alive=supervisor_alive,
+        engine_alive=engine_alive,
         elapsed_seconds=elapsed_seconds,
         budget_consumed=journal_facts.budget_consumed,
         paused_reason=snapshot.paused_reason,
