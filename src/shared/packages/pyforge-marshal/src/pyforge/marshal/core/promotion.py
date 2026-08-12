@@ -41,6 +41,18 @@ failure for the whole scan -- most commit subjects in any real repository
 are not story merges (e.g. ``"fastmcp-v4"``, ``"pixi update requires-pixi
 = \">=0.75.0\""``).
 
+``marshal_native_merged_keys`` (Story 5.9, AD-5/AD-24/AD-33): the SAME
+reachability predicate narrowed to only the two Marshal-DRIVEN patterns
+above (1 and 3) -- reused verbatim, never a fourth pattern-matcher. A key
+``merged_story_keys`` finds but this function does not is labeled
+``"not-loop-native"`` by ``cli/deploy.py::run_reconcile_completions`` --
+NOT ``"bmad-quick-dev"`` (Spec Change Log, 2026-08-12): ``marshal land``
+is ALSO Marshal-driven but its default merge strategy writes a
+plain-PR-shaped subject byte-identical to a human's, so this predicate
+cannot tell the two apart from git alone, and the reported label narrows
+to what git alone actually proves. See that function's own docstring for
+the full "why the templated form is Marshal-driven" rationale.
+
 ``SpecCandidate``/``PromotionPlan``/``classify_promotion_candidates``
 (AD-12, AD-13, AD-29): partitions every discovered Tier-3 spec candidate
 into ``to_promote`` (durable, not yet promoted, valid content) and
@@ -195,6 +207,74 @@ def merged_story_keys(
     keys: set[StoryKey] = set()
     for subject in subjects:
         key = _classify_merge_subject(subject, template, project_slug)
+        if key is not None:
+            keys.add(key)
+    return frozenset(keys)
+
+
+def marshal_native_merged_keys(
+    subjects: tuple[str, ...], template: str, project_slug: str
+) -> frozenset[StoryKey]:
+    """Story 5.9 ("a story finished by hand is not invisible to the
+    ledger", AD-5/AD-24/AD-33): every ``StoryKey`` whose merge subject in
+    ``subjects`` conforms to one of the TWO Marshal-DRIVEN merge-subject
+    patterns -- the AD-24 templated form
+    (``core.identity.parse_merge_subject``, ``deploy land-story``'s own
+    rendered signature: that command resolves ``merge_subject_template``
+    from policy and calls ``identity.render_merge_subject`` itself, so a
+    merge landing this way was orchestrated BY Marshal) and bmad-loop's own
+    native merge-commit form
+    (``extract_story_key_from_bmadloop_merge_subject``, scoped to
+    ``project_slug`` for the identical live cross-project-collision reason
+    that function's own docstring documents in full) -- DELIBERATELY
+    SKIPPING the third, GitHub-PR-merge pattern
+    (``extract_story_key_from_github_merge_subject``) this module's own
+    ``merged_story_keys`` also tries.
+
+    Reuses BOTH helper functions VERBATIM (this story's own Boundaries: "no
+    new regexes") -- this is not a fourth pattern-matcher, only a
+    DIFFERENT, narrower subset of the same two functions ``merged_story_
+    keys``/``_classify_merge_subject`` already call, tried in the SAME
+    order (templated first, then bmad-loop-native): a subject conforming to
+    the templated form is classified by it even though it happens to ALSO
+    look github-shaped, mirroring ``_classify_merge_subject``'s own
+    precedence.
+
+    **Why the templated form counts as "Marshal-driven," not "not-loop-
+    native"** (this story's own Design Notes, in full): the Dream's own
+    framing is binary (bmad-loop vs. everything else), written before
+    ``deploy land-story`` existed. ``land-story`` re-runs Marshal's own
+    gate and renders the merge subject from policy -- Marshal orchestrated
+    that merge, so grouping it with bmad-loop (both "Marshal already
+    knows") against every other route is the accurate two-actor split, not
+    a deviation from the AC's binary vocabulary.
+
+    A key present in ``core.promotion.merged_story_keys``'s own (all-three-
+    pattern) result but ABSENT from this function's result landed via a
+    route Marshal itself did not drive -- reported as ``"not-loop-native"``
+    (Spec Change Log, 2026-08-12), NOT ``"bmad-quick-dev"``: ``marshal
+    land``'s own default merge strategy ALSO writes a plain-PR-shaped
+    subject, byte-identical to a human's, so this function cannot tell a
+    genuine ``bmad-quick-dev`` landing apart from a ``marshal land`` one
+    from git alone, and the reported label narrows to what git alone
+    actually proves rather than over-claiming which route it was -- which
+    is exactly the set ``cli/deploy.py::run_reconcile_completions``
+    computes (``merged_story_keys(...) - marshal_native_merged_keys(...)``,
+    corroborated further by a valid Tier-3/tracked spec before ever
+    triggering a write; see that function's own docstring).
+
+    A subject matching NEITHER pattern is silently skipped, never raised --
+    the identical failure-tolerant contract ``merged_story_keys`` already
+    documents. Pure: no I/O, no ``VcsPort`` -- ``subjects`` is the caller's
+    already-gathered ``VcsPort.commit_subjects`` result (the SAME tuple
+    ``merged_story_keys``/``_scan_promotions`` already gathered -- never a
+    second git read)."""
+    keys: set[StoryKey] = set()
+    for subject in subjects:
+        try:
+            key: StoryKey | None = parse_merge_subject(subject, template)
+        except MergeSubjectConformanceError:
+            key = extract_story_key_from_bmadloop_merge_subject(subject, project_slug)
         if key is not None:
             keys.add(key)
     return frozenset(keys)
