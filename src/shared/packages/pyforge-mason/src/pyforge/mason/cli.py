@@ -28,6 +28,19 @@ immediately after that loop.
 
 argparse, not click/typer: FR-41 forbids a CLI-framework dependency, and the
 sibling stations dispatch the same way.
+
+Story 2.4 registers the first real verb, ``recipe new`` (FR-7): the loop
+above already captures each noun's own ``add_subparsers()`` return value in
+a local (``verb_subparsers``); ``recipe``'s is additionally kept past the
+loop's end so ``new`` can be registered on it afterward, the same
+"immediately after that loop" placement ``doctor`` already established for a
+noun-level parser. ``new``'s own required, mutually exclusive ``--from-pypi``
+/``--from-github``/``--from-cran``/``--from-npm`` group plus required
+``--output``/``-o`` are declared where this docstring said later verbs would
+land theirs. ``main()``'s dispatch replaces the ``# Unreachable in Story
+1.2`` block below with the first real one, guarded by both ``ns.noun ==
+"recipe"`` and ``ns.verb == "new"`` so a future second recipe verb does not
+fall into this branch by noun alone.
 """
 
 from __future__ import annotations
@@ -41,7 +54,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from . import __version__, doctor, render
+from . import __version__, doctor, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -346,6 +359,7 @@ def build_parser() -> argparse.ArgumentParser:
     noun_names = (*_NOUNS, "doctor")
     nouns = parser.add_subparsers(dest="noun", metavar="{" + ",".join(noun_names) + "}")
 
+    recipe_verbs = None
     for name, help_text in _NOUNS.items():
         noun_parser = nouns.add_parser(
             name, help=help_text, description=help_text, parents=[global_flags],
@@ -355,15 +369,57 @@ def build_parser() -> argparse.ArgumentParser:
         # capture this call's return value and call `.add_parser(...)` on it
         # (argparse forbids a second add_subparsers() on one parser, so this
         # cannot be done from outside after the fact — see module docstring).
-        noun_parser.add_subparsers(dest="verb", metavar="{}")
+        verb_subparsers = noun_parser.add_subparsers(dest="verb", metavar="{}")
         # Remembered so main() can print this noun's own help on the
         # bare-noun usage error without re-parsing or rebuilding a parser.
         noun_parser.set_defaults(_noun_parser=noun_parser)
+        if name == "recipe":
+            # Kept past the loop's end (module docstring) so `new` can be
+            # registered on it immediately below, the same "after the loop"
+            # placement `doctor` already established for a noun-level parser.
+            recipe_verbs = verb_subparsers
 
     doctor_parser = nouns.add_parser(
         "doctor", help=_DOCTOR_HELP, description=_DOCTOR_HELP, parents=[global_flags],
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
+
+    # Story 2.4: `recipe new` (FR-7) — the first real verb. `recipe_verbs` is
+    # never `None` here: "recipe" is always a key of `_NOUNS`, so the loop
+    # above always assigns it before this line runs.
+    assert recipe_verbs is not None
+    new_help = "generate a recipe from PyPI/GitHub/CRAN/npm via conda-forge-expert"
+    new_parser = recipe_verbs.add_parser(
+        "new", help=new_help, description=new_help, parents=[global_flags],
+    )
+    # Required (spec Always boundary): exactly one source must be named, so
+    # `recipe.py::new` never has to guess which `--from-*` the caller meant.
+    # A plain string per flag — no secondary per-source flags (GitHub's
+    # `--version`, npm's various modes, ...) are in this story's AC scope
+    # (spec Never boundary).
+    source_group = new_parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument(
+        "--from-pypi", metavar="PACKAGE",
+        help="generate from a PyPI package, optionally with an embedded version spec",
+    )
+    source_group.add_argument(
+        "--from-github", metavar="OWNER/REPO", help="generate from a GitHub repository",
+    )
+    source_group.add_argument(
+        "--from-cran", metavar="PACKAGE", help="generate from a CRAN package",
+    )
+    source_group.add_argument(
+        "--from-npm", metavar="PACKAGE", help="generate from an npm package",
+    )
+    # Required, not defaulted to CFE's own omitted-`--output` behavior (spec
+    # Design Notes): FR-7 frames this feature as output "at a user-specified
+    # path", and letting it fall through to a CFE-side naming convention
+    # would make Mason's CLI contract depend on a policy that could change
+    # independently.
+    new_parser.add_argument(
+        "--output", "-o", required=True, metavar="PATH",
+        help="path to write the generated recipe to (required)",
+    )
 
     return parser
 
@@ -424,10 +480,39 @@ def main(argv: Sequence[str] | None = None) -> int:
             ns._noun_parser.print_help(file=sys.stderr)
             return EXIT_USAGE
 
-        # Unreachable in Story 1.2: no verb is registered under any noun yet,
-        # so argparse itself rejects any token here as an invalid choice
-        # before `ns.verb` could ever be truthy. Kept only so a later story
-        # that populates verbs has somewhere to land its dispatch.
+        if ns.noun == "recipe" and ns.verb == "new":
+            # FR-7: `--from-pypi`/`--from-github`/`--from-cran`/`--from-npm`
+            # is a required mutually exclusive group, so exactly one of the
+            # four is non-None here -- argparse itself guarantees that before
+            # this line is ever reached. `source` is CFE's own subcommand
+            # name (spec Always boundary: command routing, not recipe
+            # knowledge, AD-1 Design Notes) selected 1:1 from which flag the
+            # user gave.
+            sources = (
+                ("pypi", getattr(ns, "from_pypi", None)),
+                ("github", getattr(ns, "from_github", None)),
+                ("cran", getattr(ns, "from_cran", None)),
+                ("npm", getattr(ns, "from_npm", None)),
+            )
+            source, package = next((s, p) for s, p in sources if p is not None)
+
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.new(
+                source, package, ns.output,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=getattr(ns, "cfe_timeout", None),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(fmt, sys.stdout, "recipe new", "ok", dataclasses.asdict(result), [])
+            return EXIT_OK
+
+        # Unreachable beyond this point: every registered verb (currently
+        # only `recipe new`) is dispatched above, and argparse itself
+        # rejects any other token as an invalid choice before `ns.verb`
+        # could be truthy with no matching branch. Kept so a later story
+        # that populates another verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

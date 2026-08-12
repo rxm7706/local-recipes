@@ -46,10 +46,11 @@ from pyforge.mason.cli import (
 )
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
-from pyforge.mason.errors import CfeUnresolvedError, MasonError
+from pyforge.mason.errors import CfeUnresolvedError, MasonError, RecipeGenerationError
 from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
+from pyforge.mason.models import CfeResult
 
 _FIXED_REPORT = DoctorReport(
     mason_version="1.2.3+test",
@@ -243,6 +244,109 @@ def test_recipe_help_works(capsys):
         build_parser().parse_args(["recipe", "--help"])
     assert exc.value.code == 0
     assert "recipe" in capsys.readouterr().out
+
+
+# --- Story 2.4: `recipe new` -- verb dispatch (FR-7) ------------------------
+
+_FIXED_RECIPE_RESULT = CfeResult(
+    returncode=0, stdout="Generated: recipes/requests/recipe.yaml\n", stderr="", json_body=None,
+)
+
+
+def test_recipe_new_text_mode_happy_path_calls_recipe_new_with_the_resolved_flags(capsys):
+    """`recipe.new` is mocked (`patch("pyforge.mason.cli.recipe.new", ...)`,
+    the same target-on-the-imported-module pattern `doctor.build_report`
+    already established above) -- `cli.py` calls it through the `recipe`
+    module object, not an imported bare name."""
+    with patch("pyforge.mason.cli.recipe.new", return_value=_FIXED_RECIPE_RESULT) as mock_new:
+        assert main(["recipe", "new", "--from-pypi", "requests", "--output", "x"]) == EXIT_OK
+
+    mock_new.assert_called_once()
+    args, kwargs = mock_new.call_args
+    assert args == ("pypi", "requests", "x")
+    assert kwargs["cfe_root_arg"] is None
+    assert kwargs["cfe_python_arg"] is None
+    assert kwargs["cfe_timeout_arg"] is None
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe new: ok" in out.out
+    assert "returncode: 0" in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_new_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.new", return_value=_FIXED_RECIPE_RESULT):
+        assert main([
+            "recipe", "new", "--from-github", "owner/repo", "--output", "x", "--format", "json",
+        ]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe new"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == dataclasses.asdict(_FIXED_RECIPE_RESULT)
+
+
+@pytest.mark.parametrize("flag,expected_source", [
+    ("--from-pypi", "pypi"),
+    ("--from-github", "github"),
+    ("--from-cran", "cran"),
+    ("--from-npm", "npm"),
+])
+def test_recipe_new_maps_each_from_flag_to_its_own_cfe_subcommand(flag, expected_source):
+    """The `--from-*` -> subcommand mapping is `cli.py`'s own job (spec
+    Design Notes): `recipe.py::new` merely forwards whatever `source` string
+    it is given."""
+    with patch("pyforge.mason.cli.recipe.new", return_value=_FIXED_RECIPE_RESULT) as mock_new:
+        assert main(["recipe", "new", flag, "pkg", "--output", "x"]) == EXIT_OK
+
+    args = mock_new.call_args.args
+    assert args[0] == expected_source
+    assert args[1] == "pkg"
+
+
+def test_recipe_new_with_no_source_flag_is_a_usage_error(capsys):
+    assert main(["recipe", "new", "--output", "x"]) == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert out.err != ""
+
+
+def test_recipe_new_with_two_source_flags_is_a_usage_error(capsys):
+    assert main([
+        "recipe", "new", "--from-pypi", "a", "--from-github", "b", "--output", "x",
+    ]) == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert out.err != ""
+
+
+def test_recipe_new_with_no_output_is_a_usage_error(capsys):
+    assert main(["recipe", "new", "--from-pypi", "requests"]) == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert out.err != ""
+
+
+def test_recipe_new_generation_failure_projects_to_exit_failed_with_message_on_stderr(capsys):
+    """A `RecipeGenerationError` raised out of `recipe.new` is an anticipated
+    `MasonError` subclass (AD-7) -- no dedicated branch exists for it, so it
+    hits `main()`'s generic `MasonError` handler, same as any other typed
+    Mason failure (spec Boundaries & Constraints)."""
+    error = RecipeGenerationError(source="pypi", cfe_message="Error: no such package")
+    with patch("pyforge.mason.cli.recipe.new", side_effect=error):
+        rc = main(["recipe", "new", "--from-pypi", "no-such-package", "--output", "x"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(error)
+    assert "Traceback" not in err
 
 
 @pytest.mark.parametrize("argv", [
