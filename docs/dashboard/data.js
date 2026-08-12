@@ -1331,15 +1331,15 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "5.8",
-        "title": "A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — FR-181)*",
+        "key": "5.9",
+        "title": "A story finished by hand isn't invisible to the ledger *(added 2026-08-11 — FR-186)*",
         "phase": "dev",
-        "attempt": "2",
-        "startEpoch": 1786559805,
-        "median": 97,
+        "attempt": "1",
+        "startEpoch": 1786563005,
+        "median": 102,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-12 19:28 UTC"
+        "phaseAsOf": "2026-08-12 19:35 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1471,7 +1471,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "5.8",
-            39
+            53
           ],
           [
             "7.1",
@@ -1516,8 +1516,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 5058,
-        "totalLabel": "~84.3 h active compute",
+        "total": 5072,
+        "totalLabel": "~84.5 h active compute",
         "note": "Derived from 36 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
@@ -1551,7 +1551,7 @@ window.DASHBOARD_DATA = {
           "4.13": 75,
           "4.14": 193,
           "4.15": 33,
-          "5.8": 39,
+          "5.8": 53,
           "7.1": 39,
           "7.4": 143,
           "7.5": 107,
@@ -1562,13 +1562,13 @@ window.DASHBOARD_DATA = {
           "E2": 719,
           "E3": 2146,
           "E4": 485,
-          "E5": 39,
+          "E5": 53,
           "E7": 326
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "5.8"
+        "at": "5.9"
       },
       "epics": [
         {
@@ -1876,12 +1876,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "5.8",
-              "active",
+              "pending",
               "A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — FR-181)*"
             ],
             [
               "5.9",
-              "pending",
+              "active",
               "A story finished by hand isn't invisible to the ledger *(added 2026-08-11 — FR-186)*"
             ]
           ]
@@ -2412,12 +2412,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "13/42",
+            "15/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "29",
+            "27",
             "remaining",
             ""
           ]
@@ -2545,12 +2545,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "2.6",
-              "pending",
+              "done",
               "`mason recipe build`"
             ],
             [
               "2.7",
-              "pending",
+              "done",
               "`mason recipe diagnose`"
             ],
             [
@@ -3874,7 +3874,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-12 19:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-12 19:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5950,7 +5950,7 @@ window.DASHBOARD_DATA = {
           "stories": 38,
           "state": "running",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 13,
+          "done": 15,
           "total": 42
         },
         {
@@ -6557,7 +6557,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-11T10:37",
+          "spec": "2026-08-12T18:04",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6639,7 +6639,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-11T10:37",
+            "at": "2026-08-12T18:04",
             "other": "2026-08-01"
           },
           {
@@ -6660,7 +6660,7 @@ window.DASHBOARD_DATA = {
         "age": 1,
         "stale": false,
         "version": "0.1.0",
-        "progress": "13/42",
+        "progress": "15/42",
         "complete": 13,
         "of": 13
       },
@@ -6822,7 +6822,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-10",
-          "sprint": "2026-08-11",
+          "sprint": "2026-08-12",
           "tea": "2026-08-12",
           "gates": "2026-08-10",
           "code": "2026-08-12",
@@ -13911,8 +13911,8 @@ window.DASHBOARD_DATA = {
         "task": "llms-full-check",
         "guards": "library catalog freshness",
         "state": "drift",
-        "findings": 35,
-        "verdict": "DRIFT: 35 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "findings": 33,
+        "verdict": "DRIFT: 33 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
         "runbook": ""
       }
     ],
@@ -14071,7 +14071,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "in flight 5.8",
+        "line": "in flight 5.9",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -16456,9 +16456,9 @@ window.DASHBOARD_DATA = {
     "running": [
       {
         "station": "Marshal",
-        "story": "5.8",
+        "story": "5.9",
         "phase": "dev",
-        "startEpoch": 1786559805
+        "startEpoch": 1786563005
       }
     ],
     "lastShipped": {
@@ -16469,8 +16469,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: sync tracked ledger for Story 6.11 + stamp its new spec baseline"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-12 19:28 UTC",
-    "generatedEpoch": 1786562894
+    "generatedAt": "2026-08-12 19:35 UTC",
+    "generatedEpoch": 1786563317
   },
   "storySpecs": [
     {
@@ -16499,9 +16499,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 13,
+      "done": 15,
       "tracked": 10,
-      "gap": 3
+      "gap": 5
     },
     {
       "station": "pyforge-scribe",
@@ -16637,8 +16637,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
           }
         ],
-        "done": 13,
-        "backlog": 29,
+        "done": 15,
+        "backlog": 27,
         "blocked": 0,
         "total": 42,
         "next": "2-10-mason-recipe-update",
@@ -16647,11 +16647,11 @@ window.DASHBOARD_DATA = {
           "2-10-mason-recipe-update",
           "2-4-mason-recipe-new",
           "2-5-mason-recipe-validate",
-          "2-6-mason-recipe-build",
-          "2-7-mason-recipe-diagnose",
           "2-8-mason-recipe-optimize-and-mason-recipe-scan",
           "2-9-mason-recipe-submit",
-          "3-1-engine-protocol-and-provisioning"
+          "3-1-engine-protocol-and-provisioning",
+          "3-2-mason-package-build",
+          "3-3-ship-target-vocabulary-and-dry-run-default"
         ],
         "state": "ready"
       },
@@ -16804,8 +16804,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 283,
-      "backlog": 90,
+      "done": 285,
+      "backlog": 88,
       "blocked": 6,
       "total": 379
     }
@@ -16859,13 +16859,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "mason",
         "stories": 42,
-        "done": 13,
+        "done": 15,
         "blocked": 0,
         "epics": 6,
         "epicsDone": 1,
         "complete": false,
         "running": false,
-        "projected": 13
+        "projected": 15
       },
       {
         "key": "scribe",
@@ -16903,7 +16903,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 379,
-      "done": 283,
+      "done": 285,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 49
@@ -16911,7 +16911,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 283
+      "projected": 285
     }
   }
 };

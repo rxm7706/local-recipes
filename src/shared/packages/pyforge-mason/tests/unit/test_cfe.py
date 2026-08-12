@@ -22,7 +22,13 @@ boundary it would have to cross. (It is not the ONLY such place, as this
 paragraph originally claimed -- `test_doctor.py::test_build_report_never_
 raises_against_a_real_unresolved_environment` and Story 2.3's own
 `test_cli.py` sentinel test both reach the real probe too; fourth review
-pass, Blind Hunter.)"""
+pass, Blind Hunter.)
+
+Story 2.7 extends this file with `diagnose_failure` coverage, mirroring
+`validate_recipe`'s own test shapes exactly: the `_CFE_SCRIPTS`
+table-shape assertion grows a third entry, the AD-14 sentinel test grows a
+third call site, and `diagnose_failure` gets its own per-operation-default,
+table-entry-identity, and real-fixture round-trip tests."""
 
 from __future__ import annotations
 
@@ -42,8 +48,9 @@ import pytest
 from pyforge.mason import cfe as cfe_module
 from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, _CFE_SCRIPTS, ImportFloorResult, _build_probe_script,
-    _extract_json, _invoke_captured, ensure_cfe_root, ensure_import_floor,
-    probe_import_floor, run_streamed, submit_pr, validate_recipe,
+    _extract_json, _invoke_captured, diagnose_failure, ensure_cfe_root,
+    ensure_import_floor, probe_import_floor, run_streamed, submit_pr,
+    validate_recipe,
 )
 from pyforge.mason.errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
 from pyforge.mason.models import CfeResult
@@ -1067,13 +1074,15 @@ def test_extract_json_returns_none_for_empty_stdout():
 
 # --- Story 2.1: _CFE_SCRIPTS table -------------------------------------------
 
-def test_cfe_scripts_table_has_exactly_the_two_story_1_9_fixture_entries():
-    """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr` --
-    Story 1.9's fixture only stubs these two, and which script backs each of
-    Stories 2.4-2.10 is still open."""
+def test_cfe_scripts_table_has_exactly_the_three_stubbed_fixture_entries():
+    """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr`/
+    `diagnose_failure` -- the fixture tree only stubs these three (Story
+    1.9's original pair plus Story 2.7's `failure_analyzer.py`), and which
+    script backs each of Stories 2.8-2.10 is still open."""
     assert _CFE_SCRIPTS == {
         "validate_recipe": "validate_recipe.py",
         "submit_pr": "submit_pr.py",
+        "diagnose_failure": "failure_analyzer.py",
     }
 
 
@@ -1291,6 +1300,114 @@ def test_submit_pr_invokes_its_own_table_entry_not_validate_recipes():
     assert argv[1].endswith("submit_pr.py")
 
 
+# --- Story 2.7: diagnose_failure -- per-operation default timeout, table
+# --- entry identity (mocked I/O-matrix coverage, mirroring validate_recipe) -
+
+def test_diagnose_failure_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_diagnose_failure_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_diagnose_failure_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("failure_analyzer.py")
+
+
+def test_diagnose_failure_passes_the_log_path_straight_through_as_args():
+    """No pre-validation of `log_path` (spec Always boundary): the adapter
+    passes `args` straight through, exactly like `validate_recipe`/
+    `submit_pr` do."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure(
+            ["build.log"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[-1] == "build.log"
+
+
+def test_diagnose_failure_reports_a_no_match_body_as_data_not_raised():
+    """The real script exits 1 with a `{"success": false, "error": ...}`
+    body when no pattern matched (spec I/O matrix) -- a non-zero return code
+    is data on the returned `CfeResult`, never raised (AD-4)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "No known error pattern matched. '
+            'Manual inspection required.", "hint": "..."}',
+        ),
+    ):
+        result = diagnose_failure(
+            ["build.log"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["success"] is False
+    assert "No known error pattern matched" in result.json_body["error"]
+
+
+def test_diagnose_failure_reports_a_log_file_not_found_body_as_data_not_raised():
+    """`log_path` is never pre-validated for existence (spec Always
+    boundary) -- a missing file surfaces as CFE's own `{"success": false,
+    "error": "Log file not found: ..."}` body, exit 1, not a Mason-side
+    exception."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "Log file not found: /no/such/build.log"}',
+        ),
+    ):
+        result = diagnose_failure(
+            ["/no/such/build.log"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body == {
+        "success": False, "error": "Log file not found: /no/such/build.log",
+    }
+
+
+# --- Story 2.7: diagnose_failure -- real end-to-end against fake_cfe_root --
+
+def test_diagnose_failure_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = diagnose_failure(
+        ["build.log"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body["success"] is True
+    assert result.json_body["error_class"] == "MODULE_NOT_FOUND_AT_TEST"
+    assert "all_matches" in result.json_body
+
+
 # --- Story 2.1: real end-to-end against Story 1.9's fake_cfe_root fixture --
 # --- (no mocking -- mirrors test_fake_cfe_root_fixture.py's own style) -----
 
@@ -1392,11 +1509,11 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     """AD-14: Mason never reads a JFROG_* variable, and a credential reaches
     CFE only through the inherited process environment -- never surfaced
     back into a returned result's own fields. A sentinel value set via
-    `monkeypatch.setenv` proves this for the three call sites the spec
-    names: `probe_import_floor` and `validate_recipe`/`submit_pr` (all three
-    against Story 1.9's `fake_cfe_root` fixture where applicable, real
-    subprocess, no mocking -- mirroring this file's existing fake-root
-    tests).
+    `monkeypatch.setenv` proves this for the call sites the spec names:
+    `probe_import_floor` and `validate_recipe`/`submit_pr` (Story 2.3), plus
+    `diagnose_failure` (Story 2.7, same shape) -- all against Story 1.9's
+    `fake_cfe_root` fixture where applicable, real subprocess, no mocking --
+    mirroring this file's existing fake-root tests).
 
     **The POSITIVE control is what gives this test teeth** (third review
     pass, both reviewers, reproduced). Without it the test could not fail:
@@ -1449,8 +1566,11 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     submit_result = submit_pr(
         [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
     )
+    diagnose_result = diagnose_failure(
+        ["build.log"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
 
-    for result in (validate_result, submit_result):
+    for result in (validate_result, submit_result, diagnose_result):
         # Positive: the child really did inherit the parent's environment.
         assert result.json_body == {"inherited": inheritance_marker}
         # Negative: and the credential sitting beside it never came back.
