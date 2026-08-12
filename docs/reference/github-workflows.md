@@ -109,23 +109,23 @@ Our two synced workflows are trimmed on purpose. Upstream additionally has:
   `matrix-org/pr-details-action` step, for conda-forge's merge queue. Not applicable.
 - Upstream pins `actions/checkout` at v6.0.2; we run v7.0.1.
 
-We additionally have `pixi>=0.73.0` in the linter's micromamba `create-args`.
-**Write it with no space** — `create-args` is a YAML folded scalar, so `pixi >=0.73.0`
+We additionally have `pixi>=0.76.2` in the linter's micromamba `create-args`.
+**Write it with no space** — `create-args` is a YAML folded scalar, so `pixi >=0.76.2`
 splits into two arguments and micromamba errors `Empty package name`.
 
 ---
 
 ## Where the pixi floor lives (keep all in step)
 
-`requires-pixi = ">=0.73.0"` in `pixi.toml` is the source of truth. It is restated in:
+`requires-pixi = ">=0.76.2"` in `pixi.toml` is the source of truth. It is restated in:
 
 1. `pixi.toml` `[feature.python]`
 2. `pixi.toml` `[feature.local-recipes]`
 3. `pixi.toml` (third feature block)
 4. `environment.yaml`
-5. `.github/workflows/staged-recipes-linter.yml` → `create-args: pixi>=0.73.0`
-6. `.github/workflows/dashboard.yml` → `pixi-version: v0.73.0`
-7. **`.github/actions/sync-pypi-mappings/action.yml` → `pixi-version: v0.73.0`**
+5. `.github/workflows/staged-recipes-linter.yml` → `create-args: pixi>=0.76.2`
+6. `.github/workflows/dashboard.yml` → `pixi-version: v0.76.2`
+7. **`.github/actions/sync-pypi-mappings/action.yml` → `pixi-version: v0.76.2`**
 
 №7 was missed when the others were unified. Pinned at v0.59.0, it could not parse the
 manifest (`expected a string, found table`) and failed **32/32 runs**. Raised
