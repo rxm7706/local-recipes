@@ -83,6 +83,11 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         # Story 4.4's `landing_base_branch` (AD-40) -- same reason as the 3
         # above: no AC asks for a CLI override surface for it.
         "landing_base_branch",
+        # Story 3.13's `max_parallel` (FR-184) -- same reason as the 5 above:
+        # no AC asks for a CLI override surface for it, and this key exists
+        # to compose a project's DECLARED intent (marshal-policy.toml), not
+        # a one-off invocation override.
+        "max_parallel",
     }
 )
 
@@ -108,6 +113,11 @@ _UNSETTABLE_KEYS = frozenset(
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        # Story 3.13's `max_parallel` (FR-184) -- a plain positive int
+        # excluded for the SAME "no AC asks for a CLI override surface"
+        # reason as `idle_threshold_minutes`/the 4 budget ceilings, never
+        # the "no string value could ever satisfy this validator" reason.
+        "max_parallel",
         # Story 2.3's 5th list/mapping-typed field (AD-27) -- no string
         # value could satisfy `_valid_epic_surfaces`'s
         # `Mapping[str, tuple[str, ...]]` shape either, the same reason the
@@ -135,7 +145,7 @@ _UNSETTABLE_KEYS = frozenset(
     }
 )
 
-# Field render order: the 9 static keys, then the 10 seed keys -- matches
+# Field render order: the 9 static keys, then the 11 seed keys -- matches
 # the spec's own enumeration order (Boundaries & Constraints, second
 # bullet). `idle_threshold_minutes` (Story 3.5) and Story 3.6's 4 budget
 # ceilings are deliberately NOT `--set` targets (unlike the other 5 scalar
@@ -143,7 +153,9 @@ _UNSETTABLE_KEYS = frozenset(
 # `marshal-policy.toml`'s project layer already covers "configurable"
 # (FR-12/FR-13's own AC wording). Story 4.7's 4 landing keys (AD-40) follow
 # `epic_surfaces` -- the spec's own Code Map enumeration order -- for the
-# same reason: no `--set` surface, `marshal-policy.toml` only.
+# same reason: no `--set` surface, `marshal-policy.toml` only. Story 3.13's
+# `max_parallel` (FR-184) follows the 4 budget ceilings for the identical
+# reason: `marshal-policy.toml` only, no `--set` surface.
 _FIELD_ORDER: tuple[str, ...] = (
     "verify_commands",
     "worktree_seed_paths",
@@ -167,6 +179,7 @@ _FIELD_ORDER: tuple[str, ...] = (
     "max_tokens_per_run",
     "max_wall_clock_minutes_per_story",
     "max_wall_clock_minutes_per_run",
+    "max_parallel",
 )
 
 
@@ -315,7 +328,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 22-key document matching ``schemas/policy.json`` exactly:
+    """The flat 23-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

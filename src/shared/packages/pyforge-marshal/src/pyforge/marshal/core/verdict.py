@@ -360,6 +360,14 @@ is a configuration fact Marshal cannot determine, not a real precondition
 that was checked and failed (the spec's own explicit "never a crash"
 wording for this exact scenario).
 
+Story 3.13 (the parallel-fan-out clamp is surfaced, not silent, FR-184)
+adds ``MRS-POLICY-007`` (a composed ``max_parallel`` above 1 -- ``bmad_loop``
+0.9.0's own Phase 5 fan-out scheduler is unbuilt and clamps every run to 1
+regardless of what is requested) at ``Verdict.WARN``, the same tier as
+``MRS-POLICY-005``: the request is reported, never rejected -- a project
+declaring ``max_parallel > 1`` today is a legitimate, forward-looking
+setting for whenever the upstream scheduler ships, not a malformed value.
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -758,6 +766,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-POLICY-004": Verdict.UNEVALUABLE,
     "MRS-POLICY-005": Verdict.WARN,
     "MRS-POLICY-006": Verdict.UNEVALUABLE,
+    "MRS-POLICY-007": Verdict.WARN,
     "MRS-INIT-001": Verdict.UNEVALUABLE,
     "MRS-INIT-002": Verdict.UNEVALUABLE,
     "MRS-INIT-003": Verdict.ERROR,

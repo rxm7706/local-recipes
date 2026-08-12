@@ -53,8 +53,11 @@ def test_registered_codes_contains_the_real_codes():
     not-loop-native key absent/unmatched in the ledger, and the post-
     commit Tier-3 feed repair-write failed). Story 3.12's
     cli/spin.py::run_resume adds MRS-SPIN-016 (the retry-escalation
-    floor-raise's own policy.toml write failure, AD-26). This asserts the
-    registry's exact real contents."""
+    floor-raise's own policy.toml write failure, AD-26). Story 3.13's
+    core/policy.py::compose adds MRS-POLICY-007 (a composed max_parallel
+    above 1 -- bmad_loop 0.9.0's own Phase 5 fan-out scheduler is unbuilt
+    and clamps every run to 1). This asserts the registry's exact real
+    contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -65,6 +68,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-POLICY-004",
             "MRS-POLICY-005",
             "MRS-POLICY-006",
+            "MRS-POLICY-007",
             "MRS-INIT-001",
             "MRS-INIT-002",
             "MRS-INIT-003",

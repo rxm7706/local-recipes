@@ -1279,6 +1279,18 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # this step runs (the live escalation-refusal gate already passed), so a
 # lost floor-raise degrades the run to "resumed on the un-escalated model,"
 # never a reason to abort an otherwise-viable resume.
+#
+# Story 3.13 (the parallel-fan-out clamp is surfaced, not silent, FR-184)
+# adds `MRS-POLICY-007`: `core/policy.py::compose` names a resolved
+# `max_parallel` value above 1 and its cause -- `bmad_loop` 0.9.0's own
+# Phase 5 parallel-fan-out scheduler is unbuilt and clamps every run to 1
+# with no diagnostic of its own (confirmed direct read of the vendored
+# package: `policy.py:448-451` states it is "not built yet";
+# `policy.py:815-817,841-842` clamp any requested value unconditionally).
+# Classifies `Verdict.WARN`, the same tier as `MRS-POLICY-005`: the request
+# composes and is reported, never rejected -- a project's own
+# `max_parallel > 1` setting is a legitimate, forward-looking declaration
+# for whenever the upstream scheduler ships, not a malformed value.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -1289,6 +1301,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-POLICY-004",
         "MRS-POLICY-005",
         "MRS-POLICY-006",
+        "MRS-POLICY-007",
         "MRS-INIT-001",
         "MRS-INIT-002",
         "MRS-INIT-003",
