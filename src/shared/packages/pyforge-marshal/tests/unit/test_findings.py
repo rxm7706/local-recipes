@@ -51,8 +51,10 @@ def test_registered_codes_contains_the_real_codes():
     completions adds MRS-DEPLOY-024/025/026/027 (the tracked ledger
     unreadable/unlockable, its write path failed, a corroborated
     not-loop-native key absent/unmatched in the ledger, and the post-
-    commit Tier-3 feed repair-write failed). This asserts the registry's
-    exact real contents."""
+    commit Tier-3 feed repair-write failed). Story 3.12's
+    cli/spin.py::run_resume adds MRS-SPIN-016 (the retry-escalation
+    floor-raise's own policy.toml write failure, AD-26). This asserts the
+    registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -211,6 +213,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DEPLOY-025",
             "MRS-DEPLOY-026",
             "MRS-DEPLOY-027",
+            "MRS-SPIN-016",
         }
     )
 
