@@ -2407,12 +2407,12 @@ window.DASHBOARD_DATA = {
           ],
           [
             "2.8",
-            40
+            102
           ]
         ],
         "foot": [
           [
-            "~82 min",
+            "~91 min",
             "median / story",
             "var(--done)"
           ],
@@ -2436,8 +2436,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2310,
-        "totalLabel": "~38.5 h active compute",
+        "total": 2372,
+        "totalLabel": "~39.5 h active compute",
         "note": "Derived from 17 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
@@ -2456,11 +2456,11 @@ window.DASHBOARD_DATA = {
           "2.5": 360,
           "2.6": 308,
           "2.7": 82,
-          "2.8": 40
+          "2.8": 102
         },
         "epicMin": {
           "E1": 872,
-          "E2": 1438
+          "E2": 1500
         }
       },
       "lineState": {
@@ -3884,7 +3884,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-12 23:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-12 23:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -10639,17 +10639,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "marshal-land-merge-subject",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -10665,8 +10665,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "multi-loop-isolation",
@@ -14037,7 +14037,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
+        "state": "green",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -16612,8 +16612,8 @@ window.DASHBOARD_DATA = {
       "subject": "sequence marshal-land-merge-subject spec as Story 5.10; sync .idea metadata"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-12 23:03 UTC",
-    "generatedEpoch": 1786575819
+    "generatedAt": "2026-08-12 23:53 UTC",
+    "generatedEpoch": 1786578821
   },
   "storySpecs": [
     {
