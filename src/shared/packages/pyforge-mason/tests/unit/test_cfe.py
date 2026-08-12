@@ -22,11 +22,21 @@ boundary it would have to cross. (It is not the ONLY such place, as this
 paragraph originally claimed -- `test_doctor.py::test_build_report_never_
 raises_against_a_real_unresolved_environment` and Story 2.3's own
 `test_cli.py` sentinel test both reach the real probe too; fourth review
-pass, Blind Hunter.)"""
+pass, Blind Hunter.)
+
+Story 2.6 extends this file with `build_native`/`build_docker` coverage:
+mocked argv-shape/timeout/default-timeout tests (mirroring `_invoke_
+captured`'s own mocked I/O-matrix style, patching `pyforge.mason.cfe.
+run_streamed` rather than `subprocess.run`, since both new adapters are
+STREAM mode), plus a real end-to-end round-trip against Story 1.9's
+`fake_cfe_root` fixture (real `bash`/`sys.executable` subprocess, no
+mocking) mirroring `validate_recipe`/`submit_pr`'s own fixture-round-trip
+style above."""
 
 from __future__ import annotations
 
 import contextlib
+import io
 import json
 import os
 import signal
@@ -42,11 +52,11 @@ import pytest
 from pyforge.mason import cfe as cfe_module
 from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, _CFE_SCRIPTS, ImportFloorResult, _build_probe_script,
-    _extract_json, _invoke_captured, ensure_cfe_root, ensure_import_floor,
-    probe_import_floor, run_streamed, submit_pr, validate_recipe,
+    _extract_json, _invoke_captured, build_docker, build_native, ensure_cfe_root,
+    ensure_import_floor, probe_import_floor, run_streamed, submit_pr, validate_recipe,
 )
 from pyforge.mason.errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
-from pyforge.mason.models import CfeResult
+from pyforge.mason.models import BuildResult, CfeResult
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot,
 )
@@ -1067,13 +1077,16 @@ def test_extract_json_returns_none_for_empty_stdout():
 
 # --- Story 2.1: _CFE_SCRIPTS table -------------------------------------------
 
-def test_cfe_scripts_table_has_exactly_the_two_story_1_9_fixture_entries():
-    """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr` --
-    Story 1.9's fixture only stubs these two, and which script backs each of
-    Stories 2.4-2.10 is still open."""
+def test_cfe_scripts_table_has_exactly_the_four_entries():
+    """Spec Never boundary: Story 1.9's two fixture entries
+    (`validate_recipe`/`submit_pr`) plus Story 2.6's two build entries
+    (`build_native`/`build_docker`) -- which script backs each of the
+    remaining Stories 2.4/2.5/2.7-2.10 is still open."""
     assert _CFE_SCRIPTS == {
         "validate_recipe": "validate_recipe.py",
         "submit_pr": "submit_pr.py",
+        "build_native": "native-build.sh",
+        "build_docker": "build-locally.py",
     }
 
 
@@ -1457,3 +1470,309 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
         assert sentinel not in result.stdout
         assert sentinel not in result.stderr
         assert sentinel not in str(result.json_body)
+
+
+# --- Story 2.6: build_native / build_docker -- mocked I/O-matrix coverage --
+
+def test_build_native_invokes_bash_not_the_resolved_interpreter():
+    """spec Always boundary: `native-build.sh` is invoked through `bash`,
+    never a Python interpreter -- the one disclosed exception to this
+    file's Python-only convention."""
+    with patch(
+        "pyforge.mason.cfe.run_streamed", return_value=(0, "stdout"),
+    ) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value="linux64"):
+            build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    args, kwargs = mock_run_streamed.call_args
+    argv = args[0]
+    expected_script = str(
+        Path("/fake/root") / ".claude" / "scripts" / "conda-forge-expert" / "native-build.sh"
+    )
+    assert argv == ["bash", expected_script, "recipes/foo"]
+    assert kwargs["timeout"] == 5.0
+
+
+def test_build_native_reports_the_detected_config_and_artifact_dir():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "ok")):
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value="osxarm64"):
+            result = build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    assert result == BuildResult(
+        mode="native", config="osxarm64", returncode=0, stdout="ok",
+        artifact_dir="build_artifacts/osxarm64",
+    )
+
+
+def test_build_native_reports_none_config_and_artifact_dir_on_an_unsupported_host():
+    """spec I/O matrix: an unmapped host still runs the script, which
+    reports its own failure via `returncode` -- no Mason-level error, and
+    no guessed `artifact_dir`."""
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(1, "unsupported host")):
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            result = build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    assert result.config is None
+    assert result.artifact_dir is None
+    assert result.returncode == 1
+
+
+def test_build_native_defaults_to_a_3600_second_timeout():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            build_native("recipes/foo", root=Path("/fake/root"))
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 3600.0
+
+
+def test_build_native_honors_an_explicit_timeout_override():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            build_native("recipes/foo", root=Path("/fake/root"), timeout=42.0)
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 42.0
+
+
+def test_build_native_translates_timeout_expired_to_cfe_timeout_error():
+    with patch(
+        "pyforge.mason.cfe.run_streamed",
+        side_effect=subprocess.TimeoutExpired(cmd=["bash"], timeout=5.0),
+    ):
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            with pytest.raises(CfeTimeoutError) as excinfo:
+                build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    assert excinfo.value.script == "build_native"
+    assert excinfo.value.timeout == 5.0
+
+
+def test_build_native_forwards_stderr_sink_to_run_streamed():
+    sink = object()
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            build_native(
+                "recipes/foo", root=Path("/fake/root"), timeout=5.0, stderr_sink=sink,
+            )
+
+    assert mock_run_streamed.call_args.kwargs["stderr_sink"] is sink
+
+
+def test_build_docker_invokes_the_resolved_interpreter_against_the_root_level_script():
+    """spec Always boundary: `build-locally.py` resolves at the CFE root's
+    OWN TOP LEVEL, not the standard `.claude/scripts/conda-forge-expert/`
+    subdirectory."""
+    with patch(
+        "pyforge.mason.cfe.run_streamed", return_value=(0, "stdout"),
+    ) as mock_run_streamed:
+        build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    args, kwargs = mock_run_streamed.call_args
+    argv = args[0]
+    expected_script = str(Path("/fake/root") / "build-locally.py")
+    assert argv == ["/fake/python", expected_script, "linux64"]
+    assert kwargs["timeout"] == 5.0
+
+
+def test_build_docker_reports_the_given_config_and_artifact_dir():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "ok")):
+        result = build_docker(
+            "osx64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result == BuildResult(
+        mode="docker", config="osx64", returncode=0, stdout="ok",
+        artifact_dir="build_artifacts/osx64",
+    )
+
+
+def test_build_docker_defaults_to_a_7200_second_timeout():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        build_docker("linux64", root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 7200.0
+
+
+def test_build_docker_honors_an_explicit_timeout_override():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=99.0,
+        )
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 99.0
+
+
+def test_build_docker_translates_timeout_expired_to_cfe_timeout_error():
+    with patch(
+        "pyforge.mason.cfe.run_streamed",
+        side_effect=subprocess.TimeoutExpired(cmd=["python"], timeout=5.0),
+    ):
+        with pytest.raises(CfeTimeoutError) as excinfo:
+            build_docker(
+                "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            )
+
+    assert excinfo.value.script == "build_docker"
+    assert excinfo.value.timeout == 5.0
+
+
+def test_build_docker_reports_a_nonzero_returncode_as_data_not_raised():
+    """AD-4: a failed delegated build is data, never an exception."""
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(1, "build failed")):
+        result = build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result.returncode == 1
+    assert result.stdout == "build failed"
+
+
+def test_build_docker_forwards_stderr_sink_to_run_streamed():
+    sink = object()
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            stderr_sink=sink,
+        )
+
+    assert mock_run_streamed.call_args.kwargs["stderr_sink"] is sink
+
+
+# --- Story 2.6: build_native / build_docker -- real fixture round-trip -----
+# --- (no mocking -- mirrors validate_recipe/submit_pr's own style above) ---
+
+def test_build_native_against_fake_cfe_root_streams_stderr_and_reports_stdout(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: "linux64")
+    sink = io.StringIO()
+
+    result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0, stderr_sink=sink)
+
+    assert result.mode == "native"
+    assert result.config == "linux64"
+    assert result.artifact_dir == "build_artifacts/linux64"
+    assert result.returncode == 0
+    assert "native-build-stub" in sink.getvalue()
+    assert "native build stub ok" in result.stdout
+
+
+def test_build_native_against_fake_cfe_root_with_nonzero_exit_returns_data_not_raise(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: None)
+
+    result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0)
+
+    assert result.returncode == 1
+    assert result.config is None
+    assert result.artifact_dir is None
+
+
+def test_build_native_reports_artifact_dir_even_when_the_build_itself_fails(
+    fake_cfe_root, monkeypatch,
+):
+    """Review pass: the other nonzero-exit test above pairs `returncode=1`
+    with an UNRECOGNIZED host (`config=None`), so it never proves
+    `artifact_dir` survives a failed build on a RECOGNIZED one -- the
+    routine "compile failed on a supported platform" case AD-4's own "a
+    failed build is data" philosophy exists for. `config`/`artifact_dir`
+    must not get suppressed just because `returncode != 0`."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: "linux64")
+
+    result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0)
+
+    assert result.returncode == 1
+    assert result.config == "linux64"
+    assert result.artifact_dir == "build_artifacts/linux64"
+
+
+def test_build_docker_against_fake_cfe_root_matches_the_fixtures_canned_stdout(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = build_docker(
+        "linux64", root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert "build-locally stub ok" in result.stdout
+    assert result.artifact_dir == "build_artifacts/linux64"
+    assert result.mode == "docker"
+
+
+def test_build_docker_against_fake_cfe_root_with_nonzero_exit_returns_data_not_raise(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    result = build_docker(
+        "linux64", root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 1
+
+
+@pytest.mark.parametrize("bad_config", [None, "", "   "])
+def test_build_docker_rejects_a_blank_config_before_spawning_a_child(bad_config, monkeypatch):
+    """Review pass: `cli.py`'s own usage check is the only thing that kept a
+    blank `config` from ever reaching this function -- a direct caller of
+    the public `recipe.build()`/`cfe.build_docker()` API (e.g. a future
+    `package.py` conda-forge ship target, AD-11) could reach it unvalidated
+    and hit a raw `TypeError` deep inside `subprocess.Popen` instead of a
+    clean, actionable error. Asserts no subprocess spawns at all by
+    replacing `run_streamed` with a call that fails the test if reached."""
+    def _boom(*args, **kwargs):
+        raise AssertionError("run_streamed must not be called for a blank config")
+
+    monkeypatch.setattr("pyforge.mason.cfe.run_streamed", _boom)
+
+    with pytest.raises(ValueError):
+        build_docker(bad_config, root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0)
+
+
+# --- Story 2.6: AD-14 credential-isolation sentinel test, build adapters ---
+
+
+def test_jfrog_credential_sentinel_never_appears_in_build_results(fake_cfe_root, monkeypatch):
+    """Mirrors `test_jfrog_credential_sentinel_never_appears_in_cfe_results`
+    above (Story 2.3) for the two new STREAM-mode adapters this story adds
+    -- `build_native`/`build_docker` are new CFE-invoking, environment-
+    inheriting, stdout-capturing call sites, and the existing sentinel test
+    is explicitly scoped (by its own docstring) to the three call sites
+    Story 2.3's spec named, none of which are these (review pass).
+
+    Same positive-control shape as the existing test: both new fixture
+    stubs (`native-build.sh`, `build-locally.py`) honor `MASON_FIXTURE_
+    STDOUT`, so setting it to a value that can only have come from the
+    inherited environment proves inheritance, while asserting the sentinel
+    stays out of `result.stdout` proves it never leaks back out -- the same
+    two-sided shape the AD-14 guard's own docstring requires (Guard 3's AST
+    scan already proves neither adapter passes `env=` at all; this test is
+    the runtime round-trip on top of that structural proof)."""
+    _clear_fixture_env(monkeypatch)
+    sentinel = "JFROG-SENTINEL-2c8f61ab"
+    monkeypatch.setenv("JFROG_API_KEY", sentinel)
+
+    inheritance_marker = "INHERITED-BUILD-ENV-7a4e93d0"
+    monkeypatch.setenv("MASON_FIXTURE_STDOUT", inheritance_marker)
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: "linux64")
+
+    native_result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0)
+    docker_result = build_docker(
+        "linux64", root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    for result in (native_result, docker_result):
+        # Positive: the child really did inherit the parent's environment.
+        assert inheritance_marker in result.stdout
+        # Negative: and the credential sitting beside it never came back.
+        assert sentinel not in result.stdout

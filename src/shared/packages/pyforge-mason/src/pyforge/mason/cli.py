@@ -17,14 +17,20 @@ because the seam is a **capability** decision, not an implementation one
 diagnosis lands in Story 1.8; here it is a stub, same pattern as the other
 nouns were in Story 1.1.
 
-No verb is registered under any noun yet — later stories populate them by
-editing ``build_parser()`` directly: capture the return value of that
-noun's ``add_subparsers()`` call and register real verbs on it there, in
-the same function. (argparse forbids calling ``add_subparsers()`` a second
-time on one parser, so this cannot be done from outside ``build_parser()``
-after the fact.) A single generic loop builds the three verb-bearing nouns;
+No verb was registered under any noun through Story 1.2 — later stories
+populate them by editing ``build_parser()`` directly: capture the return
+value of that noun's ``add_subparsers()`` call and register real verbs on
+it there, in the same function. (argparse forbids calling
+``add_subparsers()`` a second time on one parser, so this cannot be done
+from outside ``build_parser()`` after the fact.) A single generic loop
+builds the three verb-bearing nouns, keeping each noun's own verb-
+subparsers object in ``_noun_verbs`` so a later story can add to it;
 ``doctor`` has no verb level by design (OQ-A4) and is built separately,
 immediately after that loop.
+
+Story 2.6 registers the first real verb, ``recipe build``, on
+``_noun_verbs["recipe"]`` right after the loop -- the pattern the paragraph
+above describes, now exercised for real.
 
 argparse, not click/typer: FR-41 forbids a CLI-framework dependency, and the
 sibling stations dispatch the same way.
@@ -41,7 +47,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from . import __version__, doctor, render
+from . import __version__, doctor, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -58,6 +64,9 @@ _NOUNS = {
     "environment": "resolve conflicting worlds into one lockfile",
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
+_RECIPE_BUILD_HELP = (
+    "build a recipe (native by default; --docker + --config for CI-parity)"
+)
 
 # AD-13: every global setting has a flag and an environment-variable form,
 # resolved uniformly flag -> environment -> default. These names are the
@@ -346,16 +355,17 @@ def build_parser() -> argparse.ArgumentParser:
     noun_names = (*_NOUNS, "doctor")
     nouns = parser.add_subparsers(dest="noun", metavar="{" + ",".join(noun_names) + "}")
 
+    # Each noun's own verb-subparsers object, keyed by noun name — captured
+    # so a verb can be registered on it right after this loop (argparse
+    # forbids a second add_subparsers() on one parser, so this cannot be
+    # done from outside build_parser() after the fact — see module
+    # docstring).
+    _noun_verbs: dict[str, argparse._SubParsersAction] = {}
     for name, help_text in _NOUNS.items():
         noun_parser = nouns.add_parser(
             name, help=help_text, description=help_text, parents=[global_flags],
         )
-        # No verbs beneath these yet — Story 1.2 is CLI wiring only. Later
-        # stories register verbs by editing build_parser() right here:
-        # capture this call's return value and call `.add_parser(...)` on it
-        # (argparse forbids a second add_subparsers() on one parser, so this
-        # cannot be done from outside after the fact — see module docstring).
-        noun_parser.add_subparsers(dest="verb", metavar="{}")
+        _noun_verbs[name] = noun_parser.add_subparsers(dest="verb", metavar="{}")
         # Remembered so main() can print this noun's own help on the
         # bare-noun usage error without re-parsing or rebuilding a parser.
         noun_parser.set_defaults(_noun_parser=noun_parser)
@@ -364,6 +374,27 @@ def build_parser() -> argparse.ArgumentParser:
         "doctor", help=_DOCTOR_HELP, description=_DOCTOR_HELP, parents=[global_flags],
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
+
+    # Story 2.6: the first real verb, `recipe build`. `parents=[global_flags]`
+    # here too, mirroring every other parser level — without it, a global
+    # flag given AFTER `build` (`mason recipe build <path> --format json`)
+    # would be rejected as unrecognized, since argparse hands the tokens
+    # following `build` to THIS parser, not an ancestor one.
+    recipe_build_parser = _noun_verbs["recipe"].add_parser(
+        "build", help=_RECIPE_BUILD_HELP, description=_RECIPE_BUILD_HELP,
+        parents=[global_flags],
+    )
+    recipe_build_parser.add_argument(
+        "recipe_path", metavar="RECIPE_PATH", help="path to the recipe (file or directory)",
+    )
+    recipe_build_parser.add_argument(
+        "--docker", action="store_true",
+        help="run the Docker/CI-parity build instead of the native default (requires --config)",
+    )
+    recipe_build_parser.add_argument(
+        "--config", metavar="CONFIG",
+        help="platform-variant config name for --docker (e.g. linux64)",
+    )
 
     return parser
 
@@ -424,10 +455,55 @@ def main(argv: Sequence[str] | None = None) -> int:
             ns._noun_parser.print_help(file=sys.stderr)
             return EXIT_USAGE
 
-        # Unreachable in Story 1.2: no verb is registered under any noun yet,
-        # so argparse itself rejects any token here as an invalid choice
-        # before `ns.verb` could ever be truthy. Kept only so a later story
-        # that populates verbs has somewhere to land its dispatch.
+        if ns.noun == "recipe" and ns.verb == "build":
+            # A manual post-parse cross-check, not argparse-declarative
+            # (spec Always boundary): `--docker`/`--config` pairing is a
+            # relationship BETWEEN two flags, which argparse's own
+            # declarative validators (`required=`, `choices=`, a mutually
+            # exclusive group) cannot express directly. Checked, and
+            # rejected as EXIT_USAGE, before any CFE resolution is
+            # attempted — mirroring the bare-noun usage error's
+            # stderr/EXIT_USAGE convention above.
+            docker = ns.docker
+            # A whitespace-only `--config` is treated as absent (review
+            # pass), matching `_resolve_str`'s established "whitespace-only
+            # counts as not supplied" convention elsewhere in this file —
+            # so `--config ""`/`--config " "` reports the same clear
+            # "requires --config" message as omitting the flag entirely,
+            # rather than a misleading one claiming it was never given.
+            config = ns.config.strip() if ns.config is not None and ns.config.strip() else None
+            if docker and not config:
+                print("recipe build: --docker requires --config", file=sys.stderr)
+                return EXIT_USAGE
+            if config and not docker:
+                print("recipe build: --config requires --docker", file=sys.stderr)
+                return EXIT_USAGE
+
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.build(
+                ns.recipe_path,
+                docker=docker,
+                config=config,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT,
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            # A non-zero delegated build returncode is DATA on `result`,
+            # never raised (AD-4) — this branch always reports "ok"/
+            # EXIT_OK for a Mason-successful invocation, mirroring
+            # `doctor`'s "the gap is data" precedent above; `data.
+            # returncode` is the signal, not this command's own status.
+            render.write(fmt, sys.stdout, "recipe build", "ok", dataclasses.asdict(result), [])
+            return EXIT_OK
+
+        # Unreachable: every verb registered in build_parser() is dispatched
+        # above; argparse itself rejects any other token here as an invalid
+        # choice before `ns.verb` could ever be truthy. Kept only so a later
+        # story that populates a new verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

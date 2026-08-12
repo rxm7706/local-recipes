@@ -688,9 +688,11 @@ def test_cfe_path_allowlist_is_exactly_ad3s_two_live_carve_outs():
 def test_parse_cfe_script_filenames_reads_the_real_cfe_py():
     """Ties this guard's allowlist source directly to cfe.py's real table --
     if a future story renames `_CFE_SCRIPTS` or restructures it, this test
-    (not just the vacuity guard above) fails first."""
+    (not just the vacuity guard above) fails first. Story 2.6 adds the two
+    build-adapter entries (`build_native`/`build_docker`) to the Story 1.9
+    fixture pair."""
     assert _parse_cfe_script_filenames(PKG_ROOT / _CFE_MODULE_NAME) == frozenset(
-        {"validate_recipe.py", "submit_pr.py"}
+        {"validate_recipe.py", "submit_pr.py", "native-build.sh", "build-locally.py"}
     )
 
 
