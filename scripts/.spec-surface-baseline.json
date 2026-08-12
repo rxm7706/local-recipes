@@ -2415,6 +2415,10 @@
   "files": {},
   "memlog": ""
  },
+ "pyforge-marshal/spec-marshal-land-merge-subject": {
+  "files": {},
+  "memlog": "ea501c527cc57309410c126b67b044f1370a49db"
+ },
  "pyforge-marshal/spec-multi-loop-isolation": {
   "files": {
    "scripts/bmad-loop-worktree": "77fa15c301ea17b4452638923a67c99811989f92",
