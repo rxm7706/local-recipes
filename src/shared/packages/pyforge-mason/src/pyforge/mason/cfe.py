@@ -36,7 +36,9 @@ table (AD-3: "every CFE script Mason uses is declared once in a module-level
 table in this file"), a private CAPTURE-mode invocation helper
 (`_invoke_captured`), tolerant JSON-from-stdout extraction (`_extract_json`),
 and two public named adapters (`validate_recipe`, `submit_pr`) that each
-return the new `CfeResult` (`models.py`).
+return the new `CfeResult` (`models.py`). Story 2.7 adds a third named
+adapter, `diagnose_failure`, mirroring the same shape exactly against
+`failure_analyzer.py`.
 
 `_CFE_SCRIPTS` maps an adapter's own key (e.g. `"validate_recipe"`) to the
 script's filename relative to a resolved CFE root's
@@ -607,16 +609,20 @@ def run_streamed(
 _CFE_SCRIPTS: dict[str, str] = {
     "validate_recipe": "validate_recipe.py",
     "submit_pr": "submit_pr.py",
+    "diagnose_failure": "failure_analyzer.py",
 }
 """Every CFE script Mason invokes, declared exactly once (AD-3): adapter key
 -> script filename, relative to a resolved CFE root's
 `.claude/scripts/conda-forge-expert/`. A named adapter function below (e.g.
 `validate_recipe`) looks up its own key here; no caller anywhere passes a
-script name or path directly. Two entries only -- `validate_recipe.py` and
-`submit_pr.py` -- because Story 1.9's fixture stubs exactly these two
-scripts and which specific script backs each of Stories 2.4-2.10 is still
-open (epic context); adding a table entry ahead of that decision would be
-unfalsifiable against this story's own fixtures (spec Never boundary)."""
+script name or path directly. `validate_recipe.py` and `submit_pr.py` were
+Story 1.9's fixture-stubbed pair; Story 2.7 adds a third entry,
+`diagnose_failure` -> `failure_analyzer.py` (OQ-A1's answer for FR-10,
+resolved by reading the real script), with a matching stub added to the
+fixture tree in the same story. Which script backs each of the remaining
+Stories 2.8-2.10 is still open; adding a table entry ahead of that decision
+would be unfalsifiable against this story's own fixtures (spec Never
+boundary)."""
 
 _JSON_LINE_START_PATTERN = re.compile(r"^[ \t]*[{\[]", re.MULTILINE)
 """Matches the first `{` or `[` that starts a line (optionally indented),
@@ -816,4 +822,40 @@ def submit_pr(
         root=root,
         interpreter=interpreter,
         timeout=timeout if timeout is not None else _SUBMIT_PR_TIMEOUT_SECONDS,
+    )
+
+
+_DIAGNOSE_FAILURE_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `analyze_build_failure` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `analyze_build_failure`'s tool wrapper never overrides)."""
+
+
+def diagnose_failure(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `failure_analyzer.py` (AD-3's `diagnose_failure` adapter,
+    FR-1, FR-10) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no failure-log interpretation of its own (AD-1):
+    the script's own `{"success": ..., "diagnosis": ..., "all_matches":
+    ...}` (or, for no match, `{"success": false, "error": ..., "hint":
+    ...}`) JSON body is `CfeResult.json_body` verbatim (spec Always
+    boundary). `timeout` defaults to `_DIAGNOSE_FAILURE_TIMEOUT_SECONDS`
+    when `None`, matching the real MCP server's own per-operation default
+    for this operation (see that constant's docstring) -- the same value as
+    `validate_recipe`'s, since both are short, single-pass CAPTURE-mode
+    operations.
+    """
+    return _invoke_captured(
+        "diagnose_failure",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _DIAGNOSE_FAILURE_TIMEOUT_SECONDS,
     )

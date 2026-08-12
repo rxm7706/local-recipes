@@ -17,14 +17,18 @@ because the seam is a **capability** decision, not an implementation one
 diagnosis lands in Story 1.8; here it is a stub, same pattern as the other
 nouns were in Story 1.1.
 
-No verb is registered under any noun yet — later stories populate them by
-editing ``build_parser()`` directly: capture the return value of that
-noun's ``add_subparsers()`` call and register real verbs on it there, in
-the same function. (argparse forbids calling ``add_subparsers()`` a second
-time on one parser, so this cannot be done from outside ``build_parser()``
-after the fact.) A single generic loop builds the three verb-bearing nouns;
-``doctor`` has no verb level by design (OQ-A4) and is built separately,
-immediately after that loop.
+No verb was registered under any noun through Story 1.2 — later stories
+populate them by editing ``build_parser()`` directly: capture the return
+value of that noun's ``add_subparsers()`` call and register real verbs on
+it there, in the same function. (argparse forbids calling
+``add_subparsers()`` a second time on one parser, so this cannot be done
+from outside ``build_parser()`` after the fact.) A single generic loop
+builds the three verb-bearing nouns, capturing each one's verb-subparsers
+action into a local ``_noun_verbs`` dict; ``doctor`` has no verb level by
+design (OQ-A4) and is built separately, immediately after that loop. Story
+2.7 is the first to use that seam, registering ``recipe diagnose`` on
+``_noun_verbs["recipe"]`` right after the loop — ``package``/``environment``
+stay behavior-identical (their own captured actions are never given a verb).
 
 argparse, not click/typer: FR-41 forbids a CLI-framework dependency, and the
 sibling stations dispatch the same way.
@@ -41,7 +45,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from . import __version__, doctor, render
+from . import __version__, doctor, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -58,6 +62,7 @@ _NOUNS = {
     "environment": "resolve conflicting worlds into one lockfile",
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
+_RECIPE_DIAGNOSE_HELP = "diagnose a build-failure log via CFE's failure analyzer"
 
 # AD-13: every global setting has a flag and an environment-variable form,
 # resolved uniformly flag -> environment -> default. These names are the
@@ -346,16 +351,17 @@ def build_parser() -> argparse.ArgumentParser:
     noun_names = (*_NOUNS, "doctor")
     nouns = parser.add_subparsers(dest="noun", metavar="{" + ",".join(noun_names) + "}")
 
+    # Captured per noun (Story 2.7) so a verb can be registered on it below,
+    # in this same function — argparse forbids calling add_subparsers() a
+    # second time on one parser, so this cannot be done from outside
+    # build_parser() after the fact (module docstring's documented seam).
+    _noun_verbs: dict[str, argparse._SubParsersAction] = {}
+
     for name, help_text in _NOUNS.items():
         noun_parser = nouns.add_parser(
             name, help=help_text, description=help_text, parents=[global_flags],
         )
-        # No verbs beneath these yet — Story 1.2 is CLI wiring only. Later
-        # stories register verbs by editing build_parser() right here:
-        # capture this call's return value and call `.add_parser(...)` on it
-        # (argparse forbids a second add_subparsers() on one parser, so this
-        # cannot be done from outside after the fact — see module docstring).
-        noun_parser.add_subparsers(dest="verb", metavar="{}")
+        _noun_verbs[name] = noun_parser.add_subparsers(dest="verb", metavar="{}")
         # Remembered so main() can print this noun's own help on the
         # bare-noun usage error without re-parsing or rebuilding a parser.
         noun_parser.set_defaults(_noun_parser=noun_parser)
@@ -364,6 +370,25 @@ def build_parser() -> argparse.ArgumentParser:
         "doctor", help=_DOCTOR_HELP, description=_DOCTOR_HELP, parents=[global_flags],
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
+
+    # Story 2.7: mason recipe diagnose <log_path> — the first verb
+    # registered under any noun (FR-10). package/environment stay
+    # behavior-identical to Story 1.2: their verb-subparsers actions above
+    # are captured but never given a verb, so they remain usage errors.
+    diagnose_parser = _noun_verbs["recipe"].add_parser(
+        "diagnose",
+        help=_RECIPE_DIAGNOSE_HELP,
+        description=_RECIPE_DIAGNOSE_HELP,
+        parents=[global_flags],
+    )
+    diagnose_parser.add_argument("log_path", help="path to the build-failure log file")
+    # Review pass (2026-08-12): `metavar="{}"` was never updated once a verb
+    # was actually registered, so `mason recipe <bad-verb>` printed the
+    # literal token `{}` in its usage/error text instead of `{diagnose}`.
+    # Derived from `.choices` (populated in registration order by the
+    # `add_parser()` call above), not hardcoded, so a future story adding a
+    # second `recipe` verb updates this automatically.
+    _noun_verbs["recipe"].metavar = "{" + ",".join(_noun_verbs["recipe"].choices) + "}"
 
     return parser
 
@@ -424,10 +449,56 @@ def main(argv: Sequence[str] | None = None) -> int:
             ns._noun_parser.print_help(file=sys.stderr)
             return EXIT_USAGE
 
-        # Unreachable in Story 1.2: no verb is registered under any noun yet,
-        # so argparse itself rejects any token here as an invalid choice
-        # before `ns.verb` could ever be truthy. Kept only so a later story
-        # that populates verbs has somewhere to land its dispatch.
+        if ns.noun == "recipe" and ns.verb == "diagnose":
+            # FR-10: delegates to CFE's failure analyzer via recipe.py.
+            # `recipe.diagnose` raises CfeUnresolvedError before any
+            # subprocess spawns if the CFE root is unresolved (spec Always
+            # boundary) -- caught by the dedicated branch below, same as
+            # every other CFE-dependent path. `--cfe-timeout` is resolved
+            # here (the first real caller of `_resolve_optional_float`) and
+            # passed through; `cfe.diagnose_failure`'s own per-operation
+            # default applies only when that resolves to `None`.
+            #
+            # Review pass (2026-08-12): `_invoke_captured` fixes the child's
+            # stdin to DEVNULL (existing, unchanged), so `-` -- which CFE's
+            # own failure_analyzer.py documents as its stdin sentinel --
+            # would silently read an empty log and report a confident-looking
+            # "no known error pattern matched" rather than the piped content.
+            # Rejected as a usage error before any subprocess spawns, mirror-
+            # ing `recipe build`'s own pre-resolution --docker/--config
+            # pairing check, rather than let it silently produce a wrong
+            # answer (spec Never boundary already scopes stdin out; this only
+            # makes that boundary loud instead of silent).
+            if ns.log_path.strip() == "-":
+                print(
+                    "mason recipe diagnose: '-' (stdin) is not supported -- pass a real "
+                    "log file path",
+                    file=sys.stderr,
+                )
+                return EXIT_USAGE
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.diagnose(
+                ns.log_path,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe diagnose", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK
+
+        # Unreachable now for every verb-noun pair except `recipe diagnose`
+        # above, handled by its own branch: `package`/`environment` still
+        # register no verbs at all, and `recipe` registers no verb beyond
+        # `diagnose`, so argparse itself rejects any other token here as an
+        # invalid choice before `ns.verb` could ever hold it. Kept only so a
+        # later story that populates another verb has somewhere to land its
+        # dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
