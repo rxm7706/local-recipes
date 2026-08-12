@@ -161,6 +161,25 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "it needs either promoting _http.py into a proper shared package or "
             "making the import lazy, not a manifest line."
         ),
+        "django": (
+            "OPEN. Story 9.1 (AD-1/AD-13): dashboard/apps.py and "
+            "dashboard/cache.py import django unconditionally at module level, "
+            "but AD-1/AD-13 requires pyforge.steward.dashboard to ship ONLY "
+            "behind the `dashboard` extra, never as a base dependency -- "
+            "declaring django in [project.dependencies] would violate that "
+            "decision. Neither file can defer the import behind try/except "
+            "either: apps.py's AppConfig subclass and cache.py's "
+            "`timeout: object = DEFAULT_TIMEOUT` default argument both need the "
+            "real symbol at class/def-evaluation time. In practice the import "
+            "is already gated at runtime -- these modules only ever load when "
+            "Django's own app registry imports them, which only happens with "
+            "`pyforge-steward[dashboard]` installed and configured (see "
+            "test_invariants.py's dashboard/django/channels containment "
+            "tests) -- but this AST-only scanner cannot see that dynamic gate. "
+            "Closing it needs either a static-analysis exemption for "
+            "extras-gated Django app modules or accepting the false positive "
+            "permanently, not a manifest line."
+        ),
     },
 }
 
