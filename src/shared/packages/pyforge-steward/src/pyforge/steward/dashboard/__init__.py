@@ -12,17 +12,18 @@ promoted into once the story merges).
 Ships ONLY behind the `pyforge-steward[dashboard]` optional extra, never a
 base dependency. This module deliberately imports nothing from `django` or
 `channels` at package level. Of its submodules only `apps.py` and `cache.py`
-import `django` at all — `declarations.py` and `middleware.py` are plain
-Python (the ASGI3 callable shape is protocol, not framework, per AD-8) and
-import cleanly with or without the extra. No other module in
+import `django` at all — `declarations.py`, `middleware.py`, and `export.py`
+(Story 9.4: `ExportPolicy` + `authorize_export`/`maybe_encrypt_export`) are
+plain Python (the ASGI3 callable shape is protocol, not framework, per AD-8)
+and import cleanly with or without the extra. No other module in
 `pyforge.steward` may import this package, `django`, or `channels`; pinned by
 `tests/meta/test_invariants.py`, which since review pass 3 also pins the
-narrower claim above — that `middleware.py`, `declarations.py` and this
-`__init__` itself stay django-free (this file was added to that guard in
-review pass 4: it executes on EVERY import of the package, so a `django`
-import here would turn both framework-free test modules into collection
-errors with nothing failing first to say why) — rather than leaving it to
-these docstrings.
+narrower claim above — that `middleware.py`, `declarations.py`, `export.py`,
+and this `__init__` itself stay django-free (this file was added to that
+guard in review pass 4: it executes on EVERY import of the package, so a
+`django` import here would turn both framework-free test modules into
+collection errors with nothing failing first to say why) — rather than
+leaving it to these docstrings.
 
 **Where the deferrals live.** Several docstrings in this package defer a
 question to "the deferred-work ledger". That ledger follows the same
