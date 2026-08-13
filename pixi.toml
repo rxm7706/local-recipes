@@ -1654,6 +1654,7 @@ httpx2 = ">=2.10.0"                      # Story 6.4 evidence-link HTTP client (
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
+daphne = ">=4.2.2,<5.0"                   # Story 13.6: the ASGI host `webhook_host.py` mounts behind (`webhook-host` extra) -- MUST stay byte-identical to pyproject.toml's `webhook-host` extra pin, itself byte-identical to [feature.pyforge-steward.dependencies]'s own daphne pin (line ~174) and to this file's pre-existing wagtail/coderedcms pin (line ~1253)
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-core (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
