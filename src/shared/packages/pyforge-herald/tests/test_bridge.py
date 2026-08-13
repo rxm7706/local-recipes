@@ -21,6 +21,7 @@ from pyforge.herald import (
     auth,
     bridge,
     claims,
+    db,
     deck_pipeline,
     errors,
     evidence,
@@ -141,6 +142,7 @@ _BRIDGE_CORE_MODULES = (
     progress,
     notices,
     locking,
+    db,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -167,9 +169,14 @@ module with no transport or argv-parsing concerns of its own.
 markdown/JSON storage only, no transport call and no inference SDK, so it
 has no legitimate reason to import either denylist below. ``locking.py``
 (Story 13.1) joins for the same reason once more: a stdlib-only
-(``fcntl``/``msvcrt``) advisory-lock primitive shared by ``state.py``/
-``progress.py``/``claims.py``/``notices.py``'s read-modify-write spans --
-no transport call, no inference SDK, no argv parsing."""
+(``fcntl``/``msvcrt``) advisory-lock primitive for ``state.py``'s
+read-modify-write spans (Story 13.3 moved the other three modules onto
+``db.py``) -- no transport call, no inference SDK, no argv parsing. ``db.py`` (Story
+13.3) joins for the same reason again: the stdlib-only ``sqlite3``
+connection/migration/transaction module that replaced ``locking.py`` as
+``progress.py``/``claims.py``/``notices.py``'s concurrency primitive --
+same local-storage concern, no transport call, no inference SDK, no argv
+parsing."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name

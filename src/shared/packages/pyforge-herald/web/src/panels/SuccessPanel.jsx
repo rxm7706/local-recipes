@@ -13,7 +13,7 @@ import Tooltip from '../components/Tooltip.jsx';
  * architecture (Herald's web app is a plain static Vite bundle, Epic 7) --
  * this panel fetches a pre-generated ``success.json`` (written by
  * ``scripts/export_web_snapshot.py`` from the operator's local
- * ``.herald/claims.json``) rather than a REST endpoint. ``dataUrl``/
+ * ``.herald/herald.db``) rather than a REST endpoint. ``dataUrl``/
  * ``fetcher`` are both overridable props so a test never depends on
  * ``jsdom``'s real (or absent) global ``fetch``.
  */
