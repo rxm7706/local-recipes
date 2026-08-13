@@ -53,7 +53,7 @@ development_status:
   9-4-export-gated-server-side: done
   9-5-the-perimeter-ships-with-the-pattern: done
   9-6-isolation-proven-by-tests-that-cannot-pass-vacuously: done
-  9-7-hosted-or-static-no-fork: backlog
+  9-7-hosted-or-static-no-fork: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
