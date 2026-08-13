@@ -165,6 +165,7 @@ cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m slow"
 # _bmad-output/projects/pyforge-steward/planning-artifacts/.
 [feature.pyforge-steward.dependencies]
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # -> built conda pkg
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: budget.py/keys.py's mandatory run-dep (atomic_write)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
@@ -232,6 +233,7 @@ cmd = "pytest tests/scripts/test_container_volumes_roundtrip.py -q"
 # a documentation-level statement, not a platform-list removal.
 [feature.pyforge-marshal.dependencies]
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
@@ -1445,6 +1447,7 @@ cmd = "python -m sentinel.knowledge.crews.review_crew"
 # run-deps) into the dedicated `pyforge-warden` env. Spec: docs/specs/pyforge-warden.md.
 [feature.pyforge-warden.dependencies]
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # -> built conda pkg
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: feeds.py's mandatory run-dep (atomic_write_text)
 hatchling = ">=1.31.0"            # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
@@ -1496,6 +1499,7 @@ depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
 [feature.pyforge-atlas.dependencies]
 pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: admission.py/lasuite.py/basilisk.py/migration_status.py/refresh.py's mandatory run-dep (atomic_write)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner (kedro-test)
@@ -1623,6 +1627,7 @@ pytest = ">=9.1.1"                       # test runner
 # _bmad-output/projects/pyforge-scribe/planning-artifacts/.
 [feature.pyforge-scribe.dependencies]
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # -> built conda pkg
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: graph_store.py::commit's mandatory run-dep (atomic_write_text)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
@@ -1639,6 +1644,7 @@ pytest = ">=9.1.1"                       # test runner
 # _bmad-output/projects/pyforge-herald/planning-artifacts/.
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep
 mcp = ">=2.0.0"                         # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
 httpx2 = ">=2.5.0"                      # Story 6.4 evidence-link HTTP client (also a package run-dep; mirrors mcp's own transitive pin)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)

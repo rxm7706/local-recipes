@@ -41,10 +41,11 @@ import argparse
 import json
 import os
 import sys
-import threading
-import tomllib
 from collections.abc import Mapping
 from pathlib import Path
+
+import tomllib
+from pyforge.core.atomic_write import atomic_write_bytes
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
 from ..core import policy
@@ -372,17 +373,19 @@ class PolicyIOError(Exception):
 
 def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> Path:
     """Write ``<target_dir>/policy-<content_hash>.json`` via
-    write-to-a-temp-file-then-``os.replace`` (atomic) -- AD-35's write-once
-    artifact. A no-op if that exact path already exists AS A FILE **with the
-    expected bytes** -- content-addressing only guarantees identical content
-    for files written by a cooperating atomic writer, so the existing bytes
-    are compared rather than trusted: a truncated, hand-edited, or foreign
-    file squatting on the content-addressed name raises ``PolicyIOError``
-    instead of being blessed as a successful materialization forever. On the
-    true no-op path the existing file's mtime is left untouched and no write
-    is attempted at all. A non-file (e.g. a directory) occupying the path,
-    or any ``mkdir``/temp-file/write failure, likewise raises
-    ``PolicyIOError`` rather than an uncaught ``OSError``.
+    ``pyforge.core.atomic_write_bytes`` (Story 14.2, CAP-2 -- the one
+    shared temp-file-then-``os.replace`` primitive, mkstemp-based) --
+    AD-35's write-once artifact. A no-op if that exact path already exists
+    AS A FILE **with the expected bytes** -- content-addressing only
+    guarantees identical content for files written by a cooperating atomic
+    writer, so the existing bytes are compared rather than trusted: a
+    truncated, hand-edited, or foreign file squatting on the
+    content-addressed name raises ``PolicyIOError`` instead of being
+    blessed as a successful materialization forever. On the true no-op path
+    the existing file's mtime is left untouched and no write is attempted
+    at all. A non-file (e.g. a directory) occupying the path, or any
+    ``mkdir``/temp-file/write failure, likewise raises ``PolicyIOError``
+    rather than an uncaught ``OSError``.
 
     THE CALLER owns the persist-only-ok-compositions gate: this function
     takes no findings (the spec pins the ``(policy, target_dir)``
@@ -411,32 +414,22 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
                     "name -- refusing to bless a foreign or corrupt artifact"
                 )
             return target_path
-        # os.open with mode 0o666 lets the KERNEL apply the process umask
-        # (exactly like a plain open() would), so the final artifact gets
-        # ordinary permissions after os.replace. The previous
-        # mkstemp+fchmod approach needed an os.umask(0)/restore probe to
-        # learn the umask -- a process-GLOBAL toggle that briefly zeroed the
-        # umask for every other thread on each write. The tmp name is
-        # pid+thread-suffixed so no two live writers can ever share it, and
-        # O_EXCL-guarded with NO pre-unlink: a pre-unlink could only ever
-        # collide with (and destroy) a SAME-process sibling's in-flight temp
-        # -- a SIGKILLed earlier run has a different pid, so its leftover
-        # never collides here; if pid+tid recycling ever does land on a
-        # stale leftover, O_EXCL surfaces it as an explicit PolicyIOError
-        # (delete the stale file and re-run) instead of a silent publish of
-        # a half-written artifact.
-        tmp_path = target_dir / (
-            f".policy-{effective_policy.content_hash}"
-            f".pid{os.getpid()}.t{threading.get_native_id()}.tmp"
-        )
-        fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
-        try:
-            with os.fdopen(fd, "wb") as handle:
-                handle.write(expected_bytes)
-            os.replace(tmp_path, target_path)
-        except BaseException:
-            tmp_path.unlink(missing_ok=True)
-            raise
+        # Story 14.2 deviation (see the story's Spec Change Log): the shared
+        # primitive's temp file is mkstemp-based (private 0600), unlike the
+        # PREVIOUS os.open(..., 0o666) approach that let the KERNEL apply the
+        # process umask onto the final artifact. Reproducing that
+        # umask-respecting permission via an explicit `mode=` -- a
+        # os.umask(0)/restore probe reintroduces the very process-GLOBAL
+        # toggle (briefly zeroing the umask for every other thread) the
+        # prior implementation deliberately avoided, but it is the only way
+        # to keep the materialized artifact's permission bits
+        # umask-respecting (tests/unit/test_cli.py::
+        # test_materialized_artifact_gets_umask_respecting_permissions)
+        # while still routing the write through the shared mkstemp-based
+        # primitive.
+        current_umask = os.umask(0)
+        os.umask(current_umask)
+        atomic_write_bytes(target_path, expected_bytes, mode=0o666 & ~current_umask)
         return target_path
     except PolicyIOError:
         raise

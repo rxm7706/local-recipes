@@ -18,7 +18,7 @@ authors = [{ name = "rxm7706" }]
 # directly, so it is this package's own dependency, not an undeclared ride
 # on mcp's -- a future mcp release dropping/renaming it should not silently
 # break evidence.py.
-dependencies = ["mcp>=1.28.1", "httpx2>=2.5.0"]
+dependencies = ["mcp>=1.28.1", "httpx2>=2.5.0", "pyforge-core"]
 
 [project.scripts]
 herald = "pyforge.herald.cli:main"
