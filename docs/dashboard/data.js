@@ -3895,7 +3895,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 11:46 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 12:01 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3960,6 +3960,14 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-console"
       },
       "archived_reason": "retired"
+    },
+    {
+      "slug": "asgi-multiplexer-monolith",
+      "title": "Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other",
+      "status": "dreamt",
+      "owner": "guild",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "bmad-drift-new-artifact-shape",
@@ -4091,6 +4099,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap"
       }
+    },
+    {
+      "slug": "enterprise-multi-agent-orchestration",
+      "title": "Django, Langflow, and DB-GPT scale as isolated containers behind one gateway",
+      "status": "dreamt",
+      "owner": "guild",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "factory-console",
@@ -6027,7 +6043,7 @@ window.DASHBOARD_DATA = {
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 77,
-          "total": 125
+          "total": 126
         },
         {
           "slug": "wasm-analytics-stack",
@@ -6090,9 +6106,9 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 2,
-    "live": 39,
-    "reached": 10,
+    "sound": 4,
+    "live": 41,
+    "reached": 12,
     "gaps": 35,
     "findings": 22,
     "rows": [
@@ -8059,10 +8075,220 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "asgi-multiplexer-monolith",
+        "slug": "asgi-multiplexer-monolith",
+        "project": "",
+        "dream": "asgi-multiplexer-monolith",
+        "owner": "guild",
+        "stages": {
+          "dream": "2026-08-13",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-13",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": false,
+              "market": false,
+              "technical": false
+            },
+            "n": 0,
+            "of": 3,
+            "missing": [
+              "domain",
+              "market",
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream"
+        ],
+        "gaps": [],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "dream",
+        "updated": "2026-08-13",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
+        "of": 1
+      },
+      {
         "label": "db-gpt-django-plugin",
         "slug": "db-gpt-django-plugin",
         "project": "",
         "dream": "db-gpt-django-plugin",
+        "owner": "guild",
+        "stages": {
+          "dream": "2026-08-13",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-13",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": false,
+              "market": false,
+              "technical": false
+            },
+            "n": 0,
+            "of": 3,
+            "missing": [
+              "domain",
+              "market",
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream"
+        ],
+        "gaps": [],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "dream",
+        "updated": "2026-08-13",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
+        "of": 1
+      },
+      {
+        "label": "enterprise-multi-agent-orchestration",
+        "slug": "enterprise-multi-agent-orchestration",
+        "project": "",
+        "dream": "enterprise-multi-agent-orchestration",
         "owner": "guild",
         "stages": {
           "dream": "2026-08-13",
@@ -15040,8 +15266,18 @@ window.DASHBOARD_DATA = {
     ],
     "constitutive": [
       {
+        "slug": "asgi-multiplexer-monolith",
+        "title": "Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other",
+        "status": "dreamt"
+      },
+      {
         "slug": "db-gpt-django-plugin",
         "title": "DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane",
+        "status": "dreamt"
+      },
+      {
+        "slug": "enterprise-multi-agent-orchestration",
+        "title": "Django, Langflow, and DB-GPT scale as isolated containers behind one gateway",
         "status": "dreamt"
       },
       {
@@ -16896,8 +17132,8 @@ window.DASHBOARD_DATA = {
       "subject": "steward story 9.2 hand-landed via PR #458 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 11:46 UTC",
-    "generatedEpoch": 1786621562
+    "generatedAt": "2026-08-13 12:01 UTC",
+    "generatedEpoch": 1786622519
   },
   "storySpecs": [
     {
@@ -17030,9 +17266,9 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 77,
-        "backlog": 45,
+        "backlog": 46,
         "blocked": 3,
-        "total": 125,
+        "total": 126,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
           "7-2-error-taxonomy-and-exit-codes",
@@ -17230,9 +17466,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 296,
-      "backlog": 77,
+      "backlog": 78,
       "blocked": 6,
-      "total": 379
+      "total": 380
     }
   },
   "fleetProgress": {
@@ -17272,11 +17508,11 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "marshal",
-        "stories": 125,
+        "stories": 126,
         "done": 77,
         "blocked": 3,
         "epics": 19,
-        "epicsDone": 5,
+        "epicsDone": 4,
         "complete": false,
         "running": false,
         "projected": 77
@@ -17327,11 +17563,11 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 379,
+      "stories": 380,
       "done": 296,
       "blocked": 6,
       "epics": 74,
-      "epicsDone": 50
+      "epicsDone": 49
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
