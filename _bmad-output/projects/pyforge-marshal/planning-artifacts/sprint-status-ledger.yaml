@@ -53,7 +53,7 @@ development_status:
   13-6-the-presumed-set-is-worked-down-by-measurement: done
   13-7-the-producer-reconciles-the-surface-it-drifts: done
   14-1-the-leaf-exists-and-is-provably-a-leaf: done
-  14-2-atomic-write-has-one-implementation: backlog
+  14-2-atomic-write-has-one-implementation: done
   14-3-one-lattice-one-envelope-one-exception-root: backlog
   14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated: backlog
   15-1-one-command-refreshes-the-fleets-homes: backlog
