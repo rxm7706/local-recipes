@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
+import sys
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
@@ -130,6 +131,19 @@ def test_render_static_index_rejects_duplicate_labels():
 def test_render_static_index_includes_viewport_meta():
     text = render_static_index([StaticPanel(label="East", html="<div></div>")], board="demo")
     assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in text
+
+
+def test_render_static_index_handles_a_one_shot_iterable():
+    """Review follow-up: `panels` is read twice (duplicate-label scan, then
+    the section render), so a generator used to be exhausted by the first
+    pass and silently render a page with ZERO panels -- wrong output
+    reported as success. Materializing once up front fixes it."""
+    panels = (StaticPanel(label=name, html=f"<div>{name}</div>") for name in ("East", "West"))
+
+    text = render_static_index(panels, board="demo")
+
+    assert "<div>East</div>" in text
+    assert "<div>West</div>" in text
 
 
 # ── _is_valid_board_slug / _is_board_output_dir_safe_to_write (direct) ─────
@@ -406,6 +420,7 @@ def test_idempotent_republish_of_lone_index_html_overwrites_it(fake_repo, tmp_pa
     assert "new content" in (board_dir / "index.html").read_text()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation needs privileges on Windows")
 def test_symlinked_output_dir_refuses_and_writes_nothing_through_it(fake_repo, tmp_path):
     outside_target = tmp_path / "outside"
     outside_target.mkdir()
@@ -421,6 +436,7 @@ def test_symlinked_output_dir_refuses_and_writes_nothing_through_it(fake_repo, t
     assert not (outside_target / "index.html").exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation needs privileges on Windows")
 def test_symlinked_dashboard_ancestor_refuses(tmp_path, monkeypatch):
     root = tmp_path / "repo"
     root.mkdir()
@@ -440,6 +456,7 @@ def test_symlinked_dashboard_ancestor_refuses(tmp_path, monkeypatch):
     assert not (real_dashboard / "demo").exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation needs privileges on Windows")
 def test_symlinked_docs_ancestor_refuses(tmp_path, monkeypatch):
     root = tmp_path / "repo"
     root.mkdir()
@@ -492,6 +509,7 @@ def test_stray_tmp_alongside_prior_index_from_killed_republish_self_heals(fake_r
     assert not (board_dir / "index.html.tmp").exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation needs privileges on Windows")
 def test_symlinked_tmp_entry_refuses_and_target_file_unchanged(fake_repo, tmp_path):
     board_dir = _board_dir(fake_repo)
     board_dir.mkdir(parents=True)
@@ -509,6 +527,7 @@ def test_symlinked_tmp_entry_refuses_and_target_file_unchanged(fake_repo, tmp_pa
     assert outside.read_text() == "SECRET-TARGET-CONTENT"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="os.link is unavailable/privileged on Windows")
 def test_hardlinked_tmp_entry_refuses_and_target_byte_identical(fake_repo, tmp_path):
     board_dir = _board_dir(fake_repo)
     board_dir.mkdir(parents=True)
@@ -528,6 +547,7 @@ def test_hardlinked_tmp_entry_refuses_and_target_byte_identical(fake_repo, tmp_p
     assert after == before
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="os.mkfifo does not exist on Windows")
 def test_fifo_at_tmp_entry_refuses_without_hanging(fake_repo, tmp_path):
     """Pass-5's headline case: neither a symlink nor multiply-linked, a
     FIFO at the trusted entry name must still be refused -- and the check

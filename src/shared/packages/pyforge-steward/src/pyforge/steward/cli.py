@@ -230,7 +230,11 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         "--board",
         required=True,
         metavar="SLUG",
-        help="the board slug (filesystem-safe: ^[A-Za-z0-9_-]+$)",
+        help=(
+            "the board slug (filesystem-safe: ^[A-Za-z0-9_-]+$; also refused when "
+            "docs/dashboard/<slug>/ is excluded by a .gitignore rule, since such a "
+            "board could never be committed or pushed)"
+        ),
     )
     static.add_argument(
         "--panel",

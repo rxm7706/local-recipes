@@ -961,7 +961,17 @@ def render_static_index(panels: Sequence[StaticPanel], *, board: str) -> str:
     (see `StaticPanel`'s docstring). A `<meta name="viewport">` tag is
     always emitted so the "responsive grid" claim holds on a mobile
     viewport too.
+
+    `panels` is materialized once up front: this function reads it TWICE
+    (the duplicate-label scan, then the section render), so a one-shot
+    iterable (a generator, `map`, a consumed `iter()`) would be exhausted
+    by the first pass and silently render a page with ZERO panels rather
+    than raising — wrong output reported as success, the worst failure
+    shape for a function whose whole job is emitting the published page.
+    The annotation says `Sequence`, but honouring it is cheap and the
+    alternative failure is silent.
     """
+    panels = tuple(panels)
     seen_labels: set[str] = set()
     for panel in panels:
         if panel.label in seen_labels:
@@ -1164,7 +1174,13 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
     `ValueError` naming a duplicate label). Before writing,
     `_is_board_output_dir_safe_to_write` is called inside `except OSError`;
     an unsafe target refuses naming the pre-existing foreign content and
-    writes NOTHING. Otherwise the page is written atomically (temp file +
+    writes NOTHING. Then `_is_path_gitignored` refuses a board slug whose
+    output path a `.gitignore` rule excludes (`build`, `dist`, `out`,
+    `node_modules` and friends all satisfy the slug allowlist while being
+    ignored at any depth in this repo) — such a board would write
+    successfully and then never be committable, pushable, or even visible
+    as a diff; see that helper's own docstring. Otherwise the page is
+    written atomically (temp file +
     rename, mirroring `_run_perimeter`'s own pattern) to `docs/dashboard/
     <board>/index.html`. `mkdir(parents=True)` drops `exist_ok=True` on
     the branch where `output_dir` did not already exist at safety-check
