@@ -413,7 +413,7 @@ def _build_parser() -> _HeraldArgumentParser:
         "--repo-root",
         type=Path,
         default=None,
-        help="repo root containing .herald/claims.json (default: cwd)",
+        help="repo root containing .herald/herald.db (default: cwd)",
     )
     success_subparsers = success.add_subparsers(
         dest="success_command", required=False, metavar="success_command"
@@ -1038,8 +1038,10 @@ def _run_progress(args: argparse.Namespace) -> int:
 
 
 def _success_claims_path(args: argparse.Namespace) -> Path:
-    """Resolve ``.herald/claims.json`` under ``args.repo_root`` (default:
-    cwd) -- shared by every ``success`` subcommand handler below."""
+    """Resolve ``.herald/herald.db`` under ``args.repo_root`` (default:
+    cwd) -- shared by every ``success`` subcommand handler below. Still
+    named ``claims_path`` throughout: Story 13.3 moved the claims store
+    into the shared database without changing any signature."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
     return repo_root / claims.DEFAULT_CLAIMS_PATH
 
@@ -1159,7 +1161,7 @@ def _run_success_publish(args: argparse.Namespace) -> int:
 
 def _run_success_list(args: argparse.Namespace) -> int:
     """``herald success`` with no subcommand, or ``herald success list``
-    (Story 9.3): read-only listing over ``claims.json``, optionally
+    (Story 9.3): read-only listing over the claims store, optionally
     filtered by ``--status`` and/or the shared ``--date-range`` (matched
     against each claim's ``shipped_date``)."""
     claims_path = _success_claims_path(args)
@@ -1374,7 +1376,7 @@ def _run_notice_get(args: argparse.Namespace) -> int:
     """``herald notice get <component>`` -- read-only full detail,
     following a rename redirect (Story 10.3). Also shows Story 11.3's
     cross-Moment backlink: every claim citing this notice as evidence
-    (``claims.referenced_by_claims``, computed fresh from ``claims.json`` --
+    (``claims.referenced_by_claims``, computed fresh from the claims store --
     not stored on the notice itself, see ``claims.py``'s module docstring).
 
     Passes ``notices.aliases_for``'s full alias set (the resolved name plus

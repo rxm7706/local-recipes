@@ -203,11 +203,15 @@ Run `herald success validate <claim-id>` or `herald success validate
 
 **Q: Where's the REST API / database?**
 
-There isn't one. `.herald/progress.json`, `.herald/claims.json`, and
-`.herald/notices-index.json` in the repo root (or wherever `herald` was
-run from) are the entire backend — plain JSON files written and read by
-the CLI. The web dashboard reads separately-exported static copies of
-these, not the files themselves.
+There's no REST API. There is a local database (Story 13.3): `.herald/herald.db`
+in the repo root (or wherever `herald` was run from) is where
+Progress/Success/Operations' storage lives — a single SQLite file, no
+server, no network. Operations Notices additionally write a git-tracked
+markdown mirror under `notices/`. The web dashboard reads
+separately-exported static JSON copies, not the database itself. It runs
+in WAL mode, so a backup or restore of `.herald/herald.db` must include
+any `.herald/herald.db-wal`/`.herald/herald.db-shm` sidecar files present
+alongside it, taken while no `herald` process is running.
 
 **Q: Which stations does `herald progress` know about?**
 
