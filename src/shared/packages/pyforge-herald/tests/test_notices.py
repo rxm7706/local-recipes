@@ -124,26 +124,29 @@ def test_index_file_round_trips_through_a_fresh_load(tmp_path: Path):
     assert fetched.what == "auth-api-v1 is deprecated"
 
 
-def test_a_corrupted_index_entry_missing_a_required_field_raises_herald_error(
-    tmp_path: Path,
-):
-    """Regression: `_entry_to_notice` checked for unknown extra fields and
-    a malformed `revisions` type, but never that every field the `Notice`
-    dataclass requires (no default) was present -- a missing one raised a
-    raw `TypeError` from `Notice.__init__`, not the structural
-    `errors.HeraldError` every other corruption check in this function
-    raises (AD-6). Since `dispatch()` only catches `HeraldError`, this
-    crashed as an unhandled traceback instead of the tool's usual
-    one-stderr-line/exit-code reporting."""
-    import json
+def test_a_corrupted_revisions_column_raises_herald_error(tmp_path: Path):
+    """Story 13.3: every other ``Notice`` field is now a plain, typed SQL
+    column (``what TEXT NOT NULL`` etc. -- the schema itself refuses a
+    missing required field; see ``tests/test_db.py``'s legacy-import
+    coverage for the one corruption path still reachable there, a
+    hand-edited legacy ``notices-index.json``). ``revisions`` stays a JSON
+    TEXT column with no structural enforcement beyond "is it valid JSON",
+    so it is still reachable by writing directly to the database, bypassing
+    this module's own API -- mirrors the original regression this test
+    pinned (``_entry_to_notice`` must fail structurally, not raw)."""
+    import sqlite3
 
     _author(tmp_path)
     index_path = tmp_path / notices.DEFAULT_INDEX_PATH
-    document = json.loads(index_path.read_text(encoding="utf-8"))
-    del document["notices"]["auth-api-v1"]["what"]
-    index_path.write_text(json.dumps(document), encoding="utf-8")
+    raw = sqlite3.connect(index_path)
+    raw.execute(
+        "UPDATE notices_index SET revisions = ? WHERE component = ?",
+        ("{not valid json", "auth-api-v1"),
+    )
+    raw.commit()
+    raw.close()
 
-    with pytest.raises(HeraldError, match="missing field.*'what'"):
+    with pytest.raises(HeraldError, match="revisions"):
         notices.get_notice(tmp_path, "auth-api-v1")
 
 
@@ -213,8 +216,8 @@ def test_close_already_closed_raises(tmp_path: Path):
 
 
 def test_list_notices_on_a_completely_empty_repo_is_empty(tmp_path: Path):
-    """Story 11.2: no ``.herald/notices-index.json`` at all yet -- not even
-    an empty one -- must resolve to an empty list, not raise."""
+    """Story 11.2: no ``.herald/herald.db`` at all yet -- not even an empty
+    one -- must resolve to an empty list, not raise."""
     assert notices.list_notices(tmp_path) == []
     assert notices.list_notices(tmp_path, status="all") == []
 
@@ -321,24 +324,25 @@ def test_publish_follows_a_redirect(tmp_path: Path):
 def test_two_concurrent_authors_for_different_components_both_land(
     tmp_path: Path, monkeypatch
 ):
-    """Story 13.1 regression: two ``author_notice`` calls for different
-    components racing the same index file must both survive -- forced,
-    deterministic interleaving (not a timing-dependent sleep race).
-    Mirrors ``test_state.py``'s technique: a monkeypatched delay right
-    after ``_load_index_document``'s read gives the other (unlocked)
-    author's whole read-modify-write cycle room to run during the pause;
-    locked, a second author cannot even begin its own read until the first
-    has released the lock. Fails against the pre-fix (unlocked) code,
-    passes against the fixed code -- confirmed locally by commenting out
-    ``author_notice``'s ``locking.locked`` call."""
-    original_load_index_document = notices._load_index_document
+    """Story 13.1/13.3 regression: two ``author_notice`` calls for
+    different components racing the same database must both survive --
+    forced, deterministic interleaving (not a timing-dependent sleep
+    race). A monkeypatched delay on ``_now_iso`` (called from inside
+    ``author_notice``'s own ``db.transaction``, before its first read)
+    gives the other author's whole ``BEGIN IMMEDIATE`` attempt room to
+    genuinely block during the pause -- a second author cannot even begin
+    its own transaction until the first has committed. Fails against a
+    version of ``author_notice`` that does not hold the transaction
+    across its read-modify-write span, passes against the real
+    implementation."""
+    original_now_iso = notices._now_iso
 
-    def delayed_load_index_document(index_path):
-        document = original_load_index_document(index_path)
+    def delayed_now_iso():
+        timestamp = original_now_iso()
         time.sleep(0.2)
-        return document
+        return timestamp
 
-    monkeypatch.setattr(notices, "_load_index_document", delayed_load_index_document)
+    monkeypatch.setattr(notices, "_now_iso", delayed_now_iso)
 
     barrier = threading.Barrier(2)
 
@@ -377,13 +381,14 @@ def test_two_concurrent_authors_for_different_components_both_land(
 def test_mutating_calls_leave_no_files_behind_when_no_index_exists(
     tmp_path: Path, call, message
 ):
-    """Story 13.1 regression: acquiring the lock creates ``index_path``'s
-    parent directory and the sidecar ``.lock`` file, so a mutating call that
-    can only ever fail (no notice index exists at all -- an operator in the
-    wrong directory) would litter that directory with an empty ``.herald/``
-    tree on a pure error path that had no filesystem side effect before the
-    lock existed. These three refuse BEFORE locking; ``author_notice`` is
-    deliberately excluded, since creating the index is its job."""
+    """Story 13.1/13.3 regression: opening ``db.transaction`` creates
+    ``index_path``'s parent directory and the database file itself, so a
+    mutating call that can only ever fail (no notice index exists at all --
+    an operator in the wrong directory) would litter that directory with
+    an empty ``.herald/`` tree on a pure error path that had no filesystem
+    side effect before Story 13.1's lock existed. These three refuse
+    BEFORE the transaction opens; ``author_notice`` is deliberately
+    excluded, since creating the index is its job."""
     with pytest.raises(HeraldError, match=message):
         call(tmp_path)
 
@@ -408,23 +413,23 @@ def test_an_unreadable_index_is_never_reported_as_a_missing_notice(
     tmp_path: Path, call, wrong_message
 ):
     """The pre-lock fail-fast must distinguish "no index" from "the index
-    cannot be read".
+    cannot be opened".
 
     A ``Path.exists()`` check cannot: it returns ``False`` whenever the stat
     itself fails (symlink loop, unsearchable parent, EACCES, EIO), so an
     index that is present but unreadable would be reported as a missing
     notice -- sending the operator after the wrong problem, and silently
-    replacing the ``could not be read`` error these calls raised before
-    Story 13.1. ``state.read``'s docstring records the same hazard as the
-    reason it has no ``exists()`` pre-check either.
+    replacing the ``could not be opened`` error ``db.py`` raises. ``state.
+    read``'s docstring records the same hazard as the reason it has no
+    ``exists()`` pre-check either.
 
     A self-referential symlink is the uid-independent way to make ``stat``
     fail with something other than ENOENT (a ``chmod`` test would pass
     trivially under root)."""
-    index_path = tmp_path / ".herald" / "notices-index.json"
+    index_path = tmp_path / ".herald" / "herald.db"
     index_path.parent.mkdir(parents=True)
     index_path.symlink_to(index_path)
 
-    with pytest.raises(HeraldError, match="could not be read") as excinfo:
+    with pytest.raises(HeraldError, match="could not be opened") as excinfo:
         call(tmp_path)
     assert wrong_message not in str(excinfo.value)

@@ -1,12 +1,17 @@
-"""Story 9.1 (scaled down): local ``claims.json`` storage -- create, read,
-publish, revalidate, and the atomic-write/round-trip discipline mirroring
-``state.py``.
-"""
+"""Story 9.1 (scaled down): SQLite-backed claim storage (Story 13.3 moved
+the backing store from ``claims.json`` to ``db.py``'s shared
+``.herald/herald.db``) -- create, read, publish, revalidate.
+
+Every case uses an explicit ``tmp_path``-derived path named ``herald.db``,
+not ``claims.json`` -- Story 13.3's one-time legacy import looks for a
+sibling file literally named ``claims.json`` next to the database file, so
+a test path sharing that name would collide with the DB file itself;
+production code never hits this because ``DEFAULT_CLAIMS_PATH`` is
+``.herald/herald.db``, never ``claims.json``."""
 
 from __future__ import annotations
 
-import json
-import sys
+import sqlite3
 import threading
 import time
 from dataclasses import replace
@@ -18,7 +23,7 @@ from pyforge.herald import evidence as evidence_mod
 
 
 def test_create_writes_a_draft_claim(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(path, project_name="warden", shipped_date="2026-08-01")
     assert claim.status == "draft"
     assert claim.thesis is None
@@ -30,7 +35,7 @@ def test_create_writes_a_draft_claim(tmp_path):
 
 def test_create_defaults_shipped_date_to_today(tmp_path):
     claim = claims.create(
-        tmp_path / "claims.json",
+        tmp_path / "herald.db",
         project_name="warden",
         today=lambda: __import__("datetime").date(2026, 8, 8),
     )
@@ -39,7 +44,7 @@ def test_create_defaults_shipped_date_to_today(tmp_path):
 
 def test_create_rejects_empty_project_name(tmp_path):
     with pytest.raises(errors.HeraldError):
-        claims.create(tmp_path / "claims.json", project_name="")
+        claims.create(tmp_path / "herald.db", project_name="")
 
 
 def test_create_rejects_a_whitespace_only_project_name(tmp_path):
@@ -47,20 +52,20 @@ def test_create_rejects_a_whitespace_only_project_name(tmp_path):
     whitespace-only name ("   ") is truthy in Python and sailed through,
     creating a claim visually unidentifiable in `list` output."""
     with pytest.raises(errors.HeraldError):
-        claims.create(tmp_path / "claims.json", project_name="   ")
+        claims.create(tmp_path / "herald.db", project_name="   ")
 
 
 def test_create_rejects_unknown_evidence_type(tmp_path):
     with pytest.raises(errors.HeraldError):
         claims.create(
-            tmp_path / "claims.json",
+            tmp_path / "herald.db",
             project_name="warden",
             evidence=[claims.Evidence(type="bogus", url="https://x", label="x")],
         )
 
 
 def test_create_is_idempotent_id_wise_and_appends(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     first = claims.create(path, project_name="warden")
     second = claims.create(path, project_name="marshal")
     assert first.id != second.id
@@ -69,74 +74,45 @@ def test_create_is_idempotent_id_wise_and_appends(tmp_path):
 
 
 def test_read_one_missing_claim_raises_claim_not_found(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claims.create(path, project_name="warden")
     with pytest.raises(errors.ClaimNotFoundError):
         claims.read_one(path, "does-not-exist")
 
 
 def test_read_one_is_not_blocked_by_an_unrelated_malformed_entry(tmp_path):
-    """Regression: `read_one` went through `read_all`, which eagerly
-    decodes EVERY entry -- one malformed entry anywhere in the file
-    blocked looking up an unrelated, perfectly healthy claim by its exact
-    id. `read_one` now decodes entries lazily, only raising if the
-    MATCHED entry itself is the malformed one."""
-    path = tmp_path / "claims.json"
+    """Regression (JSON era): `read_one` went through `read_all`, which
+    eagerly decoded EVERY entry -- one malformed entry anywhere in the
+    file blocked looking up an unrelated, perfectly healthy claim by its
+    exact id. Story 13.3's DB-backed `read_one` looks the row up directly
+    by id (a targeted SQL `WHERE`), so an unrelated row's malformed
+    `evidence` JSON column never comes into play at all -- simulated here
+    by corrupting a SECOND row's `evidence` column directly, bypassing
+    this module's own write path."""
+    path = tmp_path / "herald.db"
     good = claims.create(path, project_name="warden")
-    raw = claims._load_document(path)
-    raw.append({"id": "bad-entry", "project_name": "broken"})  # missing fields
-    path.write_text(json.dumps(raw), encoding="utf-8")
+    bad = claims.create(path, project_name="broken")
+    raw = sqlite3.connect(path)
+    raw.execute("UPDATE claims SET evidence = ? WHERE id = ?", ("{not valid json", bad.id))
+    raw.commit()
+    raw.close()
 
     found = claims.read_one(path, good.id)
 
     assert found.id == good.id
     with pytest.raises(errors.HeraldError):
-        claims.read_one(path, "bad-entry")
+        claims.read_one(path, bad.id)
     with pytest.raises(errors.HeraldError):
         claims.read_all(path)
 
 
 def test_read_all_on_missing_file_is_empty(tmp_path):
-    assert claims.read_all(tmp_path / "claims.json") == []
+    assert claims.read_all(tmp_path / "herald.db") == []
 
 
-def test_read_all_rejects_malformed_json(tmp_path):
-    path = tmp_path / "claims.json"
-    path.write_text("{not valid json", encoding="utf-8")
-    with pytest.raises(errors.HeraldError):
-        claims.read_all(path)
-
-
-def test_read_all_rejects_non_list_top_level(tmp_path):
-    path = tmp_path / "claims.json"
-    path.write_text('{"not": "a list"}', encoding="utf-8")
-    with pytest.raises(errors.HeraldError):
-        claims.read_all(path)
-
-
-def test_read_all_rejects_unknown_field_on_a_claim(tmp_path):
-    path = tmp_path / "claims.json"
-    claims.create(path, project_name="warden")
-    stored = claims.read_all(path)
-    doc = [
-        {
-            "id": stored[0].id,
-            "project_name": "warden",
-            "status": "draft",
-            "thesis": None,
-            "shipped_date": None,
-            "created_at": stored[0].created_at,
-            "published_at": None,
-            "closed_at": None,
-            "updated_at": stored[0].updated_at,
-            "evidence": [],
-            "edit_history": [],
-            "totally_unknown_field": "oops",
-        }
-    ]
-    import json
-
-    path.write_text(json.dumps(doc), encoding="utf-8")
+def test_read_all_rejects_a_corrupt_database_file(tmp_path):
+    path = tmp_path / "herald.db"
+    path.write_bytes(b"not a sqlite database")
     with pytest.raises(errors.HeraldError):
         claims.read_all(path)
 
@@ -151,14 +127,14 @@ def _fake_validator(valid_urls):
 
 
 def test_publish_requires_a_thesis(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(path, project_name="warden")
     with pytest.raises(errors.HeraldError):
         claims.publish(path, claim.id, thesis=None, validate=_fake_validator(set()))
 
 
 def test_publish_updates_status_and_timestamps(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -177,7 +153,7 @@ def test_publish_updates_status_and_timestamps(tmp_path):
 
 
 def test_publish_propagates_a_broken_evidence_link_and_writes_nothing(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -197,7 +173,7 @@ def test_publish_names_every_broken_evidence_link_not_just_the_first(tmp_path):
     """Regression: raising on the first broken link meant an operator
     fixing evidence one publish-attempt at a time hit the next broken
     link on the next retry instead of seeing the full list once."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -218,7 +194,7 @@ def test_publish_names_every_broken_evidence_link_not_just_the_first(tmp_path):
 
 
 def test_publish_twice_raises_claim_state_error(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(path, project_name="warden")
     claims.publish(path, claim.id, thesis="v1", validate=_fake_validator(set()))
     with pytest.raises(errors.ClaimStateError):
@@ -226,7 +202,7 @@ def test_publish_twice_raises_claim_state_error(tmp_path):
 
 
 def test_publish_with_a_new_thesis_preserves_the_old_one_in_edit_history(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(path, project_name="warden")
     # Give it an initial thesis by publishing once, then simulate an
     # edit-and-republish scenario is not supported (publish requires
@@ -249,7 +225,7 @@ def test_publish_with_a_new_thesis_preserves_the_old_one_in_edit_history(tmp_pat
 
 
 def test_list_claims_filters_by_status(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     draft = claims.create(path, project_name="warden")
     published = claims.create(path, project_name="marshal")
     claims.publish(
@@ -263,7 +239,7 @@ def test_list_claims_filters_by_date_range_and_excludes_unset_dates(tmp_path):
     import datetime as dt
     from dataclasses import replace
 
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     in_range = claims.create(path, project_name="warden", shipped_date="2026-08-05")
     claims.create(path, project_name="marshal", shipped_date="2026-01-01")
     unset = claims.create(path, project_name="steward", shipped_date="2026-08-06")
@@ -279,7 +255,7 @@ def test_list_claims_filters_by_date_range_and_excludes_unset_dates(tmp_path):
 
 
 def test_revalidate_updates_validated_flags_without_raising(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -302,7 +278,7 @@ def test_revalidate_updates_validated_flags_without_raising(tmp_path):
 
 
 def test_revalidate_all_shares_one_timestamp(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claims.create(
         path,
         project_name="warden",
@@ -326,9 +302,9 @@ def test_revalidate_all_shares_one_timestamp(tmp_path):
 
 
 def test_revalidate_all_on_a_completely_missing_file_is_a_noop(tmp_path):
-    """Story 11.2: no ``claims.json`` at all yet -- ``revalidate_all`` must
+    """Story 11.2: no ``herald.db`` at all yet -- ``revalidate_all`` must
     not raise, and must still (harmlessly) round-trip an empty document."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     assert claims.revalidate_all(path) == []
     assert claims.read_all(path) == []
 
@@ -363,7 +339,7 @@ def test_is_stale_true_past_the_window():
 
 
 def test_to_dict_includes_computed_is_stale(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -378,7 +354,7 @@ def test_to_dict_includes_computed_is_stale(tmp_path):
 
 
 def test_snapshot_only_includes_matching_status(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claims.create(path, project_name="draft-one")
     published = claims.create(path, project_name="published-one")
     claims.publish(
@@ -391,7 +367,7 @@ def test_snapshot_only_includes_matching_status(tmp_path):
 def test_snapshot_is_newest_first_by_published_at(tmp_path):
     import datetime as dt
 
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     older = claims.create(path, project_name="older")
     newer = claims.create(path, project_name="newer")
     claims.publish(
@@ -413,7 +389,7 @@ def test_snapshot_is_newest_first_by_published_at(tmp_path):
 
 
 def test_snapshot_empty_when_no_claims_match(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claims.create(path, project_name="draft-only")
     assert claims.snapshot(path, status="published") == []
 
@@ -422,7 +398,7 @@ def test_snapshot_empty_when_no_claims_match(tmp_path):
 
 
 def test_notice_type_evidence_is_a_valid_evidence_type(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -440,7 +416,7 @@ def test_publish_never_http_validates_notice_type_evidence(tmp_path):
     """A `notice`-type evidence entry's `url` is a component name, not an
     HTTP URL -- `publish` must never hand it to `validate`, or a real
     validator would try to HEAD a bare component name and always fail."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -462,7 +438,7 @@ def test_publish_never_http_validates_notice_type_evidence(tmp_path):
 
 
 def test_revalidate_never_http_validates_notice_type_evidence(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -489,7 +465,7 @@ def test_revalidate_never_http_validates_notice_type_evidence(tmp_path):
 
 
 def test_referenced_by_claims_finds_claims_citing_a_notice(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     citing = claims.create(
         path,
         project_name="warden",
@@ -514,70 +490,53 @@ def test_referenced_by_claims_finds_claims_citing_a_notice(tmp_path):
 
 
 def test_referenced_by_claims_empty_when_no_claim_cites_it(tmp_path):
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claims.create(path, project_name="warden")
     assert claims.referenced_by_claims(path, "auth-api-v1") == []
 
 
 def test_referenced_by_claims_on_missing_file_is_empty(tmp_path):
-    assert claims.referenced_by_claims(tmp_path / "claims.json", "auth-api-v1") == []
+    assert claims.referenced_by_claims(tmp_path / "herald.db", "auth-api-v1") == []
 
 
 # --- Story 13.1: concurrency (closing DW-1-4-2) -----------------------------
 
 
-def _lock_is_currently_free(lock_path) -> bool:
-    """Independently attempts its OWN non-blocking acquire of ``lock_path``
-    -- ``True`` only if nothing else currently holds that same lock file's
-    exclusive lock. ``fcntl.flock``/``msvcrt.locking`` are per-open-file-
-    -description, not per-process, so a second, independent ``open()`` in
-    the SAME process still genuinely contends with a lock the process is
-    already holding via a different file object -- this is a direct proof,
-    not a simulation.
+def _write_lock_is_currently_free(db_path) -> bool:
+    """Independently attempts its OWN short-timeout ``BEGIN IMMEDIATE`` on
+    ``db_path`` via a brand new connection -- ``True`` only if nothing else
+    currently holds ``db.transaction``'s write lock. A genuinely separate
+    connection (not ``db.py``'s own ambient-transaction machinery) is the
+    point: this is a direct proof that SQLite's own lock is free, not a
+    simulation.
 
-    Deliberately hand-reimplements ``locking``'s ``fcntl``/``msvcrt``
-    platform dispatch instead of calling ``locking._acquire`` directly:
-    that call BLOCKS until the lock is free, which would defeat this
-    helper's whole purpose (a non-blocking "is it free right now" check)
-    -- it needs its own non-blocking variant (``LOCK_NB`` / ``LK_NBLCK``)
-    of the same two syscalls, so the duplication here is deliberate, not
-    drift."""
+    A short ``timeout`` (well under ``db._BUSY_TIMEOUT_MS``) makes "is it
+    free right now" observable quickly instead of waiting out the whole
+    generous production timeout on every failed attempt."""
+    conn = sqlite3.connect(db_path, timeout=0.05, isolation_level=None)
     try:
-        with open(lock_path, "a+b") as fh:
-            if sys.platform == "win32":
-                import msvcrt
-
-                fh.seek(0)
-                try:
-                    msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
-                except OSError:
-                    return False
-                msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
-                return True
-            else:
-                import fcntl
-
-                try:
-                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except OSError:
-                    return False
-                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
-                return True
-    except OSError:
+        conn.execute("BEGIN IMMEDIATE")
+    except sqlite3.OperationalError:
         return False
+    else:
+        conn.execute("ROLLBACK")
+        return True
+    finally:
+        conn.close()
 
 
 def test_two_concurrent_creates_for_different_projects_both_land(tmp_path, monkeypatch):
-    """Story 13.1 regression: two ``create`` calls racing the same
-    ``claims.json`` must both survive -- forced, deterministic interleaving
-    (not a timing-dependent sleep race). Mirrors ``test_state.py``'s
-    technique: a monkeypatched delay right after ``read_all``'s read gives
-    the other (unlocked) creator's whole read-modify-write cycle room to
-    run during the pause; locked, a second creator cannot even begin its
-    own read until the first has released the lock. Fails against the
-    pre-fix (unlocked) code, passes against the fixed code -- confirmed
-    locally by commenting out ``create``'s ``locking.locked`` call."""
-    path = tmp_path / "claims.json"
+    """Story 13.1/13.3 regression: two ``create`` calls racing the same
+    database must both survive -- forced, deterministic interleaving (not
+    a timing-dependent sleep race). A monkeypatched delay right after
+    ``read_all``'s read (called from inside ``create``'s own
+    ``db.transaction``) gives the other creator's whole
+    ``BEGIN IMMEDIATE`` attempt room to genuinely block during the pause --
+    a second creator cannot even begin its own transaction until the first
+    has committed. Fails against a version of ``create`` that does not
+    hold the transaction across its read-modify-write span, passes against
+    the real implementation."""
+    path = tmp_path / "herald.db"
     original_read_all = claims.read_all
 
     def delayed_read_all(claims_path):
@@ -610,12 +569,13 @@ def test_two_concurrent_creates_for_different_projects_both_land(tmp_path, monke
 
 
 def test_publish_never_holds_the_lock_during_network_validation(tmp_path):
-    """Story 13.1: ``publish``'s lock must never span the network
-    validation call. Direct proof: the injected validator attempts its OWN
-    independent non-blocking acquire of the SAME lock file ``publish``
-    uses -- if ``publish`` were (incorrectly) holding the lock during
-    validation, this nested non-blocking attempt would fail."""
-    path = tmp_path / "claims.json"
+    """Story 13.1/13.3: ``publish``'s transaction must never span the
+    network validation call. Direct proof: the injected validator attempts
+    its OWN independent ``BEGIN IMMEDIATE`` against the SAME database
+    ``publish`` uses -- if ``publish`` were (incorrectly) already holding
+    the write lock during validation, this independent attempt would
+    fail."""
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -623,14 +583,13 @@ def test_publish_never_holds_the_lock_during_network_validation(tmp_path):
             claims.Evidence(type="test_results", url="https://ok", label="tests")
         ],
     )
-    lock_path = path.with_name(path.name + ".lock")
     observed: list[bool] = []
 
     class _Result:
         is_valid = True
 
     def _validate(url):
-        observed.append(_lock_is_currently_free(lock_path))
+        observed.append(_write_lock_is_currently_free(path))
         return _Result()
 
     published = claims.publish(path, claim.id, thesis="Shipped it", validate=_validate)
@@ -642,8 +601,8 @@ def test_publish_never_holds_the_lock_during_network_validation(tmp_path):
 def test_revalidate_all_never_holds_the_lock_during_network_validation(tmp_path):
     """Same proof as ``publish``'s own test, for ``revalidate_all`` --
     every evidence link across every claim is validated (real HTTP, in
-    principle) before the lock is ever acquired."""
-    path = tmp_path / "claims.json"
+    principle) before the transaction ever opens."""
+    path = tmp_path / "herald.db"
     claims.create(
         path,
         project_name="warden",
@@ -651,14 +610,13 @@ def test_revalidate_all_never_holds_the_lock_during_network_validation(tmp_path)
             claims.Evidence(type="test_results", url="https://ok", label="tests")
         ],
     )
-    lock_path = path.with_name(path.name + ".lock")
     observed: list[bool] = []
 
     class _Result:
         is_valid = True
 
     def _validate(url):
-        observed.append(_lock_is_currently_free(lock_path))
+        observed.append(_write_lock_is_currently_free(path))
         return _Result()
 
     claims.revalidate_all(path, validate=_validate)
@@ -677,7 +635,7 @@ def test_revalidate_all_scopes_validation_results_per_claim_not_globally(tmp_pat
     result. This test FAILS against that flat-dict shape (both claims
     would end up with the SECOND call's outcome) and PASSES against the
     per-claim-scoped ``validated_by_claim`` fix."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     shared_evidence = claims.Evidence(
         type="test_results", url="https://ci.example/run-1", label="CI run"
     )
@@ -726,7 +684,7 @@ def test_concurrent_publish_on_the_same_claim_rejects_the_second_caller(
     data silently wins on disk); passes against the fixed code (exactly one
     call succeeds, the other raises ``ClaimStateError``) -- confirmed
     locally by commenting out the in-lock re-check."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(path, project_name="warden")
     original_read_all = claims.read_all
 
@@ -796,7 +754,7 @@ def test_revalidate_all_does_not_stamp_updated_at_on_a_claim_it_never_validated(
     against the fixed code (the new claim comes back byte-for-byte
     unchanged) -- confirmed locally by reverting to the unconditional
     ``replace()`` call."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claims.create(
         path,
         project_name="warden",
@@ -896,7 +854,7 @@ def test_publish_keeps_duplicate_evidence_entries_outcomes_distinct(tmp_path):
     disagree (the first check passes, the second hits a transient failure):
     publish must see the second position's breakage and reject the whole
     publish, never let the first position's success stand in for both."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -930,7 +888,7 @@ def test_revalidate_keeps_duplicate_evidence_entries_outcomes_distinct(tmp_path)
     then ``False`` (a transient 429) stored ``[False, False]`` under the
     ``Evidence``-keyed map. Index-aligned positional carry stores
     ``[True, False]``."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -951,7 +909,7 @@ def test_revalidate_all_keeps_duplicate_evidence_entries_outcomes_distinct(tmp_p
     batch entry point. Per-claim-id scoping alone does not fix it -- the
     results carried under that id must themselves be index-aligned rather
     than value-keyed."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claims.create(
         path,
         project_name="warden",
@@ -983,7 +941,7 @@ def test_publish_refuses_when_a_concurrent_writer_changed_evidence(
     exactly the unlocked-HTTP window. Fails against the pass-through shape
     (the claim publishes over unvalidated evidence); passes against the
     in-lock re-verification."""
-    path = tmp_path / "claims.json"
+    path = tmp_path / "herald.db"
     claim = claims.create(
         path,
         project_name="warden",
@@ -1067,7 +1025,7 @@ def test_revalidate_does_not_stamp_updated_at_when_every_result_was_discarded(
     nothing this run computed was actually applied. Same defect pass 3 fixed
     one branch over for a concurrently-CREATED claim -- ``is_stale`` and
     ``snapshot`` both read these timestamps."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     created = claims.create(
         claims_path,
@@ -1108,7 +1066,7 @@ def test_revalidate_all_does_not_stamp_updated_at_when_every_result_was_discarde
     stamp a claim absent from the validation map; a claim that IS in the map
     but whose every evidence entry changed concurrently is the same "claim a
     validation that never happened" defect, and was not covered."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     claims.create(
         claims_path,
@@ -1140,10 +1098,10 @@ def test_revalidate_all_refuses_duplicate_claim_ids(tmp_path):
     """``revalidate_all`` keys its per-claim validation results by claim id,
     which is only sound while ids are unique -- two claims sharing an id
     would collapse onto one entry and let one claim's HTTP outcome overwrite
-    the other's. Reachable via an injected ``id_factory`` or a hand-edited /
-    merged ``claims.json``. Refuse structurally (AD-6) rather than silently
-    corrupting one of them."""
-    claims_path = tmp_path / "claims.json"
+    the other's. Reachable via an injected ``id_factory`` or a merged/
+    hand-written claims table. Refuse structurally (AD-6) rather than
+    silently corrupting one of them."""
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     claims.create(
         claims_path, project_name="one", evidence=(ev,), id_factory=lambda: "same-id"
@@ -1167,7 +1125,7 @@ def test_publish_does_not_revert_a_concurrently_changed_thesis(tmp_path):
     were the superseded version -- inverting the two. Exactly the class of
     silent lost update ``DW-1-4-2`` exists to close, on a field the
     evidence-focused fix did not cover."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     claims.create(
         claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1"
@@ -1204,7 +1162,7 @@ def test_publish_still_archives_the_previous_thesis_when_one_is_supplied(tmp_pat
     """The counterpart to the test above: an explicitly supplied ``--thesis``
     still wins, and the value it replaces -- read fresh, under the lock --
     is what lands in ``edit_history``."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     claims.create(claims_path, project_name="proj", id_factory=lambda: "id-1")
     stored = claims.read_all(claims_path)
     stored[0] = replace(stored[0], thesis="thesis-old")
@@ -1226,7 +1184,7 @@ def test_publish_refuses_when_a_concurrent_writer_clears_the_thesis(tmp_path):
     concurrent writer clears the thesis during the unlocked validation
     window, the in-lock re-resolution has nothing to publish and must refuse
     with the same message rather than persist ``thesis=None``."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     claims.create(
         claims_path, project_name="proj", evidence=(ev,), id_factory=lambda: "id-1"
@@ -1258,7 +1216,7 @@ def test_revalidate_does_not_stamp_updated_at_when_evidence_is_emptied_concurren
     ``if fresh_claim.evidence and not any(carried)`` skips exactly the case
     it exists to catch and stamps ``updated_at`` for a validation whose
     every result was thrown away."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     claims.create(
         claims_path,
@@ -1288,7 +1246,7 @@ def test_revalidate_does_not_stamp_updated_at_when_evidence_is_emptied_concurren
 
 def test_revalidate_all_does_not_stamp_updated_at_when_evidence_is_emptied(tmp_path):
     """``revalidate_all``'s twin of the case above."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     claims.create(
         claims_path,
@@ -1328,7 +1286,7 @@ def test_revalidate_does_not_stamp_updated_at_when_evidence_appears_concurrently
     guard closes from the other direction. A guard keyed only on
     ``original_evidence`` misses it, because the tuple this run validated is
     the empty one."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     claims.create(
         claims_path,
         project_name="proj",
@@ -1362,7 +1320,7 @@ def test_revalidate_all_does_not_stamp_updated_at_when_evidence_appears(tmp_path
     """``revalidate_all``'s twin of the case above -- and proof it stays
     per-claim: the sibling claim this run DID validate is still updated
     normally."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     checked = claims.Evidence(url="https://example.com/b", type="other", label="B")
     claims.create(
         claims_path,
@@ -1408,7 +1366,7 @@ def test_revalidate_still_stamps_updated_at_for_a_claim_with_no_evidence(tmp_pat
     ordinary ``updated_at`` stamp it had before Story 13.1. Guards the fix
     for the emptied-concurrently case against overshooting into a behavior
     change for the plain single-writer path."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     claims.create(
         claims_path,
         project_name="proj",
@@ -1432,7 +1390,7 @@ def test_revalidate_all_refuses_a_duplicate_id_written_during_validation(tmp_pat
     outcome (and this run's ``updated_at``) to BOTH same-id claims. That is
     precisely the collapse the guard exists to refuse, reached by the one
     path the guard did not cover."""
-    claims_path = tmp_path / "claims.json"
+    claims_path = tmp_path / "herald.db"
     ev = claims.Evidence(url="https://example.com/a", type="other", label="A")
     claims.create(
         claims_path, project_name="one", evidence=(ev,), id_factory=lambda: "id-1"

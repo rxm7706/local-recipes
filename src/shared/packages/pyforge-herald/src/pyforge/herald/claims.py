@@ -1,21 +1,15 @@
-"""Success-claim local storage (Story 9.1, scaled down).
+"""Success-claim storage (Story 9.1, scaled down; Story 13.3 moved the
+backing store from a JSON file to the shared SQLite database in
+``db.py``).
 
-The original Epic 9 spec (`epics-with-stories.md` lines 577-654) assumes a
-live PostgreSQL/SQLite database reached via SQLAlchemy + Alembic
-migrations. Nothing in this package has ever hosted a database or a
-server -- Herald is a stateless CLI plus a static web dashboard. Per the
-2026-08-08 scope decision recorded in
-`docs/dreams/herald-moments-2-4-live-backend.md`, this module instead
-persists ``Claim`` records as one JSON array file
-(``.herald/claims.json``, ``DEFAULT_CLAIMS_PATH``), written atomically
-(temp file + ``os.replace``) -- the same crash-safety convention
-``state.py`` already uses for ``.herald/bridge-state.json``.
-
-**JSON array, not slug-keyed object.** ``state.py``'s document is an
-object keyed by deck slug because a slug is a stable natural key one
-caller already knows before it reads. A claim has no equivalent
-caller-known key before creation (its ``id`` is minted by ``create``
-itself), so the document is a plain JSON array of claim objects instead.
+Per the 2026-08-08 scope decision recorded in
+``docs/dreams/herald-moments-2-4-live-backend.md``, this module persists
+``Claim`` records as rows in ``db.py``'s shared ``.herald/herald.db``
+(table ``claims``) rather than reaching a live PostgreSQL/SQLAlchemy stack
+the original Epic 9 spec assumed. ``evidence``/``edit_history`` stay JSON
+``TEXT`` columns (no cross-record query needs them normalized -- the same
+reasoning ``progress.py``'s ``shipped_capabilities`` and ``notices.py``'s
+``revisions`` follow).
 
 **Versioning (Story 9.1's "thesis edited -> new version, old preserved"
 AC), scaled down.** The original AC describes a full version-numbered
@@ -46,23 +40,38 @@ there is nothing to ``HEAD``) -- ``publish``'s validation loop below treats
 it as trivially valid instead. The *reverse* direction (a Notice seeing
 which claims cite it) is a computed, un-persisted view --
 ``referenced_by_claims`` below -- rather than a new field on ``Notice``:
-recomputing "who cites this component" from the claims file at read time
-means the two files can never drift out of sync with each other the way a
-second stored copy of the same fact could.
+recomputing "who cites this component" from the claims table at read time
+means the two never drift out of sync with each other the way a second
+stored copy of the same fact could.
 
-**Concurrency (Story 13.1, closing ``DW-1-4-2``).** ``create`` has no
-network step, so it locks its whole read-modify-write span (``locking.locked``
-on a sidecar ``<claims_path>.lock`` file), the same convention ``state.py``/
-``progress.py`` use -- everything except its pure, no-I/O argument checks,
-which run before the lock so a call that cannot succeed fails fast instead
-of contending first (see ``create``'s own docstring). ``publish``/``revalidate``/``revalidate_all`` each
-call ``evidence_mod.validate_link``/``validate_for_publish`` per evidence
-entry -- a real HTTP request -- so the lock must never span that network
-I/O (a lock held across a live HTTP call would block every other claims
-writer for its duration, a liveness regression this story is explicit
-about avoiding). Each instead validates every evidence link UNLOCKED
-first, then acquires the lock only around re-reading the fresh claims
-state, applying the already-computed validation results, and writing.
+**Concurrency (Story 13.1, closing ``DW-1-4-2``; Story 13.3 moved the
+mechanism).** ``create`` has no network step, so it locks its whole
+read-modify-write span. ``db.transaction`` -- SQLite's own
+``BEGIN IMMEDIATE``/commit -- now IS that lock (see ``db.py``'s module
+docstring); everything except ``create``'s pure, no-I/O argument checks,
+which run before the transaction opens so a call that cannot succeed
+fails fast instead of contending first (see ``create``'s own docstring).
+``publish``/``revalidate``/``revalidate_all`` each call
+``evidence_mod.validate_link``/``validate_for_publish`` per evidence
+entry -- a real HTTP request -- so the transaction must never span that
+network I/O (holding a write lock across a live HTTP call would block
+every other claims writer for its duration, a liveness regression this
+module is explicit about avoiding). Each instead validates every evidence
+link UNLOCKED first, then opens the transaction only around re-reading the
+fresh claims state, applying the already-computed validation results, and
+writing -- exactly the shape Story 13.1 established, now enforced by
+SQLite's own transactional locking instead of an OS advisory lock.
+
+Every write function below still calls the module-level ``read_all``/
+``_write_all`` (not some internal, differently-named helper) at both the
+pre-transaction and in-transaction points, the same shape Story 13.1 gave
+them -- ``db.py``'s reentrant ambient-transaction design (module
+docstring) means a call to ``read_all``/``_write_all`` from inside an
+already-open ``db.transaction`` for the same path joins it rather than
+opening a second connection, so the two calls together form one atomic
+read-modify-write exactly as they did under ``locking.locked``. This also
+means the existing ``monkeypatch.setattr(claims, "read_all", ...)``-based
+concurrency tests keep intercepting the same calls unchanged.
 
 **The pre-lock results are carried POSITIONALLY, never in a dict keyed by
 ``Evidence`` value.** All three keep, per claim, the pre-validation
@@ -110,6 +119,7 @@ write carries its own validation, and raises ``errors.ClaimStateError``
 from __future__ import annotations
 
 import json
+import sqlite3
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field, replace
@@ -117,14 +127,14 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from pyforge.core.atomic_write import atomic_write_text
-
-from . import errors, locking
+from . import db, errors
 from . import evidence as evidence_mod
 
-DEFAULT_CLAIMS_PATH = Path(".herald/claims.json")
+DEFAULT_CLAIMS_PATH = db.DEFAULT_DB_PATH
 """Default location, relative to a repo root the caller resolves (mirrors
-``state.DEFAULT_STATE_PATH``)."""
+``state.DEFAULT_STATE_PATH``). Redefined to ``db.DEFAULT_DB_PATH`` (Story
+13.3) rather than removed, so every existing call site needs zero
+changes -- see ``db.py``'s module docstring on why one shared database."""
 
 EVIDENCE_TYPES = ("test_results", "metrics", "adoption", "other", "notice")
 CLAIM_STATUSES = ("draft", "published", "closed")
@@ -190,8 +200,8 @@ def _default_now() -> datetime:
 
 def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
     """``object_pairs_hook`` refusing a duplicated key in any JSON object in
-    the document -- mirrors ``state._reject_duplicate_keys``; ``json.load``
-    applies this to every nested object, not just the top level."""
+    a legacy document -- mirrors ``state._reject_duplicate_keys``. Only
+    relevant to ``_read_legacy_json`` now."""
     document: dict[str, object] = {}
     for key, value in pairs:
         if key in document:
@@ -200,11 +210,13 @@ def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]
     return document
 
 
-def _load_document(claims_path: Path) -> list[object]:
-    """The whole claims file as a list, or ``[]`` when the file does not
-    exist yet. Raises ``errors.HeraldError`` naming ``claims_path`` for any
-    structural failure (AD-6) -- malformed JSON, an unreadable file, or a
-    non-list top level."""
+def _load_legacy_document(claims_path: Path) -> list[object]:
+    """The whole legacy claims JSON file as a list, or ``[]`` when the file
+    does not exist. Raises ``errors.HeraldError`` naming ``claims_path`` for
+    any structural failure (AD-6) -- malformed JSON, an unreadable file, or
+    a non-list top level. Used only by ``_read_legacy_json`` (the one-time
+    migration import); the live read path is ``read_all``, through
+    ``db.py``."""
     try:
         with claims_path.open(encoding="utf-8") as fh:
             document = json.load(fh, object_pairs_hook=_reject_duplicate_keys)
@@ -295,24 +307,34 @@ def _claim_from_dict(claims_path: Path, entry: object) -> Claim:
         raise errors.HeraldError(f"{malformed}: missing field {exc}") from exc
 
 
-def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
-    """Persist the whole claims list atomically via `pyforge.core.
-    atomic_write_text` (Story 14.2, CAP-2 -- the one shared
-    temp-file-then-`os.replace` primitive, mkstemp-based; mirrors
-    `state.write`'s crash-safety discipline, including its limit: no
-    `fsync`)."""
-    document = [
-        {
-            "id": c.id,
-            "project_name": c.project_name,
-            "status": c.status,
-            "thesis": c.thesis,
-            "shipped_date": c.shipped_date,
-            "created_at": c.created_at,
-            "published_at": c.published_at,
-            "closed_at": c.closed_at,
-            "updated_at": c.updated_at,
-            "evidence": [
+def _read_legacy_json(claims_path: Path) -> list[Claim]:
+    """The pre-Story-13.3 JSON-file reader, preserved verbatim (this was
+    ``read_all``'s entire body) for the one-time legacy import
+    (``db.py``'s ``_import_legacy_v1``) -- so a legacy ``claims.json`` that
+    fails this exact validation still raises the identical
+    ``errors.HeraldError`` at migration time (Boundaries & Constraints)."""
+    return [
+        _claim_from_dict(claims_path, entry)
+        for entry in _load_legacy_document(claims_path)
+    ]
+
+
+def _to_params(c: Claim) -> tuple[object, ...]:
+    """``c`` as a positional parameter tuple matching the ``claims``
+    table's column order -- shared by every INSERT (``_write_all`` and
+    ``db.py``'s legacy import)."""
+    return (
+        c.id,
+        c.project_name,
+        c.status,
+        c.thesis,
+        c.shipped_date,
+        c.created_at,
+        c.published_at,
+        c.closed_at,
+        c.updated_at,
+        json.dumps(
+            [
                 {
                     "type": e.type,
                     "url": e.url,
@@ -321,42 +343,66 @@ def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
                     "validated_at": e.validated_at,
                 }
                 for e in c.evidence
-            ],
-            "edit_history": [
-                {"thesis": v.thesis, "edited_at": v.edited_at} for v in c.edit_history
-            ],
-        }
-        for c in claims
-    ]
-    could_not_write = f"claims could not be written to {claims_path}"
+            ]
+        ),
+        json.dumps(
+            [{"thesis": v.thesis, "edited_at": v.edited_at} for v in c.edit_history]
+        ),
+    )
+
+
+def _row_to_claim(claims_path: Path, row) -> Claim:
     try:
-        atomic_write_text(claims_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
-    except (OSError, TypeError, ValueError, RecursionError) as exc:
-        raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
+        evidence_raw = json.loads(row["evidence"])
+        edit_history_raw = json.loads(row["edit_history"])
+    except ValueError as exc:
+        raise errors.HeraldError(
+            f"claims record {row['id']!r} in {claims_path} has malformed "
+            f"evidence/edit_history JSON: {exc}"
+        ) from exc
+    if not isinstance(evidence_raw, list) or not isinstance(edit_history_raw, list):
+        raise errors.HeraldError(
+            f"claims record {row['id']!r} in {claims_path} has malformed "
+            f"evidence/edit_history: expected a JSON array"
+        )
+    entry = {
+        "id": row["id"],
+        "project_name": row["project_name"],
+        "status": row["status"],
+        "thesis": row["thesis"],
+        "shipped_date": row["shipped_date"],
+        "created_at": row["created_at"],
+        "published_at": row["published_at"],
+        "closed_at": row["closed_at"],
+        "updated_at": row["updated_at"],
+        "evidence": evidence_raw,
+        "edit_history": edit_history_raw,
+    }
+    return _claim_from_dict(claims_path, entry)
 
 
 def read_all(claims_path: Path) -> list[Claim]:
-    """Every claim currently stored, in file order."""
-    return [
-        _claim_from_dict(claims_path, entry) for entry in _load_document(claims_path)
-    ]
+    """Every claim currently stored, in ``rowid`` (insertion) order."""
+    with db.connection(claims_path) as conn:
+        rows = conn.execute("SELECT * FROM claims ORDER BY rowid").fetchall()
+        return [_row_to_claim(claims_path, row) for row in rows]
 
 
 def read_one(claims_path: Path, claim_id: str) -> Claim:
     """``claim_id``'s stored claim. Raises ``errors.ClaimNotFoundError``
     when no claim with that id exists.
 
-    Decodes each raw entry lazily rather than via ``read_all`` -- an
-    unrelated malformed entry elsewhere in the file must not block looking
-    up a claim whose own entry is perfectly healthy. An entry whose ``id``
-    field itself can't even be read cheaply is skipped rather than
-    aborting the whole lookup; only the matched entry's own malformation
-    (if it turns out to be the requested id) still raises, preserving
-    AD-6 for the one entry that's actually relevant."""
-    for entry in _load_document(claims_path):
-        if isinstance(entry, dict) and entry.get("id") == claim_id:
-            return _claim_from_dict(claims_path, entry)
-    raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
+    Looks the row up directly by ``id`` (a targeted ``WHERE`` clause)
+    rather than decoding every row via ``read_all`` -- an unrelated
+    malformed row elsewhere in the table must not block looking up a claim
+    whose own row is perfectly healthy; only the matched row's own
+    malformation (if any) raises, preserving AD-6 for the one entry that's
+    actually relevant."""
+    with db.connection(claims_path) as conn:
+        row = conn.execute("SELECT * FROM claims WHERE id = ?", (claim_id,)).fetchone()
+    if row is None:
+        raise errors.ClaimNotFoundError(f"no claim found with id {claim_id!r}")
+    return _row_to_claim(claims_path, row)
 
 
 def list_claims(
@@ -385,6 +431,29 @@ def list_claims(
     return claims
 
 
+def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
+    """Persist the whole claims list, replacing every existing row (Story
+    13.3: was an atomic JSON-file rewrite; now one ``db.transaction``
+    doing ``DELETE`` + re-``INSERT``). Reentrant the same way every other
+    write in this module is -- see the module docstring's Concurrency
+    section -- so a call from inside ``create``/``publish``/``revalidate``/
+    ``revalidate_all``'s own open transaction joins it rather than opening
+    a second one."""
+    try:
+        with db.transaction(claims_path) as conn:
+            conn.execute("DELETE FROM claims")
+            conn.executemany(
+                "INSERT INTO claims (id, project_name, status, thesis, "
+                "shipped_date, created_at, published_at, closed_at, updated_at, "
+                "evidence, edit_history) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [_to_params(c) for c in claims],
+            )
+    except errors.HeraldError:
+        raise
+    except sqlite3.Error as exc:
+        raise errors.HeraldError(f"claims could not be written to {claims_path}: {exc}") from exc
+
+
 def create(
     claims_path: Path,
     *,
@@ -401,12 +470,11 @@ def create(
     and returns it.
 
     No network step, so the whole read-modify-write body below runs inside
-    ``locking.locked`` on a sidecar ``<claims_path>.lock`` file (Story 13.1)
-    -- see the module docstring's Concurrency section. The pure,
-    no-I/O argument checks just below are validated BEFORE the lock is
-    acquired: they depend on nothing but this call's own arguments, so a
-    call that is going to fail on basic validation fails fast without
-    first contending on the lock."""
+    ``db.transaction`` (Story 13.3; see the module docstring's Concurrency
+    section). The pure, no-I/O argument checks just below are validated
+    BEFORE the transaction is opened: they depend on nothing but this
+    call's own arguments, so a call that is going to fail on basic
+    validation fails fast without first contending on the write lock."""
     if not project_name.strip():
         raise errors.HeraldError("project_name must not be empty")
     for e in evidence:
@@ -414,8 +482,7 @@ def create(
             raise errors.HeraldError(
                 f"evidence type {e.type!r} must be one of {EVIDENCE_TYPES}"
             )
-    lock_path = locking.lock_path_for(claims_path)
-    with locking.locked(lock_path):
+    with db.transaction(claims_path):
         timestamp = now().isoformat()
         claim = Claim(
             id=id_factory(),
@@ -465,23 +532,24 @@ def publish(
     make ``evidence.validate_for_publish`` unpatchable from a test.
 
     Validates every evidence link UNLOCKED (a real HTTP request per entry)
-    before acquiring the lock -- the lock only ever spans the fresh
-    load/apply/write span that follows (Story 13.1; see the module
-    docstring's Concurrency section). The results are carried POSITIONALLY,
-    index-aligned with the evidence tuple they were computed from, and
-    applied back only where the freshly-read entry at that index still
-    equals the entry that was validated. Because ``publish``'s contract is
-    that a broken link blocks the publish, an entry the discard-stale rule
-    would pass through unvalidated (a concurrent writer changed it during
-    the unlocked HTTP window) aborts the whole call with
+    before opening the transaction -- the transaction only ever spans the
+    fresh load/apply/write span that follows (Story 13.1/13.3; see the
+    module docstring's Concurrency section). The results are carried
+    POSITIONALLY, index-aligned with the evidence tuple they were computed
+    from, and applied back only where the freshly-read entry at that index
+    still equals the entry that was validated. Because ``publish``'s
+    contract is that a broken link blocks the publish, an entry the
+    discard-stale rule would pass through unvalidated (a concurrent writer
+    changed it during the unlocked HTTP window) aborts the whole call with
     ``errors.ClaimStateError`` instead -- a claim is never persisted as
     ``published`` carrying evidence this call did not itself validate.
 
-    ``thesis`` is likewise resolved against the FRESH in-lock read, not the
-    pre-validation one: falling back to the pre-lock ``claim.thesis`` would
-    publish a stale thesis over one a concurrent writer set during the
-    unlocked HTTP window, and file that writer's NEWER text into
-    ``edit_history`` as though it were the superseded version."""
+    ``thesis`` is likewise resolved against the FRESH in-transaction read,
+    not the pre-validation one: falling back to the pre-lock
+    ``claim.thesis`` would publish a stale thesis over one a concurrent
+    writer set during the unlocked HTTP window, and file that writer's
+    NEWER text into ``edit_history`` as though it were the superseded
+    version."""
     if validate is None:
         validate = evidence_mod.validate_for_publish
     no_thesis = f"claim {claim_id!r} has no thesis; supply --thesis to publish"
@@ -535,8 +603,7 @@ def publish(
             f"{'; '.join(broken)}. Fix or remove before publishing."
         )
 
-    lock_path = locking.lock_path_for(claims_path)
-    with locking.locked(lock_path):
+    with db.transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
         fresh_index = next(
             (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
@@ -604,14 +671,14 @@ def publish(
 
 
 def _require_unique_ids(claims_path: Path, claims: list[Claim]) -> None:
-    """Refuse a claims document holding two claims with the same id.
+    """Refuse a claims table holding two claims with the same id.
 
     ``revalidate_all`` keys its validation results by claim id, which is
     only sound while ids are unique: two claims sharing one would collapse
     onto a single map entry and let one claim's HTTP outcome overwrite the
     other's. ``create`` generates a uuid4 per claim, so this only happens
-    with an injected ``id_factory`` or a hand-edited/merged ``claims.json``
-    -- refuse structurally rather than silently corrupting one of them.
+    with an injected ``id_factory`` or a merged/hand-written claims table --
+    refuse structurally rather than silently corrupting one of them.
 
     Called twice per ``revalidate_all``: once on the pre-lock read (which
     builds the map) and once on the fresh in-lock read (which consumes it),
@@ -655,14 +722,14 @@ def revalidate(
     function body -- see ``publish``'s docstring for why this can't be a
     parameter default.
 
-    Validates every evidence link UNLOCKED (real HTTP) before acquiring
-    the lock, exactly like ``publish`` -- see its docstring and the module
-    docstring's Concurrency section. The results are carried POSITIONALLY
-    (index-aligned with the evidence tuple they were computed from), never
-    in a dict keyed by ``Evidence`` value: operating on a single claim does
-    NOT make a value-keyed map safe, because one claim can carry two
-    field-identical entries whose two validation calls returned different
-    outcomes."""
+    Validates every evidence link UNLOCKED (real HTTP) before opening the
+    transaction, exactly like ``publish`` -- see its docstring and the
+    module docstring's Concurrency section. The results are carried
+    POSITIONALLY (index-aligned with the evidence tuple they were computed
+    from), never in a dict keyed by ``Evidence`` value: operating on a
+    single claim does NOT make a value-keyed map safe, because one claim
+    can carry two field-identical entries whose two validation calls
+    returned different outcomes."""
     if validate is None:
         validate = evidence_mod.validate_link
     claims = read_all(claims_path)
@@ -678,8 +745,7 @@ def revalidate(
         for e in original_evidence
     )
 
-    lock_path = locking.lock_path_for(claims_path)
-    with locking.locked(lock_path):
+    with db.transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
         fresh_index = next(
             (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
@@ -740,12 +806,12 @@ def revalidate_all(
     function body -- see ``publish``'s docstring for why this can't be a
     parameter default.
 
-    Validates every evidence link UNLOCKED (real HTTP) before acquiring the
-    lock, same as ``publish``/``revalidate``, carrying each claim's results
-    POSITIONALLY as an ``(original, results)`` index-aligned pair rather
-    than in a dict keyed by ``Evidence`` value (see the module docstring:
-    one claim can carry two field-identical entries, which a value-keyed
-    map collapses onto a single result).
+    Validates every evidence link UNLOCKED (real HTTP) before opening the
+    transaction, same as ``publish``/``revalidate``, carrying each claim's
+    results POSITIONALLY as an ``(original, results)`` index-aligned pair
+    rather than in a dict keyed by ``Evidence`` value (see the module
+    docstring: one claim can carry two field-identical entries, which a
+    value-keyed map collapses onto a single result).
 
     That pair is additionally keyed by claim id
     (``validated_by_claim: dict[str, tuple[tuple[Evidence, ...],
@@ -772,8 +838,7 @@ def revalidate_all(
         for c in claims
     }
 
-    lock_path = locking.lock_path_for(claims_path)
-    with locking.locked(lock_path):
+    with db.transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
         # Re-checked against the FRESH read, not just the pre-lock one: the
         # duplicate this guard exists to refuse can be written during the

@@ -122,36 +122,40 @@ to catch anything the create step accepted but shouldn't have (a wrong
 project name, a mistyped evidence URL) before it becomes a published,
 citable record.
 
-## Malformed local storage file (the `HeraldError` you'll see instead of a "DB corruption" alert)
+## Malformed local storage file (the `HeraldError` a corrupt `.herald/herald.db` raises)
 
 **What it replaces:** database-level integrity checks/alerts a real
-persistence layer would have. Local storage here is one JSON file per
-Moment (`.herald/progress.json`, `.herald/claims.json`,
-`.herald/notices-index.json`), so "corruption" means "the JSON doesn't
-parse" or "a record is missing an expected field."
+persistence layer would have — Story 13.3 made this literally true.
+Progress/Success/Operations' storage (Notices' markdown mirror aside) is
+one shared SQLite database, `.herald/herald.db`; "corruption" means the
+database file itself doesn't open, or a nested JSON column
+(`shipped_capabilities`/`evidence`/`edit_history`/`revisions`) doesn't
+parse.
 
 ### Diagnosis
 
-Any read or write against a broken file raises a plain `HeraldError`
-naming the file and the parse problem, exit code 1:
+Any read or write against a broken database raises a plain `HeraldError`
+naming the file and the problem, exit code 1:
 
 ```
 $ herald success list
-herald: HeraldError: claims file /path/to/.herald/claims.json could not be read: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+herald: HeraldError: /path/to/.herald/herald.db is not a valid database: file is not a database
 ```
 
-This is reproducible: hand-edit any `.herald/*.json` file into invalid
-JSON (a stray brace, a trailing comma outside what the parser tolerates,
-truncated output from an interrupted write) and every subsequent `herald`
-command touching that file fails the same way until it's fixed.
+This is reproducible: truncate or overwrite `.herald/herald.db` with
+garbage bytes, and every subsequent `herald` command touching it fails the
+same way until it's fixed. A repo still carrying pre-Story-13.3
+`.herald/progress.json`/`claims.json`/`notices-index.json` that has never
+been migrated fails the same way if one of THOSE is corrupt -- the
+one-time legacy import raises naming the specific legacy file.
 
 ### Fix
 
-- Restore the file from git history if it's tracked (it usually isn't —
-  `.herald/` is operator-local state, not committed), or from a backup.
-- Otherwise, open the file and hand-fix the JSON syntax error the message
-  points at (line/column are from Python's `json` module and are
-  accurate).
+- Restore `.herald/herald.db` from a backup (it is operator-local state,
+  not committed to git). The database runs in WAL mode, so a full
+  backup/restore must include any `.herald/herald.db-wal`/
+  `.herald/herald.db-shm` sidecar files present alongside it, taken while
+  no `herald` process is running.
 - There is no repair or recovery tool built into `herald` for this.
 
 ## Stale web snapshot (no live API to "miss" — a manual export that wasn't re-run)
@@ -178,11 +182,11 @@ nothing actually breaks. Symptoms:
 If instead the panel shows an explicit **error state** ("Could not load
 progress.json." / "Could not load success claims." / "Could not load
 operations notices."), that's a different, harder failure — the snapshot
-file is missing entirely or fails to parse as JSON. `web/scripts/sync-progress.mjs`
-specifically fails loud (`JSON.parse` on the source) rather than shipping
-bad data; the two Python exporters likewise raise on read failure — trace
-that back to [Malformed local storage file](#malformed-local-storage-file-the-heralderror-youll-see-instead-of-a-db-corruption-alert)
-above if the underlying `.herald/*.json` itself is broken.
+file is missing entirely or fails to parse as JSON. All three exporters
+(`scripts/export_progress_snapshot.py`, `scripts/export_web_snapshot.py`,
+`scripts/export_notices_snapshot.py`) raise on read failure — trace that
+back to [Malformed local storage file](#malformed-local-storage-file-the-heralderror-a-corrupt-heraldheralddb-raises)
+above if the underlying `.herald/herald.db` itself is broken.
 
 ### Fix
 
