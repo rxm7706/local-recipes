@@ -382,6 +382,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pyforge.core.verdict import Lattice
+
 from .findings import require_registered
 from .model import Finding, Verdict
 
@@ -393,8 +395,6 @@ LATTICE_ORDER: tuple[Verdict, ...] = (
     Verdict.WARN,
     Verdict.CLEAN,
 )
-
-_RANK: dict[Verdict, int] = {verdict: rank for rank, verdict in enumerate(LATTICE_ORDER)}
 
 EXIT_SIGINT = 130
 
@@ -413,9 +413,15 @@ _EXIT_BY_VERDICT: dict[Verdict, int] = {
 EXIT_OK = 0
 EXIT_USAGE = 2
 
+# Story 14.3, SPEC-pyforge-core CAP-3: rank + exit-domain bookkeeping now
+# delegates to the shared Lattice primitive -- same rungs, same exit
+# values, only the `{verdict: rank for rank, verdict in enumerate(...)}`
+# bookkeeping moves. Private: nothing outside this module needs it.
+_LATTICE = Lattice(order=LATTICE_ORDER, exit_by_member=_EXIT_BY_VERDICT)
+
 # The full frozen exit-code domain (AD-7), computed -- never re-spelled --
 # from the lattice projection plus the boundary constants.
-GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
+GUARDED_EXIT_CODES: frozenset[int] = _LATTICE.exit_codes | {
     EXIT_OK,
     EXIT_USAGE,
     EXIT_SIGINT,
@@ -979,7 +985,7 @@ def compute_verdict(
                 f"findings must contain only Finding instances, got {finding!r}"
             )
         candidate = classify(finding.code)
-        if _RANK[candidate] < _RANK[winner]:
+        if _LATTICE.rank(candidate) < _LATTICE.rank(winner):
             winner = candidate
     return winner
 

@@ -19,11 +19,15 @@ authors = [{ name = "rxm7706" }]
 # repo-wide). PyYAML is Story 6.6's sources/chain.py frontmatter parser --
 # the epic's own explicit departure from 6.4/6.5's hand-rolled-parser
 # precedent, matching scripts/dream_chain_check.py's own `import yaml`
-# (floor mirrors pixi.toml's own pyyaml>=6.0 in-repo conda pin).
+# (floor mirrors pixi.toml's own pyyaml>=6.0 in-repo conda pin). pyforge-core
+# is Story 14.3's CAP-3/CAP-4 dependency -- verdict.py's Lattice and
+# __main__.py's compose(BASE_ENVELOPE_SCHEMA, ...) call (mirrors
+# pyforge-warden's identical pyforge-core run-dependency, Story 14.2).
 dependencies = [
     "jsonschema",
     "mcp>=1.28.1",
     "PyYAML>=6.0",
+    "pyforge-core",
 ]
 
 [project.optional-dependencies]

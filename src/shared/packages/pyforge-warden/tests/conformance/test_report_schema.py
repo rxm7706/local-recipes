@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import json
 from importlib import resources
+from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose as compose_envelope_schema
 
 from pyforge.warden.models import (
     AXIS_CURRENCY,
@@ -139,6 +141,20 @@ def test_minimal_report_validates():
     document = make_report().to_json_dict()
     validate(document)
     assert document["schema_version"] == "1.0.0"
+
+
+def test_sample_report_fixture_validates_against_composed_schema():
+    """Story 14.3, SPEC-pyforge-core CAP-4: a real captured report (this
+    file's own `test_rich_report_validates_across_all_three_finding_families`
+    document, frozen to disk) validates against the packaged schema COMPOSED
+    with the shared base envelope schema -- proving the composed schema
+    still admits every payload that validated against the station schema
+    alone."""
+    fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / "sample_report_with_findings.json"
+    document = json.loads(fixture_path.read_text(encoding="utf-8"))
+    jsonschema.Draft202012Validator(
+        compose_envelope_schema(BASE_ENVELOPE_SCHEMA, load_schema())
+    ).validate(document)
 
 
 def test_rich_report_validates_across_all_three_finding_families():

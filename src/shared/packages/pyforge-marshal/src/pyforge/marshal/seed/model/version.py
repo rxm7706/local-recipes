@@ -44,6 +44,8 @@ import re
 from dataclasses import dataclass, field
 from functools import total_ordering
 
+from pyforge.core.errors import PyforgeError
+
 # No ^/$ anchors -- matched with .fullmatch(), not .match(), so a trailing
 # newline can never sneak a malformed version string past the check (see
 # core/findings.py's CODE_PATTERN for the identical convention and the
@@ -71,10 +73,13 @@ _PRERELEASE_IDENTIFIER_PATTERN = re.compile(_PRERELEASE_IDENTIFIER, re.ASCII)
 _BUILD_IDENTIFIER_PATTERN = re.compile(_BUILD_IDENTIFIER, re.ASCII)
 
 
-class InvalidVersionError(ValueError):
+class InvalidVersionError(PyforgeError, ValueError):
     """Raised by ``ModelVersion.parse`` when a string does not conform to
     the SemVer 2.0.0 grammar (leading zeros, wrong component count, illegal
-    characters, or an empty/non-string input)."""
+    characters, or an empty/non-string input).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
 def _is_numeric_identifier(identifier: str) -> bool:
