@@ -2,16 +2,24 @@
 `DoctorReport`'s relocation-with-re-export sanity (the module now importing
 it via `pyforge.mason.doctor` and the module now defining it via
 `pyforge.mason.models` must be the identical class object, not two classes
-that merely look alike)."""
+that merely look alike).
+
+Story 2.9 extends this file with `ShipState`/`ShipTargetResult` coverage:
+construction/immutability mirroring `CfeResult`'s own tests, plus the one
+property unique to `ShipState` -- its `StrEnum` members behave as plain
+`str` under `json.dumps`/`str()`/`==` (the exact claim `models.py`'s own
+Design Notes make about why `render_json`/`render_text` need no special
+handling)."""
 
 from __future__ import annotations
 
+import json
 from dataclasses import FrozenInstanceError
 
 import pytest
 
 from pyforge.mason.engines import EngineStatus
-from pyforge.mason.models import CfeResult, DoctorReport
+from pyforge.mason.models import CfeResult, DoctorReport, ShipState, ShipTargetResult
 
 
 # --- CfeResult ----------------------------------------------------------------
@@ -81,3 +89,69 @@ def test_doctor_report_is_frozen():
     )
     with pytest.raises(FrozenInstanceError):
         report.mason_version = "9.9.9"  # type: ignore[misc]
+
+
+# --- ShipState -----------------------------------------------------------------
+
+def test_ship_state_has_exactly_the_four_ad9_members():
+    assert {member.value for member in ShipState} == {
+        "not_attempted", "failed", "pending", "terminal",
+    }
+
+
+def test_ship_state_members_are_real_str_instances():
+    """`StrEnum`, not a plain `Enum` (Design Notes): every member must
+    already BE a `str`, not merely comparable to one."""
+    assert isinstance(ShipState.PENDING, str)
+    assert ShipState.PENDING == "pending"
+
+
+def test_ship_state_str_renders_the_plain_value_not_the_member_repr():
+    """The exact property `render_text`'s `f"{data[key]}"` line depends on
+    (Design Notes): unlike a bare `(str, Enum)` mixin pre-3.11,
+    `StrEnum.__str__` returns the plain value, not `ShipState.PENDING`."""
+    assert str(ShipState.PENDING) == "pending"
+    assert f"{ShipState.PENDING}" == "pending"
+
+
+def test_ship_state_serializes_as_a_plain_json_string():
+    """The exact property `render_json`'s bare `json.dumps(...)` call (no
+    custom encoder) depends on: a plain `Enum` member would raise
+    `TypeError` here; `StrEnum` serializes natively."""
+    assert json.dumps({"state": ShipState.PENDING}) == '{"state": "pending"}'
+
+
+# --- ShipTargetResult ------------------------------------------------------
+
+def test_ship_target_result_constructs_with_all_four_fields():
+    result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING,
+        reference="https://github.com/conda-forge/staged-recipes/pull/123",
+        message="PR created: https://github.com/conda-forge/staged-recipes/pull/123",
+    )
+    assert result.target == "conda-forge"
+    assert result.state == ShipState.PENDING
+    assert result.reference == "https://github.com/conda-forge/staged-recipes/pull/123"
+    assert result.message == "PR created: https://github.com/conda-forge/staged-recipes/pull/123"
+
+
+def test_ship_target_result_reference_and_message_accept_none():
+    result = ShipTargetResult(
+        target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+    )
+    assert result.reference is None
+    assert result.message is None
+
+
+def test_ship_target_result_is_frozen():
+    result = ShipTargetResult(
+        target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+    )
+    with pytest.raises(FrozenInstanceError):
+        result.state = ShipState.PENDING  # type: ignore[misc]
+
+
+def test_ship_target_result_equality_is_by_value():
+    a = ShipTargetResult(target="conda-forge", state=ShipState.FAILED, reference=None, message="x")
+    b = ShipTargetResult(target="conda-forge", state=ShipState.FAILED, reference=None, message="x")
+    assert a == b

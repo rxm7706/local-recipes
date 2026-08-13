@@ -21,14 +21,34 @@ from django.conf import settings  # noqa: E402
 # Settings may already be configured if this file collects alongside another
 # test module that configured them first -- guard so a second `configure()`
 # call (which Django refuses) never crashes the run.
+#
+# Story 9.3 (review pass 1): `INSTALLED_APPS`/`DATABASES` are included here
+# too, matching `test_dashboard_audit.py`'s own declaration, even though this
+# file's own tests need neither -- `test_dashboard_audit.py` needs both and
+# previously claimed its own settings were "a strict superset that satisfies
+# both files regardless of which one wins the race," which was false in this
+# direction: this block used to set only `CACHES`, so if THIS file ever won
+# the one-shot `settings.configure()` race, the audit file's `django.setup()`
+# + `migrate` had no app and no database to work with. Making both files'
+# declarations mutual supersets closes that regardless of collection order.
+# The audit file no longer asserts EXACT equality of `INSTALLED_APPS`
+# (review pass 2), so a future addition to this list is no longer a
+# collection-order-dependent failure over there -- but the two blocks must
+# still agree on the sqlite `NAME`, which that file does hard-assert, since
+# it migrates and truncates whatever database is configured.
 if not settings.configured:
     settings.configure(
+        INSTALLED_APPS=["pyforge.steward.dashboard"],
+        DATABASES={
+            "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"},
+        },
         CACHES={
             "default": {
                 "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
                 "LOCATION": "pyforge-steward-dashboard-test",
             },
         },
+        USE_TZ=True,
     )
 
 from django.core.cache.backends.locmem import LocMemCache  # noqa: E402

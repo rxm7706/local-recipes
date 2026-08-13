@@ -201,11 +201,11 @@ import os
 import re
 import shutil
 import subprocess
-import threading
 import time
 from pathlib import Path
 
 import tomlkit
+from pyforge.core.atomic_write import atomic_write_bytes
 
 from ..core import policy
 from ..core.egress import to_redacted
@@ -492,15 +492,16 @@ def write_policy_toml(
     adapter: str | None = None,
 ) -> Path:
     """The I/O boundary: render via ``render_policy_toml`` and atomically
-    write ``<loop_home>/.bmad-loop/policy.toml`` whole, mirroring
-    ``cli/config.py::materialize``'s temp-file-then-``os.replace`` mechanics
-    -- MINUS its write-once/content-hash/no-op logic, since this artifact is
-    a fresh projection on every call, never content-addressed, never skipped.
-    Never reads an existing file at that path first: every call fully
-    replaces any prior content, including hand-edited or unrelated bytes.
-    Creates ``<loop_home>/.bmad-loop`` if it does not already exist. Any
-    ``OSError`` during the sequence is wrapped in ``HarnessPolicyWriteError``
-    rather than propagating raw.
+    write ``<loop_home>/.bmad-loop/policy.toml`` whole via
+    ``pyforge.core.atomic_write_bytes`` (Story 14.2, CAP-2 -- the one shared
+    temp-file-then-``os.replace`` primitive, mkstemp-based) -- MINUS
+    ``cli/config.py::materialize``'s write-once/content-hash/no-op logic,
+    since this artifact is a fresh projection on every call, never
+    content-addressed, never skipped. Never reads an existing file at that
+    path first: every call fully replaces any prior content, including
+    hand-edited or unrelated bytes. Creates ``<loop_home>/.bmad-loop`` if it
+    does not already exist. Any ``OSError`` during the sequence is wrapped
+    in ``HarnessPolicyWriteError`` rather than propagating raw.
 
     Like ``cli/config.py::materialize``, THE CALLER owns the gate deciding
     whether a given composition may be persisted at all (e.g. only
@@ -530,23 +531,9 @@ def _atomic_write_policy_text(text: str, loop_home: Path) -> Path:
     logic, since this artifact is a fresh projection on every call, never
     content-addressed, never skipped."""
     bmad_loop_dir = Path(loop_home) / ".bmad-loop"
+    target_path = bmad_loop_dir / "policy.toml"
     try:
-        bmad_loop_dir.mkdir(parents=True, exist_ok=True)
-        target_path = bmad_loop_dir / "policy.toml"
-        # pid+thread-id suffixed, O_EXCL-guarded, no pre-unlink -- the same
-        # collision-safety reasoning as cli/config.py::materialize's own temp
-        # file (see that function's comment for the full rationale).
-        tmp_path = bmad_loop_dir / (
-            f".policy.toml.pid{os.getpid()}.t{threading.get_native_id()}.tmp"
-        )
-        fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
-        try:
-            with os.fdopen(fd, "wb") as handle:
-                handle.write(text.encode("utf-8"))
-            os.replace(tmp_path, target_path)
-        except BaseException:
-            tmp_path.unlink(missing_ok=True)
-            raise
+        atomic_write_bytes(target_path, text.encode("utf-8"))
         return target_path
     except OSError as exc:
         raise HarnessPolicyWriteError(

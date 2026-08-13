@@ -51,3 +51,4 @@ jsonschema = "*"
 # import the moment cyclonedx re-bounded it. conda-forge ships 0.17.6 (noarch).
 packageurl-python = "*"
 license-expression = "*"
+pyforge-core = { path = "../pyforge-core" }
