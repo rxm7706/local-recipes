@@ -36,6 +36,18 @@ dispatch replaces the ``# Unreachable in Story 1.2`` block below with the
 first real branch, guarded by both ``ns.noun == "recipe"`` and ``ns.verb ==
 "new"`` so a future second recipe verb does not fall into it by noun alone.
 
+Story 2.5 registers the next verb, ``recipe validate``: a single required
+``recipe_path`` positional, no verb-own flags. It is the one CLI-level
+exception to every other verb's dispatch shape (module-level rule, not a
+per-verb quirk): every other ``recipe`` verb's branch in ``main()`` always
+returns ``EXIT_OK`` regardless of the wrapped tool's own outcome ("the gap
+is data," ``doctor``'s established precedent) -- ``recipe validate``'s own
+branch instead projects the returned ``CfeResult.returncode`` onto the
+process exit code (``EXIT_OK`` when zero, else ``EXIT_FAILED``), so it
+composes as a CI/shell gate. The rendered JSON envelope's ``status`` field
+still always reads ``"ok"`` -- only the process exit code carries the
+validation-outcome signal.
+
 Story 2.6 is the next to use that seam, registering ``recipe build`` on
 ``_noun_verbs["recipe"]``. Story 2.7 registers ``recipe diagnose`` on the
 same noun — ``package``/``environment`` stay behavior-identical (their own
@@ -92,6 +104,11 @@ _NOUNS = {
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
 _RECIPE_NEW_HELP = "generate a recipe from PyPI/GitHub/CRAN/npm via conda-forge-expert"
+_RECIPE_VALIDATE_HELP = (
+    "validate a recipe against conda-forge policy via CFE's validator (--format json puts "
+    "findings in the data field; unlike every other recipe verb, the process exit code "
+    "reflects the wrapped validator's own pass/fail outcome)"
+)
 _RECIPE_BUILD_HELP = (
     "build a recipe (native by default; --docker + --config for CI-parity)"
 )
@@ -454,8 +471,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="path to write the generated recipe to (required)",
     )
 
+    # Story 2.5: mason recipe validate <recipe_path> — the second verb
+    # registered under any noun (FR-8). A single required recipe_path
+    # positional, no verb-own flags — `recipe_path` passes through to CFE
+    # with no Mason-side existence check or interpretation (spec Always
+    # boundary), same as diagnose/optimize/scan's own recipe_path below.
+    validate_parser = _noun_verbs["recipe"].add_parser(
+        "validate",
+        help=_RECIPE_VALIDATE_HELP,
+        description=_RECIPE_VALIDATE_HELP,
+        parents=[global_flags],
+    )
+    validate_parser.add_argument(
+        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+    )
+
     # Story 2.6: mason recipe build <recipe_path> [--docker --config] — the
-    # second verb registered under any noun (FR-9). package/environment stay
+    # third verb registered under any noun (FR-9). package/environment stay
     # behavior-identical to Story 1.2: their verb-subparsers actions above
     # are captured but never given a verb, so they remain usage errors.
     # `parents=[global_flags]` here too, mirroring every other parser level
@@ -680,6 +712,38 @@ def main(argv: Sequence[str] | None = None) -> int:
             render.write(fmt, sys.stdout, "recipe new", "ok", dataclasses.asdict(result), [])
             return EXIT_OK
 
+        if ns.noun == "recipe" and ns.verb == "validate":
+            # FR-8: delegates to CFE's validator via recipe.py. `recipe.
+            # validate` raises `CfeUnresolvedError` before any subprocess
+            # spawns if the CFE root is unresolved (spec Always boundary) --
+            # caught by the dedicated branch below, same as every other
+            # CFE-dependent path.
+            #
+            # The one exception among every `recipe` verb (module docstring,
+            # spec Design Notes): the JSON envelope's own `status` field
+            # still always reads "ok" (Mason ran the command successfully),
+            # but the PROCESS EXIT CODE alone projects `result.returncode`
+            # -- `EXIT_OK` when the wrapped validator passed, `EXIT_FAILED`
+            # when it reported findings -- so `mason recipe validate`
+            # composes as a CI/shell gate. This does not violate AD-4:
+            # `recipe.validate` itself never raises for a validation
+            # failure, it is only this dispatch branch's own decision.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.validate(
+                ns.recipe_path,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe validate", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
+
         if ns.noun == "recipe" and ns.verb == "build":
             # A manual post-parse cross-check, not argparse-declarative
             # (spec Always boundary): `--docker`/`--config` pairing is a
@@ -885,13 +949,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             return EXIT_OK
 
         # Unreachable now for every verb-noun pair except `recipe new`/
-        # `recipe build`/`recipe diagnose`/`recipe optimize`/`recipe scan`/
-        # `recipe submit`/`recipe update` above, each handled by its own
-        # branch: `package`/`environment` still register no verbs at all,
-        # and `recipe` registers no verb beyond those seven, so argparse
-        # itself rejects any other token here as an invalid choice before
-        # `ns.verb` could ever hold it. Kept only so a later story that
-        # populates another verb has somewhere to land its dispatch.
+        # `recipe validate`/`recipe build`/`recipe diagnose`/`recipe
+        # optimize`/`recipe scan`/`recipe submit`/`recipe update` above,
+        # each handled by its own branch: `package`/`environment` still
+        # register no verbs at all, and `recipe` registers no verb beyond
+        # those eight, so argparse itself rejects any other token here as an
+        # invalid choice before `ns.verb` could ever hold it. Kept only so a
+        # later story that populates another verb has somewhere to land its
+        # dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

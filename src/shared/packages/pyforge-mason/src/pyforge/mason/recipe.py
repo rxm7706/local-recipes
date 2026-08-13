@@ -47,6 +47,34 @@ no rewriting, no normalization of Mason's own (spec Design Notes: `CfeResult`
 is reused as-is, never a `RecipeGenerationResult` wrapper with nothing new
 to add).
 
+Story 2.5 adds `validate()`, backing `mason recipe validate <recipe_path>`
+(FR-8). It mirrors `diagnose()`'s composition shape exactly (resolve root ->
+`ensure_cfe_root` -> resolve interpreter -> call the CFE port), with NO
+import-floor gate: the wrapped validator's only third-party import,
+PyYAML, already degrades to an honest failure on its own (confirmed by
+reading it), the same "already handles it" exemption `diagnose()`
+established -- not `optimize()`/`scan()`'s scoped-probe pattern. `args` is
+`["--json", recipe_path]` -- mirroring `scan()`'s own `--json` forcing --
+because the wrapped script defaults to human-readable text without it,
+which would leave `CfeResult.json_body` empty and violate the spec's own
+AC that findings appear in the JSON envelope's `data` field.
+`recipe_path` is passed straight through with no existence check or
+interpretation, mirroring `log_path`/`optimize()`'s and `scan()`'s own
+`recipe_path` (AD-1, spec Always boundary) -- not `submit()`'s one
+disclosed exception. `validate()` returns the raw `CfeResult` verbatim
+(spec Never boundary, like `diagnose()`/`optimize()`/`scan()`/`update()`)
+-- no reinterpretation, no new dataclass, so CFE's own identifiers are
+preserved verbatim in the rendered output.
+
+Unlike every other verb in this module, a non-zero `CfeResult.returncode`
+here is NOT merely data folded silently into a uniform `EXIT_OK` (AD-4
+still holds -- this function itself never raises for a validation
+failure): `cli.py`'s own `recipe validate` dispatch branch alone projects
+`result.returncode` onto the process exit code (`EXIT_OK` when zero, else
+`EXIT_FAILED`), so `mason recipe validate` composes as a CI/shell gate
+(spec Design Notes). That projection is scoped entirely to `cli.py`; this
+function's own contract is identical to `diagnose()`'s.
+
 Story 2.6 adds `build()`, the second `recipe` verb, driving CFE's own
 local-build tooling through two new STREAM-mode (AD-25) `cfe.py` adapters:
 `build_native` (the default) and `build_docker` (`--docker`, CI-parity,
@@ -288,6 +316,56 @@ def new(
         raise RecipeGenerationError(source=source, cfe_message=cfe_message)
 
     return result
+
+
+def validate(
+    recipe_path: str,
+    *,
+    cfe_root_arg: str | None,
+    cfe_python_arg: str | None,
+    cfe_timeout_arg: float | None,
+    environ: Mapping[str, str],
+    start_directory: Path,
+) -> CfeResult:
+    """Validate a recipe against conda-forge policy via CFE's validator
+    (FR-8) and return the resulting `CfeResult` directly -- no Mason-side
+    reinterpretation of its `json_body` (spec Never boundary).
+
+    Resolves the CFE root (`resolve_cfe_root`) and raises
+    `CfeUnresolvedError` via `cfe.ensure_cfe_root` before any subprocess
+    spawns if it is unresolved (spec Always boundary) -- mirroring
+    `diagnose()`. Resolves the interpreter (`resolve_cfe_interpreter`) with
+    no import-floor gate (module docstring): the wrapped validator's only
+    third-party import already degrades to an honest failure on its own, the
+    same exemption `diagnose()` established.
+
+    `args` is `["--json", recipe_path]` -- mirroring `scan()`'s own `--json`
+    forcing (module docstring): the wrapped script defaults to human-
+    readable text without it, which would leave `CfeResult.json_body` empty.
+    `recipe_path` is passed straight through with no existence check or
+    interpretation, mirroring `optimize()`/`scan()`'s own `recipe_path`
+    (AD-1, spec Always boundary). `cfe_timeout_arg` is passed straight
+    through as `cfe.validate_recipe`'s own `timeout`; that adapter's own
+    default (`_VALIDATE_RECIPE_TIMEOUT_SECONDS`) applies only when this
+    resolves to `None`.
+
+    A non-zero `CfeResult.returncode` is never raised here (AD-4) -- it is
+    data on the returned result, identical to every sibling verb in this
+    module. Only `cli.py`'s own `recipe validate` dispatch branch projects
+    that returncode onto the process exit code (module docstring); this
+    function's own contract stays indistinguishable from `diagnose()`'s.
+    """
+    resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
+    cfe.ensure_cfe_root(resolved_root)
+
+    resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
+
+    return cfe.validate_recipe(
+        ["--json", recipe_path],
+        root=resolved_root.root,
+        interpreter=resolved_interpreter.path,
+        timeout=cfe_timeout_arg,
+    )
 
 
 def build(

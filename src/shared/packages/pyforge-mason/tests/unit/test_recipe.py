@@ -18,6 +18,17 @@ root -- `new`'s own job is pure composition of already-tested pieces
 (`resolve.py`'s chains, `cfe.py`'s raising siblings and adapter), so these
 tests prove the composition, not those pieces' own internals again.
 
+Story 2.5 adds `recipe.py::validate()`: the same composition shape as
+`diagnose()` (resolve root -> `ensure_cfe_root` -> resolve interpreter ->
+call the CFE port), no import-floor gate, args `["--json", recipe_path]`
+mirroring `scan()`'s own `--json` forcing, and the raw `CfeResult` returned
+verbatim. Coverage mirrors `diagnose()`'s tests, plus two real end-to-end
+`fake_cfe_root` round trips (a passing canned result and a failing one via
+`MASON_FIXTURE_STDOUT`/`MASON_FIXTURE_EXIT_CODE`) proving `validate()`
+itself never raises or reinterprets a validation failure -- the exit-code
+projection this verb is otherwise known for is `cli.py`'s own job, covered
+in `tests/unit/test_cli.py`, not here.
+
 Story 2.6 adds `recipe.py::build()`, the second `recipe` verb's use-case.
 Resolves the CFE root and raises `CfeUnresolvedError` before any
 subprocess spawns when it cannot be found; otherwise dispatches to `cfe.
@@ -80,7 +91,7 @@ import pyforge.mason.recipe as recipe_module
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError, RecipeGenerationError
 from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
-from pyforge.mason.recipe import build, diagnose, new, optimize, scan, submit, update
+from pyforge.mason.recipe import build, diagnose, new, optimize, scan, submit, update, validate
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_NOT_FOUND, STEP_RUNNING_INTERPRETER,
     ResolvedCfeInterpreter, ResolvedCfeRoot,
@@ -170,6 +181,201 @@ def test_new_raises_cfe_unresolved_error_before_any_subprocess_spawns(tmp_path):
             )
 
     mock_run.assert_not_called()
+
+
+# --- validate(): I/O & Edge-Case Matrix ---------------------------------------
+
+# --- Composition (mocked) ----------------------------------------------------
+
+def test_validate_passes_json_flag_then_recipe_path_as_validate_recipe_args():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_RESULT) as mock_validate:
+        result = validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure.assert_called_once_with(_ROOT)
+    mock_validate.assert_called_once_with(
+        ["--json", "recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+    assert result is _RESULT
+
+
+def test_validate_passes_an_explicit_cfe_timeout_arg_straight_through():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_RESULT) as mock_validate:
+        validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert mock_validate.call_args.kwargs["timeout"] == 42.0
+
+
+def test_validate_returns_the_cfe_result_verbatim_no_reinterpretation():
+    """Spec Never boundary: `validate()` returns `cfe.validate_recipe`'s
+    `CfeResult` directly -- no new model, no field renaming, no wrapping,
+    regardless of the wrapped validator's own pass/fail outcome. (The
+    process-exit-code projection FR-8 asks for is `cli.py`'s own dispatch-
+    time decision -- see `tests/unit/test_cli.py` -- never a reinterpretation
+    made here.)"""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_RESULT):
+        result = validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result is _RESULT
+    assert isinstance(result, CfeResult)
+
+
+def test_validate_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
+    """`resolve_cfe_root`/`resolve_cfe_interpreter` do their own flag ->
+    environment -> default resolution -- `validate()` must pass the raw flag
+    values through unresolved, mirroring `diagnose()`'s contract."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root, \
+         patch.object(
+             recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER,
+         ) as mock_interp, \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_RESULT):
+        validate(
+            "recipes/foo",
+            cfe_root_arg="/explicit/root", cfe_python_arg="/explicit/python",
+            cfe_timeout_arg=None, environ={"X": "1"}, start_directory=Path("/start"),
+        )
+
+    mock_root.assert_called_once_with("/explicit/root", {"X": "1"}, Path("/start"))
+    mock_interp.assert_called_once_with("/explicit/python", {"X": "1"})
+
+
+def test_validate_never_calls_ensure_import_floor():
+    """The module docstring's "no import-floor gate" decision (the wrapped
+    validator's only third-party import already degrades to an honest
+    failure on its own) had no positive regression test -- mirroring
+    `test_diagnose_never_calls_ensure_import_floor` above."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_RESULT), \
+         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor:
+        validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure_floor.assert_not_called()
+
+
+# --- CFE-unresolved propagation: raises before any subprocess spawns -------
+
+def test_validate_raises_cfe_unresolved_error_when_root_is_not_found():
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+
+def test_validate_never_calls_validate_recipe_when_root_is_unresolved():
+    """The `CfeUnresolvedError` path must short-circuit before
+    `cfe.validate_recipe` is ever reached."""
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.validate_recipe") as mock_validate:
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+    mock_validate.assert_not_called()
+
+
+def test_validate_raises_before_any_subprocess_spawns_against_a_real_unresolved_root(
+    tmp_path,
+):
+    """End-to-end, nothing mocked but the subprocess boundary itself: a
+    `tmp_path` with no CFE marker directory anywhere above it and an empty
+    `environ` exercises the real `resolve.py` chain and the real
+    `cfe.ensure_cfe_root` raise path (AD-16: no real CFE installation
+    required). `subprocess.run` is patched only to prove it is never
+    called -- the spec's own wording for this row (spec I/O matrix: "raises
+    ... before any subprocess spawns")."""
+    with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=tmp_path,
+            )
+
+    mock_run.assert_not_called()
+
+
+# --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
+
+def test_validate_against_fake_cfe_root_returns_the_fixtures_canned_passing_result(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = validate(
+        "recipes/foo",
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert isinstance(result, CfeResult)
+    assert result.returncode == 0
+    assert result.json_body["passed"] is True
+    assert result.json_body["errors"] == []
+
+
+def test_validate_against_fake_cfe_root_with_a_failing_canned_result(fake_cfe_root, monkeypatch):
+    """Overrides the fixture's canned output (`MASON_FIXTURE_STDOUT`/
+    `MASON_FIXTURE_EXIT_CODE`) to simulate a recipe that fails validation --
+    proves `validate()` itself still returns the `CfeResult` verbatim with a
+    non-zero `returncode` (AD-4: data, never raised); the projection onto
+    `EXIT_OK`/`EXIT_FAILED` is `cli.py`'s own job, covered in
+    `tests/unit/test_cli.py`, not here."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_STDOUT",
+        '{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], '
+        '"rattler_lint_ran": true}',
+    )
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    result = validate(
+        "recipes/foo",
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert result.returncode == 1
+    assert result.json_body["passed"] is False
+    assert result.json_body["errors"] == ["missing license"]
 
 
 # --- build(): I/O & Edge-Case Matrix ------------------------------------------
