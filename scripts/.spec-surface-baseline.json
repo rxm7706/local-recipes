@@ -2436,7 +2436,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "449b3179a8fb3a8fde7373d7562282012dbe51fe",
+   "pixi.toml": "d2dae9f6b70544e963037eaf52c0a3567120fdb8",
    "src/shared/packages/pyforge-core/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-core/README.md": "eb9b93c06168d70f50357a799319553c616e342a",
    "src/shared/packages/pyforge-core/pixi.toml": "7974c46731748dd56e3f5e2b39f3f4570e4cf9b6",
@@ -2448,7 +2448,7 @@
    "src/shared/packages/pyforge-core/tests/meta/test_leaf_constraint.py": "8d891d0f493e14a19e78b277c46d1b7761905b7c",
    "src/shared/packages/pyforge-core/tests/unit/test_atomic_write.py": "a1b0e7c954d85a6ecbf1342a4536fb71b21af3ba"
   },
-  "memlog": "d84dbab434c099f9337de4e0cdfa0ece1694c71c"
+  "memlog": "9418a8398c1c13c9768755a55133ce5910b66c38"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
