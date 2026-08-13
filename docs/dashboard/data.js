@@ -2978,7 +2978,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "9.3",
-            400
+            468
           ],
           [
             "9.4",
@@ -3000,17 +3000,17 @@ window.DASHBOARD_DATA = {
             "var(--done)"
           ],
           [
-            "4–400 min",
+            "4–468 min",
             "observed range",
             ""
           ],
           [
-            "34/40",
+            "36/40",
             "stories complete",
             "var(--done)"
           ],
           [
-            "6",
+            "4",
             "remaining",
             ""
           ]
@@ -3019,8 +3019,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2956,
-        "totalLabel": "~49.3 h active compute",
+        "total": 3024,
+        "totalLabel": "~50.4 h active compute",
         "note": "Derived from 21 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 69,
@@ -3040,7 +3040,7 @@ window.DASHBOARD_DATA = {
           "8.3": 44,
           "9.1": 147,
           "9.2": 400,
-          "9.3": 400,
+          "9.3": 468,
           "9.4": 296,
           "9.5": 80,
           "9.6": 4
@@ -3051,7 +3051,7 @@ window.DASHBOARD_DATA = {
           "E6": 141,
           "E7": 546,
           "E8": 392,
-          "E9": 1327
+          "E9": 1395
         }
       },
       "lineState": {
@@ -3283,12 +3283,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "9.2",
-              "pending",
+              "done",
               "An unauthorized page is absent, not hidden"
             ],
             [
               "9.3",
-              "pending",
+              "done",
               "The audit trail records what was seen"
             ],
             [
@@ -3920,7 +3920,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 01:49 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 02:49 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6007,7 +6007,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "in-progress",
           "note": "next free slot",
-          "done": 34,
+          "done": 36,
           "total": 40
         },
         {
@@ -6979,7 +6979,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "34/40",
+        "progress": "36/40",
         "complete": 14,
         "of": 14
       },
@@ -16677,14 +16677,14 @@ window.DASHBOARD_DATA = {
     ],
     "lastShipped": {
       "station": "mason",
-      "story": "2.9",
-      "epoch": 1786581721,
-      "sha": "f9ff81fdc",
-      "subject": "Merge bmad-loop/20260811-190427-dc18/2-9-mason-recipe-submit into loop/pyforge-mason (bmad-loop)"
+      "story": "2.10",
+      "epoch": 1786585188,
+      "sha": "1dbf4090c",
+      "subject": "Merge bmad-loop/20260811-190427-dc18/2-10-mason-recipe-update into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-13 01:49 UTC",
-    "generatedEpoch": 1786585772
+    "generatedAt": "2026-08-13 02:49 UTC",
+    "generatedEpoch": 1786589357
   },
   "storySpecs": [
     {
@@ -16725,9 +16725,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 34,
+      "done": 36,
       "tracked": 18,
-      "gap": 16
+      "gap": 18
     },
     {
       "station": "pyforge-warden",
@@ -16870,46 +16870,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "steward",
-        "project": "pyforge-steward",
-        "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-bmad-module-provisioning",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning/SPEC.md"
-          },
-          {
-            "slug": "spec-jira-github-projects-sync",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md"
-          },
-          {
-            "slug": "spec-secure-live-dashboards",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
-          }
-        ],
-        "done": 34,
-        "backlog": 4,
-        "blocked": 2,
-        "total": 40,
-        "next": "9-2-an-unauthorized-page-is-absent-not-hidden",
-        "blockedKeys": [
-          "8-4-fail-loud-fail-alone",
-          "8-5-explicit-status-vocabulary-translation"
-        ],
-        "backlogKeys": [
-          "9-2-an-unauthorized-page-is-absent-not-hidden",
-          "9-3-the-audit-trail-records-what-was-seen",
-          "9-6-isolation-proven-by-tests-that-cannot-pass-vacuously",
-          "9-7-hosted-or-static-no-fork"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "doctor",
         "project": "pyforge-doctor",
         "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
@@ -16969,6 +16929,44 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "steward",
+        "project": "pyforge-steward",
+        "epicsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-bmad-module-provisioning",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-module-provisioning/SPEC.md"
+          },
+          {
+            "slug": "spec-jira-github-projects-sync",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-jira-github-projects-sync/SPEC.md"
+          },
+          {
+            "slug": "spec-secure-live-dashboards",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
+          }
+        ],
+        "done": 36,
+        "backlog": 2,
+        "blocked": 2,
+        "total": 40,
+        "next": "9-6-isolation-proven-by-tests-that-cannot-pass-vacuously",
+        "blockedKeys": [
+          "8-4-fail-loud-fail-alone",
+          "8-5-explicit-status-vocabulary-translation"
+        ],
+        "backlogKeys": [
+          "9-6-isolation-proven-by-tests-that-cannot-pass-vacuously",
+          "9-7-hosted-or-static-no-fork"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "atlas",
         "project": "pyforge-atlas",
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
@@ -17018,8 +17016,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 293,
-      "backlog": 80,
+      "done": 295,
+      "backlog": 78,
       "blocked": 6,
       "total": 379
     }
@@ -17083,7 +17081,7 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 40,
-        "done": 34,
+        "done": 36,
         "blocked": 2,
         "epics": 9,
         "epicsDone": 7,
@@ -17101,7 +17099,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 379,
-      "done": 293,
+      "done": 295,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 50
