@@ -6,11 +6,11 @@ method raises -- an unavailable pane, an unresolvable window, or an
 unreadable path is this port's own documented ``None``/``False``, not a
 failure.
 
-This adapter invokes ``tmux`` directly, via this module's OWN
-``subprocess`` call -- NOT
-``adapters/process_posix.py``'s ``ProcessPort.run`` (adapters never import
-each other, AD-4; the Code Map is explicit that this module "cannot reuse
-process_posix.py"). ``bmad_loop`` itself supports more than one multiplexer
+This adapter invokes ``tmux`` via ``pyforge.core.process.PosixProcess``
+(Story 14.4, SPEC-pyforge-core CAP-6 -- previously this module's OWN direct
+``subprocess`` call; adapters still never import each other, AD-4, but
+``pyforge.core`` is the shared leaf every station may depend on, not a
+sibling adapter). ``bmad_loop`` itself supports more than one multiplexer
 backend (``adapters/harness_bmadloop.py::multiplexer_backend_available``),
 but this story wires only the ``tmux`` case -- the packaged default and the
 one this repo's own loop homes run under; a second backend is out of this
@@ -57,9 +57,16 @@ of its own managed windows.
 from __future__ import annotations
 
 import json
-import subprocess
 import time
+# `subprocess` is imported for this module's own tests' monkeypatch anchor
+# (`monkeypatch.setattr(module.subprocess, "run", ...)` -- the same physical
+# stdlib module object `PosixProcess.run` itself calls, so patching it here
+# still reaches the real launch below) -- the production code never calls
+# `subprocess.*` directly (Story 14.4, SPEC-pyforge-core CAP-6).
+import subprocess  # noqa: F401
 from pathlib import Path
+
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..core.egress import to_redacted
 
@@ -86,15 +93,16 @@ class MultiplexerObserver:
         degrade condition (no such session, a hung/missing binary, zero or
         more than one row claiming active). Never raises."""
         try:
-            result = subprocess.run(
+            result = PosixProcess().run(
                 ["tmux", "list-windows", "-t", f"={session}", "-F", "#{window_id}\t#{window_active}"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=_CAPTURE_PANE_TIMEOUT_S,
+                cwd=Path.cwd(),
+                timeout_s=_CAPTURE_PANE_TIMEOUT_S,
             )
-        except (OSError, subprocess.TimeoutExpired, ValueError):
+        except ProcessError:
+            # Story 14.4, SPEC-pyforge-core CAP-6: `PosixProcess.run` folds
+            # a missing/hung binary and an embedded NUL byte into ONE
+            # `ProcessError` -- this port's own documented `None`, never
+            # raise.
             return None
         if result.returncode != 0:
             # tmux's own "no such session" exit (and every other list
@@ -122,22 +130,19 @@ class MultiplexerObserver:
         if window is None:
             return None
         try:
-            result = subprocess.run(
+            result = PosixProcess().run(
                 ["tmux", "capture-pane", "-t", window, "-p"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=_CAPTURE_PANE_TIMEOUT_S,
+                cwd=Path.cwd(),
+                timeout_s=_CAPTURE_PANE_TIMEOUT_S,
             )
-        except (OSError, subprocess.TimeoutExpired, ValueError):
+        except ProcessError:
             # tmux itself missing, or a hung capture -- indistinguishable
             # from "no such window" at this port's own documented
-            # granularity: both degrade to None, never raise. `ValueError`
-            # too (review finding, Story 3.4): `subprocess.run` raises a
-            # plain `ValueError` -- not an `OSError` -- for an embedded NUL
-            # byte in an argv element, which would otherwise escape this
-            # port's own documented "never raises" contract.
+            # granularity: both degrade to None, never raise. Story 14.4,
+            # SPEC-pyforge-core CAP-6: `PosixProcess.run` folds this and an
+            # embedded-NUL-byte failure (review finding, Story 3.4) into the
+            # SAME `ProcessError`, which would otherwise escape this port's
+            # own documented "never raises" contract.
             return None
         if result.returncode != 0:
             # The window died between resolution and this call -- the pane
@@ -168,30 +173,25 @@ class MultiplexerObserver:
         if window is None:
             return False
         try:
-            paste = subprocess.run(
+            paste = PosixProcess().run(
                 ["tmux", "send-keys", "-t", window, "-l", text],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=_CAPTURE_PANE_TIMEOUT_S,
+                cwd=Path.cwd(),
+                timeout_s=_CAPTURE_PANE_TIMEOUT_S,
             )
             if paste.returncode != 0:
                 return False
             time.sleep(_SEND_TEXT_SETTLE_S)
-            submit = subprocess.run(
+            submit = PosixProcess().run(
                 ["tmux", "send-keys", "-t", window, "Enter"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=_CAPTURE_PANE_TIMEOUT_S,
+                cwd=Path.cwd(),
+                timeout_s=_CAPTURE_PANE_TIMEOUT_S,
             )
-        except (OSError, subprocess.TimeoutExpired, ValueError):
+        except ProcessError:
             # Same CPython/tmux failure classes `pane_content` already
-            # guards -- a hung or missing binary, or an embedded NUL byte in
-            # `text`, must degrade to this port's own documented `False`,
-            # never raise.
+            # guards, all folded into ONE `ProcessError` (Story 14.4,
+            # SPEC-pyforge-core CAP-6) -- a hung or missing binary, or an
+            # embedded NUL byte in `text`, must degrade to this port's own
+            # documented `False`, never raise.
             return False
         # A settle AFTER the submitting Enter, not only before it (review
         # finding). `tmux send-keys` returns as soon as tmux has queued the

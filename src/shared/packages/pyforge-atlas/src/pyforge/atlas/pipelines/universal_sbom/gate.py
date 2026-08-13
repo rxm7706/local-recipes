@@ -57,6 +57,7 @@ from typing import Any, Callable
 
 from pyforge.atlas.a2a import AtlasAlert, Severity, build_alert_payload
 from pyforge.atlas.validation import ContractViolation, DataContractViolation
+from pyforge.core.errors import PyforgeError
 
 # The catalog name of the terminal artifact — the dataset the gate is the single
 # producer of, and the dataset the halt (DataContractViolation) is attributed to.
@@ -98,9 +99,12 @@ def _as_list(value: Any) -> list:
     return value if isinstance(value, list) else []
 
 
-class GateDependencyMissing(RuntimeError):
+class GateDependencyMissing(PyforgeError, RuntimeError):
     """Raised (with :data:`INSTALL_HINT`) when the ``pyforge-atlas[gate]`` extra
-    is absent — the schema-by-import contract's explicit, actionable failure."""
+    is absent — the schema-by-import contract's explicit, actionable failure.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def _load_warden() -> tuple[Any, Any, Any, str]:

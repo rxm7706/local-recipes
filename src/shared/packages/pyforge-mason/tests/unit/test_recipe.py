@@ -1,4 +1,37 @@
-"""Story 2.6 -- `recipe.py::build()`: the first `recipe` verb's use-case
+"""Story 2.4 -- `recipe.py::new()`: the first `recipe` verb's use-case
+module. `source`/`package`/`output` are forwarded verbatim to CFE's
+`generate_recipe` adapter, raising a typed error on CFE-root unresolved or
+a non-zero CFE exit (FR-7).
+
+`probe_import_floor`/`generate_recipe` are patched on `pyforge.mason.cfe`'s
+own module namespace, not on imported names -- mirroring `test_doctor.py`'s
+identical `cfe.probe_import_floor` patch target: `recipe.py` does `from .
+import cfe` and calls `cfe.<name>(...)`, an attribute lookup at call time
+(and `cfe.py`'s own `ensure_import_floor` calls `probe_import_floor`
+unqualified, resolved via that same module's globals at call time), so
+patching the attribute on the `cfe` module reaches both call sites with no
+gotcha -- the same pitfall `test_cfe.py::test_ensure_cfe_root_never_re_
+resolves` documents for `cfe.py` itself. Every `new()` test resolves the
+CFE root against Story 1.9's real `fake_cfe_root` fixture (or a genuinely
+marker-less `tmp_path` for the not-found case), rather than a synthetic
+root -- `new`'s own job is pure composition of already-tested pieces
+(`resolve.py`'s chains, `cfe.py`'s raising siblings and adapter), so these
+tests prove the composition, not those pieces' own internals again.
+
+Story 2.5 -- `recipe.py::validate()`: the second `recipe` verb's use-case
+module, hand-landed 2026-08-13 after this story's own dev pass deferred on
+a spec-surface gate, not a code defect (see `recipe.py`'s own module
+docstring and this Spec's memlog for the same reconciliation applied
+there). Mirrors `diagnose()`'s composition-test shape below exactly (argv/
+timeout passthrough, verbatim-return, `ensure_import_floor` never called,
+`CfeUnresolvedError` propagation), plus two real-fixture round trips
+against `fake_cfe_root`: a passing canned result (the fixture's own
+default) and a failing one produced via the `MASON_FIXTURE_STDOUT`/
+`MASON_FIXTURE_EXIT_CODE` override mechanism (Story 1.9), since the
+fixture's `validate_recipe.py` stub only emits a canned passing body on its
+own.
+
+Story 2.6 -- `recipe.py::build()`: the next `recipe` verb's use-case
 module. Resolves the CFE root and raises `CfeUnresolvedError` before any
 subprocess spawns when it cannot be found; otherwise dispatches to `cfe.
 build_native` (default) or `cfe.build_docker` (`docker=True`) -- proven
@@ -58,9 +91,9 @@ import pytest
 import pyforge.mason.cfe as cfe_module
 import pyforge.mason.recipe as recipe_module
 from pyforge.mason.cfe import ImportFloorResult
-from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
+from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError, RecipeGenerationError
 from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
-from pyforge.mason.recipe import build, diagnose, optimize, scan, submit, update
+from pyforge.mason.recipe import build, diagnose, new, optimize, scan, submit, update, validate
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_NOT_FOUND, STEP_RUNNING_INTERPRETER,
     ResolvedCfeInterpreter, ResolvedCfeRoot,
@@ -76,6 +109,80 @@ _FIXTURE_ENV_VARS = ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_F
 def _clear_fixture_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for var in _FIXTURE_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
+
+
+_EMPTY_FLOOR = ImportFloorResult(interpreter="/fake/python", missing=())
+"""A satisfied import-floor result, so `ensure_import_floor` never raises
+and -- since this IS the function `probe_import_floor` that would otherwise
+spawn a subprocess -- never spawns one either, keeping the tests below
+hermetic against whatever floor packages this test environment happens to
+have installed."""
+
+
+# --- new(): I/O & Edge-Case Matrix --------------------------------------------
+
+@pytest.mark.parametrize("source", ["pypi", "github", "cran", "npm"])
+def test_new_forwards_source_as_the_adapters_first_argv_element(source, fake_cfe_root):
+    """FR-7: `source` is CFE's own subcommand vocabulary, already selected by
+    `cli.py` before this function ever runs -- `new` applies no mapping of
+    its own, only forwards `[source, package, "--output", output]` unmodified
+    (spec Always boundary)."""
+    fake_result = CfeResult(returncode=0, stdout="ok", stderr="", json_body=None)
+    with patch("pyforge.mason.cfe.probe_import_floor", return_value=_EMPTY_FLOOR), \
+         patch("pyforge.mason.cfe.generate_recipe", return_value=fake_result) as mock_generate:
+        result = new(
+            source, "demo-package", "recipes/demo",
+            cfe_root_arg=str(fake_cfe_root), cfe_python_arg=None,
+            cfe_timeout_arg=None, environ={}, start_directory=fake_cfe_root,
+        )
+
+    assert result == fake_result
+    args = mock_generate.call_args.args[0]
+    assert args == [source, "demo-package", "--output", "recipes/demo"]
+    assert args[0] == source
+
+
+def test_new_raises_recipe_generation_error_carrying_the_fixtures_stdout(
+    fake_cfe_root, monkeypatch,
+):
+    """`MASON_FIXTURE_EXIT_CODE=1` against the real fixture stub, real
+    subprocess, no mocking of `generate_recipe` itself -- proves
+    `RecipeGenerationError` carries CFE's own stdout verbatim (the fixture's
+    canned body), not a Mason-invented message (spec I/O matrix)."""
+    monkeypatch.delenv("MASON_FIXTURE_STDOUT", raising=False)
+    monkeypatch.delenv("MASON_FIXTURE_PROGRESS_LINE", raising=False)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    with patch("pyforge.mason.cfe.probe_import_floor", return_value=_EMPTY_FLOOR):
+        with pytest.raises(RecipeGenerationError) as excinfo:
+            new(
+                "pypi", "demo", "recipes/demo",
+                cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+                cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+            )
+
+    assert excinfo.value.source == "pypi"
+    assert "Generated: recipes/demo/recipe.yaml" in excinfo.value.cfe_message
+
+
+def test_new_raises_cfe_unresolved_error_before_any_subprocess_spawns(tmp_path):
+    """A not-found root (a genuinely marker-less, isolated `tmp_path` --
+    `test_resolve.py::test_walk_exhausts_to_filesystem_root`'s identical
+    setup) must be caught before `ensure_import_floor`'s probe or
+    `generate_recipe` itself ever spawns a process (spec I/O matrix): every
+    subprocess spawn in this package funnels through `cfe.py`'s own
+    `subprocess.run` call, so asserting it was never invoked proves no
+    process launched at all, not merely that this test's happy-path
+    assertions were skipped."""
+    with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            new(
+                "pypi", "demo", "recipes/demo",
+                cfe_root_arg=None, cfe_python_arg=None,
+                cfe_timeout_arg=None, environ={}, start_directory=tmp_path,
+            )
+
+    mock_run.assert_not_called()
 
 
 # --- build(): I/O & Edge-Case Matrix ------------------------------------------
@@ -199,6 +306,218 @@ def test_build_docker_resolves_a_cfe_interpreter_from_the_flag(fake_cfe_root, mo
             start_directory=Path("/does/not/matter"),
         )
 
+
+# =============================================================================
+# Story 2.5: validate() -- numerically the first `recipe` verb (see module
+# docstring); mirrors diagnose()'s composition shape exactly, except `args`
+# forces `--json` ahead of `recipe_path`, mirroring scan()'s own forcing.
+# =============================================================================
+
+_VALIDATE_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"passed": true, "errors": [], "warnings": [], "info": [], '
+           '"rattler_lint_ran": true}',
+    stderr="",
+    json_body={
+        "passed": True, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": True,
+    },
+)
+
+
+# --- Composition (mocked) ----------------------------------------------------
+
+def test_validate_passes_json_flag_then_recipe_path_as_validate_recipe_args():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
+         patch(
+             "pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT,
+         ) as mock_validate:
+        result = validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure.assert_called_once_with(_ROOT)
+    mock_validate.assert_called_once_with(
+        ["--json", "recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+    assert result is _VALIDATE_RESULT
+
+
+def test_validate_passes_an_explicit_cfe_timeout_arg_straight_through():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT,
+         ) as mock_validate:
+        validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert mock_validate.call_args.kwargs["timeout"] == 42.0
+
+
+def test_validate_returns_the_cfe_result_verbatim_no_reinterpretation():
+    """Spec Never boundary: `validate()` returns `cfe.validate_recipe`'s
+    `CfeResult` directly -- no new model, no field renaming, no wrapping, no
+    Mason-side pass/fail reinterpretation (that projection is `cli.py`'s own
+    dispatch-time decision, not this function's)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT):
+        result = validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result is _VALIDATE_RESULT
+    assert isinstance(result, CfeResult)
+
+
+def test_validate_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root, \
+         patch.object(
+             recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER,
+         ) as mock_interp, \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT):
+        validate(
+            "recipes/foo",
+            cfe_root_arg="/explicit/root", cfe_python_arg="/explicit/python",
+            cfe_timeout_arg=None, environ={"X": "1"}, start_directory=Path("/start"),
+        )
+
+    mock_root.assert_called_once_with("/explicit/root", {"X": "1"}, Path("/start"))
+    mock_interp.assert_called_once_with("/explicit/python", {"X": "1"})
+
+
+def test_validate_never_calls_ensure_import_floor():
+    """spec Always boundary: the wrapped validator's only third-party
+    import, PyYAML, already degrades to an honest failure on its own -- no
+    import-floor gate, mirroring `diagnose()`'s own established exemption,
+    not `optimize()`/`scan()`'s scoped-probe pattern."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT), \
+         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor, \
+         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor:
+        validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure_floor.assert_not_called()
+    mock_probe_floor.assert_not_called()
+
+
+# --- CFE-unresolved propagation: raises before any subprocess spawns -------
+
+def test_validate_raises_cfe_unresolved_error_when_root_is_not_found():
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+
+def test_validate_never_calls_validate_recipe_when_root_is_unresolved():
+    """The `CfeUnresolvedError` path must short-circuit before
+    `cfe.validate_recipe` is ever reached."""
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.validate_recipe") as mock_validate:
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+    mock_validate.assert_not_called()
+
+
+def test_validate_raises_before_any_subprocess_spawns_against_a_real_unresolved_root(
+    tmp_path,
+):
+    """End-to-end, nothing mocked but the subprocess boundary itself --
+    mirrors `diagnose()`'s own version of this test."""
+    with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=tmp_path,
+            )
+
+    mock_run.assert_not_called()
+
+
+# --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
+
+def test_validate_against_fake_cfe_root_returns_the_fixtures_canned_passing_result(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = validate(
+        "recipes/example",
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert isinstance(result, CfeResult)
+    assert result.returncode == 0
+    assert result.json_body["passed"] is True
+    assert result.json_body["errors"] == []
+
+
+def test_validate_against_fake_cfe_root_returns_a_failing_result_via_fixture_override(
+    fake_cfe_root, monkeypatch,
+):
+    """The fixture's own `validate_recipe.py` stub only emits a canned
+    passing body (Story 1.9) -- a failing round trip needs the
+    `MASON_FIXTURE_STDOUT`/`MASON_FIXTURE_EXIT_CODE` override mechanism
+    already used throughout this suite (spec: 'use the... override
+    mechanism... rather than editing the fixture file itself')."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_STDOUT",
+        '{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], '
+        '"rattler_lint_ran": true}',
+    )
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    result = validate(
+        "recipes/example",
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert isinstance(result, CfeResult)
+    assert result.returncode == 1
+    assert result.json_body["passed"] is False
+    assert result.json_body["errors"] == ["missing license"]
+
+
+# =============================================================================
+# Story 2.7: diagnose() -- mirrors doctor.build_report's composition shape.
+# =============================================================================
 
 # --- Composition (mocked) ----------------------------------------------------
 

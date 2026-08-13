@@ -758,6 +758,12 @@ _bmad-output/projects/*/.bmad-config.user.toml
 .viz/
 .bmad-loop/runs/
 .bmad-loop/cache/
+# `bmad-loop clean`'s default (non---hard) sweep archives concluded runs here
+# as .tar.gz rather than deleting them -- never listed alongside runs/cache/
+# above, so it showed up as untracked cruft in every loop-home worktree and
+# `bmad-loop run` refuses to start on a dirty worktree (found live 2026-08-13,
+# pyforge-steward, after a routine `bmad-loop clean`).
+.bmad-loop/archive/
 # bmad-loop writes the story's HEAD commit hash to this file at the run-worktree
 # root and never removes it. It has no in-repo producer or consumer (`grep -rn
 # claude_hash` across scripts, hooks, .bmad-loop/ and settings finds neither), and

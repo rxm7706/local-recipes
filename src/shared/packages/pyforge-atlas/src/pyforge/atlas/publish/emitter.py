@@ -34,6 +34,7 @@ from typing import Any, Mapping
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from pyforge.core.errors import PyforgeError
 
 # ---------------------------------------------------------------------------
 # The layout contract — DEFINED ONCE HERE (single owner, Spine convention).
@@ -78,10 +79,13 @@ def _require_safe_name(name: str) -> None:
         )
 
 
-class ManifestChecksumError(RuntimeError):
+class ManifestChecksumError(PyforgeError, RuntimeError):
     """A chunk on disk does not match the sha256 / byte size recorded in the manifest — a
     corrupt or truncated artifact. Raised by :func:`verify_manifest` (never silently ignored:
-    a Range consumer that reads a corrupt chunk must fail loudly, not return a wrong answer)."""
+    a Range consumer that reads a corrupt chunk must fail loudly, not return a wrong answer).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def _sha256_and_size(path: Path) -> tuple[str, int]:

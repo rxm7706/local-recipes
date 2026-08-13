@@ -2681,7 +2681,7 @@ def test_batch_pr_redact_p11_returns_none_on_any_redaction_failure(monkeypatch):
 # ``marshal deploy refresh-feed`` (Story 4.5, AD-33).
 # =====================================================================
 
-from pyforge.marshal.adapters.process_posix import ProcessError  # noqa: E402
+from pyforge.core.process import ProcessError, ProcessResult  # noqa: E402
 from pyforge.marshal.core.journal import (  # noqa: E402
     JournalEntryId,
     Phase,
@@ -2689,7 +2689,6 @@ from pyforge.marshal.core.journal import (  # noqa: E402
     prepare_for_write,
 )
 from pyforge.marshal.ports.harness import RunStatusSnapshot, TaskPhaseSnapshot  # noqa: E402
-from pyforge.marshal.ports.process import ProcessResult  # noqa: E402
 
 
 class _FakeProcess:
