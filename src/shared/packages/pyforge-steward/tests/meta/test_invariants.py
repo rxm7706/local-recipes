@@ -424,10 +424,19 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
     `pyforge.steward.dashboard.middleware` failed with `ImportError`. Its own
     docstring asserts it is django-free, which is precisely the class of
     prose-only claim this test exists to replace with a mechanism.
+
+    Story 9.2 added `navigation.py` and `filtering.py` to the list on the
+    same rationale: both modules' own docstrings and the story spec's
+    Boundaries & Constraints assert they stay framework-free, and
+    `tests/unit/test_dashboard_navigation.py` / `test_dashboard_filtering.py`
+    rely on that by importing them with no `pytest.importorskip` either.
     """
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
     offenders: list[str] = []
-    for name in ("__init__.py", "middleware.py", "declarations.py"):
+    for name in (
+        "__init__.py", "middleware.py", "declarations.py", "export.py",
+        "navigation.py", "filtering.py",
+    ):
         path = dashboard_dir / name
         assert path.exists(), f"{name} is missing from {dashboard_dir}"
         own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
@@ -466,7 +475,9 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
     read "only `apps.py` and `cache.py`". The sibling guard above pins only the
     django-FREE half, so the drift recurs on the next dashboard module: adding
     a `views.py` with `from django.db import models` left the whole suite green
-    with the docstring silently wrong (mutation-proved at the time).
+    with the docstring silently wrong (mutation-proved at the time) -- exactly
+    what Story 9.2's own `views.py` (a Django view factory backing CAP-3's
+    "absent, not hidden" claim) then did for real, adding it to the set below.
 
     Deliberately an equality assert against a named set rather than a derived
     one -- the point is to FAIL when the set changes, so whoever adds the next
@@ -475,7 +486,7 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
     import ast
 
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
-    documented = {"apps.py", "cache.py", "models.py", "audit.py"}
+    documented = {"apps.py", "cache.py", "models.py", "audit.py", "views.py"}
 
     actual: set[str] = set()
     for path in sorted(dashboard_dir.rglob("*.py")):
