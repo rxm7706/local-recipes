@@ -74,6 +74,26 @@ still present on `CfeResult.stderr` (FR-4: a parsed body is present "when
 one is present," never invented when absent). (No CFE script filename is
 named here or below -- AD-3's sole-caller guard forbids naming one anywhere
 outside `cfe.py`, docstrings included.)
+
+Story 2.9 adds `submit()`, backing `mason recipe submit <recipe_path>`
+(FR-13, AD-9, AD-11) -- staged-recipes submission's ONE implementation, that
+Epic 3's `conda-forge` ship target calls rather than reimplements (AD-11).
+It mirrors `diagnose()`'s composition shape (resolve root -> `ensure_cfe_
+root` -> resolve interpreter, no import-floor gate: the wrapped submission
+script is stdlib-only, confirmed by reading it, the same exemption
+`diagnose()` established) with two additions neither
+`diagnose()`/`optimize()`/`scan()` need: `recipe_path` IS interpreted here
+-- the one narrow, disclosed exception to AD-1's "no Mason-side path
+interpretation" precedent every other verb in this module follows, required
+because the wrapped script's own positional argument is a bare recipe NAME,
+not a path, unlike every other wrapped script (spec Always boundary) -- and
+the returned `CfeResult` is reinterpreted into a `ShipTargetResult`
+(`models.py`, AD-9) by the private `_ship_target_result_from_cfe_result`
+helper below, the one Mason-side reinterpretation of a CFE JSON body this
+epic makes (AD-9's own designed shape, not a recipe-knowledge violation of
+AD-1: interpreting `success`/`pr_url`/`fork_branch_url` into
+`state`/`reference` is what AD-9 exists to standardize across every ship
+target, conda-forge included).
 """
 
 from __future__ import annotations
@@ -83,7 +103,7 @@ from pathlib import Path
 
 from . import cfe
 from .errors import CfeImportFloorError
-from .models import CfeResult
+from .models import CfeResult, ShipState, ShipTargetResult
 from .resolve import resolve_cfe_interpreter, resolve_cfe_root
 
 _OPTIMIZE_RELEVANT_FLOOR: tuple[str, ...] = ("ruamel.yaml",)
@@ -104,6 +124,18 @@ never the whole floor, for the same reason as `_OPTIMIZE_RELEVANT_FLOOR`
 above. `requests` here names CFE's own dependency floor entry -- probed
 inside the CFE interpreter, never imported by Mason -- not a Mason-side
 HTTP client (see this constant's tuple-literal note above)."""
+
+_CFE_RECIPES_ROOT_ENV_VAR = "CFE_RECIPES_ROOT"
+"""Sanctioned duplication of CFE's own `_path_guard.ROOT_ENV_VAR` literal
+(module docstring) -- the env var `_path_guard.recipes_root()` reads, per
+call, to override the confinement root a recipe slug is resolved and
+validated against. AD-2's dependency-direction rule forbids importing a CFE
+internal, and AD-3 reserves CFE path/invocation knowledge to `cfe.py` alone
+in any case -- so this is a local re-declaration of the same literal,
+mirroring `resolve.py`'s `_ENV_CFE_ROOT`/`errors.py`'s `_MESSAGE` sanctioned-
+duplication pattern (`cfe.py`'s own module docstring names this same
+pattern for its `_CFE_SCRIPTS` table). Set, never read, by `submit()` below
+-- Mason never reads this variable back."""
 
 
 def diagnose(
@@ -232,4 +264,167 @@ def scan(
         root=resolved_root.root,
         interpreter=resolved_interpreter.path,
         timeout=cfe_timeout_arg,
+    )
+
+
+def submit(
+    recipe_path: str,
+    *,
+    confirm: bool,
+    prepare_only: bool,
+    cfe_root_arg: str | None,
+    cfe_python_arg: str | None,
+    cfe_timeout_arg: float | None,
+    environ: Mapping[str, str],
+    start_directory: Path,
+) -> ShipTargetResult:
+    """Submit a recipe to conda-forge/staged-recipes via CFE's two-phase
+    submission flow (FR-13, AD-9, AD-11) and return a `ShipTargetResult`.
+
+    Resolves the CFE root (`resolve_cfe_root`) and raises
+    `CfeUnresolvedError` via `cfe.ensure_cfe_root` before any subprocess
+    spawns if it is unresolved (spec Always boundary), mirroring
+    `diagnose()`/`optimize()`/`scan()`. Resolves the interpreter (`resolve_
+    cfe_interpreter`) with NO import-floor gate: the wrapped submission
+    script is stdlib-only (confirmed by reading it), the same exemption
+    `diagnose()` established (module docstring) -- not `optimize()`/
+    `scan()`'s scoped-probe pattern.
+
+    Unlike every other verb in this module, `recipe_path` IS interpreted
+    here -- the one narrow, disclosed exception to AD-1's "no Mason-side
+    path interpretation" precedent (spec Always boundary): the wrapped
+    script's own positional argument is a bare recipe NAME, not a path,
+    unlike every other wrapped script. `recipe_dir` is resolved
+    (`Path(recipe_path).expanduser().resolve()`) with NO existence check --
+    an invalid path surfaces as CFE's own `{"success": false, "error":
+    "Recipe not found: ..."}` (AD-4, data not raised, never a Mason-side
+    `FileNotFoundError`). `recipe_dir.name` becomes the wrapped script's own
+    positional slug, and `recipe_dir.parent` is unconditionally set as
+    `_CFE_RECIPES_ROOT_ENV_VAR` in the child's environment: harmless when
+    the recipe is already in-tree (parent == the real `recipes/` root, no
+    branching needed), and what lets an out-of-tree, user-specified
+    generation path (Story 2.4) still submit, with no new CLI flag and no
+    CFE surface file touched (epic-2-context.md Technical Decisions).
+
+    `confirm` inverts CFE's own `--dry-run` default (spec Always boundary,
+    PRD "`--dry-run` is the default"): `confirm=False` appends `--dry-run`
+    to the argv; `confirm=True` omits it -- nothing is pushed or opened
+    unless the caller explicitly confirmed. `prepare_only`, when true,
+    appends `--prepare-only` unconditionally, composing with `--dry-run`
+    exactly as the wrapped script's own argparse already allows (the
+    two-phase flow's own "separately addressable" requirement) -- no other
+    flag (`--title`/`--body`/`--branch`/`--no-force`) is ever passed (spec
+    Never boundary: speculative surface no FR/AC names).
+
+    `env` is built here, once, as the caller -- `run_streamed`'s documented
+    contract, mirrored by `cfe.submit_pr`'s own `env=` parameter: the real
+    inherited `environ` plus the one `_CFE_RECIPES_ROOT_ENV_VAR` key. No
+    credential is read, filtered, or added (AD-14's actual rule: full
+    pass-through of the given `environ` plus one non-credential key).
+
+    Returns a `ShipTargetResult`, not the raw `CfeResult` (spec Always
+    boundary, unlike every other verb here): see
+    `_ship_target_result_from_cfe_result` below for the state mapping.
+
+    `recipe_dir`'s resolution (`.expanduser().resolve()`) is wrapped in its
+    own `try`/`except` (review pass, 2026-08-12): a NONEXISTENT path
+    resolves cleanly (`Path.resolve()` does not require the target to
+    exist) and surfaces as CFE's own `"Recipe not found"` data, per the
+    paragraph above -- but a symlink loop or an embedded NUL byte raises
+    `OSError`/`ValueError` from `resolve()` itself, before any subprocess
+    spawns. Catching that here and returning a `FAILED` `ShipTargetResult`
+    keeps this verb's own contract (AD-4: an anticipated failure is data,
+    never a raised exception reaching the CLI as a raw traceback) instead
+    of falling through to `cli.py`'s generic `except Exception` handler.
+    """
+    resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
+    cfe.ensure_cfe_root(resolved_root)
+
+    resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
+
+    try:
+        recipe_dir = Path(recipe_path).expanduser().resolve()
+    except (OSError, ValueError) as exc:
+        return ShipTargetResult(
+            target="conda-forge", state=ShipState.FAILED, reference=None, message=str(exc),
+        )
+    args = [recipe_dir.name]
+    if not confirm:
+        args.append("--dry-run")
+    if prepare_only:
+        args.append("--prepare-only")
+
+    env = {**environ, _CFE_RECIPES_ROOT_ENV_VAR: str(recipe_dir.parent)}
+
+    result = cfe.submit_pr(
+        args,
+        root=resolved_root.root,
+        interpreter=resolved_interpreter.path,
+        timeout=cfe_timeout_arg,
+        env=env,
+    )
+    return _ship_target_result_from_cfe_result(result, confirm=confirm)
+
+
+def _ship_target_result_from_cfe_result(
+    result: CfeResult, *, confirm: bool,
+) -> ShipTargetResult:
+    """Map a `submit_pr` `CfeResult` onto a `ShipTargetResult` (AD-9) -- the
+    one Mason-side reinterpretation of a CFE JSON body this epic makes
+    (spec Always boundary), in this order:
+
+    - `confirm=False` -> `NOT_ATTEMPTED`, `reference=None`: a dry run's
+      `fork_branch_url` is hypothetical, never rendered as if real.
+    - `confirm=True` and the body reports failure (`json_body.get(
+      "success")` falsy, or `json_body` is unparseable/not a `dict`, in
+      which case `result.returncode == 0` stands in for "success") ->
+      `FAILED`, `reference=json_body.get("fork_branch_url")` when a body
+      exists (present when the push succeeded but `open_pr` failed
+      afterward; `None` otherwise).
+    - `confirm=True`, success, `pr_url` present (the full flow) ->
+      `PENDING`, `reference=json_body["pr_url"]` -- never `TERMINAL` (a PR
+      being open is not a PR being merged; AD-10's interrogation-based
+      idempotence is how a later command would ever learn `TERMINAL`, out
+      of this story's scope).
+    - `confirm=True`, success, no `pr_url` (`--prepare-only`) -> `PENDING`,
+      `reference=json_body.get("fork_branch_url")` (AD-10: "if a target
+      cannot be interrogated, the result is pending with the reason").
+
+    `message` is `json_body["message"]` when that key is PRESENT (even if
+    falsy, e.g. an explicit empty string -- `dict.get(key, default)`'s
+    default only applies when the key is absent, review pass, 2026-08-12:
+    an `or`-chain would have silently discarded a present-but-empty
+    `"message"` in favor of `"error"`), else `json_body.get("error")`,
+    verbatim -- no re-authoring (AD-1), computed once and reused across
+    every branch above. `target` is the literal string `"conda-forge"`, not
+    tied to a `ShipTarget` enum -- that vocabulary is explicitly Story 3.3's
+    scope (spec Never boundary).
+
+    `body` treats a `json_body` that parsed to something other than a
+    `dict` (or didn't parse at all, `None`) identically -- neither shape
+    has fields to read, so both fall back to the `result.returncode`
+    stand-in and a `None` reference/message, matching FR-4's "a parsed body
+    is present when one is present" (never invented when absent).
+    """
+    body = result.json_body if isinstance(result.json_body, dict) else None
+    message = body.get("message", body.get("error")) if body else None
+
+    if not confirm:
+        return ShipTargetResult(
+            target="conda-forge", state=ShipState.NOT_ATTEMPTED,
+            reference=None, message=message,
+        )
+
+    succeeded = body.get("success") if body is not None else result.returncode == 0
+    if not succeeded:
+        return ShipTargetResult(
+            target="conda-forge", state=ShipState.FAILED,
+            reference=(body.get("fork_branch_url") if body else None),
+            message=message,
+        )
+
+    pr_url = body.get("pr_url") if body else None
+    reference = pr_url if pr_url else (body.get("fork_branch_url") if body else None)
+    return ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference=reference, message=message,
     )

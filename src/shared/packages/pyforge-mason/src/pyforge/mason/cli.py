@@ -33,6 +33,14 @@ Story 2.8 registers two more verbs on that same noun, ``recipe optimize``
 and ``recipe scan``, each a single required ``recipe_path`` positional
 mirroring ``diagnose``'s own ``log_path`` shape.
 
+Story 2.9 registers a fourth verb, ``recipe submit``: the same
+``recipe_path`` positional, plus two verb-own boolean flags, ``--yes`` and
+``--prepare-only`` -- both live only on ``submit_parser`` itself, never on
+the shared ``global_flags`` parent (that parent is AD-13's closed six-flag
+set only), so they need none of ``_build_global_flags_parser``'s
+``argparse.SUPPRESS``/``getattr`` dance and read back as plain ``bool``s
+off the namespace.
+
 argparse, not click/typer: FR-41 forbids a CLI-framework dependency, and the
 sibling stations dispatch the same way.
 """
@@ -71,6 +79,10 @@ _RECIPE_SCAN_HELP = (
     "scan a recipe's exactly-pinned dependencies for known vulnerabilities via CFE's scanner "
     "(range-pinned/unpinned deps are not scanned; makes an outbound network call to "
     "api.osv.dev by default)"
+)
+_RECIPE_SUBMIT_HELP = (
+    "submit a recipe to conda-forge/staged-recipes via CFE's two-phase flow (dry run by "
+    "default; --yes to confirm a real push/PR, --prepare-only to stop after pushing the branch)"
 )
 
 # AD-13: every global setting has a flag and an environment-variable form,
@@ -417,6 +429,35 @@ def build_parser() -> argparse.ArgumentParser:
         "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
     )
 
+    # Story 2.9: mason recipe submit <recipe_path> [--yes] [--prepare-only]
+    # -- `recipe_path` is the recipe's OWN directory (unlike diagnose/
+    # optimize/scan's `recipe_path`, this one IS interpreted, by recipe.py,
+    # not here -- spec Always boundary). `--yes`/`--prepare-only` are
+    # per-verb flags, not part of the shared `global_flags` parent (AD-13's
+    # closed six-knob set), so they need no `argparse.SUPPRESS`/`getattr`
+    # dance -- `ns.yes`/`ns.prepare_only` default to plain `False`.
+    submit_parser = _noun_verbs["recipe"].add_parser(
+        "submit",
+        help=_RECIPE_SUBMIT_HELP,
+        description=_RECIPE_SUBMIT_HELP,
+        parents=[global_flags],
+    )
+    submit_parser.add_argument(
+        "recipe_path",
+        help="path to the recipe's own directory (its basename becomes the CFE slug -- "
+        "unlike diagnose/optimize/scan's recipe_path, this must be the directory itself, "
+        "not a recipe.yaml/meta.yaml file)",
+    )
+    submit_parser.add_argument(
+        "--yes", action="store_true",
+        help="confirm a real submission (default: dry run -- --dry-run forwarded to CFE)",
+    )
+    submit_parser.add_argument(
+        "--prepare-only", action="store_true",
+        help="stop after pushing the branch to the fork; do not open a PR (still a no-op "
+        "dry run unless --yes is also given)",
+    )
+
     # Review pass (2026-08-12): `metavar="{}"` was never updated once a verb
     # was actually registered, so `mason recipe <bad-verb>` printed the
     # literal token `{}` in its usage/error text instead of `{diagnose}`.
@@ -571,13 +612,43 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_OK
 
+        if ns.noun == "recipe" and ns.verb == "submit":
+            # FR-13: delegates to CFE's two-phase submission flow via
+            # recipe.py. `recipe.submit` raises `CfeUnresolvedError` before
+            # any subprocess spawns if the CFE root is unresolved (spec
+            # Always boundary) -- caught by the dedicated branch below, same
+            # as every other CFE-dependent path. `ns.yes`/`ns.prepare_only`
+            # are plain `bool`s (not `getattr`-guarded: these two flags live
+            # only on this verb's own parser, never on the shared
+            # `global_flags` parent -- see their registration comment
+            # above), passed straight through as `confirm`/`prepare_only`;
+            # `recipe.submit` does the `--dry-run` inversion itself.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.submit(
+                ns.recipe_path,
+                confirm=ns.yes,
+                prepare_only=ns.prepare_only,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe submit", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK
+
         # Unreachable now for every verb-noun pair except `recipe
-        # diagnose`/`recipe optimize`/`recipe scan` above, each handled by
-        # its own branch: `package`/`environment` still register no verbs at
-        # all, and `recipe` registers no verb beyond those three, so
-        # argparse itself rejects any other token here as an invalid choice
-        # before `ns.verb` could ever hold it. Kept only so a later story
-        # that populates another verb has somewhere to land its dispatch.
+        # diagnose`/`recipe optimize`/`recipe scan`/`recipe submit` above,
+        # each handled by its own branch: `package`/`environment` still
+        # register no verbs at all, and `recipe` registers no verb beyond
+        # those four, so argparse itself rejects any other token here as an
+        # invalid choice before `ns.verb` could ever hold it. Kept only so a
+        # later story that populates another verb has somewhere to land its
+        # dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

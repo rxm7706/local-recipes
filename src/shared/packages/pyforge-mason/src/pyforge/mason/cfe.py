@@ -53,6 +53,25 @@ either adapter, scoped to only the operation-relevant subset of `.missing`
 -- this file's two new functions do not gate on the floor themselves,
 because their caller has already done so.
 
+Story 2.9 adds a keyword-only `env: Mapping[str, str] | None = None`
+parameter to `_invoke_captured` (and threads it through `submit_pr`, the one
+adapter that uses it): `recipe.py::submit()` is the one caller in this whole
+package that ever passes a non-`None` value, to inject `CFE_RECIPES_ROOT`
+into the child's environment so an out-of-tree recipe (Story 2.4) still
+resolves under CFE's own `_path_guard.py` confinement (epic-2-context.md
+Technical Decisions, correct-course 2026-08-10). It mirrors `run_streamed`'s
+already-established `env=` contract exactly -- forwarded to `subprocess.run`
+as `env=dict(env) if env is not None else None`, the EXACT expression text
+`tests/meta/test_credential_isolation.py`'s `_SANCTIONED_PASS_THROUGH_ENV_
+EXPR` names, so that file's Guard 3a allowlist (generalized the same story,
+from one sanctioned call site to two) recognizes this call structurally,
+the same way it already recognizes `run_streamed`'s own `Popen` call: a
+*replacement*, never a merge -- the caller builds the whole dict. Every
+other existing caller (`validate_recipe`, `diagnose_failure`,
+`optimize_recipe`, `scan_for_vulnerabilities`) passes no `env`, so `None`
+reaches `subprocess.run` exactly as before this story and their behavior is
+byte-for-byte unchanged.
+
 `_CFE_SCRIPTS` maps an adapter's own key (e.g. `"validate_recipe"`) to the
 script's filename relative to a resolved CFE root's
 `.claude/scripts/conda-forge-expert/` -- a caller never passes a script
@@ -698,12 +717,23 @@ def _invoke_captured(
     root: Path,
     interpreter: str,
     timeout: float,
+    env: Mapping[str, str] | None = None,
 ) -> CfeResult:
     """Run `_CFE_SCRIPTS[script_key]` under `interpreter` as a CAPTURE-mode
     subprocess and return a `CfeResult` (AD-3, AD-4, AD-25). Private: every
     public caller is a named adapter function below that supplies its own
     `script_key` -- this function is never called with a caller-supplied
     script name (spec Always boundary).
+
+    `env`, when given, *replaces* the child's environment wholesale --
+    mirrors `run_streamed`'s own established `env=` contract exactly (Story
+    2.9): passed to `subprocess.run` as `dict(env) if env is not None else
+    None`, never merged with the caller's own. `None` (the default) is
+    `subprocess.run`'s own "inherit the parent environment" behavior,
+    unchanged for every caller that omits this parameter -- `submit_pr` is
+    the only adapter below that forwards a caller-supplied `env`; every
+    other adapter (`validate_recipe`, `diagnose_failure`, `optimize_recipe`,
+    `scan_for_vulnerabilities`) never passes one.
 
     `args` must not be a bare `str`/`bytes` or `None` -- the same
     `run_streamed`-established guard (review pass, 2026-08-11): passed as
@@ -762,6 +792,7 @@ def _invoke_captured(
             stdin=subprocess.DEVNULL,
             timeout=timeout,
             check=False,
+            env=dict(env) if env is not None else None,
         )
     except subprocess.TimeoutExpired:
         # subprocess.run's own timeout handling has already killed and
@@ -820,6 +851,7 @@ def submit_pr(
     root: Path,
     interpreter: str,
     timeout: float | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> CfeResult:
     """Invoke CFE's `submit_pr.py` (AD-3's `submit_pr` adapter, FR-1, FR-13)
     and return a `CfeResult`.
@@ -832,6 +864,14 @@ def submit_pr(
     this operation (see that constant's docstring) -- longer than
     `validate_recipe`'s, since this operation clones and pushes a git
     branch before opening a pull request.
+
+    `env`, when given, replaces the subprocess's inherited environment
+    wholesale (see `_invoke_captured`'s own docstring for the exact
+    contract) -- `recipe.py::submit()` is the one caller that supplies it,
+    to inject `CFE_RECIPES_ROOT` for an out-of-tree recipe (module
+    docstring, Story 2.9); every other caller of this adapter passes none,
+    and `_invoke_captured`'s own default (`None` -> inherit unmodified)
+    applies.
     """
     return _invoke_captured(
         "submit_pr",
@@ -839,6 +879,7 @@ def submit_pr(
         root=root,
         interpreter=interpreter,
         timeout=timeout if timeout is not None else _SUBMIT_PR_TIMEOUT_SECONDS,
+        env=env,
     )
 
 

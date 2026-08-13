@@ -39,7 +39,17 @@ tests. Neither adapter itself calls `ensure_import_floor` (that gate lives
 in `recipe.py`'s `optimize()`/`scan()`, one layer up -- see `test_recipe.py`
 and this story's Design Notes), so their real-fixture round-trip tests here
 need no floor faking: the fixture stubs are stdlib-only, canned scripts,
-never the real `ruamel.yaml`/`requests`-dependent ones."""
+never the real `ruamel.yaml`/`requests`-dependent ones.
+
+Story 2.9 extends this file with `env=` passthrough coverage for
+`_invoke_captured`/`submit_pr` -- the new keyword-only parameter both
+functions gain to let `recipe.py::submit()` inject `CFE_RECIPES_ROOT` into
+the child's environment (AD-14's second sanctioned pass-through site, see
+`tests/meta/test_credential_isolation.py`) -- and extends the AD-14
+sentinel test with one more `submit_pr` call site, this one passing an
+explicit `env={**os.environ, ...}` mapping, proving the new pass-through
+neither drops an inherited credential nor leaks one back into the returned
+`CfeResult`."""
 
 from __future__ import annotations
 
@@ -1315,6 +1325,57 @@ def test_submit_pr_invokes_its_own_table_entry_not_validate_recipes():
     assert argv[1].endswith("submit_pr.py")
 
 
+# --- Story 2.9: env= passthrough (_invoke_captured, submit_pr) -------------
+
+def test_invoke_captured_forwards_an_explicit_env_to_subprocess_run():
+    """`env=`, when given, reaches `subprocess.run` as `dict(env) if env is
+    not None else None` -- the exact expression
+    `tests/meta/test_credential_isolation.py`'s
+    `_SANCTIONED_PASS_THROUGH_ENV_EXPR` names, mirroring `run_streamed`'s
+    own established `env=` contract exactly."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        _invoke_captured(
+            "validate_recipe", [],
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            env={"A": "b"},
+        )
+
+    assert mock_run.call_args.kwargs["env"] == {"A": "b"}
+
+
+def test_invoke_captured_env_defaults_to_none_when_omitted():
+    """Every existing adapter caller (`validate_recipe`, `diagnose_failure`,
+    `optimize_recipe`, `scan_for_vulnerabilities`) passes no `env` -- this
+    pins that omitting it still reaches `subprocess.run` as a bare `None`
+    (inherit unmodified), not an empty dict or anything else."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        _invoke_captured(
+            "validate_recipe", [],
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert mock_run.call_args.kwargs["env"] is None
+
+
+def test_submit_pr_forwards_an_explicit_env_to_invoke_captured():
+    """`submit_pr` is the one adapter that forwards a caller-supplied `env`
+    -- `recipe.py::submit()`'s `CFE_RECIPES_ROOT` injection reaches
+    `subprocess.run` through this exact path."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        submit_pr(
+            [], root=Path("/fake/root"), interpreter="/fake/python",
+            env={"CFE_RECIPES_ROOT": "/tmp/out-of-tree"},
+        )
+
+    assert mock_run.call_args.kwargs["env"] == {"CFE_RECIPES_ROOT": "/tmp/out-of-tree"}
+
+
 # --- Story 2.7: diagnose_failure -- per-operation default timeout, table
 # --- entry identity (mocked I/O-matrix coverage, mirroring validate_recipe) -
 
@@ -1810,7 +1871,15 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     which the positive control proves is live. Giving the stub a
     `MASON_FIXTURE_STDERR` knob purely to make the assertion bite would
     expand Story 1.9's shared fixture to re-prove, on a second stream, the
-    same inheritance the first stream already establishes."""
+    same inheritance the first stream already establishes.
+
+    Story 2.9 adds one more `submit_pr` call, this one with an EXPLICIT
+    `env={**os.environ, "CFE_RECIPES_ROOT": ...}` -- `recipe.py::submit()`'s
+    own shape exactly. Proves the new pass-through doesn't accidentally drop
+    the inherited sentinel/marker pair (a caller building `{**environ, ...}`
+    still carries everything `environ` held) and that the sentinel still
+    never surfaces in the returned `CfeResult`'s own fields, the same as
+    every bare-`env=None` call above."""
     _clear_fixture_env(monkeypatch)
     sentinel = "JFROG-SENTINEL-9f3e7a1c"
     monkeypatch.setenv("JFROG_API_KEY", sentinel)
@@ -1828,6 +1897,10 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     submit_result = submit_pr(
         [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
     )
+    submit_result_with_explicit_env = submit_pr(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+        env={**os.environ, "CFE_RECIPES_ROOT": str(fake_cfe_root / "recipes")},
+    )
     diagnose_result = diagnose_failure(
         ["build.log"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
     )
@@ -1839,7 +1912,8 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     )
 
     for result in (
-        validate_result, submit_result, diagnose_result, optimize_result, scan_result,
+        validate_result, submit_result, submit_result_with_explicit_env,
+        diagnose_result, optimize_result, scan_result,
     ):
         # Positive: the child really did inherit the parent's environment.
         assert result.json_body == {"inherited": inheritance_marker}
