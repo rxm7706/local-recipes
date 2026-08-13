@@ -24,6 +24,12 @@ raises_against_a_real_unresolved_environment` and Story 2.3's own
 `test_cli.py` sentinel test both reach the real probe too; fourth review
 pass, Blind Hunter.)
 
+Story 2.4 extends this file with `generate_recipe` coverage, mirroring
+`validate_recipe`/`submit_pr`'s own test shapes exactly: the `_CFE_SCRIPTS`
+table-shape assertion grows a third entry, and `generate_recipe` gets its
+own mocked argv-shape/default-timeout/timeout-override/timeout-error tests
+plus a real-fixture round-trip against Story 1.9's `fake_cfe_root` fixture.
+
 Story 2.6 extends this file with `build_native`/`build_docker` coverage:
 mocked argv-shape/timeout/default-timeout tests (mirroring `_invoke_
 captured`'s own mocked I/O-matrix style, patching `pyforge.mason.cfe.
@@ -80,9 +86,9 @@ from pyforge.mason import cfe as cfe_module
 from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, _CFE_SCRIPTS, ImportFloorResult, _build_probe_script,
     _extract_json, _invoke_captured, build_docker, build_native, diagnose_failure,
-    ensure_cfe_root, ensure_import_floor, optimize_recipe, probe_import_floor,
-    run_streamed, scan_for_vulnerabilities, submit_pr, update_recipe,
-    update_recipe_from_github, validate_recipe,
+    ensure_cfe_root, ensure_import_floor, generate_recipe, optimize_recipe,
+    probe_import_floor, run_streamed, scan_for_vulnerabilities, submit_pr,
+    update_recipe, update_recipe_from_github, validate_recipe,
 )
 from pyforge.mason.errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
 from pyforge.mason.models import BuildResult, CfeResult
@@ -1106,18 +1112,20 @@ def test_extract_json_returns_none_for_empty_stdout():
 
 # --- Story 2.1: _CFE_SCRIPTS table -------------------------------------------
 
-def test_cfe_scripts_table_has_exactly_the_nine_stubbed_fixture_entries():
+def test_cfe_scripts_table_has_exactly_the_ten_stubbed_fixture_entries():
     """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr`/
-    `build_native`/`build_docker`/`diagnose_failure`/`optimize_recipe`/
-    `scan_for_vulnerabilities`/`update_recipe`/`update_recipe_from_github`
-    -- the fixture tree only stubs these nine (Story 1.9's original pair,
-    Story 2.6's `native-build.sh`/`build-locally.py`, Story 2.7's
+    `generate_recipe`/`build_native`/`build_docker`/`diagnose_failure`/
+    `optimize_recipe`/`scan_for_vulnerabilities`/`update_recipe`/
+    `update_recipe_from_github` -- the fixture tree only stubs these ten
+    (Story 1.9's original pair, Story 2.4's `recipe-generator.py`, Story
+    2.6's `native-build.sh`/`build-locally.py`, Story 2.7's
     `failure_analyzer.py`, Story 2.8's `recipe_optimizer.py`/
     `vulnerability_scanner.py`, and Story 2.10's `recipe_updater.py`/
     `github_updater.py`)."""
     assert _CFE_SCRIPTS == {
         "validate_recipe": "validate_recipe.py",
         "submit_pr": "submit_pr.py",
+        "generate_recipe": "recipe-generator.py",
         "build_native": "native-build.sh",
         "build_docker": "build-locally.py",
         "diagnose_failure": "failure_analyzer.py",
@@ -1340,6 +1348,70 @@ def test_submit_pr_invokes_its_own_table_entry_not_validate_recipes():
 
     argv = mock_run.call_args.args[0]
     assert argv[1].endswith("submit_pr.py")
+
+
+# --- Story 2.4: generate_recipe -- mocked argv shape, default timeout, -----
+# --------------------------------------------- timeout-error translation --
+
+def test_generate_recipe_reaches_subprocess_run_with_args_unmodified_and_no_env():
+    """FR-7: `args` passed to `generate_recipe` is forwarded to `subprocess.
+    run` completely unmodified -- no parsing of an embedded `==`/`@` version
+    spec, no path transformation of `--output`'s value (spec Always
+    boundary). `env` is absent/`None`, matching `_invoke_captured`'s own
+    established credential-isolation shape (`test_invoke_captured_runs_
+    interpreter_script_path_then_args_as_list_argv` above): `subprocess.
+    run`'s own default inherits the parent process environment unmodified,
+    so a future edit that "helpfully" adds an explicit `env=` would silently
+    break AD-14 for this adapter too."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="ok"),
+    ) as mock_run:
+        generate_recipe(
+            ["pypi", "requests", "--output", "x"],
+            root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    args, kwargs = mock_run.call_args
+    argv = args[0]
+    expected_script = str(
+        Path("/fake/root") / ".claude" / "scripts" / "conda-forge-expert" / "recipe-generator.py"
+    )
+    assert argv == ["/fake/python", expected_script, "pypi", "requests", "--output", "x"]
+    assert "env" not in kwargs or kwargs["env"] is None
+
+
+def test_generate_recipe_defaults_to_a_240_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="ok"),
+    ) as mock_run:
+        generate_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 240.0
+
+
+def test_generate_recipe_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="ok"),
+    ) as mock_run:
+        generate_recipe(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=12.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 12.5
+
+
+def test_generate_recipe_timeout_expired_raises_cfe_timeout_error():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd=["python", "recipe-generator.py"], timeout=5.0),
+    ):
+        with pytest.raises(CfeTimeoutError) as excinfo:
+            generate_recipe(
+                [], root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            )
+
+    assert excinfo.value.script == "generate_recipe"
+    assert excinfo.value.timeout == 5.0
 
 
 # --- Story 2.9: env= passthrough (_invoke_captured, submit_pr) -------------
@@ -2134,6 +2206,25 @@ def test_validate_recipe_against_fake_cfe_root_with_plain_text_stdout_reports_js
     assert result.returncode == 0
     assert result.json_body is None
     assert "plain text, not json" in result.stdout
+
+
+def test_generate_recipe_against_fake_cfe_root_matches_the_fixtures_canned_stdout(
+    fake_cfe_root, monkeypatch,
+):
+    """Story 2.4: unlike `validate_recipe`/`submit_pr`, the wrapped script
+    has no `--json` mode, so `json_body` must be `None` here even though the
+    fixture's stdout is non-empty -- `returncode`/`stdout` are CFE's own,
+    unmodified (spec Design Notes)."""
+    _clear_fixture_env(monkeypatch)
+
+    result = generate_recipe(
+        ["pypi", "demo", "--output", "recipes/demo"],
+        root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body is None
+    assert result.stdout == "Fetching info for demo...\nGenerated: recipes/demo/recipe.yaml\n\n"
 
 
 # --- Story 2.3: credential isolation -- sentinel-credential test (AD-14) ---

@@ -8,7 +8,8 @@ script; the actual data shaping lives in ``claims.snapshot``/``to_dict``,
 reused by both this script and ``herald success --json``.
 
 The web app is a plain static Vite bundle with no server (Epic 7) -- this
-script is how ``.herald/claims.json`` (local, operator-machine-only)
+script is how ``.herald/herald.db``'s claims (local,
+operator-machine-only)
 becomes something the browser can ``fetch()``. Run it by hand, or wire it
 into a build/deploy step; it is not triggered automatically by ``herald
 success publish`` (publishing and re-exporting the web snapshot are
@@ -42,7 +43,7 @@ DEFAULT_OUT_DIR = _PACKAGE_ROOT / "web" / "public"
 
 def export_success_snapshot(*, repo_root: Path, out_dir: Path) -> Path:
     """Write ``out_dir/success.json`` -- every published claim under
-    ``repo_root/.herald/claims.json``, newest first. Returns the written
+    ``repo_root/.herald/herald.db``, newest first. Returns the written
     path."""
     claims_path = repo_root / claims.DEFAULT_CLAIMS_PATH
     payload = claims.snapshot(claims_path, status="published")
@@ -58,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         "--repo-root",
         type=Path,
         default=Path.cwd(),
-        help="repo root containing .herald/claims.json (default: cwd)",
+        help="repo root containing .herald/herald.db (default: cwd)",
     )
     parser.add_argument(
         "--out-dir",
