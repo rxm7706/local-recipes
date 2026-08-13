@@ -662,14 +662,19 @@ comparison on the correctness path** — `updated_at` may only select candidates
 verdicts on the rest (post-blind-review): **8.2 and 8.3 STILL-VALID, narrowed** — both
 mechanisms landed with 8.1; each story's deliverable is its demonstration test, exactly as the
 frozen 8-1 spec sequenced (`spec-8-1-bidirectional-propagation.md:116-120`); 8.2's test must
-also cover the non-atomic baseline-refresh failure path (`sync.py:869-880`). **8.4 and 8.5
-NEEDS-RESPEC before dispatch**: 8.4's batch premise has **no producer story** (nothing
-decomposes the `trigger=schedule` candidate enumerator), and 8.5 collides with the frozen
-boundary "Never build a general status-vocabulary translation table" the landed code cites
-(`sync.py:421-422`) while its GitHub direction is today a raw 1:1 pass-through — its scope is
-both directions plus a boundary amendment. Do not dispatch 8.4/8.5 until `bmad-correct-course`
-resolves these. A stale Tier-3 `blocked` record for 8.2 predates the AD-5 amendment — clear
-it at loop-home preflight before re-spin.
+also cover the non-atomic baseline-refresh failure path (`sync.py:869-880`). A stale Tier-3
+`blocked` record for 8.2 predates the AD-5 amendment — clear it at loop-home preflight before
+re-spin.
+
+**RESPEC resolved (`bmad-correct-course`, 2026-08-13 —
+`planning-artifacts/sprint-change-proposal-2026-08-13.md`).** The original 8.4/8.5
+`NEEDS-RESPEC` verdict split into one genuine gap and one false positive. **8.4's batch
+premise genuinely had no producer story** — `trigger=schedule`'s candidate enumeration (AD-2/
+AD-5, already decided) was never assigned to any story, so a new Story 8.4 below builds it;
+the two former 8.4/8.5 shift down to 8.5/8.6. **8.5's "frozen boundary collision" was a
+misreading**: Story 8.1's own frozen spec (`spec-8-1-bidirectional-propagation.md:119-121`)
+explicitly *names* Story 8.5 (now 8.6) as the table's owner when it defers building one —
+there is no boundary to amend, and no architecture change was needed for either fix.
 
 ### Story 8.1: Bidirectional propagation
 **FR/AD:** FR-27 • **Effort:** L • **Deps:** the three open questions
@@ -703,13 +708,21 @@ demonstrated by test, never asserted.
 a single delivery.
 **Status:** backlog
 
-### Story 8.4: Fail loud, fail alone
-**FR/AD:** FR-30 • **Effort:** XS • **Deps:** S-8.1
+### Story 8.4: The schedule trigger enumerates real candidates
+**FR/AD:** FR-27 (AD-2/AD-5) • **Effort:** M • **Deps:** S-8.1
+**Given** `trigger=schedule` fires **Then** every linked item whose current `updated_at`
+differs from its recorded per-field baseline is selected as a candidate and reconciled through
+the existing single-pair `reconcile()` engine, in one run, with no `--github-item`/
+`--jira-issue` pair required per invocation.
+**Status:** backlog
+
+### Story 8.5: Fail loud, fail alone
+**FR/AD:** FR-30 • **Effort:** XS • **Deps:** S-8.1, S-8.4
 **Given** a batch containing one unlinked item **Then** every other item completes and the
 unlinked one emits a named, greppable error.
 **Status:** backlog
 
-### Story 8.5: Explicit status-vocabulary translation
+### Story 8.6: Explicit status-vocabulary translation
 **FR/AD:** FR-31 • **Effort:** S • **Deps:** S-8.1
 **Given** any status crossing the boundary **Then** it passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through inventing a state.

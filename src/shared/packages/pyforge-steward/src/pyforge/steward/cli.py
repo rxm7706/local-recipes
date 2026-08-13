@@ -39,7 +39,10 @@ DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget", "sync")
 
 _HELP = {
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
-    "deploy": "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx manifests",
+    "deploy": (
+        "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx "
+        "manifests; static: CAP-8/AD-10 static-export publish"
+    ),
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
     "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
@@ -138,14 +141,19 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `dashboard` (`--build`/`--dry-run`), `status`, and `perimeter`
-    verbs. `perimeter` is a distinct, unrelated surface from `dashboard`
-    (Story 9.5, CAP-6) — it validates and renders the `pyforge.steward.
-    dashboard` Django app's deployment perimeter (AD-5 shareability +
-    daphne/nginx manifests), never the GitHub-Pages program console
-    `dashboard` builds/reconciles.
+    """Add the `dashboard` (`--build`/`--dry-run`), `status`, `perimeter`,
+    and `static` verbs. `perimeter` is a distinct, unrelated surface from
+    `dashboard` (Story 9.5, CAP-6) — it validates and renders the
+    `pyforge.steward.dashboard` Django app's deployment perimeter (AD-5
+    shareability + daphne/nginx manifests), never the GitHub-Pages program
+    console `dashboard` builds/reconciles. `static` (Story 9.7, CAP-8/
+    AD-10) publishes a board as a self-contained static export to
+    `docs/dashboard/<board>/index.html`, which the pre-existing `dashboard`
+    verb then commits/pushes unchanged — a fourth, also-unrelated surface.
     """
-    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard,status,perimeter}")
+    deploy_subs = deploy_parser.add_subparsers(
+        dest="deploy_verb", metavar="{dashboard,status,perimeter,static}"
+    )
 
     dashboard = deploy_subs.add_parser(
         "dashboard", help="build/reconcile the GitHub Pages program-console dashboard"
@@ -211,6 +219,39 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         help="write the rendered daphne unit + nginx edge config here (omit for validation-only)",
     )
 
+    static = deploy_subs.add_parser(
+        "static",
+        help=(
+            "publish a board as a self-contained static export "
+            "(docs/dashboard/<board>/index.html) — CAP-8/AD-10"
+        ),
+    )
+    static.add_argument(
+        "--board",
+        required=True,
+        metavar="SLUG",
+        help=(
+            "the board slug (filesystem-safe: ^[A-Za-z0-9_-]+$; also refused when "
+            "docs/dashboard/<slug>/ is excluded by a .gitignore rule, since such a "
+            "board could never be committed or pushed)"
+        ),
+    )
+    static.add_argument(
+        "--panel",
+        action="append",
+        metavar="LABEL=PATH",
+        help="a pre-rendered HTML panel to embed verbatim (repeatable, in call order)",
+    )
+    static.add_argument(
+        "--access-column",
+        default=None,
+        metavar="NAME",
+        help=(
+            "the board's declared access column, if any — refuses (AD-10) rather than "
+            "publishing, since static export cannot honor row-level access"
+        ),
+    )
+
 
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:
     """Add the `--list-modules`/`--module`/`--env`/`--runner`/`--list`/
@@ -273,9 +314,13 @@ def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
 
 def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
     """Add the `reconcile` verb (Epic 8, Story 8.1) — the only verb this
-    story defines. `--github-item`/`--jira-issue` are mutually exclusive and
-    one is required: `reconcile` resolves whichever identifier wasn't given
-    via the other side's link field (see `sync.py`'s `reconcile` docstring).
+    story defines. `--github-item`/`--jira-issue`/`--schedule` are mutually
+    exclusive and one is required: `reconcile` resolves whichever identifier
+    wasn't given via the other side's link field (see `sync.py`'s
+    `reconcile` docstring); `--schedule` (Story 8.4, `trigger=schedule`,
+    AD-1's default operating mode) instead bulk-enumerates every linked item
+    on the board and reconciles each in one run (`sync.py`'s
+    `reconcile_schedule_batch`).
     """
     sync_subs = sync_parser.add_subparsers(dest="sync_verb", metavar="{reconcile}")
 
@@ -287,6 +332,14 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
         "--github-item", metavar="ID", help="GitHub Projects V2 item node ID"
     )
     identifier_group.add_argument("--jira-issue", metavar="KEY", help="Jira issue key")
+    identifier_group.add_argument(
+        "--schedule",
+        action="store_true",
+        help=(
+            "trigger=schedule: bulk-enumerate every linked item on the GitHub Projects V2 "
+            "board and reconcile each in this one run"
+        ),
+    )
     reconcile_.add_argument(
         "--config",
         default=None,

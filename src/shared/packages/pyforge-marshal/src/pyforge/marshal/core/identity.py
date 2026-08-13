@@ -42,6 +42,8 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from pyforge.core.errors import PyforgeError
+
 from .model import Finding, Severity
 
 # Either `.` or `-` separates epic/seq on input; the suffix, if present, is a
@@ -63,13 +65,16 @@ _KEY_RE = re.compile(
 _KEY_PLACEHOLDER = "{key}"
 
 
-class MalformedStoryKeyError(ValueError):
+class MalformedStoryKeyError(PyforgeError, ValueError):
     """Raised by ``normalize()`` when ``raw`` does not contain a leading
     ``<epic>[.-]<seq><suffix>?`` token -- registers as ``MRS-IDENT-001``.
-    Never silently coerced or truncated."""
+    Never silently coerced or truncated.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
-class MergeSubjectConformanceError(ValueError):
+class MergeSubjectConformanceError(PyforgeError, ValueError):
     """Raised by ``parse_merge_subject()`` when ``subject`` does not conform
     to ``template``'s fixed literal shape around the one ``{key}``
     placeholder -- registers as ``MRS-IDENT-002``. Wraps every failure mode
@@ -77,7 +82,10 @@ class MergeSubjectConformanceError(ValueError):
     extracted key) so a caller only ever needs to catch this one exception
     type. Carries a ``.finding`` attribute: the real ``MRS-IDENT-002``
     ``Finding``, ready to feed into ``verdict.compute_verdict`` the same way
-    ``resolve_feed``'s ``.findings`` tuple is used."""
+    ``resolve_feed``'s ``.findings`` tuple is used.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
     finding: Finding
 

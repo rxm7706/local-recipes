@@ -108,6 +108,7 @@ from typing import Any
 import filelock
 from kedro.framework.hooks import hook_impl
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.errors import PyforgeError
 
 logger = logging.getLogger(__name__)
 
@@ -135,21 +136,27 @@ _HOLDER_SUFFIX = ".holder.json"
 _STORE_NAME = ".locks"
 
 
-class AdmissionConfigError(ValueError):
+class AdmissionConfigError(PyforgeError, ValueError):
     """A malformed admission configuration — raised BEFORE any lock is taken.
 
     Never silently falls back to reject-fast or to an unbounded wait: a run that asked for
     ``admission_wait_seconds="soon"`` gets a loud refusal, not a different policy than the
     one it requested.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO.
     """
 
 
-class RunAdmissionRejected(RuntimeError):
+class RunAdmissionRejected(PyforgeError, RuntimeError):
     """AD-23: the requested output dataset set is already held by another run.
 
     Carries the full diagnostic set the AC demands — which dataset conflicted, and who is
     holding it. Any field the holder record could not supply reports as ``None`` rather than
     raising: a torn or absent sidecar must still yield a readable rejection.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO.
     """
 
     def __init__(
