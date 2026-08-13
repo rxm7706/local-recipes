@@ -44,6 +44,7 @@ def test_happy_path_loads_a_fully_populated_config(tmp_path):
     assert config.jira_baseline_field_id == "customfield_10002"
     assert config.field_overrides == {}
     assert config.user_mapping == {}
+    assert config.status_mapping == {}
 
 
 def test_happy_path_with_field_overrides_and_user_mapping(tmp_path):
@@ -62,6 +63,22 @@ user_mapping:
 
     assert config.field_overrides == {"status": "jira"}
     assert config.user_mapping == {"octocat": "5b10a2844c20165700ede21g"}
+
+
+def test_happy_path_with_status_mapping(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+status_mapping:
+  Closed: Done
+  In Progress: In Progress
+""",
+    )
+
+    config = load_config(path)
+
+    assert config.status_mapping == {"Closed": "Done", "In Progress": "In Progress"}
 
 
 def test_missing_file_raises_sync_config_error(tmp_path):
@@ -181,4 +198,30 @@ def test_user_mapping_must_be_a_mapping(tmp_path):
     path = _write(tmp_path, _VALID_DOCUMENT + "user_mapping: not-a-mapping\n")
 
     with pytest.raises(SyncConfigError, match="user_mapping"):
+        load_config(path)
+
+
+def test_status_mapping_must_be_a_mapping(tmp_path):
+    path = _write(tmp_path, _VALID_DOCUMENT + "status_mapping: not-a-mapping\n")
+
+    with pytest.raises(SyncConfigError, match="status_mapping"):
+        load_config(path)
+
+
+def test_status_mapping_rejects_a_non_string_value(tmp_path):
+    # YAML's `yes` parses to the boolean `True` -- a common authoring
+    # gotcha that must fail loud at config-load time, never silently
+    # forward a non-string value into a GitHub GraphQL write.
+    path = _write(tmp_path, _VALID_DOCUMENT + "status_mapping:\n  Done: yes\n")
+
+    with pytest.raises(SyncConfigError, match="status_mapping"):
+        load_config(path)
+
+
+def test_status_mapping_rejects_a_null_value(tmp_path):
+    # `Done:` with nothing after the colon parses to `None` -- must be
+    # rejected distinctly from "no entry for this key" (unmapped).
+    path = _write(tmp_path, _VALID_DOCUMENT + "status_mapping:\n  Done:\n")
+
+    with pytest.raises(SyncConfigError, match="status_mapping"):
         load_config(path)

@@ -37,6 +37,13 @@ CONFIG = SyncConfig(
     jira_project_key="PROJ",
     jira_link_field_id="jira_link",
     jira_baseline_field_id="jira_baseline",
+    # Identity mapping covering this file's entire fixture vocabulary (every
+    # `push_to_github`-decision test in this file, including the `--schedule`
+    # batch tests) -- Story 8.6. Every existing test's Jira status values
+    # already match their GitHub counterparts 1:1, so translation is a no-op
+    # here; the dedicated translation/unmapped tests below use their own
+    # differently-shaped `status_mapping`.
+    status_mapping={"To Do": "To Do", "In Progress": "In Progress", "Blocked": "Blocked"},
 )
 
 CONFIG_JIRA_WINS = SyncConfig(
@@ -227,6 +234,73 @@ def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_baselin
     assert transport.github_fields["gh_status"] == "In Progress"
     assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
     assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+
+
+# ── Row (Story 8.6, AD-6/CAP-5): a mapped Jira status translates before writing to GitHub ──
+
+CONFIG_STATUS_TRANSLATION = SyncConfig(
+    **{**CONFIG.__dict__, "status_mapping": {"Closed": "Done"}}
+)
+
+
+def test_mapped_jira_status_translates_before_writing_to_github():
+    """A Jira status name that differs from its GitHub counterpart must be
+    translated through `status_mapping` before the GitHub write -- GitHub's
+    status field receives the MAPPED value, GitHub's baseline records that
+    mapped value, and Jira's baseline records the original (untranslated)
+    value, since Jira's own value never changed."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do"}',  # matches current -- gh unchanged
+        },
+        jira_fields={
+            "status": {"name": "Closed"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+    )
+
+    result = reconcile(jira_issue_key="PROJ-1", config=CONFIG_STATUS_TRANSLATION, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "push_to_github"
+    assert transport.github_fields["gh_status"] == "Done"
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "Done"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "Closed"}
+    # `result.details["baseline"]` must mirror the actually-written (translated)
+    # GH value, never the raw pre-translation `target_value` -- a caller reading
+    # the returned details, not the transport, must see the same truth.
+    assert result.details["baseline"] == {"status": "Done"}
+
+
+def test_unmapped_jira_status_pushed_to_github_is_a_named_failure_not_a_passthrough():
+    """AD-6: an unmapped status value crossing into GitHub is a hard, named
+    failure, never passed through as a phantom GitHub state. No GitHub
+    write happens, and neither baseline is written (mirrors
+    `test_no_matching_jira_transition_is_a_named_failure_not_a_guess`'s
+    assertion shape for the symmetric push_to_jira direction)."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do"}',  # matches current -- gh unchanged
+        },
+        jira_fields={
+            "status": {"name": "Triage"},  # not in CONFIG_STATUS_TRANSLATION.status_mapping
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+    )
+
+    result = reconcile(jira_issue_key="PROJ-1", config=CONFIG_STATUS_TRANSLATION, transport=transport)
+
+    assert result.ok is False
+    assert "unmapped: jira status 'Triage' has no status_mapping entry for github" in result.summary
+    assert transport.write_calls() == []
+    assert transport.github_fields["gh_baseline"] == '{"status": "To Do"}'
+    assert transport.jira_fields["jira_baseline"] == '{"status": "To Do"}'
 
 
 # ── Row: both changed since their own baseline (real conflict) -> GitHub wins per AD-4 ──
@@ -1495,6 +1569,70 @@ def test_schedule_batch_one_candidate_failing_does_not_abort_the_others():
     assert candidates["ITEM_1"]["ok"] is True
     assert candidates["ITEM_2"]["ok"] is False
     assert candidates["ITEM_3"]["ok"] is True
+    assert "1 failed" in result.summary
+    assert "3 candidates" in result.summary
+
+
+# ── Row (Story 8.6): one unmapped status among linked items fails only that entry ──
+
+
+def test_schedule_batch_with_one_unmapped_status_among_linked_items_fails_only_that_entry():
+    """AD-6/CAP-5's batch-composition guarantee: 3 board items, PROJ-2's
+    Jira status ("Triage") has no `status_mapping` entry in `CONFIG`.
+    ITEM_1/ITEM_3 converge cleanly; ITEM_2's entry is `ok=False` with the
+    named, greppable `SyncUnmappedStatusError` summary -- mirrors Story
+    8.5's own unlinked-item batch-isolation test for the symmetric failure
+    mode (`test_schedule_batch_with_one_unlinked_item_among_linked_items_
+    fails_only_that_entry`)."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
+            },
+            "ITEM_2": {
+                "fields": {
+                    "gh_link": "PROJ-2",
+                    "gh_status": "In Progress",
+                    "gh_baseline": '{"status": "In Progress"}',  # matches current -- gh unchanged
+                }
+            },
+            "ITEM_3": {
+                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_1", "jira_baseline": '{"status": "To Do"}'}
+            },
+            "PROJ-2": {
+                # no jira_baseline -- jira_changed (first sync); gh
+                # unchanged above, so this is a clean push_to_github
+                # decision, exercising the new unmapped-status path.
+                "fields": {"status": {"name": "Triage"}, "jira_link": "ITEM_2"}
+            },
+            "PROJ-3": {
+                "fields": {
+                    "status": {"name": "Blocked"},
+                    "jira_link": "ITEM_3",
+                    "jira_baseline": '{"status": "Blocked"}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 3
+    assert candidates["ITEM_1"]["ok"] is True
+    assert candidates["ITEM_3"]["ok"] is True
+    assert candidates["ITEM_2"]["ok"] is False
+    assert (
+        "unmapped: jira status 'Triage' has no status_mapping entry for github"
+        in candidates["ITEM_2"]["summary"]
+    )
     assert "1 failed" in result.summary
     assert "3 candidates" in result.summary
 
