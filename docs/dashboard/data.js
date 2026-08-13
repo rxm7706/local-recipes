@@ -3895,7 +3895,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 11:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 11:46 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -16889,15 +16889,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "marshal",
-      "story": "14.2",
-      "epoch": 1786616510,
-      "sha": "e1c63956b",
-      "subject": "marshal story 14.2 hand-landed via PR #455 — Route-3 evidence record"
+      "station": "steward",
+      "story": "9.2",
+      "epoch": 1786620331,
+      "sha": "257094dcc",
+      "subject": "steward story 9.2 hand-landed via PR #458 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 11:20 UTC",
-    "generatedEpoch": 1786620042
+    "generatedAt": "2026-08-13 11:46 UTC",
+    "generatedEpoch": 1786621562
   },
   "storySpecs": [
     {
