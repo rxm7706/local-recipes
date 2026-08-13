@@ -2617,9 +2617,9 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "bd094688e43a629ffee75daffd59af19f71d6fd5",
-   "docs/dashboard/generate.py": "b19acbf9fb420ca45a28fe0334538c76a3319c08"
+   "docs/dashboard/generate.py": "bdd42f458d8f321b38d2e030c72ce956de1a36e1"
   },
-  "memlog": "ebfae3f0274b502e47d0eb493bd5b9483fa55fe9"
+  "memlog": "66e4d23c2639fe009b51cf5f756e6b10ec0fdf1b"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {
@@ -2646,10 +2646,10 @@
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
-   "docs/dashboard/generate.py": "b19acbf9fb420ca45a28fe0334538c76a3319c08",
+   "docs/dashboard/generate.py": "bdd42f458d8f321b38d2e030c72ce956de1a36e1",
    "scripts/promote_sprint_status.py": "583e4286df45b29f676f71e1266522d00bce33e0"
   },
-  "memlog": "daccf365a8646a3509af3adc47ca016b2fe8740a"
+  "memlog": "5b6b79e7a7c963b5295a394e8ab565528a80b3b9"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {
