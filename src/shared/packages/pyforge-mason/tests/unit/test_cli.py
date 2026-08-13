@@ -472,14 +472,15 @@ def test_recipe_diagnose_verb_metavar_reflects_the_registered_verb(capsys):
     """Review pass: `metavar="{}"` was never updated once a verb was
     actually registered, so `mason recipe <bad-verb>` printed the literal
     token `{}` in its usage/error text instead of
-    `{diagnose,optimize,scan,submit,update}`. Story 2.8 widened this from
-    `{diagnose}` to three registered verbs; Story 2.9 widened it to four;
-    Story 2.10 widens it again to all five, in registration order."""
+    `{build,diagnose,optimize,scan,submit,update}`. Story 2.6 registered the
+    first verb, `build`; Story 2.8 widened this to four registered verbs;
+    Story 2.9 widened it to five; Story 2.10 widens it again to all six, in
+    registration order."""
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["recipe", "bogus-verb"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "{diagnose,optimize,scan,submit,update}" in err
+    assert "{build,diagnose,optimize,scan,submit,update}" in err
     assert "argument {}:" not in err
 
 
