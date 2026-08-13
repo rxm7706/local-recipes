@@ -50,11 +50,25 @@ real Django/Channels object. Wired as `steward deploy perimeter`, a THIRD,
 unrelated verb alongside the pre-existing `dashboard` (docs/dashboard-gen)
 and `status` — reusing the `dashboard` name for this surface was flagged as
 a live naming collision on Story 9.1's own deferred-work ledger.
+
+Story 9.7 slice (CAP-8, AD-10): `StaticPanel` + `render_static_index` +
+`_run_static` implement AD-10's refusal — "a board that has declared an
+access column may not be delivered by static export... refuses rather than
+warns" — wired as a FOURTH verb, `steward deploy static`. Panels arrive as
+caller-supplied, already-rendered HTML fragments (e.g. an adopter's own
+`plotly.graph_objects.Figure.to_html()` output) and are assembled verbatim
+into one self-contained `docs/dashboard/<board>/index.html`; the
+pre-existing `dashboard` verb's reconciled-push mechanism then commits and
+pushes that file unchanged — no new git plumbing. `dashboard_diff` (Story
+2.2, above) is extended here to also see genuinely new, untracked files
+under `docs/dashboard/`, since a board's first-ever static publish is
+exactly that shape and was previously invisible to it.
 """
 
 from __future__ import annotations
 
 import argparse
+import html
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -124,23 +138,42 @@ def build_dashboard(
 
 
 def dashboard_diff(*, cwd: str | Path) -> str:
-    """Return the `git diff` text for `docs/dashboard/` against the committed
-    tree (unstaged changes to already-tracked files only — `dashboard-gen`
-    only ever rewrites the existing tracked `data.js` in place, never adds a
-    new file).
+    """Return non-empty text if `docs/dashboard/` differs from the committed
+    tree — either unstaged changes to already-tracked files (`git diff`) or
+    genuinely NEW, untracked files under that path (`git ls-files --others
+    --exclude-standard`, Story 9.7).
 
-    Empty string means no diff. Raises `subprocess.CalledProcessError` if
-    `git diff` itself fails (e.g. `cwd` is not a git worktree) — propagated,
-    not swallowed.
+    The original design assumed `dashboard-gen` only ever rewrites the
+    existing tracked `data.js` in place, never adds a new file — true for
+    every caller until `steward deploy static` (Story 9.7), whose entire
+    job is to create a NEW, previously-untracked board directory on first
+    publish. Without the untracked-file check, that first publish was
+    invisible here, so `steward deploy dashboard` reported "nothing to
+    deploy" and never committed/pushed it (review pass 2 finding).
+
+    Empty string means no diff — the only thing either caller keys off:
+    `_run_dashboard`'s "nothing to deploy" gate and its `--dry-run`
+    printout both compare `.strip()` truthy/falsy only, never this text's
+    exact shape, so combining the two subprocess outputs is a
+    backward-compatible extension. Raises `subprocess.CalledProcessError`
+    if either underlying git call fails (e.g. `cwd` is not a git worktree)
+    — propagated, not swallowed.
     """
-    result = subprocess.run(
+    diff_result = subprocess.run(
         ["git", "diff", "--", str(_DASHBOARD_RELATIVE_PATH)],
         cwd=str(cwd),
         check=True,
         capture_output=True,
         text=True,
     )
-    return result.stdout
+    untracked_result = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "--", str(_DASHBOARD_RELATIVE_PATH)],
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return diff_result.stdout + untracked_result.stdout
 
 
 def commit_and_push_dashboard(*, cwd: str | Path) -> str:
@@ -863,9 +896,370 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     )
 
 
+# ── Static export (CAP-8, AD-10, Story 9.7) ─────────────────────────────────
+
+
+@dataclass(frozen=True)
+class StaticPanel:
+    """One pre-rendered HTML panel `render_static_index` embeds verbatim.
+
+    `label` is the human-readable heading shown above the panel (escaped via
+    `html.escape()` before interpolation — see `render_static_index`);
+    `html` is the caller's own already-rendered fragment (e.g. an adopter's
+    `plotly.graph_objects.Figure.to_html()` output), embedded byte-for-byte
+    unchanged — the guarantee that hosted and static modes share one
+    chart-producing source, never re-derived (this story's Boundaries).
+    Validation mirrors `dashboard/declarations.py`'s established idiom
+    (rejected, not sanitized, so a caller sees exactly why); kept here
+    rather than imported, since `deploy.py` may not import from
+    `dashboard/` at all (the import-boundary invariant).
+
+    `html` carries no non-empty requirement, asymmetric with `label`'s
+    strict validation — deliberate: an empty panel fragment is a caller's
+    own (odd but harmless) choice, not a shape this module can meaningfully
+    reject.
+    """
+
+    label: str
+    html: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.label, str):
+            raise TypeError(f"StaticPanel.label must be a string, got {type(self.label).__name__}")
+        if not isinstance(self.html, str):
+            raise TypeError(f"StaticPanel.html must be a string, got {type(self.html).__name__}")
+        if not self.label.strip():
+            raise ValueError("StaticPanel.label must not be empty or whitespace-only")
+        if self.label != self.label.strip():
+            raise ValueError(
+                f"StaticPanel.label {self.label!r} carries leading/trailing whitespace"
+            )
+
+
+def render_static_index(panels: Sequence[StaticPanel], *, board: str) -> str:
+    """Render one self-contained `index.html` embedding every panel's
+    `html` byte-for-byte verbatim, in the order given, inside a responsive
+    CSS grid.
+
+    Raises `ValueError` naming a duplicate `panel.label` — two panels
+    sharing a heading is almost certainly a caller mistake, not two
+    genuinely different panels. `panel.label` and `board` are HTML-escaped
+    (`html.escape()`) before interpolation into `<h2>`/`<title>` — both
+    feed a page this story's own Intent says gets committed and published
+    on GitHub Pages, unlike `panel.html`, which stays verbatim by design
+    (see `StaticPanel`'s docstring). A `<meta name="viewport">` tag is
+    always emitted so the "responsive grid" claim holds on a mobile
+    viewport too.
+    """
+    seen_labels: set[str] = set()
+    for panel in panels:
+        if panel.label in seen_labels:
+            raise ValueError(f"render_static_index: duplicate panel label {panel.label!r}")
+        seen_labels.add(panel.label)
+
+    sections = "\n".join(
+        f'    <section class="panel">\n'
+        f"      <h2>{html.escape(panel.label)}</h2>\n"
+        f"{panel.html}\n"
+        f"    </section>"
+        for panel in panels
+    )
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{html.escape(board)}</title>
+<style>
+  body {{ margin: 0; font-family: sans-serif; }}
+  .grid {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+  }}
+  .panel {{ border: 1px solid #ccc; border-radius: 4px; padding: 1rem; }}
+</style>
+</head>
+<body>
+  <div class="grid">
+{sections}
+  </div>
+</body>
+</html>
+"""
+
+
+# Hand-rolled `^[A-Za-z0-9_-]+$` equivalent — `import re` is unconditionally
+# banned in this module (`test_deploy_has_no_story_status_derivation`, Story
+# 5.2/AD-71/AD-1), so this replicates the same character-set semantics by
+# hand rather than reaching for the toolkit that ban exists to keep out.
+_VALID_BOARD_SLUG_CHARS = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
+)
+
+
+def _is_valid_board_slug(value: str) -> bool:
+    """`^[A-Za-z0-9_-]+$` — non-empty, every character in the allowlist.
+    Refuses `--board ../../etc`, an absolute path, or anything else that
+    could escape `docs/dashboard/` once joined into a path."""
+    return bool(value) and all(ch in _VALID_BOARD_SLUG_CHARS for ch in value)
+
+
+_STATIC_INDEX_FILENAME = "index.html"
+_STATIC_INDEX_TMP_FILENAME = "index.html.tmp"
+# The only three directory shapes `_is_board_output_dir_safe_to_write` ever
+# trusts: a completed prior publish, a killed FIRST publish, or a killed
+# REPUBLISH of an already-published board.
+_TRUSTED_STATIC_ENTRY_SHAPES: tuple[frozenset[str], ...] = (
+    frozenset({_STATIC_INDEX_FILENAME}),
+    frozenset({_STATIC_INDEX_TMP_FILENAME}),
+    frozenset({_STATIC_INDEX_FILENAME, _STATIC_INDEX_TMP_FILENAME}),
+)
+
+
+def _is_board_output_dir_safe_to_write(output_dir: Path) -> bool:
+    """Refuse to write over foreign content at `docs/dashboard/<board>/` —
+    the structural fix closing five recurring review-pass findings at once
+    (this story's Spec Change Log, passes 2-5): a symlinked ancestor, a
+    symlinked target directory, a symlinked trusted entry, a hard-linked
+    trusted entry, and a special-file-type (FIFO/socket) at a trusted name
+    each previously bypassed one variant of this check or another.
+
+    Every filesystem probe here (`.exists()`/`.is_dir()`/`.iterdir()`/
+    `.is_symlink()`/`.stat()`) can raise `PermissionError` (an `OSError`) —
+    the caller wraps this whole call in `except OSError`, never lets one
+    escape uncaught.
+
+    Order:
+    1. Either of `output_dir`'s two FIXED ancestors (`docs`, `docs/
+       dashboard`) being a symlink refuses — checked from `output_dir`'s
+       own `.parent`/`.parent.parent`, never a bare `Path("docs")` (which
+       would resolve against the process's CWD, not necessarily the repo
+       root).
+    2. `output_dir` itself being a symlink refuses.
+    3. A genuinely absent `output_dir` is safe (nothing to collide with).
+    4. `output_dir` existing but not a directory refuses.
+    5. An empty existing directory is safe (no prior successful write, no
+       foreign content — see this story's Design Notes).
+    6. The entry NAMES present must exactly equal one of the three trusted
+       shapes above — anything else (e.g. the real `docs/dashboard/
+       kedro-viz/`) refuses.
+    7. Structural fix (the final amendment): every entry in that shape
+       must POSITIVELY satisfy `is_file()` — which by construction excludes
+       every non-regular-file type (FIFOs, sockets, block/char devices,
+       directories) in one check, rather than one more named exclusion per
+       filesystem primitive discovered — AND independently fail
+       `is_symlink()` (a symlink to a real file also satisfies `is_file()`)
+       AND fail `st_nlink != 1` (a hard link is, by every other test here,
+       an ordinary regular file with no separate identity from the inode
+       it shares — only its link count reveals it isn't the one thing
+       this verb itself wrote). Any entry failing any of the three refuses
+       the whole directory.
+    8. Otherwise safe.
+    """
+    dashboard_dir = output_dir.parent
+    docs_dir = output_dir.parent.parent
+    if docs_dir.is_symlink() or dashboard_dir.is_symlink():
+        return False
+
+    if output_dir.is_symlink():
+        return False
+
+    if not output_dir.exists():
+        return True
+
+    if not output_dir.is_dir():
+        return False
+
+    entries = list(output_dir.iterdir())
+    if not entries:
+        return True
+
+    entry_names = frozenset(entry.name for entry in entries)
+    if entry_names not in _TRUSTED_STATIC_ENTRY_SHAPES:
+        return False
+
+    for entry in entries:
+        if not entry.is_file():
+            return False
+        if entry.is_symlink():
+            return False
+        if entry.stat().st_nlink != 1:
+            return False
+
+    return True
+
+
+def _run_static(ns: argparse.Namespace) -> DutyResult:
+    """`deploy static --board SLUG --panel LABEL=PATH [--panel ...]
+    [--access-column NAME]`.
+
+    AD-10's refusal runs FIRST, unconditionally, before any other
+    validation, path construction, or `--panel` file read: a declared
+    (stripped, non-empty) `--access-column` refuses outright — "a board
+    that has declared an access column may not be delivered by static
+    export... refuses rather than warns" (AD-10). This is caller-asserted,
+    never independently verified against a real `AccessDeclaration` —
+    `deploy.py` may not import `dashboard/declarations.py` at all (the
+    import-boundary invariant); an accepted, documented tradeoff identical
+    to Story 9.5's `DeploymentTopology.cache_backend` precedent.
+
+    Then `--board` is validated as a filesystem-safe slug (`_is_valid_
+    board_slug`) BEFORE any path is constructed from it, then `--panel`
+    presence, then each `--panel LABEL=PATH` entry's shape (a `=`
+    separator, a non-empty label) and file content (`OSError` and
+    `UnicodeDecodeError` — not an `OSError` subclass — both caught as a
+    named refusal, mirroring `_tracked_ledger_refusal`'s own established
+    precedent for this exact bug class). Every string-typed operation on
+    `ns.access_column`/`ns.board`/each parsed panel label additionally
+    catches `(TypeError, AttributeError)`, mirroring `_run_perimeter`'s own
+    documented precedent in this file for a malformed `Namespace`.
+
+    `render_static_index` is called once every panel is read (raises
+    `ValueError` naming a duplicate label). Before writing,
+    `_is_board_output_dir_safe_to_write` is called inside `except OSError`;
+    an unsafe target refuses naming the pre-existing foreign content and
+    writes NOTHING. Otherwise the page is written atomically (temp file +
+    rename, mirroring `_run_perimeter`'s own pattern) to `docs/dashboard/
+    <board>/index.html`. `mkdir(parents=True)` drops `exist_ok=True` on
+    the branch where `output_dir` did not already exist at safety-check
+    time — closing the highest-value slice of the check-then-write TOCTOU
+    window for the cost of one keyword argument (this story's Design
+    Notes). On a write failure, every ancestor directory freshly created
+    by that `mkdir` (not only the leaf) is best-effort `rmdir()`'d,
+    innermost first, alongside the temp-file cleanup.
+    """
+    try:
+        access_column = getattr(ns, "access_column", None)
+        access_column_declared = access_column is not None and bool(access_column.strip())
+    except (TypeError, AttributeError) as exc:
+        return DutyResult(
+            ok=False, summary=f"deploy static: refused — malformed --access-column: {exc}"
+        )
+    if access_column_declared:
+        return DutyResult(
+            ok=False,
+            summary=(
+                f"deploy static: refused — --access-column {access_column!r} is declared; "
+                "a board with a declared access column may not be delivered by static "
+                "export (AD-10)"
+            ),
+        )
+
+    board = getattr(ns, "board", None)
+    try:
+        board_valid = bool(board) and _is_valid_board_slug(board)
+    except (TypeError, AttributeError) as exc:
+        return DutyResult(ok=False, summary=f"deploy static: refused — malformed --board: {exc}")
+    if not board_valid:
+        return DutyResult(
+            ok=False,
+            summary=(
+                f"deploy static: refused — --board {board!r} is missing or is not a valid "
+                "filesystem-safe slug (^[A-Za-z0-9_-]+$)"
+            ),
+        )
+
+    panel_specs = getattr(ns, "panel", None) or []
+    if not panel_specs:
+        return DutyResult(
+            ok=False,
+            summary="deploy static: refused — no --panel given (at least one is required)",
+        )
+
+    panels: list[StaticPanel] = []
+    for raw in panel_specs:
+        try:
+            has_separator = "=" in raw
+            label, _, path_str = raw.partition("=")
+            label = label.strip()
+        except (TypeError, AttributeError) as exc:
+            return DutyResult(
+                ok=False, summary=f"deploy static: refused — malformed --panel entry: {exc}"
+            )
+        if not has_separator:
+            return DutyResult(
+                ok=False,
+                summary=f"deploy static: refused — --panel {raw!r} is malformed (expected LABEL=PATH)",
+            )
+        if not label:
+            return DutyResult(
+                ok=False, summary=f"deploy static: refused — --panel {raw!r} has an empty label"
+            )
+        try:
+            panel_html = Path(path_str).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            return DutyResult(
+                ok=False, summary=f"deploy static: refused — could not read --panel {raw!r}: {exc}"
+            )
+        try:
+            panels.append(StaticPanel(label=label, html=panel_html))
+        except (TypeError, ValueError) as exc:
+            return DutyResult(
+                ok=False, summary=f"deploy static: refused — invalid --panel {raw!r}: {exc}"
+            )
+
+    try:
+        index_html = render_static_index(panels, board=board)
+    except ValueError as exc:
+        return DutyResult(ok=False, summary=f"deploy static: refused — {exc}")
+
+    output_dir = repo_root() / _DASHBOARD_RELATIVE_PATH / board
+    try:
+        safe = _is_board_output_dir_safe_to_write(output_dir)
+    except OSError as exc:
+        return DutyResult(
+            ok=False, summary=f"deploy static: refused — could not inspect {output_dir}: {exc}"
+        )
+    if not safe:
+        return DutyResult(
+            ok=False,
+            summary=(
+                f"deploy static: refused — {output_dir} already contains content this verb "
+                "did not write; refusing to overwrite foreign content"
+            ),
+        )
+
+    tmp_path = output_dir / _STATIC_INDEX_TMP_FILENAME
+    final_path = output_dir / _STATIC_INDEX_FILENAME
+    created_dirs: list[Path] = []
+    try:
+        output_dir_existed = output_dir.exists()
+        if output_dir_existed:
+            output_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            probe = output_dir
+            while not probe.exists():
+                created_dirs.append(probe)
+                probe = probe.parent
+            # No `exist_ok=True` on this branch — a symlink raced into this
+            # exact path between the safety check above and this call now
+            # raises `FileExistsError` (an OSError, already caught below)
+            # instead of silently succeeding through it.
+            output_dir.mkdir(parents=True)
+        tmp_path.write_text(index_html, encoding="utf-8")
+        tmp_path.rename(final_path)
+    except OSError as exc:
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        for directory in created_dirs:
+            try:
+                directory.rmdir()
+            except OSError:
+                pass
+        return DutyResult(
+            ok=False, summary=f"deploy static: refused — could not write to {output_dir}: {exc}"
+        )
+
+    return DutyResult(ok=True, summary=f"deploy static: wrote {final_path}")
+
+
 # ── DeployDuty (Duty-protocol adapter) ──────────────────────────────────────
 
-_DEPLOY_VERBS: tuple[str, ...] = ("dashboard", "status", "perimeter")
+_DEPLOY_VERBS: tuple[str, ...] = ("dashboard", "status", "perimeter", "static")
 
 
 def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
@@ -958,14 +1352,16 @@ def _run_status(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
 
 
 class DeployDuty:
-    """The real `deploy` duty — dispatches the `dashboard`/`status`/`perimeter` verbs.
+    """The real `deploy` duty — dispatches the `dashboard`/`status`/
+    `perimeter`/`static` verbs.
 
     Bare `steward deploy` (no verb) degrades to `DutyResult(ok=True, ...)`
     naming the available verbs (AD-7), matching `KeysDuty`'s identical
     precedent. A subprocess failure (pixi, git) is caught here as
     `subprocess.CalledProcessError` and reported as a duty-level failure,
     never conflated with an internal crash (AD-8 — that boundary is
-    `cli.main()`'s alone).
+    `cli.main()`'s alone). `static` never shells out, but is dispatched
+    through the same guarded `try` for a uniform shape.
     """
 
     name = "deploy"
@@ -982,6 +1378,8 @@ class DeployDuty:
                 return _run_dashboard(ns)
             if verb == "perimeter":
                 return _run_perimeter(ns)
+            if verb == "static":
+                return _run_static(ns)
             return _run_status(ns)
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
