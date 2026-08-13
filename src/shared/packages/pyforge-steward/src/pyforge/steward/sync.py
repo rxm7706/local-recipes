@@ -4,7 +4,8 @@ duty", mirrors `keys.py`/`deploy.py`/`budget.py`'s own precedent.
 Story 8.1 slice: the whole `sync` duty in one pass — `SyncConfig`/
 `SyncConfigError`/`load_config` (the non-secret, operator-declared mapping of
 GitHub project/field IDs, Jira base URL/project key/field IDs,
-`field_overrides`, and `user_mapping` that makes the engine board-agnostic), a
+`field_overrides`, `user_mapping`, and (Story 8.6) `status_mapping` that makes
+the engine board-agnostic), a
 GitHub GraphQL client and a Jira REST v3 client built on an injectable
 `transport` seam (a real `urlopen`-backed one by default, wrapping
 `.claude/skills/conda-forge-expert/scripts/_http.py`'s `open_url` — never a
@@ -114,6 +115,7 @@ class SyncConfig:
     jira_baseline_field_id: str
     field_overrides: dict[str, str] = field(default_factory=dict)
     user_mapping: dict[str, str] = field(default_factory=dict)
+    status_mapping: dict[str, str] = field(default_factory=dict)
 
 
 def default_config_path() -> Path:
@@ -191,6 +193,21 @@ def load_config(path: str | Path) -> SyncConfig:
     if not isinstance(user_mapping, dict):
         raise SyncConfigError(f"{document_path}: 'user_mapping' must be a mapping")
 
+    status_mapping = document.get("status_mapping") or {}
+    if not isinstance(status_mapping, dict):
+        raise SyncConfigError(f"{document_path}: 'status_mapping' must be a mapping")
+    for jira_status, github_status in status_mapping.items():
+        # Type safety only -- never vocabulary validation (no closed set of
+        # valid status names exists to check against). Without this, a YAML
+        # gotcha (`Done: yes` -> `True`, `Done:` -> `None`) loads silently
+        # and only surfaces as a malformed GitHub GraphQL write instead of a
+        # named config-time `SyncConfigError`.
+        if not isinstance(jira_status, str) or not isinstance(github_status, str):
+            raise SyncConfigError(
+                f"{document_path}: 'status_mapping' keys and values must be strings "
+                f"(got {jira_status!r}: {github_status!r})"
+            )
+
     return SyncConfig(
         github_project_id=github_values["project_id"],
         github_status_field_id=github_values["status_field_id"],
@@ -202,6 +219,7 @@ def load_config(path: str | Path) -> SyncConfig:
         jira_baseline_field_id=jira_values["baseline_field_id"],
         field_overrides=dict(field_overrides),
         user_mapping=dict(user_mapping),
+        status_mapping=dict(status_mapping),
     )
 
 
@@ -221,6 +239,11 @@ class SyncAPIError(SyncError):
 class SyncUnlinkedError(SyncError):
     """An item has no identity-link value recorded pointing at its
     counterpart on the other side."""
+
+
+class SyncUnmappedStatusError(SyncError):
+    """A non-null status value crossing into GitHub has no `status_mapping`
+    entry."""
 
 
 class SyncBaselineTooLargeError(SyncError):
@@ -953,17 +976,37 @@ def reconcile(
             details=details,
         )
 
+    # `github_write_value` defaults to `target_value` unchanged -- the
+    # `push_to_jira` and no_op paths never assign it, so they keep writing
+    # exactly what they write today. Only the `push_to_github` branch below
+    # translates it (AD-6/CAP-5: every status value crossing into GitHub
+    # passes through `status_mapping`; an unmapped value is a hard, named
+    # failure, never passed through).
+    github_write_value = target_value
     if decision != "no_op":
         try:
             if decision == "push_to_jira":
                 transition_jira_issue(
                     jira.issue_key, target_value, config=config, credential=jira_credential, transport=transport
                 )
-            else:
+            else:  # push_to_github
+                if target_value is None:
+                    # An explicit clear is not a status word to translate
+                    # (AD-10: an absent baseline key and an explicit null
+                    # mean opposite things) -- bypasses the mapping lookup.
+                    github_write_value = None
+                else:
+                    mapped = config.status_mapping.get(target_value)
+                    if mapped is None:
+                        raise SyncUnmappedStatusError(
+                            f"unmapped: jira status {target_value!r} has no status_mapping "
+                            "entry for github"
+                        )
+                    github_write_value = mapped
                 update_project_item_field(
                     gh.item_id,
                     config.github_status_field_id,
-                    target_value,
+                    github_write_value,
                     config=config,
                     credential=github_credential,
                     transport=transport,
@@ -975,9 +1018,14 @@ def reconcile(
     # already" no_op path and the real-push path reach this), because at
     # least one side diverged from ITS OWN prior baseline and every future
     # reconcile of this pair would otherwise see it as "changed" forever.
+    # The GitHub-side baseline records the TRANSLATED (actually-written)
+    # value -- `github_write_value`, never the raw `target_value` -- or the
+    # next reconcile's `gh.status != gh_base` comparison would permanently
+    # mismatch (a zero-loop regression, AD-5). The Jira-side baseline stays
+    # keyed on `target_value`: Jira's own value did not change.
     try:
         new_gh_baseline = _serialize_baseline(
-            {**gh.baseline, _TRACKED_FIELD: target_value},
+            {**gh.baseline, _TRACKED_FIELD: github_write_value},
             side="github",
             ceiling=_GITHUB_BASELINE_FIELD_CEILING,
         )
@@ -1012,7 +1060,11 @@ def reconcile(
             summary=f"sync reconcile: {decision} but failed refreshing baseline: {exc}",
         )
 
-    details["baseline"] = {_TRACKED_FIELD: target_value}
+    # `github_write_value` (== `target_value` on every path except a
+    # translated push_to_github) so this returned detail matches what the
+    # GH-side baseline write above actually persisted, not the raw
+    # pre-translation status.
+    details["baseline"] = {_TRACKED_FIELD: github_write_value}
     return DutyResult(
         ok=True,
         summary=(
