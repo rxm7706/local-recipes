@@ -75,6 +75,7 @@ from cyclonedx.output.json import JsonV1Dot6
 from cyclonedx.schema import SchemaVersion
 from cyclonedx.validation.json import JsonStrictValidator
 from packageurl import PackageURL
+from pyforge.core.errors import PyforgeError
 
 from .inventory import Component, ResolvedInventory
 from .mapping import load_conda_pypi_map
@@ -90,10 +91,16 @@ _CONDA_CHANNEL = "conda-forge"
 _VALIDATOR = JsonStrictValidator(SchemaVersion.V1_6)
 
 
-class SbomValidationError(Exception):
+class SbomValidationError(PyforgeError, Exception):
     """The rendered document failed its own CycloneDX 1.6 schema validation
     -- an internal rendering defect. Deliberately NOT a ``ValueError``/
-    ``OSError`` -- see the module docstring for why."""
+    ``OSError`` -- see the module docstring for why.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base (multiple inheritance) -- ``Exception`` stays in the
+    MRO, so every existing ``except SbomValidationError``/``except
+    Exception`` site is unaffected; ``except PyforgeError`` newly catches
+    it too."""
 
 
 def render_cyclonedx(inventory: ResolvedInventory, report: ComplianceReport) -> str:

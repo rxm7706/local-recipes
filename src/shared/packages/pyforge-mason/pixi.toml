@@ -24,3 +24,4 @@ hatchling = "*"
 
 [package.run-dependencies]
 python = ">=3.12"
+pyforge-core = { path = "../pyforge-core" }  # Story 14.3, CAP-5: errors.py's MasonError re-parents to pyforge.core.errors.PyforgeError

@@ -40,6 +40,7 @@ from importlib import resources
 from pathlib import Path
 
 import jsonschema
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from . import fleet_surface, prescribe, score, sources
 from .checks import env_hygiene, registry
@@ -816,8 +817,12 @@ def _emit_json(
     document = report.to_json_dict()
     # Self-validated BEFORE it ever reaches stdout -- a schema-invalid
     # document must never be the one thing an automated caller (Marshal)
-    # consumes as the contract.
-    jsonschema.validate(document, _report_schema())
+    # consumes as the contract. Story 14.3, SPEC-pyforge-core CAP-4:
+    # validates against the packaged schema COMPOSED with the shared base
+    # envelope schema (an `allOf` merge -- the packaged schema is embedded
+    # verbatim, unmodified); every payload that validated before still
+    # validates, since the base only adds already-satisfied presence checks.
+    jsonschema.validate(document, compose(BASE_ENVELOPE_SCHEMA, _report_schema()))
     _write_stdout(json.dumps(document, sort_keys=True, indent=2) + "\n")
 
 
