@@ -7,25 +7,49 @@ definition, so `cfe` is imported at module level here --
 `tests/meta/test_capability_tiers.py`'s lazy-import guard names only
 `package.py`/`environment.py`/`doctor.py`, not this file.
 
-Story 2.6 creates this module -- the first `recipe` verb -- with `build()`,
-driving CFE's own local-build tooling through two new STREAM-mode (AD-25)
-`cfe.py` adapters: `build_native` (the default) and `build_docker`
-(`--docker`, CI-parity, opt-in), reporting the outcome as a `models.
-BuildResult`. Unlike `cfe.py::validate_recipe`/`submit_pr` (CAPTURE mode), a
-build is expected to run for minutes, so its output streams live rather
-than buffering to completion. `build()` mirrors `doctor.build_report`'s
-parameter shape but raises `CfeUnresolvedError` instead of degrading --
-`mason recipe build` cannot proceed at all without a resolved CFE root,
-since both of CFE's own build scripts live under it. It calls no `ensure_
-import_floor` gate: neither wrapped script needs CFE's Python import floor
-(spec Design Notes) -- the native path never runs under any Python
-interpreter at all, and the Docker/CI-parity script imports only the
-stdlib, the same "already handles it" exemption `diagnose()` below reuses
-for its own wrapped script. The CFE interpreter is resolved only for the
-Docker/CI-parity path: the native path invokes its script through `bash`,
-never through a Python interpreter (spec Always boundary), so resolving one
-for that path would be dead work -- `resolve_cfe_interpreter` is therefore
-only ever called inside the `docker` branch below, not unconditionally.
+Story 2.5 adds `validate()`, backing `mason recipe validate <recipe_path>`
+(FR-8) -- the first `recipe` verb in this module, numerically, even though
+`build`/`diagnose`/`optimize`/`scan`/`submit`/`update` (Stories 2.6-2.10)
+landed first in this worktree (spec Design Notes: this repository's `main`
+branch already reconciled Story 2.4's `new()` into this same first
+position, ahead of `build`, after an analogous out-of-order landing --
+`new()` itself is not present in this file, since this worktree's baseline
+predates that merge). It mirrors `diagnose()`'s composition shape below exactly
+(resolve root -> `ensure_cfe_root` -> resolve interpreter -> call the CFE
+port, no import-floor gate: the wrapped validator's only third-party
+import, PyYAML, already degrades to an honest failure on its own, the same
+"already handles it" exemption `diagnose()` establishes -- not
+`optimize()`/`scan()`'s scoped-probe pattern), with one addition neither
+`diagnose()` nor `build()` need: `args` is `["--json", recipe_path]`,
+mirroring `scan()`'s own `--json` forcing below, not `diagnose()`'s bare
+`[log_path]` -- without it the wrapped validator prints human text, leaving
+`CfeResult.json_body` empty. `validate()` returns the raw `CfeResult`
+verbatim (spec Never boundary), like every sibling verb -- it never raises
+for a validation failure. Only `cli.py`'s own `recipe validate` dispatch
+branch projects `CfeResult.returncode` onto the process exit code (spec
+Always boundary) -- the one verb where that projection happens; this
+module's own contract (a non-zero return code is data, never an exception,
+AD-4) is unchanged.
+
+Story 2.6 adds `build()`, the next verb after `validate()` above, driving
+CFE's own local-build tooling through two new STREAM-mode (AD-25) `cfe.py`
+adapters: `build_native` (the default) and `build_docker` (`--docker`,
+CI-parity, opt-in), reporting the outcome as a `models.BuildResult`. Unlike
+`cfe.py::validate_recipe`/`submit_pr` (CAPTURE mode), a build is expected to
+run for minutes, so its output streams live rather than buffering to
+completion. `build()` mirrors `doctor.build_report`'s parameter shape but
+raises `CfeUnresolvedError` instead of degrading -- `mason recipe build`
+cannot proceed at all without a resolved CFE root, since both of CFE's own
+build scripts live under it. It calls no `ensure_import_floor` gate:
+neither wrapped script needs CFE's Python import floor (spec Design Notes)
+-- the native path never runs under any Python interpreter at all, and the
+Docker/CI-parity script imports only the stdlib, the same "already handles
+it" exemption `diagnose()` below reuses for its own wrapped script. The CFE
+interpreter is resolved only for the Docker/CI-parity path: the native path
+invokes its script through `bash`, never through a Python interpreter (spec
+Always boundary), so resolving one for that path would be dead work --
+`resolve_cfe_interpreter` is therefore only ever called inside the `docker`
+branch below, not unconditionally.
 
 Story 2.7 adds `diagnose()`, backing `mason recipe diagnose <log_path>`
 (FR-10). `diagnose()` mirrors `doctor.build_report`'s composition shape
@@ -188,6 +212,58 @@ mirroring `resolve.py`'s `_ENV_CFE_ROOT`/`errors.py`'s `_MESSAGE` sanctioned-
 duplication pattern (`cfe.py`'s own module docstring names this same
 pattern for its `_CFE_SCRIPTS` table). Set, never read, by `submit()` below
 -- Mason never reads this variable back."""
+
+
+def validate(
+    recipe_path: str,
+    *,
+    cfe_root_arg: str | None,
+    cfe_python_arg: str | None,
+    cfe_timeout_arg: float | None,
+    environ: Mapping[str, str],
+    start_directory: Path,
+) -> CfeResult:
+    """Validate a recipe against conda-forge policy via CFE's validator
+    (FR-8) and return the resulting `CfeResult` directly -- no Mason-side
+    reinterpretation of its `json_body` (spec Never boundary).
+
+    Resolves the CFE root (`resolve_cfe_root`) and raises
+    `CfeUnresolvedError` via `cfe.ensure_cfe_root` before any subprocess
+    spawns if it is unresolved (spec Always boundary) -- mirroring
+    `build`/`diagnose`/`submit`. Resolves the interpreter (`resolve_cfe_
+    interpreter`) with NO import-floor gate (module docstring): the wrapped
+    validator's only third-party import, PyYAML, already degrades to an
+    honest failure on its own, the same "already handles it" exemption
+    `diagnose()` establishes -- not `optimize()`/`scan()`'s scoped-probe
+    pattern.
+
+    `args` is `["--json", recipe_path]`, mirroring `scan()`'s own `--json`
+    forcing below (spec Always boundary) -- without it the wrapped
+    validator prints human text, leaving `CfeResult.json_body` empty.
+    `recipe_path` is passed straight through with no existence check or
+    interpretation (AD-1), mirroring `diagnose()`/`optimize()`/`scan()`'s
+    own `recipe_path`/`log_path`. `cfe_timeout_arg` is passed straight
+    through as `cfe.validate_recipe`'s own `timeout`; that adapter's own
+    default (`_VALIDATE_RECIPE_TIMEOUT_SECONDS`) applies only when this
+    resolves to `None`.
+
+    Unlike every sibling verb, this operation's pass/fail outcome also
+    projects onto the process exit code -- but only `cli.py`'s own `recipe
+    validate` dispatch branch makes that projection (spec Always boundary):
+    this function itself never raises for a validation failure, identical
+    to every other verb here and to AD-4's rule.
+    """
+    resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
+    cfe.ensure_cfe_root(resolved_root)
+
+    resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
+
+    return cfe.validate_recipe(
+        ["--json", recipe_path],
+        root=resolved_root.root,
+        interpreter=resolved_interpreter.path,
+        timeout=cfe_timeout_arg,
+    )
 
 
 def build(
