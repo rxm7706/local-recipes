@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
+import sqlite3
 import threading
 import time
 from pathlib import Path
 
 import pytest
-from pyforge.herald import notices
+from pyforge.herald import db, notices
 from pyforge.herald.errors import HeraldError
 
 
@@ -82,6 +83,49 @@ def test_re_authoring_with_a_changed_type_removes_the_stale_markdown_file(
     assert new_path.exists()
     assert new_path != old_path
     assert not old_path.exists()
+
+
+def test_a_failed_commit_does_not_delete_the_markdown_the_index_rolls_back_to(
+    tmp_path: Path, monkeypatch
+):
+    """The index must never point at a markdown file this call has already
+    deleted.
+
+    Story 13.3 made the index write transactional, so it rolls back on any
+    later failure -- but the stale-file `unlink` above ran INSIDE that
+    transaction, before the commit. A commit failure (ENOSPC, EIO, a Ctrl-C
+    in the window) therefore restored the index entry pointing at the old
+    path while the old file was already gone, producing exactly the phantom
+    entry `author_notice`'s write ordering exists to prevent and destroying
+    the git-tracked durable record. Under the pre-13.3 JSON store the index
+    write was already durable at that point, so there was nothing to roll
+    back to. Fails against an unlink inside the transaction.
+    """
+    first = _author(tmp_path, notice_type="deprecation")
+    old_path = tmp_path / first.path
+    assert old_path.exists()
+
+    class _CommitFails:
+        """Everything the real connection does, except COMMIT."""
+
+        def __init__(self, conn):
+            self._conn = conn
+
+        def __getattr__(self, name):
+            return getattr(self._conn, name)
+
+        def commit(self):
+            raise sqlite3.OperationalError("disk I/O error")
+
+    real_connect = db._connect
+    monkeypatch.setattr(db, "_connect", lambda path: _CommitFails(real_connect(path)))
+
+    with pytest.raises(HeraldError):
+        _author(tmp_path, notice_type="fix")
+
+    monkeypatch.undo()
+    assert notices.get_notice(tmp_path, "auth-api-v1").path == first.path
+    assert old_path.exists()
 
 
 def test_author_publish_close_write_markdown_before_the_index(

@@ -265,8 +265,13 @@ def _require_existing_index(index_path: Path, missing: str) -> None:
     found" for a notice plainly in the legacy index, while running any
     read first (which does open a connection, and so does migrate) made
     the identical call succeed. ``db._has_legacy_data`` is the same
-    predicate ``db.connection`` uses for exactly this distinction."""
-    if db._has_legacy_data(index_path):
+    predicate ``db.connection`` uses for exactly this distinction --
+    narrowed here to the NOTICES legacy store, the only one that can carry
+    a notice. Asking the unnarrowed question let an unrelated legacy
+    ``progress.json``/``claims.json`` suppress this fail-fast, which put
+    back the very ``.herald/`` tree it exists to avoid creating on a pure
+    error path."""
+    if db._has_legacy_data(index_path, "notices-index.json"):
         return
     try:
         index_path.stat()
@@ -552,6 +557,7 @@ def author_notice(
     notices_dir = (
         notices_dir if notices_dir is not None else repo_root / DEFAULT_NOTICES_DIR
     )
+    stale_markdown: Path | None = None
     try:
         with db.transaction(index_path) as conn:
             timestamp = now if now is not None else _now_iso()
@@ -613,13 +619,15 @@ def author_notice(
             # Story 13.3 widened WHEN that orphan can happen, and the trade
             # is still the right way round. `_write_markdown` is a
             # filesystem write inside `db.transaction`, so the index now
-            # rolls back on ANY later failure in this block -- the stale-file
-            # `unlink` below, the `_upsert_notice_row`, the COMMIT itself --
-            # not only on a markdown-write failure. The orphan is therefore
-            # reachable from more paths than before, and it stays the
-            # harmless half: a file with no index entry is inert, whereas
-            # the phantom index entry the ordering avoids is one the CLI
-            # reports as a live notice.
+            # rolls back on ANY later failure in this block -- the
+            # `_upsert_notice_row`, the COMMIT itself -- not only on a
+            # markdown-write failure. The orphan is therefore reachable from
+            # more paths than before, and it stays the harmless half: a file
+            # with no index entry is inert, whereas the phantom index entry
+            # the ordering avoids is one the CLI reports as a live notice.
+            # The one operation that could turn a rollback into the phantom
+            # half -- deleting the OLD file after a path change -- is
+            # deliberately deferred past the commit; see below.
             _write_markdown(repo_root, notice)
             _upsert_notice_row(conn, notice)
             if (
@@ -633,22 +641,33 @@ def author_notice(
                 # stale, git-diffable "record" carrying the old content sat
                 # alongside the new one indefinitely, indistinguishable from
                 # a real current notice to anyone browsing `notices/`
-                # directly. Removed now that the new file has landed.
-                try:
-                    (repo_root / existing.path).unlink()
-                except OSError as exc:
-                    raise errors.HeraldError(
-                        f"stale notice markdown file {repo_root / existing.path} "
-                        f"could not be removed after re-authoring under a new "
-                        f"path: {exc}"
-                    ) from exc
-            return notice
+                # directly. Deleted below, AFTER the commit: deleting it
+                # here, inside the transaction, meant a later failure in the
+                # block (the COMMIT itself, a Ctrl-C) rolled the index back
+                # to a path whose file this call had already removed --
+                # producing exactly the phantom entry the write ordering
+                # above exists to prevent, and destroying the git-tracked
+                # durable record in the process. Under the pre-13.3 JSON
+                # store the index write was already durable by this point,
+                # so there was nothing to roll back to.
+                stale_markdown = repo_root / existing.path
     except errors.HeraldError:
         raise
     except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(
             f"notice for {component!r} could not be written: {exc}"
         ) from exc
+    if stale_markdown is not None:
+        try:
+            stale_markdown.unlink()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            raise errors.HeraldError(
+                f"stale notice markdown file {stale_markdown} could not be "
+                f"removed after re-authoring under a new path: {exc}"
+            ) from exc
+    return notice
 
 
 def publish_notice(

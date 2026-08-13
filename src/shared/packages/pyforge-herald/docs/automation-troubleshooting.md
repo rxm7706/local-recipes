@@ -158,6 +158,36 @@ one-time legacy import raises naming the specific legacy file.
   no `herald` process is running.
 - There is no repair or recovery tool built into `herald` for this.
 
+### Two adjacent failures that are NOT corruption
+
+Both name the database and exit 1 the same way, so they read like the
+above at a glance. Neither is fixed by restoring a backup:
+
+```
+$ herald success list
+herald: HeraldError: /path/to/.herald/herald.db has user_version=2, newer
+than this build's latest known migration (1); refusing to overwrite or
+downgrade it -- upgrade herald, or point at a different database
+```
+
+The database was written by a **newer** `herald` than the one running --
+usually an accidental downgrade (an older environment activated, an older
+build on `PATH`). `herald` refuses rather than guessing, so nothing is
+damaged. Fix: run the newer build, or point at a different database.
+
+```
+$ herald progress mason
+herald: HeraldError: /path/to/.herald/herald.db: legacy data could not be
+imported: UNIQUE constraint failed: progress.station, progress.date
+```
+
+Only on the first run against a pre-Story-13.3 repo: the one-time import of
+`.herald/{progress,claims,notices-index}.json` hit data the new schema
+rejects (here, two `progress.json` records sharing a `(station, date)`).
+The whole migration rolls back, so nothing is half-imported and every later
+command retries it. Fix: correct the offending legacy file, or move it
+aside to skip importing it -- the database itself is fine.
+
 ## Stale web snapshot (no live API to "miss" — a manual export that wasn't re-run)
 
 **What it replaces:** the "operator alerts for automation failures" AC.

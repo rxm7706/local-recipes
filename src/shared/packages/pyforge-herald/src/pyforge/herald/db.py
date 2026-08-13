@@ -187,10 +187,22 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
-def _has_legacy_data(db_path: Path) -> bool:
-    """Whether any pre-Story-13.3 JSON store sits next to ``db_path``, i.e.
-    whether a first connection here would have a legacy import to run."""
-    return any((db_path.parent / name).exists() for name in _LEGACY_FILENAMES)
+def _has_legacy_data(db_path: Path, *names: str) -> bool:
+    """Whether any of ``names`` (default: every pre-Story-13.3 JSON store)
+    sits next to ``db_path``, i.e. whether a first connection here would
+    have a legacy import to run.
+
+    Uses ``_is_definitely_absent`` rather than ``exists()`` for the reason
+    that helper spells out: a legacy file that is merely un-``stat``-able
+    is not an absent one, and reading it as absent split the read and write
+    answers apart. Verified: with an un-``stat``-able ``progress.json``
+    beside a not-yet-created database, ``read_all`` was served from the
+    empty in-memory database and returned ``[]``, while a write on the same
+    store correctly reported that the legacy file could not be read."""
+    return any(
+        not _is_definitely_absent(db_path.parent / name)
+        for name in (names or _LEGACY_FILENAMES)
+    )
 
 
 def _is_definitely_absent(db_path: Path) -> bool:
@@ -278,13 +290,22 @@ def connection(db_path: Path) -> Iterator[sqlite3.Connection]:
     beside it to migrate) is served from an empty in-memory database --
     reads stay side-effect-free, see ``_empty_read_connection``.
 
-    A ``sqlite3`` failure raised while reading is wrapped in
-    ``errors.HeraldError`` here, at the seam, so the read functions match
-    the write functions' existing AD-6 contract without repeating the same
-    ``try``/``except`` in all six of them. ``cli.dispatch`` catches only
-    ``HeraldError``; an unwrapped one exited as a traceback instead of the
-    "message plus exit code 1" this story's own rewritten runbooks
-    promise."""
+    A failure raised while reading is wrapped in ``errors.HeraldError``
+    here, at the seam, so the read functions match the write functions'
+    existing AD-6 contract without repeating the same ``try``/``except`` in
+    all six of them. ``cli.dispatch`` catches only ``HeraldError``; an
+    unwrapped one exited as a traceback instead of the "message plus exit
+    code 1" this story's own rewritten runbooks promise.
+
+    The caught set is deliberately the write paths' set, not just
+    ``sqlite3.Error``: binding a parameter is where SQLite converts Python
+    values, and it raises the same non-``sqlite3`` types there that
+    ``progress``/``claims``/``notices``'s writers already catch. Verified
+    through the real CLI: ``herald success review $'\\xff'`` -- a non-UTF-8
+    argv byte, which ``surrogateescape`` hands on as a lone surrogate --
+    reached ``read_one``'s ``WHERE id = ?`` and exited as a raw
+    ``UnicodeEncodeError`` traceback, the exact failure the write half was
+    already fixed for."""
     key = str(Path(db_path).resolve())
     ambient = _ambient(key)
     if ambient is not None:
@@ -298,7 +319,7 @@ def connection(db_path: Path) -> Iterator[sqlite3.Connection]:
         conn = _connect(db_path)
     try:
         yield conn
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(f"{db_path} could not be read: {exc}") from exc
     finally:
         conn.close()
@@ -392,10 +413,10 @@ def transaction(db_path: Path) -> Iterator[sqlite3.Connection]:
 # every subsequent command raised the same error, with no repair path and a
 # message pointing at nothing an operator could act on. Verified before and
 # after. Re-running the migration over already-present tables is now a
-# no-op, and `_import_legacy_v1` stays correct on that path: if legacy JSON
-# is also present the `INSERT`s hit the existing rows' `PRIMARY KEY` and
-# raise `IntegrityError`, which `_connect` already reports as "legacy data
-# could not be imported" -- accurate, and recoverable by moving that file.
+# no-op, and `_import_legacy_v1` skips any store whose table already holds
+# rows, so the import half is a no-op on that path too -- see its own
+# docstring for why "the PRIMARY KEY would catch a re-import" was not
+# enough.
 _SCHEMA_V1_SQL = """
 CREATE TABLE IF NOT EXISTS progress (
   id TEXT PRIMARY KEY,
@@ -468,10 +489,31 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
     creation above -- a validation failure partway through rolls back the
     whole migration (nothing partially imported), and the next call retries
     from scratch against the still-broken file until an operator fixes or
-    removes it."""
+    removes it.
+
+    Each store is skipped when its destination table already holds rows,
+    which is what makes "once" true on the one path that can legitimately
+    run this migration over populated tables: a database restored from
+    `sqlite3 .dump` (see the `IF NOT EXISTS` note above) comes back with
+    every table full and `user_version = 0`, so the whole v1 step reruns.
+    Relying on the tables' own `PRIMARY KEY`s to catch that -- the previous
+    reasoning -- covers `progress`/`notices_index`/`notices_redirects` but
+    NOT `claims`, whose `id` is deliberately not a key (see the schema
+    comment above). Verified: restoring such a dump beside a legacy
+    `claims.json` silently re-imported every claim a second time, after
+    which `revalidate_all` refused permanently with "holds duplicate claim
+    ids" and no repair tool. An emptiness check is also the more accurate
+    reading of "imports ... once, idempotently": a re-run is a no-op rather
+    than an `IntegrityError` an operator has to interpret."""
     from . import claims as claims_mod
     from . import notices as notices_mod
     from . import progress as progress_mod
+
+    def already_populated(*tables: str) -> bool:
+        return any(
+            conn.execute(f"SELECT 1 FROM {table} LIMIT 1").fetchone() is not None
+            for table in tables
+        )
 
     legacy_dir = db_path.parent
 
@@ -496,7 +538,7 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
         legacy(name) for name in _LEGACY_FILENAMES
     )
 
-    if progress_file is not None:
+    if progress_file is not None and not already_populated("progress"):
         for record in progress_mod._read_legacy_json(progress_file):
             conn.execute(
                 "INSERT INTO progress (id, station, date, shipped_capabilities, "
@@ -505,7 +547,7 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
                 progress_mod._to_params(record),
             )
 
-    if claims_file is not None:
+    if claims_file is not None and not already_populated("claims"):
         for claim in claims_mod._read_legacy_json(claims_file):
             conn.execute(
                 "INSERT INTO claims (id, project_name, status, thesis, shipped_date, "
@@ -514,7 +556,9 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
                 claims_mod._to_params(claim),
             )
 
-    if notices_file is None:
+    # Both notices tables come from the one legacy index document, so
+    # either one already holding rows means that document was imported.
+    if notices_file is None or already_populated("notices_index", "notices_redirects"):
         return
     document = notices_mod._read_legacy_index_document(notices_file)
     for entry in document["notices"].values():

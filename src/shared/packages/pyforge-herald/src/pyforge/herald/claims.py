@@ -118,10 +118,11 @@ write carries its own validation, and raises ``errors.ClaimStateError``
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -431,6 +432,35 @@ def list_claims(
     return claims
 
 
+@contextlib.contextmanager
+def _write_transaction(claims_path: Path) -> Iterator[None]:
+    """``db.transaction`` plus this module's AD-6 error translation, for
+    the whole critical section rather than just its write.
+
+    ``db.connection`` translates a raw storage failure into
+    ``errors.HeraldError`` for STANDALONE reads only -- inside a
+    transaction it deliberately leaves translation to the writer that owns
+    the critical section (see its docstring). Every writer here opens its
+    transaction with a fresh in-transaction ``read_all``, and that read was
+    covered by nothing: ``_write_all``'s own wrapper starts later, and the
+    standalone ``read_all`` these functions take BEFORE opening the
+    transaction is a different call. Verified: with the fault arriving
+    during ``publish``'s unlocked evidence-validation window, the
+    in-transaction ``read_all`` raised
+    ``sqlite3.OperationalError: no such table: claims`` straight through
+    ``cli.dispatch``, which catches only ``HeraldError``, as a traceback."""
+    try:
+        with db.transaction(claims_path):
+            yield
+    except errors.HeraldError:
+        raise
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
+        # Same set, same reason, as `_write_all` -- see the comment there.
+        raise errors.HeraldError(
+            f"claims could not be written to {claims_path}: {exc}"
+        ) from exc
+
+
 def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
     """Persist the whole claims list, replacing every existing row (Story
     13.3: was an atomic JSON-file rewrite; now one ``db.transaction``
@@ -486,45 +516,30 @@ def create(
             raise errors.HeraldError(
                 f"evidence type {e.type!r} must be one of {EVIDENCE_TYPES}"
             )
-    # Wrapped for the same AD-6 reason `_write_all`/`progress.upsert`/every
-    # `notices` writer are. `db.connection` translates `sqlite3.Error` for
-    # STANDALONE reads only -- inside a transaction it deliberately leaves
-    # translation to the writer that owns the critical section. `publish`/
-    # `revalidate`/`revalidate_all` each take their first `read_all` BEFORE
-    # opening the transaction, so that one is standalone and already
-    # covered; `create`'s only read is the ambient one below, which made it
-    # the single writer with no wrapper on any path. A table-level fault
-    # (verified: `DROP TABLE claims` out of band) reached `cli.dispatch` --
-    # which catches only `HeraldError` -- as an unhandled traceback rather
-    # than the "message plus exit code 1" the runbooks promise.
-    try:
-        with db.transaction(claims_path):
-            timestamp = now().isoformat()
-            claim = Claim(
-                id=id_factory(),
-                project_name=project_name,
-                status="draft",
-                thesis=None,
-                shipped_date=(
-                    shipped_date if shipped_date is not None else today().isoformat()
-                ),
-                created_at=timestamp,
-                published_at=None,
-                closed_at=None,
-                updated_at=timestamp,
-                evidence=tuple(evidence),
-                edit_history=(),
-            )
-            claims = read_all(claims_path)
-            claims.append(claim)
-            _write_all(claims_path, claims)
-            return claim
-    except errors.HeraldError:
-        raise
-    except sqlite3.Error as exc:
-        raise errors.HeraldError(
-            f"claims could not be written to {claims_path}: {exc}"
-        ) from exc
+    # `_write_transaction`, not a bare `db.transaction`, for the AD-6
+    # reason its docstring gives: the ambient `read_all` below is covered
+    # by nothing else.
+    with _write_transaction(claims_path):
+        timestamp = now().isoformat()
+        claim = Claim(
+            id=id_factory(),
+            project_name=project_name,
+            status="draft",
+            thesis=None,
+            shipped_date=(
+                shipped_date if shipped_date is not None else today().isoformat()
+            ),
+            created_at=timestamp,
+            published_at=None,
+            closed_at=None,
+            updated_at=timestamp,
+            evidence=tuple(evidence),
+            edit_history=(),
+        )
+        claims = read_all(claims_path)
+        claims.append(claim)
+        _write_all(claims_path, claims)
+        return claim
 
 
 def publish(
@@ -625,7 +640,7 @@ def publish(
             f"{'; '.join(broken)}. Fix or remove before publishing."
         )
 
-    with db.transaction(claims_path):
+    with _write_transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
         fresh_index = next(
             (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
@@ -767,7 +782,7 @@ def revalidate(
         for e in original_evidence
     )
 
-    with db.transaction(claims_path):
+    with _write_transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
         fresh_index = next(
             (i for i, c in enumerate(fresh_claims) if c.id == claim_id), None
@@ -860,7 +875,7 @@ def revalidate_all(
         for c in claims
     }
 
-    with db.transaction(claims_path):
+    with _write_transaction(claims_path):
         fresh_claims = read_all(claims_path)  # fresh state, not the pre-validation read
         # Re-checked against the FRESH read, not just the pre-lock one: the
         # duplicate this guard exists to refuse can be written during the

@@ -867,3 +867,153 @@ def test_empty_read_connection_follows_the_migration_set(tmp_path, monkeypatch):
 
     assert memory_shape == disk_shape
     assert memory_shape[0] == 2
+
+
+def test_legacy_import_is_skipped_when_the_tables_already_hold_rows(tmp_path):
+    """"Imports once" has to hold on the one path that legitimately reruns
+    the v1 migration over populated tables: a database restored from
+    ``sqlite3 .dump`` comes back full at ``user_version = 0``.
+
+    The `IF NOT EXISTS` change relied on the tables' own ``PRIMARY KEY``s to
+    make a re-import fail loudly, which covers three of the four tables but
+    NOT ``claims``, whose ``id`` is deliberately not a key. Every claim was
+    silently imported a second time, after which ``revalidate_all`` refused
+    permanently with "holds duplicate claim ids" and there is no repair
+    tool. Fails against an unguarded ``_import_legacy_v1``.
+    """
+    herald_dir = tmp_path / ".herald"
+    herald_dir.mkdir(parents=True)
+    (herald_dir / "claims.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "c1",
+                    "project_name": "warden",
+                    "status": "draft",
+                    "thesis": None,
+                    "shipped_date": "2026-08-13",
+                    "created_at": "2026-08-13T00:00:00+00:00",
+                    "published_at": None,
+                    "closed_at": None,
+                    "updated_at": "2026-08-13T00:00:00+00:00",
+                    "evidence": [],
+                    "edit_history": [],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    db_path = herald_dir / "herald.db"
+    assert [c.id for c in claims.read_all(db_path)] == ["c1"]
+
+    source = sqlite3.connect(db_path)
+    dump = "\n".join(source.iterdump())
+    source.close()
+    for path in herald_dir.glob("herald.db*"):
+        path.unlink()
+    restored = sqlite3.connect(db_path)
+    restored.executescript(dump)
+    restored.commit()
+    restored.close()
+    # The legacy file is deliberately left in place by the first import, so
+    # it is still sitting there for this second migration to find.
+    assert (herald_dir / "claims.json").exists()
+
+    assert [c.id for c in claims.read_all(db_path)] == ["c1"]
+    # And the store is still operable, not merely un-duplicated.
+    claims.revalidate_all(db_path, validate=lambda url: None)
+
+
+def test_read_paths_wrap_non_sqlite_binding_failures(tmp_path):
+    """The write paths were widened to the pre-13.3 exception set for a
+    lone surrogate (what ``argv`` yields for a non-UTF-8 byte through
+    ``surrogateescape``); the read seam was left at ``sqlite3.Error``, and
+    binding a parameter is exactly where SQLite converts Python values.
+
+    Verified through the real CLI before the fix: ``herald success review``
+    with a non-UTF-8 byte reached ``read_one``'s ``WHERE id = ?`` and exited
+    as a raw ``UnicodeEncodeError`` traceback, not the message-plus-exit-1
+    the runbooks promise. Fails against a ``sqlite3.Error``-only clause.
+    """
+    db_path = tmp_path / ".herald" / "herald.db"
+    claims.create(db_path, project_name="warden")
+    with pytest.raises(HeraldError):
+        claims.read_one(db_path, "\udcff")
+
+
+def test_an_unstattable_legacy_store_is_not_read_as_absent(tmp_path):
+    """``_has_legacy_data`` asked ``exists()``, which collapses every stat
+    failure into "absent" -- the hazard ``_is_definitely_absent`` exists to
+    catch, one helper over. A legacy file behind a symlink loop made the
+    read path serve ``[]`` from the empty in-memory database while the write
+    path on the same store correctly reported it could not be read. Fails
+    against the ``exists()`` predicate.
+    """
+    herald_dir = tmp_path / ".herald"
+    herald_dir.mkdir(parents=True)
+    legacy = herald_dir / "progress.json"
+    legacy.symlink_to(legacy)  # ELOOP: stat fails, the file is not absent
+    assert legacy.exists() is False  # the premise this test rests on
+    db_path = herald_dir / "herald.db"
+    with pytest.raises(HeraldError):
+        progress.read_all(db_path)
+
+
+def test_the_two_migration_sets_carry_the_same_versions():
+    """``_SCHEMA_MIGRATIONS`` (structure only, for the read of a store that
+    does not exist yet) and ``_MIGRATIONS`` (structure plus data) are two
+    hand-kept tuples whose agreement was stated only in a docstring.
+    Registering a version in one and forgetting the other puts back exactly
+    the defect ``_empty_read_connection`` was rebuilt to fix: a read served
+    from a schema stamped current but shaped a version behind.
+    """
+    assert [version for version, _ in db._SCHEMA_MIGRATIONS] == [
+        version for version, _ in db._MIGRATIONS
+    ]
+
+
+def test_notices_fail_fast_creates_nothing_when_another_legacy_store_exists(tmp_path):
+    """The notices fail-fast bypasses itself when legacy data is waiting to
+    be migrated -- but it asked whether ANY of the three legacy stores
+    exists, so an unrelated ``progress.json`` (a repo that used
+    ``herald progress`` and never ``herald notice``) suppressed it and put
+    back the ``.herald/`` tree the fast path exists to avoid creating on a
+    pure error path. Fails against the unnarrowed predicate.
+    """
+    herald_dir = tmp_path / ".herald"
+    herald_dir.mkdir(parents=True)
+    (herald_dir / "progress.json").write_text("[]", encoding="utf-8")
+
+    with pytest.raises(HeraldError):
+        notices.publish_notice(tmp_path, "auth-api-v1")
+    assert not (herald_dir / "herald.db").exists()
+
+
+def test_claims_publish_wraps_a_raw_sqlite_error_from_its_in_transaction_read(tmp_path):
+    """``create`` was wrapped on the reasoning that ``publish``/
+    ``revalidate``/``revalidate_all`` take their first ``read_all`` before
+    the transaction opens and are therefore covered. Their SECOND,
+    in-transaction ``read_all`` is ambient -- which ``db.connection``
+    deliberately leaves untranslated -- and nothing wrapped it, so a fault
+    arriving during the unlocked evidence-validation window (seconds to
+    minutes wide for ``revalidate_all``) reached ``cli.dispatch``, which
+    catches only ``HeraldError``, as a traceback. Fails against a bare
+    ``db.transaction`` in ``publish``.
+    """
+    db_path = tmp_path / ".herald" / "herald.db"
+    claim = claims.create(
+        db_path,
+        project_name="warden",
+        evidence=[claims.Evidence(type="metrics", url="https://example.com/1", label="m")],
+    )
+
+    def drop_the_table_mid_validation(url):
+        raw = sqlite3.connect(db_path)
+        raw.execute("DROP TABLE claims")
+        raw.commit()
+        raw.close()
+
+    with pytest.raises(HeraldError):
+        claims.publish(
+            db_path, claim.id, thesis="t", validate=drop_the_table_mid_validation
+        )
