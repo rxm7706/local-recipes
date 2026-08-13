@@ -118,3 +118,21 @@ def test_build_navigation_with_no_matching_role_returns_an_empty_tuple():
 
 def test_build_navigation_with_an_empty_page_list_returns_an_empty_tuple():
     assert build_navigation("viewer", ()) == ()
+
+
+def test_build_navigation_rejects_a_non_page_element_by_type():
+    """A duck-typed look-alike whose `.roles` is a bare string would turn the
+    membership check into a substring match instead of exact-tuple
+    membership -- this guard must refuse it before that check ever runs.
+    """
+
+    class _FakePage:
+        roles = "east"
+
+    with pytest.raises(TypeError, match=r"pages\[0\] must be a Page"):
+        build_navigation("east", (_FakePage(),))
+
+
+def test_build_navigation_rejects_a_non_sequence_pages_argument():
+    with pytest.raises(TypeError, match="pages"):
+        build_navigation("east", None)

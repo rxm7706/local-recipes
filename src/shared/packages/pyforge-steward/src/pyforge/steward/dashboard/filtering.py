@@ -21,6 +21,7 @@ work with or without the `[dashboard]` extra installed.
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Sequence
 
@@ -99,6 +100,14 @@ def filter_by_role(
             f"configuration defect, never treated the same as no identity"
         )
 
+    if not isinstance(master, Sequence):
+        raise TypeError(
+            f"filter_by_role requires master to be a Sequence of row "
+            f"mappings, got {type(master).__name__} — likely a caller that "
+            f"never actually called `get_master_dataset()`, or that dropped "
+            f"a cache-miss `None` straight through"
+        )
+
     column = declaration.access_column
     matched: list[Mapping[str, Any]] = []
     for index, row in enumerate(master):
@@ -117,11 +126,14 @@ def filter_by_role(
                 f"row belongs to role {role!r}"
             ) from exc
         if value == role:
-            # A copy, not the original reference: `master`'s rows must stay
-            # untouched by whatever a caller does with the returned frame --
-            # mutating a row reached through `RoleFilteredRows` must never
-            # reach back into the master dataset this was filtered from.
-            matched.append(dict(row))
+            # A deep copy, not the original reference: `master`'s rows must
+            # stay untouched by whatever a caller does with the returned
+            # frame -- mutating a row (including a nested value inside it)
+            # reached through `RoleFilteredRows` must never reach back into
+            # the master dataset this was filtered from. A shallow `dict(row)`
+            # is not enough: a nested mutable value would still be the same
+            # object shared with `master`.
+            matched.append(copy.deepcopy(row))
     return RoleFilteredRows(rows=tuple(matched))
 
 

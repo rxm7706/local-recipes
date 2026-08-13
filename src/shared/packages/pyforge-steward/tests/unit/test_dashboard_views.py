@@ -130,3 +130,15 @@ def test_a_scope_missing_the_dashboard_role_key_entirely_degrades_to_no_pages():
     response = view(request)
 
     assert json.loads(response.content) == {"pages": []}
+
+
+def test_build_navigation_view_rejects_a_non_page_element_at_wiring_time():
+    with pytest.raises(TypeError, match=r"pages\[1\] must be a Page"):
+        build_navigation_view((VIEWER_PAGE, "not-a-page"))
+
+
+def test_build_navigation_view_rejects_two_pages_declaring_the_same_path():
+    duplicate = Page(path="/reports", label="Reports Again", roles=("admin",))
+
+    with pytest.raises(ValueError, match=r"/reports.*more than once"):
+        build_navigation_view((VIEWER_PAGE, duplicate))
