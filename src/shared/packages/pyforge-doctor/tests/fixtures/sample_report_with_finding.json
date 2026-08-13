@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "verb": "check",
+  "generated_at": "2026-08-13T00:00:00Z",
+  "findings": [
+    {
+      "source": "env-hygiene",
+      "check": "python_version",
+      "status": "warn",
+      "message": "interpreter is older than the recommended floor",
+      "evidence": {"found": "3.12.0", "recommended": "3.14.0"}
+    }
+  ]
+}
