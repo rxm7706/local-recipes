@@ -103,6 +103,11 @@ def build_navigation(role: str | None, pages: Sequence[Page]) -> tuple[Page, ...
     """
     if role is None:
         return ()
+    if not isinstance(pages, Sequence):
+        raise TypeError(
+            f"build_navigation requires pages to be a Sequence[Page], got "
+            f"{type(pages).__name__}"
+        )
     # Materialized once: `pages` is typed `Sequence[Page]`, but a caller
     # passing a one-shot iterator would pass the type-check loop below and
     # then find it already exhausted by the time the membership pass runs,

@@ -90,6 +90,27 @@ def test_filter_by_role_never_mutates_the_master_dataset():
     assert master == snapshot, "filter_by_role must never mutate the master dataset it was given"
 
 
+def test_filter_by_role_deep_copies_rows_so_a_nested_value_is_not_shared():
+    """A shallow `dict(row)` copy would still share a nested mutable value
+    (e.g. a list or dict field) with `master` -- mutating it through the
+    returned frame must not reach back into the master dataset.
+    """
+    declaration = AccessDeclaration(access_column="region", roles=("east", "west"))
+    master = [{"region": "east", "tags": ["a", "b"]}]
+
+    result = filter_by_role(master, declaration, "east")
+    result.rows[0]["tags"].append("mutated")
+
+    assert master[0]["tags"] == ["a", "b"], "a nested value must not be shared with master"
+
+
+def test_filter_by_role_rejects_a_non_sequence_master():
+    declaration = AccessDeclaration(access_column="region", roles=("east", "west"))
+
+    with pytest.raises(TypeError, match="master"):
+        filter_by_role(None, declaration, "east")
+
+
 def test_filter_by_role_uses_exact_equality_with_no_normalization():
     """Inherited Story 9.1 deferral to Story 9.3: no `.strip()` or
     case-folding is applied to the role comparison -- a padded or
@@ -140,3 +161,10 @@ def test_search_rejects_a_dict_and_a_none():
 
 def test_search_on_an_empty_frame_returns_an_empty_tuple():
     assert search(RoleFilteredRows(rows=()), lambda row: True) == ()
+
+
+def test_search_rejects_a_non_callable_predicate():
+    frame = RoleFilteredRows(rows=({"region": "east"},))
+
+    with pytest.raises(TypeError, match="predicate"):
+        search(frame, "not-callable")

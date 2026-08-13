@@ -37,6 +37,11 @@ def build_navigation_view(pages: Sequence[Page]) -> Callable:
     matches both surface a navigation payload with an ambiguous duplicate
     entry, silently, on every request that role makes.
     """
+    if not isinstance(pages, Sequence):
+        raise TypeError(
+            f"build_navigation_view requires pages to be a Sequence[Page], "
+            f"got {type(pages).__name__}"
+        )
     # Materialized once, before validation: the closure below reuses `pages`
     # on every request it serves, so a one-shot iterator passed in here must
     # not be exhausted by this wiring-time loop alone -- that would silently
@@ -68,7 +73,9 @@ def build_navigation_view(pages: Sequence[Page]) -> Callable:
         # serving it to a different role's request would reopen exactly
         # that leak one layer up, so caching is refused explicitly rather
         # than left to whatever the deployment's defaults happen to be.
-        response["Cache-Control"] = "private, no-store"
+        # `no-store` alone already forbids storage by any cache, private or
+        # shared -- `private` adds nothing once `no-store` is present.
+        response["Cache-Control"] = "no-store"
         return response
 
     return navigation_view
