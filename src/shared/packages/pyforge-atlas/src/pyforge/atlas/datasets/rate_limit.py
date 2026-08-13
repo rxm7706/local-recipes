@@ -36,6 +36,8 @@ from datetime import timezone
 from email.utils import parsedate_to_datetime
 from typing import Any, Callable, Protocol, runtime_checkable
 
+from pyforge.core.errors import PyforgeError
+
 logger = logging.getLogger(__name__)
 
 # Phase K default request rate. 3.0 RPS is the legacy "~3x safety margin" against
@@ -251,11 +253,14 @@ class StubFetcherClient:
         return self._responses.get(key)
 
 
-class FetchError(RuntimeError):
+class FetchError(PyforgeError, RuntimeError):
     """Raised by a fetcher on a non-success status (e.g. GitHub 403 secondary
     rate-limit). Phase K maps a 403 to ``upstream_versions.last_error`` and re-picks
     the row via the TTL bypass — that mapping is a *node/transform* concern and is
-    fixture-tested in the K node suite."""
+    fixture-tested in the K node suite.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
     def __init__(self, key: str, status: int) -> None:
         super().__init__(f"fetch({key!r}) failed with status {status}")

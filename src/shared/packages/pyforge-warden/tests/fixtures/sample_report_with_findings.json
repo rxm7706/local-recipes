@@ -1,0 +1,86 @@
+{
+  "actuation": null,
+  "coverage": [
+    {
+      "axis": "hygiene",
+      "deps_assessed": 2,
+      "deps_total": 2,
+      "gating": false,
+      "manifests_found": 1,
+      "manifests_parsed": 1,
+      "resolution_depth": "direct-only"
+    }
+  ],
+  "currency_data": null,
+  "epss_data": null,
+  "errors": [],
+  "exit_code": 1,
+  "findings": [
+    {
+      "axis": "hygiene",
+      "currency": null,
+      "epss": null,
+      "id": "hygiene:DEP002:leftpad",
+      "kev": null,
+      "kev_date": null,
+      "license": null,
+      "message": "unused dependency",
+      "severity": null,
+      "subject": "leftpad"
+    },
+    {
+      "axis": "vulnerability",
+      "currency": null,
+      "epss": null,
+      "id": "indeterminate:no-version:numpy",
+      "kev": null,
+      "kev_date": null,
+      "license": null,
+      "message": "version unresolved; vuln match withheld",
+      "severity": null,
+      "subject": "numpy"
+    },
+    {
+      "axis": "vulnerability",
+      "currency": null,
+      "epss": null,
+      "id": "vuln:GHSA-abcd-1234:requests@2.31.0",
+      "kev": null,
+      "kev_date": null,
+      "license": null,
+      "message": "known vulnerability",
+      "severity": {
+        "raw": "CVSS:3.1/AV:N/AC:L",
+        "tier": "critical"
+      },
+      "subject": "requests"
+    }
+  ],
+  "inventory_count": 2,
+  "kev_data": null,
+  "license_data": null,
+  "resolved_scan_set": [
+    {
+      "kind": "pyproject",
+      "path": "pyproject.toml"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "status": {
+    "driver": {
+      "axis": "vulnerability",
+      "finding_id": "vuln:GHSA-abcd-1234:requests@2.31.0"
+    },
+    "value": "policy-violation"
+  },
+  "suppressions": [],
+  "tool": {
+    "name": "warden",
+    "version": "0.1.0"
+  },
+  "vuln_data": {
+    "max_age_ok": null,
+    "snapshot_at": null,
+    "source": null
+  }
+}

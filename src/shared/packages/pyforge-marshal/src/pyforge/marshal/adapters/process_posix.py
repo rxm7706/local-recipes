@@ -45,11 +45,16 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
+from pyforge.core.errors import PyforgeError
+
 from ..ports.process import ProcessResult
 
 
-class ProcessError(Exception):
-    """Raised when ``argv`` could not be launched or run to completion at
+class ProcessError(PyforgeError, Exception):
+    """Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO.
+
+    Raised when ``argv`` could not be launched or run to completion at
     all: the executable does not resolve, launching it failed for any other
     reason (a permission error, a corrupt binary), the argv list was empty
     (no executable to launch), an argv element carries a ``NUL`` byte

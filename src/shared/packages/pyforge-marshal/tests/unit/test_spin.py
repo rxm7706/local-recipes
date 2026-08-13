@@ -21,6 +21,7 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError, render_policy_toml
 from pyforge.marshal.adapters.process_posix import ProcessError
@@ -801,7 +802,7 @@ def test_spin_json_output_validates_against_the_envelope_schema(home, capsys):
     assert exit_code == EXIT_OK
     payload = json.loads(capsys.readouterr().out)
     schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
-    jsonschema.validate(instance=payload, schema=schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, schema))
     assert payload["command"] == "factory spin"
     assert payload["status"] == "ok"
 
