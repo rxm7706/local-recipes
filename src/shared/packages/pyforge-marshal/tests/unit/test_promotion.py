@@ -5,7 +5,7 @@ disk or git; every input is a plain value.
 
 from __future__ import annotations
 
-from pyforge.marshal.core.identity import StoryKey
+from pyforge.marshal.core.identity import StoryKey, render_merge_subject
 from pyforge.marshal.core.promotion import (
     SpecCandidate,
     classify_promotion_candidates,
@@ -197,6 +197,18 @@ def test_marshal_native_merged_keys_recognizes_the_templated_form():
     assert marshal_native_merged_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
         {StoryKey(5, 5)}
     )
+
+
+def test_marshal_native_merged_keys_recognizes_a_land_rendered_subject():
+    """Story 5.10: `marshal land`'s full-merge path renders its subject via
+    the SAME `identity.render_merge_subject(key, template)` `deploy
+    land-story` already uses -- proving that rendered subject classifies as
+    Marshal-native, not merely reading the code that claims it does."""
+    key = StoryKey(5, 10)
+    rendered_subject = render_merge_subject(key, _TEMPLATE)
+    assert marshal_native_merged_keys(
+        (rendered_subject,), _TEMPLATE, _PROJECT_SLUG
+    ) == frozenset({key})
 
 
 def test_marshal_native_merged_keys_recognizes_the_bmadloop_native_form():

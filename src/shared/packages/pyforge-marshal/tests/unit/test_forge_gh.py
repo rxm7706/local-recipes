@@ -357,12 +357,74 @@ def test_merge_pr_delete_branch_true_adds_flag(forge, monkeypatch):
     assert "--delete-branch" in argv
 
 
+def test_merge_pr_omitted_subject_adds_no_subject_flag(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=0)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(
+        _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=False
+    )
+    (argv,) = run.calls
+    assert "--subject" not in argv
+
+
+def test_merge_pr_provided_subject_adds_subject_flag(forge, monkeypatch):
+    run = _ScriptedRun([_completed([], returncode=0)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(
+        _REPO,
+        42,
+        ForgeRef("merge"),
+        expected_head_sha=ForgeRef("deadbeef"),
+        delete_branch=False,
+        subject=ForgeRef("Merge 5-10-story into main"),
+    )
+    (argv,) = run.calls
+    assert "--subject" in argv
+    assert argv[argv.index("--subject") + 1] == "Merge 5-10-story into main"
+
+
+def test_merge_pr_subject_and_delete_branch_both_present(forge, monkeypatch):
+    """Story 5.10: `land`'s own real call site always passes `subject`
+    alongside a policy-derived `delete_branch` -- neither flag clobbers or
+    reorders the other in the resulting argv."""
+    run = _ScriptedRun([_completed([], returncode=0)])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(
+        _REPO,
+        42,
+        ForgeRef("merge"),
+        expected_head_sha=ForgeRef("deadbeef"),
+        delete_branch=True,
+        subject=ForgeRef("Merge 5-10-story into main"),
+    )
+    (argv,) = run.calls
+    assert "--delete-branch" in argv
+    assert "--subject" in argv
+    assert argv[argv.index("--subject") + 1] == "Merge 5-10-story into main"
+
+
 def test_merge_pr_raises_on_gh_failure(forge, monkeypatch):
     run = _ScriptedRun([_completed([], returncode=1, stderr="pull request is not mergeable")])
     monkeypatch.setattr(forge_gh_module, "_run", run)
     with pytest.raises(ForgeCommandError, match="not mergeable"):
         forge.merge_pr(
             _REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True
+        )
+
+
+def test_merge_pr_failure_message_names_the_subject_when_provided(forge, monkeypatch):
+    """Story 5.10 review finding: the raised error previously omitted the
+    `--subject` flag/value, hiding a subject-caused failure's true cause."""
+    run = _ScriptedRun([_completed([], returncode=1, stderr="invalid subject")])
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    with pytest.raises(ForgeCommandError, match="--subject 'bad subject' "):
+        forge.merge_pr(
+            _REPO,
+            42,
+            ForgeRef("merge"),
+            expected_head_sha=ForgeRef("deadbeef"),
+            delete_branch=False,
+            subject=ForgeRef("bad subject"),
         )
 
 
