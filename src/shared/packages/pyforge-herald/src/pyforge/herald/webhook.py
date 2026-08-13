@@ -23,17 +23,24 @@ pattern ``test_progress.py``/``test_claims.py`` already use. Only
 ``create_app``'s returned ``app(scope, receive, send)`` is ``async def`` --
 a raw ASGI3 callable, hand-tested with a constructed ``scope``/``receive``/
 ``send`` triple, no new ``pytest-asyncio``/``anyio``/httpx dependency.
-This is also the literal shape AD-9 of Steward's
-``spec-secure-live-dashboards`` architecture requires of a machine caller:
-"the library binds at the ASGI application boundary ... no adopter may be
-asked to change frameworks to adopt" -- Herald never imports Django,
-Channels, or any web framework; whatever ASGI host Story 13.6 chooses
-mounts this callable directly. ``app`` calls the matched sync handler via
-``asyncio.to_thread`` rather than directly: ``_retry_with_backoff``'s
-default ``sleep`` is the real, blocking ``time.sleep``, and calling the
-handler straight on the event-loop thread would let up to ~3s of retry
-backoff block the ENTIRE ASGI worker -- every other in-flight request --
-not just the one call that happens to be retrying.
+This is also the literal shape AD-8 of Steward's
+``spec-secure-live-dashboards`` architecture requires: "the library binds
+at the ASGI application boundary ... no adopter may be asked to change
+frameworks to adopt" -- Herald never imports Django, Channels, or any web
+framework; whatever ASGI host Story 13.6 chooses mounts this callable
+directly, alongside Steward's own S-9.1 dashboard middleware, which is a
+framework-free raw ASGI3 callable for the same reason. ``app`` calls the
+matched sync handler via ``asyncio.to_thread`` rather than directly:
+``_retry_with_backoff``'s default ``sleep`` is the real, blocking
+``time.sleep``, and calling the handler straight on the event-loop thread
+would block the ENTIRE ASGI worker -- every other in-flight request -- not
+just the one call that happens to be retrying. Note for whoever mounts
+this (Story 13.6): the thread hop bounds the damage, it does not bound the
+duration. One call sleeps up to 3s of retry backoff, but each of its 3
+attempts can additionally block on SQLite's write lock for up to
+``db._BUSY_TIMEOUT_MS`` (30s), so a contended request can occupy its
+worker for well over a minute. A request timeout and a bounded executor
+belong with the host wiring, not here.
 
 **HMAC, not ingress.** AD-9 ("machine callers authenticate by proof, not
 by ingress"): a caller presents a verifiable HMAC-SHA256 signature over the
@@ -72,11 +79,14 @@ PR-merge event, which the "Alerting" paragraph below explicitly invites via
 a non-2xx response) is a fresh top-level call with its own fresh
 ``uuid.uuid4()`` id, and would sail straight past the ``read_one`` guard
 into a second ``claims.create``. So the claim id is instead derived
-DETERMINISTICALLY (``_claim_id_for``: ``uuid.uuid5`` over ``project_name``
-and ``shipped_date``, falling back to today's UTC date when the payload
-omits it) -- a genuine redelivery of the same logical event computes the
-SAME id, and the existing idempotency guard catches it across the HTTP
-boundary too, not just across one call's own retry loop.
+DETERMINISTICALLY, by ``_claim_id_for``, from what identifies the event:
+the project, the shipped date, and a per-event discriminator (the
+payload's own ``event_id`` when it carries one, else its ``evidence``
+list). A genuine redelivery of the same logical event computes the SAME
+id, and the existing idempotency guard catches it across the HTTP boundary
+too -- while two DIFFERENT ships for one project on one day still compute
+two ids, which keying on project+date alone did not, silently swallowing
+the second ship behind a ``201``.
 
 **Alerting.** No email/Slack/other operator-alert channel exists anywhere
 in this repo to build against, so retries-exhausted is reported the one
@@ -134,6 +144,8 @@ to import them from rather than re-typing the literals."""
 SECRET_ENV_VAR = "HERALD_WEBHOOK_SECRET"
 _SIGNATURE_HEADER = "x-hub-signature-256"
 _SIGNATURE_PREFIX = "sha256="
+_SIGNATURE_HEX_LEN = hashlib.sha256().digest_size * 2
+_HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
 
 MAX_BODY_BYTES = 1_000_000
 """Upper bound on a webhook request body (see the module docstring's "Body
@@ -148,6 +160,12 @@ LAST attempt of a 3-attempt budget -- the third entry documents where the
 schedule would continue if ``RETRY_ATTEMPTS`` ever grew."""
 
 _EVIDENCE_FIELDS = frozenset(("type", "url", "label"))
+
+_MIN_SQLITE_INT = -(2**63)
+_MAX_SQLITE_INT = 2**63 - 1
+"""SQLite's signed-64-bit ``INTEGER`` range. An ``int`` outside it raises
+``OverflowError`` at bind time -- not a ``HeraldError``, so it would escape
+the retry helper and surface as an opaque 500 instead of the 400 it is."""
 
 _T = TypeVar("_T")
 
@@ -178,10 +196,25 @@ def verify_signature(secret: bytes, body: bytes, signature_header: str | None) -
     to guess the secret byte by byte. A missing header, or one not shaped
     ``sha256=<hex>``, is simply not proof -- returns ``False`` rather than
     raising, so the ASGI boundary has one uniform "was this call proven?"
-    answer to act on."""
+    answer to act on.
+
+    The ``<hex>`` half is shape-checked (exactly ``_SIGNATURE_HEX_LEN``
+    hex digits) BEFORE ``compare_digest`` sees it, because
+    ``compare_digest`` on two ``str``s RAISES ``TypeError`` for a
+    non-ASCII character rather than returning ``False`` -- and the header
+    is attacker-controlled (``_header_value`` decodes it ``latin-1``, so
+    any byte can reach here). Without this check an unauthenticated caller
+    sending ``sha256=<non-ASCII>`` turned its own 401 into a 500 plus one
+    ERROR log record per request -- and ERROR logging is this module's
+    ONLY operator-alert channel, so that is a way to drown the real
+    ``retries_exhausted`` alerts without knowing the secret. The check
+    inspects only the caller's own input, never the expected digest, so it
+    leaks nothing about ``secret``."""
     if signature_header is None or not signature_header.startswith(_SIGNATURE_PREFIX):
         return False
     provided = signature_header[len(_SIGNATURE_PREFIX) :]
+    if len(provided) != _SIGNATURE_HEX_LEN or not _HEX_DIGITS.issuperset(provided):
+        return False
     expected = hmac.new(secret, body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, provided)
 
@@ -237,6 +270,24 @@ def _retry_with_backoff(
     raise last_error
 
 
+def _json_safe(value: Any) -> Any:
+    """``value`` with every non-finite float replaced by its ``repr``.
+
+    The alert record below is only useful if it is really JSON. Python's
+    ``json.dumps`` emits bare ``NaN``/``Infinity`` tokens, which RFC 8259
+    does not allow and strict consumers (``jq``, most log pipelines)
+    reject -- and such a value can reach the record through any payload
+    field ``_problem_on_ship`` does not know about, since ``json.loads``
+    accepts those non-standard literals on the way in."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return repr(value)
+    if isinstance(value, Mapping):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
 def _log_retry_exhausted(event: str, payload: Mapping[str, Any], exc: BaseException) -> None:
     """The sole operator-alert mechanism (Boundaries & Constraints): one
     structured JSON ERROR-level log record -- event type, payload summary,
@@ -247,9 +298,10 @@ def _log_retry_exhausted(event: str, payload: Mapping[str, Any], exc: BaseExcept
             {
                 "event": "herald.webhook.retries_exhausted",
                 "webhook": event,
-                "payload": dict(payload),
+                "payload": _json_safe(dict(payload)),
                 "error": f"{type(exc).__name__}: {exc}",
-            }
+            },
+            allow_nan=False,
         )
     )
 
@@ -274,46 +326,76 @@ def _log_unexpected_exception(event: str, exc: BaseException) -> None:
 # --- on-ship -----------------------------------------------------------------
 
 
+def _problem_number(field: str, value: object, *, integer: bool) -> str | None:
+    """The shared type/range check for one numeric payload field, or
+    ``None`` when it is acceptable.
+
+    Range matters as much as type here, and for two reasons that both end
+    as a 500 rather than the 400 they are: ``math.isfinite`` RAISES
+    ``OverflowError`` for an ``int`` too large to convert to a float (a
+    400-digit JSON integer literal is perfectly legal JSON), and an ``int``
+    outside SQLite's signed-64-bit range raises ``OverflowError`` at bind
+    time inside ``progress.upsert`` -- which is not a ``HeraldError``, so
+    it escapes the retry helper's translation entirely.
+
+    Negative values are rejected here too, mirroring what
+    ``_problem_on_pr_close_shipped`` already does for the rules
+    ``claims.create`` enforces. ``progress.upsert`` rejects them as well,
+    but only as a ``HeraldError``, which is indistinguishable from a
+    transient storage failure: the caller would burn all 3 retry attempts,
+    raise one ERROR alert blaming storage for a fault that is really the
+    payload's, and get a 500 -- which this module's own contract invites
+    CI to re-fire forever, for a request that can never succeed."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return f"field {field!r} must be {'an integer' if integer else 'a number'}"
+    if integer and not isinstance(value, int):
+        return f"field {field!r} must be an integer"
+    if isinstance(value, int) and not (_MIN_SQLITE_INT <= value <= _MAX_SQLITE_INT):
+        return f"field {field!r} is out of range"
+    # `json.loads` accepts the non-standard NaN/Infinity/-Infinity
+    # literals, and `progress.upsert`'s own `value < 0` guard is `False`
+    # for NaN (NaN comparisons are always False) -- neither layer
+    # otherwise rejects one, so a non-finite value would be silently
+    # stored and could break downstream numeric aggregation. Checked
+    # before the sign test below, which NaN would likewise slip past.
+    if not math.isfinite(value):
+        return f"field {field!r} must be a finite number"
+    if value < 0:
+        return f"field {field!r} must not be negative"
+    return None
+
+
 def _problem_on_ship(payload: object) -> str | None:
     """Structural validation only -- required fields present, correct JSON
-    types -- maps to 400 (Boundaries & Constraints). A business-rule
-    rejection (e.g. a negative ``compute_hours``) is deliberately NOT
-    checked here: that is ``progress.upsert``'s own job, and its
-    ``HeraldError`` is eligible for retry/500 like any other storage
-    failure, never a fast 400."""
+    types, values inside the range the storage layer can actually hold --
+    maps to 400 (Boundaries & Constraints)."""
     if not isinstance(payload, Mapping):
         return "payload is not a JSON object"
     if "station" not in payload:
         return "field 'station' is required"
     if not isinstance(payload["station"], str):
         return "field 'station' must be a string"
+    # NOT re-validated against `progress.STATIONS` (Boundaries &
+    # Constraints' explicit "Never"): `progress.upsert` accepts any
+    # station name by design. A blank one is a different question -- it is
+    # structurally absent, not merely unrecognized, and every blank-station
+    # delivery from every repo would otherwise collapse onto the single
+    # `("", date)` row.
+    if not payload["station"].strip():
+        return "field 'station' must not be blank"
     if "shipped_capabilities" in payload:
         caps = payload["shipped_capabilities"]
         if not isinstance(caps, list) or not all(isinstance(c, str) for c in caps):
             return "field 'shipped_capabilities' must be an array of strings"
-    if "compute_hours" in payload:
-        value = payload["compute_hours"]
-        if not isinstance(value, (int, float)) or isinstance(value, bool):
-            return "field 'compute_hours' must be a number"
-        # `json.loads` accepts the non-standard NaN/Infinity/-Infinity
-        # literals, and `progress.upsert`'s own `value < 0` guard is
-        # `False` for NaN (NaN comparisons are always False) -- neither
-        # layer otherwise rejects one, so a non-finite value would be
-        # silently stored and could break downstream numeric aggregation.
-        if not math.isfinite(value):
-            return "field 'compute_hours' must be a finite number"
-    if "token_spend" in payload:
-        value = payload["token_spend"]
-        if not isinstance(value, int) or isinstance(value, bool):
-            return "field 'token_spend' must be an integer"
-        # No `math.isfinite` check needed here: `token_spend` is `int`-only
-        # (checked above), and a Python `int` can never be NaN/Infinity.
-    if "wall_clock_hours" in payload:
-        value = payload["wall_clock_hours"]
-        if not isinstance(value, (int, float)) or isinstance(value, bool):
-            return "field 'wall_clock_hours' must be a number"
-        if not math.isfinite(value):
-            return "field 'wall_clock_hours' must be a finite number"
+    for field, integer in (
+        ("compute_hours", False),
+        ("token_spend", True),
+        ("wall_clock_hours", False),
+    ):
+        if field in payload:
+            problem = _problem_number(field, payload[field], integer=integer)
+            if problem is not None:
+                return problem
     if "unblock_narrative" in payload and not isinstance(payload["unblock_narrative"], str):
         return "field 'unblock_narrative' must be a string"
     return None
@@ -397,6 +479,13 @@ def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
         payload["shipped_date"], str
     ):
         return "field 'shipped_date' must be a string"
+    # Optional, and the caller's own identifier for this event (see
+    # `_claim_id_for`) -- it only has to be stable across a redelivery and
+    # distinct between events, so any string will do, but it must BE a
+    # string: a mutable/unordered JSON value would not render into a
+    # stable uuid5 name.
+    if payload.get("event_id") is not None and not isinstance(payload["event_id"], str):
+        return "field 'event_id' must be a string"
     if "evidence" in payload:
         entries = payload["evidence"]
         if not isinstance(entries, list):
@@ -417,21 +506,50 @@ def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
     return None
 
 
-def _claim_id_for(project_name: str, shipped_date: str | None) -> str:
+def _claim_id_for(payload: Mapping[str, Any], shipped_date: str) -> str:
     """A deterministic claim id for one logical CI shipped-PR event --
-    ``uuid.uuid5`` over ``project_name`` plus ``shipped_date`` (or today's
-    UTC date when the payload omits it), rather than ``uuid.uuid4()`` (see
-    the module docstring's "Retry + idempotency" section). A genuine CI
-    webhook redelivery of the SAME event is a second, independent HTTP
-    call -- a random id per call would defeat ``handle_on_pr_close``'s
-    ``read_one``-before-``create`` idempotency guard across that boundary
-    and create a second, duplicate draft claim; a deterministic id makes
-    the redelivery compute the SAME id, so the very same guard catches it
-    too."""
-    date_component = (
-        shipped_date if shipped_date is not None else datetime.now(UTC).date().isoformat()
-    )
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"herald-claim:{project_name}|{date_component}"))
+    ``uuid.uuid5`` over what identifies that event, rather than
+    ``uuid.uuid4()`` (see the module docstring's "Retry + idempotency"
+    section). A genuine CI webhook redelivery of the SAME event is a
+    second, independent HTTP call -- a random id per call would defeat
+    ``handle_on_pr_close``'s ``read_one``-before-``create`` idempotency
+    guard across that boundary and create a second, duplicate draft claim;
+    a deterministic id makes the redelivery compute the SAME id, so the
+    very same guard catches it too.
+
+    The identity has to discriminate as well as it deduplicates. Keyed on
+    ``project_name`` and ``shipped_date`` ALONE it does not: two different
+    PRs for one project merging on one day are two real ships that compute
+    one id, so the second is silently swallowed by the idempotency guard
+    and answered ``201`` -- exactly the "an unrecorded ship is
+    indistinguishable from no ship" failure this story exists to close, and
+    its evidence is dropped with it. So a per-event discriminator joins the
+    name:
+
+    - ``event_id`` when the payload carries one -- the caller's own
+      identifier for the event (a PR number, a delivery id). This is the
+      precise answer, and what Story 13.6's workflow step should send.
+    - otherwise the ``evidence`` list, canonically encoded -- CI's PR-close
+      payload carries the PR's own URL there, so distinct PRs differ here
+      even with no ``event_id``, while a redelivery of the identical body
+      still computes the identical id.
+
+    Two same-day ships for one project that supply neither an ``event_id``
+    nor any distinguishing evidence remain indistinguishable by
+    construction -- nothing in such a payload tells them apart."""
+    event_id = payload.get("event_id")
+    if event_id is not None:
+        discriminator = f"event:{event_id}"
+    else:
+        discriminator = "evidence:" + json.dumps(
+            [
+                [entry["type"], entry["url"], entry["label"]]
+                for entry in payload.get("evidence", [])
+            ],
+            separators=(",", ":"),
+        )
+    name = f"herald-claim:{payload['project_name']}|{shipped_date}|{discriminator}"
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, name))
 
 
 def handle_on_pr_close(
@@ -464,11 +582,23 @@ def handle_on_pr_close(
         return WebhookResponse(400, {"error": shipped_problem})
 
     claims_path = repo_root / claims.DEFAULT_CLAIMS_PATH
+    # Resolved ONCE, here, and passed to BOTH `_claim_id_for` and
+    # `claims.create` below. `claims.create`'s own default for an omitted
+    # `shipped_date` is `date.today()` -- the LOCAL date -- while this
+    # module computes UTC everywhere (`handle_on_ship`'s `date`, per
+    # Boundaries & Constraints). Letting each side fall back on its own
+    # clock stored a record whose `shipped_date` the id could not be
+    # recomputed from, and made a redelivery that straddled the two
+    # clocks' midnight compute a different id and create the duplicate
+    # this whole mechanism exists to prevent.
+    shipped_date = payload.get("shipped_date")
+    if shipped_date is None:
+        shipped_date = datetime.now(UTC).date().isoformat()
     # Generated ONCE, before the retry loop, and DETERMINISTICALLY (see
     # `_claim_id_for` and the module docstring's "Retry + idempotency"
     # section) -- a genuine redelivery of this same logical event, arriving
     # as a separate top-level call, computes this same id.
-    claim_id = _claim_id_for(payload["project_name"], payload.get("shipped_date"))
+    claim_id = _claim_id_for(payload, shipped_date)
     evidence = tuple(
         claims.Evidence(type=e["type"], url=e["url"], label=e["label"])
         for e in payload.get("evidence", [])
@@ -486,7 +616,7 @@ def handle_on_pr_close(
         return claims.create(
             claims_path,
             project_name=payload["project_name"],
-            shipped_date=payload.get("shipped_date"),
+            shipped_date=shipped_date,
             evidence=evidence,
             id_factory=lambda: claim_id,
         )
@@ -511,21 +641,57 @@ class _BodyTooLarge(Exception):
     the module docstring's "Body size cap" section)."""
 
 
+class _ClientDisconnected(Exception):
+    """Raised by ``_read_body`` on an ``http.disconnect`` message -- the
+    peer went away mid-body, so there is no complete request to act on and
+    nobody left to answer.
+
+    Without this, ``http.disconnect`` carries no ``more_body`` key, so the
+    drain loop below read it as "body complete" and handed a TRUNCATED body
+    on to ``verify_signature`` -- which of course fails, answering a
+    network truncation with ``401 invalid or missing HMAC signature`` and
+    sending an operator hunting a secret mismatch that never happened."""
+
+
 async def _read_body(receive: Receive) -> bytes:
     """Drain every ``http.request`` message until ``more_body`` is falsy --
     the ASGI3 contract for a (possibly chunked) request body. Raises
     ``_BodyTooLarge`` once the accumulated size exceeds ``MAX_BODY_BYTES``,
     checked on every chunk so a caller cannot stream past the cap one
-    ``more_body: true`` message at a time."""
+    ``more_body: true`` message at a time, and ``_ClientDisconnected`` if
+    the peer disconnects before the body is complete."""
     body = b""
     more_body = True
     while more_body:
         message = await receive()
+        if message.get("type") == "http.disconnect":
+            raise _ClientDisconnected(
+                "client disconnected before the body was complete"
+            )
         body += message.get("body", b"")
         if len(body) > MAX_BODY_BYTES:
             raise _BodyTooLarge(f"request body exceeds {MAX_BODY_BYTES} bytes")
         more_body = message.get("more_body", False)
     return body
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """``object_pairs_hook`` refusing a duplicated key anywhere in the
+    request body -- the same AD-6 convention ``progress``/``claims``/
+    ``state`` already apply to the documents they read.
+
+    ``json.loads`` otherwise keeps the LAST value for a repeated key, so
+    ``{"gates_passed": false, "gates_passed": true}`` passes the ship gate
+    on a payload that also says it should not. The body is signed, so this
+    is a buggy producer rather than an attacker -- but a mis-gated claim is
+    a wrong record either way, and ``app`` already answers a malformed body
+    with a 400."""
+    document: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in document:
+            raise ValueError(f"duplicate key {key!r}")
+        document[key] = value
+    return document
 
 
 def _header_value(scope: Scope, name: str) -> str | None:
@@ -586,7 +752,14 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         if scope.get("type") != "http":
             return  # e.g. an ASGI "lifespan" scope -- nothing for a leaf app to do
-        path = scope.get("path")
+        # `scope["path"]` includes the prefix the host mounted this app
+        # under, so an exact match against the route literals 404s every
+        # delivery the moment Story 13.6 mounts it anywhere but the root.
+        # `root_path` is that prefix; strip it before routing.
+        path = scope.get("path") or ""
+        root_path = scope.get("root_path") or ""
+        if root_path and path.startswith(root_path):
+            path = path[len(root_path) :] or "/"
         if path == ON_SHIP_PATH:
             handler: Callable[..., WebhookResponse] = handle_on_ship
             event_name = "on-ship"
@@ -600,6 +773,34 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
             await _send_json(send, 405, {"error": "method not allowed; use POST"})
             return
 
+        response_started = False
+
+        async def tracking_send(message: Mapping[str, Any]) -> None:
+            """``send``, remembering whether the response has begun -- the
+            error guards below must not start a SECOND response."""
+            nonlocal response_started
+            if message.get("type") == "http.response.start":
+                response_started = True
+            await send(message)
+
+        async def fail(status: int, body: Mapping[str, Any]) -> None:
+            """Answer with a terminal error, defensively.
+
+            Two ways this can be called when it must NOT send: after the
+            response already started (the host rejects a second
+            ``http.response.start``, and that rejection propagated out of
+            ``app`` -- precisely the uncaught escape the guard exists to
+            prevent), and when ``send`` itself is what failed, because the
+            peer is gone. In the first case the caller has already logged
+            the real cause, so this stays silent; in the second there is
+            nothing left to answer with, so it logs and gives up."""
+            if response_started:
+                return
+            try:
+                await _send_json(tracking_send, status, body)
+            except Exception as exc:  # noqa: BLE001 -- nothing left to answer with
+                _log_unexpected_exception(event_name, exc)
+
         # Everything from here through the final response send is wrapped
         # in a broad exception guard -- see the module docstring's
         # "Uncaught exceptions" section: an ASGI app must always answer,
@@ -608,30 +809,31 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
             body = await _read_body(receive)
             signature = _header_value(scope, _SIGNATURE_HEADER)
             if not verify_signature(secret, body, signature):
-                await _send_json(
-                    send, 401, {"error": "invalid or missing HMAC signature"}
-                )
+                await fail(401, {"error": "invalid or missing HMAC signature"})
                 return
 
             try:
-                payload = json.loads(body)
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                await _send_json(send, 400, {"error": "malformed JSON payload"})
+                # `ValueError` covers both `json.JSONDecodeError` and the
+                # `UnicodeDecodeError` of a non-UTF-8 body, and also the
+                # duplicate-key rejection from the hook.
+                payload = json.loads(body, object_pairs_hook=_reject_duplicate_keys)
+            except ValueError:
+                await fail(400, {"error": "malformed JSON payload"})
                 return
 
             # Off the event-loop thread: `_retry_with_backoff`'s default
             # `sleep` is the real, blocking `time.sleep`, and calling the
             # handler directly here would block every other in-flight
-            # request for up to ~3s during any retry (see the module
-            # docstring's "Shape" section).
+            # request during any retry (see the module docstring's "Shape"
+            # section).
             result = await asyncio.to_thread(handler, repo_root, payload)
-            await _send_json(send, result.status, result.body)
+            await _send_json(tracking_send, result.status, result.body)
+        except _ClientDisconnected:
+            return  # nobody left to answer -- see `_ClientDisconnected`
         except _BodyTooLarge:
-            await _send_json(
-                send, 413, {"error": f"request body exceeds {MAX_BODY_BYTES} bytes"}
-            )
+            await fail(413, {"error": f"request body exceeds {MAX_BODY_BYTES} bytes"})
         except Exception as exc:  # noqa: BLE001 -- last-resort ASGI contract guard
             _log_unexpected_exception(event_name, exc)
-            await _send_json(send, 500, {"error": "internal error"})
+            await fail(500, {"error": "internal error"})
 
     return app

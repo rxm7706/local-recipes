@@ -666,3 +666,279 @@ def test_asgi_app_ignores_a_non_http_scope(tmp_path: Path):
     recorder = _Recorder()
     asyncio.run(app({"type": "lifespan"}, _boom_receive, recorder))
     assert recorder.messages == []
+
+
+# --- review pass 2: hardening the boundary --------------------------------
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "sha256=" + "\xff" * 64,  # non-ASCII: `compare_digest` RAISES on this
+        "sha256=" + "z" * 64,  # ASCII, right length, not hex
+        "sha256=" + "0" * 63,  # hex, one digit short
+        "sha256=" + "0" * 65,  # hex, one digit long
+        "sha256=",  # prefix only
+    ],
+)
+def test_verify_signature_rejects_a_malformed_hex_half_without_raising(header: str):
+    """`hmac.compare_digest` on two `str`s raises `TypeError` for a
+    non-ASCII character rather than returning `False`, and the header is
+    attacker-controlled. `verify_signature`'s contract is "returns `False`
+    rather than raising", so the hex half is shape-checked first."""
+    assert webhook.verify_signature(b"secret", b"body", header) is False
+
+
+def test_asgi_app_non_ascii_signature_is_401_not_a_500_with_an_alert(
+    tmp_path: Path, caplog
+):
+    """The 401/500 distinction is the whole point: ERROR logging is this
+    module's ONLY operator-alert channel, so an unauthenticated caller able
+    to force one ERROR record per request could drown the real
+    `retries_exhausted` alerts without ever holding the secret."""
+    app = webhook.create_app(tmp_path, b"shared-secret")
+    body = json.dumps({"station": "warden"}).encode("utf-8")
+    scope = _scope(
+        webhook.ON_SHIP_PATH,
+        headers=[(b"x-hub-signature-256", b"sha256=" + b"\xff" * 64)],
+    )
+    recorder = _Recorder()
+    with caplog.at_level("ERROR", logger=webhook.logger.name):
+        asyncio.run(app(scope, _receive_once(body), recorder))
+    assert recorder.status == 401
+    assert [r for r in caplog.records if r.levelname == "ERROR"] == []
+    assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
+
+
+def test_handle_on_pr_close_two_different_prs_on_one_day_create_two_claims(
+    tmp_path: Path,
+):
+    """Keyed on project+date ALONE, two real same-day ships computed one
+    id, so the second was silently swallowed by the idempotency guard and
+    answered 201 with its evidence dropped -- the "an unrecorded ship is
+    indistinguishable from no ship" failure this story exists to close."""
+    first = {
+        "merged": True,
+        "gates_passed": True,
+        "project_name": "Marshal",
+        "shipped_date": "2026-08-13",
+        "evidence": [{"type": "other", "url": "https://ci/pr/100", "label": "PR 100"}],
+    }
+    second = dict(
+        first,
+        evidence=[{"type": "other", "url": "https://ci/pr/101", "label": "PR 101"}],
+    )
+    assert webhook.handle_on_pr_close(tmp_path, first).status == 201
+    assert webhook.handle_on_pr_close(tmp_path, second).status == 201
+    stored = claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)
+    assert len(stored) == 2
+    assert sorted(e.url for c in stored for e in c.evidence) == [
+        "https://ci/pr/100",
+        "https://ci/pr/101",
+    ]
+
+
+def test_handle_on_pr_close_distinct_event_ids_create_distinct_claims(tmp_path: Path):
+    """`event_id` is the precise discriminator (what Story 13.6's workflow
+    step should send) -- it tells two ships apart even when nothing else in
+    the payload does."""
+    payload = {
+        "merged": True,
+        "gates_passed": True,
+        "project_name": "Marshal",
+        "shipped_date": "2026-08-13",
+    }
+    first = webhook.handle_on_pr_close(tmp_path, dict(payload, event_id="pr-100"))
+    second = webhook.handle_on_pr_close(tmp_path, dict(payload, event_id="pr-101"))
+    assert (first.status, second.status) == (201, 201)
+    assert len(claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)) == 2
+
+
+def test_handle_on_pr_close_redelivery_with_the_same_event_id_is_idempotent(
+    tmp_path: Path,
+):
+    payload = {
+        "merged": True,
+        "gates_passed": True,
+        "project_name": "Marshal",
+        "shipped_date": "2026-08-13",
+        "event_id": "pr-100",
+    }
+    first = webhook.handle_on_pr_close(tmp_path, payload)
+    second = webhook.handle_on_pr_close(tmp_path, dict(payload))
+    assert first.body["claim_id"] == second.body["claim_id"]
+    assert len(claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)) == 1
+
+
+def test_handle_on_pr_close_claim_id_is_recomputable_from_the_stored_record(
+    tmp_path: Path,
+):
+    """`claims.create`'s own default for an omitted `shipped_date` is the
+    LOCAL `date.today()`, while this module computes UTC everywhere. Each
+    side falling back on its own clock stored a record whose `shipped_date`
+    the id could not be recomputed from -- and made a redelivery straddling
+    the two clocks' midnight compute a different id, creating the duplicate
+    the deterministic id exists to prevent."""
+    payload = {"merged": True, "gates_passed": True, "project_name": "Marshal"}
+    result = webhook.handle_on_pr_close(tmp_path, payload)
+    (stored,) = claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)
+    assert stored.shipped_date == datetime.now(UTC).date().isoformat()
+    recomputed = webhook._claim_id_for(payload, stored.shipped_date)
+    assert recomputed == result.body["claim_id"]
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({"station": "   "}, "must not be blank"),
+        ({"station": "warden", "compute_hours": -5.0}, "must not be negative"),
+        ({"station": "warden", "token_spend": -1}, "must not be negative"),
+        ({"station": "warden", "wall_clock_hours": -0.5}, "must not be negative"),
+        ({"station": "warden", "compute_hours": 10**400}, "out of range"),
+        ({"station": "warden", "token_spend": 2**63}, "out of range"),
+        ({"station": "warden", "token_spend": -(2**63) - 1}, "out of range"),
+        ({"station": "warden", "event_id": "irrelevant here"}, None),
+    ],
+)
+def test_handle_on_ship_rejects_out_of_range_values_as_400(
+    tmp_path: Path, payload: dict[str, Any], expected: str | None
+):
+    """Both range cases used to escape as an opaque 500: `math.isfinite`
+    RAISES `OverflowError` for an int too large to convert to a float, and
+    an int outside SQLite's signed-64-bit range raises `OverflowError` at
+    bind time -- neither is a `HeraldError`, so neither reached the retry
+    helper's translation. The negative cases WERE `HeraldError`s, which is
+    worse in its own way: indistinguishable from a transient storage
+    failure, so they burned all 3 attempts, raised one alert blaming
+    storage, and returned a 500 that invites CI to re-fire forever."""
+    result = webhook.handle_on_ship(tmp_path, payload, sleep=lambda _: None)
+    if expected is None:
+        assert result.status == 201
+        return
+    assert result.status == 400
+    assert expected in result.body["error"]
+    assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
+
+
+def test_handle_on_pr_close_rejects_a_non_string_event_id(tmp_path: Path):
+    result = webhook.handle_on_pr_close(
+        tmp_path,
+        {
+            "merged": True,
+            "gates_passed": True,
+            "project_name": "Marshal",
+            "event_id": 100,
+        },
+    )
+    assert result.status == 400
+    assert "event_id" in result.body["error"]
+    assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
+
+
+def test_log_retry_exhausted_emits_valid_json_for_a_non_finite_payload_value(
+    tmp_path: Path, caplog
+):
+    """`json.dumps` emits bare `NaN`/`Infinity` tokens, which RFC 8259 does
+    not allow and strict consumers reject -- and `json.loads` accepts those
+    literals on the way in, through any field `_problem_on_ship` does not
+    know about. A "structured JSON record" nobody can parse is not an
+    alert."""
+    with caplog.at_level("ERROR", logger=webhook.logger.name):
+        webhook._log_retry_exhausted(
+            "on-ship",
+            {"station": "warden", "unknown_extra": float("nan")},
+            HeraldError("boom"),
+        )
+    (record,) = [r for r in caplog.records if r.levelname == "ERROR"]
+    parsed = json.loads(record.getMessage())  # would raise on a bare NaN token
+    assert parsed["payload"]["unknown_extra"] == "nan"
+
+
+def test_asgi_app_duplicate_json_keys_are_400(tmp_path: Path):
+    """`json.loads` keeps the LAST value for a repeated key, so a duplicated
+    `gates_passed` flips the ship gate on a payload that also says it should
+    not -- the same AD-6 reasoning `progress`/`claims`/`state` already apply
+    to the documents they read."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = (
+        b'{"merged": true, "gates_passed": false, "gates_passed": true,'
+        b' "project_name": "M"}'
+    )
+    scope = _scope(
+        webhook.ON_PR_CLOSE_PATH,
+        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+    )
+    recorder = _Recorder()
+    asyncio.run(app(scope, _receive_once(body), recorder))
+    assert recorder.status == 400
+    assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
+
+
+def test_asgi_app_routes_correctly_when_mounted_under_a_root_path(tmp_path: Path):
+    """`scope["path"]` includes the prefix the host mounted this app under,
+    so exact-matching the route literals 404s every delivery the moment
+    Story 13.6 mounts it anywhere but the root."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden"}).encode("utf-8")
+    scope = _scope(
+        "/herald" + webhook.ON_SHIP_PATH,
+        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+    )
+    scope["root_path"] = "/herald"
+    recorder = _Recorder()
+    asyncio.run(app(scope, _receive_once(body), recorder))
+    assert recorder.status == 201
+    assert len(progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)) == 1
+
+
+def test_asgi_app_client_disconnect_mid_body_answers_nothing(tmp_path: Path, caplog):
+    """`http.disconnect` carries no `more_body` key, so the drain loop read
+    it as "body complete" and handed a TRUNCATED body to
+    `verify_signature` -- answering a network truncation with `401 invalid
+    or missing HMAC signature` and sending an operator hunting a secret
+    mismatch that never happened. There is also nobody left to answer."""
+    app = webhook.create_app(tmp_path, b"shared-secret")
+    messages: list[dict[str, Any]] = [
+        {"type": "http.request", "body": b'{"stat', "more_body": True},
+        {"type": "http.disconnect"},
+    ]
+
+    async def receive() -> dict[str, Any]:
+        return messages.pop(0)
+
+    recorder = _Recorder()
+    with caplog.at_level("ERROR", logger=webhook.logger.name):
+        asyncio.run(app(_scope(webhook.ON_SHIP_PATH), receive, recorder))
+    assert recorder.messages == []
+    assert [r for r in caplog.records if r.levelname == "ERROR"] == []
+    assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
+
+
+def test_asgi_app_send_failure_mid_response_does_not_start_a_second_response(
+    tmp_path: Path, caplog
+):
+    """The last-resort guard had no "response already started" flag, so a
+    send failure after `http.response.start` -- an ordinary mid-response
+    client disconnect -- made it issue a SECOND `http.response.start`; the
+    host rejects that, and the rejection then propagated out of `app`,
+    which is exactly the uncaught escape the guard exists to prevent."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden"}).encode("utf-8")
+    scope = _scope(
+        webhook.ON_SHIP_PATH,
+        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+    )
+    sent: list[str] = []
+
+    async def flaky_send(message: Mapping[str, Any]) -> None:
+        sent.append(message["type"])
+        if message["type"] == "http.response.body":
+            raise RuntimeError("client went away mid-response")
+
+    with caplog.at_level("ERROR", logger=webhook.logger.name):
+        asyncio.run(app(scope, _receive_once(body), flaky_send))  # must not raise
+    assert sent == ["http.response.start", "http.response.body"]
+    assert len([r for r in caplog.records if r.levelname == "ERROR"]) == 1

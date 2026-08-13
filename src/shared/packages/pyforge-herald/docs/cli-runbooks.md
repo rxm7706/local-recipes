@@ -171,11 +171,25 @@ For when it is mounted, the shape:
   default fallback, and never provisioned by this package (Steward's
   `keys` surface is a deployment concern, out of this story's Surface).
 - **Reliability:** a storage-layer failure (`errors.HeraldError` from
-  `progress.upsert`/`claims.create`) is retried up to 3 times (1s/2s/4s
-  backoff) before giving up; giving up logs one structured JSON
-  `ERROR`-level record (there is no email/Slack/other operator-alert
-  channel in this repo to build against) and answers with a non-2xx
-  status so CI's own webhook-delivery retry can re-fire the call later.
+  `progress.upsert`/`claims.create`) is retried up to 3 times, sleeping 1s
+  then 2s between them — never after the last attempt, so the retry budget
+  adds at most ~3s, not 7s — before giving up; giving up logs one
+  structured JSON `ERROR`-level record (there is no email/Slack/other
+  operator-alert channel in this repo to build against) and answers with a
+  non-2xx status so CI's own webhook-delivery retry can re-fire the call
+  later. Sizing a CI step timeout off that 3s alone is not safe, though:
+  each attempt can additionally wait up to SQLite's 30s busy timeout for
+  the write lock.
+- **Other responses:** a body over 1 MB is a 413 (checked before the
+  signature, so an unauthenticated caller cannot make the process buffer
+  it); an unknown path is a 404 and any method but `POST` a 405, both
+  before the body is read at all; a malformed or duplicate-keyed JSON
+  body, or one whose fields are the wrong type/out of range, is a 400
+  before any storage call. A redelivery of an already-recorded
+  `on-pr-close` event returns the claim already stored rather than
+  creating a second one — supply a per-event `event_id` in the payload
+  (a PR number, a delivery id) so two different PRs shipping the same
+  project on the same day are told apart.
 
 ## How to run the scheduled job (evidence revalidation and progress snapshot)
 
