@@ -25,7 +25,15 @@ makes this move; `EngineStatus`, `ImportFloorResult`, `ResolvedCfeRoot`, and
 Never boundary) -- the architecture names `DoctorReport` alone as the
 one landed divergence.
 
-Story 2.9 adds `ShipState`/`ShipTargetResult` -- the second and third shapes
+Story 2.6 adds `BuildResult`, the second shape in this file, the return
+type of both new STREAM-mode (AD-25) build adapters in `cfe.py`
+(`build_native`/`build_docker`) -- the first shape in this module NOT
+produced by a CAPTURE-mode invocation: unlike `CfeResult`, it carries no
+`stderr` (STREAM mode forwards a child's stderr live rather than
+accumulating it -- see `cfe.run_streamed`'s own docstring) and no
+`json_body` (neither wrapped script has a `--json` mode).
+
+Story 2.9 adds `ShipState`/`ShipTargetResult` -- the third and fourth shapes
 in this file (AD-9): the return type of `recipe.py::submit()` (FR-13), and
 the shape Epic 3's `package.py`/`environment.py` ship targets will wrap
 their own results in later (AD-11, spec Never boundary: no `ShipTarget`
@@ -82,6 +90,35 @@ class DoctorReport:
     cfe_import_floor_missing: tuple[str, ...]
     unavailable_verbs: tuple[str, ...]
     engines: tuple[EngineStatus, ...]
+
+
+@dataclass(frozen=True)
+class BuildResult:
+    """The outcome of one `recipe build` invocation (FR-9, AD-25): a
+    STREAM-mode build, native or Docker/CI-parity.
+
+    `mode` is `"native"` or `"docker"` -- which adapter ran. `config` is the
+    platform-variant name (e.g. `"linux64"`) -- detected automatically for
+    the native path, or the caller's own `--config` value for the Docker
+    path -- or `None` when native detection found no match for the current
+    host (the build still runs and reports its own failure via
+    `returncode`; never guessed). `returncode` is the child's raw exit code
+    -- a non-zero value is DATA here, never raised (AD-4): a failed build is
+    the routine, expected outcome of the recipe-development iteration loop
+    this whole product exists to support, not an exceptional input error.
+    `stdout` is the child's captured stdout in full -- STREAM mode never
+    accumulates stderr; it is forwarded live instead (see
+    `cfe.run_streamed`'s own docstring), so this shape carries no `stderr`
+    field at all. `artifact_dir` is `build_artifacts/<config>` (a
+    documented build-infrastructure convention, not recipe knowledge) when
+    `config` is known, else `None`.
+    """
+
+    mode: str
+    config: str | None
+    returncode: int
+    stdout: str
+    artifact_dir: str | None
 
 
 class ShipState(StrEnum):

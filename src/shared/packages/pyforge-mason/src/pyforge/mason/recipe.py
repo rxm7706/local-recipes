@@ -1,27 +1,45 @@
-"""CFE-dependent use-cases for the `recipe` noun (AD-6): `mason recipe
-<verb>` composes `resolve.py`'s pure chains with `cfe.py`'s named adapters,
-adding no recipe semantics of its own (AD-1).
-
-Story 2.7 creates this module -- the first `recipe` verb on this branch --
-with `diagnose()`, backing `mason recipe diagnose <log_path>` (FR-10).
-Unlike `doctor.py`/`package.py`/`environment.py` (AD-6's CFE-independent
-tier, which must import `cfe` lazily or not at all), `recipe.py` is
-CFE-dependent by definition, so `cfe` is imported at module level here --
+"""The `recipe` noun's CFE-dependent use-case module (FR-9, AD-6): `mason
+recipe <verb>` composes `resolve.py`'s pure chains with `cfe.py`'s named
+adapters, adding no recipe semantics of its own (AD-1). Unlike `doctor.py`/
+`package.py`/`environment.py` (AD-6's CFE-independent tier, which must
+import `cfe` lazily or not at all), `recipe.py` is CFE-dependent by
+definition, so `cfe` is imported at module level here --
 `tests/meta/test_capability_tiers.py`'s lazy-import guard names only
 `package.py`/`environment.py`/`doctor.py`, not this file.
 
-`diagnose()` mirrors `doctor.build_report`'s composition shape (resolve root
--> resolve interpreter -> call the CFE port) with one addition: it calls
-`cfe.ensure_cfe_root` and lets `CfeUnresolvedError` propagate (spec Always
-boundary) rather than folding an unresolved root into report data the way
-`doctor.py` does -- `recipe diagnose` is a CFE-dependent command, not a
-self-diagnosis, so an unresolved root is this command's own failure, not
-data about it. It deliberately does NOT call `cfe.ensure_import_floor`
-(spec Always boundary): the wrapped failure-analysis script imports only
-stdlib modules (confirmed by reading it), the same import-floor exemption
-Story 2.6 established for its own wrapped build script, so gating this
-operation on CFE's full import floor would reject a call that would have
-succeeded.
+Story 2.6 creates this module -- the first `recipe` verb -- with `build()`,
+driving CFE's own local-build tooling through two new STREAM-mode (AD-25)
+`cfe.py` adapters: `build_native` (the default) and `build_docker`
+(`--docker`, CI-parity, opt-in), reporting the outcome as a `models.
+BuildResult`. Unlike `cfe.py::validate_recipe`/`submit_pr` (CAPTURE mode), a
+build is expected to run for minutes, so its output streams live rather
+than buffering to completion. `build()` mirrors `doctor.build_report`'s
+parameter shape but raises `CfeUnresolvedError` instead of degrading --
+`mason recipe build` cannot proceed at all without a resolved CFE root,
+since both of CFE's own build scripts live under it. It calls no `ensure_
+import_floor` gate: neither wrapped script needs CFE's Python import floor
+(spec Design Notes) -- the native path never runs under any Python
+interpreter at all, and the Docker/CI-parity script imports only the
+stdlib, the same "already handles it" exemption `diagnose()` below reuses
+for its own wrapped script. The CFE interpreter is resolved only for the
+Docker/CI-parity path: the native path invokes its script through `bash`,
+never through a Python interpreter (spec Always boundary), so resolving one
+for that path would be dead work -- `resolve_cfe_interpreter` is therefore
+only ever called inside the `docker` branch below, not unconditionally.
+
+Story 2.7 adds `diagnose()`, backing `mason recipe diagnose <log_path>`
+(FR-10). `diagnose()` mirrors `doctor.build_report`'s composition shape
+(resolve root -> resolve interpreter -> call the CFE port) with one
+addition: it calls `cfe.ensure_cfe_root` and lets `CfeUnresolvedError`
+propagate (spec Always boundary) rather than folding an unresolved root
+into report data the way `doctor.py` does -- `recipe diagnose` is a
+CFE-dependent command, not a self-diagnosis, so an unresolved root is this
+command's own failure, not data about it. It deliberately does NOT call
+`cfe.ensure_import_floor` (spec Always boundary): the wrapped
+failure-analysis script imports only stdlib modules (confirmed by reading
+it), the same import-floor exemption Story 2.6 established for its own
+wrapped build script, so gating this operation on CFE's full import floor
+would reject a call that would have succeeded.
 
 `log_path` is passed straight through as the one element of `cfe.
 diagnose_failure`'s `args` -- no existence check, no interpretation of the
@@ -35,7 +53,7 @@ Story 2.8 adds `optimize()`/`scan()`, backing `mason recipe optimize
 <recipe_path>` / `mason recipe scan <recipe_path>` (FR-11, FR-12). Both
 mirror `diagnose()`'s composition shape (resolve root -> `ensure_cfe_root`
 -> resolve interpreter -> call the CFE port) with one addition neither
-`diagnose()` nor `build` needs: after resolving the interpreter, both call
+`diagnose()` nor `build()` needs: after resolving the interpreter, both call
 `cfe.probe_import_floor(resolved_interpreter.path)` themselves and raise
 `CfeImportFloorError` before invoking their own CFE adapter, but ONLY when
 their own operation-relevant subset of `.missing` is non-empty -- never the
@@ -133,10 +151,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
+from typing import TextIO
 
 from . import cfe
 from .errors import CfeImportFloorError
-from .models import CfeResult, ShipState, ShipTargetResult
+from .models import BuildResult, CfeResult, ShipState, ShipTargetResult
 from .resolve import resolve_cfe_interpreter, resolve_cfe_root
 
 _OPTIMIZE_RELEVANT_FLOOR: tuple[str, ...] = ("ruamel.yaml",)
@@ -169,6 +188,58 @@ mirroring `resolve.py`'s `_ENV_CFE_ROOT`/`errors.py`'s `_MESSAGE` sanctioned-
 duplication pattern (`cfe.py`'s own module docstring names this same
 pattern for its `_CFE_SCRIPTS` table). Set, never read, by `submit()` below
 -- Mason never reads this variable back."""
+
+
+def build(
+    recipe_path: str,
+    *,
+    docker: bool,
+    config: str | None,
+    cfe_root_arg: str | None,
+    cfe_python_arg: str | None,
+    cfe_timeout_arg: float | None,
+    environ: Mapping[str, str],
+    start_directory: Path,
+    stderr_sink: TextIO | None = None,
+) -> BuildResult:
+    """Build `recipe_path`: natively by default, or via CFE's Docker/
+    CI-parity tooling when `docker` is `True` (FR-9).
+
+    Resolves the CFE root and calls `cfe.ensure_cfe_root` -- raising
+    `CfeUnresolvedError` before any subprocess spawns if it cannot be found
+    (spec I/O matrix) -- then dispatches to `cfe.build_docker` (resolving
+    the CFE interpreter first) when `docker` is `True`, else straight to
+    `cfe.build_native`. `config` is only meaningful for the Docker path
+    (required there by `cli.py`'s own usage check, before this function is
+    ever called); the native path always detects its own platform-variant
+    config via `resolve.detect_native_build_config` inside `cfe.
+    build_native` itself, never from this parameter.
+
+    `cfe_timeout_arg` is forwarded straight through as the adapter's own
+    `timeout` -- `None` selects that adapter's per-operation default
+    (`cfe.py`'s `_BUILD_NATIVE_TIMEOUT_SECONDS`/`_BUILD_DOCKER_TIMEOUT_
+    SECONDS`). A non-zero child return code is never raised here (AD-4) --
+    it is data on the returned `BuildResult`.
+    """
+    resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
+    cfe.ensure_cfe_root(resolved_root)
+
+    if docker:
+        resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
+        return cfe.build_docker(
+            config,
+            root=resolved_root.root,
+            interpreter=resolved_interpreter.path,
+            timeout=cfe_timeout_arg,
+            stderr_sink=stderr_sink,
+        )
+
+    return cfe.build_native(
+        recipe_path,
+        root=resolved_root.root,
+        timeout=cfe_timeout_arg,
+        stderr_sink=stderr_sink,
+    )
 
 
 def diagnose(
@@ -485,8 +556,9 @@ def update(
     spawns if it is unresolved (spec Always boundary), mirroring
     `diagnose()`/`optimize()`/`scan()`/`submit()`. Resolves the interpreter
     (`resolve_cfe_interpreter`) with NO import-floor gate (module docstring):
-    both wrapped scripts already degrade a missing dependency to JSON error
-    data on their own, the same exemption `diagnose()` established.
+    both wrapped autotick scripts already degrade a missing dependency to
+    JSON error data on their own, the same exemption `diagnose()`
+    established.
 
     `github` is a Mason-only dispatch flag (module docstring, AD-1): it
     selects which adapter is called and is never itself forwarded as CFE
