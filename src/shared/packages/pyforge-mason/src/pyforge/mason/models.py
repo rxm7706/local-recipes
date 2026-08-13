@@ -40,6 +40,16 @@ their own results in later (AD-11, spec Never boundary: no `ShipTarget`
 enum or `ShipReceipt` aggregate lands with this story -- both are
 explicitly out of scope here). Later stories still add `ShipReceipt` and
 `LockResult` here (architecture Structural Seed) -- neither exists yet.
+
+Story 3.2 adds `PackageBuildResult` -- the fifth shape, and the first NOT
+produced anywhere near `cfe.py`: `package.py::build()`'s own return type
+(FR-15, FR-21, FR-22), composed from `engines.pep517`/`engines.pixi`'s two
+independent build outcomes. Its per-engine intermediate result dataclasses
+(`Pep517BuildResult`, `PixiBuildResult`) deliberately stay in their own
+`engines/*.py` modules rather than landing here -- they cross a layer
+boundary too (`engines/*.py` -> `package.py`), but never reach `cli.py`/
+`render.py` directly the way `PackageBuildResult` itself does, so widening
+this leaf's surface for them is not warranted.
 """
 
 from __future__ import annotations
@@ -174,3 +184,48 @@ class ShipTargetResult:
     state: ShipState
     reference: str | None
     message: str | None
+
+
+@dataclass(frozen=True)
+class PackageBuildResult:
+    """The outcome of one `package build` invocation (FR-15, FR-21, FR-22):
+    both a PEP 517 wheel+sdist build (`engines.pep517`) and a `.conda`
+    build (`engines.pixi`) run for the same project, in one call.
+
+    `target` is the caller's own `--target` value (`"library"` in v1 --
+    `cli.py`'s `choices=("library",)` is the only validation, since a
+    closed `ShipTarget`-style enum for this field is out of this story's
+    scope, mirroring `ShipTargetResult.target`'s own plain-`str` precedent).
+    `project_path` is the resolved, absolute project directory both engines
+    actually ran against (`package.py::build()`'s own docstring explains why
+    it is resolved before either engine runs). `wheel_path`/`sdist_path`/
+    `conda_path` are the produced artifacts' paths, or `None` when that
+    artifact was not produced -- an absent engine never reaches this far
+    (`require_engine` raises before either subprocess spawns), so `None`
+    here means a non-zero build returncode (AD-4: data, never raised) or no
+    matching artifact filename was found on disk after a build that
+    otherwise reported success. `wheel_version`/`conda_version` are each
+    build's own parsed version (`engines.pep517`'s wheel-filename parse,
+    `engines.pixi`'s `.conda`-filename parse respectively), or `None` under
+    the same "not produced" condition -- `package.py::build()`'s one point
+    of comparison between them (FR-22: a disagreement between two known
+    values raises `PackageVersionMismatchError` before this dataclass is
+    ever constructed). `pep517_returncode`/`pixi_returncode` are each
+    engine subprocess's raw exit code -- non-zero is DATA here, never
+    raised (AD-4), mirroring `BuildResult.returncode`'s own precedent.
+    `pep517_stdout`/`pixi_stdout` are each engine subprocess's captured
+    stdout in full (review pass, 2026-08-13) -- mirror `BuildResult.
+    stdout`'s own precedent: a build failure investigated outside a live
+    terminal needs diagnostic text, not a bare returncode integer."""
+
+    target: str
+    project_path: str
+    wheel_path: str | None
+    sdist_path: str | None
+    conda_path: str | None
+    wheel_version: str | None
+    conda_version: str | None
+    pep517_returncode: int
+    pixi_returncode: int
+    pep517_stdout: str
+    pixi_stdout: str

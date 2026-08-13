@@ -231,3 +231,166 @@ class EngineAbsentError(MasonError):
         # end up correct anyway -- but `.args` itself, and therefore
         # `repr(exc)`, stays permanently garbled without this override.
         return (self.__class__, (self.name, self.conda_package))
+
+
+class PackageVersionMismatchError(MasonError):
+    """`package.py::build()`'s wheel/sdist build and its `.conda` build
+    reported different version numbers for the same project (Story 3.2,
+    FR-22, NFR-14).
+
+    Raised only when BOTH `wheel_version` and `conda_version` are known
+    (neither engine's build failed to produce a parseable artifact) and
+    they actually disagree -- a real packaging inconsistency (a stale
+    generated file, a build backend reading a different source of truth
+    than `pixi-build-python` did), never raised merely because one side is
+    unknown (spec Always boundary: that case is data on `models.
+    PackageBuildResult`, not this error). Construction raises `ValueError`
+    for an empty `wheel_version`/`conda_version`/`wheel_path`/`conda_path`,
+    matching `EngineAbsentError`'s validation rigor: a mismatch error naming
+    no version on one side is incoherent.
+
+    `wheel_path`/`conda_path` are the two ALREADY-BUILT artifacts' own
+    paths (review pass, 2026-08-13): by the time this error is raised, both
+    engine builds already succeeded and left real files on disk, so the
+    message names exactly where to find each one -- a bare pair of version
+    strings with no path leaves a user with nothing to act on. Both are
+    guaranteed non-`None` at `package.py::build()`'s one call site (the
+    mismatch branch only runs when both `*_version` fields are non-`None`,
+    which only happens when the corresponding `*_path` was also
+    successfully discovered).
+    """
+
+    def __init__(
+        self, wheel_version: str, conda_version: str, wheel_path: str, conda_path: str,
+    ) -> None:
+        if not isinstance(wheel_version, str) or not wheel_version.strip():
+            raise ValueError(
+                "PackageVersionMismatchError requires a non-empty `wheel_version`: "
+                "a mismatch error naming no wheel version is incoherent"
+            )
+        if not isinstance(conda_version, str) or not conda_version.strip():
+            raise ValueError(
+                "PackageVersionMismatchError requires a non-empty `conda_version`: "
+                "a mismatch error naming no conda version is incoherent"
+            )
+        if not isinstance(wheel_path, str) or not wheel_path.strip():
+            raise ValueError(
+                "PackageVersionMismatchError requires a non-empty `wheel_path`: "
+                "a mismatch error with no wheel artifact location is incoherent"
+            )
+        if not isinstance(conda_path, str) or not conda_path.strip():
+            raise ValueError(
+                "PackageVersionMismatchError requires a non-empty `conda_path`: "
+                "a mismatch error with no conda artifact location is incoherent"
+            )
+        self.wheel_version = wheel_version
+        self.conda_version = conda_version
+        self.wheel_path = wheel_path
+        self.conda_path = conda_path
+        message = (
+            f"wheel/sdist build reports version {wheel_version!r} (at {wheel_path!r}) but "
+            f"the .conda build reports {conda_version!r} (at {conda_path!r}) -- these must "
+            "match (FR-22)"
+        )
+        super().__init__("package:version-mismatch", message)
+
+    def __reduce__(self):
+        # Mirrors `EngineAbsentError.__reduce__` above: `Exception.
+        # __reduce__` reconstructs via `cls(*self.args)`, and `MasonError.
+        # __init__` sets `self.args = ("package:version-mismatch", <built
+        # message>)` -- the wrong two values for this class's own
+        # `(wheel_version, conda_version, wheel_path, conda_path)` constructor.
+        return (
+            self.__class__,
+            (self.wheel_version, self.conda_version, self.wheel_path, self.conda_path),
+        )
+
+
+class PackageBuildTimeoutError(MasonError):
+    """A `package build` engine invocation (`engines.pep517.build`/
+    `engines.pixi.build`) exceeded its mandatory timeout (Story 3.2, FR-15,
+    AD-25, NFR-14) -- mirrors `CfeTimeoutError`'s own shape and rationale
+    exactly; only the wrapped subprocess boundary differs (an engine
+    adapter's own `subprocess.run(timeout=...)` rather than
+    `cfe.py::_invoke_captured`/`run_streamed`).
+
+    `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
+    is what guarantees "no orphaned process" here -- this class only names
+    the failure; it does not itself do any process cleanup. `engine` is the
+    `engines/__init__.py::_KNOWN_ENGINES` display name (`"build"` or
+    `"pixi"`), the same name a caller passed to `require_engine` at the top
+    of that adapter's own `build()`. `timeout` is the number of seconds that
+    elapsed before the child was killed, echoed verbatim into the message.
+    Unlike `CfeTimeoutError`'s `--cfe-timeout/MASON_CFE_TIMEOUT` override,
+    v1 exposes no per-engine timeout flag (spec Never boundary) -- the
+    message says so rather than pointing at a knob that does not exist.
+    """
+
+    def __init__(self, engine: str, timeout: float) -> None:
+        self.engine = engine
+        self.timeout = timeout
+        message = (
+            f"the {engine!r} engine did not complete its build within {timeout}s "
+            "and was killed; this is not a currently configurable v1 knob"
+        )
+        super().__init__("package:build-timeout", message)
+
+    def __reduce__(self):
+        # Mirrors `CfeTimeoutError.__reduce__` (module docstring precedent):
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = ("package:build-timeout",
+        # <built message>)` -- the wrong two values for this class's own
+        # `(engine, timeout)` constructor.
+        return (self.__class__, (self.engine, self.timeout))
+
+
+class PackageProjectPathError(MasonError):
+    """`package.py::build()`'s `project_path` could not be resolved, or an
+    engine adapter could not use it as a build directory (Story 3.2, FR-15,
+    NFR-14).
+
+    Two distinct raise sites share this one error: (1) `package.py::build()`
+    itself, when `Path(project_path).expanduser().resolve()` raises
+    `OSError`/`ValueError` for a pathological input (a null byte, an
+    unreadable parent directory encountered during symlink resolution) --
+    before either engine adapter is ever called; (2) `engines.pep517.build`/
+    `engines.pixi.build`, when `project_path` resolves fine but does not
+    exist (or is not a directory) by the time the child process starts,
+    so `subprocess.run(cwd=project_path)` raises `FileNotFoundError`/
+    `NotADirectoryError` (both `OSError` subclasses) BEFORE the wrapped
+    tool ever runs. This is NOT the "wrapped tool reports its own failure
+    via returncode" case those adapters otherwise treat as data (AD-4): the
+    tool never starts, so there is no returncode to report -- the raw
+    stdlib exception must not escape past `main()`'s `except MasonError`
+    handler either.
+
+    `reason` is `str(exc)` from whichever `OSError`/`ValueError` was caught
+    -- the stdlib's own diagnostic text, verbatim (AD-1), never a Mason-side
+    re-authoring of it. Construction raises `ValueError` for an empty
+    `project_path`/`reason`, matching `EngineAbsentError`'s validation
+    rigor: a path error naming no path, or giving no reason, is incoherent.
+    """
+
+    def __init__(self, project_path: str, reason: str) -> None:
+        if not isinstance(project_path, str) or not project_path.strip():
+            raise ValueError(
+                "PackageProjectPathError requires a non-empty `project_path`: "
+                "a path error naming no path is incoherent"
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError(
+                "PackageProjectPathError requires a non-empty `reason`: "
+                "a path error giving no reason is incoherent"
+            )
+        self.project_path = project_path
+        self.reason = reason
+        message = f"could not use {project_path!r} as a package build directory: {reason}"
+        super().__init__("package:project-path-invalid", message)
+
+    def __reduce__(self):
+        # Mirrors `CfeTimeoutError.__reduce__` (module docstring precedent):
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = (
+        # "package:project-path-invalid", <built message>)` -- the wrong two
+        # values for this class's own `(project_path, reason)` constructor.
+        return (self.__class__, (self.project_path, self.reason))
