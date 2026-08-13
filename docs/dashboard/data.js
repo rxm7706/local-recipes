@@ -1510,12 +1510,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "75/126",
+            "76/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "51",
+            "50",
             "remaining",
             ""
           ]
@@ -2216,7 +2216,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "14.1",
-              "pending",
+              "done",
               "The leaf exists and is provably a leaf"
             ],
             [
@@ -2355,7 +2355,7 @@ window.DASHBOARD_DATA = {
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 17 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 18 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -2424,11 +2424,15 @@ window.DASHBOARD_DATA = {
           [
             "2.8",
             102
+          ],
+          [
+            "2.9",
+            58
           ]
         ],
         "foot": [
           [
-            "~91 min",
+            "~86 min",
             "median / story",
             "var(--done)"
           ],
@@ -2452,9 +2456,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2372,
-        "totalLabel": "~39.5 h active compute",
-        "note": "Derived from 17 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 2430,
+        "totalLabel": "~40.5 h active compute",
+        "note": "Derived from 18 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
           "1.3": 402,
@@ -2472,11 +2476,12 @@ window.DASHBOARD_DATA = {
           "2.5": 360,
           "2.6": 308,
           "2.7": 82,
-          "2.8": 102
+          "2.8": 102,
+          "2.9": 58
         },
         "epicMin": {
           "E1": 872,
-          "E2": 1500
+          "E2": 1558
         }
       },
       "lineState": {
@@ -2964,7 +2969,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "9.2",
-            360
+            381
           ],
           [
             "9.3",
@@ -2990,7 +2995,7 @@ window.DASHBOARD_DATA = {
             "var(--done)"
           ],
           [
-            "4–360 min",
+            "4–381 min",
             "observed range",
             ""
           ],
@@ -3009,8 +3014,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2876,
-        "totalLabel": "~47.9 h active compute",
+        "total": 2897,
+        "totalLabel": "~48.3 h active compute",
         "note": "Derived from 21 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 69,
@@ -3029,7 +3034,7 @@ window.DASHBOARD_DATA = {
           "8.2": 61,
           "8.3": 44,
           "9.1": 147,
-          "9.2": 360,
+          "9.2": 381,
           "9.3": 360,
           "9.4": 296,
           "9.5": 80,
@@ -3041,7 +3046,7 @@ window.DASHBOARD_DATA = {
           "E6": 141,
           "E7": 546,
           "E8": 392,
-          "E9": 1247
+          "E9": 1268
         }
       },
       "lineState": {
@@ -3910,7 +3915,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 00:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 00:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5026,7 +5031,7 @@ window.DASHBOARD_DATA = {
       "title": "PyForge Testing Charter — fleet-wide test architecture",
       "caps": 5,
       "companions": 2,
-      "updated": "2026-08-10",
+      "updated": "2026-08-12",
       "dream": "pyforge-testing-charter",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
     },
@@ -6025,7 +6030,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 75,
+          "done": 76,
           "total": 125
         },
         {
@@ -6582,7 +6587,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "75/126",
+        "progress": "76/126",
         "complete": 13,
         "of": 13
       },
@@ -11030,16 +11035,16 @@ window.DASHBOARD_DATA = {
           "context": "",
           "epics": "",
           "sprint": "",
-          "tea": "",
+          "tea": "2026-08-12",
           "gates": "",
-          "code": "",
-          "verify": "",
+          "code": "2026-08-12",
+          "verify": "2026-08-12",
           "retro": ""
         },
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-09T11:40",
+          "spec": "2026-08-12T19:42",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11048,10 +11053,10 @@ window.DASHBOARD_DATA = {
           "context": "",
           "epics": "",
           "sprint": "",
-          "tea": "",
+          "tea": "2026-08-12",
           "gates": "",
-          "code": "",
-          "verify": "",
+          "code": "2026-08-12",
+          "verify": "2026-08-12",
           "retro": ""
         },
         "sub": {
@@ -11102,21 +11107,38 @@ window.DASHBOARD_DATA = {
         "required": [
           "deck",
           "spec",
-          "research"
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "tea",
+          "gates",
+          "code",
+          "verify"
         ],
         "gaps": [
-          "deck"
+          "deck",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates"
         ],
         "partial": [],
         "staleBy": [],
-        "furthest": "research",
+        "furthest": "verify",
         "updated": "2026-08-12",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 3
+        "complete": 5,
+        "of": 13
       },
       {
         "label": "marshal-loop-orchestrator",
@@ -14073,15 +14095,21 @@ window.DASHBOARD_DATA = {
         "task": "llms-full-check",
         "guards": "library catalog freshness",
         "state": "drift",
-        "findings": 33,
-        "verdict": "DRIFT: 33 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "findings": 34,
+        "verdict": "DRIFT: 34 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
         "runbook": ""
       }
     ],
     "baseline": {
       "skill": "8.81.0",
       "head": "3fd83c1aa1",
-      "deltas": [],
+      "deltas": [
+        {
+          "what": "pixi envs",
+          "baseline": "20",
+          "live": "21"
+        }
+      ],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
   },
@@ -16650,8 +16678,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260811-190409-5c73/5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger into loop/pyforge-marshal"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-13 00:33 UTC",
-    "generatedEpoch": 1786581197
+    "generatedAt": "2026-08-13 00:43 UTC",
+    "generatedEpoch": 1786581780
   },
   "storySpecs": [
     {
@@ -16674,9 +16702,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 75,
+      "done": 76,
       "tracked": 56,
-      "gap": 19
+      "gap": 20
     },
     {
       "station": "pyforge-mason",
@@ -16783,8 +16811,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 75,
-        "backlog": 47,
+        "done": 76,
+        "backlog": 46,
         "blocked": 3,
         "total": 125,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -16985,8 +17013,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 290,
-      "backlog": 83,
+      "done": 291,
+      "backlog": 82,
       "blocked": 6,
       "total": 379
     }
@@ -17023,7 +17051,7 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 125,
-        "done": 75,
+        "done": 76,
         "blocked": 3,
         "epics": 19,
         "epicsDone": 5,
@@ -17068,7 +17096,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 379,
-      "done": 290,
+      "done": 291,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 50
