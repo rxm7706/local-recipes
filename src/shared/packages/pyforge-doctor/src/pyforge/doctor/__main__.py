@@ -40,11 +40,14 @@ from importlib import resources
 from pathlib import Path
 
 import jsonschema
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from . import fleet_surface, prescribe, score, sources
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
-from .sources import atlas, marshal as marshal_source, warden as warden_source
+from .sources import atlas
+from .sources import marshal as marshal_source
+from .sources import warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
 
 # Story 2.3 AC1: omitting `--watch` runs this documented default axis set
@@ -816,8 +819,19 @@ def _emit_json(
     document = report.to_json_dict()
     # Self-validated BEFORE it ever reaches stdout -- a schema-invalid
     # document must never be the one thing an automated caller (Marshal)
-    # consumes as the contract.
-    jsonschema.validate(document, _report_schema())
+    # consumes as the contract. Story 14.3, SPEC-pyforge-core CAP-4:
+    # validates against the packaged schema COMPOSED with the shared base
+    # envelope schema (an `allOf` merge -- the packaged schema is embedded
+    # verbatim, unmodified); every payload that validated before still
+    # validates, since the base only adds already-satisfied presence checks.
+    # Draft202012Validator is pinned explicitly (review-pass patch, matches
+    # warden's identical call site) -- the composed dict's own top-level
+    # has no `$schema` key (only the nested base branch does), so a bare
+    # `jsonschema.validate` would rely on the library's default-draft
+    # auto-detection instead of the pin every station's own schema declares.
+    jsonschema.Draft202012Validator(compose(BASE_ENVELOPE_SCHEMA, _report_schema())).validate(
+        document
+    )
     _write_stdout(json.dumps(document, sort_keys=True, indent=2) + "\n")
 
 

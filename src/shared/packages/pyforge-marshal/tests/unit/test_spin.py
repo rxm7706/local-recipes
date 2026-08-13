@@ -21,12 +21,14 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 from pyforge.marshal.adapters.fs_local import FsError
-from pyforge.marshal.adapters.harness_bmadloop import HarnessError
+from pyforge.marshal.adapters.harness_bmadloop import HarnessError, render_policy_toml
 from pyforge.marshal.adapters.process_posix import ProcessError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
+from pyforge.marshal.core import policy as policy_module
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
 from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot, SpinResult
@@ -800,7 +802,7 @@ def test_spin_json_output_validates_against_the_envelope_schema(home, capsys):
     assert exit_code == EXIT_OK
     payload = json.loads(capsys.readouterr().out)
     schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
-    jsonschema.validate(instance=payload, schema=schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, schema))
     assert payload["command"] == "factory spin"
     assert payload["status"] == "ok"
 
@@ -3556,3 +3558,119 @@ def test_spin_empty_preview_skips_model_tiering_entirely(home):
     assert "adapter_name" not in outcome["payload"]
     assert "resolved_models" not in outcome["payload"]
     assert not harness.adapter_binary_calls
+
+
+# --- Story 3.11: a real, populated model_tier_map actually changes the render ---
+
+
+def _empty_model_tier_map_policy_path(tmp_path: Path) -> Path:
+    """Sibling of `_model_tier_map_policy_path`: a project-policy layer that
+    is a valid, readable TOML file but carries NO `model_tier_map` table at
+    all -- the "populated vs. empty" contrast fixture for
+    `test_spin_populated_model_tier_map_renders_a_different_policy_toml_
+    than_an_empty_one_for_the_same_story`."""
+    policy_path = tmp_path / "marshal-policy-empty.toml"
+    policy_path.write_text("", encoding="utf-8")
+    return policy_path
+
+
+def test_spin_populated_model_tier_map_renders_a_different_policy_toml_than_an_empty_one_for_the_same_story(
+    home, tmp_path, monkeypatch
+):
+    """The AC of record (Story 3.11): for the IDENTICAL story set (a single
+    story declaring `difficulty: heavy`), a launch against a project policy
+    with a real, populated `model_tier_map` renders a different
+    `.bmad-loop/policy.toml` than a launch against one with an empty
+    `model_tier_map` -- and the populated launch's journaled outcome carries
+    `resolved_models`/`adapter_name` via the existing `_tiering_journal_fields`
+    echo, no second mechanism."""
+    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
+
+    # Launch A: populated model_tier_map.
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _model_tier_map_policy_path(tmp_path),
+    )
+    fs_populated = FakeFs(dirs={home})
+    harness_populated = FakeHarness()
+    harness_populated.feed_keys = ("1-1-first-story",)
+
+    exit_code_populated = run_spin(
+        _spin_namespace("acme", fmt="json"), fs=fs_populated, harness=harness_populated
+    )
+
+    assert exit_code_populated == EXIT_OK
+    outcome_populated = json.loads(fs_populated.appended_lines[1][1])
+    assert outcome_populated["payload"]["resolved_models"] == {"dev": "opus", "review": "opus"}
+    assert outcome_populated["payload"]["adapter_name"] == "claude"
+    populated_rendered = (home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8")
+
+    # Launch B: empty model_tier_map, same story, same home.
+    monkeypatch.setattr(
+        spin_module,
+        "conventional_project_policy_path",
+        lambda slug: _empty_model_tier_map_policy_path(tmp_path),
+    )
+    fs_empty = FakeFs(dirs={home})
+    harness_empty = FakeHarness()
+    harness_empty.feed_keys = ("1-1-first-story",)
+
+    exit_code_empty = run_spin(
+        _spin_namespace("acme", fmt="json"), fs=fs_empty, harness=harness_empty
+    )
+
+    assert exit_code_empty == EXIT_OK
+    outcome_empty = json.loads(fs_empty.appended_lines[1][1])
+    assert outcome_empty["payload"]["resolved_models"] == {}
+    empty_rendered = (home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8")
+
+    assert populated_rendered != empty_rendered
+    populated_parsed = tomllib.loads(populated_rendered)
+    empty_parsed = tomllib.loads(empty_rendered)
+    assert populated_parsed["adapter"]["dev"]["model"] == "opus"
+    assert "dev" not in empty_parsed.get("adapter", {})
+
+
+def test_the_real_pyforge_marshal_policy_declares_a_working_model_tier_map():
+    """Regression guard for Story 3.11 (review-pass finding): the REAL,
+    committed `marshal-policy.toml` (not a hand-duplicated test fixture) must
+    keep its `model_tier_map` table block valid and last -- a future edit
+    that appends any root-level key after it would silently nest that key
+    under `model_tier_map.easy` instead of the document root, per TOML's own
+    table-scoping rule (see this file's own Design Notes). Also drives the
+    `easy` tier end to end, which the populated-vs-empty test above never
+    does: `easy` overrides only `dev`, so `review` must stay at its own
+    unrelated `opus` baseline, not silently fall to something else."""
+    real_policy_path = (
+        Path(__file__).resolve().parents[6]
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+        / "marshal-policy.toml"
+    )
+    if not real_policy_path.is_file():
+        pytest.skip("tracked project policy file not present in this checkout")
+
+    parsed = tomllib.loads(real_policy_path.read_text(encoding="utf-8"))
+
+    # Root-level keys survived the table placement -- the exact footgun this
+    # story's own Design Notes warn about.
+    assert parsed["gate_mode"] == "none"
+    assert len(parsed["verify_commands"]) == 2
+    assert len(parsed["landing_rules"]) == 2
+    assert parsed["model_tier_map"] == {
+        "heavy": {"dev": "opus", "review": "opus"},
+        "easy": {"dev": "haiku"},
+    }
+
+    effective, findings = policy_module.compose(
+        project=parsed, project_slug="pyforge-marshal", flags={}
+    )
+    assert findings == ()
+
+    rendered_easy = render_policy_toml(effective, difficulty="easy")
+    parsed_easy = tomllib.loads(rendered_easy)
+    assert parsed_easy["adapter"]["dev"]["model"] == "haiku"
+    assert parsed_easy["adapter"]["review"]["model"] == "opus"

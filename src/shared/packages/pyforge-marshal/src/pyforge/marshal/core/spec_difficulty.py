@@ -61,6 +61,8 @@ from __future__ import annotations
 import ast
 import re
 
+from pyforge.core.errors import PyforgeError
+
 _FRONTMATTER_DELIMITER = "---"
 _DIFFICULTY_KEY = "difficulty:"
 
@@ -96,8 +98,11 @@ def _strip_trailing_comment(raw: str) -> str:
     return raw
 
 
-class DifficultyParseError(ValueError):
-    """Raised by ``parse_declared_difficulty`` when the frontmatter's
+class DifficultyParseError(PyforgeError, ValueError):
+    """Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO.
+
+    Raised by ``parse_declared_difficulty`` when the frontmatter's
     ``difficulty:`` key is PRESENT but carries no inline value on its own
     line -- the multi-line YAML block form (``difficulty:`` alone, or with
     only a trailing comment). Distinct from a merely malformed/unsupported

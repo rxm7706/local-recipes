@@ -46,6 +46,7 @@ from pathlib import Path
 
 import tomllib
 from pyforge.core.atomic_write import atomic_write_bytes
+from pyforge.core.errors import PyforgeError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
 from ..core import policy
@@ -370,14 +371,17 @@ def conventional_project_policy_path(slug: str) -> Path:
     return repo_root() / PROJECT_POLICY_RELPATH.format(slug=slug)
 
 
-class PolicyIOError(Exception):
+class PolicyIOError(PyforgeError, Exception):
     """Raised by ``materialize()``/``run_config()`` when a CLI-boundary I/O
     step fails (an unwritable ``--materialize`` target, an unreadable or
     non-UTF-8 ``--project-policy`` file, a foreign artifact squatting on the
     content-addressed path) -- registers as ``MRS-POLICY-004``. Never lets a
     raw ``OSError``/``UnicodeDecodeError``/``tomllib.TOMLDecodeError``
     propagate out of ``run_config()``, matching ``cli/main.py``'s own "never
-    raise, clamp anything foreign" exit-relay contract."""
+    raise, clamp anything foreign" exit-relay contract.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO."""
 
     def __init__(self, message: str) -> None:
         super().__init__(message)

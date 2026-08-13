@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 163
+# stories: 164
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -54,7 +54,7 @@ development_status:
   13-7-the-producer-reconciles-the-surface-it-drifts: done
   14-1-the-leaf-exists-and-is-provably-a-leaf: done
   14-2-atomic-write-has-one-implementation: done
-  14-3-one-lattice-one-envelope-one-exception-root: backlog
+  14-3-one-lattice-one-envelope-one-exception-root: done
   14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated: backlog
   15-1-one-command-refreshes-the-fleets-homes: backlog
   15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check: backlog
@@ -75,10 +75,10 @@ development_status:
   2-5-gate-mode-ladder-with-autonomy-labels: done
   2-6-gate-evidence-record-with-redaction-at-egress: done
   2-7-a-gate-binds-to-the-specs-success-signal: done
-  2-8-a-low-risk-storys-review-runs-lighter-never-absent: backlog
+  2-8-a-low-risk-storys-review-runs-lighter-never-absent: done
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
-  3-11-a-storys-declared-difficulty-actually-picks-its-model: backlog
+  3-11-a-storys-declared-difficulty-actually-picks-its-model: done
   3-12-a-struggling-retry-runs-under-a-stronger-model: done
   3-13-the-parallel-fan-out-clamp-is-surfaced-not-silent: done
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: done
@@ -105,6 +105,7 @@ development_status:
   4-8-marshal-land-the-last-mile-lands-itself: done
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: done
   5-1-fleet-view: done
+  5-10-marshal-land-renders-a-detectable-merge-subject: done
   5-2-per-run-detail: done
   5-3-escalation-queue: done
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: done
@@ -167,7 +168,7 @@ development_status:
   epic-3-retrospective: done
   epic-4: done
   epic-4-retrospective: done
-  epic-5: done
+  epic-5: backlog
   epic-5-retrospective: done
   epic-6: done
   epic-6-retrospective: optional
