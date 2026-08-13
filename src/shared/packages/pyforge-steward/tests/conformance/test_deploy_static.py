@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from pyforge.steward.deploy import (
     StaticPanel,
     _is_board_output_dir_safe_to_write,
     _is_valid_board_slug,
+    dashboard_diff,
     render_static_index,
 )
 
@@ -609,3 +611,68 @@ def test_bare_deploy_names_static_among_available_verbs():
     result = duty.run(argparse.Namespace())
     assert result.ok is True
     assert "static" in result.summary
+
+
+# ── gitignored board slugs / non-UTF-8 labels (review follow-up pass) ───────
+
+
+def _git_repo_with_ignore(tmp_path: Path, monkeypatch, ignore: str) -> Path:
+    """A REAL scratch git repo (like `test_deploy_reconcile.py`'s) — the
+    gitignore interaction cannot be exercised against this file's usual
+    non-git scratch dir, which is exactly why the gap survived six review
+    passes: every existing test here monkeypatches `repo_root()` to a
+    directory `git check-ignore` cannot answer for at all."""
+    root = tmp_path / "gitrepo"
+    (root / "docs" / "dashboard").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
+    (root / ".gitignore").write_text(ignore)
+    monkeypatch.setattr("pyforge.steward.deploy.repo_root", lambda: root)
+    return root
+
+
+def test_static_refuses_a_board_slug_a_gitignore_rule_would_swallow(tmp_path, monkeypatch):
+    """`build` is a valid `^[A-Za-z0-9_-]+$` slug, and a bare `build/` rule
+    matches at ANY depth — so `docs/dashboard/build/index.html` is ignored,
+    `git add` skips it, `dashboard_diff()` never sees it, and the board
+    silently never publishes while the run reports success."""
+    root = _git_repo_with_ignore(tmp_path, monkeypatch, "build/\ndist/\n")
+    panel = tmp_path / "panel.html"
+    panel.write_text("<div>swallowed</div>")
+
+    result = DeployDuty().run(_ns(board="build", panel=[f"East={panel}"]))
+
+    assert result.ok is False
+    assert ".gitignore" in result.summary
+    assert "build" in result.summary
+    assert not _board_dir(root, "build").exists()
+
+
+def test_static_publishes_a_board_git_can_actually_see(tmp_path, monkeypatch):
+    """The control for the test above, and the story's end-to-end claim:
+    a non-ignored board is written AND is visible to `dashboard_diff()`,
+    the gate `steward deploy dashboard` keys off before committing."""
+    root = _git_repo_with_ignore(tmp_path, monkeypatch, "build/\n")
+    panel = tmp_path / "panel.html"
+    panel.write_text("<div>publishable</div>")
+
+    result = DeployDuty().run(_ns(board="demo", panel=[f"East={panel}"]))
+
+    assert result.ok is True
+    assert (_board_dir(root, "demo") / "index.html").exists()
+    assert dashboard_diff(cwd=root).strip() != ""
+
+
+def test_static_refuses_a_non_utf8_panel_label_without_crashing(fake_repo, tmp_path):
+    """argv is decoded with `surrogateescape`, so a non-UTF-8 byte in a
+    `--panel` LABEL reaches the renderer as a lone surrogate and fails only
+    at encode time — `UnicodeEncodeError` is a `ValueError`, not an
+    `OSError`, the mirror image of the `--panel` READ case."""
+    panel = tmp_path / "panel.html"
+    panel.write_text("<div>ok</div>")
+
+    result = DeployDuty().run(_ns(panel=[f"East\udcff={panel}"]))
+
+    assert result.ok is False
+    assert not (_board_dir(fake_repo) / "index.html").exists()
+    # and no stray temp file survives the refusal
+    assert not (_board_dir(fake_repo) / "index.html.tmp").exists()

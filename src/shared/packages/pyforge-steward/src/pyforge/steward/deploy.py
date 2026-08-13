@@ -56,7 +56,7 @@ Story 9.7 slice (CAP-8, AD-10): `StaticPanel` + `render_static_index` +
 access column may not be delivered by static export... refuses rather than
 warns" — wired as a FOURTH verb, `steward deploy static`. Panels arrive as
 caller-supplied, already-rendered HTML fragments (e.g. an adopter's own
-`plotly.graph_objects.Figure.to_html()` output) and are assembled verbatim
+`plotly.graph_objects.Figure.to_html(full_html=False)` output) and are assembled verbatim
 into one self-contained `docs/dashboard/<board>/index.html`; the
 pre-existing `dashboard` verb's reconciled-push mechanism then commits and
 pushes that file unchanged — no new git plumbing. `dashboard_diff` (Story
@@ -905,10 +905,21 @@ class StaticPanel:
 
     `label` is the human-readable heading shown above the panel (escaped via
     `html.escape()` before interpolation — see `render_static_index`);
-    `html` is the caller's own already-rendered fragment (e.g. an adopter's
-    `plotly.graph_objects.Figure.to_html()` output), embedded byte-for-byte
-    unchanged — the guarantee that hosted and static modes share one
-    chart-producing source, never re-derived (this story's Boundaries).
+    `html` is the caller's own already-rendered FRAGMENT (e.g. an adopter's
+    `plotly.graph_objects.Figure.to_html(full_html=False)` output), embedded
+    byte-for-byte unchanged — the guarantee that hosted and static modes
+    share one chart-producing source, never re-derived (this story's
+    Boundaries).
+
+    `full_html=False` is not incidental: `to_html()` defaults to
+    `full_html=True`, which returns a COMPLETE document, and embedding that
+    verbatim inside a `<section>` nests `<html>`/`<head>`/`<body>` inside the
+    assembled page. Nothing here parses or validates the fragment to catch
+    that — embedding verbatim is the whole point (Boundaries), so the
+    fragment contract is the caller's to honour. Adopters emitting more than
+    one panel also want `include_plotlyjs="cdn"` (or `False` on the panels
+    after the first), since the `True` default inlines a full copy of
+    plotly.js into every panel.
     Validation mirrors `dashboard/declarations.py`'s established idiom
     (rejected, not sanitized, so a caller sees exactly why); kept here
     rather than imported, since `deploy.py` may not import from
@@ -1016,6 +1027,39 @@ _TRUSTED_STATIC_ENTRY_SHAPES: tuple[frozenset[str], ...] = (
     frozenset({_STATIC_INDEX_TMP_FILENAME}),
     frozenset({_STATIC_INDEX_FILENAME, _STATIC_INDEX_TMP_FILENAME}),
 )
+
+
+def _is_path_gitignored(path: Path, *, cwd: Path) -> bool:
+    """True when `git` would refuse to add `path` because a `.gitignore`
+    rule excludes it (review follow-up pass finding).
+
+    `commit_and_push_dashboard` publishes via `git add`, and `dashboard_diff`
+    detects new boards via `git ls-files --others --exclude-standard` — both
+    honour `.gitignore`. A board slug is only constrained to
+    `^[A-Za-z0-9_-]+$`, which happily admits `build`, `dist`, `out`, `lib`,
+    `env`, `venv`, `logs`, `target` and `node_modules`; every one of those is
+    matched by a bare-directory rule in this repo's own `.gitignore`, which
+    applies at ANY depth — so `docs/dashboard/build/index.html` is ignored
+    today. Writing there reported success while the board could never be
+    committed, pushed, or even seen as a diff: silent non-publication, the
+    same failure mode review pass 2 closed for untracked files.
+
+    A non-zero exit means "not ignored" (1), or that this question cannot be
+    answered here at all (128 — `cwd` is not a git worktree, as in this
+    verb's own tests). Both proceed: this check exists to catch a
+    publishable-looking board that git will silently drop, never to make a
+    git worktree a precondition for writing a file.
+    """
+    try:
+        completed = subprocess.run(
+            ["git", "check-ignore", "-q", "--", str(path)],
+            cwd=str(cwd),
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0
 
 
 def _is_board_output_dir_safe_to_write(output_dir: Path) -> bool:
@@ -1223,6 +1267,17 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
 
     tmp_path = output_dir / _STATIC_INDEX_TMP_FILENAME
     final_path = output_dir / _STATIC_INDEX_FILENAME
+
+    if _is_path_gitignored(final_path, cwd=repo_root()):
+        return DutyResult(
+            ok=False,
+            summary=(
+                f"deploy static: refused — {final_path} is excluded by a .gitignore rule, "
+                f"so `steward deploy dashboard` could never commit or push it; "
+                f"choose a --board slug that is not gitignored (got {board!r})"
+            ),
+        )
+
     created_dirs: list[Path] = []
     try:
         output_dir_existed = output_dir.exists()
@@ -1240,7 +1295,16 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
             output_dir.mkdir(parents=True)
         tmp_path.write_text(index_html, encoding="utf-8")
         tmp_path.rename(final_path)
-    except OSError as exc:
+    # `UnicodeEncodeError` is a `ValueError`, NOT an `OSError` — the exact
+    # mirror-image of the `UnicodeDecodeError` case already handled on the
+    # `--panel` READ above, and reachable through the real CLI: argv is
+    # decoded with `surrogateescape`, so a non-UTF-8 byte in a `--panel`
+    # LABEL survives into the rendered page as a lone surrogate and only
+    # fails here, at encode time. Without this clause it escaped as an
+    # uncaught crash (EXIT_INTERNAL) and skipped the cleanup below, leaving
+    # a stray `index.html.tmp` behind — breaking this verb's own "refuse,
+    # never crash" guarantee. Same refusal and same cleanup path.
+    except (OSError, UnicodeEncodeError) as exc:
         try:
             tmp_path.unlink(missing_ok=True)
         except OSError:

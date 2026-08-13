@@ -3579,7 +3579,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/models.py": "b2fc47f38b80cb1555fd6e33ab24364e5672d953",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/navigation.py": "c1ea4dd03bca3dcfae7d97a7817e878596115353",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py": "f78c24080091aa5accef40b9a2d97d00c1608dc8",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py": "7ee41b1df2d064c959030bdbb96305f768fdcfd4",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "58334410924556f3fd5ec6ac5e6f0e3d46ffeace",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "5e711634d520c468d46038dcb0bbcb37e360bf00",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py": "fd72d6a13afd5619eef54f8b1bbdff96298bc10a",
@@ -3594,7 +3594,7 @@
    "src/shared/packages/pyforge-steward/tests/conformance/test_deploy_ledger_refusal.py": "bada11cc48432fdb2b6d68aae323fc1c31bc8329",
    "src/shared/packages/pyforge-steward/tests/conformance/test_deploy_perimeter.py": "59e2edb3f0f4e1c9cf62d31612241381b0fe97e9",
    "src/shared/packages/pyforge-steward/tests/conformance/test_deploy_reconcile.py": "ae1394d6e27440577b61e5dee15a3a9dc144d172",
-   "src/shared/packages/pyforge-steward/tests/conformance/test_deploy_static.py": "a915252e6a017bf3079d2a87a1f92eb34ee50af5",
+   "src/shared/packages/pyforge-steward/tests/conformance/test_deploy_static.py": "85dded72d444af70f8a5084b15af656b09f9fded",
    "src/shared/packages/pyforge-steward/tests/conformance/test_deploy_status.py": "36d33a651eadc1def0c07cc0614a6ed863c458e3",
    "src/shared/packages/pyforge-steward/tests/conformance/test_duty_protocol.py": "47224c7f8eabcd1585b8c1eed5615c71e12a74da",
    "src/shared/packages/pyforge-steward/tests/conformance/test_keys_audit_cli.py": "0509d4638dc710a71635f2250135d34ecfc58526",
@@ -3626,7 +3626,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_navigation.py": "38d5df19cd1f647006c403d898f915cea3b1a145",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_views.py": "7ef4cc1726c2006f7f22692e7b20250e5188220b"
   },
-  "memlog": "a30b078cb518fc2c0d68b67e8f19f1eec481b716"
+  "memlog": "463076b0897f092c5bf01f81905e7f335daa1e09"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
