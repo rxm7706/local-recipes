@@ -3580,3 +3580,965 @@ def test_promote_reconciles_one_open_intent_while_leaving_a_disjoint_one_open(
     assert len(reconciliations) == 1
     assert reconciliations[0]["intent_id"] == confirmed_intent["id"]
     assert reconciliations[0]["intent_id"] != unconfirmed_intent["id"]
+
+
+# =====================================================================
+# ``marshal deploy reconcile-completions`` (Story 5.9, AD-5/AD-6/AD-29/
+# AD-33): "a story finished by hand is not invisible to the ledger".
+# ``VcsPort``/``HarnessPort`` are faked (mirrors this module's own
+# established convention); filesystem I/O runs against a REAL
+# ``tmp_path`` via the real ``LocalFs``, including the tracked ledger
+# file and the Tier-3 feed -- this command's own line-level rewrite
+# (``core.status.render_ledger_advancements``) and its own Tier-3
+# repair-write need real bytes to prove byte-preservation against.
+# Reported completion-path label is ``"not-loop-native"`` (Spec Change
+# Log, 2026-08-12), never ``"bmad-quick-dev"``.
+# =====================================================================
+
+from pyforge.marshal.adapters.harness_bmadloop import HarnessError  # noqa: E402
+
+
+class _FakeReconcileHarness:
+    """A minimal ``HarnessPort`` stand-in exposing only ``ledger_story_
+    statuses`` -- the ONE method Story 5.9's own CAP-4 isolation contract
+    (AD-5) permits ``run_reconcile_completions`` to call. Every OTHER
+    ``HarnessPort`` method raises ``AssertionError`` if invoked AT ALL --
+    this is the isolation PROOF itself (the story's own AC: "proven by a
+    test"), not a convenience default: a regression that starts reading a
+    live run's own journal/``state.json`` fails this test loudly, from
+    inside the system under test, rather than silently returning a
+    plausible-looking value that would mask the violation. ``_DeployRun``/
+    ``_fold_deploy_journal`` (Marshal's OWN per-deploy-action paper trail
+    under ``implementation-artifacts/runs/``, AD-6) are a DIFFERENT
+    journal, reached via ``FsPort`` -- untouched by this fake."""
+
+    def __init__(
+        self,
+        *,
+        ledger_statuses: tuple[tuple[str, str], ...] = (),
+        ledger_raises: bool = False,
+        ledger_error_message: str = "sprint status file not found",
+    ) -> None:
+        self.ledger_statuses = ledger_statuses
+        self.ledger_raises = ledger_raises
+        self.ledger_error_message = ledger_error_message
+        self.ledger_calls: list[Path] = []
+
+    def ledger_story_statuses(self, path):
+        self.ledger_calls.append(path)
+        if self.ledger_raises:
+            raise HarnessError(self.ledger_error_message)
+        return self.ledger_statuses
+
+    def __getattr__(self, name):
+        def _forbidden(*args, **kwargs):
+            raise AssertionError(
+                f"run_reconcile_completions must never call HarnessPort.{name!r} "
+                "-- CAP-4 isolation (AD-5) permits ONLY ledger_story_statuses"
+            )
+
+        return _forbidden
+
+
+class _PartialCommitFailureVcs(_FakeVcs):
+    """``_FakeVcs``'s own ``commit_raises`` is a single flag applied to
+    EVERY ``commit_paths`` call, which cannot distinguish "the ledger's own
+    commit fails" from "the spec's own commit fails" -- exactly the
+    distinction this story's own I/O matrix row ("Ledger commit_paths
+    fails ... spec promotion for other keys still attempted") requires a
+    test to prove. This subclass fails ``commit_paths`` ONLY for the one
+    call whose ``paths`` contains ``fail_path`` (the ledger), while
+    ``attempted_paths`` logs EVERY call -- succeeded or failed -- so a
+    test can assert both that the ledger commit was genuinely attempted
+    (not skipped) and that the SEPARATE spec-promotion commit still
+    succeeded independently."""
+
+    def __init__(self, *, fail_path: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.fail_path = fail_path
+        self.attempted_paths: list[tuple] = []
+
+    def commit_paths(self, repo_root, paths, message):
+        self.attempted_paths.append(paths)
+        if self.fail_path in paths:
+            raise VcsCommandError("git commit failed for the ledger")
+        self.commit_calls.append((paths, message))
+        return "deadbeef"
+
+
+def _write_ledger(tmp_path: Path, slug: str, text: str) -> Path:
+    ledger_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "sprint-status-ledger.yaml"
+    )
+    ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    ledger_path.write_text(text, encoding="utf-8")
+    return ledger_path
+
+
+def _ledger_text(*entries: tuple[str, str]) -> str:
+    lines = ["development_status:"]
+    for raw_key, raw_status in entries:
+        lines.append(f"  {raw_key}: {raw_status}")
+    return "\n".join(lines) + "\n"
+
+
+def _write_tier3_feed(tmp_path: Path, slug: str, text: str) -> Path:
+    feed_path = (
+        tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+        / "sprint-status.yaml"
+    )
+    feed_path.parent.mkdir(parents=True, exist_ok=True)
+    feed_path.write_text(text, encoding="utf-8")
+    return feed_path
+
+
+def _not_loop_native_subject(branch_segment: str, pr: int = 500) -> str:
+    """A real GitHub PR-merge commit-subject shape -- the ONE remaining
+    route this story exists to detect: a story landed via any route
+    Marshal itself did not drive (reported as ``"not-loop-native"`` --
+    typically a human-run ``bmad-quick-dev`` session merged as a plain
+    PR, but never a templated or bmad-loop-native form, which this
+    detection alone cannot distinguish from a ``marshal land`` landing;
+    see ``core.promotion.marshal_native_merged_keys``'s own docstring)."""
+    return f"Merge pull request #{pr} from rxm7706/acme/{branch_segment}"
+
+
+def test_reconcile_completions_advances_and_promotes_a_not_loop_native_story(
+    tmp_path, capsys, monkeypatch
+):
+    """The headline scenario (I/O matrix row 1): a backlog story merged via
+    a plain GitHub PR, with a valid, durable Tier-3 spec -- advances the
+    ledger AND promotes the spec, in two dedicated commits, and closes
+    the Tier-3 feed divergence for the same key (a pre-existing feed is
+    set up here so this happy path stays finding-free; the feed-missing
+    MRS-DEPLOY-027 case has its own dedicated test below)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    feed_path = _write_tier3_feed(tmp_path, "acme", "development_status:\n  5-9-title: backlog\n")
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["advanced"] == ["5.9"]
+    assert payload["data"]["promoted"] == ["5.9"]
+    assert payload["data"]["missing_from_ledger"] == []
+    assert payload["findings"] == []
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+
+    assert "5-9-title: done" in ledger_path.read_text(encoding="utf-8")
+    dest = _tracked_path(tmp_path, "acme", "5-9-title")
+    assert dest.read_text(encoding="utf-8") == _VALID_SPEC
+    # The Tier-3 feed's own divergence was also closed, since it existed.
+    assert "5-9-title: done" in feed_path.read_text(encoding="utf-8")
+
+    # Two dedicated commits, one per concern (AD-29's "only promotion
+    # paths" precedent, applied symmetrically to the ledger commit too).
+    # The Tier-3 feed repair-write is never git-committed (Tier-3 is
+    # gitignored).
+    assert len(vcs.commit_calls) == 2
+    ledger_commit = next(c for c in vcs.commit_calls if c[0] == (ledger_path,))
+    assert "advance" in ledger_commit[1]
+    spec_commit = next(c for c in vcs.commit_calls if c[0] == (dest,))
+    assert "promote" in spec_commit[1]
+
+
+def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(
+    tmp_path, capsys, monkeypatch
+):
+    """I/O matrix row 2: corroborated and not-loop-native-landed, but the
+    tracked ledger carries no row for it at all -- never advanced, never
+    invented, reported. Spec promotion is a SEPARATE concern from the
+    ledger advance: `to_promote_scoped` does not depend on the ledger's
+    own advance set at all, so the spec IS still promoted here even
+    though the ledger row is missing."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_ledger(tmp_path, "acme", _ledger_text(("1-1-x", "done")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("1-1-x", "done"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-DEPLOY-026" in codes
+    finding = next(f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-026")
+    assert finding["severity"] == "warn"
+    assert "5.9" in finding["message"]
+    assert payload["data"]["missing_from_ledger"] == ["5.9"]
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["promoted"] == ["5.9"]
+    assert exit_code == 0  # WARN never blocks
+    # Exactly one commit -- the spec's own; the ledger was never touched
+    # (no row to advance).
+    dest = _tracked_path(tmp_path, "acme", "5-9-title")
+    assert vcs.commit_calls == [((dest,), vcs.commit_calls[0][1])]
+
+
+def test_reconcile_completions_excludes_a_marshal_native_landed_key(
+    tmp_path, capsys, monkeypatch
+):
+    """I/O matrix row 3: a story merged via the AD-24 templated form (what
+    ``deploy land-story`` itself renders) is Marshal-driven -- Story 5.4's
+    own sync already owns it, and reconcile-completions leaves it alone
+    entirely."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "4-3-title", _VALID_SPEC)
+    _write_ledger(tmp_path, "acme", _ledger_text(("4-3-title", "backlog")))
+    # The default `merge_subject_template` -- "Merge {key} into main" --
+    # rendered for 4.3's hyphen form: exactly what `land-story` itself
+    # writes.
+    vcs = _FakeVcs(main_subjects=("Merge 4-3 into main",))
+    harness = _FakeReconcileHarness(ledger_statuses=(("4-3-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["missing_from_ledger"] == []
+    assert payload["findings"] == []
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+
+
+def test_reconcile_completions_git_match_without_corroborating_spec_is_silent(
+    tmp_path, capsys, monkeypatch
+):
+    """I/O matrix row 4: a bare git match with no valid/durable spec
+    (possible cross-project collision) never triggers a write, and is not
+    reported by THIS command -- Story 5.4's own ``--reconcile-ledger``
+    already covers this direction."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    (tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts").mkdir(
+        parents=True, exist_ok=True
+    )
+    _write_ledger(tmp_path, "acme", _ledger_text(("7-1-title", "backlog")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("7-1-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("7-1-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    # Per this story's own I/O matrix: "Not advanced, not reported (5.4's
+    # --reconcile-ledger already covers this)" -- reconcile-completions
+    # never surfaces `_scan_promotions`'s own per-candidate promotion gaps
+    # (MRS-DEPLOY-001/002, `deploy promote`'s own reporting concern); a
+    # bare git match with no corroborating spec is silent here.
+    assert payload["findings"] == []
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["missing_from_ledger"] == []
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+
+
+def test_reconcile_completions_tracked_spec_alone_with_no_merge_evidence_never_advances(
+    tmp_path, capsys, monkeypatch
+):
+    """Review fix, 2026-08-12, high-severity: the contract's own "a git
+    match alone never triggers a write" bullet reads BOTH directions -- a
+    tracked spec alone (corroborated via `scan.already_promoted`, with NO
+    merge evidence ANYWHERE in history) must never be sufficient either.
+    `not_loop_native_candidates` now requires `corroborated_keys &
+    full_merged_keys` (git's FULL three-pattern reachability), not
+    `corroborated_keys` alone."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tracked_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    vcs = _FakeVcs(main_subjects=())  # zero merge evidence anywhere in history
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["findings"] == []
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["missing_from_ledger"] == []
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-title", "backlog"))
+
+
+def test_reconcile_completions_blocked_row_is_never_force_advanced(tmp_path, capsys, monkeypatch):
+    """Review fix, 2026-08-12, medium-severity: a `blocked` ledger row is a
+    DELIBERATE operator/process signal -- git+spec-corroborated evidence
+    must never silently overwrite it. Spec promotion for the SAME key
+    still proceeds independently -- it does not depend on the ledger's own
+    row status at all."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "blocked")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "blocked"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["missing_from_ledger"] == []  # present, just not backlog
+    assert payload["findings"] == []
+    assert exit_code == 0
+    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-title", "blocked"))
+    assert (ledger_path,) not in [c[0] for c in vcs.commit_calls]
+    assert payload["data"]["promoted"] == ["5.9"]
+
+
+def test_reconcile_completions_in_progress_row_is_never_force_advanced(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "in-progress")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "in-progress"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["advanced"] == []
+    assert exit_code == 0
+    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-title", "in-progress"))
+
+
+def test_reconcile_completions_already_done_key_is_a_clean_no_op(
+    tmp_path, capsys, monkeypatch
+):
+    """I/O matrix row 5: AD-21's convergence property -- a FULLY CONVERGED
+    system (ledger already `done` AND the spec already promoted -- a key
+    that is merely `done` in the ledger but NOT yet promoted is no longer
+    a no-op for promotion; see the dedicated `already_promoted_spec_
+    still_advances_the_ledger`/promotion-retry tests for that independent
+    axis) produces zero changes and no finding on re-run."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_tracked_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "done")))
+    before = ledger_path.read_text(encoding="utf-8")
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "done"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["promoted"] == []
+    assert payload["findings"] == []
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+    assert ledger_path.read_text(encoding="utf-8") == before
+
+
+def test_reconcile_completions_ledger_unreadable_degrades_to_report_only(
+    tmp_path, capsys, monkeypatch
+):
+    """I/O matrix row 6: the tracked ledger cannot be read at all -- the
+    WHOLE run degrades to report-only, MRS-DEPLOY-024 (WARN), and never
+    crashes."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(
+        ledger_raises=True, ledger_error_message="sprint status file not found: acme"
+    )
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [f["code"] for f in payload["findings"]]
+    assert codes == ["MRS-DEPLOY-024"]
+    assert payload["findings"][0]["severity"] == "warn"
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["missing_from_ledger"] == []
+    assert vcs.commit_calls == []
+
+
+def test_reconcile_completions_ledger_commit_failure_still_attempts_promotion(
+    tmp_path, capsys, monkeypatch
+):
+    """I/O matrix row 7: the ledger's OWN commit fails (MRS-DEPLOY-025,
+    ERROR) -- but spec promotion for the SAME advanced key is still
+    attempted, and succeeds, independently (two dedicated commits, one per
+    concern). `data["advanced"]`/`data["advanced_count"]` report the REAL
+    outcome of the write+commit sequence: empty here, even though the key
+    was ELIGIBLE, because the commit itself never durably landed -- the
+    finding explains why. The local write is rolled back (review fix,
+    2026-08-12, high-severity), so the ledger's own on-disk text is back
+    to its pre-advance state, never a stranded uncommitted `done`."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    vcs = _PartialCommitFailureVcs(
+        fail_path=ledger_path, main_subjects=(_not_loop_native_subject("5-9-title"),)
+    )
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-DEPLOY-025" in codes
+    finding = next(f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-025")
+    assert finding["severity"] == "error"
+    assert "rolled back" in finding["message"]
+    assert exit_code != 0
+
+    # Both commit attempts genuinely happened -- the ledger's own (which
+    # failed) and the spec's own (which succeeded independently).
+    assert len(vcs.attempted_paths) == 2
+    assert (ledger_path,) in vcs.attempted_paths
+    dest = _tracked_path(tmp_path, "acme", "5-9-title")
+    assert (dest,) in vcs.attempted_paths
+    assert vcs.commit_calls == [((dest,), vcs.commit_calls[0][1])]
+
+    # The envelope's own `advanced` reports the REAL outcome -- empty,
+    # since the ledger commit itself failed -- never the pre-write
+    # eligibility set. Promotion succeeded independently regardless.
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["advanced_count"] == 0
+    assert payload["data"]["promoted"] == ["5.9"]
+    # The ledger's own on-disk text was ROLLED BACK to its pre-advance
+    # state -- never a stranded uncommitted `done` a later run's own
+    # harness-based read (which reads the working tree, not git) would
+    # misread as already converged.
+    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-title", "backlog"))
+
+
+def test_reconcile_completions_ledger_commit_failure_recovers_on_a_later_run(
+    tmp_path, capsys, monkeypatch
+):
+    """Proves the rollback fix composes correctly for full recovery: a
+    ledger commit failure this run rolls the local write back to its
+    pre-advance text (review fix, 2026-08-12, high-severity -- a stranded
+    uncommitted `done` used to make a LATER run's own harness-based read,
+    which reads the WORKING TREE and not git, misread the key as already
+    converged, excluding it PERMANENTLY), and reports an empty
+    `advanced`. A LATER run, with NO test-side reset of any kind, finds
+    the key genuinely still eligible and successfully retries the ledger
+    advance. The spec itself was already promoted on the first run
+    (promotion's own decoupling from the ledger's advance set), so the
+    second run has nothing left to promote."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    failing_vcs = _PartialCommitFailureVcs(
+        fail_path=ledger_path, main_subjects=(_not_loop_native_subject("5-9-title"),)
+    )
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    first_exit = deploy_module.run_reconcile_completions(
+        _args(), vcs=failing_vcs, fs=LocalFs(), harness=harness
+    )
+    first_payload = json.loads(capsys.readouterr().out)
+    assert first_payload["data"]["advanced"] == []
+    assert first_payload["data"]["promoted"] == ["5.9"]
+    assert first_exit != 0
+    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(("5-9-title", "backlog"))
+
+    # A LATER run: the failure is no longer simulated. NO test-side reset
+    # of the ledger file -- the rollback above already restored it, and
+    # the SAME `_FakeReconcileHarness` fixture is reused unmodified.
+    non_failing_vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    second_exit = deploy_module.run_reconcile_completions(
+        _args(), vcs=non_failing_vcs, fs=LocalFs(), harness=harness
+    )
+    second_payload = json.loads(capsys.readouterr().out)
+
+    assert second_payload["data"]["advanced"] == ["5.9"]
+    assert second_payload["data"]["promoted"] == []  # already promoted, nothing left
+    assert second_exit == 0
+    assert "5-9-title: done" in ledger_path.read_text(encoding="utf-8")
+    assert len(non_failing_vcs.commit_calls) == 1
+    assert non_failing_vcs.commit_calls[0][0] == (ledger_path,)
+
+
+def test_reconcile_completions_toctou_mismatch_reports_mrs_deploy_026_and_writes_nothing(
+    tmp_path, capsys, monkeypatch
+):
+    """Review fix, 2026-08-12, high-severity: `render_ledger_advancements`
+    reports back which raw keys it actually matched -- a whole-batch match
+    failure (modeled here by a ledger file whose real, on-disk raw key
+    spelling differs from what the harness reports for the SAME dot-form
+    key, simulating a rewrite between the harness-based read and the
+    raw-text re-read) still emits a finding rather than silently doing
+    and reporting nothing, and no ledger write/commit is attempted (spec
+    promotion for the SAME key is a separate concern and still proceeds
+    independently -- it does not depend on the ledger's own text match at
+    all)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(
+        tmp_path, "acme", _ledger_text(("5-9-a-different-raw-spelling", "backlog"))
+    )
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-DEPLOY-026" in codes
+    finding = next(f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-026")
+    assert finding["severity"] == "warn"
+    assert "5.9" in finding["message"]
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["promoted"] == ["5.9"]
+    assert exit_code == 0  # WARN never blocks
+    assert (ledger_path,) not in [paths for paths, _ in vcs.commit_calls]
+    assert ledger_path.read_text(encoding="utf-8") == _ledger_text(
+        ("5-9-a-different-raw-spelling", "backlog")
+    )
+
+
+class _SpecsDirLockRaisingFs(LocalFs):
+    """A ``FsPort`` wrapper (real ``LocalFs``/real ``fcntl.flock`` for the
+    lock mechanics otherwise) whose ``acquire_advisory_lock`` raises
+    ``FsError`` ONLY when the requested path is ``raising_path`` --
+    proves the ledger's own advisory lock (``ledger_path.parent``, a
+    SEPARATE resource) is independently acquirable even while
+    ``_execute_promotion_plan``'s own ``specs_dir`` lock is contended."""
+
+    def __init__(self, *, raising_path: Path) -> None:
+        super().__init__()
+        self._raising_path = raising_path
+
+    def acquire_advisory_lock(self, path, *, timeout_s):
+        if path == self._raising_path:
+            raise FsError("simulated: another process holds this lock")
+        return super().acquire_advisory_lock(path, timeout_s=timeout_s)
+
+
+def test_reconcile_completions_promotion_lock_failure_is_retried_on_a_later_run(
+    tmp_path, capsys, monkeypatch
+):
+    """A promotion failure (lock contention on `specs_dir`) for a key
+    whose ledger advancement SUCCEEDED in the SAME run does not orphan
+    that key's promotion: `to_promote_scoped` is scoped to
+    `not_loop_native_candidates` directly, independent of the ledger's own
+    advance set, so a later run retries the promotion regardless of the
+    ledger's already-`done` state."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+    specs_dir = _specs_dir(tmp_path, "acme")
+    promotion_locked_fs = _SpecsDirLockRaisingFs(raising_path=specs_dir)
+
+    first_exit = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=promotion_locked_fs, harness=harness
+    )
+    first_payload = json.loads(capsys.readouterr().out)
+
+    # The ledger advanced -- its OWN, separate lock on `ledger_path.parent`
+    # succeeded -- even though the promotion lock on `specs_dir` failed.
+    codes = [f["code"] for f in first_payload["findings"]]
+    assert "MRS-DEPLOY-023" in codes
+    assert first_payload["data"]["advanced"] == ["5.9"]
+    assert first_payload["data"]["promoted"] == []
+    assert first_exit == 0  # WARN never blocks
+    assert "5-9-title: done" in ledger_path.read_text(encoding="utf-8")
+    assert not _tracked_path(tmp_path, "acme", "5-9-title").exists()
+
+    # Second run: the harness now reports the (now-`done`) ledger row --
+    # `not_loop_native_completions` correctly excludes it (AD-21
+    # convergence, already done, and no longer in `ledger_backlog_keys`)
+    # -- but the spec is STILL promoted, proving `to_promote_scoped` no
+    # longer depends on the (now-empty) `advanced_dot_keys` set.
+    harness_second = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "done"),))
+    second_exit = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness_second
+    )
+    second_payload = json.loads(capsys.readouterr().out)
+
+    assert second_payload["data"]["advanced"] == []  # already done -- no-op
+    assert second_payload["data"]["promoted"] == ["5.9"]
+    assert second_exit == 0
+    dest = _tracked_path(tmp_path, "acme", "5-9-title")
+    assert dest.read_text(encoding="utf-8") == _VALID_SPEC
+
+
+def test_reconcile_completions_ledger_lock_contention_reports_warn_and_skips_the_write(
+    tmp_path, capsys, monkeypatch
+):
+    """The ledger's own read-modify-write sequence acquires an advisory
+    lock on the ledger's OWN parent directory (a SEPARATE resource from
+    `_execute_promotion_plan`'s own `specs_dir` lock) -- proven here
+    against a GENUINE, real `fcntl.flock` held by another thread (mirrors
+    `test_promote_hits_the_real_contention_path_when_another_holder_has_
+    the_lock`'s own real-contention style), not a simulated one. The
+    second (foreground) run reports the WARN and never touches the
+    ledger; spec promotion for the same key still proceeds independently.
+    The lock now wraps the `ledger_story_statuses` READ too (review fix,
+    2026-08-12, medium-severity, the TOCTOU fix): `harness.ledger_calls`
+    is asserted EMPTY, proving the read itself never happens under
+    contention, not merely that the write is skipped afterward."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(deploy_module, "_LEDGER_LOCK_TIMEOUT_S", 0.3)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    before = ledger_path.read_text(encoding="utf-8")
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    holder_fs = LocalFs()
+    release_event = threading.Event()
+    held_event = threading.Event()
+
+    def _hold_lock():
+        lock = holder_fs.acquire_advisory_lock(ledger_path.parent, timeout_s=5.0)
+        held_event.set()
+        release_event.wait(timeout=5.0)
+        holder_fs.release_advisory_lock(lock)
+
+    holder = threading.Thread(target=_hold_lock, daemon=True)
+    holder.start()
+    try:
+        assert held_event.wait(timeout=5.0), "background holder never acquired the real lock"
+
+        exit_code = deploy_module.run_reconcile_completions(
+            _args(), vcs=vcs, fs=LocalFs(), harness=harness
+        )
+    finally:
+        release_event.set()
+        holder.join(timeout=5.0)
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-DEPLOY-024" in codes
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["advanced_count"] == 0
+    assert exit_code == 0  # WARN never blocks
+    # Never touched, never corrupted, never double-written.
+    assert ledger_path.read_text(encoding="utf-8") == before
+    assert (ledger_path,) not in [paths for paths, _ in vcs.commit_calls]
+    # The TOCTOU fix: the harness-based read itself never happens while
+    # the lock is contended, not merely the write.
+    assert harness.ledger_calls == []
+
+    # Spec promotion for the SAME key still proceeds independently of the
+    # ledger's own lock contention.
+    assert payload["data"]["promoted"] == ["5.9"]
+
+
+def test_reconcile_completions_dirty_ledger_skips_the_write_but_promotion_still_proceeds(
+    tmp_path, capsys, monkeypatch
+):
+    """A pre-existing uncommitted edit to the tracked ledger (an ordinary,
+    expected case -- other writers, including bmad-loop itself, touch this
+    file) must never be silently folded into this command's own commit --
+    the write is skipped, WARN reported, and spec promotion for the SAME
+    eligible key still proceeds independently in the same run."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    before = ledger_path.read_text(encoding="utf-8")
+    vcs = _FakeVcs(
+        main_subjects=(_not_loop_native_subject("5-9-title"),),
+        dirty_paths=frozenset({ledger_path}),
+    )
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-DEPLOY-024" in codes
+    finding = next(
+        f
+        for f in payload["findings"]
+        if f["code"] == "MRS-DEPLOY-024" and "uncommitted changes" in f["message"]
+    )
+    assert finding["severity"] == "warn"
+    assert payload["data"]["advanced"] == []
+    assert payload["data"]["advanced_count"] == 0
+    assert exit_code == 0
+    assert ledger_path.read_text(encoding="utf-8") == before  # never touched
+    assert (ledger_path,) not in [paths for paths, _ in vcs.commit_calls]
+
+    assert payload["data"]["promoted"] == ["5.9"]
+
+
+def test_reconcile_completions_already_promoted_spec_still_advances_the_ledger(
+    tmp_path, capsys, monkeypatch
+):
+    """A key corroborated via `scan.already_promoted` (a valid,
+    git-committed tracked copy already exists in the archive --
+    `_write_tracked_spec`) rather than `scan.plan.to_promote`, with the
+    ledger row still `backlog`, AND with real merge evidence in history.
+    Corroboration requires a durable, valid spec (`to_promote UNION
+    already_promoted`) AND real merge evidence, so the ledger still
+    advances to `done`; there is nothing left to promote for this key."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_tracked_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    _write_tier3_feed(tmp_path, "acme", "development_status:\n  5-9-title: backlog\n")
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["findings"] == []
+    assert payload["data"]["missing_from_ledger"] == []
+    assert payload["data"]["advanced"] == ["5.9"]
+    assert payload["data"]["promoted"] == []
+    assert exit_code == 0
+    assert "5-9-title: done" in ledger_path.read_text(encoding="utf-8")
+    # Exactly one commit -- the ledger's own; nothing left to promote.
+    assert len(vcs.commit_calls) == 1
+    assert vcs.commit_calls[0][0] == (ledger_path,)
+
+
+def test_reconcile_completions_ledger_commit_has_an_ad6_intent_outcome_pair(
+    tmp_path, capsys, monkeypatch
+):
+    """Review fix, 2026-08-12, medium-severity: the ledger commit -- this
+    command's own headline durable write -- now has an AD-6 intent/
+    outcome pair, like every sibling write command in this module
+    (`run_promote`/`run_land_story`)."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+    assert exit_code == 0
+
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    ledger_entries = [
+        line for line in journal_lines if line["kind"] == deploy_module._LEDGER_COMMIT_KIND
+    ]
+    intents = [e for e in ledger_entries if e["phase"] == "intent"]
+    outcomes = [e for e in ledger_entries if e["phase"] == "outcome"]
+    assert len(intents) == 1
+    assert len(outcomes) == 1
+    assert intents[0]["payload"]["story_keys"] == ["5.9"]
+    assert outcomes[0]["payload"]["story_keys"] == ["5.9"]
+    assert outcomes[0]["id"] != intents[0]["id"]
+
+
+def test_reconcile_completions_reconciles_a_prior_open_ledger_intent(
+    tmp_path, capsys, monkeypatch
+):
+    """A crashed prior `reconcile-completions` run left an open intent for
+    "3.8"; THIS run's own fresh ledger read confirms its row now reads
+    `done` -- the intent is closed with a `reconciliation` outcome,
+    mirroring `run_promote`'s own identical AD-6 x AD-21 x AD-28
+    precondition."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_open_intent(
+        tmp_path,
+        "acme",
+        run_id="prior-run-ledger",
+        kind=deploy_module._LEDGER_COMMIT_KIND,
+        story_keys=["3.8"],
+    )
+    vcs = _FakeVcs()
+    harness = _FakeReconcileHarness(ledger_statuses=(("3-8-title", "done"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+    assert exit_code == 0
+
+    journal_lines = _find_land_journal_lines(tmp_path, "acme")
+    reconciliations = [
+        line
+        for line in journal_lines
+        if line["phase"] == "outcome" and line["kind"] == "reconciliation"
+    ]
+    assert len(reconciliations) == 1
+    assert reconciliations[0]["payload"]["reconciled_kind"] == deploy_module._LEDGER_COMMIT_KIND
+
+
+def test_reconcile_completions_closes_the_tier3_feed_divergence_after_a_successful_advance(
+    tmp_path, capsys, monkeypatch
+):
+    """Spec Change Log, 2026-08-12, item 2: after a successful ledger
+    commit, the Tier-3 feed for the project is closed for exactly the
+    advanced keys, reusing `scripts/promote_sprint_status.py`'s own
+    repair-feed logic -- no separate `sprint-ledger-sync --repair-feed`
+    invocation required by the operator."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    feed_path = _write_tier3_feed(
+        tmp_path, "acme", "development_status:\n  5-9-title: backlog\n"
+    )
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["findings"] == []
+    assert exit_code == 0
+    assert "5-9-title: done" in ledger_path.read_text(encoding="utf-8")
+    assert "5-9-title: done" in feed_path.read_text(encoding="utf-8")
+    # The Tier-3 feed is gitignored -- never git-committed by this step.
+    assert (feed_path,) not in [paths for paths, _ in vcs.commit_calls]
+
+
+def test_reconcile_completions_missing_tier3_feed_reports_mrs_deploy_027_ledger_still_stands(
+    tmp_path, capsys, monkeypatch
+):
+    """The ordinary case on a fresh clone/CI runner: no local Tier-3
+    artifacts at all (`implementation-artifacts/` is gitignored). The
+    repair-write cannot complete, so `MRS-DEPLOY-027` (WARN) is reported
+    -- but the ledger commit already landed and stands regardless, never
+    rolled back by a failed, best-effort repair step."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-DEPLOY-027" in codes
+    finding = next(f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-027")
+    assert finding["severity"] == "warn"
+    assert exit_code == 0  # WARN never blocks
+    assert payload["data"]["advanced"] == ["5.9"]
+    assert "5-9-title: done" in ledger_path.read_text(encoding="utf-8")
+    assert (ledger_path,) in [paths for paths, _ in vcs.commit_calls]
+
+
+def test_reconcile_completions_never_reads_or_writes_a_live_runs_own_journal(
+    tmp_path, capsys, monkeypatch
+):
+    """Story 5.9's own CAP-4 isolation AC, proven by a test: a live
+    bmad-loop run mid-run on a DIFFERENT story, on the same station, is
+    neither read from nor written to. ``_FakeReconcileHarness`` raises
+    ``AssertionError`` for every ``HarnessPort`` method other than
+    ``ledger_story_statuses`` (proof by construction); a REAL file
+    standing in for that live run's own journal is asserted
+    byte-identical before and after."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    # A real file standing in for a DIFFERENT, live bmad-loop run's own
+    # journal on the same station (mid-run, on a different story) --
+    # bmad-loop's own on-disk shape (external to this repo, AD-3), never
+    # read by this module directly. Distinct from Marshal's OWN per-
+    # deploy-action journal under `implementation-artifacts/runs/`, which
+    # THIS run legitimately writes to (AD-6) via `FsPort`, never
+    # `HarnessPort`.
+    live_run_journal = (
+        tmp_path / "loop-home" / ".bmad-loop" / "runs" / "live-run-id" / "journal.jsonl"
+    )
+    live_run_journal.parent.mkdir(parents=True, exist_ok=True)
+    live_run_journal.write_bytes(b'{"kind": "story-transition", "story": "9.1"}\n')
+    before = live_run_journal.read_bytes()
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    after = live_run_journal.read_bytes()
+    assert after == before
+
+    ledger_path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "planning-artifacts"
+        / "sprint-status-ledger.yaml"
+    )
+    assert harness.ledger_calls == [ledger_path]
+
+    # Sanity: this was not a trivial no-op that happened to touch nothing
+    # -- the run did real, correct work.
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["advanced"] == ["5.9"]
+    assert exit_code == 0
+
+
+def test_reconcile_completions_text_format_smoke(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_ledger(tmp_path, "acme", _ledger_text(("5-9-title", "backlog")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(
+        _args(format="text"), vcs=vcs, fs=LocalFs(), harness=harness
+    )
+
+    out = capsys.readouterr().out
+    assert "deploy reconcile-completions" in out
+    assert "advanced: 1 (5.9)" in out
+    assert "promoted: 1 (5.9)" in out
+    assert exit_code == 0
+
+
+def test_reconcile_completions_subparser_is_registered():
+    """The new ``reconcile-completions`` action parses without error and
+    dispatches to ``run_reconcile_completions`` -- mirrors this module's
+    own convention of a bare parser-wiring smoke test."""
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command")
+    deploy_module.add_deploy_subparser(subparsers)
+
+    args = parser.parse_args(
+        ["deploy", "reconcile-completions", "--project", "acme", "--format", "json"]
+    )
+    assert args.handler is deploy_module.run_reconcile_completions
+    assert args.project == "acme"
+    assert args.format == "json"

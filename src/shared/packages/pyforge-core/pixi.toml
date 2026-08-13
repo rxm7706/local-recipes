@@ -1,0 +1,32 @@
+# pyforge-core (Core) — pixi build workspace member (pyforge-scribe mirror, Story 14.1).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-core.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# pyforge-core is the shared leaf every station may eventually depend on and
+# that depends on none of them (SPEC-pyforge-core CAP-1: "the leaf exists and
+# is provably a leaf"). Pure stdlib, zero third-party runtime dependencies.
+# This story scaffolds the empty package plus the meta-test that structurally
+# fails the build if that ever stops being true; primitive extraction
+# (atomic write, verdict lattice, report envelope, exception root, subprocess
+# guard) is Stories 14.2-14.4
+# (_bmad-output/projects/pyforge-marshal/planning-artifacts/).
+
+[package]
+name = "pyforge-core"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"          # matches every sibling station's floor
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.12"
