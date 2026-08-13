@@ -30,6 +30,26 @@ presence and shape (a `development_status:` block exists) — never an
 individual story-status value — so this module still performs zero status
 derivation of its own (AD-1: that computation stays inside the wrapped
 `dashboard-gen` subprocess / `docs/dashboard/generate.py`).
+
+Story 9.5 slice (CAP-6, AD-5, AD-8): `DeploymentTopology` + `check_shareable_
+state` implement AD-5's refusal — "any cross-worker shared state that cannot
+be shared across worker processes is refused when the deployment runs more
+than one worker" — that `dashboard/cache.py`'s own module docstring named as
+explicitly deferred to this story. `render_daphne_unit`/`render_edge_config`
+render CAP-6's "production-shaped runtime" (a daphne worker fleet + an nginx
+edge doing TLS termination and network-policy restriction) as plain strings
+— no template-file/package-data plumbing exists anywhere in this package, so
+none is invented here (this story's spec, "Design Notes"). All of it lives
+in THIS module, never under `dashboard/`: AD-1 classifies ASGI topology and
+edge policy as out-of-process concerns, and the existing import-boundary
+invariant (`test_no_module_outside_dashboard_imports_dashboard_django_or_
+channels`) already forbids this file from importing anything under
+`dashboard/`, `django`, or `channels` — so this code deals only in plain
+strings (dotted backend class paths, peer addresses, file paths), never a
+real Django/Channels object. Wired as `steward deploy perimeter`, a THIRD,
+unrelated verb alongside the pre-existing `dashboard` (docs/dashboard-gen)
+and `status` — reusing the `dashboard` name for this surface was flagged as
+a live naming collision on Story 9.1's own deferred-work ledger.
 """
 
 from __future__ import annotations
@@ -302,9 +322,550 @@ def _tracked_ledger_refusal(*, cwd: str | Path) -> str | None:
     return None
 
 
+# ── Deployment topology + AD-5 shareability refusal (CAP-6, Story 9.5) ─────
+
+
+@dataclass(frozen=True)
+class DeploymentTopology:
+    """The deployment shape `check_shareable_state` validates and
+    `render_daphne_unit`/`render_edge_config` render manifests for.
+
+    `worker_count` is the number of daphne worker processes the rendered
+    systemd fleet starts. `cache_backend`/`channel_layer_backend` are the
+    DOTTED CLASS PATHS an adopter's Django `CACHES`/`CHANNEL_LAYERS` setting
+    would name for the response cache and the Channels channel layer
+    respectively (e.g. `"django.core.cache.backends.locmem.LocMemCache"`,
+    `"channels_redis.core.RedisChannelLayer"`) — plain strings, never an
+    imported class: this module may not import `django`/`channels` (the
+    import-boundary invariant), so it can only compare the STRING an
+    adopter would put in settings, exactly as `dashboard/declarations.py`'s
+    `AccessDeclaration`/`TrustedIngress` validate plain strings rather than
+    live objects for the same reason.
+
+    Validated at construction time, naming the exact offending field —
+    mirrors `declarations.py`'s and `keys.py`'s `HostScopedCredential`
+    established convention in this package.
+    """
+
+    worker_count: int
+    cache_backend: str
+    channel_layer_backend: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.worker_count, int) or isinstance(self.worker_count, bool):
+            raise TypeError(
+                f"DeploymentTopology.worker_count must be an int, got "
+                f"{type(self.worker_count).__name__} — `bool` is excluded "
+                "even though it satisfies `isinstance(_, int)`, since `True`/"
+                "`False` are never a meaningful worker count"
+            )
+        if self.worker_count <= 0:
+            raise ValueError(
+                f"DeploymentTopology.worker_count must be positive, got "
+                f"{self.worker_count!r} — a deployment needs at least one worker"
+            )
+        for field_name, value in (
+            ("cache_backend", self.cache_backend),
+            ("channel_layer_backend", self.channel_layer_backend),
+        ):
+            if not isinstance(value, str):
+                raise TypeError(
+                    f"DeploymentTopology.{field_name} must be a string (a "
+                    f"dotted Django/Channels backend class path), got "
+                    f"{type(value).__name__}"
+                )
+            if not value.strip():
+                raise ValueError(
+                    f"DeploymentTopology.{field_name} must not be empty or "
+                    "whitespace-only — check_shareable_state has nothing to "
+                    "allowlist against"
+                )
+            # Padding too (review pass, mirroring `declarations.py`'s
+            # identical convention): a padded value passes the emptiness
+            # check above, then silently fails `check_shareable_state`'s
+            # exact-match allowlist comparison even for an otherwise-valid
+            # Redis-backed class path -- misreporting a legitimate backend
+            # as unshareable instead of naming the real problem (the
+            # padding). Rejected rather than trimmed, so the declaration
+            # means exactly what it says.
+            if value != value.strip():
+                raise ValueError(
+                    f"DeploymentTopology.{field_name} {value!r} carries "
+                    "leading/trailing whitespace — a padded dotted class "
+                    "path matches nothing in check_shareable_state's allowlist"
+                )
+
+
+class UnshareableStateError(ValueError):
+    """AD-5: a cross-worker-unshareable backend was declared while
+    `worker_count > 1` — the response cache or the Channels channel layer
+    cannot actually deliver the property (one upstream fetch; every viewer
+    sees a broadcast) the deployment claims to have."""
+
+
+# AD-5's allowlist (fail-closed): only backends this story can cite as
+# genuinely cross-process-shared AND actually usable with what the
+# `[dashboard]` extra installs. Judgment call, recorded here rather than
+# assumed (this story's spec leaves the exact class path(s) open): only
+# Django's own built-in Redis backend (4.0+) is allowlisted, because its
+# `redis` client dependency is already satisfied transitively by
+# `channels_redis` (itself in the extra for the channel layer, below) --
+# review pass found `django_redis.cache.RedisCache` (the third-party
+# `django-redis` package) allowlisted here with NO corresponding dependency
+# anywhere in this extra or pixi.toml, so passing `check_shareable_state`
+# gave false confidence about a backend the extra cannot actually satisfy.
+# Narrowed rather than widened the extra to cover it -- matches this
+# allowlist's own established, more conservative precedent for the
+# channel-layer side below. Matching names exactly, not by prefix, so a
+# project-specific subclass is refused rather than silently trusted
+# (`cache.py`'s own docstring: only a backend this module can actually
+# vouch for is accepted). The channel-layer allowlist stays to the ONE
+# class the architecture Stack table names by its own words as "the
+# sanctioned layer backend" — widening it to `channels_redis`'s other
+# shipped layer class was deliberately not done, to avoid allowlisting
+# something neither the Spec nor the architecture actually named.
+_SHAREABLE_CACHE_BACKENDS: tuple[str, ...] = (
+    "django.core.cache.backends.redis.RedisCache",
+)
+_SHAREABLE_CHANNEL_LAYER_BACKENDS: tuple[str, ...] = (
+    "channels_redis.core.RedisChannelLayer",
+)
+
+
+def check_shareable_state(topology: DeploymentTopology) -> None:
+    """AD-5: refuse a cross-worker-unshareable backend once `workers > 1`.
+
+    `worker_count == 1` passes unconditionally, for any backend — AD-5's own
+    text: "a single-worker adopter may use in-process backends for both."
+    Above that, `cache_backend` and `channel_layer_backend` must each match
+    one of the allowlisted Redis-backed classes above; an in-process backend
+    (`LocMemCache`, `channels.layers.InMemoryChannelLayer`) silently loses
+    the cross-worker guarantee it claims once more than one worker exists
+    (`dashboard/cache.py`'s own module docstring; the architecture's own
+    rejected "accepting any backend" alternative).
+
+    Raises `UnshareableStateError` naming the FIRST offending field only
+    (cache checked before channel layer, matching the dataclass's own field
+    order) — never both merged into one message, so a caller such as
+    `_run_perimeter` names exactly one missing/incompatible declaration per
+    the architecture's "Refusals" convention ("a refused deployment names
+    the missing declaration").
+    """
+    if topology.worker_count == 1:
+        return
+    if topology.cache_backend not in _SHAREABLE_CACHE_BACKENDS:
+        raise UnshareableStateError(
+            f"cache_backend {topology.cache_backend!r} is not cross-worker "
+            f"shareable under worker_count={topology.worker_count} — "
+            f"allowlisted backends are {_SHAREABLE_CACHE_BACKENDS!r} (AD-5)"
+        )
+    if topology.channel_layer_backend not in _SHAREABLE_CHANNEL_LAYER_BACKENDS:
+        raise UnshareableStateError(
+            f"channel_layer_backend {topology.channel_layer_backend!r} is "
+            f"not cross-worker shareable under worker_count="
+            f"{topology.worker_count} — allowlisted backends are "
+            f"{_SHAREABLE_CHANNEL_LAYER_BACKENDS!r} (AD-5)"
+        )
+
+
+# ── Deployment manifests: daphne systemd fleet + nginx edge (CAP-6, Story 9.5) ─
+#
+# Plain strings built from `DeploymentTopology`'s fields — no Jinja, no
+# `.template` asset files, no new packaging plumbing (this story's spec,
+# "Design Notes": no package-data precedent exists anywhere in this package).
+
+_DEFAULT_BASE_PORT = 8001
+_DEFAULT_BIND_HOST = "127.0.0.1"
+# The spec's own Code Map names no CLI flag for the ASGI application import
+# path, and this story renders plain text with no templating engine — so
+# rather than invent an unrequested flag, the adopter edits this one
+# placeholder line by hand, same as any other systemd unit before enabling
+# it (judgment call, recorded here).
+_ASGI_APPLICATION_PLACEHOLDER = "myproject.asgi:application"  # adopter fills in
+
+
+def _worker_ports(topology: DeploymentTopology, *, base_port: int) -> tuple[int, ...]:
+    """The bind ports both `render_daphne_unit`'s enable-command comment and
+    `render_edge_config`'s nginx upstream block derive from — the single
+    source both functions read, so the two rendered manifests can never
+    independently drift out of step on how many workers/ports there are.
+    One port per worker, sequential from `base_port`.
+
+    Raises `ValueError` if the highest port would exceed 65535 (review pass:
+    `DeploymentTopology.worker_count` only checked `> 0`, so a large count
+    silently produced an out-of-range port with no error and no rendered
+    manifest naming the problem).
+    """
+    highest_port = base_port + topology.worker_count - 1
+    if highest_port > 65535:
+        raise ValueError(
+            f"worker_count={topology.worker_count} with base_port={base_port} "
+            f"would need a port up to {highest_port}, beyond the valid range "
+            "(1-65535) -- lower worker_count or base_port"
+        )
+    return tuple(base_port + i for i in range(topology.worker_count))
+
+
+def render_daphne_unit(
+    topology: DeploymentTopology,
+    *,
+    base_port: int = _DEFAULT_BASE_PORT,
+    bind_host: str = _DEFAULT_BIND_HOST,
+) -> str:
+    """Render a systemd TEMPLATE unit for a fleet of `topology.worker_count`
+    daphne ASGI workers — daphne has no built-in worker-pool flag (unlike
+    gunicorn's `--workers`), so the fleet is one OS process per worker,
+    started as separate template-unit instances.
+
+    A systemd template unit's `%i` is the literal string after `@` in the
+    instance name it is started as. This renders each instance named by the
+    PORT it binds (`pyforge-steward-dashboard@8001.service`) rather than by
+    an ordinal worker index, which would need arithmetic systemd has no
+    specifier for (`800%i` string-CONCATENATES, not adds, and breaks past
+    worker 9) — the port-as-instance-name convention sidesteps that trap
+    entirely and needs no arithmetic inside the unit file at all.
+
+    `--proxy-headers` is always passed — judgment call, recorded here: AD-4's
+    ingress refusal (`dashboard/middleware.py`) depends on `scope["client"]`
+    reflecting the real peer, which requires daphne to parse
+    `X-Forwarded-For` rather than reporting the edge proxy's own address for
+    every connection. `middleware.py`'s own module docstring names exactly
+    this as the deployment precondition Story 9.5 owns. This is only SAFE
+    paired with `render_edge_config`'s nginx OVERWRITING (not appending to)
+    `X-Forwarded-For` — the two rendered manifests are a matched pair, never
+    independently correct; see that function's docstring for the other half.
+
+    Binds to `bind_host` (localhost by default) — `render_edge_config`'s
+    nginx is the only thing meant to reach these ports directly; network
+    policy is the edge's job (CAP-6), not daphne's own.
+    """
+    ports = _worker_ports(topology, base_port=base_port)
+    enable_cmd = " ".join(f"pyforge-steward-dashboard@{p}.service" for p in ports)
+    return f"""# pyforge-steward[dashboard] — daphne ASGI worker fleet (Story 9.5, CAP-6/AD-5/AD-8)
+# Template unit: one instance per worker, named by the port it binds. Enable
+# the full fleet for this topology (worker_count={topology.worker_count}) with:
+#   systemctl enable --now {enable_cmd}
+#
+# Replace {_ASGI_APPLICATION_PLACEHOLDER} below with your project's real
+# ASGI application import path before enabling.
+
+[Unit]
+Description=pyforge-steward dashboard daphne worker on port %i
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=daphne --bind {bind_host} --port %i --proxy-headers {_ASGI_APPLICATION_PLACEHOLDER}
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+
+# Non-whitespace characters that could break an interpolated value out of
+# the nginx directive line it is rendered into (review pass: `render_edge_
+# config` previously validated only emptiness, so a crafted `--trusted-
+# address`/`--tls-cert`/`--tls-key`/server-name value containing e.g. `;`
+# could inject an arbitrary extra directive into a config whose entire job
+# is enforcing this deployment's security perimeter). Whitespace ANYWHERE
+# in the value (not just leading/trailing) is checked separately below --
+# nginx directive values here are rendered unquoted, so even an EMBEDDED
+# space breaks the directive into two tokens. `#` starts a same-line nginx
+# comment (truncating whatever directive it lands in); `$` triggers nginx
+# variable interpolation in most directive contexts, including the modern
+# `ssl_certificate`/`ssl_certificate_key` (review pass: both were absent from
+# the original three-character set).
+_UNSAFE_NGINX_VALUE_CHARS = frozenset(";{}#$")
+
+
+def _validate_nginx_value(field_name: str, value: str) -> None:
+    """Shared emptiness/whitespace/injection-character guard for every
+    string `render_edge_config` interpolates into the generated config --
+    mirrors `declarations.py`'s "reject, don't sanitize" convention so a
+    malformed value fails loudly at render time rather than silently
+    producing a corrupted or partially-effective security perimeter.
+    """
+    if not value or not value.strip():
+        raise ValueError(f"render_edge_config: {field_name} must not be empty or whitespace-only")
+    if any(ch.isspace() for ch in value):
+        raise ValueError(
+            f"render_edge_config: {field_name} {value!r} contains whitespace -- "
+            "rendered unquoted, so even an embedded space (not only leading/"
+            "trailing) splits the generated nginx directive into two tokens"
+        )
+    if any(ch in _UNSAFE_NGINX_VALUE_CHARS for ch in value):
+        raise ValueError(
+            f"render_edge_config: {field_name} {value!r} contains a character "
+            f"that could break out of the generated nginx directive (one of "
+            f"{''.join(sorted(_UNSAFE_NGINX_VALUE_CHARS))!r}) -- refused rather "
+            "than silently rendering a corrupted security-perimeter config"
+        )
+
+
+def render_edge_config(
+    topology: DeploymentTopology,
+    *,
+    trusted_addresses: Sequence[str],
+    tls_cert: str,
+    tls_key: str,
+    server_name: str = "_",
+    base_port: int = _DEFAULT_BASE_PORT,
+    bind_host: str = _DEFAULT_BIND_HOST,
+) -> str:
+    """Render an nginx edge config: TLS termination + an `allow`/`deny`
+    network-policy block scoped to `trusted_addresses`, load-balancing
+    across `topology.worker_count` daphne workers at the SAME ports
+    `render_daphne_unit` binds (`_worker_ports` — see that function's
+    docstring for why the two share one source rather than each computing
+    its own).
+
+    `trusted_addresses`/`tls_cert`/`tls_key`/`server_name` are plain
+    strings/CLI input — this function never imports `TrustedIngress` from
+    `dashboard/declarations.py` (the import-boundary invariant forbids this
+    module from reaching into `dashboard/` at all), so validation here is
+    `_validate_nginx_value`'s emptiness/whitespace/injection-character
+    check, not real address-form or header-name validation. `server_name`
+    defaults to nginx's own `_` catch-all convention — the adopter is
+    expected to replace it with a real domain.
+
+    `X-Forwarded-For` is set by OVERWRITING with `$remote_addr`, never
+    `$proxy_add_x_forwarded_for` (which APPENDS) — judgment call, recorded
+    here: `dashboard/middleware.py`'s own module docstring names an
+    appending proxy as defeating AD-4's ingress check entirely, since a
+    client-supplied `X-Forwarded-For` entry then survives as the leftmost
+    one daphne's `--proxy-headers` parsing reads. This edge config is the
+    other half of that documented deployment precondition.
+
+    `Connection` is set via nginx's `map $http_upgrade $connection_upgrade`
+    idiom rather than a hardcoded `"upgrade"` (review pass: hardcoding it
+    forced every plain HTTP request through the same upgrade-connection
+    header, not only real WebSocket upgrade requests). `proxy_read_timeout`/
+    `proxy_send_timeout` are raised to 24h (review pass: nginx's ~60s
+    default silently drops the long-lived WebSocket connections this whole
+    pattern's Channels layer exists to carry).
+
+    Raises `ValueError` if `trusted_addresses` is empty, or if any of
+    `trusted_addresses`/`tls_cert`/`tls_key`/`server_name` is empty,
+    whitespace-padded, or contains a character that could break out of a
+    generated nginx directive — a network-policy block with nothing to
+    allow (or a corrupted directive) enforces nothing while looking like it
+    does (mirrors `TrustedIngress.addresses`'s own non-empty requirement
+    without importing that class, per the import-boundary note above).
+    """
+    if not trusted_addresses:
+        raise ValueError(
+            "render_edge_config: trusted_addresses must not be empty — an "
+            "edge config with no declared trusted ingress restricts access "
+            "to nothing while appearing to enforce a network policy"
+        )
+    for index, address in enumerate(trusted_addresses):
+        _validate_nginx_value(f"trusted_addresses[{index}]", address)
+    _validate_nginx_value("tls_cert", tls_cert)
+    _validate_nginx_value("tls_key", tls_key)
+    _validate_nginx_value("server_name", server_name)
+
+    ports = _worker_ports(topology, base_port=base_port)
+    upstream_name = "pyforge_steward_dashboard_workers"
+    upstream_servers = "\n".join(f"    server {bind_host}:{p};" for p in ports)
+    allow_lines = "\n".join(f"    allow {addr};" for addr in trusted_addresses)
+
+    return f"""# pyforge-steward[dashboard] — nginx edge (Story 9.5, CAP-6/AD-4/AD-8)
+# TLS termination + network-policy restriction to the declared trusted
+# ingress; proxies to the daphne worker fleet render_daphne_unit renders.
+
+map $http_upgrade $connection_upgrade {{
+    default upgrade;
+    ''      close;
+}}
+
+upstream {upstream_name} {{
+{upstream_servers}
+}}
+
+server {{
+    listen 443 ssl;
+    server_name {server_name};
+
+    ssl_certificate {tls_cert};
+    ssl_certificate_key {tls_key};
+
+    # AD-4's declared trusted ingress: only these peers may reach the app.
+{allow_lines}
+    deny all;
+
+    location / {{
+        proxy_pass http://{upstream_name};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        # Overwrite, never append -- see this function's docstring.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Long-lived Channels WebSocket connections outlive nginx's ~60s
+        # default idle timeout -- see this function's docstring.
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }}
+}}
+"""
+
+
+def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
+    """`deploy perimeter --workers N --cache-backend PATH
+    --channel-layer-backend PATH [--trusted-address ADDR ...] [--tls-cert
+    PATH --tls-key PATH] [--output-dir DIR]`.
+
+    Always validates first: `DeploymentTopology`'s own construction-time
+    checks, then `check_shareable_state` (AD-5). Every `TypeError`/
+    `ValueError`/`AttributeError` from validation OR rendering is caught
+    here and reported as a named duty-level refusal — never an uncaught
+    crash (AD-8's boundary stays `cli.main()`'s alone). `AttributeError` is
+    caught alongside the other two (review pass): the required fields
+    (`ns.workers`/`.cache_backend`/`.channel_layer_backend`) were accessed
+    directly rather than via the `getattr` fallback the optional fields
+    below use, so an incomplete `Namespace` raised uncaught, contradicting
+    this exact guarantee. A topology that fails the check writes NOTHING
+    (I/O matrix).
+
+    With no `--output-dir`: validation-only — `DutyResult(ok=True, ...)`,
+    nothing written (I/O matrix's last row).
+
+    With `--output-dir`: also requires at least one `--trusted-address` and
+    both `--tls-cert`/`--tls-key` — an edge config with no declared ingress
+    or no certificate would enforce nothing while looking complete, so this
+    refuses rather than rendering one (the architecture's "Refusals"
+    convention, applied here to this story's OWN declarations, not only the
+    dashboard app's). A filesystem failure writing the manifests (e.g. an
+    unwritable `--output-dir`) is caught as `OSError` and reported the same
+    way, never propagated as an internal crash.
+    """
+    try:
+        topology = DeploymentTopology(
+            worker_count=ns.workers,
+            cache_backend=ns.cache_backend,
+            channel_layer_backend=ns.channel_layer_backend,
+        )
+        check_shareable_state(topology)
+        # Review pass: without this, an extreme `--workers` value (past the
+        # port range `_worker_ports` bounds-checks) reported `ok=True`
+        # "topology valid" in validation-only mode, then failed only once
+        # `--output-dir` was added later -- a "valid" verdict that wasn't
+        # durable. Validating the same port range here makes both branches
+        # below agree on what "valid" means.
+        _worker_ports(topology, base_port=_DEFAULT_BASE_PORT)
+    except (TypeError, ValueError, AttributeError) as exc:
+        return DutyResult(ok=False, summary=f"deploy perimeter: refused — {exc}")
+
+    output_dir = getattr(ns, "output_dir", None)
+    if not output_dir:
+        return DutyResult(
+            ok=True,
+            summary=(
+                "deploy perimeter: topology valid "
+                f"(workers={topology.worker_count}, "
+                f"cache_backend={topology.cache_backend!r}, "
+                f"channel_layer_backend={topology.channel_layer_backend!r}) "
+                "— no --output-dir given, nothing written"
+            ),
+        )
+
+    trusted_addresses = tuple(getattr(ns, "trusted_address", None) or ())
+    tls_cert = getattr(ns, "tls_cert", None)
+    tls_key = getattr(ns, "tls_key", None)
+    missing = [
+        flag
+        for flag, value in (
+            ("--trusted-address", trusted_addresses),
+            ("--tls-cert", tls_cert),
+            ("--tls-key", tls_key),
+        )
+        if not value
+    ]
+    if missing:
+        return DutyResult(
+            ok=False,
+            summary=(
+                "deploy perimeter: refused — --output-dir was given but "
+                f"{', '.join(missing)} was not supplied; an edge config "
+                "cannot be rendered without a declared trusted ingress and "
+                "a TLS certificate/key pair"
+            ),
+        )
+
+    try:
+        unit_text = render_daphne_unit(topology)
+        edge_text = render_edge_config(
+            topology,
+            trusted_addresses=trusted_addresses,
+            tls_cert=tls_cert,
+            tls_key=tls_key,
+        )
+    except (TypeError, ValueError) as exc:
+        return DutyResult(ok=False, summary=f"deploy perimeter: refused — {exc}")
+
+    output_path = Path(output_dir)
+    unit_path = output_path / "pyforge-steward-dashboard@.service"
+    edge_path = output_path / "pyforge-steward-dashboard.nginx.conf"
+    # Write both to temp names, then rename both onto their final names only
+    # once BOTH writes succeeded (same-directory rename is atomic on POSIX) --
+    # review pass: writing directly to the final names left a lone unit file
+    # on disk if the edge-config write failed second, even though the duty
+    # reported `ok=False` and wrote nothing per the I/O matrix.
+    unit_tmp = output_path / (unit_path.name + ".tmp")
+    edge_tmp = output_path / (edge_path.name + ".tmp")
+    try:
+        output_path.mkdir(parents=True, exist_ok=True)
+        unit_tmp.write_text(unit_text, encoding="utf-8")
+        edge_tmp.write_text(edge_text, encoding="utf-8")
+    except OSError as exc:
+        # Best-effort cleanup: e.g. `output_path.mkdir()` itself failing
+        # (review pass's own regression -- a FILE already at `output_path`)
+        # means neither temp file was ever created, so unlinking under it
+        # raises `NotADirectoryError` (still an `OSError`) rather than
+        # `FileNotFoundError` -- caught here so cleanup can never mask the
+        # real error this branch is already reporting.
+        for tmp in (unit_tmp, edge_tmp):
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return DutyResult(
+            ok=False, summary=f"deploy perimeter: refused — could not write to {output_path}: {exc}"
+        )
+    try:
+        unit_tmp.rename(unit_path)
+        edge_tmp.rename(edge_path)
+    except OSError as exc:
+        # Review pass: the renames themselves previously sat OUTSIDE this
+        # guard, so a rename failure (e.g. a directory already at the target
+        # name) escaped uncaught instead of returning the named refusal this
+        # function's own docstring promises. Best-effort cleanup mirrors the
+        # write-failure branch above; a lone already-renamed file from the
+        # first `rename()` succeeding before the second fails is a residual
+        # this cleanup cannot undo without a backup of any prior content at
+        # that path, which is out of this story's scope.
+        for tmp in (unit_tmp, edge_tmp):
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return DutyResult(
+            ok=False,
+            summary=f"deploy perimeter: refused — could not finalize manifests in {output_path}: {exc}",
+        )
+
+    return DutyResult(
+        ok=True,
+        summary=f"deploy perimeter: rendered daphne unit + nginx edge config to {output_path}",
+    )
+
+
 # ── DeployDuty (Duty-protocol adapter) ──────────────────────────────────────
 
-_DEPLOY_VERBS: tuple[str, ...] = ("dashboard", "status")
+_DEPLOY_VERBS: tuple[str, ...] = ("dashboard", "status", "perimeter")
 
 
 def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
@@ -397,7 +958,7 @@ def _run_status(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
 
 
 class DeployDuty:
-    """The real `deploy` duty — dispatches the `dashboard`/`status` verbs.
+    """The real `deploy` duty — dispatches the `dashboard`/`status`/`perimeter` verbs.
 
     Bare `steward deploy` (no verb) degrades to `DutyResult(ok=True, ...)`
     naming the available verbs (AD-7), matching `KeysDuty`'s identical
@@ -419,6 +980,8 @@ class DeployDuty:
         try:
             if verb == "dashboard":
                 return _run_dashboard(ns)
+            if verb == "perimeter":
+                return _run_perimeter(ns)
             return _run_status(ns)
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()

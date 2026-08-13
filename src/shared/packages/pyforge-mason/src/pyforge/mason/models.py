@@ -25,13 +25,19 @@ makes this move; `EngineStatus`, `ImportFloorResult`, `ResolvedCfeRoot`, and
 Never boundary) -- the architecture names `DoctorReport` alone as the
 one landed divergence.
 
-Later stories add `ShipReceipt`, `ShipTargetResult`, and `LockResult` here
-(architecture Structural Seed) -- none of that exists yet.
+Story 2.9 adds `ShipState`/`ShipTargetResult` -- the second and third shapes
+in this file (AD-9): the return type of `recipe.py::submit()` (FR-13), and
+the shape Epic 3's `package.py`/`environment.py` ship targets will wrap
+their own results in later (AD-11, spec Never boundary: no `ShipTarget`
+enum or `ShipReceipt` aggregate lands with this story -- both are
+explicitly out of scope here). Later stories still add `ShipReceipt` and
+`LockResult` here (architecture Structural Seed) -- neither exists yet.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 
 from .engines import EngineStatus
 
@@ -76,3 +82,58 @@ class DoctorReport:
     cfe_import_floor_missing: tuple[str, ...]
     unavailable_verbs: tuple[str, ...]
     engines: tuple[EngineStatus, ...]
+
+
+class ShipState(StrEnum):
+    """The closed set of states any ship target's result can be in (AD-9):
+    `not_attempted` (no confirming flag was given -- a dry run; nothing was
+    pushed or opened), `failed` (a confirmed attempt did not reach a
+    reportable success), `pending` (a confirmed attempt initiated something
+    real -- a pushed branch, an opened PR -- but confirming it reached a
+    durable end state requires interrogating the target later, AD-10, out
+    of scope for the call that produced this result), `terminal` (a later
+    interrogation confirmed the target reached its end state; no code path
+    in this story produces it -- AD-10's interrogation-based idempotence,
+    not yet built, is the only way a future caller would ever learn it).
+    **`pending` is never collapsed into success in any rendering** (AD-9).
+
+    `StrEnum` (stdlib since 3.12, this package's floor), not a plain `Enum`
+    (Design Notes): `cli.py`'s dispatch renders every result via
+    `render.write` -> `render_json`'s `json.dumps(dataclasses.asdict(result),
+    ...)`, with no custom encoder (`render.py`'s own module docstring: only
+    a fixed five-key envelope, no schema-driven serialization).
+    `dataclasses.asdict` does not special-case `Enum`, so a plain `Enum`
+    member would reach `json.dumps` as a non-serializable object and raise.
+    `StrEnum` members are real `str` instances the JSON encoder handles
+    natively, AND -- unlike a bare `(str, Enum)` mixin pre-3.11 --
+    `__str__`/`__format__` return the plain value too, so `render_text`'s
+    `f"{data[key]}"` line renders `pending`, never `ShipState.PENDING`."""
+
+    NOT_ATTEMPTED = "not_attempted"
+    FAILED = "failed"
+    PENDING = "pending"
+    TERMINAL = "terminal"
+
+
+@dataclass(frozen=True)
+class ShipTargetResult:
+    """One ship target's outcome (AD-9) -- `recipe.py::submit()`'s return
+    type (FR-13), and the shape a future `package.py`/`environment.py` ship
+    target wraps its own result in (AD-11: `mason package --ship
+    conda-forge` calls `recipe.py::submit()` rather than reimplementing it,
+    and wraps ITS `ShipTargetResult` -- never produces a second one for the
+    same operation).
+
+    `target` is a literal string (e.g. `"conda-forge"`), not a `ShipTarget`
+    enum -- that closed vocabulary is explicitly Story 3.3's scope (spec
+    Never boundary), so this field stays a plain `str` until that story
+    defines it. `reference` is a URL, PR number, or branch URL, depending on
+    `state`, or `None` when nothing concrete exists yet (a dry run, or a
+    failure before anything was produced). `message` is the wrapped tool's
+    own `message`/`error` field, verbatim -- no Mason-side re-authoring
+    (AD-1)."""
+
+    target: str
+    state: ShipState
+    reference: str | None
+    message: str | None

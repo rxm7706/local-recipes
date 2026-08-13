@@ -456,6 +456,64 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
     ), "the framework-only guard must still catch a real django import"
 
 
+def test_the_dashboard_module_split_is_pinned_not_merely_documented():
+    """Review pass 4: `dashboard/__init__.py` names WHICH submodules import
+    `django`, and nothing checked that claim in the growing direction.
+
+    That docstring is the package's load-bearing statement of which modules an
+    adopter without the `[dashboard]` extra may touch, and Story 9.3 already
+    made it false once by adding three django-importing modules while it still
+    read "only `apps.py` and `cache.py`". The sibling guard above pins only the
+    django-FREE half, so the drift recurs on the next dashboard module: adding
+    a `views.py` with `from django.db import models` left the whole suite green
+    with the docstring silently wrong (mutation-proved at the time).
+
+    Deliberately an equality assert against a named set rather than a derived
+    one -- the point is to FAIL when the set changes, so whoever adds the next
+    django-importing module updates the docstring in the same commit.
+    """
+    import ast
+
+    dashboard_dir = PKG_ROOT / "steward" / "dashboard"
+    documented = {"apps.py", "cache.py", "models.py", "audit.py"}
+
+    actual: set[str] = set()
+    for path in sorted(dashboard_dir.rglob("*.py")):
+        if path.parent.name == "migrations":
+            # `migrations/` is documented as a directory, not per-file, since
+            # every future migration lands there and importing django is the
+            # whole point of the file format.
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name.split(".")[0] for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                names = [node.module.split(".")[0]]
+            if any(name in {"django", "channels"} for name in names):
+                actual.add(path.name)
+                break
+
+    assert actual == documented, (
+        f"the set of dashboard modules importing django/channels changed to "
+        f"{sorted(actual)} (documented: {sorted(documented)}) — update "
+        f"`dashboard/__init__.py`'s module-split docstring, which tells an "
+        f"adopter without the [dashboard] extra which modules they may touch, "
+        f"and this pin, in the same commit"
+    )
+    # And the docstring really does name each one, so the two cannot agree
+    # here while disagreeing there.
+    init_docstring = ast.get_docstring(
+        ast.parse((dashboard_dir / "__init__.py").read_text(encoding="utf-8"))
+    )
+    missing = [name for name in sorted(documented) if name not in init_docstring]
+    assert not missing, (
+        f"`dashboard/__init__.py`'s docstring does not name these "
+        f"django-importing modules: {missing}"
+    )
+
+
 def test_dashboard_import_guard_flags_a_relative_import_past_the_top_package():
     """Review pass 3: `from ...dashboard import cache` inside
     `pyforge/steward/` climbed past the top-level package, and the level
@@ -547,24 +605,32 @@ def test_dashboard_appconfig_is_ad13_compliant():
     }
 
 
-def test_django_pin_matches_the_dashboard_extra():
-    """The django floor is hand-typed in two files -- pyproject.toml's
-    `[dashboard]` extra and root pixi.toml's
-    `[feature.pyforge-steward.dependencies]`. Review pass 1 closed "nothing
-    keeps these in sync" with a cross-reference comment; review pass 2 found
-    that comment had ALREADY drifted (it claimed the same floor as a third,
-    deliberately narrower pin). A comment is not a mechanism -- this is.
+def test_dashboard_extra_pins_match_pixi_feature_pins():
+    """Every `[dashboard]` extra floor is hand-typed TWICE -- once in
+    pyproject.toml's `[dashboard]` extra, once in root pixi.toml's
+    `[feature.pyforge-steward.dependencies]`. Review pass 1 (Story 9.1,
+    django-only at the time) closed "nothing keeps these in sync" with a
+    cross-reference comment; review pass 2 found that comment had ALREADY
+    drifted (it claimed the same floor as a third, deliberately narrower
+    pin). A comment is not a mechanism -- this is. Story 9.5 generalized this
+    from a django-only check into a loop over every package the extra now
+    pins, rather than four near-duplicate test functions.
 
     Deliberately scoped to that pair. `[feature.local-recipes.dependencies]`
-    pins a narrower `>=5.2.15,<6.0` for unrelated reasons (wagtail/coderedcms)
-    and is NOT required to match.
+    separately pins `django`/`channels`/`daphne` narrower/for unrelated
+    reasons (wagtail/coderedcms) and is NOT required to match.
 
-    The distribution name is matched on a name boundary and case-insensitively
-    (review pass 3). A plain `startswith("django")` broke on two edits that are
-    each a matter of when, not if: the canonical PyPI spelling `Django` (as
-    `dependencies = ["PyYAML"]` above already uses) matched nothing, and any
-    `django-*` companion such as `django-htmx` matched a second time — either
+    Each distribution name is matched on a name boundary and
+    case-insensitively (review pass 3, django-only at the time). A plain
+    `startswith(name)` breaks on two edits that are each a matter of when,
+    not if: the canonical PyPI spelling (`Django`, as `dependencies =
+    ["PyYAML"]` above already uses elsewhere) would match nothing, and a
+    same-prefixed companion package (`django-htmx` for `django`,
+    `channels_presence` for `channels`) would match a second time -- either
     way failing on spelling rather than on the drift this exists to catch.
+    The boundary also keeps `channels` from matching `channels_redis` (and
+    vice versa isn't possible: `channels_redis` is the longer, more specific
+    name) since `_` is itself an excluded continuation character.
     """
     import re
     try:
@@ -575,38 +641,65 @@ def test_django_pin_matches_the_dashboard_extra():
     manifest = tomllib.loads(
         (PKG_ROOT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
     extra = (manifest["project"]["optional-dependencies"])["dashboard"]
-    # `django` as a whole distribution name: followed by a version specifier,
-    # an extras/marker delimiter, or nothing -- never by another name char, so
-    # `django-htmx` and `django_foo` do not match.
-    django_name = re.compile(r"^django(?![0-9A-Za-z._-])", re.IGNORECASE)
-    extra_pins = [spec for spec in extra if django_name.match(spec.replace(" ", ""))]
-    assert len(extra_pins) == 1, f"expected exactly one django pin in the extra, got {extra_pins!r}"
-    extra_pin = extra_pins[0].replace(" ", "")
 
     # PKG_ROOT is <repo>/src/shared/packages/pyforge-steward/src/pyforge, so
     # the repo root carrying pixi.toml is five parents up. Skipped rather
-    # than crashed when it is not there (review pass 4): this is the only
-    # assertion in this file that reaches OUTSIDE the package -- every other
-    # file-reading test stops at `PKG_ROOT.parents[1]` -- so a bare
-    # `read_text()` made the package's own suite raise `FileNotFoundError`
-    # anywhere the monorepo layout is absent. Ledger entry DW-1-3-14 is an
-    # open item about this package behaving correctly "in a package installed
-    # outside a checkout", so that is a planned environment, not a
-    # hypothetical one; a cross-manifest pin check simply has nothing to
-    # compare there.
+    # than crashed when it is not there (review pass 4, django-only at the
+    # time): this is the only assertion in this file that reaches OUTSIDE the
+    # package -- every other file-reading test stops at `PKG_ROOT.parents[1]`
+    # -- so a bare `read_text()` made the package's own suite raise
+    # `FileNotFoundError` anywhere the monorepo layout is absent. Ledger entry
+    # DW-1-3-14 is an open item about this package behaving correctly "in a
+    # package installed outside a checkout", so that is a planned
+    # environment, not a hypothetical one; a cross-manifest pin check simply
+    # has nothing to compare there.
     import pytest
 
     repo_root = PKG_ROOT.parents[5]
     pixi_path = repo_root / "pixi.toml"
     if not pixi_path.is_file():
-        pytest.skip(f"no monorepo pixi.toml at {pixi_path} — nothing to cross-check the pin against")
+        pytest.skip(f"no monorepo pixi.toml at {pixi_path} — nothing to cross-check the pins against")
 
     pixi_manifest = tomllib.loads(pixi_path.read_text(encoding="utf-8"))
-    feature_pin = pixi_manifest["feature"]["pyforge-steward"]["dependencies"]["django"]
+    pixi_deps = pixi_manifest["feature"]["pyforge-steward"]["dependencies"]
 
-    # Distribution names are case-insensitive (PEP 503); the SPECIFIER is what
-    # must match byte-for-byte, so only the name's case is normalized away.
-    assert extra_pin.lower() == f"django{feature_pin}".replace(" ", "").lower(), (
-        f"django pin drift: pyproject `[dashboard]` extra says {extra_pin!r}, "
-        f"pixi.toml `[feature.pyforge-steward.dependencies]` says {feature_pin!r}"
+    checked_names = ("django", "channels", "daphne", "asgiref", "channels_redis")
+    # Review pass: the per-name loop below asserts a MISSING pin loudly, but
+    # said nothing about an EXTRA one -- a 6th dependency added to the extra
+    # without a matching addition to `checked_names` drifted out of sync
+    # invisibly, defeating this test's own "generalized to every package the
+    # extra pins" docstring claim.
+    assert len(extra) == len(checked_names), (
+        f"[dashboard] extra has {len(extra)} pin(s) {extra!r} but this test "
+        f"only checks {checked_names!r} -- a pin was added or removed "
+        f"without updating this test"
     )
+    for pkg_name in checked_names:
+        # `pkg_name` as a whole distribution name: followed by a version
+        # specifier, an extras/marker delimiter, or nothing -- never by
+        # another name char, so e.g. `django-htmx` never matches `django`.
+        name_re = re.compile(rf"^{re.escape(pkg_name)}(?![0-9A-Za-z._-])", re.IGNORECASE)
+        extra_pins = [spec for spec in extra if name_re.match(spec.replace(" ", ""))]
+        assert len(extra_pins) == 1, (
+            f"expected exactly one {pkg_name} pin in the [dashboard] extra, got {extra_pins!r}"
+        )
+        extra_pin = extra_pins[0].replace(" ", "")
+
+        # Guard the lookup itself (review pass): a package present in the
+        # extra but missing entirely from pixi.toml's feature deps is
+        # exactly the drift this test exists to catch -- a raw `KeyError`
+        # reports that as an opaque traceback instead of a clear assertion.
+        assert pkg_name in pixi_deps, (
+            f"{pkg_name} is pinned in pyproject.toml's [dashboard] extra but "
+            f"missing entirely from pixi.toml's "
+            f"[feature.pyforge-steward.dependencies]"
+        )
+        feature_pin = pixi_deps[pkg_name]
+
+        # Distribution names are case-insensitive (PEP 503); the SPECIFIER is
+        # what must match byte-for-byte, so only the name's case is
+        # normalized away.
+        assert extra_pin.lower() == f"{pkg_name}{feature_pin}".replace(" ", "").lower(), (
+            f"{pkg_name} pin drift: pyproject `[dashboard]` extra says {extra_pin!r}, "
+            f"pixi.toml `[feature.pyforge-steward.dependencies]` says {feature_pin!r}"
+        )

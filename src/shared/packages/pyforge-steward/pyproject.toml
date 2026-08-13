@@ -24,12 +24,30 @@ dependencies = ["PyYAML", "pyforge-core"]
 # table's "Django 5.2 LTS"; 5.2 is already resolved and used elsewhere in this
 # estate (wagtail/coderedcms), not merely aspirational.
 #
-# MUST stay byte-identical to root pixi.toml's
-# `[feature.pyforge-steward.dependencies]` django pin. That pair is enforced
-# by tests/meta/test_invariants.py::test_django_pin_matches_the_dashboard_extra
-# rather than by a comment asking a human to remember (review pass 2 found the
-# previous comment here had already drifted from the file it named).
-dashboard = ["django>=5.2,<6"]
+# Story 9.5 (CAP-6): channels/daphne/asgiref/channels_redis complete the
+# extra to the architecture Stack table's full ASGI runtime -- Django alone
+# (Story 9.1's slice) could not yet run behind Channels at all. Floors:
+# channels/channels_redis match the shipped version this estate's own local
+# recipes pin (recipes/channels/meta.yaml, recipes/channels_redis/meta.yaml,
+# both 4.2.0); daphne matches root pixi.toml's pre-existing (unrelated,
+# wagtail/coderedcms) `[feature.local-recipes.dependencies]` pin; asgiref
+# matches the architecture Stack table's own quote of daphne's transitive
+# requirement (`asgiref >=3.5.2,<4`). All four verified to solve against
+# this workspace's conda-forge/SelfExplainML channels before landing.
+#
+# Every pin here MUST stay byte-identical to root pixi.toml's
+# `[feature.pyforge-steward.dependencies]` counterpart. That pair is enforced
+# by tests/meta/test_invariants.py's pin-sync test (generalized in Story 9.5
+# from a django-only check) rather than by a comment asking a human to
+# remember (review pass 2 found the previous comment here had already
+# drifted from the file it named).
+dashboard = [
+    "django>=5.2,<6",
+    "channels>=4.2.0,<5.0",
+    "daphne>=4.2.2,<5.0",
+    "asgiref>=3.5.2,<4",
+    "channels_redis>=4.2.0,<5.0",
+]
 
 [project.scripts]
 steward = "pyforge.steward.cli:main"

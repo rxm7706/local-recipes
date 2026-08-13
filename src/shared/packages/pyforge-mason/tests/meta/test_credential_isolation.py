@@ -110,21 +110,33 @@ floor and a per-name fixture, again mirroring `test_adapter_sole_caller.py`
 -- the original three-name set let `subprocess.check_output(..., env=...)`
 through untouched (follow-up review, Edge Case Hunter, reproduced).
 
-Exactly one allowlist entry: `cfe.py`'s own `run_streamed`-internal
-`Popen(..., env=dict(env) if env is not None else None)` call (Story 1.10's
-sanctioned pass-through primitive -- `cfe.py`'s own docstring names it as
-such). The allowlist is identified structurally -- by walking `run_streamed`'s
-own function body in `cfe.py` and permitting only the `Popen` call found
-there -- not by file alone, so an unrelated `env=` misuse elsewhere in
-`cfe.py` still gets flagged (spec Design Notes: "targets call sites, not
-function signatures... the property this guard protects is 'nobody currently
-exercises the override,' which only a call-site scan can prove"). It
-allowlists the `env=` EXPRESSION, not merely the call's identity: the value
-must unparse to exactly `_SANCTIONED_PASS_THROUGH_ENV_EXPR`. Identity alone
-was the guard's largest hole (follow-up review, both reviewers, reproduced
-on the real `cfe.py`) -- rewriting that one call's `env=` to `{}`, or to a
-targeted `JFROG_*`-stripping comprehension, defeated AD-14 at the single
-site that can defeat it while every guard test stayed green.
+Exactly two allowlist entries (Story 2.9 widens this from one): `cfe.py`'s
+own `run_streamed`-internal `Popen(..., env=dict(env) if env is not None
+else None)` call (Story 1.10's sanctioned pass-through primitive --
+`cfe.py`'s own docstring names it as such), and `cfe.py`'s own
+`_invoke_captured`-internal `subprocess.run(..., env=dict(env) if env is
+not None else None)` call (Story 2.9's second sanctioned pass-through site,
+added so `recipe.py::submit()` can inject `CFE_RECIPES_ROOT` into the
+child's environment for an out-of-tree recipe -- epic-2-context.md
+Technical Decisions, correct-course 2026-08-10). Each is identified
+structurally -- by walking its OWN named function's body in `cfe.py` and
+permitting only the one call of its own kind found there -- not by file
+alone, so an unrelated `env=` misuse elsewhere in `cfe.py` still gets
+flagged (spec Design Notes: "targets call sites, not function signatures...
+the property this guard protects is 'nobody currently exercises the
+override,' which only a call-site scan can prove"), and each is checked
+INDEPENDENTLY of the other: a regression at one site does not affect the
+other's own coverage, and a synthetic test fixture defining only one of the
+two named functions still gets that one site's protection in full (the
+generalized lookup returns the empty set, not an error, for a function that
+is absent or that contains zero matching calls). Both allowlist the `env=`
+EXPRESSION, not merely the call's identity: the value must unparse to
+exactly `_SANCTIONED_PASS_THROUGH_ENV_EXPR`. Identity alone was the guard's
+largest hole (follow-up review, both reviewers, reproduced on the real
+`cfe.py`) -- rewriting either sanctioned call's `env=` to `{}`, or to a
+targeted `JFROG_*`-stripping comprehension, defeats AD-14 at the one site
+that can defeat it while every OTHER guard test stays green -- proven
+independently for each site by its own fixtures below.
 
 *3b -- process-environment mutation.* No module mutates `os.environ` (or
 `os.environb`, the bytes view of the identical POSIX environment) by
@@ -657,15 +669,19 @@ _REQUIRED_EXPLICIT_ENV_SPAWN_FUNCTIONS = frozenset(
 """Independently spelled floor, same rationale as `_REQUIRED_HTTP_IMPORTS`."""
 
 _SANCTIONED_PASS_THROUGH_ENV_EXPR = "dict(env) if env is not None else None"
-"""The one `env=` expression the Guard-3 allowlist accepts, compared as
-`ast.unparse` text. Story 1.10's sanctioned pass-through: it forwards the
-caller's own `env` argument and otherwise hands `Popen` a bare `None`, which
-is exactly "inherit the parent environment". Pinning the EXPRESSION, not
-just the call's identity, is the fix for this guard's largest hole
-(follow-up review, both reviewers, reproduced against the real `cfe.py`):
-allowlisting by identity meant the sanctioned call could be rewritten to
-`env={}` or to a `JFROG_*`-stripping comprehension -- defeating AD-14 at the
-one site that can defeat it -- with all 34 guard tests still green."""
+"""The one `env=` expression BOTH of Guard-3a's allowlist entries accept
+(Story 2.9 widens this docstring from "the allowlist" (singular) to "both
+entries" -- the expression text itself is unchanged and shared verbatim
+between the two sites), compared as `ast.unparse` text. Story 1.10's
+sanctioned pass-through, mirrored exactly by Story 2.9's second site: it
+forwards the caller's own `env` argument and otherwise hands the call a
+bare `None`, which is exactly "inherit the parent environment". Pinning the
+EXPRESSION, not just the call's identity, is the fix for this guard's
+largest hole (follow-up review, both reviewers, reproduced against the real
+`cfe.py`): allowlisting by identity meant a sanctioned call could be
+rewritten to `env={}` or to a `JFROG_*`-stripping comprehension --
+defeating AD-14 at the one site that can defeat it -- with all 34 guard
+tests still green."""
 
 
 def _call_name(node: ast.Call) -> str | None:
@@ -692,10 +708,16 @@ def _is_bare_none_literal(value: ast.expr) -> bool:
     return isinstance(value, ast.Constant) and value.value is None
 
 
-def _run_streamed_function_def(
-    tree: ast.Module,
+def _named_function_def(
+    tree: ast.Module, name: str,
 ) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
-    """`AsyncFunctionDef` too (third review pass, Edge Case Hunter,
+    """The (sync or async) function definition named `name`, anywhere in
+    `tree` -- generalized (Story 2.9) from the original
+    `_run_streamed_function_def`, which hardcoded the name `"run_streamed"`,
+    so the identical structural lookup serves both of Guard 3a's sanctioned
+    sites: `run_streamed` and `_invoke_captured`.
+
+    `AsyncFunctionDef` too (third review pass, Edge Case Hunter,
     reproduced): matching only `ast.FunctionDef` fails CLOSED -- an `async
     def run_streamed` reds the guard on the sanctioned call itself rather
     than opening a hole -- but a false positive whose cheapest repair is to
@@ -704,28 +726,45 @@ def _run_streamed_function_def(
     for node in ast.walk(tree):
         if (
             isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name == "run_streamed"
+            and node.name == name
         ):
             return node
     return None
 
 
-def _allowlisted_popen_call_ids(tree: ast.Module) -> set[int]:
-    """The one AD-14 allowlist entry: `id()` of `run_streamed`'s own
-    `Popen(...)` call -- structural, not file-wide (module docstring), so a
-    second, unrelated `env=` misuse elsewhere in the same file is still
-    caught by the caller below.
+def _allowlisted_call_ids_in_named_function(
+    tree: ast.Module, function_name: str, call_name: str,
+) -> set[int]:
+    """One Guard-3a allowlist entry: `id()` of the one sanctioned
+    `call_name` call inside `function_name`'s own body -- structural, not
+    file-wide (module docstring), so a second, unrelated `env=` misuse
+    elsewhere in the same file is still caught by the caller below.
+    Generalized (Story 2.9) from the original `_allowlisted_popen_call_ids`,
+    which hardcoded `"run_streamed"`/`"Popen"`: this same per-function check
+    now backs BOTH sanctioned sites (`run_streamed`/`Popen` and
+    `_invoke_captured`/`run`), each called independently by
+    `_allowlisted_env_override_ids` below.
 
-    Fails CLOSED, not open (review pass, Blind Hunter): if `run_streamed`'s
-    body contains more than one `Popen` call, NONE is allowlisted. The
-    original version allowlisted every `Popen` call found by location alone,
-    regardless of count -- so a second, hostile `Popen(..., env={...})`
-    planted inside the same function body was silently allowlisted alongside
-    the one legitimate call, the exact regression this guard exists to
-    catch. The allowlist's whole premise is "exactly one sanctioned
-    pass-through call"; a second call (however it got there) invalidates
-    that premise, so both fall back to being flagged like any other
-    unallowlisted site.
+    Returns the empty set -- gracefully, not an error -- both when
+    `function_name` is not defined anywhere in `tree` at all (the original
+    behavior, e.g. for any file that isn't `cfe.py`) AND when it IS defined
+    but contains zero calls named `call_name` (the new case this
+    generalization must also handle gracefully: before Story 2.9 gives
+    `_invoke_captured` its own `env=`-passing call, `cfe.py` has a live
+    `run_streamed` entry and a `_invoke_captured` with no matching call at
+    all -- the caller below must not error or misbehave over that).
+
+    Fails CLOSED, not open (review pass, Blind Hunter): if
+    `function_name`'s body contains more than one call named `call_name`,
+    NONE is allowlisted. The original version allowlisted every such call
+    found by location alone, regardless of count -- so a second, hostile
+    call planted inside the same function body was silently allowlisted
+    alongside the one legitimate call, the exact regression this guard
+    exists to catch. The allowlist's whole premise is "exactly one
+    sanctioned pass-through call in THIS function"; a second call (however
+    it got there) invalidates that premise for this function alone -- the
+    OTHER sanctioned site, if any, is checked independently and is
+    unaffected.
 
     Allowlists the `env=` EXPRESSION, not the call's identity (follow-up
     review, both reviewers): the value must unparse to exactly
@@ -733,23 +772,39 @@ def _allowlisted_popen_call_ids(tree: ast.Module) -> set[int]:
     the one sanctioned call's `env=` -- to `{}`, or to a targeted
     `JFROG_*`-stripping comprehension -- passed every guard test, at the
     single call site where AD-14 can actually be broken."""
-    func = _run_streamed_function_def(tree)
+    func = _named_function_def(tree, function_name)
     if func is None:
         return set()
-    popen_calls = [
+    matching_calls = [
         node
         for node in ast.walk(func)
-        if node is not func and isinstance(node, ast.Call) and _call_name(node) == "Popen"
+        if node is not func and isinstance(node, ast.Call) and _call_name(node) == call_name
     ]
-    if len(popen_calls) != 1:
+    if len(matching_calls) != 1:
         return set()
-    env_value = _env_kwarg_value(popen_calls[0])
+    env_value = _env_kwarg_value(matching_calls[0])
     if env_value is None or _is_bare_none_literal(env_value):
         # Not flagged by the caller anyway -- nothing to allowlist.
         return set()
     if ast.unparse(env_value) != _SANCTIONED_PASS_THROUGH_ENV_EXPR:
         return set()
-    return {id(popen_calls[0])}
+    return {id(matching_calls[0])}
+
+
+def _allowlisted_env_override_ids(tree: ast.Module) -> set[int]:
+    """The union of BOTH Guard-3a allowlist entries (Story 2.9 renames this
+    from `_allowlisted_popen_call_ids`, which covered only `run_streamed`'s
+    `Popen` call): `run_streamed`'s own `Popen(...)` call, and
+    `_invoke_captured`'s own `run(...)` (`subprocess.run`) call. Each is
+    checked independently by `_allowlisted_call_ids_in_named_function`
+    above, so a regression at one site (a second call planted in its body,
+    a rewritten `env=` expression) does not affect the other site's own
+    coverage."""
+    return _allowlisted_call_ids_in_named_function(
+        tree, "run_streamed", "Popen",
+    ) | _allowlisted_call_ids_in_named_function(
+        tree, "_invoke_captured", "run",
+    )
 
 
 # --- Guard 3b: no mutation of the parent's own process environment ----------
@@ -1016,7 +1071,7 @@ def _find_env_override_violations(root: Path) -> list[Violation]:
     for path in sorted(root.rglob("*.py")):
         tree = _parse_file(path)
         allowlisted_ids = (
-            _allowlisted_popen_call_ids(tree) if path.resolve() == cfe_path else set()
+            _allowlisted_env_override_ids(tree) if path.resolve() == cfe_path else set()
         )
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
@@ -1093,8 +1148,9 @@ def test_no_unallowlisted_env_override_in_the_real_tree():
     assert not violations, (
         "AD-14: env= on a spawn call must be absent or the bare literal "
         "None, and no module may call the os.exec*e/spawn*e/posix_spawn "
-        "family at all. The ONE allowlisted site is cfe.py's own "
-        "run_streamed-internal Popen call, whose env= must unparse to "
+        "family at all. The TWO allowlisted sites are cfe.py's own "
+        "run_streamed-internal Popen call and its own _invoke_captured-"
+        "internal subprocess.run call, each of whose env= must unparse to "
         f"exactly {_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Found:\n"
         + "\n".join(f"  {v.path}:{v.lineno} [{v.category}] {v.detail}" for v in violations)
     )
@@ -1152,23 +1208,53 @@ def test_env_mutating_names_cover_the_required_floor():
     )
 
 
-def test_the_real_cfe_py_allowlist_entry_is_still_live():
-    """The allowlist must never go stale (third review pass, Blind Hunter,
-    reproduced): deleting the `env=` line from the real `cfe.py` entirely --
-    so `run_streamed`'s `env` parameter is accepted and silently ignored, and
-    `_SANCTIONED_PASS_THROUGH_ENV_EXPR` matches nothing in the tree -- left
-    every guard test in this file green. A carve-out nobody exercises is a
-    carve-out that quietly comes to cover whatever that file grows next.
-    Mirrors `test_adapter_sole_caller.py::
-    test_cfe_path_allowlist_is_exactly_ad3s_two_live_carve_outs`."""
+def test_the_real_cfe_py_run_streamed_allowlist_entry_is_still_live():
+    """The `run_streamed` allowlist entry must never go stale (third review
+    pass, Blind Hunter, reproduced): deleting the `env=` line from the real
+    `cfe.py` entirely -- so `run_streamed`'s `env` parameter is accepted and
+    silently ignored, and `_SANCTIONED_PASS_THROUGH_ENV_EXPR` matches
+    nothing in the tree -- left every guard test in this file green. A
+    carve-out nobody exercises is a carve-out that quietly comes to cover
+    whatever that file grows next. Mirrors `test_adapter_sole_caller.py::
+    test_cfe_path_allowlist_is_exactly_ad3s_two_live_carve_outs`. Story 2.9
+    splits this from a single combined test into one test per allowlisted
+    site (matching this file's own per-name-fixture convention) now that
+    Guard 3a has two sites -- see the `_invoke_captured` counterpart below."""
     cfe_path = PKG_ROOT / "cfe.py"
     assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
 
-    allowlisted = _allowlisted_popen_call_ids(_parse_file(cfe_path))
+    allowlisted = _allowlisted_call_ids_in_named_function(
+        _parse_file(cfe_path), "run_streamed", "Popen",
+    )
 
     assert len(allowlisted) == 1, (
-        "AD-14's single allowlist entry is dead: cfe.py's run_streamed no "
-        "longer contains exactly one Popen call whose env= unparses to "
+        "AD-14's run_streamed allowlist entry is dead: cfe.py's run_streamed "
+        "no longer contains exactly one Popen call whose env= unparses to "
+        f"{_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Either the sanctioned "
+        "pass-through was rewritten (a real AD-14 change -- justify it) or "
+        "the allowlist is now covering nothing and must be deleted."
+    )
+
+
+def test_the_real_cfe_py_invoke_captured_allowlist_entry_is_still_live():
+    """Story 2.9's second Guard-3a allowlist entry, mirroring the
+    `run_streamed` test above: `cfe.py`'s own `_invoke_captured` must still
+    contain exactly one `subprocess.run(...)` call whose `env=` unparses to
+    exactly `_SANCTIONED_PASS_THROUGH_ENV_EXPR` -- proving `recipe.py::
+    submit()`'s `CFE_RECIPES_ROOT` injection (module docstring) reaches a
+    real, live, structurally-verified pass-through, not a carve-out nobody
+    exercises."""
+    cfe_path = PKG_ROOT / "cfe.py"
+    assert cfe_path.is_file(), f"cfe.py moved? {cfe_path}"
+
+    allowlisted = _allowlisted_call_ids_in_named_function(
+        _parse_file(cfe_path), "_invoke_captured", "run",
+    )
+
+    assert len(allowlisted) == 1, (
+        "AD-14's _invoke_captured allowlist entry is dead: cfe.py's "
+        "_invoke_captured no longer contains exactly one subprocess.run "
+        f"call whose env= unparses to exactly "
         f"{_SANCTIONED_PASS_THROUGH_ENV_EXPR!r}. Either the sanctioned "
         "pass-through was rewritten (a real AD-14 change -- justify it) or "
         "the allowlist is now covering nothing and must be deleted."
@@ -1839,6 +1925,64 @@ def test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_call(
         "\n"
         "def run_streamed(argv, *, timeout, env=None):\n"
         f"    return subprocess.Popen(argv, env={env_expr})\n",
+        encoding="utf-8",
+    )
+
+    violations = _find_env_override_violations(root)
+
+    assert any(v.category == CATEGORY_ENV_OVERRIDE for v in violations)
+
+
+def test_allowlist_is_revoked_when_invoke_captured_gains_a_second_run_call(tmp_path):
+    """Story 2.9's `_invoke_captured`-equivalent of
+    `test_allowlist_is_revoked_when_run_streamed_gains_a_second_popen_call`
+    above: more than one `subprocess.run` call in `_invoke_captured`'s own
+    body revokes THAT site's allowlist entry entirely -- both calls must be
+    flagged, not just the newly-planted one. `run_streamed`'s own entry
+    (absent from this synthetic file) is unaffected by this file even
+    defining `_invoke_captured` at all -- the two sites are checked
+    independently."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "cfe.py").write_text(
+        "import subprocess\n"
+        "\n"
+        "\n"
+        "def _invoke_captured(script_key, args, *, root, interpreter, timeout, env=None):\n"
+        "    leaked = subprocess.run(args, env={'JFROG_API_KEY': 'x'})\n"
+        "    completed = subprocess.run(\n"
+        "        args, env=dict(env) if env is not None else None,\n"
+        "    )\n"
+        "    return completed\n",
+        encoding="utf-8",
+    )
+
+    violations = _find_env_override_violations(root)
+
+    assert len(violations) == 2
+
+
+@pytest.mark.parametrize(
+    "env_expr",
+    ["{}", '{"HTTPS_PROXY": "http://evil"}', "{k: v for k, v in os.environ.items()}"],
+    ids=["empty-dict", "hostile-dict", "stripping-comprehension"],
+)
+def test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_invoke_captured_call(
+    tmp_path, env_expr,
+):
+    """Story 2.9's `_invoke_captured`-equivalent of
+    `test_allowlist_rejects_a_rewritten_env_expression_in_the_sanctioned_call`
+    above: rewriting `_invoke_captured`'s own sanctioned `env=` -- to `{}`,
+    to a hostile dict, or to a targeted `JFROG_*`-stripping comprehension --
+    must still be caught at this second site, exactly as at the first."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "cfe.py").write_text(
+        "import os\nimport subprocess\n"
+        "\n"
+        "\n"
+        "def _invoke_captured(script_key, args, *, root, interpreter, timeout, env=None):\n"
+        f"    return subprocess.run(args, env={env_expr})\n",
         encoding="utf-8",
     )
 
