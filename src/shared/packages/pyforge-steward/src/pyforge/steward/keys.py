@@ -62,7 +62,6 @@ import stat
 import subprocess
 import sys
 import tempfile
-import threading
 import tokenize
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -70,6 +69,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import yaml
+from pyforge.core.atomic_write import atomic_write
 
 from .interfaces import DutyResult
 
@@ -661,16 +661,15 @@ def save_inventory(path: str | Path, entries: tuple[KeyIdentityEntry, ...]) -> N
 
     Creates parent directories as needed. `yaml.safe_dump` only.
 
-    Writes via a pid+thread-id-suffixed temp file then `os.replace` (never
-    a direct `open("w")` on the real path) -- review finding: a concurrent
-    `load_inventory` reader (e.g. `steward keys list` running at the same
-    moment as a `rotate`/`revoke`) could otherwise observe a partially
-    written file mid-`yaml.safe_dump`. `os.replace` is atomic on POSIX, so
-    a reader always sees either the fully-old or fully-new document, never
-    a torn one.
+    Writes atomically via `pyforge.core.atomic_write` (Story 14.2, CAP-2 --
+    the one shared temp-file-then-`os.replace` primitive, mkstemp-based) --
+    review finding: a concurrent `load_inventory` reader (e.g. `steward keys
+    list` running at the same moment as a `rotate`/`revoke`) could otherwise
+    observe a partially written file mid-`yaml.safe_dump`. `os.replace` is
+    atomic on POSIX, so a reader always sees either the fully-old or
+    fully-new document, never a torn one.
     """
     path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
     document = {
         "identities": [
             {
@@ -685,10 +684,12 @@ def save_inventory(path: str | Path, entries: tuple[KeyIdentityEntry, ...]) -> N
             for e in entries
         ]
     }
-    tmp_path = path.parent / f".{path.name}.pid{os.getpid()}.t{threading.get_native_id()}.tmp"
-    with tmp_path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(document, f, sort_keys=False)
-    os.replace(tmp_path, path)
+
+    def _write(tmp: Path) -> None:
+        with tmp.open("w", encoding="utf-8") as f:
+            yaml.safe_dump(document, f, sort_keys=False)
+
+    atomic_write(path, _write)
 
 
 @contextlib.contextmanager
