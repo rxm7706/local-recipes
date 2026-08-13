@@ -136,6 +136,42 @@ class CfeUnresolvedError(MasonError):
         return (self.__class__, ())
 
 
+class RecipeGenerationError(MasonError):
+    """`cfe.py::generate_recipe` reported a non-zero exit for `recipe.py::new`
+    (FR-7, NFR-14).
+
+    `source` is the CFE subcommand name the caller selected (`pypi`/`github`/
+    `cran`/`npm` -- `recipe.py`'s own `--from-*` -> subcommand mapping, spec
+    Always boundary), not a filesystem path or a Mason-invented label.
+    `cfe_message` is CFE's own failure text, embedded verbatim -- the wrapped
+    recipe-generator script's `main()` prints `Error: <e>` to **stdout** on
+    failure (its own trailing `except Exception as e: print(f"Error:
+    {e}")`), not stderr, so `recipe.py` prefers `CfeResult.stdout` over
+    `stderr` when building this argument; this class does no interpretation
+    of its own, only carries the string through. (Script filenames are named
+    once, in `cfe.py` alone -- AD-3, `tests/meta/test_adapter_sole_caller.py`
+    -- so this docstring deliberately never spells the `.py` filename.)
+
+    `__reduce__` mirrors `CfeTimeoutError`'s override immediately below, for
+    the identical reason: `MasonError.__init__` sets `self.args =
+    (identifier, message)` -- two items, but the WRONG two values for this
+    class's own two-argument constructor (`source`, `cfe_message`). Without
+    this override, `RecipeGenerationError(*self.args)` would not raise, but
+    would silently reconstruct with `self.source` bound to the identifier
+    string and `self.cfe_message` bound to the built message, corrupting
+    every deepcopy/pickle round-trip instead of failing loudly.
+    """
+
+    def __init__(self, source: str, cfe_message: str) -> None:
+        self.source = source
+        self.cfe_message = cfe_message
+        message = f"recipe generation from {source} failed: {cfe_message}"
+        super().__init__("recipe:generation-failed", message)
+
+    def __reduce__(self):
+        return (self.__class__, (self.source, self.cfe_message))
+
+
 class CfeTimeoutError(MasonError):
     """A CFE invocation exceeded its mandatory timeout (FR-4, AD-4, AD-25,
     NFR-14) -- either a CAPTURE-mode one (`cfe.py::_invoke_captured`) or a

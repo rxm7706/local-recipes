@@ -1,24 +1,17 @@
-"""Progress record local storage (Story 8.1, scaled-down Epic 8).
+"""Progress record storage (Story 8.1, scaled-down Epic 8; Story 13.3
+moved the backing store from a JSON file to the shared SQLite database in
+``db.py``).
 
-The full Epic 8 spec
-(``_bmad-output/projects/pyforge-herald/planning-artifacts/epics-with-stories.md``
-lines 359-568) assumes a live PostgreSQL/SQLite database behind SQLAlchemy +
-Alembic migrations. Nothing else in this repo's Herald architecture (a
-stateless CLI plus a static web dashboard) has ever hosted a persistent
-service, so the first pass is scaled down to a single local JSON file --
-``.herald/progress.json`` -- holding a JSON array of records, following the
-same repo-root-relative, explicit-``Path``-argument convention
-``state.py``'s ``DEFAULT_STATE_PATH``/``read``/``write`` already established
-(AD-5's shape, reused rather than reinvented). See
-``docs/dreams/herald-moments-2-4-live-backend.md`` for the deferred
-live-database shape this module's data-access seam is meant to swap behind
-without a CLI/web-tab contract change.
-
-**Storage shape.** A JSON array of objects (not NDJSON): the whole file is
-small (one record per station per day, a handful of stations), so there is
-no streaming/append-only need NDJSON would justify, and a plain array is the
-simplest thing that round-trips through ``json.load``/``json.dump`` the same
-way ``state.py``'s single JSON object does.
+**Storage shape.** One row per record in ``db.py``'s shared
+``.herald/herald.db`` (table ``progress``). ``shipped_capabilities`` is a
+JSON array stored as a ``TEXT`` column -- no cross-record query needs it
+normalized (Simplicity First), the same reasoning ``claims.py``'s
+``evidence``/``edit_history`` and ``notices.py``'s ``revisions`` columns
+follow. See ``docs/dreams/herald-moments-2-4-live-backend.md`` for the
+full live-database shape this module's data-access seam originally
+existed to swap behind without a CLI/web-tab contract change -- this story
+is that swap, for progress/claims/notices' local storage (not a live
+server).
 
 **Uniqueness key.** ``(station, date)`` -- the epics doc's own Story 8.2 AC
 ("Creates new Progress record for today (if not exists)") implies at most
@@ -27,41 +20,43 @@ one record per station per calendar day. ``upsert`` enforces this: a second
 (bumping ``updated_at``, preserving the original ``id``/``created_at``)
 rather than accumulating duplicates.
 
-**Concurrency.** Same atomic-write pattern as ``state.py``/``deck_pipeline.py``:
-write to a temp file in the same directory, then ``os.replace``. Atomic
-replacement alone is crash-safety, not concurrency-safety, so ``upsert``'s
-whole read-modify-write span also runs inside ``locking.locked`` on a
-sidecar ``<progress_path>.lock`` file (Story 13.1, closing ``DW-1-4-2``):
-a second concurrent ``upsert`` call for the same ``progress_path`` blocks
-until the first releases the lock, so two writers targeting different
-``(station, date)`` keys in the same file can never silently drop one
-update.
-
-``write_all`` -- this module's other public writer -- takes the same lock,
-since an advisory lock only serializes the writers that all take it and a
-lock-free public whole-document write would reopen the same lost-update
-race against a concurrent ``upsert``. ``upsert`` calls the private
-``_write_all_unlocked`` from inside its own critical section instead:
-``locking.locked`` is deliberately not reentrant, so calling the locked
-public entry point there would self-deadlock.
+**Concurrency (Story 13.3).** ``db.transaction`` -- SQLite's own
+``BEGIN IMMEDIATE``/commit -- replaces ``locking.locked`` as the mechanism
+serializing this module's writers; see ``db.py``'s module docstring for the
+reentrant-ambient-transaction design that lets ``read_all``/
+``_write_all_unlocked`` keep the exact call shape (and therefore the exact
+public signature, patchable by a test's ``monkeypatch.setattr``) Story
+13.1 established. ``upsert`` operates on a single row directly (no
+whole-table read-modify-write) -- a natural simplification once the store
+is a real database rather than one JSON array file. ``write_all`` --
+this module's other public writer -- still takes the same transaction
+``upsert`` does: a caller that skipped it would race a concurrent
+``upsert`` exactly as before this module had any locking at all.
+``upsert`` itself calls ``_write_all_unlocked`` instead of the public
+``write_all`` purely to keep the two names' original relationship; both
+now resolve to the SAME ambient transaction when called from inside one
+(``db.transaction`` is reentrant), so there is no self-deadlock risk to
+avoid the way there was under ``locking.locked``'s non-reentrant lock.
 """
 
 from __future__ import annotations
 
 import json
+import sqlite3
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from datetime import date as date_cls
 from pathlib import Path
 
-from pyforge.core.atomic_write import atomic_write_text
+from . import db, errors
 
-from . import errors, locking
-
-DEFAULT_PROGRESS_PATH = Path(".herald/progress.json")
+DEFAULT_PROGRESS_PATH = db.DEFAULT_DB_PATH
 """Mirrors ``state.DEFAULT_STATE_PATH``'s convention: relative to a repo
-root the caller resolves."""
+root the caller resolves. Redefined to ``db.DEFAULT_DB_PATH`` (rather than
+removed) so every existing call site (``cli.py``'s
+``progress.DEFAULT_PROGRESS_PATH``) needs zero changes -- see ``db.py``'s
+module docstring on why one shared database, not per-module files."""
 
 STATIONS: tuple[str, ...] = (
     "warden",
@@ -166,7 +161,8 @@ def _fields_problem(record: object) -> str | None:
 def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
     """Mirrors ``state._reject_duplicate_keys``: a duplicated key within one
     record's own object is a hand-edit that must fail structurally (AD-6),
-    not silently last-wins."""
+    not silently last-wins. Only relevant to ``_read_legacy_json`` now --
+    the DB read path has no JSON-object-key concept to duplicate."""
     document: dict[str, object] = {}
     for key, value in pairs:
         if key in document:
@@ -175,13 +171,13 @@ def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]
     return document
 
 
-def read_all(progress_path: Path) -> list[Progress]:
-    """Every stored record, or ``[]`` when the file does not exist yet.
-
-    Raises ``errors.HeraldError`` on malformed JSON, a non-array top level,
-    or any record failing ``_fields_problem`` -- mirrors ``state._load_document``'s
-    discipline: a corrupt or hand-edited file fails structurally, never
-    silently."""
+def _read_legacy_json(progress_path: Path) -> list[Progress]:
+    """The pre-Story-13.3 JSON-file reader, preserved verbatim for the
+    one-time legacy import (``db.py``'s ``_import_legacy_v1``) -- so a
+    legacy ``progress.json`` that fails this exact validation still raises
+    the identical ``errors.HeraldError`` at migration time (Boundaries &
+    Constraints). No longer ``read_all``'s own body; that now reads
+    through ``db.py``."""
     try:
         with progress_path.open(encoding="utf-8") as fh:
             document = json.load(fh, object_pairs_hook=_reject_duplicate_keys)
@@ -207,37 +203,118 @@ def read_all(progress_path: Path) -> list[Progress]:
     return records
 
 
-def write_all(progress_path: Path, records: list[Progress]) -> None:
-    """Persist ``records`` wholesale, atomically (temp file + ``os.replace``),
-    mirroring ``state.write``'s crash-safety pattern. Sorted by
-    ``(station, date)`` before writing so the on-disk file is deterministic
-    across runs regardless of insertion order.
+def _to_params(record: Progress) -> tuple[object, ...]:
+    """``record`` as a positional parameter tuple matching the ``progress``
+    table's column order -- shared by every INSERT (``_write_all_unlocked``,
+    ``upsert``, and ``db.py``'s legacy import)."""
+    return (
+        record.id,
+        record.station,
+        record.date,
+        json.dumps(record.shipped_capabilities),
+        record.compute_hours,
+        record.token_spend,
+        record.wall_clock_hours,
+        record.unblock_narrative,
+        record.created_at,
+        record.updated_at,
+    )
 
-    Takes the same ``locking.locked`` lock ``upsert`` does (Story 13.1).
-    An advisory lock only serializes writers that all take it, so a public
-    whole-document writer that skipped it would clobber a concurrent
-    ``upsert`` exactly as before the lock existed -- the very race this
-    module's Concurrency note claims is closed. ``upsert`` itself calls
-    ``_write_all_unlocked`` instead, because ``locked`` is deliberately not
-    reentrant and ``upsert`` already holds this lock across its own
-    read-modify-write span."""
-    lock_path = locking.lock_path_for(progress_path)
-    with locking.locked(lock_path):
+
+def _row_to_progress(progress_path: Path, row) -> Progress:
+    try:
+        shipped_capabilities = json.loads(row["shipped_capabilities"])
+    except ValueError as exc:
+        raise errors.HeraldError(
+            f"progress record {row['id']!r} in {progress_path} has malformed "
+            f"shipped_capabilities: {exc}"
+        ) from exc
+    if not isinstance(shipped_capabilities, list) or not all(
+        isinstance(c, str) for c in shipped_capabilities
+    ):
+        raise errors.HeraldError(
+            f"progress record {row['id']!r} in {progress_path} has malformed "
+            f"shipped_capabilities: expected an array of strings"
+        )
+    return Progress(
+        id=row["id"],
+        station=row["station"],
+        date=row["date"],
+        shipped_capabilities=shipped_capabilities,
+        compute_hours=row["compute_hours"],
+        token_spend=row["token_spend"],
+        wall_clock_hours=row["wall_clock_hours"],
+        unblock_narrative=row["unblock_narrative"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def read_all(progress_path: Path) -> list[Progress]:
+    """Every stored record, or ``[]`` when nothing has been written yet.
+
+    Raises ``errors.HeraldError`` naming ``progress_path`` when a stored
+    record's ``shipped_capabilities`` JSON column is malformed -- the one
+    corruption still reachable once the store is a schema-enforced
+    database: every other field is a plain, typed SQL column in a
+    ``STRICT`` table, so SQLite itself rejects a wrong-typed value at
+    write time rather than handing it back here. (Without ``STRICT``,
+    SQLite's default type affinity accepts e.g. ``compute_hours='lots'``
+    from an out-of-band write and returns it verbatim -- the exact
+    type-validation ``read_all`` performed on every record pre-13.3.)"""
+    with db.connection(progress_path) as conn:
+        rows = conn.execute(
+            "SELECT id, station, date, shipped_capabilities, compute_hours, "
+            "token_spend, wall_clock_hours, unblock_narrative, created_at, "
+            "updated_at FROM progress ORDER BY station, date"
+        ).fetchall()
+        return [_row_to_progress(progress_path, row) for row in rows]
+
+
+def write_all(progress_path: Path, records: list[Progress]) -> None:
+    """Persist ``records`` wholesale (replacing every existing row),
+    sorted by ``(station, date)`` before writing so callers relying on
+    ``read_all``'s order see it deterministically.
+
+    Takes the same ``db.transaction`` ``upsert`` does (Story 13.3): a
+    public whole-table writer that skipped it would race a concurrent
+    ``upsert`` exactly as before this module had any concurrency
+    primitive at all."""
+    with db.transaction(progress_path):
         _write_all_unlocked(progress_path, records)
 
 
 def _write_all_unlocked(progress_path: Path, records: list[Progress]) -> None:
-    """``write_all``'s body, without taking the lock -- for callers that
-    already hold it (``upsert``). Never call this from outside a
-    ``locking.locked`` block.
-
-    Delegates to `pyforge.core.atomic_write_text` (Story 14.2, CAP-2 -- the
-    one shared temp-file-then-`os.replace` primitive, mkstemp-based)."""
+    """``write_all``'s body -- see the module docstring's Concurrency
+    section for why this no longer needs to avoid a separate lock
+    acquisition the way it did under ``locking.locked``: ``db.transaction``
+    is reentrant, so calling this from inside ``upsert``'s own open
+    transaction (or ``write_all``'s) simply joins it."""
     ordered = sorted(records, key=lambda r: (r.station, r.date))
-    document = [asdict(r) for r in ordered]
     try:
-        atomic_write_text(progress_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
-    except (OSError, TypeError, ValueError, RecursionError) as exc:
+        with db.transaction(progress_path) as conn:
+            conn.execute("DELETE FROM progress")
+            conn.executemany(
+                "INSERT INTO progress (id, station, date, shipped_capabilities, "
+                "compute_hours, token_spend, wall_clock_hours, unblock_narrative, "
+                "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [_to_params(r) for r in ordered],
+            )
+    except errors.HeraldError:
+        raise
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
+        # The non-`sqlite3` arms are not defensive padding: they are the
+        # exact set the pre-Story-13.3 `write_all` caught, and `_to_params`
+        # -- which still `json.dumps` the `shipped_capabilities` column --
+        # runs inside this `try`. Narrowing to `sqlite3.Error` silently
+        # regressed the error contract this story promised to keep
+        # unchanged. Verified: a non-serializable capability raised a raw
+        # `TypeError` here, and a lone surrogate (what `argv` yields for a
+        # non-UTF-8 byte, via `surrogateescape`) raised a raw
+        # `UnicodeEncodeError` out of SQLite's own TEXT binding -- a
+        # `ValueError` subclass the old `json.dumps(ensure_ascii=True)`
+        # path escaped instead. Both reached `cli.dispatch`, which catches
+        # only `HeraldError`, as tracebacks.
         raise errors.HeraldError(
             f"progress file {progress_path} could not be written: {exc}"
         ) from exc
@@ -263,21 +340,30 @@ def upsert(
     compute_hours/token_spend/wall_clock_hours can meaningfully be
     negative, and without this check a typo'd flag was silently stored
     and rendered as-is (e.g. "-5h compute") with no indication anything
-    was wrong."""
+    was wrong.
+
+    Operates on the single ``(station, date)`` row directly inside one
+    ``db.transaction`` (Story 13.3) rather than reloading and rewriting
+    the whole table -- a natural simplification once the store is a real
+    database; the transaction's ``BEGIN IMMEDIATE`` gives the same
+    "second concurrent writer blocks until the first commits" guarantee
+    ``locking.locked`` gave, now enforced by SQLite itself."""
     if compute_hours < 0:
         raise errors.HeraldError("compute_hours must not be negative")
     if token_spend < 0:
         raise errors.HeraldError("token_spend must not be negative")
     if wall_clock_hours < 0:
         raise errors.HeraldError("wall_clock_hours must not be negative")
-    lock_path = locking.lock_path_for(progress_path)
-    with locking.locked(lock_path):
-        records = read_all(progress_path)
-        timestamp = now_iso()
-        for index, existing in enumerate(records):
-            if existing.station == station and existing.date == date:
+    try:
+        with db.transaction(progress_path) as conn:
+            existing = conn.execute(
+                "SELECT id, created_at FROM progress WHERE station = ? AND date = ?",
+                (station, date),
+            ).fetchone()
+            timestamp = now_iso()
+            if existing is not None:
                 updated = Progress(
-                    id=existing.id,
+                    id=existing["id"],
                     station=station,
                     date=date,
                     shipped_capabilities=list(shipped_capabilities),
@@ -285,27 +371,50 @@ def upsert(
                     token_spend=token_spend,
                     wall_clock_hours=wall_clock_hours,
                     unblock_narrative=unblock_narrative,
-                    created_at=existing.created_at,
+                    created_at=existing["created_at"],
                     updated_at=timestamp,
                 )
-                records[index] = updated
-                _write_all_unlocked(progress_path, records)
+                conn.execute(
+                    "UPDATE progress SET shipped_capabilities = ?, compute_hours = ?, "
+                    "token_spend = ?, wall_clock_hours = ?, unblock_narrative = ?, "
+                    "updated_at = ? WHERE id = ?",
+                    (
+                        json.dumps(updated.shipped_capabilities),
+                        compute_hours,
+                        token_spend,
+                        wall_clock_hours,
+                        unblock_narrative,
+                        timestamp,
+                        existing["id"],
+                    ),
+                )
                 return updated
-        created = Progress(
-            id=new_id(),
-            station=station,
-            date=date,
-            shipped_capabilities=list(shipped_capabilities),
-            compute_hours=compute_hours,
-            token_spend=token_spend,
-            wall_clock_hours=wall_clock_hours,
-            unblock_narrative=unblock_narrative,
-            created_at=timestamp,
-            updated_at=timestamp,
-        )
-        records.append(created)
-        _write_all_unlocked(progress_path, records)
-        return created
+            created = Progress(
+                id=new_id(),
+                station=station,
+                date=date,
+                shipped_capabilities=list(shipped_capabilities),
+                compute_hours=compute_hours,
+                token_spend=token_spend,
+                wall_clock_hours=wall_clock_hours,
+                unblock_narrative=unblock_narrative,
+                created_at=timestamp,
+                updated_at=timestamp,
+            )
+            conn.execute(
+                "INSERT INTO progress (id, station, date, shipped_capabilities, "
+                "compute_hours, token_spend, wall_clock_hours, unblock_narrative, "
+                "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                _to_params(created),
+            )
+            return created
+    except errors.HeraldError:
+        raise
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
+        # Same set, same reason, as `_write_all_unlocked` above.
+        raise errors.HeraldError(
+            f"progress file {progress_path} could not be written: {exc}"
+        ) from exc
 
 
 def latest_for_station(progress_path: Path, station: str) -> Progress | None:
