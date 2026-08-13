@@ -2436,9 +2436,16 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "42a1005af94d3c1190d802aca779eae40d500864"
+   "pixi.toml": "3aa921f51a0e8173ab905df2819f0650f9d044fe",
+   "src/shared/packages/pyforge-core/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
+   "src/shared/packages/pyforge-core/README.md": "eb9b93c06168d70f50357a799319553c616e342a",
+   "src/shared/packages/pyforge-core/pixi.toml": "7974c46731748dd56e3f5e2b39f3f4570e4cf9b6",
+   "src/shared/packages/pyforge-core/pyproject.toml": "40c4b6d34b441a0558e9484244f3875768a34ca9",
+   "src/shared/packages/pyforge-core/src/pyforge/core/__init__.py": "011d8c0d468a6ee517c73337ccb5f29413077aaa",
+   "src/shared/packages/pyforge-core/src/pyforge/core/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+   "src/shared/packages/pyforge-core/tests/meta/test_leaf_constraint.py": "8d891d0f493e14a19e78b277c46d1b7761905b7c"
   },
-  "memlog": "8f2c4f48966d11dd71231205c3f0d47f1139cd4a"
+  "memlog": "a1302850534bd6ce8f0bdc1585075ccec19dc2f9"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
