@@ -10,11 +10,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# NFR-10 / FR-41: only what `pyforge.mason` actually imports. At scaffold stage
-# that is the standard library alone — argparse and importlib.metadata.
-# Deliberately NO CLI framework: click/typer are forbidden by FR-41, and the
-# dispatcher is argparse for the same reason its siblings' are.
-dependencies = []
+# NFR-10 / FR-41: only what `pyforge.mason` actually imports. Standard
+# library alone otherwise (argparse, importlib.metadata) -- `packaging` is
+# the one third-party addition, for engines/__init__.py's `SpecifierSet`
+# version-range constants (Story 3.1). Deliberately NO CLI framework:
+# click/typer are forbidden by FR-41, and the dispatcher is argparse for the
+# same reason its siblings' are.
+dependencies = ["packaging"]
 
 [project.scripts]
 mason = "pyforge.mason.cli:main"

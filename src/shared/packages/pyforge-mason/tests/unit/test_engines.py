@@ -3,18 +3,26 @@
 version=None` failure path. `shutil.which`/`subprocess.run` are mocked
 throughout (AD-16: no test in this suite requires a real engine binary on
 PATH), mirroring `test_cfe.py`'s `subprocess.run` mocking pattern.
+
+Story 3.1 extends this file with `EngineAdapter` protocol-shape coverage and
+`require_engine` coverage (the I/O & Edge-Case Matrix: present+parses,
+present+unparseable, absent), using the same `shutil.which`/`subprocess.run`
+mocking convention.
 """
 
 from __future__ import annotations
 
 import subprocess
+import typing
 from unittest.mock import patch
 
 import pytest
 
 from pyforge.mason.engines import (
-    _KNOWN_ENGINES, EngineStatus, probe_engine, probe_known_engines,
+    _KNOWN_ENGINES, EngineAdapter, EngineStatus, probe_engine,
+    probe_known_engines, require_engine,
 )
+from pyforge.mason.errors import EngineAbsentError
 
 
 def _fake_completed(stdout: str = "", stderr: str = "", returncode: int = 0) -> subprocess.CompletedProcess:
@@ -142,3 +150,82 @@ def test_probe_known_engines_never_raises_even_when_every_probe_fails():
 
     assert len(statuses) == len(_KNOWN_ENGINES)
     assert all(status.available is True and status.version is None for status in statuses)
+
+
+# --- Story 3.1: EngineAdapter protocol shape --------------------------------
+
+def test_engine_adapter_protocol_declares_name_and_probe():
+    assert typing.Protocol in EngineAdapter.__mro__
+
+    hints = typing.get_type_hints(EngineAdapter)
+    assert hints["name"] is str
+
+    probe_hints = typing.get_type_hints(EngineAdapter.probe)
+    assert probe_hints["return"] == (str | None)
+
+
+# --- Story 3.1: require_engine (I/O & Edge-Case Matrix) ---------------------
+
+def test_require_engine_returns_the_version_when_present_and_parseable():
+    with patch("pyforge.mason.engines.shutil.which", return_value="/usr/bin/twine"), \
+         patch(
+             "pyforge.mason.engines.subprocess.run",
+             return_value=_fake_completed(stdout="twine version 7.0.0\n"),
+         ):
+        version = require_engine("twine")
+
+    assert version == "twine version 7.0.0"
+
+
+def test_require_engine_returns_none_when_present_but_version_is_unreadable():
+    """Spec I/O matrix: presence, not parseability, is what's required."""
+    with patch("pyforge.mason.engines.shutil.which", return_value="/usr/bin/pixi"), \
+         patch(
+             "pyforge.mason.engines.subprocess.run",
+             side_effect=subprocess.TimeoutExpired(cmd=["pixi", "--version"], timeout=10.0),
+         ):
+        version = require_engine("pixi")
+
+    assert version is None
+
+
+def test_require_engine_raises_engine_absent_error_when_not_on_path():
+    with patch("pyforge.mason.engines.shutil.which", return_value=None), \
+         patch("pyforge.mason.engines.subprocess.run") as mock_run:
+        with pytest.raises(EngineAbsentError) as excinfo:
+            require_engine("conda-lock")
+
+    mock_run.assert_not_called()
+    exc = excinfo.value
+    assert exc.identifier == "engine:absent"
+    assert exc.name == "conda-lock"
+    assert exc.conda_package == "conda-lock"
+    assert "conda-lock" in str(exc)
+
+
+def test_require_engine_never_leaks_a_raw_file_not_found_error():
+    """Spec acceptance criterion: absence must surface as
+    `EngineAbsentError` -- never a raw `FileNotFoundError` leaking a
+    subprocess implementation detail past this module's boundary."""
+    with patch("pyforge.mason.engines.shutil.which", return_value=None):
+        with pytest.raises(EngineAbsentError):
+            require_engine("build")
+
+
+def test_require_engine_names_the_build_engines_conda_package_not_its_binary_or_display_name():
+    """`build`'s conda package is `python-build`, distinct from both its
+    display name (`build`) and its PATH binary name (`pyproject-build`)."""
+    with patch("pyforge.mason.engines.shutil.which", return_value=None):
+        with pytest.raises(EngineAbsentError) as excinfo:
+            require_engine("build")
+
+    assert excinfo.value.conda_package == "python-build"
+    assert "python-build" in str(excinfo.value)
+
+
+def test_require_engine_probes_via_the_known_engines_binary_name():
+    with patch("pyforge.mason.engines.shutil.which", return_value=None) as mock_which:
+        with pytest.raises(EngineAbsentError):
+            require_engine("build")
+
+    mock_which.assert_called_once_with("pyproject-build")
