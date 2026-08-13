@@ -29,7 +29,7 @@ development_status:
   2-2-the-seam-guard: done
   2-3-credential-isolation: done
   2-4-mason-recipe-new: done
-  2-5-mason-recipe-validate: backlog
+  2-5-mason-recipe-validate: done
   2-6-mason-recipe-build: done
   2-7-mason-recipe-diagnose: done
   2-8-mason-recipe-optimize-and-mason-recipe-scan: done

@@ -36,6 +36,14 @@ dispatch replaces the ``# Unreachable in Story 1.2`` block below with the
 first real branch, guarded by both ``ns.noun == "recipe"`` and ``ns.verb ==
 "new"`` so a future second recipe verb does not fall into it by noun alone.
 
+Story 2.5 registers the second verb, ``recipe validate`` (FR-8), on the
+same noun, right after ``new`` above (hand-landed 2026-08-13 after this
+story's own dev pass deferred on a spec-surface gate, not a code defect --
+see ``recipe.py``'s own module docstring and this Spec's memlog for the
+same reconciliation applied there). ``main()``'s dispatch adds a second
+guarded branch, ``ns.verb == "validate"`` -- the one verb whose own
+pass/fail outcome also projects onto the process exit code (FR-8).
+
 Story 2.6 is the next to use that seam, registering ``recipe build`` on
 ``_noun_verbs["recipe"]``. Story 2.7 registers ``recipe diagnose`` on the
 same noun — ``package``/``environment`` stay behavior-identical (their own
@@ -92,6 +100,10 @@ _NOUNS = {
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
 _RECIPE_NEW_HELP = "generate a recipe from PyPI/GitHub/CRAN/npm via conda-forge-expert"
+_RECIPE_VALIDATE_HELP = (
+    "validate a recipe against conda-forge policy via CFE's validator (process exit code "
+    "reflects the pass/fail outcome)"
+)
 _RECIPE_BUILD_HELP = (
     "build a recipe (native by default; --docker + --config for CI-parity)"
 )
@@ -454,15 +466,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="path to write the generated recipe to (required)",
     )
 
+    # Story 2.5: mason recipe validate <recipe_path> — the first verb
+    # registered under any noun (FR-8), numerically: Story 2.5 precedes
+    # every other `recipe` verb below, even though `build`/`diagnose`/
+    # `optimize`/`scan`/`submit`/`update` (Stories 2.6-2.10) landed first in
+    # this worktree (spec Design Notes — this repository's `main` branch
+    # already reconciled Story 2.4's `new()` into this same first position
+    # after an analogous out-of-order landing; `new()` itself is not present
+    # in this file, since this worktree's baseline predates that merge).
+    # `parents=[global_flags]` mirrors every other verb parser below —
+    # without it, a global flag given AFTER `validate` would be rejected as
+    # unrecognized, for the same reason `build`'s own comment (next) spells
+    # out.
+    validate_parser = _noun_verbs["recipe"].add_parser(
+        "validate", help=_RECIPE_VALIDATE_HELP, description=_RECIPE_VALIDATE_HELP,
+        parents=[global_flags],
+    )
+    validate_parser.add_argument(
+        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+    )
+
     # Story 2.6: mason recipe build <recipe_path> [--docker --config] — the
-    # second verb registered under any noun (FR-9). package/environment stay
-    # behavior-identical to Story 1.2: their verb-subparsers actions above
-    # are captured but never given a verb, so they remain usage errors.
-    # `parents=[global_flags]` here too, mirroring every other parser level
-    # — without it, a global flag given AFTER `build` (`mason recipe build
-    # <path> --format json`) would be rejected as unrecognized, since
-    # argparse hands the tokens following `build` to THIS parser, not an
-    # ancestor one.
+    # next verb registered under any noun (FR-9), right after `validate`
+    # above. package/environment stay behavior-identical to Story 1.2: their
+    # verb-subparsers actions above are captured but never given a verb, so
+    # they remain usage errors. `parents=[global_flags]` here too, mirroring
+    # every other parser level — without it, a global flag given AFTER
+    # `build` (`mason recipe build <path> --format json`) would be rejected
+    # as unrecognized, since argparse hands the tokens following `build` to
+    # THIS parser, not an ancestor one.
     recipe_build_parser = _noun_verbs["recipe"].add_parser(
         "build", help=_RECIPE_BUILD_HELP, description=_RECIPE_BUILD_HELP,
         parents=[global_flags],
@@ -680,6 +712,40 @@ def main(argv: Sequence[str] | None = None) -> int:
             render.write(fmt, sys.stdout, "recipe new", "ok", dataclasses.asdict(result), [])
             return EXIT_OK
 
+        if ns.noun == "recipe" and ns.verb == "validate":
+            # FR-8: delegates to CFE's recipe validator via recipe.py.
+            # `recipe.validate` raises CfeUnresolvedError before any
+            # subprocess spawns if the CFE root is unresolved (spec Always
+            # boundary) -- caught by the dedicated branch below, same as
+            # every other CFE-dependent path. `--cfe-timeout` is resolved
+            # here and passed through; `cfe.validate_recipe`'s own
+            # per-operation default applies only when that resolves to
+            # `None`.
+            #
+            # Unlike every sibling verb, this branch alone projects the
+            # wrapped validator's own pass/fail outcome onto the process
+            # exit code (spec Intent/FR-8): `EXIT_OK` when `result.
+            # returncode == 0`, else `EXIT_FAILED`. This is `cli.py`'s own
+            # dispatch-time decision (AD-7's exit-code ownership) -- the
+            # JSON envelope's `status` field stays "ok" regardless (spec I/O
+            # matrix), and `recipe.validate` itself still never raises for a
+            # validation failure (AD-4), identical to every other verb here.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.validate(
+                ns.recipe_path,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe validate", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
+
         if ns.noun == "recipe" and ns.verb == "build":
             # A manual post-parse cross-check, not argparse-declarative
             # (spec Always boundary): `--docker`/`--config` pairing is a
@@ -885,6 +951,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return EXIT_OK
 
         # Unreachable now for every verb-noun pair except `recipe new`/
+        # `recipe validate`/
         # `recipe build`/`recipe diagnose`/`recipe optimize`/`recipe scan`/
         # `recipe submit`/`recipe update` above, each handled by its own
         # branch: `package`/`environment` still register no verbs at all,
