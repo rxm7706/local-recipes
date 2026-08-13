@@ -424,10 +424,19 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
     `pyforge.steward.dashboard.middleware` failed with `ImportError`. Its own
     docstring asserts it is django-free, which is precisely the class of
     prose-only claim this test exists to replace with a mechanism.
+
+    Story 9.2 added `navigation.py` and `filtering.py` to the list on the
+    same rationale: both modules' own docstrings and the story spec's
+    Boundaries & Constraints assert they stay framework-free, and
+    `tests/unit/test_dashboard_navigation.py` / `test_dashboard_filtering.py`
+    rely on that by importing them with no `pytest.importorskip` either.
     """
     dashboard_dir = PKG_ROOT / "steward" / "dashboard"
     offenders: list[str] = []
-    for name in ("__init__.py", "middleware.py", "declarations.py", "export.py"):
+    for name in (
+        "__init__.py", "middleware.py", "declarations.py", "export.py",
+        "navigation.py", "filtering.py",
+    ):
         path = dashboard_dir / name
         assert path.exists(), f"{name} is missing from {dashboard_dir}"
         own_package_parts = path.relative_to(PKG_ROOT.parent).with_suffix("").parts[:-1]
