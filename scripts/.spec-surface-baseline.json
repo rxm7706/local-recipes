@@ -402,7 +402,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_completeness.py": "f842f04fea2c0c467d9e0a831953ba2daec1e56f",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_check_layout.py": "59a364d71ea0705eee70c4a1b0a0a85fe75400f1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_dashboard_drift.py": "e1f43efeecceb520ea195500a3781fa2515dfacf",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": "054b76e71523ce9836dd6fad34360e99b232eeaf",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": "cf08411ba2f62af55c66d3c47b82d00b5e12be92",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py": "5e1257e5327aa0055154e6179914cb1b5388f002",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "c2641950ef4d5efacef83627446e55f5d0a67c4b",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_forward_dependency.py": "a9ae03b6574a0209d4886e24756ac1d0b481a645",
@@ -414,7 +414,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_warden.py": "5122025ff7966e19724a19605701c9e10044cb22",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "8d913014a81682239c49f62d9751e1df4e050abe"
+  "memlog": "d2c586a0cdab8e156773a0445ea8da3ab2234e92"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},

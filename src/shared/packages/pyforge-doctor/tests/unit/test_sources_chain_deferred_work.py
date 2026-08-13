@@ -609,3 +609,42 @@ def test_baseline_bool_or_negative_value_degrades_like_missing(
         kinds = [f.check for f in findings]
         assert kinds.count("no-deferred-work-baseline") == 1, (bad_value, kinds)
         assert "tier3-entry-unidentified" not in kinds, (bad_value, kinds)
+
+
+# --- Story 7.4: severity parity across ledger/Tier-3 sides -------------------------
+
+
+def test_ledger_and_tier3_anonymous_entries_carry_the_same_severity(
+    tmp_path: Path,
+) -> None:
+    """CAP-2's closing AC: proof, not an inference from reading the code, that
+    the two anonymous-entry finding kinds -- tracked-side
+    ``ledger-entry-unidentified`` and Tier-3-side ``tier3-entry-unidentified``
+    -- resolve to the same status within ONE run. Neither finding-building
+    branch in ``_check_project_deferred_work`` sets the ``"warn"`` key, so
+    both must come back FAIL; this pins that fact so a future one-sided edit
+    (e.g. adding ``"warn"`` to only one branch) cannot silently desync them."""
+    _write_baseline(tmp_path, {"proj": 0})
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-x\nstatus: open\n- source_spec: foo\n\n- source_spec: bar\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    kinds = {f.check for f in findings}
+    assert {"ledger-entry-unidentified", "tier3-entry-unidentified"} <= kinds, (
+        f"expected both anonymous-entry finding kinds to fire in the same run: "
+        f"{sorted(kinds)}"
+    )
+    ledger = next(f for f in findings if f.check == "ledger-entry-unidentified")
+    tier3 = next(f for f in findings if f.check == "tier3-entry-unidentified")
+    assert ledger.source is Source.DEFERRED_WORK
+    assert tier3.source is Source.DEFERRED_WORK
+    assert ledger.status is DoctorStatus.FAIL
+    assert tier3.status is DoctorStatus.FAIL
+    assert ledger.status == tier3.status, (
+        f"anonymous entries on the two sides diverged in severity: "
+        f"ledger={ledger.status!r} tier3={tier3.status!r}"
+    )
