@@ -1,4 +1,37 @@
-"""Story 2.6 -- `recipe.py::build()`: the first `recipe` verb's use-case
+"""Story 2.4 -- `recipe.py::new()`: the first `recipe` verb's use-case
+module. `source`/`package`/`output` are forwarded verbatim to CFE's
+`generate_recipe` adapter, raising a typed error on CFE-root unresolved or
+a non-zero CFE exit (FR-7).
+
+`probe_import_floor`/`generate_recipe` are patched on `pyforge.mason.cfe`'s
+own module namespace, not on imported names -- mirroring `test_doctor.py`'s
+identical `cfe.probe_import_floor` patch target: `recipe.py` does `from .
+import cfe` and calls `cfe.<name>(...)`, an attribute lookup at call time
+(and `cfe.py`'s own `ensure_import_floor` calls `probe_import_floor`
+unqualified, resolved via that same module's globals at call time), so
+patching the attribute on the `cfe` module reaches both call sites with no
+gotcha -- the same pitfall `test_cfe.py::test_ensure_cfe_root_never_re_
+resolves` documents for `cfe.py` itself. Every `new()` test resolves the
+CFE root against Story 1.9's real `fake_cfe_root` fixture (or a genuinely
+marker-less `tmp_path` for the not-found case), rather than a synthetic
+root -- `new`'s own job is pure composition of already-tested pieces
+(`resolve.py`'s chains, `cfe.py`'s raising siblings and adapter), so these
+tests prove the composition, not those pieces' own internals again.
+
+Story 2.5 -- `recipe.py::validate()`: the second `recipe` verb's use-case
+module, hand-landed 2026-08-13 after this story's own dev pass deferred on
+a spec-surface gate, not a code defect (see `recipe.py`'s own module
+docstring and this Spec's memlog for the same reconciliation applied
+there). Mirrors `diagnose()`'s composition-test shape below exactly (argv/
+timeout passthrough, verbatim-return, `ensure_import_floor` never called,
+`CfeUnresolvedError` propagation), plus two real-fixture round trips
+against `fake_cfe_root`: a passing canned result (the fixture's own
+default) and a failing one produced via the `MASON_FIXTURE_STDOUT`/
+`MASON_FIXTURE_EXIT_CODE` override mechanism (Story 1.9), since the
+fixture's `validate_recipe.py` stub only emits a canned passing body on its
+own.
+
+Story 2.6 -- `recipe.py::build()`: the next `recipe` verb's use-case
 module. Resolves the CFE root and raises `CfeUnresolvedError` before any
 subprocess spawns when it cannot be found; otherwise dispatches to `cfe.
 build_native` (default) or `cfe.build_docker` (`docker=True`) -- proven
@@ -36,15 +69,21 @@ mirrors `diagnose()`'s tests exactly, plus several additions this scoped
 gate is specified to have: a positive "`probe_import_floor` IS called" test
 (the inverse of Story 2.7's `test_diagnose_never_calls_ensure_import_floor`);
 a test that an interpreter missing only an operation-UNRELATED floor entry
-is NOT rejected; a REAL, unmocked import-floor-missing propagation test
+is NOT rejected; a test that the call IS rejected when its own single
+relevant floor entry (`ruamel.yaml` for `optimize()`; `pyyaml` or `requests`
+for `scan()`) is missing, originally exercised as a REAL, unmocked probe
 against `sys.executable` (the spec's own empirical note: the `pyforge-mason`
-pixi env genuinely lacks `ruamel.yaml`/`requests`/`pyyaml`, so no mocking is
-needed to exercise a real `CfeImportFloorError` raise -- self-diagnosed by
-asserting the precondition directly rather than assumed); and a
-real-fixture round-trip test that fakes ONLY the floor verdict, by patching
-`cfe.probe_import_floor`'s return value rather than `subprocess.run` wholesale
-(spec Design Notes: a blanket `subprocess.run` patch would also intercept
-`_invoke_captured`'s own real call against the fixture stub).
+pixi env genuinely lacked `ruamel.yaml`/`requests`/`pyyaml`, so no mocking
+was needed) but converted to a mock of `probe_import_floor`'s return value
+by Story 3.1, whose own required change (`twine`/`conda-lock` landing as
+`pyforge-mason` conda run-dependencies) permanently pulls all three into
+that SAME shared pixi environment -- see `test_optimize_is_rejected_when_
+the_relevant_floor_entry_is_missing`'s docstring for the full account; and
+a real-fixture round-trip test that fakes ONLY the floor verdict, by
+patching `cfe.probe_import_floor`'s return value rather than `subprocess.
+run` wholesale (spec Design Notes: a blanket `subprocess.run` patch would
+also intercept `_invoke_captured`'s own real call against the fixture
+stub).
 """
 
 from __future__ import annotations
@@ -55,12 +94,11 @@ from unittest.mock import patch
 
 import pytest
 
-import pyforge.mason.cfe as cfe_module
 import pyforge.mason.recipe as recipe_module
 from pyforge.mason.cfe import ImportFloorResult
-from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
+from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError, RecipeGenerationError
 from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
-from pyforge.mason.recipe import build, diagnose, optimize, scan, submit, update
+from pyforge.mason.recipe import build, diagnose, new, optimize, scan, submit, update, validate
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_NOT_FOUND, STEP_RUNNING_INTERPRETER,
     ResolvedCfeInterpreter, ResolvedCfeRoot,
@@ -76,6 +114,80 @@ _FIXTURE_ENV_VARS = ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_F
 def _clear_fixture_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for var in _FIXTURE_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
+
+
+_EMPTY_FLOOR = ImportFloorResult(interpreter="/fake/python", missing=())
+"""A satisfied import-floor result, so `ensure_import_floor` never raises
+and -- since this IS the function `probe_import_floor` that would otherwise
+spawn a subprocess -- never spawns one either, keeping the tests below
+hermetic against whatever floor packages this test environment happens to
+have installed."""
+
+
+# --- new(): I/O & Edge-Case Matrix --------------------------------------------
+
+@pytest.mark.parametrize("source", ["pypi", "github", "cran", "npm"])
+def test_new_forwards_source_as_the_adapters_first_argv_element(source, fake_cfe_root):
+    """FR-7: `source` is CFE's own subcommand vocabulary, already selected by
+    `cli.py` before this function ever runs -- `new` applies no mapping of
+    its own, only forwards `[source, package, "--output", output]` unmodified
+    (spec Always boundary)."""
+    fake_result = CfeResult(returncode=0, stdout="ok", stderr="", json_body=None)
+    with patch("pyforge.mason.cfe.probe_import_floor", return_value=_EMPTY_FLOOR), \
+         patch("pyforge.mason.cfe.generate_recipe", return_value=fake_result) as mock_generate:
+        result = new(
+            source, "demo-package", "recipes/demo",
+            cfe_root_arg=str(fake_cfe_root), cfe_python_arg=None,
+            cfe_timeout_arg=None, environ={}, start_directory=fake_cfe_root,
+        )
+
+    assert result == fake_result
+    args = mock_generate.call_args.args[0]
+    assert args == [source, "demo-package", "--output", "recipes/demo"]
+    assert args[0] == source
+
+
+def test_new_raises_recipe_generation_error_carrying_the_fixtures_stdout(
+    fake_cfe_root, monkeypatch,
+):
+    """`MASON_FIXTURE_EXIT_CODE=1` against the real fixture stub, real
+    subprocess, no mocking of `generate_recipe` itself -- proves
+    `RecipeGenerationError` carries CFE's own stdout verbatim (the fixture's
+    canned body), not a Mason-invented message (spec I/O matrix)."""
+    monkeypatch.delenv("MASON_FIXTURE_STDOUT", raising=False)
+    monkeypatch.delenv("MASON_FIXTURE_PROGRESS_LINE", raising=False)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    with patch("pyforge.mason.cfe.probe_import_floor", return_value=_EMPTY_FLOOR):
+        with pytest.raises(RecipeGenerationError) as excinfo:
+            new(
+                "pypi", "demo", "recipes/demo",
+                cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+                cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+            )
+
+    assert excinfo.value.source == "pypi"
+    assert "Generated: recipes/demo/recipe.yaml" in excinfo.value.cfe_message
+
+
+def test_new_raises_cfe_unresolved_error_before_any_subprocess_spawns(tmp_path):
+    """A not-found root (a genuinely marker-less, isolated `tmp_path` --
+    `test_resolve.py::test_walk_exhausts_to_filesystem_root`'s identical
+    setup) must be caught before `ensure_import_floor`'s probe or
+    `generate_recipe` itself ever spawns a process (spec I/O matrix): every
+    subprocess spawn in this package funnels through `cfe.py`'s own
+    `subprocess.run` call, so asserting it was never invoked proves no
+    process launched at all, not merely that this test's happy-path
+    assertions were skipped."""
+    with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            new(
+                "pypi", "demo", "recipes/demo",
+                cfe_root_arg=None, cfe_python_arg=None,
+                cfe_timeout_arg=None, environ={}, start_directory=tmp_path,
+            )
+
+    mock_run.assert_not_called()
 
 
 # --- build(): I/O & Edge-Case Matrix ------------------------------------------
@@ -199,6 +311,218 @@ def test_build_docker_resolves_a_cfe_interpreter_from_the_flag(fake_cfe_root, mo
             start_directory=Path("/does/not/matter"),
         )
 
+
+# =============================================================================
+# Story 2.5: validate() -- numerically the first `recipe` verb (see module
+# docstring); mirrors diagnose()'s composition shape exactly, except `args`
+# forces `--json` ahead of `recipe_path`, mirroring scan()'s own forcing.
+# =============================================================================
+
+_VALIDATE_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"passed": true, "errors": [], "warnings": [], "info": [], '
+           '"rattler_lint_ran": true}',
+    stderr="",
+    json_body={
+        "passed": True, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": True,
+    },
+)
+
+
+# --- Composition (mocked) ----------------------------------------------------
+
+def test_validate_passes_json_flag_then_recipe_path_as_validate_recipe_args():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
+         patch(
+             "pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT,
+         ) as mock_validate:
+        result = validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure.assert_called_once_with(_ROOT)
+    mock_validate.assert_called_once_with(
+        ["--json", "recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+    assert result is _VALIDATE_RESULT
+
+
+def test_validate_passes_an_explicit_cfe_timeout_arg_straight_through():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT,
+         ) as mock_validate:
+        validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert mock_validate.call_args.kwargs["timeout"] == 42.0
+
+
+def test_validate_returns_the_cfe_result_verbatim_no_reinterpretation():
+    """Spec Never boundary: `validate()` returns `cfe.validate_recipe`'s
+    `CfeResult` directly -- no new model, no field renaming, no wrapping, no
+    Mason-side pass/fail reinterpretation (that projection is `cli.py`'s own
+    dispatch-time decision, not this function's)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT):
+        result = validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result is _VALIDATE_RESULT
+    assert isinstance(result, CfeResult)
+
+
+def test_validate_forwards_cfe_root_and_cfe_python_flag_values_unresolved():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT) as mock_root, \
+         patch.object(
+             recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER,
+         ) as mock_interp, \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT):
+        validate(
+            "recipes/foo",
+            cfe_root_arg="/explicit/root", cfe_python_arg="/explicit/python",
+            cfe_timeout_arg=None, environ={"X": "1"}, start_directory=Path("/start"),
+        )
+
+    mock_root.assert_called_once_with("/explicit/root", {"X": "1"}, Path("/start"))
+    mock_interp.assert_called_once_with("/explicit/python", {"X": "1"})
+
+
+def test_validate_never_calls_ensure_import_floor():
+    """spec Always boundary: the wrapped validator's only third-party
+    import, PyYAML, already degrades to an honest failure on its own -- no
+    import-floor gate, mirroring `diagnose()`'s own established exemption,
+    not `optimize()`/`scan()`'s scoped-probe pattern."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.validate_recipe", return_value=_VALIDATE_RESULT), \
+         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor, \
+         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor:
+        validate(
+            "recipes/foo",
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure_floor.assert_not_called()
+    mock_probe_floor.assert_not_called()
+
+
+# --- CFE-unresolved propagation: raises before any subprocess spawns -------
+
+def test_validate_raises_cfe_unresolved_error_when_root_is_not_found():
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+
+def test_validate_never_calls_validate_recipe_when_root_is_unresolved():
+    """The `CfeUnresolvedError` path must short-circuit before
+    `cfe.validate_recipe` is ever reached."""
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.validate_recipe") as mock_validate:
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+    mock_validate.assert_not_called()
+
+
+def test_validate_raises_before_any_subprocess_spawns_against_a_real_unresolved_root(
+    tmp_path,
+):
+    """End-to-end, nothing mocked but the subprocess boundary itself --
+    mirrors `diagnose()`'s own version of this test."""
+    with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            validate(
+                "recipes/foo",
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=tmp_path,
+            )
+
+    mock_run.assert_not_called()
+
+
+# --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
+
+def test_validate_against_fake_cfe_root_returns_the_fixtures_canned_passing_result(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = validate(
+        "recipes/example",
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert isinstance(result, CfeResult)
+    assert result.returncode == 0
+    assert result.json_body["passed"] is True
+    assert result.json_body["errors"] == []
+
+
+def test_validate_against_fake_cfe_root_returns_a_failing_result_via_fixture_override(
+    fake_cfe_root, monkeypatch,
+):
+    """The fixture's own `validate_recipe.py` stub only emits a canned
+    passing body (Story 1.9) -- a failing round trip needs the
+    `MASON_FIXTURE_STDOUT`/`MASON_FIXTURE_EXIT_CODE` override mechanism
+    already used throughout this suite (spec: 'use the... override
+    mechanism... rather than editing the fixture file itself')."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_STDOUT",
+        '{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], '
+        '"rattler_lint_ran": true}',
+    )
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    result = validate(
+        "recipes/example",
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert isinstance(result, CfeResult)
+    assert result.returncode == 1
+    assert result.json_body["passed"] is False
+    assert result.json_body["errors"] == ["missing license"]
+
+
+# =============================================================================
+# Story 2.7: diagnose() -- mirrors doctor.build_report's composition shape.
+# =============================================================================
 
 # --- Composition (mocked) ----------------------------------------------------
 
@@ -586,31 +910,46 @@ def test_optimize_raises_before_any_subprocess_spawns_against_a_real_unresolved_
     mock_run.assert_not_called()
 
 
-# --- Import-floor-missing propagation: real, unmocked (spec Design Notes) --
+# --- Import-floor-missing propagation: rejected on the relevant floor gap --
 
-def test_optimize_raises_cfe_import_floor_error_against_a_real_unresolved_floor(
-    fake_cfe_root,
-):
-    """Empirical note (spec Design Notes): the lean `pyforge-mason` pixi env
-    genuinely lacks `ruamel.yaml`. Asserted directly, first, against the real
-    `cfe.probe_import_floor(sys.executable)` result -- self-diagnosing, so a
-    future environment change that adds `ruamel.yaml` as a real dependency
-    fails on this clear, named assertion instead of a confusing "DID NOT
-    RAISE" from the `pytest.raises` block below. Calling `optimize()` with
-    `cfe_python_arg=sys.executable` and NO floor faking therefore exercises
-    a REAL, unmocked `CfeImportFloorError` raise -- no mocking of the floor
-    probe itself needed. `cfe.optimize_recipe` is patched only to prove the
-    gate fires before the wrapped script's own subprocess spawns."""
-    assert "ruamel.yaml" in cfe_module.probe_import_floor(sys.executable).missing
+def test_optimize_is_rejected_when_the_relevant_floor_entry_is_missing():
+    """`_OPTIMIZE_RELEVANT_FLOOR` is exactly `("ruamel.yaml",)` -- mocks
+    `probe_import_floor` to report only that one entry missing (the other
+    five floor entries present) and asserts the call is rejected on it
+    alone, mirroring `scan()`'s own `test_scan_is_rejected_when_only_one_
+    relevant_floor_entry_is_missing`.
 
-    with patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize:
-        with pytest.raises(CfeImportFloorError):
+    Story 3.1 note: this test was originally a REAL, unmocked probe against
+    `sys.executable` (the spec's own empirical note: the lean `pyforge-mason`
+    pixi env genuinely lacked `ruamel.yaml`, so no mocking was needed to
+    exercise a real `CfeImportFloorError` raise -- self-diagnosed by
+    asserting the precondition directly rather than assumed). That
+    precondition is now permanently gone: `conda-lock` (whose own dependency
+    tree includes `ruamel.yaml`) is a `pyforge-mason` conda run-dependency
+    as of this same story, so `sys.executable` -- the SAME shared pixi
+    environment this suite runs under -- can never again observe
+    `ruamel.yaml` as missing. Mocking is the only way left to exercise this
+    specific raise (see `test_scan_is_rejected_when_only_one_relevant_
+    floor_entry_is_missing`'s docstring for `scan()`'s parallel, already-
+    mocked coverage of the same class of gap)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.probe_import_floor",
+             return_value=ImportFloorResult(
+                 interpreter=_INTERPRETER.path, missing=("ruamel.yaml",),
+             ),
+         ), \
+         patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize:
+        with pytest.raises(CfeImportFloorError) as exc_info:
             optimize(
                 "recipes/foo",
-                cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-                cfe_timeout_arg=None, environ={}, start_directory=fake_cfe_root,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
             )
 
+    assert exc_info.value.missing == ("ruamel.yaml",)
     mock_optimize.assert_not_called()
 
 
@@ -879,33 +1218,19 @@ def test_scan_raises_before_any_subprocess_spawns_against_a_real_unresolved_root
     mock_run.assert_not_called()
 
 
-# --- Import-floor-missing propagation: real, unmocked (spec Design Notes) --
-
-def test_scan_raises_cfe_import_floor_error_against_a_real_unresolved_floor(
-    fake_cfe_root,
-):
-    """Empirical note (spec Design Notes): the lean `pyforge-mason` pixi env
-    genuinely lacks `requests`/`pyyaml` too. Asserted directly, first,
-    against the real `cfe.probe_import_floor(sys.executable)` result --
-    self-diagnosing, mirroring `optimize()`'s own version of this test, so a
-    future environment change that adds either as a real dependency fails on
-    this clear, named assertion instead of a confusing "DID NOT RAISE" from
-    the `pytest.raises` block below. Calling `scan()` with
-    `cfe_python_arg=sys.executable` and NO floor faking therefore exercises
-    a REAL, unmocked `CfeImportFloorError` raise."""
-    missing = cfe_module.probe_import_floor(sys.executable).missing
-    assert "requests" in missing
-    assert "pyyaml" in missing
-
-    with patch("pyforge.mason.cfe.scan_for_vulnerabilities") as mock_scan:
-        with pytest.raises(CfeImportFloorError):
-            scan(
-                "recipes/foo",
-                cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-                cfe_timeout_arg=None, environ={}, start_directory=fake_cfe_root,
-            )
-
-    mock_scan.assert_not_called()
+# Story 3.1 note: this section formerly carried a REAL, unmocked
+# `sys.executable`-probe counterpart to `test_scan_is_rejected_when_only_
+# one_relevant_floor_entry_is_missing` above (the spec's own empirical note:
+# the lean `pyforge-mason` pixi env genuinely lacked `requests`/`pyyaml`).
+# That precondition is now permanently gone: `twine` (`requests`) and
+# `conda-lock` (`pyyaml`/`ruamel.yaml`) are `pyforge-mason` conda
+# run-dependencies as of this same story, pulling both into `sys.executable`
+# -- the SAME shared pixi environment this suite runs under -- for good.
+# Removed rather than converted to a second mock of the same shape: the
+# parametrized test above already covers "rejected when `pyyaml` OR
+# `requests` alone is missing" with no loss of coverage (`optimize()`'s
+# parallel case, above, had no other mocked coverage of its single-entry
+# `ruamel.yaml` gap and was converted in place instead).
 
 
 # --- Real end-to-end against fake_cfe_root, floor faked (AD-16, Design Notes)

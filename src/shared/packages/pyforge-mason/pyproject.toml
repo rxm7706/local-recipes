@@ -10,11 +10,16 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# NFR-10 / FR-41: only what `pyforge.mason` actually imports. At scaffold stage
-# that is the standard library alone — argparse and importlib.metadata.
-# Deliberately NO CLI framework: click/typer are forbidden by FR-41, and the
-# dispatcher is argparse for the same reason its siblings' are.
-dependencies = []
+# NFR-10 / FR-41: only what `pyforge.mason` actually imports. Standard
+# library alone otherwise (argparse, importlib.metadata) -- `packaging` is
+# a third-party addition, for engines/__init__.py's `SpecifierSet`
+# version-range constants (Story 3.1). pyforge-core is Story 14.3's CAP-5
+# dependency -- errors.py's MasonError re-parents to pyforge.core.errors.
+# PyforgeError (mirrors pyforge-herald's identical pyforge-core
+# run-dependency for the same reason, Story 14.2/14.3). Deliberately NO CLI
+# framework: click/typer are forbidden by FR-41, and the dispatcher is
+# argparse for the same reason its siblings' are.
+dependencies = ["packaging", "pyforge-core"]
 
 [project.scripts]
 mason = "pyforge.mason.cli:main"
