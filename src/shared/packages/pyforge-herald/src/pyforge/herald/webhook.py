@@ -13,10 +13,15 @@ event alone -- ``handle_on_pr_close`` gates on the payload's own
 needs the producer to send the day's CUMULATIVE figures on every
 delivery, because a same-day second delivery replaces rather than merges
 -- see "Same-day ``on-ship`` deliveries REPLACE" below before wiring the
-step. Writing the actual ``.github/workflows/*.yml`` step, mounting this
-module into a live ASGI host, and wiring Steward's identity/trust
-boundary around it are all Story 13.6's job -- this module is built and
-fully tested in isolation.
+step. Writing the actual ``.github/workflows/*.yml`` step and mounting this
+module into a live ASGI host were Story 13.6's job -- done: ``webhook_host.py``
+mounts this callable behind ``daphne``, and
+``.github/workflows/herald-live-demo.yml`` drives it as a bounded,
+CI-contained demonstration (never a persistent, publicly-reachable
+deployment -- that stays out of Surface; see this repo's deferred-work
+ledger for the tracked gap in Steward's own perimeter tooling). This
+module itself is still built and fully tested in isolation, independent of
+that host.
 
 **What holding the secret buys.** The CLI's own ``herald progress
 --update`` runs behind ``auth.require_operator_role`` (AD-16); this
@@ -185,6 +190,28 @@ _SIGNATURE_PREFIX = "sha256="
 _SIGNATURE_HEX_LEN = hashlib.sha256().digest_size * 2
 _HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
 
+_TIMESTAMP_HEADER = "x-hub-timestamp"
+_TIMESTAMP_DIGITS = frozenset("0123456789")
+_MAX_TIMESTAMP_HEADER_LEN = 16
+"""Generous upper bound on ``X-Hub-Timestamp``'s digit count -- unix seconds
+today is 10 digits and will not reach 16 within any realistic operating
+lifetime of this module, even counting milliseconds by mistake. Checked
+BEFORE ``int(timestamp_header)`` ever runs, the same "bound the caller's own
+input before it reaches conversion/arithmetic" discipline
+``_SIGNATURE_HEX_LEN``'s shape check already applies to the signature half:
+CPython's own string-to-int conversion has a documented complexity blowup
+for very long digit strings (``sys.set_int_max_str_digits`` exists for
+exactly this), so this module does not rely on that global default alone."""
+
+MAX_TIMESTAMP_SKEW_SECONDS = 300
+"""Boundaries & Constraints (closing DW-FU-13-4): the largest age an
+``X-Hub-Timestamp`` may carry, in EITHER direction, and still be accepted --
+5 minutes. Symmetric, not "reject only if older than 5 minutes": a
+one-directional check would leave a request whose timestamp was ever set (by
+producer clock skew, or a bug) into the FUTURE valid forever, until the
+server's own clock caught up to it -- exactly the forever-valid-replay-token
+failure this window exists to close (see ``verify_signature``'s docstring)."""
+
 MAX_BODY_BYTES = 1_000_000
 """Upper bound on a webhook request body (see the module docstring's "Body
 size cap" section) -- generous for this payload shape, small JSON with at
@@ -264,9 +291,16 @@ class WebhookResponse:
 # --- HMAC verification (AD-9) ------------------------------------------------
 
 
-def verify_signature(secret: bytes, body: bytes, signature_header: str | None) -> bool:
+def verify_signature(
+    secret: bytes,
+    body: bytes,
+    signature_header: str | None,
+    timestamp_header: str | None,
+) -> bool:
     """Whether ``signature_header`` (an ``X-Hub-Signature-256: sha256=<hex>``
-    value) proves ``body`` was sent by a holder of ``secret``.
+    value) -- together with ``timestamp_header`` (an ``X-Hub-Timestamp:
+    <unix-seconds>`` value) -- proves ``body`` was sent, recently, by a
+    holder of ``secret``.
 
     ``hmac.compare_digest`` -- constant-time, so a mismatch cannot be timed
     to guess the secret byte by byte. A missing header, or one not shaped
@@ -296,13 +330,60 @@ def verify_signature(secret: bytes, body: bytes, signature_header: str | None) -
     ONLY operator-alert channel, so that is a way to drown the real
     ``retries_exhausted`` alerts without knowing the secret. The check
     inspects only the caller's own input, never the expected digest, so it
-    leaks nothing about ``secret``."""
+    leaks nothing about ``secret``.
+
+    **The timestamp is folded INTO the signed content, narrowing
+    DW-FU-13-4 from a forever-valid forgery token to a <=5-minute replay
+    window.** Before Story 13.6, the HMAC covered ``body`` alone, so one
+    captured signed request was a forever-valid forgery token: neither
+    handler is a pure function of the signed bytes
+    (``handle_on_ship``/``handle_on_pr_close`` both compute a server-side
+    date whenever the payload omits one), so replaying a stale capture on a
+    later day created a fresh record carrying the earlier day's numbers
+    under the later day's date. ``timestamp_header`` is signed alongside
+    ``body`` (``timestamp_header.encode() + b"." + body`` -- the same
+    "signed timestamp prefix" shape Stripe's webhook signatures use)
+    rather than merely compared next to an unauthenticated one: a caller
+    without ``secret`` cannot swap in a fresh timestamp on a captured old
+    body and recompute a matching signature. A request whose
+    ``timestamp_header`` is more than ``MAX_TIMESTAMP_SKEW_SECONDS`` from
+    the server's own clock, in EITHER direction, is rejected (see that
+    constant's own docstring for why the check is symmetric).
+
+    **Residual: a replay INSIDE that window is still a valid request.**
+    There is no nonce or single-use token here, only expiry -- a capture
+    replayed within the skew window re-sends a request this module itself
+    still accepts. Low-impact by construction rather than by this
+    function's own doing: ``handle_on_ship``'s ``progress.upsert`` is keyed
+    by ``(station, date)`` and ``handle_on_pr_close``'s ``event_id``-derived
+    claim id both make an in-window replay idempotent (re-applies the same
+    record) rather than exploitable -- see ``deferred-work.md``'s
+    ``DW-FU-13-4`` for the full accounting.
+
+    The timestamp's shape is validated the same defensive way the hex
+    signature half already is, before either reaches ``int()``/``hmac``:
+    non-empty, no longer than ``_MAX_TIMESTAMP_HEADER_LEN``, and composed
+    only of ASCII decimal digits (so a leading ``+``/``-`` or stray
+    whitespace -- both of which bare ``int()`` accepts -- is rejected
+    rather than silently parsed)."""
     if signature_header is None or not signature_header.startswith(_SIGNATURE_PREFIX):
         return False
     provided = signature_header[len(_SIGNATURE_PREFIX) :]
     if len(provided) != _SIGNATURE_HEX_LEN or not _HEX_DIGITS.issuperset(provided):
         return False
-    expected = hmac.new(secret, body, hashlib.sha256).hexdigest()
+    if (
+        timestamp_header is None
+        or not (1 <= len(timestamp_header) <= _MAX_TIMESTAMP_HEADER_LEN)
+        or not _TIMESTAMP_DIGITS.issuperset(timestamp_header)
+    ):
+        return False
+    timestamp_seconds = int(timestamp_header)
+    now_seconds = int(datetime.now(UTC).timestamp())
+    if abs(now_seconds - timestamp_seconds) > MAX_TIMESTAMP_SKEW_SECONDS:
+        return False
+    expected = hmac.new(
+        secret, timestamp_header.encode("ascii") + b"." + body, hashlib.sha256
+    ).hexdigest()
     return hmac.compare_digest(expected, provided.lower())
 
 
@@ -1076,9 +1157,11 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
     Route/method/signature/body-shape checks run in the I/O matrix's own
     order: unknown path -> 404, wrong method on a known path -> 405 (both
     before the body is read at all); then the body is read (-> 413 if it
-    exceeds ``MAX_BODY_BYTES``) and the HMAC is checked against it -> 401
-    (before the body is parsed as JSON); then JSON parsing -> 400 on
-    failure; only then does the matched handler run (which does its own
+    exceeds ``MAX_BODY_BYTES``) and the HMAC (now including the
+    ``X-Hub-Timestamp`` skew check -- ``verify_signature``'s own docstring)
+    is checked against it -> 401 (before the body is parsed as JSON); then
+    JSON parsing -> 400 on failure; only then does the matched handler run
+    (which does its own
     further structural validation -> 400, or the real storage work ->
     201/202/500). Any other exception on that path is a 500 (see the
     module docstring's "Uncaught exceptions" section)."""
@@ -1216,7 +1299,8 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
 
             body = await _read_body(receive)
             signature = _header_value(scope, _SIGNATURE_HEADER)
-            if not verify_signature(secret, body, signature):
+            timestamp = _header_value(scope, _TIMESTAMP_HEADER)
+            if not verify_signature(secret, body, signature, timestamp):
                 await fail(401, {"error": "invalid or missing HMAC signature"})
                 return
 

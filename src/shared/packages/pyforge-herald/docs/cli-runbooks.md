@@ -6,22 +6,31 @@ troubleshooting section for the failure modes that actually exist in this
 codebase today.
 
 **Scope note.** Herald's Moments 2-4 (Progress/Success/Operations) are
-**local-storage, CLI-triggered** — storage is a local SQLite file,
-`.herald/herald.db` (Story 13.3). **Today, every record (a progress entry,
-a claim, a notice) is created by an operator running an explicit `herald`
-command by hand.** A second, CI-triggered path exists in the codebase —
-the HMAC-verified webhook handlers Story 13.4 built
-(`src/pyforge/herald/webhook.py`'s `on-ship`/`on-pr-close`, see [The
-webhook endpoint](#the-webhook-endpoint-ci-calls-story-134) below) — but it
-is built and unit-tested in isolation and **not mounted anywhere**: there is
-no live HTTP listener in this package today, and no hosted scheduler either
-except `herald scheduler run`'s derived-state refresh (Story 13.5, see
-[How to run the scheduled
+**local-storage** — storage is a local SQLite file, `.herald/herald.db`
+(Story 13.3) — and records are created two ways: an operator running an
+explicit `herald` command by hand, or the HMAC-verified webhook handlers
+Story 13.4 built (`src/pyforge/herald/webhook.py`'s `on-ship`/
+`on-pr-close`, see [The webhook endpoint](#the-webhook-endpoint-ci-calls-story-134)
+below), mounted behind a real ASGI host as of Story 13.6
+(`src/pyforge/herald/webhook_host.py`). **This package still ships no
+persistent, always-on webhook listener** — the mount point is
+`.github/workflows/herald-live-demo.yml`, a bounded, CI-contained
+demonstration that starts `webhook_host:application` behind `daphne` for
+one job's lifetime and discards it when the job ends (proven real on
+every push to `main`, every PR close, and a weekly schedule), never a
+publicly-reachable deployment. An operator can still create every record
+by hand at any time; the webhook path is additive, not a replacement.
+`herald scheduler run`'s derived-state refresh (Story 13.5, see [How to
+run the scheduled
 job](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
-below), which an operator can point an optional local `cron` entry at.
-Wiring the webhook into a live ASGI host and a real GitHub Actions step is
-Story 13.6's job. See `docs/dreams/herald-moments-2-4-live-backend.md` for
-the fuller live-backend version and why the rest of the scope was cut
+below) is likewise proven unattended by that same workflow's
+`scheduler-demo` job, though its own documented trigger for a real
+checkout remains an operator-local `cron` entry (a GitHub-hosted runner
+never has the gitignored `.herald/herald.db` a real repo checkout would).
+Persistent, publicly-reachable hosting behind Steward's live perimeter is
+tracked as deferred work (`_bmad-output/implementation-artifacts/deferred-work.md`),
+not built here. See `docs/dreams/herald-moments-2-4-live-backend.md` for
+the fuller live-backend version and why the rest of that scope was cut
 down. This runbook documents the system as it exists, not that Dream.
 
 All examples below were captured by actually running `herald` (built via
@@ -142,19 +151,23 @@ no thesis yet). Evidence links are optional per-type flags on `create`:
 Other read commands: `herald success list [--status draft|published|closed]`
 and `herald success get <claim-id>` (full detail, including edit history).
 
-## The webhook endpoint (CI calls, Story 13.4)
+## The webhook endpoint (CI calls, Story 13.4/13.6)
 
 `src/pyforge/herald/webhook.py` is a second, CI-triggered path onto the
 same storage `herald progress --update`/`herald success create` write:
 an HMAC-verified ASGI3 callable (`webhook.create_app(repo_root, secret)`),
-built and fully unit-tested in isolation, but **not mounted anywhere in
-this repo today** — there is no live URL to `curl`. Mounting it into a
-real ASGI host and wiring an actual GitHub Actions workflow step is Story
-13.6's job; until that lands, `herald progress --update`/`herald success
-create` remain the only way a record actually gets created outside a
-Python test.
+built and fully unit-tested in isolation, and — as of Story 13.6 —
+demonstrably real: `src/pyforge/herald/webhook_host.py` mounts it behind
+`daphne` (a stable `application` object, `daphne pyforge.herald.webhook_host:application`),
+and `.github/workflows/herald-live-demo.yml` starts that host for real on
+every push to `main` and every PR close, POSTs a real signed request, and
+tears the process down at the end of the job. There is still no
+persistent, always-reachable URL to `curl` from outside CI — that
+deployment shape stays out of Surface (see the Scope note above) — but
+`herald progress --update`/`herald success create` are no longer the
+*only* way a record gets created outside a Python test.
 
-For when it is mounted, the shape:
+The shape:
 
 - **Routes:** `POST /api/herald/webhooks/on-ship` (calls the same
   `progress.upsert` `herald progress <station> --update` calls) and
@@ -181,14 +194,19 @@ For when it is mounted, the shape:
   station-scoped `herald` command or dashboard will ever surface.
   Surrounding whitespace is stripped, but case is not normalized.
 - **Auth:** every request must carry an `X-Hub-Signature-256: sha256=<hex>`
-  header proving the sender holds the shared secret
-  (`hmac.new(secret, raw_body, hashlib.sha256)`; hex in either case) — a
-  missing or mismatched
-  signature is a 401 before the body is even parsed as JSON. The secret
-  itself comes from the `HERALD_WEBHOOK_SECRET` env var, read once at
-  mount time (`webhook.resolve_webhook_secret`) — never a literal or a
-  default fallback, and never provisioned by this package (Steward's
-  `keys` surface is a deployment concern, out of this story's Surface).
+  header AND an `X-Hub-Timestamp: <unix-seconds>` header, the latter folded
+  into the signed content itself
+  (`hmac.new(secret, timestamp + "." + raw_body, hashlib.sha256)`; hex in
+  either case) and rejected if it is more than 5 minutes off the server's
+  own clock in either direction — a missing/mismatched signature, a
+  missing timestamp, or a stale one is a 401 before the body is even
+  parsed as JSON. (Before Story 13.6 the HMAC covered the body alone, so
+  a captured signed request stayed a valid replay forever; folding in a
+  time-boxed timestamp closes that.) The secret itself comes from the
+  `HERALD_WEBHOOK_SECRET` env var, read once at mount time
+  (`webhook.resolve_webhook_secret`) — never a literal or a default
+  fallback, and never provisioned by this package (Steward's `keys`
+  surface is a deployment concern, out of this story's Surface).
   **That secret is a privilege boundary, not just a spam filter.** The
   CLI's `herald progress --update` runs behind
   `auth.require_operator_role` (AD-16); the webhook deliberately does not,
@@ -278,10 +296,15 @@ default for a normal checkout).
 Both jobs run unconditionally on every invocation — the ~weekly
 evidence-staleness window (`evidence.STALE_AFTER`) is enforced by how
 often you run this command, not by anything inside it. Install a local
-`crontab` entry (never a GitHub Actions workflow: `.herald/` is
-gitignored, per-operator state, so a GitHub-hosted runner would run this
-against an empty database every time — see this story's spec Design
-Notes for the full reasoning). `cd` into `pyforge-herald`'s own package
+`crontab` entry for *your own* real, durable `.herald/herald.db` — never
+a GitHub Actions workflow: `.herald/` is gitignored, per-operator state,
+so a GitHub-hosted runner has no access to it and would run this against
+an empty database every time (see this story's spec Design Notes for the
+full reasoning). `herald-live-demo.yml`'s `scheduler-demo` job (Story
+13.6) *does* run `herald scheduler run --json` inside GitHub Actions, but
+only to prove the command runs unattended — it seeds and revalidates its
+own throwaway scratch database, never yours; it is a proof this machinery
+works, not a substitute for installing the cron entry below. `cd` into `pyforge-herald`'s own package
 directory first, not an arbitrary checkout: unlike `deck`'s `--repo-root`
 (any `presentations/<slug>/`-holding project), `scheduler`/`progress`/
 `success`/`notice` treat `--repo-root` as *this package's own* checkout
@@ -466,22 +489,41 @@ herald: error: no command given; valid subcommands: deck, progress, success, not
 
 ### What is *not* a failure mode here
 
-The webhook handlers (`webhook.py`, [above](#the-webhook-endpoint-ci-calls-story-134))
-are not mounted anywhere in this repo, so there is no live webhook to "not
-fire" here yet, and no async re-validation job to fail silently either.
+**"My local `.herald/herald.db` doesn't have the record `herald-live-demo.yml` just created in CI" is not a bug.**
+As of Story 13.6 the webhook handlers (`webhook.py`, [above](#the-webhook-endpoint-ci-calls-story-134))
+fire for real on every push to `main` and every PR close
+(`.github/workflows/herald-live-demo.yml`'s `on-ship`/`on-pr-close`
+jobs) — but each job writes into a scratch, JOB-LOCAL
+`.herald/herald.db` under the runner's temp directory, discarded the
+moment the job ends. This is a bounded, CI-contained demonstration that
+the wiring works, never a persistent, publicly-reachable deployment (see
+the Scope note above) — it does **not** write into any checkout's real
+`.herald/herald.db`, yours included. If you want a record in *your* local
+store, run the CLI command yourself
+(`herald progress <station> --update` / `herald success create`, see
+[`operator-guide.md`](operator-guide.md)'s FAQ); the webhook path and the
+CLI path are two independent writers onto two independent stores in this
+demo shape, not one shared source of truth yet.
+
+The failure mode actually worth watching for is `herald-live-demo.yml`
+itself going red — check the Actions tab, not your local database. One
+specific way it fails loudly rather than silently: if
+`HERALD_WEBHOOK_SECRET` is not configured as a repo secret,
+`webhook_host.application` raises at daphne startup (the same fail-fast
+`resolve_webhook_secret` always guaranteed) and the job's "wait for daphne
+to start listening" step fails with a clear error, rather than the
+workflow quietly no-op'ing.
+
 `herald scheduler run`
 (Story 13.5, [above](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot))
-is the one piece of periodic infrastructure that does exist, and it is
-opt-in and operator-installed (a local `crontab` entry) — a *missed* run
-of that cron entry (the machine was off, the entry was never installed)
-is a real, if narrow, failure mode, distinct from "there is no automation
-to miss" for everything else in this guide. If you find yourself
-debugging why a PR merge didn't automatically create a progress record or
-a claim, stop: it can't, today — the webhook is built and tested, but not
-yet mounted into a live endpoint or wired into a real GitHub Actions
-workflow (Story 13.6). Run the CLI command yourself (see
-[`operator-guide.md`](operator-guide.md)'s FAQ). Once 13.6 lands, this
-section will need updating along with it.
+has the identical split: `herald-live-demo.yml`'s `scheduler-demo` job
+proves the command runs unattended (weekly schedule + manual
+`workflow_dispatch`), against its own scratch seed data — the documented
+trigger for *your* real, durable `.herald/herald.db` is still an
+operator-installed local `crontab` entry, because a GitHub-hosted runner
+never has the gitignored database a real checkout would. A *missed* run
+of that local cron entry (the machine was off, the entry was never
+installed) is a real, if narrow, failure mode.
 
 ## Escalation path
 

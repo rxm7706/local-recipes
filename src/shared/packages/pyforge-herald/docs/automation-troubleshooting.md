@@ -2,30 +2,79 @@
 
 Story 12.4 (honestly scoped). The original epics spec for this story asked
 for "webhook not firing," "cron job missed," "auto-extract failed," and
-"stale link warning" diagnoses. "Webhook not firing" still cannot happen
-in this codebase's *running* system: Story 13.4 built and fully
-unit-tested an HMAC-verified webhook handler
+"stale link warning" diagnoses. "Webhook not firing" now genuinely can
+happen, but only inside a specific, bounded surface: Story 13.4 built and
+fully unit-tested an HMAC-verified webhook handler
 (`src/pyforge/herald/webhook.py`, see
 [`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)),
-but it is not mounted into any live ASGI host or wired into a real GitHub
-Actions workflow yet (Story 13.6) — there is no listening endpoint
-anywhere for a delivery to fail to reach. See
+and Story 13.6 mounted it for real behind `daphne`
+(`src/pyforge/herald/webhook_host.py`) — but the ONLY place that host runs
+is inside `.github/workflows/herald-live-demo.yml`'s three demonstration
+jobs (`on-ship`/`on-pr-close`/`scheduler-demo`), each against its own
+scratch, job-local database. There is still no persistent, always-
+listening endpoint outside CI for a delivery to fail to reach — "the
+webhook isn't firing against MY checkout" is not a bug, it is the
+documented boundary (see the [`cli-runbooks.md`](cli-runbooks.md#what-is-not-a-failure-mode-here)
+troubleshooting note this section doesn't repeat). What CAN genuinely
+fail now, and is worth a section of its own below, is the CI job itself:
+[Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci). See
 `docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
-live-backend design this is working toward. "Cron job missed" is now a
-real, if narrow, possibility: Story 13.5 added `herald scheduler run` plus
-a documented, *opt-in* local `crontab` entry (see
+live-backend design this is working toward (a persistent host every
+checkout shares) — Steward's `deploy perimeter` gaining the ability to
+target an arbitrary ASGI callable is the tracked deferred-work gap ahead
+of that. "Cron job missed" is a real, if narrow, possibility: Story 13.5
+added `herald scheduler run` plus a documented, *opt-in* local `crontab`
+entry for an operator's own real database (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)) —
 an operator who never installed that entry has nothing to miss, but one
 who did and whose machine was off (or whose cron daemon isn't running)
-genuinely misses a scheduled revalidation. Neither caveat is repeated per
-section below.
+genuinely misses a scheduled revalidation. `herald-live-demo.yml`'s own
+`scheduler-demo` job is a separate, unattended proof against its own
+scratch data, not a substitute for that cron entry. Neither caveat is
+repeated per section below.
 
-What *does* exist today, and can genuinely misbehave, is the CLI-triggered
+What else exists today, and can genuinely misbehave, is the CLI-triggered
 equivalent of each of those automations — including "auto-extract" (see
-below): Epic 9's `herald success create` is its direct replacement, an
-operator-run command that does the same work the `on-pr-close` webhook
-handler will do once it is mounted. This guide covers those real,
+below): Epic 9's `herald success create` is a standing, operator-run
+alternative that does the same storage work the `on-pr-close` webhook
+handler does, for an operator who wants a record in their own checkout
+right now rather than waiting on CI. This guide covers those real,
 reproducible failure modes.
+
+## Webhook demo job failing in CI
+
+**Symptom:** `herald-live-demo.yml` (Story 13.6) is red on the Actions
+tab, in one of its three jobs.
+
+- **`on-ship`/`on-pr-close` fail at "Start the webhook host (daphne)"
+  with "daphne never started listening":** almost always
+  `HERALD_WEBHOOK_SECRET` is not configured as a repo secret yet (an
+  operational step outside this story's Surface) —
+  `webhook_host.application` raises at daphne startup
+  (`webhook.resolve_webhook_secret`'s own "never a default fallback"
+  guard), so the process exits before ever binding the port, and the
+  step's own readiness loop times out and fails loudly rather than
+  hanging. Check the step's own `cat daphne-*.log` output in the job log
+  for the actual traceback. Configure the secret (`gh secret set
+  HERALD_WEBHOOK_SECRET --repo rxm7706/local-recipes`) and re-run.
+- **`on-ship` silently does nothing (job green, no POST step ran):** the
+  triggering commit's subject matched neither this repo's own
+  `bmad-loop`-merge convention nor the `<station>: story N.N` convention
+  (`docs/dashboard/generate.py`'s own `_LOOP_DONE`/`_QUALIFIED_STORY`
+  patterns) — check the "Derive station + story" step's own log line
+  (`subject: ... matched: False ...`). This is the documented, intentional
+  no-op (Boundaries & Constraints: "A commit matching neither pattern is
+  not a ship"), not a bug — an ordinary docs/chore push looks exactly like
+  this.
+- **`on-pr-close` returns 400:** the payload's `project_name` came back
+  blank (an untitled PR) — the job derives it from
+  `github.event.pull_request.title`, and a PR with no title cannot name a
+  claim.
+- **`scheduler-demo` fails its own JSON assertion:** `claims_checked != 1`
+  or `broken_evidence_claim_ids` is non-empty means the seeded evidence URL
+  (this repo's own GitHub page) failed to validate — check for a genuine
+  GitHub outage or a runner-side network problem before assuming a code
+  regression; this URL does not change.
 
 ## Stale or broken evidence links (the `herald success validate` scope)
 
@@ -111,10 +160,12 @@ published claim.
 **What it replaces:** the original spec's PR-close webhook, which would
 auto-extract a draft claim's `project_name`/`shipped_date`/evidence from
 CI's payload the moment a PR merged with all gates green. Story 13.4 built
-that webhook handler (`on-pr-close`, see
-[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)),
-but it is not mounted anywhere yet (Story 13.6); until it is, an operator
-runs `herald success create <project>` by hand, supplying the same fields
+that webhook handler (`on-pr-close`), and Story 13.6 mounted it for real
+behind `daphne` inside `herald-live-demo.yml`'s CI-contained demo jobs
+(see [`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134))
+— but since each demo job's database is scratch and job-local, an
+operator who wants a claim in their OWN checkout still runs
+`herald success create <project>` by hand, supplying the same fields
 explicitly via flags (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-publish-a-success-claim) for the
 full create -> review -> publish walkthrough).

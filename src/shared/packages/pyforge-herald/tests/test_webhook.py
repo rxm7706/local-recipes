@@ -30,8 +30,33 @@ from pyforge.herald.errors import HeraldError
 # --- ASGI test helpers --------------------------------------------------------
 
 
-def _sign(secret: bytes, body: bytes) -> str:
-    return "sha256=" + hmac.new(secret, body, hashlib.sha256).hexdigest()
+def _timestamp() -> str:
+    """A fresh ``X-Hub-Timestamp`` value -- real wall-clock seconds, well
+    inside ``webhook.MAX_TIMESTAMP_SKEW_SECONDS`` for the whole (fast,
+    synchronous) duration of one test."""
+    return str(int(time.time()))
+
+
+def _sign(secret: bytes, timestamp: str, body: bytes) -> str:
+    """The signature over ``timestamp + "." + body`` -- the signed content
+    ``webhook.verify_signature`` now expects (Story 13.6, closing
+    DW-FU-13-4)."""
+    return "sha256=" + hmac.new(
+        secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256
+    ).hexdigest()
+
+
+def _signed_headers(
+    secret: bytes, body: bytes, *, timestamp: str | None = None
+) -> list[tuple[bytes, bytes]]:
+    """The ``X-Hub-Signature-256``/``X-Hub-Timestamp`` header pair a real
+    producer would send -- the one helper every ASGI-level signed-request
+    test below builds its ``scope["headers"]`` from."""
+    ts = timestamp if timestamp is not None else _timestamp()
+    return [
+        (b"x-hub-signature-256", _sign(secret, ts, body).encode()),
+        (b"x-hub-timestamp", ts.encode()),
+    ]
 
 
 def _scope(
@@ -86,21 +111,28 @@ class _Recorder:
 def test_verify_signature_accepts_a_valid_signature():
     secret = b"shared-secret"
     body = b'{"station": "warden"}'
-    assert webhook.verify_signature(secret, body, _sign(secret, body)) is True
+    ts = _timestamp()
+    assert webhook.verify_signature(secret, body, _sign(secret, ts, body), ts) is True
 
 
 def test_verify_signature_rejects_a_mismatched_signature():
     secret = b"shared-secret"
     body = b'{"station": "warden"}'
-    assert webhook.verify_signature(secret, body, "sha256=" + "0" * 64) is False
+    assert (
+        webhook.verify_signature(secret, body, "sha256=" + "0" * 64, _timestamp())
+        is False
+    )
 
 
 def test_verify_signature_rejects_a_missing_header():
-    assert webhook.verify_signature(b"secret", b"body", None) is False
+    assert webhook.verify_signature(b"secret", b"body", None, _timestamp()) is False
 
 
 def test_verify_signature_rejects_a_header_with_no_sha256_prefix():
-    assert webhook.verify_signature(b"secret", b"body", "deadbeef") is False
+    assert (
+        webhook.verify_signature(b"secret", b"body", "deadbeef", _timestamp())
+        is False
+    )
 
 
 # --- resolve_webhook_secret -----------------------------------------------
@@ -524,7 +556,7 @@ def test_asgi_app_valid_signed_on_ship_post_creates_a_progress_record(tmp_path: 
     body = json.dumps({"station": "warden", "compute_hours": 2.0}).encode("utf-8")
     scope = _scope(
         webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     recorder = _Recorder()
     asyncio.run(app(scope, _receive_once(body), recorder))
@@ -543,7 +575,7 @@ def test_asgi_app_valid_signed_on_pr_close_post_creates_a_claim(tmp_path: Path):
     ).encode("utf-8")
     scope = _scope(
         webhook.ON_PR_CLOSE_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     recorder = _Recorder()
     asyncio.run(app(scope, _receive_once(body), recorder))
@@ -584,7 +616,7 @@ def test_asgi_app_wrong_secret_signature_is_401(tmp_path: Path):
     body = json.dumps({"station": "warden"}).encode("utf-8")
     scope = _scope(
         webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(b"a-different-secret", body).encode())],
+        headers=_signed_headers(b"a-different-secret", body),
     )
     recorder = _Recorder()
     asyncio.run(app(scope, _receive_once(body), recorder))
@@ -598,7 +630,7 @@ def test_asgi_app_malformed_json_body_is_400(tmp_path: Path):
     body = b"not json"
     scope = _scope(
         webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     recorder = _Recorder()
     asyncio.run(app(scope, _receive_once(body), recorder))
@@ -651,7 +683,7 @@ def test_asgi_app_unexpected_exception_is_a_500_not_an_uncaught_propagation(
     body = json.dumps({"station": "warden"}).encode("utf-8")
     scope = _scope(
         webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
 
     def _boom_loads(*args, **kwargs):
@@ -689,7 +721,7 @@ def test_verify_signature_rejects_a_malformed_hex_half_without_raising(header: s
     non-ASCII character rather than returning `False`, and the header is
     attacker-controlled. `verify_signature`'s contract is "returns `False`
     rather than raising", so the hex half is shape-checked first."""
-    assert webhook.verify_signature(b"secret", b"body", header) is False
+    assert webhook.verify_signature(b"secret", b"body", header, _timestamp()) is False
 
 
 def test_asgi_app_non_ascii_signature_is_401_not_a_500_with_an_alert(
@@ -874,7 +906,7 @@ def test_asgi_app_duplicate_json_keys_are_400(tmp_path: Path):
     )
     scope = _scope(
         webhook.ON_PR_CLOSE_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     recorder = _Recorder()
     asyncio.run(app(scope, _receive_once(body), recorder))
@@ -891,7 +923,7 @@ def test_asgi_app_routes_correctly_when_mounted_under_a_root_path(tmp_path: Path
     body = json.dumps({"station": "warden"}).encode("utf-8")
     scope = _scope(
         "/herald" + webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     scope["root_path"] = "/herald"
     recorder = _Recorder()
@@ -936,7 +968,7 @@ def test_asgi_app_send_failure_mid_response_does_not_start_a_second_response(
     body = json.dumps({"station": "warden"}).encode("utf-8")
     scope = _scope(
         webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     sent: list[str] = []
 
@@ -963,10 +995,11 @@ def test_verify_signature_accepts_an_uppercase_hex_signature():
     writes Story 13.6's producer hunting a secret mismatch that never
     happened."""
     secret, body = b"shared-secret", b'{"station":"warden"}'
-    lower = _sign(secret, body)
+    ts = _timestamp()
+    lower = _sign(secret, ts, body)
     upper = "sha256=" + lower[len("sha256=") :].upper()
-    assert webhook.verify_signature(secret, body, upper) is True
-    assert webhook.verify_signature(secret, body, lower) is True
+    assert webhook.verify_signature(secret, body, upper, ts) is True
+    assert webhook.verify_signature(secret, body, lower, ts) is True
 
 
 @pytest.mark.parametrize(
@@ -1122,7 +1155,7 @@ def test_asgi_app_routes_correctly_when_root_path_is_a_bare_slash(tmp_path: Path
     body = json.dumps({"station": "warden"}).encode("utf-8")
     scope = _scope(
         webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     recorder = _Recorder()
     asyncio.run(app({**scope, "root_path": "/"}, _receive_once(body), recorder))
@@ -1159,7 +1192,7 @@ def test_asgi_app_deeply_nested_json_is_400_not_a_500_with_an_alert(
     body = b'{"station":"warden","x":' + b"[" * 100_000 + b"]" * 100_000 + b"}"
     scope = _scope(
         webhook.ON_SHIP_PATH,
-        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+        headers=_signed_headers(secret, body),
     )
     recorder = _Recorder()
     with caplog.at_level("ERROR", logger=webhook.logger.name):
@@ -1189,7 +1222,7 @@ def test_asgi_app_assembles_a_chunked_body_and_stays_linear(tmp_path: Path):
     body = json.dumps({"station": "warden", "unblock_narrative": "x" * 800_000}).encode(
         "utf-8"
     )
-    signature = _sign(secret, body).encode()
+    headers = _signed_headers(secret, body)
     chunk_size = -(-len(body) // webhook.MAX_BODY_MESSAGES)  # ceil
 
     def receive_in_single_bytes():
@@ -1209,9 +1242,7 @@ def test_asgi_app_assembles_a_chunked_body_and_stays_linear(tmp_path: Path):
     started = time.monotonic()
     asyncio.run(
         app(
-            _scope(
-                webhook.ON_SHIP_PATH, headers=[(b"x-hub-signature-256", signature)]
-            ),
+            _scope(webhook.ON_SHIP_PATH, headers=headers),
             receive_in_single_bytes(),
             recorder,
         )
@@ -1605,7 +1636,7 @@ def test_asgi_app_normalizes_the_request_path(tmp_path: Path, path: str):
     secret = b"shared-secret"
     app = webhook.create_app(tmp_path, secret)
     body = json.dumps({"station": "warden"}).encode()
-    scope = _scope(path, headers=[(b"x-hub-signature-256", _sign(secret, body).encode())])
+    scope = _scope(path, headers=_signed_headers(secret, body))
     recorder = _Recorder()
     asyncio.run(app(scope, _receive_once(body), recorder))
     assert recorder.status == 201
@@ -1646,3 +1677,135 @@ def test_handle_on_ship_second_delivery_replaces_rather_than_merges(tmp_path: Pa
     assert list(stored.shipped_capabilities) == []
     assert (stored.compute_hours, stored.token_spend) == (0.0, 0)
     assert stored.unblock_narrative == ""
+
+
+# --- Story 13.6: the X-Hub-Timestamp skew window (closing DW-FU-13-4) ---------
+
+
+def test_verify_signature_rejects_a_timestamp_more_than_5_minutes_old():
+    """The literal AC: a captured, previously-valid signed request, replayed
+    after 5 minutes, is rejected -- before this story, the HMAC covered only
+    `body`, so this exact replay verified forever (DW-FU-13-4)."""
+    secret, body = b"shared-secret", b'{"station":"warden"}'
+    stale = str(int(time.time()) - webhook.MAX_TIMESTAMP_SKEW_SECONDS - 1)
+    header = "sha256=" + hmac.new(
+        secret, stale.encode("ascii") + b"." + body, hashlib.sha256
+    ).hexdigest()
+    assert webhook.verify_signature(secret, body, header, stale) is False
+
+
+def test_verify_signature_accepts_a_timestamp_just_inside_the_skew_window():
+    secret, body = b"shared-secret", b'{"station":"warden"}'
+    fresh_enough = str(int(time.time()) - webhook.MAX_TIMESTAMP_SKEW_SECONDS + 5)
+    header = "sha256=" + hmac.new(
+        secret, fresh_enough.encode("ascii") + b"." + body, hashlib.sha256
+    ).hexdigest()
+    assert webhook.verify_signature(secret, body, header, fresh_enough) is True
+
+
+def test_verify_signature_rejects_a_timestamp_more_than_5_minutes_in_the_future():
+    """Symmetric, not one-directional: a one-directional "reject only if
+    older" check would leave a future-dated timestamp valid forever, until
+    the server's own clock caught up to it -- see
+    `MAX_TIMESTAMP_SKEW_SECONDS`'s own docstring."""
+    secret, body = b"shared-secret", b'{"station":"warden"}'
+    future = str(int(time.time()) + webhook.MAX_TIMESTAMP_SKEW_SECONDS + 1)
+    header = "sha256=" + hmac.new(
+        secret, future.encode("ascii") + b"." + body, hashlib.sha256
+    ).hexdigest()
+    assert webhook.verify_signature(secret, body, header, future) is False
+
+
+def test_verify_signature_rejects_a_missing_timestamp_header():
+    secret, body = b"shared-secret", b'{"station":"warden"}'
+    ts = _timestamp()
+    good_signature = _sign(secret, ts, body)
+    assert webhook.verify_signature(secret, body, good_signature, None) is False
+
+
+@pytest.mark.parametrize(
+    "bogus_timestamp",
+    [
+        "",  # empty
+        "not-a-number",
+        "12345.6",  # not an integer
+        "-12345",  # signed -- `int()` alone would accept this
+        "+12345",  # signed -- `int()` alone would accept this
+        "1" * 17,  # over `_MAX_TIMESTAMP_HEADER_LEN`
+        "123 456",  # whitespace -- `int()` alone would accept this
+        "\xff" * 5,  # non-ASCII
+    ],
+)
+def test_verify_signature_rejects_a_malformed_timestamp_without_raising(
+    bogus_timestamp: str,
+):
+    """`int()` alone accepts a leading sign, internal whitespace, and
+    underscores -- all attacker-controlled since the header is
+    attacker-controlled -- so the shape is checked first, the same
+    discipline the hex signature half already gets."""
+    secret, body = b"shared-secret", b'{"station":"warden"}'
+    good_signature = _sign(secret, _timestamp(), body)
+    assert webhook.verify_signature(secret, body, good_signature, bogus_timestamp) is False
+
+
+def test_asgi_app_replayed_request_with_a_stale_timestamp_is_401_before_storage(
+    tmp_path: Path,
+):
+    """The I/O matrix's "Replayed captured request, stale timestamp" row,
+    exercised through the full ASGI boundary: a request signed with a
+    timestamp more than 5 minutes old is rejected before any storage call
+    -- the endpoint never creates a Progress record for it."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden"}).encode("utf-8")
+    stale = str(int(time.time()) - webhook.MAX_TIMESTAMP_SKEW_SECONDS - 30)
+    headers = _signed_headers(secret, body, timestamp=stale)
+    recorder = _Recorder()
+    asyncio.run(app(_scope(webhook.ON_SHIP_PATH, headers=headers), _receive_once(body), recorder))
+    assert recorder.status == 401
+    assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
+
+
+def test_asgi_app_missing_timestamp_header_is_401(tmp_path: Path):
+    """A correctly-signed body with no `X-Hub-Timestamp` at all -- the
+    header simply is not proof, mirroring the existing missing-signature
+    case."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden"}).encode("utf-8")
+    ts = _timestamp()
+    scope = _scope(
+        webhook.ON_SHIP_PATH,
+        headers=[(b"x-hub-signature-256", _sign(secret, ts, body).encode())],
+    )
+    recorder = _Recorder()
+    asyncio.run(app(scope, _receive_once(body), recorder))
+    assert recorder.status == 401
+    assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
+
+
+def test_asgi_app_valid_fresh_timestamp_still_creates_the_record(tmp_path: Path):
+    """The ordinary case survives the new gate: a freshly-signed request
+    (the shared `_signed_headers` helper every other ASGI test already
+    uses) still creates the record."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden"}).encode("utf-8")
+    scope = _scope(webhook.ON_SHIP_PATH, headers=_signed_headers(secret, body))
+    recorder = _Recorder()
+    asyncio.run(app(scope, _receive_once(body), recorder))
+    assert recorder.status == 201
+    assert len(progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)) == 1
+
+
+def test_verify_signature_a_timestamp_cannot_be_swapped_onto_a_captured_body():
+    """The timestamp is folded INTO the signed content, not merely compared
+    alongside an unauthenticated one: recomputing the signature with a
+    DIFFERENT timestamp than the one actually signed must fail, even
+    though both timestamps are individually fresh -- otherwise a captured
+    signature would remain valid under a relabeled timestamp forever,
+    defeating the whole point of folding it in."""
+    secret, body = b"shared-secret", b'{"station":"warden"}'
+    ts_a, ts_b = _timestamp(), str(int(_timestamp()) + 1)
+    signature_for_a = _sign(secret, ts_a, body)
+    assert webhook.verify_signature(secret, body, signature_for_a, ts_b) is False
