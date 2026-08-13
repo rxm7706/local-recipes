@@ -207,6 +207,7 @@ from pathlib import Path
 import tomlkit
 from pyforge.core.atomic_write import atomic_write_bytes
 from pyforge.core.errors import PyforgeError
+from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from ..core import policy
 from ..core.egress import to_redacted
@@ -766,23 +767,18 @@ class HarnessError(PyforgeError, Exception):
     additional base -- ``Exception`` stays in the MRO."""
 
 
-def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> subprocess.CompletedProcess[str] | None:
-    """Mirrors ``vcs_git.py``'s ``_run``: same ``encoding="utf-8"``/
-    ``errors="replace"`` decode discipline. Unlike that module's version,
-    every failure mode here (missing binary, launch failure, a hung
-    process) degrades to ``None`` rather than raising -- ``harness_version``
-    is documented to never raise, so there is no typed exception for a
-    caller to catch."""
+def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> ProcessResult | None:
+    """Story 14.4, SPEC-pyforge-core CAP-6: delegates the actual launch to
+    ``pyforge.core.process.PosixProcess().run(...)`` -- mirrors
+    ``adapters/vcs_git.py::_run``'s identical delegation (``cwd=Path.cwd()``,
+    never relying on a caller-supplied working directory). Unlike that
+    module's version, every failure mode here (missing binary, launch
+    failure, a hung process) degrades to ``None`` rather than raising --
+    ``harness_version`` is documented to never raise, so there is no typed
+    exception for a caller to catch."""
     try:
-        return subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_s,
-        )
-    except (OSError, subprocess.TimeoutExpired):
+        return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s)
+    except ProcessError:
         return None
 
 
@@ -1056,53 +1052,32 @@ class BmadLoopHarness:
         log_path: Path,
     ) -> SpinResult:
         argv = self._run_argv(epic=epic, story=story, max_count=max_count)
+        # Story 14.4, SPEC-pyforge-core CAP-6: delegates the log-open +
+        # detached-``Popen`` recipe to ``pyforge.core.process.PosixProcess.
+        # spawn_detached`` -- the generic primitive that recipe was itself
+        # modeled on (that primitive's own docstring names this method as
+        # its mirror). ``spawn_detached`` forces the identical
+        # ``PYTHONUNBUFFERED=1`` env fix this method always has (see the
+        # review finding below, still true) PLUS ``PYTHONSAFEPATH=1`` -- a
+        # no-op for this call (``bmad-loop`` is an installed console-script
+        # entry point, not a ``python -m`` invocation, so ``project`` never
+        # lands on its ``sys.path[0]`` either way), harmless to inherit from
+        # the now-shared recipe. ``spawn_detached`` raises ONE
+        # ``ProcessError`` for either of the two distinct failures the
+        # original two-step open-then-Popen code raised separately (a log
+        # that could not be opened, or a launch failure) -- distinguished
+        # here by its own message prefix so both original ``HarnessError``
+        # messages survive unchanged.
         try:
-            log_file = open(log_path, "wb")
-        except OSError as exc:
-            raise HarnessError(f"cannot open spin log {log_path}: {exc}") from exc
-        # A `with` block over the ALREADY-OPENED file (not `with open(...) as
-        # log_file:` wrapping both steps): opening and launching are two
-        # distinct failure modes with two distinct messages ("cannot open
-        # spin log" vs "cannot launch bmad-loop run"), so the open above must
-        # stay outside this block's own exception handling -- the `with`
-        # here exists solely to guarantee the close, mirroring the
-        # try/finally this replaces.
-        with log_file:
-            try:
-                process = subprocess.Popen(
-                    argv,
-                    cwd=project,
-                    start_new_session=True,
-                    stdin=subprocess.DEVNULL,
-                    stdout=log_file,
-                    stderr=log_file,
-                    # Review finding (Blind Hunter, verified live): CPython's
-                    # stdout is FULLY block-buffered -- not line-buffered --
-                    # the instant it is redirected to a regular file rather
-                    # than a tty, and `bmad-loop run`'s own "starting" print
-                    # (verified against the installed cli.py) carries no
-                    # `flush=True`. Left to the AMBIENT environment, this
-                    # module's own poll below would only see that line once
-                    # the child's stdio buffer fills or the whole (possibly
-                    # minutes-long) run exits -- defeating both the poll AND
-                    # AD-22's "returns promptly" in any shell that does not
-                    # happen to already export PYTHONUNBUFFERED (this
-                    # session's own dev environment does, which is exactly
-                    # what let the bug through undetected). Forcing it here,
-                    # on the CHILD's own env, makes the poll's promptness a
-                    # property of this call, never of whatever invoked it.
-                    env={**os.environ, "PYTHONUNBUFFERED": "1"},
-                )
-            except OSError as exc:
-                raise HarnessError(f"cannot launch bmad-loop run: {exc}") from exc
-            # The child already holds its own duplicated descriptor
-            # (Popen's own fork+exec dance) -- closing this end in the
-            # parent (as the `with` block exits) is safe, and correct: an
-            # unclosed copy here would leak across every future subprocess
-            # this LONG-LIVED CLI process spawns.
+            pid = PosixProcess().spawn_detached(argv, cwd=project, log_path=log_path)
+        except ProcessError as exc:
+            cause = exc.__cause__
+            if str(exc).startswith("cannot open log"):
+                raise HarnessError(f"cannot open spin log {log_path}: {cause}") from cause
+            raise HarnessError(f"cannot launch bmad-loop run: {cause}") from cause
 
         harness_run_id = self._poll_for_harness_run_id(log_path)
-        return SpinResult(pid=process.pid, harness_run_id=harness_run_id)
+        return SpinResult(pid=pid, harness_run_id=harness_run_id)
 
     @staticmethod
     def _normalize_returncode(returncode: int) -> int:
@@ -1118,6 +1093,12 @@ class BmadLoopHarness:
         return 128 - returncode if returncode < 0 else returncode
 
     def attach(self, project: Path) -> int:
+        # Story 14.4, SPEC-pyforge-core CAP-6: a SANCTIONED exception, left
+        # unmigrated -- `pyforge.core.process.PosixProcess.run` always
+        # captures stdout/stderr/stdin, but `attach` must inherit this
+        # process's OWN stdio so an operator can interact with the attached
+        # session; the shared primitive offers no interactive-passthrough
+        # mode (CAP-6's own "no primitive earns a place on one caller").
         try:
             result = subprocess.run(["bmad-loop", "attach"], cwd=project)
         except OSError as exc:
@@ -1133,6 +1114,11 @@ class BmadLoopHarness:
         max_count: int | None,
     ) -> int:
         argv = self._run_argv(epic=epic, story=story, max_count=max_count)
+        # Story 14.4, SPEC-pyforge-core CAP-6: a SANCTIONED exception, left
+        # unmigrated -- the ``--foreground`` counterpart to ``spin``, same
+        # interactive-stdio-passthrough reason as ``attach`` above (an
+        # operator watches/interrupts the run live); the shared
+        # ``PosixProcess.run`` always captures.
         try:
             result = subprocess.run(argv, cwd=project)
         except OSError as exc:
@@ -1158,7 +1144,16 @@ class BmadLoopHarness:
         present binary gets exactly one bounded, log-redirected
         ``subprocess.run`` call (mirrors ``spin``'s own log-redirection
         recipe, but synchronous and bounded rather than detached -- there is
-        no supervisor watching an unattended ephemeral smoke run)."""
+        no supervisor watching an unattended ephemeral smoke run).
+
+        Story 14.4, SPEC-pyforge-core CAP-6: a SANCTIONED exception, left
+        unmigrated -- this call's bounded ``timeout_s`` PLUS its
+        already-open, caller-owned ``log_file`` redirect fits neither
+        ``PosixProcess.run`` (captures to its own return value, not a
+        caller's file handle) nor ``.spawn_detached`` (fire-and-forget, no
+        timeout, no returncode) cleanly; forcing it into either risks a
+        behavior regression this story does not need to take on (spec's own
+        Never section)."""
         profile = self._get_profile(adapter_name, project)
         binary = profile.binary
         binary_present = self.binary_present(binary)
@@ -1225,27 +1220,24 @@ class BmadLoopHarness:
         # (those inherit stdio by design) -- `stop` is not interactive, and
         # capturing keeps this call's own stdout/stderr from leaking into
         # the supervisor's own redirected log uninterpreted.
+        # Story 14.4, SPEC-pyforge-core CAP-6: delegates to
+        # ``pyforge.core.process.PosixProcess().run(...)``, which already
+        # applies the identical ``stdin=DEVNULL`` discipline this call used
+        # to spell out itself, and folds every launch failure (a timeout, an
+        # embedded NUL byte, any other launch ``OSError``) into ONE
+        # ``ProcessError`` -- distinguished below by cause type so both
+        # original ``HarnessError`` messages survive unchanged.
         try:
-            result = subprocess.run(
-                ["bmad-loop", "stop", run_id],
-                cwd=project,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                stdin=subprocess.DEVNULL,
-                timeout=_STOP_TIMEOUT_S,
+            result = PosixProcess().run(
+                ["bmad-loop", "stop", run_id], cwd=project, timeout_s=_STOP_TIMEOUT_S
             )
-        except subprocess.TimeoutExpired as exc:
-            raise HarnessError(
-                f"bmad-loop stop {run_id} timed out after {_STOP_TIMEOUT_S}s: {exc}"
-            ) from exc
-        except (OSError, ValueError) as exc:
-            # `ValueError` alongside `OSError` (the same CPython split this
-            # module's own `spin`/`spawn_detached` sibling already guards):
-            # `subprocess.run` raises a plain `ValueError` -- not an
-            # `OSError` -- for an embedded NUL byte in an argv element.
-            raise HarnessError(f"cannot launch bmad-loop stop: {exc}") from exc
+        except ProcessError as exc:
+            cause = exc.__cause__
+            if isinstance(cause, subprocess.TimeoutExpired):
+                raise HarnessError(
+                    f"bmad-loop stop {run_id} timed out after {_STOP_TIMEOUT_S}s: {cause}"
+                ) from cause
+            raise HarnessError(f"cannot launch bmad-loop stop: {cause}") from cause
         # A non-zero exit is the ordinary "did not stop" shape (already
         # finished, or some other non-launch failure the installed 0.9.0
         # `cmd_stop` reports) -- never raised, matching this Protocol's own
@@ -1253,6 +1245,15 @@ class BmadLoopHarness:
         return result.returncode == 0
 
     def resume(self, project: Path, run_id: str, *, log_path: Path) -> int:
+        # Story 14.4, SPEC-pyforge-core CAP-6: a SANCTIONED exception, left
+        # unmigrated -- this Popen's own log open below is APPEND ("ab"),
+        # never truncate, because `log_path` may be a wedged run's own
+        # existing `harness.log` (see that open's own comment); `PosixProcess
+        # .spawn_detached` hardcodes `"wb"` truncate, so routing through it
+        # would destroy the prior run's output at the exact moment it is
+        # most valuable. The shared primitive offers no append-mode
+        # parameter (CAP-6's own "no primitive earns a place on one caller").
+        #
         # Mirrors `spin`'s own detached-launch recipe exactly: `bmad-loop
         # resume` drives a resumed engine run synchronously and
         # unboundedly in the child (confirmed live against the installed

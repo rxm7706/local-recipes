@@ -106,10 +106,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
+
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
-from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy as policy_core
 from ..core import promotion
@@ -121,7 +122,6 @@ from ..core.verdict import Verdict, classify, compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
-from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .config import (
     PolicyIOError,

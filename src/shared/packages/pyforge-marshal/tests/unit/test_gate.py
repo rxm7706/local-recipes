@@ -1,7 +1,7 @@
 """Unit tests for ``pyforge.marshal.core.gate`` (Story 2.1, AD-4/AD-7) --
 the pure per-command classification core, driven entirely by SYNTHETIC
 ``ProcessResult`` values (no real subprocess -- that lives in
-``test_process_posix.py`` and the real end-to-end
+``pyforge-core``'s ``tests/unit/test_process.py`` and the real end-to-end
 ``tests/unit/test_cli.py::gate evaluate`` cases).
 """
 
@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import pytest
 
+from pyforge.core.process import ProcessResult
 from pyforge.marshal.core import findings, gate, policy, verdict
 from pyforge.marshal.core.findings import UnregisteredFindingCodeError
 from pyforge.marshal.core.model import Finding, Severity, Verdict
 from pyforge.marshal.core.verdict import classify
-from pyforge.marshal.ports.process import ProcessResult
 
 # --- classify_outcome: a passing command --------------------------------------
 

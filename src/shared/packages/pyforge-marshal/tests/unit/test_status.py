@@ -15,11 +15,11 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
-from pyforge.marshal.adapters.process_posix import ProcessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli import status as status_cli
@@ -37,7 +37,6 @@ from pyforge.marshal.ports.harness import (
     RunStatusSnapshot,
     TaskPhaseSnapshot,
 )
-from pyforge.marshal.ports.process import ProcessResult
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
 _CANONICAL = Path("/repo/_bmad-output/projects/acme/implementation-artifacts")

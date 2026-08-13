@@ -39,6 +39,9 @@ from __future__ import annotations
 import json
 import subprocess
 from collections.abc import Mapping
+from pathlib import Path
+
+from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from ..core.egress import Redacted
 from ..ports.forge import ForgeCommandError, ForgeRef, PrInfo
@@ -52,26 +55,32 @@ _GH_READ_TIMEOUT_S = 30.0
 _GH_WRITE_TIMEOUT_S = 120.0
 
 
-def _run(
-    args: list[str], *, timeout_s: float
-) -> subprocess.CompletedProcess[str]:
+def _run(args: list[str], *, timeout_s: float) -> ProcessResult:
+    """Story 14.4, SPEC-pyforge-core CAP-6: delegates the actual launch to
+    ``pyforge.core.process.PosixProcess().run(...)`` -- mirrors
+    ``adapters/vcs_git.py::_run``'s identical translation (``cwd=Path.cwd()``
+    since every ``args`` list is a self-contained ``gh ... --repo <repo>``
+    invocation, never relying on the process's own working directory). This
+    module keeps ``import subprocess`` solely for its own tests' monkeypatch
+    target (``forge_gh_module.subprocess.run``, unchanged since both names
+    resolve to the SAME stdlib module object ``PosixProcess.run`` itself
+    calls) and this method's own ``subprocess.TimeoutExpired`` cause
+    classification -- it never calls ``subprocess.run``/``Popen`` directly."""
     try:
-        return subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_s,
-        )
-    except FileNotFoundError as exc:
-        raise ForgeCommandError(f"gh executable not found: {exc}") from exc
-    except subprocess.TimeoutExpired as exc:
-        raise ForgeCommandError(
-            f"gh command timed out after {timeout_s}s: {' '.join(args)}"
-        ) from exc
-    except OSError as exc:
-        raise ForgeCommandError(f"cannot launch gh: {exc}") from exc
+        return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s)
+    except ProcessError as exc:
+        cause = exc.__cause__
+        if isinstance(cause, FileNotFoundError):
+            raise ForgeCommandError(f"gh executable not found: {cause}") from cause
+        if isinstance(cause, subprocess.TimeoutExpired):
+            raise ForgeCommandError(
+                f"gh command timed out after {timeout_s}s: {' '.join(args)}"
+            ) from cause
+        # `cause` is `None` for `PosixProcess`'s own empty-argv guard (it
+        # raises with no `from` clause) -- `exc` itself already carries that
+        # message, so fall back to it rather than stringifying/chaining from
+        # a bare `None` (Story 14.4 review finding, mirrors vcs_git.py).
+        raise ForgeCommandError(f"cannot launch gh: {cause or exc}") from (cause or exc)
 
 
 def _parse_json(text: str, *, context: str) -> object:
