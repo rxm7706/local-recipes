@@ -474,7 +474,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/auth.py": "4c8a0171157cdd5b10b61b0641ec3f8ef5f52b6b",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/bridge.py": "b5d60f965604407935f74660988e156cd7e9b7ab",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/claims.py": "8dcb54db029a739caeeedbc0cc9d1902a27c55d9",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py": "72d6bd07aa3e0744d1fa1f48c3587faeb1dc9fd3",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py": "75d6cd49a3b231cbd7a5bcca99fae971363f84b8",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/db.py": "86a99fc20eded5eb8591997c809c8b3b8892c917",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py": "41370ce89a79c5f13ca75f7c41b0d3a9b4dd227b",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/errors.py": "ede1e23328ba55395f067a1431c014c93f2aee4a",
@@ -490,9 +490,10 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/agent_sdk_transport.py": "c07ff55a0343c4d8c809e1a3828f088ab2caf9e7",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py": "2a4ce90d6abc98798bf6d8d5265e2021276f520c",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py": "436b169730769577db45d64974b1f5068c6d3015",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py": "68647a65dc044cb42543907dcf57ca5288b53c92"
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py": "68647a65dc044cb42543907dcf57ca5288b53c92",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py": "fba2c93054537b556b8f145a4605fe342653409c"
   },
-  "memlog": "737d74c9d54acb145ac2e0c2cda5fcaf917587a9"
+  "memlog": "3d975060a3c03a854ff39fa8935b3d662767c8ae"
  },
  "pyforge-herald/spec-herald-moments-2-4-missing-surface": {
   "files": {},
@@ -2011,9 +2012,9 @@
    "src/shared/packages/pyforge-herald/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-herald/README.md": "1d6bdc7bdec6cc54ff86276a18f4e51f11e2494e",
    "src/shared/packages/pyforge-herald/docs/README.md": "eca82247b7122162d1407282ab7c05f34b8150c8",
-   "src/shared/packages/pyforge-herald/docs/automation-troubleshooting.md": "feee84bd830a197300df9882e21be6423a2c5218",
-   "src/shared/packages/pyforge-herald/docs/cli-runbooks.md": "7ba018b950a77cbb7a939439c6e2edc034c0849a",
-   "src/shared/packages/pyforge-herald/docs/operator-guide.md": "18234c92b43d0a8dd0caae0af6ff89b4dd82b606",
+   "src/shared/packages/pyforge-herald/docs/automation-troubleshooting.md": "3c1a642a78a838b0b34b0f67e69b5cf28ef04046",
+   "src/shared/packages/pyforge-herald/docs/cli-runbooks.md": "8054343c46104ec5fd2ab1f4b7d220556ff1350e",
+   "src/shared/packages/pyforge-herald/docs/operator-guide.md": "d9f2a5d986bfa582b4f1512dd25d2e1f885c90ea",
    "src/shared/packages/pyforge-herald/docs/web-ux-guide.md": "42e5daf22baf6e7d064c17c32a7078e39a596edc",
    "src/shared/packages/pyforge-herald/pixi.toml": "8d80ac85b855bd5b6408face595512f722d8f84b",
    "src/shared/packages/pyforge-herald/pyproject.toml": "a536425aa630d9954cacf3b841590643b0a48e4e",
@@ -2024,7 +2025,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/auth.py": "4c8a0171157cdd5b10b61b0641ec3f8ef5f52b6b",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/bridge.py": "b5d60f965604407935f74660988e156cd7e9b7ab",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/claims.py": "8dcb54db029a739caeeedbc0cc9d1902a27c55d9",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py": "72d6bd07aa3e0744d1fa1f48c3587faeb1dc9fd3",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py": "75d6cd49a3b231cbd7a5bcca99fae971363f84b8",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/db.py": "86a99fc20eded5eb8591997c809c8b3b8892c917",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py": "41370ce89a79c5f13ca75f7c41b0d3a9b4dd227b",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/errors.py": "ede1e23328ba55395f067a1431c014c93f2aee4a",
@@ -2041,10 +2042,11 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py": "2a4ce90d6abc98798bf6d8d5265e2021276f520c",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py": "436b169730769577db45d64974b1f5068c6d3015",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py": "68647a65dc044cb42543907dcf57ca5288b53c92",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py": "fba2c93054537b556b8f145a4605fe342653409c",
    "src/shared/packages/pyforge-herald/tests/conftest.py": "0e289738373116e3409ae215591e2740eaa763c7",
    "src/shared/packages/pyforge-herald/tests/test_agent_sdk_transport.py": "f19ff4a63dc76b723cc6453b5a3f424d773222ab",
    "src/shared/packages/pyforge-herald/tests/test_auth.py": "d70f091a5253370adb248df99012c8e053049ac0",
-   "src/shared/packages/pyforge-herald/tests/test_bridge.py": "df2aa9bc2c5479a73bd733ba8f26c766196d4066",
+   "src/shared/packages/pyforge-herald/tests/test_bridge.py": "ea71b81102fd956a85759c85dbd5e5f123d494ff",
    "src/shared/packages/pyforge-herald/tests/test_claims.py": "716d3337d5e92a76d0e5c16f51c00c79eccde75e",
    "src/shared/packages/pyforge-herald/tests/test_cli_dispatch.py": "ac20f71ee254a0fe7926a2a2d3a0fbda9a846125",
    "src/shared/packages/pyforge-herald/tests/test_cli_epic13.py": "fc1cba22f770cf999725992607a6cf64b0f09ef3",
@@ -2078,6 +2080,7 @@
    "src/shared/packages/pyforge-herald/tests/test_state.py": "b8115dd7619708515ef409df775f08bcb2be24e6",
    "src/shared/packages/pyforge-herald/tests/test_transport_base.py": "b6103517abb01977adbeb8f63921803ac8e15b7b",
    "src/shared/packages/pyforge-herald/tests/test_watch.py": "375911f51fdac2c3a781d51c7125101ffc7f6ae1",
+   "src/shared/packages/pyforge-herald/tests/test_webhook.py": "1e2ad06cc40d5fb5f2dbf1bac00030ae9245614c",
    "src/shared/packages/pyforge-herald/web/.gitignore": "5a55b1e8e23c782e141182ac4fbf4542fbec7e2d",
    "src/shared/packages/pyforge-herald/web/README.md": "e5b71aa4beac887a401faf1e8646c989e19f70b6",
    "src/shared/packages/pyforge-herald/web/index.html": "6b4b9380dc76531df96b5b2af78c79f6637a4b28",
@@ -2109,7 +2112,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "6a9fafa917c16d8f775c154d05f3044e69d86ec2"
+  "memlog": "74d4021a49899ce8452171226c18fd97c6537bd0"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {
