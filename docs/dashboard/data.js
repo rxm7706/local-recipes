@@ -1475,7 +1475,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "5.9",
-            125
+            200
           ],
           [
             "7.1",
@@ -1520,8 +1520,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 5197,
-        "totalLabel": "~86.6 h active compute",
+        "total": 5272,
+        "totalLabel": "~87.9 h active compute",
         "note": "Derived from 37 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
@@ -1556,7 +1556,7 @@ window.DASHBOARD_DATA = {
           "4.14": 193,
           "4.15": 33,
           "5.8": 53,
-          "5.9": 125,
+          "5.9": 200,
           "7.1": 39,
           "7.4": 143,
           "7.5": 107,
@@ -1567,7 +1567,7 @@ window.DASHBOARD_DATA = {
           "E2": 719,
           "E3": 2146,
           "E4": 485,
-          "E5": 178,
+          "E5": 253,
           "E7": 326
         }
       },
@@ -2422,12 +2422,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "15/42",
+            "16/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "27",
+            "26",
             "remaining",
             ""
           ]
@@ -2565,7 +2565,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "2.8",
-              "pending",
+              "done",
               "`mason recipe optimize` and `mason recipe scan`"
             ],
             [
@@ -3884,7 +3884,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-12 23:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-12 23:56 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5980,7 +5980,7 @@ window.DASHBOARD_DATA = {
           "stories": 38,
           "state": "running",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 15,
+          "done": 16,
           "total": 42
         },
         {
@@ -6587,7 +6587,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-12T18:04",
+          "spec": "2026-08-12T18:21",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6669,7 +6669,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-12T18:04",
+            "at": "2026-08-12T18:21",
             "other": "2026-08-01"
           },
           {
@@ -6690,7 +6690,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "15/42",
+        "progress": "16/42",
         "complete": 13,
         "of": 13
       },
@@ -16612,8 +16612,8 @@ window.DASHBOARD_DATA = {
       "subject": "sequence marshal-land-merge-subject spec as Story 5.10; sync .idea metadata"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-12 23:53 UTC",
-    "generatedEpoch": 1786578821
+    "generatedAt": "2026-08-12 23:56 UTC",
+    "generatedEpoch": 1786579016
   },
   "storySpecs": [
     {
@@ -16642,9 +16642,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 15,
+      "done": 16,
       "tracked": 10,
-      "gap": 5
+      "gap": 6
     },
     {
       "station": "pyforge-scribe",
@@ -16780,8 +16780,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
           }
         ],
-        "done": 15,
-        "backlog": 27,
+        "done": 16,
+        "backlog": 26,
         "blocked": 0,
         "total": 42,
         "next": "2-10-mason-recipe-update",
@@ -16790,11 +16790,11 @@ window.DASHBOARD_DATA = {
           "2-10-mason-recipe-update",
           "2-4-mason-recipe-new",
           "2-5-mason-recipe-validate",
-          "2-8-mason-recipe-optimize-and-mason-recipe-scan",
           "2-9-mason-recipe-submit",
           "3-1-engine-protocol-and-provisioning",
           "3-2-mason-package-build",
-          "3-3-ship-target-vocabulary-and-dry-run-default"
+          "3-3-ship-target-vocabulary-and-dry-run-default",
+          "3-4-the-pypi-ship-target"
         ],
         "state": "ready"
       },
@@ -16947,8 +16947,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 285,
-      "backlog": 88,
+      "done": 286,
+      "backlog": 87,
       "blocked": 6,
       "total": 379
     }
@@ -16994,7 +16994,7 @@ window.DASHBOARD_DATA = {
       {
         "key": "mason",
         "stories": 42,
-        "done": 15,
+        "done": 16,
         "blocked": 0,
         "epics": 6,
         "epicsDone": 1,
@@ -17030,7 +17030,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 379,
-      "done": 285,
+      "done": 286,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 49
