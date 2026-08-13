@@ -456,6 +456,64 @@ def test_dashboard_middleware_and_declarations_stay_django_free():
     ), "the framework-only guard must still catch a real django import"
 
 
+def test_the_dashboard_module_split_is_pinned_not_merely_documented():
+    """Review pass 4: `dashboard/__init__.py` names WHICH submodules import
+    `django`, and nothing checked that claim in the growing direction.
+
+    That docstring is the package's load-bearing statement of which modules an
+    adopter without the `[dashboard]` extra may touch, and Story 9.3 already
+    made it false once by adding three django-importing modules while it still
+    read "only `apps.py` and `cache.py`". The sibling guard above pins only the
+    django-FREE half, so the drift recurs on the next dashboard module: adding
+    a `views.py` with `from django.db import models` left the whole suite green
+    with the docstring silently wrong (mutation-proved at the time).
+
+    Deliberately an equality assert against a named set rather than a derived
+    one -- the point is to FAIL when the set changes, so whoever adds the next
+    django-importing module updates the docstring in the same commit.
+    """
+    import ast
+
+    dashboard_dir = PKG_ROOT / "steward" / "dashboard"
+    documented = {"apps.py", "cache.py", "models.py", "audit.py"}
+
+    actual: set[str] = set()
+    for path in sorted(dashboard_dir.rglob("*.py")):
+        if path.parent.name == "migrations":
+            # `migrations/` is documented as a directory, not per-file, since
+            # every future migration lands there and importing django is the
+            # whole point of the file format.
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name.split(".")[0] for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                names = [node.module.split(".")[0]]
+            if any(name in {"django", "channels"} for name in names):
+                actual.add(path.name)
+                break
+
+    assert actual == documented, (
+        f"the set of dashboard modules importing django/channels changed to "
+        f"{sorted(actual)} (documented: {sorted(documented)}) — update "
+        f"`dashboard/__init__.py`'s module-split docstring, which tells an "
+        f"adopter without the [dashboard] extra which modules they may touch, "
+        f"and this pin, in the same commit"
+    )
+    # And the docstring really does name each one, so the two cannot agree
+    # here while disagreeing there.
+    init_docstring = ast.get_docstring(
+        ast.parse((dashboard_dir / "__init__.py").read_text(encoding="utf-8"))
+    )
+    missing = [name for name in sorted(documented) if name not in init_docstring]
+    assert not missing, (
+        f"`dashboard/__init__.py`'s docstring does not name these "
+        f"django-importing modules: {missing}"
+    )
+
+
 def test_dashboard_import_guard_flags_a_relative_import_past_the_top_package():
     """Review pass 3: `from ...dashboard import cache` inside
     `pyforge/steward/` climbed past the top-level package, and the level
