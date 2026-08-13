@@ -21,10 +21,10 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError, render_policy_toml
-from pyforge.marshal.adapters.process_posix import ProcessError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin

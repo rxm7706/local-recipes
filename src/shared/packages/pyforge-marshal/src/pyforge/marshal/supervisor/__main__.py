@@ -333,12 +333,13 @@ from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 
+from pyforge.core.process import PosixProcess, ProcessPort
+
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
-from ..adapters.process_posix import PosixProcess
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.egress import to_redacted
@@ -368,7 +369,6 @@ from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot
 from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
-from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .durability import PushTrigger, classify_push_triggers
 

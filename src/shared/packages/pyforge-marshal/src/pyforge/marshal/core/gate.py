@@ -119,7 +119,8 @@ from __future__ import annotations
 
 import fnmatch
 
-from ..ports.process import ProcessResult
+from pyforge.core.process import ProcessResult
+
 from . import policy
 from .journal import FrozenPath
 from .model import Finding, Severity, Status, status_for

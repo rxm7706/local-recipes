@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.core.process import ProcessResult
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
@@ -25,7 +26,6 @@ from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, pre
 from pyforge.marshal.core.policy import DEFAULT_POLICY
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 from pyforge.marshal.ports.harness import RunStatusSnapshot, TaskPhaseSnapshot
-from pyforge.marshal.ports.process import ProcessResult
 
 _BMADLOOP_WAVE_SUBJECT = "Merge bmad-loop/run-1/4-4-batch into loop/acme (bmad-loop)"
 _DEFAULT_MERGE_SUBJECT_TEMPLATE = str(DEFAULT_POLICY["merge_subject_template"])
