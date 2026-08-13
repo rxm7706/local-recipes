@@ -377,14 +377,6 @@ query($projectId: ID!, $after: String) {
         nodes {
           id
           updatedAt
-          fieldValues(first: 50) {
-            nodes {
-              ... on ProjectV2ItemFieldTextValue {
-                text
-                field { ... on ProjectV2FieldCommon { id } }
-              }
-            }
-          }
         }
         pageInfo {
           hasNextPage
@@ -455,10 +447,10 @@ def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
     value is propagated 1:1, matching the Boundaries & Constraints' "Never
     build a general status-vocabulary translation table").
 
-    Factored out of `get_project_item`'s own inline loop (Story 8.4) so
-    `list_linked_github_items`'s bulk candidate-discovery query -- which
-    parses the SAME `ProjectV2ItemFieldTextValue` shape per node, just
-    across many nodes instead of one -- never duplicates this logic.
+    Factored out of `get_project_item`'s own inline loop (Story 8.4). No
+    longer called by `list_linked_github_items` (Story 8.5) -- that
+    function's bulk listing no longer reads any field value, only `id`/
+    `updatedAt` per node.
     """
     field_values: dict[str, str] = {}
     for entry in ((node.get("fieldValues") or {}).get("nodes") or []):
@@ -505,21 +497,28 @@ def list_linked_github_items(
     *, config: SyncConfig, credential: HostScopedCredential, transport: TransportFn
 ) -> list[dict[str, object]]:
     """Bulk, paginated candidate discovery for `trigger=schedule` (AD-1) --
-    enumerates every item on the configured GitHub Projects V2 board whose
-    parsed link-field value is non-empty, via ONE new paginated GraphQL
-    query (`_LIST_PROJECT_ITEMS_QUERY`), never one call per item. Follows
-    `pageInfo.hasNextPage`/`endCursor` until exhausted.
+    enumerates EVERY item on the configured GitHub Projects V2 board, via
+    ONE new paginated GraphQL query (`_LIST_PROJECT_ITEMS_QUERY`), never one
+    call per item. Follows `pageInfo.hasNextPage`/`endCursor` until
+    exhausted.
 
-    A candidate is every item whose LINK field is non-empty -- AD-10 rule 1:
-    an absent baseline is a first link, not a loop candidate, and is still
-    reconciled, so candidacy is deliberately never gated on the baseline (it
-    is never even read here). `updated_at` is fetched and returned per
-    candidate for observability only -- deliberately never used to filter
-    candidacy: a Jira-only-originated change never touches GitHub's
-    `updatedAt`, and AD-5 treats a false negative ("silently drops a
-    change") as strictly worse than a false positive ("one wasted read,
-    converges to no_op"). See this story's Design Notes for the full
-    rationale.
+    A candidate is every deduplicated node the bulk listing returns --
+    candidacy is never gated on the link field (or any other field value);
+    only `id`/`updatedAt` are read per node. An item with no linked Jira
+    issue is still a candidate here, and is dispatched through `reconcile()`
+    like any other -- `reconcile()`'s own `_read_both_sides` re-reads the
+    item fresh and raises `SyncUnlinkedError` (Story 8.5, CAP-4 "fail loud,
+    fail alone") the moment it finds no link, which `reconcile_schedule_batch`
+    folds into that candidate's own failed entry without aborting the rest
+    of the batch. Candidacy is likewise never gated on the baseline (AD-10
+    rule 1: an absent baseline is a first link, not a loop candidate, and is
+    still reconciled) -- the baseline is never even read here. `updated_at`
+    is fetched and returned per candidate for observability only --
+    deliberately never used to filter candidacy: a Jira-only-originated
+    change never touches GitHub's `updatedAt`, and AD-5 treats a false
+    negative ("silently drops a change") as strictly worse than a false
+    positive ("one wasted read, converges to no_op"). See this story's
+    Design Notes for the full rationale.
 
     Raises `SyncAPIError` for a missing/malformed `data.node.items` shape
     (including `nodes`/`pageInfo` present but not list-/dict-shaped), a
@@ -567,11 +566,8 @@ def list_linked_github_items(
             item_id = node.get("id")
             if item_id is None or item_id in seen_item_ids:
                 continue
-            fields = _parse_field_values(node)
-            link = fields.get(config.github_link_field_id)
-            if link:
-                seen_item_ids.add(item_id)
-                candidates.append({"github_item_id": item_id, "updated_at": node.get("updatedAt")})
+            seen_item_ids.add(item_id)
+            candidates.append({"github_item_id": item_id, "updated_at": node.get("updatedAt")})
 
         if not page_info.get("hasNextPage"):
             break
@@ -1047,10 +1043,14 @@ def reconcile_schedule_batch(
 
     This story never builds Jira-side (JQL) candidate discovery (GitHub is
     the authoritative board per AD-4, and `reconcile()` already re-reads
-    BOTH sides fresh regardless of entry identifier) and never implements
-    the "named, greppable error for the broken item" refinement -- that is
-    FR-30 / Story 8.5, which depends on this one. See the frozen intent
-    contract's "Never".
+    BOTH sides fresh regardless of entry identifier). The "named, greppable
+    error for the broken item" refinement (FR-30 / Story 8.5, CAP-4 "fail
+    loud, fail alone") is closed by `list_linked_github_items` making every
+    board item a candidate -- an unlinked candidate's `reconcile()` call
+    raises `SyncUnlinkedError`, which `reconcile()` already catches (as any
+    other `SyncError`) and turns into an `ok=False` `DutyResult`, folded here
+    into that candidate's own failed entry exactly like any other failure,
+    without aborting the rest of the batch.
     """
     transport = transport or _default_transport
     github_credential = HostScopedCredential(hosts=(_GITHUB_API_HOST,))

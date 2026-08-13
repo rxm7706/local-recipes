@@ -1287,18 +1287,22 @@ def test_list_linked_github_items_follows_pagination_across_multiple_pages():
     assert len(listing_calls) == 3  # 2 + 2 + 1 items per page
 
 
-# ── Row: candidacy is gated on the link field ONLY, never the baseline ──
+# ── Row: candidacy is gated on nothing -- every enumerated item is a candidate ──
 
 
-def test_list_linked_github_items_filters_by_link_field_only_never_baseline():
-    """AD-10 rule 1: an absent baseline is a first link, not a loop
-    candidate -- still a candidate. Only the LINK field gates candidacy; the
+def test_list_linked_github_items_never_filters_on_link_or_baseline():
+    """Story 8.5 (CAP-4 "fail loud, fail alone"): candidacy is never gated on
+    any field value -- not the link field, not the baseline. Every
+    deduplicated node the bulk listing returns becomes a candidate,
+    regardless of whether it is linked. AD-10 rule 1 (an absent baseline is
+    a first link, not a loop candidate) still holds, but is now just one
+    instance of the broader "never gate on field values" rule -- the
     baseline is never even read during enumeration (Boundaries &
     Constraints)."""
     transport = ScheduleFakeTransport(
         items={
-            "ITEM_1": {"fields": {"gh_link": "PROJ-1"}},  # no baseline at all -- still a candidate
-            "ITEM_2": {"fields": {"gh_status": "To Do"}},  # no link -- NOT a candidate
+            "ITEM_1": {"fields": {"gh_link": "PROJ-1"}},  # linked, no baseline -- still a candidate (unchanged)
+            "ITEM_2": {"fields": {"gh_status": "To Do"}},  # no link -- NOW also a candidate (changed)
             "ITEM_3": {"fields": {"gh_link": "PROJ-3", "gh_baseline": '{"status": "Blocked"}'}},
         },
         page_size=10,
@@ -1306,7 +1310,7 @@ def test_list_linked_github_items_filters_by_link_field_only_never_baseline():
 
     candidates = list_linked_github_items(config=CONFIG, credential=_GH_CREDENTIAL, transport=transport)
 
-    assert {c["github_item_id"] for c in candidates} == {"ITEM_1", "ITEM_3"}
+    assert {c["github_item_id"] for c in candidates} == {"ITEM_1", "ITEM_2", "ITEM_3"}
 
 
 def test_list_linked_github_items_malformed_response_is_a_named_failure():
@@ -1317,23 +1321,37 @@ def test_list_linked_github_items_malformed_response_is_a_named_failure():
         list_linked_github_items(config=CONFIG, credential=_GH_CREDENTIAL, transport=transport)
 
 
-# ── Row: empty/no linked items -> ok=True naming 0 candidates ──────────────
+# ── Row: batch entirely unlinked items -> ok=False, every entry named "unlinked:" ──
 
 
-def test_schedule_batch_with_no_linked_items_is_ok_with_zero_candidates():
+def test_schedule_batch_with_all_unlinked_items_fails_every_entry_by_name():
+    """Story 8.5 (CAP-4 "fail loud, fail alone"): an item with no link field
+    value is still a candidate and is still dispatched through `reconcile()`
+    -- it is `reconcile()`'s own `SyncUnlinkedError` (via `_read_both_sides`)
+    that names the failure, not `list_linked_github_items` silently dropping
+    it. An all-unlinked-item batch therefore still enumerates every item,
+    dispatches every one, and fails every one by name -- never a silent
+    "0 candidates" no-op."""
     transport = ScheduleFakeTransport(
         items={
-            "ITEM_1": {"fields": {"gh_status": "To Do"}},  # no gh_link -> not a candidate
+            "ITEM_1": {"fields": {"gh_status": "To Do"}},  # no gh_link -> still a candidate, now fails
             "ITEM_2": {"fields": {}},
         },
     )
 
     result = reconcile_schedule_batch(config=CONFIG, transport=transport)
 
-    assert result.ok is True
-    assert result.details["candidates"] == []
-    assert "0 candidates" in result.summary
-    # only the listing query ran -- zero reconcile() dispatches, so no Jira call
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 2
+    assert candidates["ITEM_1"]["ok"] is False
+    assert "unlinked: github item ITEM_1 has no linked jira issue" in candidates["ITEM_1"]["summary"]
+    assert candidates["ITEM_2"]["ok"] is False
+    assert "unlinked: github item ITEM_2 has no linked jira issue" in candidates["ITEM_2"]["summary"]
+    assert "2 candidates" in result.summary
+    assert "2 failed" in result.summary
+    # reconcile() raises SyncUnlinkedError before ever attempting a Jira
+    # call -- only the GitHub listing + per-item reads ran.
     assert all(call["url"] == _GITHUB_GRAPHQL_URL for call in transport.calls)
 
 
@@ -1477,6 +1495,54 @@ def test_schedule_batch_one_candidate_failing_does_not_abort_the_others():
     assert candidates["ITEM_1"]["ok"] is True
     assert candidates["ITEM_2"]["ok"] is False
     assert candidates["ITEM_3"]["ok"] is True
+    assert "1 failed" in result.summary
+    assert "3 candidates" in result.summary
+
+
+# ── Row: mixed batch -- one unlinked item among otherwise-linked items ─────
+# (Story 8.5's own frozen I/O Matrix scenario, CAP-4 "fail loud, fail alone")
+
+
+def test_schedule_batch_with_one_unlinked_item_among_linked_items_fails_only_that_entry():
+    """The frozen AC's literal scenario: 3 board items, ITEM_2 has no link
+    field value, ITEM_1/ITEM_3 are linked and converge cleanly. Every linked
+    item's own entry is `ok=True`; the unlinked item's entry is `ok=False`
+    with the named, greppable `"unlinked: github item <id> has no linked
+    jira issue"` summary; the aggregate `DutyResult.ok` is `False`."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
+            },
+            "ITEM_2": {"fields": {"gh_status": "In Progress"}},  # no gh_link -- unlinked
+            "ITEM_3": {
+                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_1", "jira_baseline": '{"status": "To Do"}'}
+            },
+            "PROJ-3": {
+                "fields": {
+                    "status": {"name": "Blocked"},
+                    "jira_link": "ITEM_3",
+                    "jira_baseline": '{"status": "Blocked"}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 3
+    assert candidates["ITEM_1"]["ok"] is True
+    assert candidates["ITEM_3"]["ok"] is True
+    assert candidates["ITEM_2"]["ok"] is False
+    assert "unlinked: github item ITEM_2 has no linked jira issue" in candidates["ITEM_2"]["summary"]
     assert "1 failed" in result.summary
     assert "3 candidates" in result.summary
 
