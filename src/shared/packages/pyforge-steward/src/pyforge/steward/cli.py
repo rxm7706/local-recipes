@@ -314,9 +314,13 @@ def _add_budget_subparsers(budget_parser: argparse.ArgumentParser) -> None:
 
 def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
     """Add the `reconcile` verb (Epic 8, Story 8.1) — the only verb this
-    story defines. `--github-item`/`--jira-issue` are mutually exclusive and
-    one is required: `reconcile` resolves whichever identifier wasn't given
-    via the other side's link field (see `sync.py`'s `reconcile` docstring).
+    story defines. `--github-item`/`--jira-issue`/`--schedule` are mutually
+    exclusive and one is required: `reconcile` resolves whichever identifier
+    wasn't given via the other side's link field (see `sync.py`'s
+    `reconcile` docstring); `--schedule` (Story 8.4, `trigger=schedule`,
+    AD-1's default operating mode) instead bulk-enumerates every linked item
+    on the board and reconciles each in one run (`sync.py`'s
+    `reconcile_schedule_batch`).
     """
     sync_subs = sync_parser.add_subparsers(dest="sync_verb", metavar="{reconcile}")
 
@@ -328,6 +332,14 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
         "--github-item", metavar="ID", help="GitHub Projects V2 item node ID"
     )
     identifier_group.add_argument("--jira-issue", metavar="KEY", help="Jira issue key")
+    identifier_group.add_argument(
+        "--schedule",
+        action="store_true",
+        help=(
+            "trigger=schedule: bulk-enumerate every linked item on the GitHub Projects V2 "
+            "board and reconcile each in this one run"
+        ),
+    )
     reconcile_.add_argument(
         "--config",
         default=None,
