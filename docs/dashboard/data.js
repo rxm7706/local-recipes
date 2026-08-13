@@ -1331,15 +1331,15 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "14.1",
-        "title": "The leaf exists and is provably a leaf",
+        "key": "14.2",
+        "title": "Atomic write has one implementation",
         "phase": "dev",
         "attempt": "1",
-        "startEpoch": 1786579005,
-        "median": 107,
+        "startEpoch": 1786581221,
+        "median": 102,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 00:31 UTC"
+        "phaseAsOf": "2026-08-13 00:52 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2343,15 +2343,15 @@ window.DASHBOARD_DATA = {
         "E5"
       ],
       "inflight": {
-        "key": "2.9",
-        "title": "`mason recipe submit`",
+        "key": "2.10",
+        "title": "`mason recipe update`",
         "phase": "dev",
         "attempt": "1",
-        "startEpoch": 1786578191,
-        "median": 91,
+        "startEpoch": 1786581730,
+        "median": 86,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-13 00:31 UTC"
+        "phaseAsOf": "2026-08-13 00:52 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2892,12 +2892,12 @@ window.DASHBOARD_DATA = {
         "key": "9.2",
         "title": "An unauthorized page is absent, not hidden",
         "phase": "dev",
-        "attempt": "1",
+        "attempt": "2",
         "startEpoch": 1786580234,
         "median": 79,
         "lo": 4,
-        "hi": 360,
-        "phaseAsOf": "2026-08-13 00:31 UTC"
+        "hi": 381,
+        "phaseAsOf": "2026-08-13 00:52 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3915,7 +3915,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 00:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 00:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5001,7 +5001,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-core",
       "caps": 7,
       "companions": 0,
-      "updated": "2026-08-10",
+      "updated": "2026-08-12",
       "dream": "pyforge-core",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core"
     },
@@ -11273,7 +11273,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-12T19:32",
+          "spec": "2026-08-12T19:53",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11702,7 +11702,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-12T19:32",
+          "spec": "2026-08-12T19:53",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -16653,15 +16653,15 @@ window.DASHBOARD_DATA = {
     "running": [
       {
         "station": "Marshal",
-        "story": "14.1",
+        "story": "14.2",
         "phase": "dev",
-        "startEpoch": 1786579005
+        "startEpoch": 1786581221
       },
       {
         "station": "Mason",
-        "story": "2.9",
+        "story": "2.10",
         "phase": "dev",
-        "startEpoch": 1786578191
+        "startEpoch": 1786581730
       },
       {
         "station": "Steward",
@@ -16672,14 +16672,14 @@ window.DASHBOARD_DATA = {
     ],
     "lastShipped": {
       "station": "marshal",
-      "story": "5.9",
-      "epoch": 1786578999,
-      "sha": "1c3a5aa70",
-      "subject": "Merge bmad-loop/20260811-190409-5c73/5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger into loop/pyforge-marshal"
+      "story": "14.1",
+      "epoch": 1786581212,
+      "sha": "2cd08f7e7",
+      "subject": "Merge bmad-loop/20260811-190409-5c73/14-1-the-leaf-exists-and-is-provably-a-leaf into loop/pyforge-marshal (bmad-loop)"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-13 00:43 UTC",
-    "generatedEpoch": 1786581780
+    "generatedAt": "2026-08-13 00:53 UTC",
+    "generatedEpoch": 1786582405
   },
   "storySpecs": [
     {
