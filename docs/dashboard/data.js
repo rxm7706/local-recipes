@@ -522,7 +522,7 @@ window.DASHBOARD_DATA = {
         "median": 112,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-13 15:40 UTC"
+        "phaseAsOf": "2026-08-13 15:48 UTC"
       },
       "velocity": {
         "derived": true,
@@ -892,7 +892,7 @@ window.DASHBOARD_DATA = {
         "median": 199,
         "lo": 29,
         "hi": 417,
-        "phaseAsOf": "2026-08-13 15:40 UTC"
+        "phaseAsOf": "2026-08-13 15:48 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1359,7 +1359,7 @@ window.DASHBOARD_DATA = {
         "median": 107,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 15:40 UTC"
+        "phaseAsOf": "2026-08-13 15:48 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2915,9 +2915,9 @@ window.DASHBOARD_DATA = {
         "attempt": "1",
         "startEpoch": 1786635159,
         "median": 79,
-        "lo": 4,
+        "lo": 37,
         "hi": 468,
-        "phaseAsOf": "2026-08-13 15:40 UTC"
+        "phaseAsOf": "2026-08-13 15:48 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3020,12 +3020,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "36/40",
+            "37/40",
             "stories complete",
             "var(--done)"
           ],
           [
-            "4",
+            "3",
             "remaining",
             ""
           ]
@@ -3318,7 +3318,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "9.6",
-              "pending",
+              "done",
               "Isolation proven by tests that cannot pass vacuously"
             ],
             [
@@ -3935,7 +3935,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 15:40 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 15:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5113,7 +5113,7 @@ window.DASHBOARD_DATA = {
       "title": "A one-line doc fix and a cross-module rewrite get the identical review",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-13",
+      "updated": "2026-08-11",
       "dream": "risk-tiered-review-depth",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth"
     },
@@ -6054,7 +6054,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "running",
           "note": "next free slot",
-          "done": 36,
+          "done": 37,
           "total": 40
         },
         {
@@ -6571,7 +6571,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-06-20",
           "epics": "2026-08-12",
           "sprint": "2026-08-13",
-          "tea": "2026-08-13",
+          "tea": "2026-08-12",
           "gates": "2026-08-10",
           "code": "2026-08-12",
           "verify": "2026-08-12",
@@ -6941,7 +6941,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T11:19",
+          "spec": "2026-08-13T12:00",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6949,7 +6949,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-10",
-          "sprint": "2026-08-12",
+          "sprint": "2026-08-13",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-12",
@@ -7024,7 +7024,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T11:19",
+            "at": "2026-08-13T12:00",
             "other": "2026-08-01"
           },
           {
@@ -7040,7 +7040,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "36/40",
+        "progress": "37/40",
         "complete": 14,
         "of": 14
       },
@@ -17197,8 +17197,8 @@ window.DASHBOARD_DATA = {
       "subject": "steward story 9.2 hand-landed via PR #458 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 15:40 UTC",
-    "generatedEpoch": 1786635627
+    "generatedAt": "2026-08-13 15:48 UTC",
+    "generatedEpoch": 1786636109
   },
   "storySpecs": [
     {
@@ -17239,9 +17239,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 36,
+      "done": 37,
       "tracked": 18,
-      "gap": 18
+      "gap": 19
     },
     {
       "station": "pyforge-warden",
@@ -17465,17 +17465,16 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 36,
-        "backlog": 2,
+        "done": 37,
+        "backlog": 1,
         "blocked": 2,
         "total": 40,
-        "next": "9-6-isolation-proven-by-tests-that-cannot-pass-vacuously",
+        "next": "9-7-hosted-or-static-no-fork",
         "blockedKeys": [
           "8-4-fail-loud-fail-alone",
           "8-5-explicit-status-vocabulary-translation"
         ],
         "backlogKeys": [
-          "9-6-isolation-proven-by-tests-that-cannot-pass-vacuously",
           "9-7-hosted-or-static-no-fork"
         ],
         "state": "ready"
@@ -17530,8 +17529,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 297,
-      "backlog": 77,
+      "done": 298,
+      "backlog": 76,
       "blocked": 6,
       "total": 380
     }
@@ -17607,7 +17606,7 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 40,
-        "done": 36,
+        "done": 37,
         "blocked": 2,
         "epics": 9,
         "epicsDone": 7,
@@ -17629,7 +17628,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 380,
-      "done": 297,
+      "done": 298,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 50
