@@ -1047,7 +1047,8 @@
   // ---- 2b · Campaigns (program-scale efforts; completed collapse, active leads) ----
   const CAMPAIGNS = window.DASHBOARD_DATA.campaigns || [];
   const CAMP_STAGES = ["research","brief","prd","arch","epics"];
-  const CBADGE = { running:"cb-running", queued:"cb-queued", held:"cb-partial", future:"cb-queued",
+  const CBADGE = { running:"cb-running", "in-progress":"cb-partial", queued:"cb-queued",
+                   held:"cb-partial", future:"cb-queued",
                    done:"cb-landed", landed:"cb-landed", partial:"cb-partial",
                    active:"cb-running", completed:"cb-landed" };
   if (CAMPAIGNS.length) {

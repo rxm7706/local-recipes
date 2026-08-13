@@ -30,9 +30,9 @@ development_status:
   2-3-credential-isolation: done
   2-4-mason-recipe-new: backlog
   2-5-mason-recipe-validate: backlog
-  2-6-mason-recipe-build: backlog
-  2-7-mason-recipe-diagnose: backlog
-  2-8-mason-recipe-optimize-and-mason-recipe-scan: backlog
+  2-6-mason-recipe-build: done
+  2-7-mason-recipe-diagnose: done
+  2-8-mason-recipe-optimize-and-mason-recipe-scan: done
   2-9-mason-recipe-submit: backlog
   3-1-engine-protocol-and-provisioning: backlog
   3-2-mason-package-build: backlog
