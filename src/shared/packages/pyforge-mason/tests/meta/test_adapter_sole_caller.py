@@ -691,11 +691,13 @@ def test_parse_cfe_script_filenames_reads_the_real_cfe_py():
     (not just the vacuity guard above) fails first. Story 2.7 adds
     `failure_analyzer.py` as the table's third entry. Story 2.8 adds
     `recipe_optimizer.py`/`vulnerability_scanner.py` as the fourth and
-    fifth."""
+    fifth. Story 2.10 adds `recipe_updater.py`/`github_updater.py` as the
+    sixth and seventh."""
     assert _parse_cfe_script_filenames(PKG_ROOT / _CFE_MODULE_NAME) == frozenset(
         {
             "validate_recipe.py", "submit_pr.py", "failure_analyzer.py",
             "recipe_optimizer.py", "vulnerability_scanner.py",
+            "recipe_updater.py", "github_updater.py",
         }
     )
 

@@ -72,6 +72,20 @@ other existing caller (`validate_recipe`, `diagnose_failure`,
 reaches `subprocess.run` exactly as before this story and their behavior is
 byte-for-byte unchanged.
 
+Story 2.10 adds two more named adapters, `update_recipe` and
+`update_recipe_from_github`, against `recipe_updater.py`/`github_updater.py`
+-- otherwise identical in shape to `diagnose_failure` above (CAPTURE mode via
+`_invoke_captured`, a per-operation default timeout of 120.0s matching the
+real MCP server's own `_run_script` default for both, `args` passed straight
+through, no `env=` parameter). Neither adapter gates on CFE's import floor
+itself, and neither needs a caller-side scoped probe the way `optimize()`/
+`scan()` do: reading both wrapped scripts confirms every import-floor-
+dependent call is already wrapped in a blanket `try/except (ImportError,
+ValueError, FileNotFoundError)` (plus a catch-all `except Exception`) that
+degrades a missing dependency to `{"success": false, "error": ...}` JSON
+data, never a raw traceback -- the same "already handles it" case
+`diagnose_failure`'s own caller (`recipe.py::diagnose()`) established.
+
 `_CFE_SCRIPTS` maps an adapter's own key (e.g. `"validate_recipe"`) to the
 script's filename relative to a resolved CFE root's
 `.claude/scripts/conda-forge-expert/` -- a caller never passes a script
@@ -644,6 +658,8 @@ _CFE_SCRIPTS: dict[str, str] = {
     "diagnose_failure": "failure_analyzer.py",
     "optimize_recipe": "recipe_optimizer.py",
     "scan_for_vulnerabilities": "vulnerability_scanner.py",
+    "update_recipe": "recipe_updater.py",
+    "update_recipe_from_github": "github_updater.py",
 }
 """Every CFE script Mason invokes, declared exactly once (AD-3): adapter key
 -> script filename, relative to a resolved CFE root's
@@ -656,9 +672,12 @@ resolved by reading the real script). Story 2.8 adds the fourth and fifth
 entries, `optimize_recipe` -> `recipe_optimizer.py` and
 `scan_for_vulnerabilities` -> `vulnerability_scanner.py` (OQ-A1's answer for
 FR-11/FR-12), each with a matching stub added to the fixture tree in the
-same story. Which script backs each of the remaining Stories 2.9-2.10 is
-still open; adding a table entry ahead of that decision would be
-unfalsifiable against this story's own fixtures (spec Never boundary)."""
+same story. Story 2.10 adds the sixth and seventh entries, `update_recipe`
+-> `recipe_updater.py` and `update_recipe_from_github` -> `github_updater.py`
+(OQ-A1's answer for FR-14), each with a matching stub added to the fixture
+tree in the same story -- resolving the earlier "still open" note this
+docstring carried for Stories 2.9-2.10 (2.9 turned out to reuse the existing
+`submit_pr` entry rather than add a new one)."""
 
 _JSON_LINE_START_PATTERN = re.compile(r"^[ \t]*[{\[]", re.MULTILINE)
 """Matches the first `{` or `[` that starts a line (optionally indented),
@@ -1015,4 +1034,81 @@ def scan_for_vulnerabilities(
         root=root,
         interpreter=interpreter,
         timeout=timeout if timeout is not None else _SCAN_FOR_VULNERABILITIES_TIMEOUT_SECONDS,
+    )
+
+
+_UPDATE_RECIPE_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `update_recipe` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `update_recipe`'s tool wrapper never overrides)."""
+
+_UPDATE_RECIPE_FROM_GITHUB_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `update_recipe_from_github` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `update_recipe_from_github`'s tool wrapper never overrides)."""
+
+
+def update_recipe(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `recipe_updater.py` (AD-3's `update_recipe` adapter,
+    FR-14) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no upstream-version-check logic of its own (AD-1):
+    the script's own JSON body -- `{"success": true, "updated": true,
+    "new_version": ..., "message": "Recipe updated successfully."}` on a real
+    write, `{"success": true, "updated": true, "dry_run": true, "actions":
+    [...], "message": ...}` under `--dry-run`, `{"success": true, "updated":
+    false, "message": "Recipe is already up-to-date."}` when nothing changed,
+    or `{"success": false, "error": ...}` on failure -- is `CfeResult.
+    json_body` verbatim (spec Always boundary). `timeout` defaults to
+    `_UPDATE_RECIPE_TIMEOUT_SECONDS` when `None`, matching the real MCP
+    server's own per-operation default for this operation (see that
+    constant's docstring) -- the same value as `validate_recipe`'s/
+    `diagnose_failure`'s, since this is likewise a short, single-pass
+    CAPTURE-mode operation.
+    """
+    return _invoke_captured(
+        "update_recipe",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _UPDATE_RECIPE_TIMEOUT_SECONDS,
+    )
+
+
+def update_recipe_from_github(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `github_updater.py` (AD-3's `update_recipe_from_github`
+    adapter, FR-14) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no GitHub-repo-detection or version-comparison logic
+    of its own (AD-1): the script's own JSON body -- the same
+    success/dry-run/already-current/failure shapes `update_recipe` above
+    documents, plus `current_version`/`latest_tag`/`github_url` fields and a
+    pre-release-skip shape (`{"success": true, "updated": false, ...,
+    "message": "Latest release ... is a pre-release ..."}`) neither the PyPI
+    script nor its own callers have -- is `CfeResult.json_body` verbatim
+    (spec Always boundary). `timeout` defaults to
+    `_UPDATE_RECIPE_FROM_GITHUB_TIMEOUT_SECONDS` when `None`, matching the
+    real MCP server's own per-operation default for this operation (see that
+    constant's docstring).
+    """
+    return _invoke_captured(
+        "update_recipe_from_github",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _UPDATE_RECIPE_FROM_GITHUB_TIMEOUT_SECONDS,
     )
