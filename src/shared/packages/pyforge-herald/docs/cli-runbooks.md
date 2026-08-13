@@ -199,17 +199,26 @@ re-checking evidence on claims that are already published.
 
 ### Malformed local storage file
 
-Every Moment's storage is a single JSON file under `.herald/` in the
-repo root (`progress.json`, `claims.json`, `notices-index.json`). A
-hand-edited or corrupted file fails loud, not silently:
+Progress/Success/Operations' local storage is one shared SQLite database,
+`.herald/herald.db`, in the repo root (Story 13.3; Notices' markdown files
+under `notices/` are the separate, git-tracked durable copy). A corrupted
+database file, or a corrupted JSON value inside one of its nested columns
+(`shipped_capabilities`/`evidence`/`edit_history`/`revisions`), fails loud,
+not silently:
 
 ```
 $ herald success list
-herald: HeraldError: claims file /path/to/.herald/claims.json could not be read: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+herald: HeraldError: /path/to/.herald/herald.db is not a valid database: file is not a database
 ```
 
-Exit code 1. Fix: restore the file from git history / a backup, or hand-fix
-the JSON syntax error the message points at. There is no repair tool.
+Exit code 1. Fix: restore `.herald/herald.db` from a backup (it is
+operator-local state, not committed) -- there is no repair tool. The
+database runs in WAL mode, so a backup or restore must include any
+`.herald/herald.db-wal`/`.herald/herald.db-shm` sidecar files present
+alongside it, taken while no `herald` process is running. A first-ever run
+against a pre-Story-13.3 repo importing legacy
+`.herald/progress.json`/`claims.json`/`notices-index.json` fails the same
+way, naming the offending legacy file, if one of those is itself corrupt.
 
 ### `--date-range` usage errors
 
