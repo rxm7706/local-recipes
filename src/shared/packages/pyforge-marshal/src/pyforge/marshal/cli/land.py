@@ -107,7 +107,7 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness
 from ..adapters.process_posix import PosixProcess
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import deferred_work, policy, promotion
+from ..core import deferred_work, identity, policy, promotion
 from ..core.identity import StoryKey
 from ..core.journal import Phase
 from ..core.landing import rule_applies
@@ -953,6 +953,15 @@ def run_land(
     # atomically, forge-side, if a commit lands on the branch anywhere
     # between that poll and this call, closing the exact TOCTOU window a
     # bare PR-number merge would leave open.
+    # Render the merge subject (AD-24, Story 5.10) -- the SAME already-
+    # shipped `identity.render_merge_subject` `deploy land-story` already
+    # uses, from the wave's primary (lowest-sorted) key (`wave_keys[0]`; see
+    # this story's own Design Notes for why a single key, not all wave
+    # keys) -- never hand-typed, never a separate pre-merge PR-title-edit
+    # call.
+    subject = identity.render_merge_subject(wave_keys[0], template)
+    data["subject"] = subject
+
     merge_intent_id = deploy_run.write(
         findings,
         kind=_LAND_MERGE_PR_KIND,
@@ -973,6 +982,7 @@ def run_land(
             ForgeRef(merge_strategy),
             expected_head_sha=ForgeRef(head_sha),
             delete_branch=delete_branch,
+            subject=ForgeRef(subject),
         )
     except ForgeCommandError as exc:
         findings.append(
@@ -1425,6 +1435,8 @@ def _render_text_land(data: Mapping[str, object], findings: tuple[Finding, ...])
     elif data.get("updated"):
         lines.append(f"updated: PR #{data.get('pr_number')} ({data.get('pr_url')})")
     lines.append(f"merged: {data.get('merged')}")
+    if "subject" in data:
+        lines.append(f"subject: {data['subject']!r}")
     if "branch_retired" in data:
         lines.append(f"branch retired: {data.get('branch_retired')}")
     if "resynced" in data:
