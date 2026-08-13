@@ -10,8 +10,13 @@ push-back). ``progress``/``success``/``notice`` are all real as of Epics
 ``notices.py``, all scaled down from the epics doc's live-database/
 webhook/cron design per the 2026-08-08 scope decision -- see
 ``docs/dreams/herald-moments-2-4-live-backend.md``), with an explicit CLI
-command as the sole record-creation path (an operator runs it by hand;
-there is no webhook anywhere in this module).
+command as the primary, operator-run record-creation path. Epic 13 (Story
+13.4) added a second, HMAC-verified path -- ``webhook.py``'s
+``on-ship``/``on-pr-close`` ASGI3 handlers, calling straight through to
+the same ``progress.upsert``/``claims.create`` these CLI verbs call --
+but that module has no subcommand here: it is mounted directly into an
+ASGI host by whatever deploys it (Story 13.6), not dispatched through
+this argparse tree.
 
 **Dispatcher (Story 6.1, AD-11).** One ``herald`` entry point; every
 subcommand routes through ``_route``. Exit-code shape, reconciled with
