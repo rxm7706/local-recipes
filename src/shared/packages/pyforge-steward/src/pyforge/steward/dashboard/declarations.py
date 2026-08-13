@@ -1,12 +1,13 @@
-"""Story 9.1 — the "declared, not implemented" half of CAP-2 and AD-4.
+"""Story 9.1/9.3 — the "declared, not implemented" half of CAP-2, AD-4, and AD-7.
 
-Two frozen dataclasses an adopter fills in instead of hand-writing filtering
-or hand-wiring a trust boundary. Neither performs any filtering, request
-handling, or ingress checking itself — that is `middleware.py` (AD-4) and a
-later story's job (CAP-2's filtering half). This module's only job is the
-declaration schema plus construction-time validation, so a misconfigured
-adopter fails loudly at config time rather than serving unfiltered rows or
-trusting an undeclared network path.
+Three frozen dataclasses an adopter fills in instead of hand-writing
+filtering, hand-wiring a trust boundary, or hand-picking an audit retention
+policy. None of them performs any filtering, request handling, ingress
+checking, or purging itself — that is `middleware.py` (AD-4) and `audit.py`
+(AD-7)'s job. This module's only job is the declaration schema plus
+construction-time validation, so a misconfigured adopter fails loudly at
+config time rather than serving unfiltered rows, trusting an undeclared
+network path, or running an unbounded audit trail.
 
 Deliberately import-free of `django`/`channels` — plain `dataclasses`, so
 this module (and its tests) work with or without the `[dashboard]` extra
@@ -17,6 +18,23 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
+
+# Story 9.3: the widest gap any two representable datetimes can have, so a
+# `days` value above this could not be turned into a cutoff from ANY `now`
+# whatsoever.
+#
+# Review pass 2 corrected this from `timedelta.max.days` (999,999,999): a
+# `timedelta` of that size constructs fine, but the operation
+# `purge_expired_entries` actually performs is `now - timedelta(days=...)`,
+# which overflows the DATETIME range, not the timedelta range -- so the
+# previous bound admitted values that still crashed with the bare
+# `OverflowError` this guard exists to replace (verified by execution).
+# This bound is time-independent and can never be wrong; the residual band
+# (values a *specific* `now` cannot span, e.g. 3,000,000 days from 2026)
+# cannot be judged without a `now`, so `purge_expired_entries` catches that
+# case at the point of computation and raises its own named error there.
+_MAX_RETENTION_DAYS = (datetime.max - datetime.min).days
 
 # RFC 9110 §5.1 `token`: the grammar a header *name* must satisfy to exist on
 # the wire at all. Validated because a name that is merely latin-1-encodable
@@ -243,4 +261,55 @@ class TrustedIngress:
                 f"name for both makes the extracted role a copy of the "
                 f"identity, silently granting a caller any role that matches "
                 f"their own name"
+            )
+
+
+@dataclass(frozen=True)
+class AuditRetention:
+    """AD-7: the adopter-declared audit retention period; the pattern refuses a default.
+
+    ``days`` is how many days an ``AuditEntry`` row is retained before
+    `audit.py`'s `purge_expired_entries` deletes it. There is deliberately no
+    default value for this field and no module-level fallback constant
+    anywhere in this package — `purge_expired_entries` takes a required
+    `AuditRetention` argument, so a deployment that has not made this
+    declaration cannot purge at all, rather than purging on an assumed
+    policy nobody actually chose (AD-7: "refused rather than run
+    unbounded").
+    """
+
+    days: int
+
+    def __post_init__(self) -> None:
+        # `bool` excluded explicitly, same as `cache.py`'s `lock_timeout`
+        # guard: `isinstance(True, int)` is `True` in Python, so
+        # `AuditRetention(days=True)` would otherwise construct cleanly and
+        # silently retain the audit trail for exactly one day -- a
+        # retention policy nobody typed.
+        if not isinstance(self.days, int) or isinstance(self.days, bool):
+            raise TypeError(
+                f"AuditRetention.days must be an int, got "
+                f"{type(self.days).__name__} — a retention period the "
+                f"pattern can compute a cutoff from"
+            )
+        if self.days <= 0:
+            raise ValueError(
+                f"AuditRetention.days must be a positive number of days, "
+                f"got {self.days} — zero or negative retention describes no "
+                f"real policy: a deployment that wants no retention at all "
+                f"declares that by never calling purge_expired_entries, not "
+                f"by declaring a value that means nothing"
+            )
+        # A `days` value past the widest representable datetime gap
+        # constructs cleanly here but then crashes `purge_expired_entries`
+        # with a bare, unhelpful `OverflowError` -- caught here instead, with
+        # this module's own clear, named error, consistent with every other
+        # refusal in this file. See `_MAX_RETENTION_DAYS` for why this bound
+        # is the datetime range and not `timedelta`'s (review pass 2).
+        if self.days > _MAX_RETENTION_DAYS:
+            raise ValueError(
+                f"AuditRetention.days must not exceed {_MAX_RETENTION_DAYS} "
+                f"(the widest gap any two representable datetimes can have), "
+                f"got {self.days} — no reference time whatsoever could turn "
+                f"a larger value into a cutoff"
             )

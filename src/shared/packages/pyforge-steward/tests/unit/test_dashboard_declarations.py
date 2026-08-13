@@ -1,10 +1,12 @@
-"""Story 9.1 — `AccessDeclaration`/`TrustedIngress` construction-time validation."""
+"""Story 9.1/9.3 — `AccessDeclaration`/`TrustedIngress`/`AuditRetention` construction-time validation."""
 
 from __future__ import annotations
 
 import pytest
 
-from pyforge.steward.dashboard.declarations import AccessDeclaration, TrustedIngress
+from pyforge.steward.dashboard.declarations import (
+    _MAX_RETENTION_DAYS, AccessDeclaration, AuditRetention, TrustedIngress,
+)
 
 
 def test_access_declaration_accepts_a_column_and_a_role_vocabulary():
@@ -273,3 +275,78 @@ def test_access_declaration_rejects_whitespace_padded_fields():
 
     with pytest.raises(ValueError, match=r"roles\[1\]"):
         AccessDeclaration(access_column="region", roles=("admin", "viewer\n"))
+
+
+def test_audit_retention_accepts_a_positive_day_count():
+    retention = AuditRetention(days=30)
+    assert retention.days == 30
+
+
+def test_audit_retention_rejects_zero_days():
+    """AD-7: zero describes no real policy -- a deployment that wants no
+    retention at all declares that by never calling `purge_expired_entries`,
+    not by declaring a value that means nothing.
+    """
+    with pytest.raises(ValueError, match="days"):
+        AuditRetention(days=0)
+
+
+def test_audit_retention_rejects_negative_days():
+    with pytest.raises(ValueError, match="days"):
+        AuditRetention(days=-5)
+
+
+def test_audit_retention_rejects_a_non_int_days():
+    with pytest.raises(TypeError, match="days"):
+        AuditRetention(days="30")
+
+
+def test_audit_retention_rejects_a_bool_days():
+    """`bool` is a subclass of `int` in Python, so `isinstance(True, int)`
+    is `True` -- `AuditRetention(days=True)` would otherwise construct
+    cleanly and silently retain the trail for exactly one day, a retention
+    policy nobody actually typed. Mirrors `cache.py`'s identical `bool`
+    exclusion for `lock_timeout`.
+    """
+    with pytest.raises(TypeError, match="days"):
+        AuditRetention(days=True)
+    with pytest.raises(TypeError, match="days"):
+        AuditRetention(days=False)
+
+
+def test_audit_retention_rejects_a_days_value_no_cutoff_could_ever_span():
+    """A `days` value wider than the whole representable datetime range
+    would otherwise construct cleanly here and only fail later, inside
+    `purge_expired_entries`, with a bare `OverflowError` -- caught here
+    instead, with this module's own named error.
+
+    Review pass 2 corrected the bound: it used to be `timedelta.max.days`
+    (999,999,999), but the operation that actually overflows is
+    `now - timedelta(days=...)`, which is limited by the DATETIME range, not
+    the timedelta range. `AuditRetention(days=timedelta.max.days)` therefore
+    constructed happily and `purge_expired_entries` then raised the exact
+    bare `OverflowError` this guard exists to replace.
+    """
+    import datetime
+
+    with pytest.raises(ValueError, match="days"):
+        AuditRetention(days=_MAX_RETENTION_DAYS + 1)
+    with pytest.raises(ValueError, match="days"):
+        AuditRetention(days=datetime.timedelta.max.days)
+
+
+def test_audit_retention_accepts_a_days_value_at_the_representable_ceiling():
+    """The accepted boundary.
+
+    The previous version of this test is why the wrong bound survived a
+    review pass: it asserted only that the object CONSTRUCTED, so the
+    `OverflowError` waiting one call downstream went unnoticed. The
+    consumer half — that `purge_expired_entries` refuses this value in
+    NAMED terms rather than crashing on it — is pinned by
+    `test_purge_expired_entries_names_a_retention_this_now_cannot_span` in
+    `test_dashboard_audit.py`, which is where the django settings and
+    database that call needs are set up. This file stays django-free so it
+    keeps importing without the `[dashboard]` extra.
+    """
+    retention = AuditRetention(days=_MAX_RETENTION_DAYS)
+    assert retention.days == _MAX_RETENTION_DAYS
