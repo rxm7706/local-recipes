@@ -51,17 +51,33 @@ def test_package_pixi_version_matches_pyproject():
 def test_package_run_dependencies_match_project_dependencies():
     """Same deps, same pins, both manifests -- ``python`` excluded (a
     conda-side interpreter pin with no pyproject counterpart; pyproject's
-    ``requires-python`` covers it)."""
+    ``requires-python`` covers it).
+
+    A path dependency (Story 14.2, CAP-2: ``pyforge-core = { path = "..."
+    }``) has no version specifier in EITHER manifest -- pyproject.toml
+    spells it as a bare, unversioned name (a workspace member has no PyPI
+    version), so it normalizes to the same empty spec ``""`` a bare name
+    parses to via ``_REQUIREMENT_RE`` above, rather than the version-string
+    ``.replace(" ", "")`` every other (string-valued) pixi run-dep uses.
+    Review pass 2: the normalization is gated on the dict actually having a
+    ``path`` key, not merely on it being dict-shaped -- a future dict-valued
+    dependency that instead carries a real ``version =`` key must still be
+    compared, not silently exempted (it is left as its ``str()`` form below
+    rather than assumed unversioned, so it still fails loudly on drift
+    instead of crashing on a non-string ``.replace()`` call)."""
     pyproject_deps: dict[str, str] = {}
     for requirement in _load("pyproject.toml")["project"]["dependencies"]:
         match = _REQUIREMENT_RE.match(requirement)
         assert match is not None, f"unparseable requirement {requirement!r}"
         pyproject_deps[match.group(1).lower()] = match.group(2).replace(" ", "")
-    pixi_deps = {
-        name.lower(): spec.replace(" ", "")
-        for name, spec in _load("pixi.toml")["package"]["run-dependencies"].items()
-        if name != "python"
-    }
+    pixi_deps: dict[str, str] = {}
+    for name, spec in _load("pixi.toml")["package"]["run-dependencies"].items():
+        if name == "python":
+            continue
+        if isinstance(spec, dict):
+            pixi_deps[name.lower()] = "" if "path" in spec else str(spec)
+        else:
+            pixi_deps[name.lower()] = spec.replace(" ", "")
     assert pixi_deps == pyproject_deps
 
 

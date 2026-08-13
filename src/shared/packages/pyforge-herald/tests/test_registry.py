@@ -323,14 +323,19 @@ def test_register_wraps_a_failed_replace_and_leaks_no_temp_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     """A filesystem refusal mid-write surfaces as ``HeraldError``, leaves
-    the original README byte-identical, and unlinks the temp file."""
+    the original README byte-identical, and unlinks the temp file.
+
+    Patches `os.replace` where it actually runs now (Story 14.2, CAP-2:
+    `register` delegates to `pyforge.core.atomic_write_text`, which owns the
+    `os.replace` call -- `registry.py` itself no longer imports `os` at
+    all)."""
     readme_path = tmp_path / "README.md"
     readme_path.write_text("# My Deck\n")
 
     def _refuse(src, dst):
         raise OSError("disk full")
 
-    monkeypatch.setattr("pyforge.herald.registry.os.replace", _refuse)
+    monkeypatch.setattr("pyforge.core.atomic_write.os.replace", _refuse)
     with pytest.raises(HeraldError, match="disk full"):
         register(readme_path, "Name", "id-1", "https://example.com/p")
 
