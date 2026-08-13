@@ -5,6 +5,7 @@ created: '{date}'
 status: 'draft' # draft | ready-for-dev | in-progress | in-review | done
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 context: [] # optional: `{project-root}/`-prefixed paths to project-wide standards/docs the implementation agent should load. Keep short — only what isn't already distilled into the spec body.
+difficulty: '' # optional: free-form string matching a key in the project's model_tier_map (marshal-policy.toml). Authored by whoever writes this spec (human or drafting agent) — never auto-derived. OMIT THE WHOLE LINE for the mechanical default (flat baseline model) — an empty value with no inline text (`difficulty:` alone) is a different, malformed-but-present case that raises a WARN instead.
 ---
 
 <!-- Target: 900–1300 tokens. Above 1600 = high risk of context rot.

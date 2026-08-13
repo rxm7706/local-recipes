@@ -304,6 +304,7 @@ class GhForge:
         *,
         expected_head_sha: ForgeRef,
         delete_branch: bool,
+        subject: ForgeRef | None = None,
     ) -> None:
         repo_value, strategy_value = repo.value, strategy.value
         sha_value = expected_head_sha.value
@@ -320,11 +321,14 @@ class GhForge:
         ]
         if delete_branch:
             args.append("--delete-branch")
+        if subject is not None:
+            args.extend(["--subject", subject.value])
         result = _run(args, timeout_s=_GH_WRITE_TIMEOUT_S)
         if result.returncode != 0:
             raise ForgeCommandError(
                 f"gh pr merge {number} --repo {repo_value} --{strategy_value} "
                 f"--match-head-commit {sha_value} "
-                f"{'--delete-branch ' if delete_branch else ''}failed: "
+                f"{'--delete-branch ' if delete_branch else ''}"
+                f"{f'--subject {subject.value!r} ' if subject is not None else ''}failed: "
                 f"{result.stderr.strip()}"
             )
