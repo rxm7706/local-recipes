@@ -141,6 +141,8 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from pyforge.core.errors import PyforgeError
+
 from .models import CurrencyVerdict, LicenseVerdict, SeverityTier, Status
 
 _PYPROJECT_FILENAME = "pyproject.toml"
@@ -197,14 +199,19 @@ _DEP001_BLOCK_CONFIDENCE_CHOICES = ("likely", "verified")
 _CONFIDENCE_RANK: dict[str, int] = {"likely": 0, "verified": 1}
 
 
-class _ConfigError(ValueError):
+class _ConfigError(PyforgeError, ValueError):
     """Base for this module's typed errors — carries any ``warnings``
     (config-key conflicts, a malformed-but-non-fatal ``pixi.toml``) gathered
     before this error was raised, via the ``warnings`` attribute (default
     ``()``), so a later exception never silently drops an earlier-gathered
     diagnostic (review finding). ``ConfigLoader.load`` sets it explicitly
     before re-raising; direct construction elsewhere gets the empty
-    default."""
+    default.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base (multiple inheritance) -- ``ValueError`` stays in the
+    MRO, so every existing ``except _ConfigError``/``except ValueError``
+    site is unaffected; ``except PyforgeError`` newly catches it too."""
 
     def __init__(self, message: str, *, warnings: tuple[str, ...] = ()) -> None:
         super().__init__(message)

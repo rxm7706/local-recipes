@@ -34,16 +34,20 @@ from typing import Any, Literal, Union
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from pyforge.atlas.semantic import METRIC_PROVENANCE
+from pyforge.core.errors import PyforgeError
 
 # Bumped only on a breaking schema change; travels on the wire so a receiver can reject
 # an incompatible producer instead of mis-parsing it.
 SCHEMA_VERSION = "1"
 
 
-class A2ADecodeError(ValueError):
+class A2ADecodeError(PyforgeError, ValueError):
     """Raised when a wire payload cannot be decoded (unknown/absent ``kind``,
     malformed JSON, or a schema-validation failure) — a controlled failure, never
-    an uncaught crash (Reviewer-B unknown-kind contract)."""
+    an uncaught crash (Reviewer-B unknown-kind contract).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
 def _ensure_json_native(obj: Any, path: str) -> Any:

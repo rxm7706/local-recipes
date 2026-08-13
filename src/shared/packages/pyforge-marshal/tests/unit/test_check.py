@@ -10,11 +10,10 @@ from __future__ import annotations
 import argparse
 import json
 
-from pyforge.marshal.adapters.process_posix import ProcessError
+from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.marshal.cli import check as check_cli
 from pyforge.marshal.core import policy as policy_core
 from pyforge.marshal.core.context import MarshalContext
-from pyforge.marshal.ports.process import ProcessResult
 
 
 class _FakeProcess:

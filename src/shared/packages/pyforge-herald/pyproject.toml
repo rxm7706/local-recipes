@@ -20,6 +20,22 @@ authors = [{ name = "rxm7706" }]
 # break evidence.py.
 dependencies = ["mcp>=1.28.1", "httpx2>=2.5.0", "pyforge-core"]
 
+[project.optional-dependencies]
+# Story 13.6: the ASGI host `webhook_host.py` mounts behind -- opt-in, not a
+# base dependency, mirroring AD-8 ("no adopter may be asked to change
+# frameworks to adopt"): only whoever actually runs the webhook as a live
+# process (this extra's installer, and `.github/workflows/herald-live-demo.yml`)
+# needs `daphne` at all; `webhook.py` itself stays a plain, framework-free
+# ASGI3 callable. Floor is byte-identical to pyforge-steward's own
+# `[dashboard]` extra's `daphne` pin (its Story 9.5 rationale: terminates
+# both HTTP and WebSocket, already verified solvable in this workspace) and
+# to root `pixi.toml`'s pre-existing (unrelated, wagtail/coderedcms) pin --
+# reusing an already-verified floor rather than deriving a new one.
+# `pixi.toml`'s `[feature.pyforge-herald.dependencies]` mirrors this pin,
+# per the same extra<->feature convention steward's own `dashboard` extra
+# established.
+webhook-host = ["daphne>=4.2.2,<5.0"]
+
 [project.scripts]
 herald = "pyforge.herald.cli:main"
 
@@ -32,4 +48,15 @@ packages = ["src/pyforge"]
 # carves it out of tests/conftest.py's egress-deny fixture and keeps it
 # greppable; its own skipif on HERALD_LIVE_DESIGN is what keeps the default
 # pyforge-herald-test gate offline.
-markers = ["live: reaches the real claude-design MCP endpoint (opt in with HERALD_LIVE_DESIGN=1)"]
+#
+# Story 13.6: `live_webhook` is the analogous carve-out for
+# test_webhook_live_smoke.py -- a genuinely different kind of "live" (a
+# real daphne subprocess bound to a real LOOPBACK socket, never reaching
+# claude-design or any external host), kept as its own marker rather than
+# reusing `live` so each marker's docstring stays literally true. Its own
+# skipif on HERALD_LIVE_WEBHOOK is what keeps it out of the default
+# pyforge-herald-test gate.
+markers = [
+    "live: reaches the real claude-design MCP endpoint (opt in with HERALD_LIVE_DESIGN=1)",
+    "live_webhook: starts a real daphne subprocess and connects to it over a real loopback socket (opt in with HERALD_LIVE_WEBHOOK=1)",
+]

@@ -27,17 +27,32 @@ builds the three verb-bearing nouns, capturing each one's verb-subparsers
 action into a local ``_noun_verbs`` dict; ``doctor`` has no verb level by
 design (OQ-A4) and is built separately, immediately after that loop.
 
-Story 2.6 registers the first real verb, ``recipe build``, on
+Story 2.4 registers the first real verb, ``recipe new`` (FR-7), on
 ``_noun_verbs["recipe"]`` right after the loop -- the pattern the paragraph
-above describes, now exercised for real. Story 2.7 is the next to use that
-seam, registering ``recipe diagnose`` on ``_noun_verbs["recipe"]``
-— ``package``/``environment`` stay behavior-identical (their own captured
-actions are never given a verb). Story 2.8 registers two more verbs on
-that same noun, ``recipe optimize`` and ``recipe scan``, each a single
-required ``recipe_path`` positional mirroring ``diagnose``'s own
+above describes, now exercised for real. Its own required, mutually
+exclusive ``--from-pypi``/``--from-github``/``--from-cran``/``--from-npm``
+group plus required ``--output``/``-o`` land there too. ``main()``'s
+dispatch replaces the ``# Unreachable in Story 1.2`` block below with the
+first real branch, guarded by both ``ns.noun == "recipe"`` and ``ns.verb ==
+"new"`` so a future second recipe verb does not fall into it by noun alone.
+
+Story 2.5 registers the second verb, ``recipe validate`` (FR-8), on the
+same noun, right after ``new`` above (hand-landed 2026-08-13 after this
+story's own dev pass deferred on a spec-surface gate, not a code defect --
+see ``recipe.py``'s own module docstring and this Spec's memlog for the
+same reconciliation applied there). ``main()``'s dispatch adds a second
+guarded branch, ``ns.verb == "validate"`` -- the one verb whose own
+pass/fail outcome also projects onto the process exit code (FR-8).
+
+Story 2.6 is the next to use that seam, registering ``recipe build`` on
+``_noun_verbs["recipe"]``. Story 2.7 registers ``recipe diagnose`` on the
+same noun — ``package``/``environment`` stay behavior-identical (their own
+captured actions are never given a verb). Story 2.8 registers two more
+verbs on that same noun, ``recipe optimize`` and ``recipe scan``, each a
+single required ``recipe_path`` positional mirroring ``diagnose``'s own
 ``log_path`` shape.
 
-Story 2.9 registers a fourth verb, ``recipe submit``: the same
+Story 2.9 registers a fifth verb, ``recipe submit``: the same
 ``recipe_path`` positional, plus two verb-own boolean flags, ``--yes`` and
 ``--prepare-only`` -- both live only on ``submit_parser`` itself, never on
 the shared ``global_flags`` parent (that parent is AD-13's closed six-flag
@@ -45,12 +60,19 @@ set only), so they need none of ``_build_global_flags_parser``'s
 ``argparse.SUPPRESS``/``getattr`` dance and read back as plain ``bool``s
 off the namespace.
 
-Story 2.10 registers a fifth verb, ``recipe update``: the same
+Story 2.10 registers a sixth verb, ``recipe update``: the same
 ``recipe_path`` positional, plus three verb-own flags -- ``--dry-run``/
 ``--github`` (``action="store_true"``) and ``--repo`` (an optional string,
 ``metavar="OWNER/REPO"``) -- and a fourth, ``--pre`` (``action=
 "store_true"``), none part of the shared ``global_flags`` parent, same
 reasoning as ``submit``'s own two flags above.
+
+Story 3.2 registers the first verb under a DIFFERENT noun, `package build`,
+on `_noun_verbs["package"]` (previously captured but never given a verb) --
+the same registration/dispatch shape as every `recipe` verb above, but
+CFE-independent: `package.build()` never resolves a CFE root/interpreter,
+so its dispatch branch reads no `--cfe-root`/`--cfe-python`/`--cfe-timeout`
+flags at all.
 
 argparse, not click/typer: FR-41 forbids a CLI-framework dependency, and the
 sibling stations dispatch the same way.
@@ -67,7 +89,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from . import __version__, doctor, recipe, render
+from . import __version__, doctor, package, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -84,6 +106,11 @@ _NOUNS = {
     "environment": "resolve conflicting worlds into one lockfile",
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
+_RECIPE_NEW_HELP = "generate a recipe from PyPI/GitHub/CRAN/npm via conda-forge-expert"
+_RECIPE_VALIDATE_HELP = (
+    "validate a recipe against conda-forge policy via CFE's validator (process exit code "
+    "reflects the pass/fail outcome)"
+)
 _RECIPE_BUILD_HELP = (
     "build a recipe (native by default; --docker + --config for CI-parity)"
 )
@@ -102,6 +129,10 @@ _RECIPE_UPDATE_HELP = (
     "bump a recipe to its latest upstream version via CFE's autotick scripts (PyPI by "
     "default; --github for GitHub Releases; shows the plan before writing, in both the "
     "default and --dry-run paths)"
+)
+_PACKAGE_BUILD_HELP = (
+    "build a project's distributable artifacts: wheel+sdist via PEP 517, and a .conda "
+    "package via pixi build (--target library only in v1; CFE-independent)"
 )
 
 # AD-13: every global setting has a flag and an environment-variable form,
@@ -412,15 +443,69 @@ def build_parser() -> argparse.ArgumentParser:
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
 
+    # Story 2.4: mason recipe new --from-{pypi,github,cran,npm} <pkg> --output
+    # <path> — the first verb registered under any noun in epic order (FR-7).
+    # Required, mutually exclusive `--from-*` group (spec Always boundary):
+    # exactly one source must be named, so `recipe.py::new` never has to
+    # guess which the caller meant. A plain string per flag — no secondary
+    # per-source flags (GitHub's --version, npm's various modes, ...) are in
+    # this story's AC scope (spec Never boundary).
+    new_parser = _noun_verbs["recipe"].add_parser(
+        "new", help=_RECIPE_NEW_HELP, description=_RECIPE_NEW_HELP, parents=[global_flags],
+    )
+    source_group = new_parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument(
+        "--from-pypi", metavar="PACKAGE",
+        help="generate from a PyPI package, optionally with an embedded version spec",
+    )
+    source_group.add_argument(
+        "--from-github", metavar="OWNER/REPO", help="generate from a GitHub repository",
+    )
+    source_group.add_argument(
+        "--from-cran", metavar="PACKAGE", help="generate from a CRAN package",
+    )
+    source_group.add_argument(
+        "--from-npm", metavar="PACKAGE", help="generate from an npm package",
+    )
+    # Required, not defaulted to CFE's own omitted-`--output` behavior (spec
+    # Design Notes): FR-7 frames this feature as output "at a user-specified
+    # path", and letting it fall through to a CFE-side naming convention
+    # would make Mason's CLI contract depend on a policy that could change
+    # independently.
+    new_parser.add_argument(
+        "--output", "-o", required=True, metavar="PATH",
+        help="path to write the generated recipe to (required)",
+    )
+
+    # Story 2.5: mason recipe validate <recipe_path> — the first verb
+    # registered under any noun (FR-8), numerically: Story 2.5 precedes
+    # every other `recipe` verb below, even though `build`/`diagnose`/
+    # `optimize`/`scan`/`submit`/`update` (Stories 2.6-2.10) landed first in
+    # this worktree (spec Design Notes — this repository's `main` branch
+    # already reconciled Story 2.4's `new()` into this same first position
+    # after an analogous out-of-order landing; `new()` itself is not present
+    # in this file, since this worktree's baseline predates that merge).
+    # `parents=[global_flags]` mirrors every other verb parser below —
+    # without it, a global flag given AFTER `validate` would be rejected as
+    # unrecognized, for the same reason `build`'s own comment (next) spells
+    # out.
+    validate_parser = _noun_verbs["recipe"].add_parser(
+        "validate", help=_RECIPE_VALIDATE_HELP, description=_RECIPE_VALIDATE_HELP,
+        parents=[global_flags],
+    )
+    validate_parser.add_argument(
+        "recipe_path", help="path to a recipe file (recipe.yaml/meta.yaml) or its directory",
+    )
+
     # Story 2.6: mason recipe build <recipe_path> [--docker --config] — the
-    # first verb registered under any noun (FR-9). package/environment stay
-    # behavior-identical to Story 1.2: their verb-subparsers actions above
-    # are captured but never given a verb, so they remain usage errors.
-    # `parents=[global_flags]` here too, mirroring every other parser level
-    # — without it, a global flag given AFTER `build` (`mason recipe build
-    # <path> --format json`) would be rejected as unrecognized, since
-    # argparse hands the tokens following `build` to THIS parser, not an
-    # ancestor one.
+    # next verb registered under any noun (FR-9), right after `validate`
+    # above. package/environment stay behavior-identical to Story 1.2: their
+    # verb-subparsers actions above are captured but never given a verb, so
+    # they remain usage errors. `parents=[global_flags]` here too, mirroring
+    # every other parser level — without it, a global flag given AFTER
+    # `build` (`mason recipe build <path> --format json`) would be rejected
+    # as unrecognized, since argparse hands the tokens following `build` to
+    # THIS parser, not an ancestor one.
     recipe_build_parser = _noun_verbs["recipe"].add_parser(
         "build", help=_RECIPE_BUILD_HELP, description=_RECIPE_BUILD_HELP,
         parents=[global_flags],
@@ -549,6 +634,34 @@ def build_parser() -> argparse.ArgumentParser:
     # every `recipe` verb above is registered, rather than after each one.
     _noun_verbs["recipe"].metavar = "{" + ",".join(_noun_verbs["recipe"].choices) + "}"
 
+    # Story 3.2: mason package build PROJECT_PATH [--target {library}] --
+    # the `package` noun's first verb (FR-15, FR-21). Mirrors `recipe
+    # build`'s own registration shape (parents=[global_flags], for the same
+    # "a global flag given after the verb and its positional" reason
+    # documented on that registration above). `--target` mirrors the shared
+    # `--format` flag's `choices=` pattern -- no new error class needed
+    # (spec Always boundary) -- and is a plain per-verb default (`"library"`),
+    # not `argparse.SUPPRESS`: that dance is reserved for the shared
+    # `global_flags` parent (see `_build_global_flags_parser`'s own
+    # docstring), never a verb-own flag like `--docker`/`--yes`/`--dry-run`
+    # above.
+    package_build_parser = _noun_verbs["package"].add_parser(
+        "build", help=_PACKAGE_BUILD_HELP, description=_PACKAGE_BUILD_HELP,
+        parents=[global_flags],
+    )
+    package_build_parser.add_argument(
+        "project_path", metavar="PROJECT_PATH",
+        help="path to the project to build (its own pyproject.toml/pixi.toml)",
+    )
+    package_build_parser.add_argument(
+        "--target", choices=("library",), default="library",
+        help="what to build (v1 scope: library only)",
+    )
+
+    # Same `.choices`-derived metavar fixup as `recipe` above, now that
+    # `package` has a real verb registered too.
+    _noun_verbs["package"].metavar = "{" + ",".join(_noun_verbs["package"].choices) + "}"
+
     return parser
 
 
@@ -607,6 +720,70 @@ def main(argv: Sequence[str] | None = None) -> int:
             # stderr so both exit-2 paths agree on stream.
             ns._noun_parser.print_help(file=sys.stderr)
             return EXIT_USAGE
+
+        if ns.noun == "recipe" and ns.verb == "new":
+            # FR-7: `--from-pypi`/`--from-github`/`--from-cran`/`--from-npm`
+            # is a required mutually exclusive group, so exactly one of the
+            # four is non-None here -- argparse itself guarantees that before
+            # this line is ever reached. `source` is CFE's own subcommand
+            # name (spec Always boundary: command routing, not recipe
+            # knowledge, AD-1 Design Notes) selected 1:1 from which flag the
+            # user gave.
+            sources = (
+                ("pypi", getattr(ns, "from_pypi", None)),
+                ("github", getattr(ns, "from_github", None)),
+                ("cran", getattr(ns, "from_cran", None)),
+                ("npm", getattr(ns, "from_npm", None)),
+            )
+            source, package_name = next((s, p) for s, p in sources if p is not None)
+
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.new(
+                source, package_name, ns.output,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(fmt, sys.stdout, "recipe new", "ok", dataclasses.asdict(result), [])
+            return EXIT_OK
+
+        if ns.noun == "recipe" and ns.verb == "validate":
+            # FR-8: delegates to CFE's recipe validator via recipe.py.
+            # `recipe.validate` raises CfeUnresolvedError before any
+            # subprocess spawns if the CFE root is unresolved (spec Always
+            # boundary) -- caught by the dedicated branch below, same as
+            # every other CFE-dependent path. `--cfe-timeout` is resolved
+            # here and passed through; `cfe.validate_recipe`'s own
+            # per-operation default applies only when that resolves to
+            # `None`.
+            #
+            # Unlike every sibling verb, this branch alone projects the
+            # wrapped validator's own pass/fail outcome onto the process
+            # exit code (spec Intent/FR-8): `EXIT_OK` when `result.
+            # returncode == 0`, else `EXIT_FAILED`. This is `cli.py`'s own
+            # dispatch-time decision (AD-7's exit-code ownership) -- the
+            # JSON envelope's `status` field stays "ok" regardless (spec I/O
+            # matrix), and `recipe.validate` itself still never raises for a
+            # validation failure (AD-4), identical to every other verb here.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.validate(
+                ns.recipe_path,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe validate", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "recipe" and ns.verb == "build":
             # A manual post-parse cross-check, not argparse-declarative
@@ -812,14 +989,33 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_OK
 
-        # Unreachable now for every verb-noun pair except `recipe build`/
-        # `recipe diagnose`/`recipe optimize`/`recipe scan`/`recipe submit`/
-        # `recipe update` above, each handled by its own branch: `package`/
-        # `environment` still register no verbs at all, and `recipe`
-        # registers no verb beyond those six, so argparse itself rejects
-        # any other token here as an invalid choice before `ns.verb` could
-        # ever hold it. Kept only so a later story that populates another
-        # verb has somewhere to land its dispatch.
+        if ns.noun == "package" and ns.verb == "build":
+            # FR-15/FR-21/FR-22: drives Story 3.1's engine protocol through
+            # package.py's own two adapters (engines.pep517/engines.pixi).
+            # Unlike every `recipe` verb, `package.build()` never touches
+            # CFE at all (spec Always boundary) -- no cfe-root/cfe-python/
+            # cfe-timeout flags are read here.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = package.build(ns.project_path, target=ns.target)
+            # A non-zero delegated engine returncode is DATA on `result`,
+            # never raised (AD-4) -- this branch always reports "ok"/
+            # EXIT_OK for a Mason-successful invocation, mirroring `recipe
+            # build`'s established "the gap is data" precedent above;
+            # `PackageVersionMismatchError` is the one exception `package.
+            # build()` can still raise, propagating to main()'s existing
+            # `except MasonError` handler below.
+            render.write(fmt, sys.stdout, "package build", "ok", dataclasses.asdict(result), [])
+            return EXIT_OK
+
+        # Unreachable now for every verb-noun pair except `recipe new`/
+        # `recipe validate`/`recipe build`/`recipe diagnose`/`recipe
+        # optimize`/`recipe scan`/`recipe submit`/`recipe update`/`package
+        # build` above, each handled by its own branch: `environment` still
+        # registers no verbs at all, `package` registers no verb beyond
+        # `build`, and `recipe` registers no verb beyond those eight, so
+        # argparse itself rejects any other token here as an invalid choice
+        # before `ns.verb` could ever hold it. Kept only so a later story
+        # that populates another verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

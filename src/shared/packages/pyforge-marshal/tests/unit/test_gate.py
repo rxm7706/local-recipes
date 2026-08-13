@@ -1,7 +1,7 @@
 """Unit tests for ``pyforge.marshal.core.gate`` (Story 2.1, AD-4/AD-7) --
 the pure per-command classification core, driven entirely by SYNTHETIC
 ``ProcessResult`` values (no real subprocess -- that lives in
-``test_process_posix.py`` and the real end-to-end
+``pyforge-core``'s ``tests/unit/test_process.py`` and the real end-to-end
 ``tests/unit/test_cli.py::gate evaluate`` cases).
 """
 
@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import pytest
 
+from pyforge.core.process import ProcessResult
 from pyforge.marshal.core import findings, gate, policy, verdict
 from pyforge.marshal.core.findings import UnregisteredFindingCodeError
 from pyforge.marshal.core.model import Finding, Severity, Verdict
 from pyforge.marshal.core.verdict import classify
-from pyforge.marshal.ports.process import ProcessResult
 
 # --- classify_outcome: a passing command --------------------------------------
 
@@ -451,3 +451,107 @@ def test_check_spec_binding_never_classifies_warn():
     for finding in (*missing_binding, *narrowed):
         assert classify(finding.code) is not Verdict.WARN
         assert classify(finding.code) is not Verdict.CLEAN
+
+
+# --- Story 2.8: classify_review_tier / resolve_review_cycles (FR-185, ------
+# I/O & Edge-Case Matrix's own truth table) -----------------------------------
+
+
+def test_classify_review_tier_declared_and_small_diff_is_low():
+    report = gate.classify_review_tier(
+        declared_low_risk=True, changed_files=("a.py", "b.py")
+    )
+    assert report == {
+        "tier": "low",
+        "declared_low_risk": True,
+        "changed_files": ("a.py", "b.py"),
+    }
+
+
+def test_classify_review_tier_declared_and_wide_diff_is_standard():
+    """A bare declaration on a wide diff is not evidence of low risk --
+    the AND-gate's own asymmetry from `classify_doc_only_declaration`'s
+    OR-gate."""
+    report = gate.classify_review_tier(
+        declared_low_risk=True, changed_files=tuple(f"f{i}.py" for i in range(10))
+    )
+    assert report["tier"] == "standard"
+
+
+def test_classify_review_tier_undeclared_and_small_diff_is_standard():
+    """An accidental small diff is not auto-tiered down -- the declaration
+    is required too."""
+    report = gate.classify_review_tier(declared_low_risk=False, changed_files=("a.py",))
+    assert report["tier"] == "standard"
+
+
+def test_classify_review_tier_undeclared_and_wide_diff_is_standard():
+    report = gate.classify_review_tier(
+        declared_low_risk=False, changed_files=tuple(f"f{i}.py" for i in range(10))
+    )
+    assert report["tier"] == "standard"
+
+
+def test_classify_review_tier_boundary_at_exactly_three_changed_files_is_low():
+    """The AND-gate's own `<= 3` boundary: exactly 3 changed files, declared
+    low-risk, still tiers `"low"` -- the spec's own `_LOW_RISK_MAX_CHANGED_
+    FILES` threshold is inclusive, not exclusive."""
+    report = gate.classify_review_tier(
+        declared_low_risk=True, changed_files=("a.py", "b.py", "c.py")
+    )
+    assert report["tier"] == "low"
+
+
+def test_classify_review_tier_boundary_at_four_changed_files_is_standard():
+    """One past the `<= 3` boundary tiers `"standard"` -- guards the exact
+    threshold against an off-by-one mutation (e.g. `<= 3` becoming `<= 4`)."""
+    report = gate.classify_review_tier(
+        declared_low_risk=True, changed_files=("a.py", "b.py", "c.py", "d.py")
+    )
+    assert report["tier"] == "standard"
+
+
+def test_classify_review_tier_declared_and_empty_diff_is_low():
+    """The natural low-risk shape this story's own motivation cites: a
+    doc-only-style story with zero changed files, declared low-risk."""
+    report = gate.classify_review_tier(declared_low_risk=True, changed_files=())
+    assert report["tier"] == "low"
+
+
+def test_classify_review_tier_rejects_non_tuple_changed_files():
+    """`changed_files` is type-checked exactly like `check_scope`'s own
+    identically-shaped parameter (`test_scope.py::
+    test_check_scope_rejects_non_tuple_changed_files`)."""
+    with pytest.raises(TypeError):
+        gate.classify_review_tier(declared_low_risk=True, changed_files=["a.py"])  # type: ignore[arg-type]
+
+
+def test_resolve_review_cycles_low_tier_returns_one():
+    assert gate.resolve_review_cycles("low", default_max_review_cycles=3) == 1
+
+
+def test_resolve_review_cycles_standard_tier_returns_default_unchanged():
+    """AC3: a higher-risk or unclassified story is never granted a smaller
+    allowance than today's flat ceiling."""
+    assert gate.resolve_review_cycles("standard", default_max_review_cycles=3) == 3
+
+
+def test_resolve_review_cycles_floors_at_one_for_both_tiers_against_a_zero_default():
+    """AC2's unconditional floor: `default_max_review_cycles <= 0`
+    (`core/policy.py::_valid_attempt_count` permits `0`) never yields a
+    review-skipping `0` cycle allowance, for either tier."""
+    assert gate.resolve_review_cycles("low", default_max_review_cycles=0) == 1
+    assert gate.resolve_review_cycles("standard", default_max_review_cycles=0) == 1
+
+
+def test_resolve_review_cycles_floors_at_one_for_both_tiers_against_a_negative_default():
+    assert gate.resolve_review_cycles("low", default_max_review_cycles=-3) == 1
+    assert gate.resolve_review_cycles("standard", default_max_review_cycles=-3) == 1
+
+
+def test_resolve_review_cycles_rejects_out_of_vocabulary_tier():
+    """Mirrors `describe_gate_mode`'s own precedent (Story 2.5) for a
+    closed-vocabulary input: `ValueError` naming the invalid value, never a
+    `Finding`."""
+    with pytest.raises(ValueError, match="bogus"):
+        gate.resolve_review_cycles("bogus", default_max_review_cycles=3)

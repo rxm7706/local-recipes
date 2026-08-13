@@ -164,7 +164,8 @@ def test_the_supervisor_still_does_not_import_the_cli():
 def test_the_module_really_runs_under_dash_m(tmp_path):
     """Review finding: every other supervisor test calls ``run_supervisor``
     or ``main()`` IN-PROCESS, and the two real-child spawn tests in
-    ``test_process_posix.py`` use ``-c`` -- so nothing ever executed the
+    ``pyforge-core``'s ``tests/unit/test_process.py`` use ``-c`` -- so
+    nothing ever executed the
     one invocation ``cli/spin.py`` actually builds,
     ``python -m pyforge.marshal.supervisor``. If ``supervisor/__main__.py``
     fell out of the wheel, or ``supervisor/__init__.py`` gained a failing

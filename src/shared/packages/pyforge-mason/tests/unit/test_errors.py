@@ -6,7 +6,19 @@ path. Story 1.7 extends it again with `CfeUnresolvedError` coverage: its
 fixed identifier and message naming all four `resolve.py` step names plus
 how to satisfy the first three. Story 2.1 extends it again with
 `CfeTimeoutError` coverage: its identifier and a message naming both the
-timed-out script's key and the timeout value."""
+timed-out script's key and the timeout value. Story 3.1 extends it again
+with `EngineAbsentError` coverage: its identifier, stored attributes, and a
+message naming both the absent engine and its provisioning hint, matching
+`CfeImportFloorError`'s existing test shape. Story 3.2 extends it again
+with `PackageVersionMismatchError` coverage: its identifier, stored
+attributes, and a message naming both the wheel and conda versions,
+matching `EngineAbsentError`'s existing two-string-argument test shape
+(including its `__reduce__` deepcopy/pickle guard). Story 3.2's review pass
+(2026-08-13) extends `PackageVersionMismatchError`'s coverage again to its
+new `wheel_path`/`conda_path` arguments (Patch 7), and adds coverage for
+two new error classes: `PackageBuildTimeoutError` (Patch 3, mirrors
+`CfeTimeoutError`'s shape) and `PackageProjectPathError` (Patch 4, mirrors
+`CfeTimeoutError`'s shape with a different pair of fields)."""
 
 from __future__ import annotations
 
@@ -16,7 +28,9 @@ import pickle
 import pytest
 
 from pyforge.mason.errors import (
-    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, MasonError,
+    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
+    EngineAbsentError, MasonError, PackageBuildTimeoutError,
+    PackageProjectPathError, PackageVersionMismatchError,
 )
 
 
@@ -255,5 +269,326 @@ def test_cfe_timeout_error_survives_pickle_round_trip():
     assert isinstance(clone, CfeTimeoutError)
     assert clone.script == original.script
     assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.1: EngineAbsentError --------------------------------------------
+
+def test_engine_absent_error_identifier():
+    exc = EngineAbsentError(name="conda-lock", conda_package="conda-lock")
+    assert exc.identifier == "engine:absent"
+
+
+def test_engine_absent_error_stores_attributes():
+    exc = EngineAbsentError(name="build", conda_package="python-build")
+    assert exc.name == "build"
+    assert exc.conda_package == "python-build"
+
+
+def test_engine_absent_error_message_names_the_engine_and_its_conda_package():
+    exc = EngineAbsentError(name="build", conda_package="python-build")
+    message = str(exc)
+    assert "build" in message
+    assert "python-build" in message
+
+
+def test_engine_absent_error_is_a_mason_error():
+    assert issubclass(EngineAbsentError, MasonError)
+    with pytest.raises(MasonError):
+        raise EngineAbsentError(name="pixi", conda_package="pixi")
+
+
+def test_engine_absent_error_str_format_is_identifier_colon_space_message():
+    exc = EngineAbsentError(name="twine", conda_package="twine")
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_engine_absent_error_rejects_empty_name():
+    with pytest.raises(ValueError):
+        EngineAbsentError(name="", conda_package="pixi")
+
+
+def test_engine_absent_error_rejects_empty_conda_package():
+    with pytest.raises(ValueError):
+        EngineAbsentError(name="pixi", conda_package="")
+
+
+def test_engine_absent_error_rejects_whitespace_only_name():
+    with pytest.raises(ValueError):
+        EngineAbsentError(name="   ", conda_package="pixi")
+
+
+def test_engine_absent_error_survives_deepcopy():
+    """Review pass (2026-08-13): mirrors `CfeTimeoutError`'s own deepcopy
+    guard -- without the `__reduce__` override, `cls(*self.args)` would
+    reconstruct with `name == "engine:absent"` (the identifier) and
+    `conda_package` bound to the built message string, corrupting the
+    clone's `.args`/`repr()` instead of failing loudly."""
+    original = EngineAbsentError(name="pixi", conda_package="pixi")
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, EngineAbsentError)
+    assert clone.name == original.name
+    assert clone.conda_package == original.conda_package
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_engine_absent_error_survives_pickle_round_trip():
+    original = EngineAbsentError(name="build", conda_package="python-build")
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, EngineAbsentError)
+    assert clone.name == original.name
+    assert clone.conda_package == original.conda_package
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.2: PackageVersionMismatchError ----------------------------------
+
+_WHEEL_PATH = "/proj/dist/pkg-0.1.0-py3-none-any.whl"
+_CONDA_PATH = "/proj/dist-conda/pkg-0.2.0-abc123_0.conda"
+
+
+def test_package_version_mismatch_error_identifier():
+    exc = PackageVersionMismatchError(
+        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+    )
+    assert exc.identifier == "package:version-mismatch"
+
+
+def test_package_version_mismatch_error_stores_attributes():
+    exc = PackageVersionMismatchError(
+        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+    )
+    assert exc.wheel_version == "0.1.0"
+    assert exc.conda_version == "0.2.0"
+    assert exc.wheel_path == _WHEEL_PATH
+    assert exc.conda_path == _CONDA_PATH
+
+
+def test_package_version_mismatch_error_message_names_both_versions_and_both_paths():
+    exc = PackageVersionMismatchError(
+        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+    )
+    message = str(exc)
+    assert "0.1.0" in message
+    assert "0.2.0" in message
+    assert _WHEEL_PATH in message
+    assert _CONDA_PATH in message
+
+
+def test_package_version_mismatch_error_is_a_mason_error():
+    assert issubclass(PackageVersionMismatchError, MasonError)
+    with pytest.raises(MasonError):
+        raise PackageVersionMismatchError(
+            wheel_version="0.1.0",
+            conda_version="0.2.0",
+            wheel_path=_WHEEL_PATH,
+            conda_path=_CONDA_PATH,
+        )
+
+
+def test_package_version_mismatch_error_str_format_is_identifier_colon_space_message():
+    exc = PackageVersionMismatchError(
+        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+    )
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_package_version_mismatch_error_rejects_empty_wheel_version():
+    with pytest.raises(ValueError):
+        PackageVersionMismatchError(
+            wheel_version="", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        )
+
+
+def test_package_version_mismatch_error_rejects_empty_conda_version():
+    with pytest.raises(ValueError):
+        PackageVersionMismatchError(
+            wheel_version="0.1.0", conda_version="", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+        )
+
+
+def test_package_version_mismatch_error_rejects_whitespace_only_wheel_version():
+    with pytest.raises(ValueError):
+        PackageVersionMismatchError(
+            wheel_version="   ",
+            conda_version="0.2.0",
+            wheel_path=_WHEEL_PATH,
+            conda_path=_CONDA_PATH,
+        )
+
+
+def test_package_version_mismatch_error_rejects_empty_wheel_path():
+    with pytest.raises(ValueError):
+        PackageVersionMismatchError(
+            wheel_version="0.1.0", conda_version="0.2.0", wheel_path="", conda_path=_CONDA_PATH,
+        )
+
+
+def test_package_version_mismatch_error_rejects_empty_conda_path():
+    with pytest.raises(ValueError):
+        PackageVersionMismatchError(
+            wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path="",
+        )
+
+
+def test_package_version_mismatch_error_survives_deepcopy():
+    """Mirrors `EngineAbsentError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `wheel_version == "package:version-mismatch"` (the identifier) and
+    `conda_version` bound to the built message string, corrupting the
+    clone's `.args`/`repr()` instead of failing loudly."""
+    original = PackageVersionMismatchError(
+        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+    )
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, PackageVersionMismatchError)
+    assert clone.wheel_version == original.wheel_version
+    assert clone.conda_version == original.conda_version
+    assert clone.wheel_path == original.wheel_path
+    assert clone.conda_path == original.conda_path
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_package_version_mismatch_error_survives_pickle_round_trip():
+    original = PackageVersionMismatchError(
+        wheel_version="0.1.0", conda_version="0.2.0", wheel_path=_WHEEL_PATH, conda_path=_CONDA_PATH,
+    )
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, PackageVersionMismatchError)
+    assert clone.wheel_version == original.wheel_version
+    assert clone.conda_version == original.conda_version
+    assert clone.wheel_path == original.wheel_path
+    assert clone.conda_path == original.conda_path
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.2 (review pass, 2026-08-13): PackageBuildTimeoutError -----------
+
+def test_package_build_timeout_error_identifier():
+    exc = PackageBuildTimeoutError(engine="build", timeout=600.0)
+    assert exc.identifier == "package:build-timeout"
+
+
+def test_package_build_timeout_error_stores_attributes():
+    exc = PackageBuildTimeoutError(engine="pixi", timeout=600.0)
+    assert exc.engine == "pixi"
+    assert exc.timeout == 600.0
+
+
+def test_package_build_timeout_error_message_names_the_engine_and_timeout_value():
+    exc = PackageBuildTimeoutError(engine="build", timeout=600.0)
+    message = str(exc)
+    assert "build" in message
+    assert "600.0" in message
+
+
+def test_package_build_timeout_error_is_a_mason_error():
+    assert issubclass(PackageBuildTimeoutError, MasonError)
+    with pytest.raises(MasonError):
+        raise PackageBuildTimeoutError(engine="pixi", timeout=600.0)
+
+
+def test_package_build_timeout_error_str_format_is_identifier_colon_space_message():
+    exc = PackageBuildTimeoutError(engine="build", timeout=600.0)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_package_build_timeout_error_survives_deepcopy():
+    """Mirrors `CfeTimeoutError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `engine == "package:build-timeout"` (the identifier) and `timeout`
+    bound to the built message string, corrupting the clone instead of
+    failing loudly."""
+    original = PackageBuildTimeoutError(engine="build", timeout=600.0)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, PackageBuildTimeoutError)
+    assert clone.engine == original.engine
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_package_build_timeout_error_survives_pickle_round_trip():
+    original = PackageBuildTimeoutError(engine="pixi", timeout=600.0)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, PackageBuildTimeoutError)
+    assert clone.engine == original.engine
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.2 (review pass, 2026-08-13): PackageProjectPathError ------------
+
+def test_package_project_path_error_identifier():
+    exc = PackageProjectPathError(project_path="/no/such/dir", reason="No such file or directory")
+    assert exc.identifier == "package:project-path-invalid"
+
+
+def test_package_project_path_error_stores_attributes():
+    exc = PackageProjectPathError(project_path="/no/such/dir", reason="No such file or directory")
+    assert exc.project_path == "/no/such/dir"
+    assert exc.reason == "No such file or directory"
+
+
+def test_package_project_path_error_message_names_the_path_and_reason():
+    exc = PackageProjectPathError(project_path="/no/such/dir", reason="No such file or directory")
+    message = str(exc)
+    assert "/no/such/dir" in message
+    assert "No such file or directory" in message
+
+
+def test_package_project_path_error_is_a_mason_error():
+    assert issubclass(PackageProjectPathError, MasonError)
+    with pytest.raises(MasonError):
+        raise PackageProjectPathError(project_path="/no/such/dir", reason="boom")
+
+
+def test_package_project_path_error_str_format_is_identifier_colon_space_message():
+    exc = PackageProjectPathError(project_path="/no/such/dir", reason="boom")
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_package_project_path_error_rejects_empty_project_path():
+    with pytest.raises(ValueError):
+        PackageProjectPathError(project_path="", reason="boom")
+
+
+def test_package_project_path_error_rejects_empty_reason():
+    with pytest.raises(ValueError):
+        PackageProjectPathError(project_path="/no/such/dir", reason="")
+
+
+def test_package_project_path_error_rejects_whitespace_only_project_path():
+    with pytest.raises(ValueError):
+        PackageProjectPathError(project_path="   ", reason="boom")
+
+
+def test_package_project_path_error_survives_deepcopy():
+    """Mirrors `CfeTimeoutError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `project_path == "package:project-path-invalid"` (the identifier) and
+    `reason` bound to the built message string, corrupting the clone
+    instead of failing loudly."""
+    original = PackageProjectPathError(project_path="/no/such/dir", reason="boom")
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, PackageProjectPathError)
+    assert clone.project_path == original.project_path
+    assert clone.reason == original.reason
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_package_project_path_error_survives_pickle_round_trip():
+    original = PackageProjectPathError(project_path="/no/such/dir", reason="boom")
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, PackageProjectPathError)
+    assert clone.project_path == original.project_path
+    assert clone.reason == original.reason
     assert clone.identifier == original.identifier
     assert clone.message == original.message
