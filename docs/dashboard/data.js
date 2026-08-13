@@ -967,7 +967,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "13.6"
+        "at": "13.4"
       },
       "epics": [
         {
@@ -1334,16 +1334,16 @@ window.DASHBOARD_DATA = {
         "key": "14.4",
         "title": "The subprocess seam is reconciled and sole ownership is gated",
         "phase": "dev",
-        "attempt": "1",
+        "attempt": "2",
         "startEpoch": 1786645817,
         "median": 97,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 19:00 UTC"
+        "phaseAsOf": "2026-08-13 19:53 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 41 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 42 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1508,6 +1508,10 @@ window.DASHBOARD_DATA = {
           [
             "14.3",
             97
+          ],
+          [
+            "14.4",
+            78
           ]
         ],
         "foot": [
@@ -1536,9 +1540,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 5748,
-        "totalLabel": "~95.8 h active compute",
-        "note": "Derived from 41 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 5826,
+        "totalLabel": "~97.1 h active compute",
+        "note": "Derived from 42 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -1580,7 +1584,8 @@ window.DASHBOARD_DATA = {
           "7.6": 37,
           "14.1": 36,
           "14.2": 223,
-          "14.3": 97
+          "14.3": 97,
+          "14.4": 78
         },
         "epicMin": {
           "E1": 1343,
@@ -1589,7 +1594,7 @@ window.DASHBOARD_DATA = {
           "E4": 485,
           "E5": 297,
           "E7": 326,
-          "E14": 356
+          "E14": 434
         }
       },
       "lineState": {
@@ -3004,12 +3009,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "37/40",
+            "38/40",
             "stories complete",
             "var(--done)"
           ],
           [
-            "3",
+            "2",
             "remaining",
             ""
           ]
@@ -3308,7 +3313,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "9.7",
-              "pending",
+              "done",
               "Hosted or static, no fork"
             ]
           ]
@@ -3920,7 +3925,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 19:00 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 19:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -7032,7 +7037,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "37/40",
+        "progress": "38/40",
         "complete": 14,
         "of": 14
       },
@@ -14701,7 +14706,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "paused 13.6",
+        "line": "paused 13.4",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -17164,15 +17169,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "marshal",
-      "story": "14.3",
-      "epoch": 1786645810,
-      "sha": "5141daad8",
-      "subject": "Merge bmad-loop/20260813-094919-bfcb/14-3-one-lattice-one-envelope-one-exception-root into loop/pyforge-marshal (bmad-lo"
+      "station": "herald",
+      "story": "13.5",
+      "epoch": 1786646284,
+      "sha": "18dca9e3a",
+      "subject": "Merge bmad-loop/20260813-094918-551b/13-5-the-scheduler-enforces-what-was-displayed into loop/pyforge-herald (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 19:00 UTC",
-    "generatedEpoch": 1786647633
+    "generatedAt": "2026-08-13 19:53 UTC",
+    "generatedEpoch": 1786650823
   },
   "storySpecs": [
     {
@@ -17371,14 +17376,13 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 51,
-        "backlog": 1,
-        "blocked": 1,
+        "backlog": 2,
+        "blocked": 0,
         "total": 53,
-        "next": "13-6-a-ship-records-itself-end-to-end",
-        "blockedKeys": [
-          "13-4-the-webhook-endpoint-ci-calls"
-        ],
+        "next": "13-4-the-webhook-endpoint-ci-calls",
+        "blockedKeys": [],
         "backlogKeys": [
+          "13-4-the-webhook-endpoint-ci-calls",
           "13-6-a-ship-records-itself-end-to-end"
         ],
         "state": "ready"
@@ -17498,8 +17502,8 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 307,
-      "backlog": 67,
-      "blocked": 6,
+      "backlog": 68,
+      "blocked": 5,
       "total": 380
     }
   },
@@ -17531,7 +17535,7 @@ window.DASHBOARD_DATA = {
         "key": "herald",
         "stories": 53,
         "done": 51,
-        "blocked": 1,
+        "blocked": 0,
         "epics": 13,
         "epicsDone": 12,
         "complete": false,
@@ -17597,7 +17601,7 @@ window.DASHBOARD_DATA = {
     "total": {
       "stories": 380,
       "done": 307,
-      "blocked": 6,
+      "blocked": 5,
       "epics": 74,
       "epicsDone": 54
     },
