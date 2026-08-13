@@ -32,6 +32,7 @@ from pyforge.herald import (
     scheduler,
     state,
     watch,
+    webhook,
 )
 from pyforge.herald import transport as transport_pkg
 from pyforge.herald.cli import dispatch
@@ -145,6 +146,7 @@ _BRIDGE_CORE_MODULES = (
     locking,
     db,
     scheduler,
+    webhook,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -181,7 +183,11 @@ same local-storage concern, no transport call, no inference SDK, no argv
 parsing. ``scheduler.py`` (Story 13.5) joins for the same reason once
 more: it only composes ``claims.revalidate_all``/``progress.write_snapshot``
 into ``herald scheduler run``'s cron-facing job -- no transport call, no
-inference SDK, no argv parsing (that's ``cli.py``'s own job)."""
+inference SDK, no argv parsing (that's ``cli.py``'s own job). ``webhook.py``
+(Story 13.4) joins for the same reason again: it calls straight through
+to ``progress.upsert``/``claims.create`` (plus one raw ASGI3
+``app(scope, receive, send)`` boundary, never a web framework) -- no
+transport call, no inference SDK, and no argv parsing of its own."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name

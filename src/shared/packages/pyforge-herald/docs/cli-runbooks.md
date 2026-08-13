@@ -6,17 +6,23 @@ troubleshooting section for the failure modes that actually exist in this
 codebase today.
 
 **Scope note.** Herald's Moments 2-4 (Progress/Success/Operations) are
-**local-storage, CLI-triggered** — there is no webhook server and no
-hosted scheduler anywhere in this package. Storage is a local SQLite
-file, `.herald/herald.db` (Story 13.3). Every record (a progress entry,
-a claim, a notice) is created by an operator running an explicit `herald`
-command by hand; the one automated exception is `herald scheduler run`'s
-derived-state refresh (Story 13.5, see [How to run the scheduled
+**local-storage, CLI-triggered** — storage is a local SQLite file,
+`.herald/herald.db` (Story 13.3). Every record (a progress entry, a
+claim, a notice) is created either by an operator running an explicit
+`herald` command by hand, or by CI calling the HMAC-verified webhook
+handlers Story 13.4 built (`src/pyforge/herald/webhook.py`'s
+`on-ship`/`on-pr-close` -- see [The webhook
+endpoint](#the-webhook-endpoint-ci-calls-story-134) below). The webhook is
+built, unit-tested in isolation, and not yet mounted anywhere: there is no
+live HTTP listener in this package today, and no hosted scheduler either
+except `herald scheduler run`'s derived-state refresh (Story 13.5, see
+[How to run the scheduled
 job](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
 below), which an operator can point an optional local `cron` entry at.
-See `docs/dreams/herald-moments-2-4-live-backend.md` for the deferred
-live-backend version and why the rest of the scope was cut down. This
-runbook documents the system as it exists, not that Dream.
+Wiring the webhook into a live ASGI host and a real GitHub Actions step is
+Story 13.6's job. See `docs/dreams/herald-moments-2-4-live-backend.md` for
+the fuller live-backend version and why the rest of the scope was cut
+down. This runbook documents the system as it exists, not that Dream.
 
 All examples below were captured by actually running `herald` (built via
 `pixi run --frozen -e pyforge-herald herald ...`) in a scratch directory.
@@ -96,10 +102,12 @@ storage) — there is no HTTP server to serve an actual redirect from.
 
 ## How to publish a claim (Success proclamation)
 
-`herald success` manages Moment 3. `create` makes a draft (the
-CLI-triggered stand-in for what would have been a PR-close webhook
-payload); `review` shows it read-only; `publish` requires the operator
-role and validates every evidence link before writing anything.
+`herald success` manages Moment 3. `create` makes a draft -- the same
+`claims.create` call the `on-pr-close` webhook handler makes once it is
+mounted (see [The webhook endpoint](#the-webhook-endpoint-ci-calls-story-134)
+below); until then, this CLI command is the only way to make one.
+`review` shows it read-only; `publish` requires the operator role and
+validates every evidence link before writing anything.
 
 ```
 $ herald success create "Marshal S-1.10" \
@@ -133,6 +141,41 @@ no thesis yet). Evidence links are optional per-type flags on `create`:
 
 Other read commands: `herald success list [--status draft|published|closed]`
 and `herald success get <claim-id>` (full detail, including edit history).
+
+## The webhook endpoint (CI calls, Story 13.4)
+
+`src/pyforge/herald/webhook.py` is a second, CI-triggered path onto the
+same storage `herald progress --update`/`herald success create` write:
+an HMAC-verified ASGI3 callable (`webhook.create_app(repo_root, secret)`),
+built and fully unit-tested in isolation, but **not mounted anywhere in
+this repo today** — there is no live URL to `curl`. Mounting it into a
+real ASGI host and wiring an actual GitHub Actions workflow step is Story
+13.6's job; until that lands, `herald progress --update`/`herald success
+create` remain the only way a record actually gets created outside a
+Python test.
+
+For when it is mounted, the shape:
+
+- **Routes:** `POST /api/herald/webhooks/on-ship` (calls the same
+  `progress.upsert` `herald progress <station> --update` calls) and
+  `POST /api/herald/webhooks/on-pr-close` (calls the same `claims.create`
+  `herald success create` calls, only when the payload's own `merged` and
+  `gates_passed` are both `true` — any other combination is a 202 no-op,
+  never an error).
+- **Auth:** every request must carry an `X-Hub-Signature-256: sha256=<hex>`
+  header proving the sender holds the shared secret
+  (`hmac.new(secret, raw_body, hashlib.sha256)`) — a missing or mismatched
+  signature is a 401 before the body is even parsed as JSON. The secret
+  itself comes from the `HERALD_WEBHOOK_SECRET` env var, read once at
+  mount time (`webhook.resolve_webhook_secret`) — never a literal or a
+  default fallback, and never provisioned by this package (Steward's
+  `keys` surface is a deployment concern, out of this story's Surface).
+- **Reliability:** a storage-layer failure (`errors.HeraldError` from
+  `progress.upsert`/`claims.create`) is retried up to 3 times (1s/2s/4s
+  backoff) before giving up; giving up logs one structured JSON
+  `ERROR`-level record (there is no email/Slack/other operator-alert
+  channel in this repo to build against) and answers with a non-2xx
+  status so CI's own webhook-delivery retry can re-fire the call later.
 
 ## How to run the scheduled job (evidence revalidation and progress snapshot)
 
@@ -357,8 +400,10 @@ herald: error: no command given; valid subcommands: deck, progress, success, not
 
 ### What is *not* a failure mode here
 
-There is no webhook to "not fire," and no async re-validation job to fail
-silently — neither exists in this codebase. `herald scheduler run`
+The webhook handlers (`webhook.py`, [above](#the-webhook-endpoint-ci-calls-story-134))
+are not mounted anywhere in this repo, so there is no live webhook to "not
+fire" here yet, and no async re-validation job to fail silently either.
+`herald scheduler run`
 (Story 13.5, [above](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot))
 is the one piece of periodic infrastructure that does exist, and it is
 opt-in and operator-installed (a local `crontab` entry) — a *missed* run
@@ -366,19 +411,20 @@ of that cron entry (the machine was off, the entry was never installed)
 is a real, if narrow, failure mode, distinct from "there is no automation
 to miss" for everything else in this guide. If you find yourself
 debugging why a PR merge didn't automatically create a progress record or
-a claim, stop: it can't, by design, today — that part is still entirely
-CLI-triggered. Run the CLI command yourself (see
-[`operator-guide.md`](operator-guide.md)'s FAQ). The live-automation
-version is tracked as a Dream, not a bug:
-`docs/dreams/herald-moments-2-4-live-backend.md`.
+a claim, stop: it can't, today — the webhook is built and tested, but not
+yet mounted into a live endpoint or wired into a real GitHub Actions
+workflow (Story 13.6). Run the CLI command yourself (see
+[`operator-guide.md`](operator-guide.md)'s FAQ). Once 13.6 lands, this
+section will need updating along with it.
 
 ## Escalation path
 
 1. Check this file and [`automation-troubleshooting.md`](automation-troubleshooting.md)
    for the specific error text you're seeing.
-2. If the failure looks like it should have been automatic (a webhook, a
-   cron job, an email/in-app alert), read
-   `docs/dreams/herald-moments-2-4-live-backend.md` first — it is very
+2. If the failure looks like it should have been automatic (a webhook not
+   yet mounted, a cron job, an email/in-app alert), read
+   [The webhook endpoint](#the-webhook-endpoint-ci-calls-story-134) above
+   and `docs/dreams/herald-moments-2-4-live-backend.md` first — it is very
    likely the gap you're hitting is the documented, intentional scope cut,
    not a bug.
 3. Otherwise, file an issue against `rxm7706/local-recipes` describing the

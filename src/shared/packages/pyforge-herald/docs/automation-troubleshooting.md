@@ -2,24 +2,30 @@
 
 Story 12.4 (honestly scoped). The original epics spec for this story asked
 for "webhook not firing," "cron job missed," "auto-extract failed," and
-"stale link warning" diagnoses. "Webhook not firing" cannot happen in
-this codebase, because no webhook infrastructure exists — see
-`docs/dreams/herald-moments-2-4-live-backend.md` for the full, unbuilt
-live-backend design and why the first pass was scaled down to a CLI an
-operator runs by hand. "Cron job missed" is now a real, if narrow,
-possibility: Story 13.5 added `herald scheduler run` plus a documented,
-*opt-in* local `crontab` entry (see
+"stale link warning" diagnoses. "Webhook not firing" still cannot happen
+in this codebase's *running* system: Story 13.4 built and fully
+unit-tested an HMAC-verified webhook handler
+(`src/pyforge/herald/webhook.py`, see
+[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)),
+but it is not mounted into any live ASGI host or wired into a real GitHub
+Actions workflow yet (Story 13.6) — there is no listening endpoint
+anywhere for a delivery to fail to reach. See
+`docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
+live-backend design this is working toward. "Cron job missed" is now a
+real, if narrow, possibility: Story 13.5 added `herald scheduler run` plus
+a documented, *opt-in* local `crontab` entry (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)) —
 an operator who never installed that entry has nothing to miss, but one
 who did and whose machine was off (or whose cron daemon isn't running)
 genuinely misses a scheduled revalidation. Neither caveat is repeated per
 section below.
 
-What *does* exist, and can genuinely misbehave, is the CLI-triggered
+What *does* exist today, and can genuinely misbehave, is the CLI-triggered
 equivalent of each of those automations — including "auto-extract" (see
 below): Epic 9's `herald success create` is its direct replacement, an
-operator-run command rather than a PR-close webhook trigger. This guide
-covers those real, reproducible failure modes.
+operator-run command that does the same work the `on-pr-close` webhook
+handler will do once it is mounted. This guide covers those real,
+reproducible failure modes.
 
 ## Stale or broken evidence links (the `herald success validate` scope)
 
@@ -103,10 +109,13 @@ published claim.
 ## "Auto-extract failed" (the `herald success create` scope)
 
 **What it replaces:** the original spec's PR-close webhook, which would
-have auto-extracted a draft claim's `project_name`/`shipped_date`/evidence
-from CI's payload the moment a PR merged with all gates green. There is no
-webhook; instead, an operator runs `herald success create <project>` by
-hand, supplying the same fields explicitly via flags (see
+auto-extract a draft claim's `project_name`/`shipped_date`/evidence from
+CI's payload the moment a PR merged with all gates green. Story 13.4 built
+that webhook handler (`on-pr-close`, see
+[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)),
+but it is not mounted anywhere yet (Story 13.6); until it is, an operator
+runs `herald success create <project>` by hand, supplying the same fields
+explicitly via flags (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-publish-a-success-claim) for the
 full create -> review -> publish walkthrough).
 

@@ -23,14 +23,19 @@ of a PyForge Guild station's work over time:
    closed) and an archive.
 
 **Architecture, in one sentence:** every record in Moments 2-4 is created
-by an operator running an explicit `herald` command; there is no webhook
-or hosted service anywhere in this package. A local SQLite database
-(`.herald/herald.db`, Story 13.3) backs storage, and `herald scheduler
-run` (Story 13.5) keeps evidence validation and the progress snapshot
-current — an operator can point an optional local `cron` entry at it
+either by an operator running an explicit `herald` command, or by CI
+calling the HMAC-verified webhook handlers Story 13.4 built (see
+[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134))
+— but that webhook is not mounted into any live host yet (Story 13.6), so
+in practice every record today still comes from an operator's command. A
+local SQLite database (`.herald/herald.db`, Story 13.3) backs storage, and
+`herald scheduler run` (Story 13.5) keeps evidence validation and the
+progress snapshot current — an operator can point an optional local
+`cron` entry at it
 (see [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)).
 See `docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
-live-backend version of this system that hasn't been built yet, and why.
+live-backend version of this system that hasn't been fully built yet, and
+why.
 
 Two surfaces exist side by side:
 
@@ -165,12 +170,13 @@ Full walkthrough: [`cli-runbooks.md`](cli-runbooks.md#how-to-author-a-notice).
 **Q: Why doesn't a PR merge automatically create a progress record or a
 success claim?**
 
-Because there is no webhook (or any other automation trigger) wired up
-yet — this is the scaled-down first pass of Epics 8-10, deliberately built
-without inventing server infrastructure this repo has never had. Run
+Because the webhook that would do this (Story 13.4, see
+[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134))
+is built and fully unit-tested but not mounted into any live host or wired
+into a real GitHub Actions workflow yet — that's Story 13.6. Run
 `herald progress <station> --update` (or `herald success create`) by hand
-instead. The live-backend version that would do this automatically is
-captured, unbuilt, in `docs/dreams/herald-moments-2-4-live-backend.md`.
+instead until it is. The fuller live-backend version this is working
+toward is captured in `docs/dreams/herald-moments-2-4-live-backend.md`.
 
 **Q: I ran `herald success publish`, but the web dashboard still shows the
 old data (or nothing). Is the write broken?**
