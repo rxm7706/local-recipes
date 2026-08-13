@@ -394,3 +394,41 @@ class PackageProjectPathError(MasonError):
         # "package:project-path-invalid", <built message>)` -- the wrong two
         # values for this class's own `(project_path, reason)` constructor.
         return (self.__class__, (self.project_path, self.reason))
+
+
+class InvalidShipTargetError(MasonError):
+    """A `--ship`/`--to` token failed to parse as one of the three valid
+    ship-target forms (Story 3.3, FR-16, FR-19, NFR-14).
+
+    Raised by `package.py::parse_ship_targets` for a token that is not
+    exactly `"pypi"`, exactly `"conda-forge"`, or `"channel:"` followed by a
+    non-empty name -- the message names the offending token verbatim and
+    lists all three valid forms (spec AC1: "rejected with the valid set
+    listed"), never inventing a partial match or a best guess at what the
+    caller meant. `value` is the ORIGINAL stripped token, not the whole
+    comma-separated input string, so a caller sees exactly which part of a
+    multi-target value was wrong. Construction raises `ValueError` for an
+    empty `value`, matching `PackageProjectPathError`'s validation rigor: an
+    invalid-target error naming no token is incoherent.
+    """
+
+    def __init__(self, value: str) -> None:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(
+                "InvalidShipTargetError requires a non-empty `value`: an "
+                "invalid-target error naming no token is incoherent"
+            )
+        self.value = value
+        message = (
+            f"{value!r} is not a valid ship target; valid forms are "
+            "'pypi', 'conda-forge', 'channel:<name>'"
+        )
+        super().__init__("ship:invalid-target", message)
+
+    def __reduce__(self):
+        # Mirrors `PackageProjectPathError.__reduce__` above:
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = ("ship:invalid-target",
+        # <built message>)` -- the wrong value for this class's own
+        # `(value,)` constructor.
+        return (self.__class__, (self.value,))

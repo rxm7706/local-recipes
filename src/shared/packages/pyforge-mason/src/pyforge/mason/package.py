@@ -45,20 +45,37 @@ path`), doubling the path (`<caller's cwd>/<project_path>/<project_path>/
 dist`). Resolving once, up front, to an absolute string makes both
 interpolations agree regardless of what the caller passed.
 
+Story 3.3 adds `parse_ship_targets()`/`plan_ship()` (FR-16, FR-19, NFR-9):
+the closed `--ship`/`--to` vocabulary parser and the "plan and print,
+upload nothing" default -- `recipe.py::submit()`'s already-established
+`ShipTargetResult(state=NOT_ATTEMPTED, reference=None, ...)` dry-run
+mapping (AD-9), generalized across all three vocabulary kinds rather than
+reinvented. Neither function touches an engine or a subprocess: `plan_
+ship()` takes an already-built `PackageBuildResult` and reads its fields
+only. No CLI wiring lands with this story (spec Never boundary) -- the
+`ship` verb and its flags are Story 3.9's scope, built only after the
+individual target adapters (Stories 3.4-3.6) exist to dispatch to.
+
 Zero `cfe` reference anywhere in this file (spec Always boundary,
 `tests/meta/test_capability_tiers.py` guards it): `build()` never resolves
-a CFE root or interpreter, unlike every `recipe.py` verb.
+a CFE root or interpreter, unlike every `recipe.py` verb, and Story 3.3's
+two new functions are pure and CFE-independent too.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from packaging.version import InvalidVersion, Version
 
 from .engines import pep517, pixi
-from .errors import PackageProjectPathError, PackageVersionMismatchError
-from .models import PackageBuildResult
+from .errors import (
+    InvalidShipTargetError, PackageProjectPathError, PackageVersionMismatchError,
+)
+from .models import (
+    PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+)
 
 
 def _versions_disagree(wheel_version: str, conda_version: str) -> bool:
@@ -147,3 +164,131 @@ def build(project_path: str, *, target: str = "library") -> PackageBuildResult:
         pep517_stdout=pep517_result.stdout,
         pixi_stdout=pixi_result.stdout,
     )
+
+
+_CHANNEL_PREFIX = "channel:"
+
+
+def parse_ship_targets(value: str) -> tuple[ShipTarget, ...]:
+    """Parse a comma-separated `--ship`/`--to` value into `ShipTarget`s
+    (Story 3.3, FR-16, FR-19, spec AC1).
+
+    Splits `value` on `,` and strips whitespace from each resulting token
+    (including the substring after a `"channel:"` prefix, review pass,
+    2026-08-13), then matches each token INDEPENDENTLY of the others
+    against the three valid forms: `"pypi"`/`"conda-forge"` exactly
+    (case-sensitive), or a `"channel:"`-prefixed token whose suffix
+    (everything after the colon, stripped) is non-empty, which becomes
+    `CHANNEL` with that stripped suffix as `channel_name`. Any other token
+    -- including a bare `"channel:"` with nothing after the colon, or an
+    empty token from a leading/trailing/doubled comma -- raises
+    `InvalidShipTargetError`.
+
+    An empty token is named `"<empty>"` rather than passed to
+    `InvalidShipTargetError` as-is (review pass, 2026-08-13):
+    `InvalidShipTargetError.__init__` itself rejects an empty `value` with
+    a bare `ValueError` (its own validation-rigor guard, matching every
+    other error class in `errors.py`), so a genuinely empty token -- `","`,
+    `"pypi,"`, `" "` -- previously let that internal guard's `ValueError`
+    escape instead of the `InvalidShipTargetError` this function's own
+    docstring promises for "any other token." Every other invalid token is
+    still named exactly as given.
+
+    Returns one `ShipTarget` per token, in the order given -- no
+    deduplication, no reordering: `"pypi,pypi"` returns two identical
+    entries, since deciding what "duplicate" means for a future ship
+    engine's own per-target output is out of this parser's scope.
+    """
+    targets = []
+    for token in value.split(","):
+        stripped = token.strip()
+        if not stripped:
+            raise InvalidShipTargetError("<empty>")
+        if stripped == "pypi":
+            targets.append(ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None))
+        elif stripped == "conda-forge":
+            targets.append(ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None))
+        elif stripped.startswith(_CHANNEL_PREFIX) and stripped[len(_CHANNEL_PREFIX):].strip():
+            targets.append(
+                ShipTarget(
+                    kind=ShipTargetKind.CHANNEL,
+                    channel_name=stripped[len(_CHANNEL_PREFIX):].strip(),
+                )
+            )
+        else:
+            raise InvalidShipTargetError(stripped)
+    return tuple(targets)
+
+
+def plan_ship(
+    targets: Sequence[ShipTarget], build_result: PackageBuildResult,
+) -> tuple[ShipTargetResult, ...]:
+    """Produce the dry-run ship plan for `targets` against an already-built
+    `build_result` (Story 3.3, FR-16, FR-19, spec AC1) -- print-only,
+    uploads nothing.
+
+    Reuses `models.ShipTargetResult` (`state=ShipState.NOT_ATTEMPTED,
+    reference=None`), the exact dry-run shape `recipe.py::submit()` already
+    produces for its own `confirm=False` branch (AD-9, this module's own
+    docstring) -- never a second "plan" shape. There is no `confirm`
+    parameter here at all, unlike `submit()`'s inversion: this story's own
+    scope has no code path that ever ships for real (Stories 3.4-3.6 add
+    the target adapters this plan describes, but this function never calls
+    them, and never spawns a subprocess of its own -- `build_result` is
+    already-built data, read only), so there is nothing to invert.
+
+    `target`'s canonical string form is reconstructed from each
+    `ShipTarget` (`"pypi"`, `"conda-forge"`, or `"channel:<name>"`), not
+    `ShipTargetKind.value` alone -- `ShipTargetResult.target` stays a plain
+    `str` (spec Always boundary; see `models.ShipTargetResult`'s own
+    docstring). Each `message` names the relevant `build_result` artifact(s)
+    and destination: `PYPI` names `wheel_path`/`sdist_path` and states the
+    upload is irreversible (spec Always boundary, epic-3-context
+    Requirements); `CONDA_FORGE` names no build artifact at all -- a
+    staged-recipes submission ships the recipe SOURCE, not the built
+    `.conda` binary built here -- and states a pull request would be
+    opened; `CHANNEL` names `conda_path` and the channel's own name.
+
+    Each artifact is named via `_describe_artifact` (review pass,
+    2026-08-13), never a bare `!r}` interpolation of the `PackageBuildResult`
+    field directly: `wheel_path`/`sdist_path`/`conda_path` are `str | None`
+    (`None` when that engine's own build failed -- `models.
+    PackageBuildResult`'s own docstring), and a bare `!r` would render the
+    literal text `None` into the printed plan as if it were a real path,
+    contradicting this story's own AC ("the plan names every target, every
+    artifact, and every destination").
+    """
+    results = []
+    for target in targets:
+        if target.kind is ShipTargetKind.PYPI:
+            canonical = "pypi"
+            message = (
+                f"would upload {_describe_artifact(build_result.wheel_path, 'wheel')} and "
+                f"{_describe_artifact(build_result.sdist_path, 'sdist')} to PyPI; "
+                "this upload is irreversible"
+            )
+        elif target.kind is ShipTargetKind.CONDA_FORGE:
+            canonical = "conda-forge"
+            message = "would open a conda-forge/staged-recipes pull request"
+        elif target.kind is ShipTargetKind.CHANNEL:
+            canonical = f"{_CHANNEL_PREFIX}{target.channel_name}"
+            message = (
+                f"would upload {_describe_artifact(build_result.conda_path, '.conda package')} "
+                f"to channel {target.channel_name!r}"
+            )
+        else:
+            raise AssertionError(f"unhandled ShipTargetKind: {target.kind!r}")
+        results.append(
+            ShipTargetResult(
+                target=canonical, state=ShipState.NOT_ATTEMPTED, reference=None, message=message,
+            )
+        )
+    return tuple(results)
+
+
+def _describe_artifact(path: str | None, label: str) -> str:
+    """Render one `plan_ship` artifact reference: the path itself when
+    built, or a `"no {label} was built"` note when `None` (review pass,
+    2026-08-13) -- see `plan_ship`'s own docstring for why a bare `!r}` of a
+    possibly-`None` path is wrong here."""
+    return repr(path) if path is not None else f"no {label} was built"

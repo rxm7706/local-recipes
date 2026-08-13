@@ -18,7 +18,12 @@ matching `EngineAbsentError`'s existing two-string-argument test shape
 new `wheel_path`/`conda_path` arguments (Patch 7), and adds coverage for
 two new error classes: `PackageBuildTimeoutError` (Patch 3, mirrors
 `CfeTimeoutError`'s shape) and `PackageProjectPathError` (Patch 4, mirrors
-`CfeTimeoutError`'s shape with a different pair of fields)."""
+`CfeTimeoutError`'s shape with a different pair of fields).
+
+Story 3.3 extends this file again with `InvalidShipTargetError` coverage,
+mirroring `PackageProjectPathError`'s suite exactly in shape: identifier,
+stored attribute, message content, is-a-`MasonError`, `str()` format,
+rejects-empty-value, deepcopy/pickle round-trip."""
 
 from __future__ import annotations
 
@@ -29,7 +34,7 @@ import pytest
 
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
-    EngineAbsentError, MasonError, PackageBuildTimeoutError,
+    EngineAbsentError, InvalidShipTargetError, MasonError, PackageBuildTimeoutError,
     PackageProjectPathError, PackageVersionMismatchError,
 )
 
@@ -590,5 +595,74 @@ def test_package_project_path_error_survives_pickle_round_trip():
     assert isinstance(clone, PackageProjectPathError)
     assert clone.project_path == original.project_path
     assert clone.reason == original.reason
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.3: InvalidShipTargetError ----------------------------------------
+
+def test_invalid_ship_target_error_identifier():
+    exc = InvalidShipTargetError("bogus")
+    assert exc.identifier == "ship:invalid-target"
+
+
+def test_invalid_ship_target_error_stores_attributes():
+    exc = InvalidShipTargetError("bogus")
+    assert exc.value == "bogus"
+
+
+def test_invalid_ship_target_error_message_names_the_value_and_the_three_valid_forms():
+    exc = InvalidShipTargetError("bogus")
+    message = str(exc)
+    assert "bogus" in message
+    assert "pypi" in message
+    assert "conda-forge" in message
+    assert "channel:<name>" in message
+
+
+def test_invalid_ship_target_error_is_a_mason_error():
+    assert issubclass(InvalidShipTargetError, MasonError)
+    with pytest.raises(MasonError):
+        raise InvalidShipTargetError("bogus")
+
+
+def test_invalid_ship_target_error_str_format_is_identifier_colon_space_message():
+    exc = InvalidShipTargetError("bogus")
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_invalid_ship_target_error_rejects_empty_value():
+    with pytest.raises(ValueError):
+        InvalidShipTargetError("")
+
+
+def test_invalid_ship_target_error_rejects_non_string_value():
+    with pytest.raises(ValueError):
+        InvalidShipTargetError(None)  # type: ignore[arg-type]
+
+
+def test_invalid_ship_target_error_rejects_whitespace_only_value():
+    with pytest.raises(ValueError):
+        InvalidShipTargetError("   ")
+
+
+def test_invalid_ship_target_error_survives_deepcopy():
+    """Mirrors `PackageProjectPathError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `value == "ship:invalid-target"` (the identifier), corrupting the
+    clone's `.args`/`repr()` instead of failing loudly."""
+    original = InvalidShipTargetError("bogus")
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, InvalidShipTargetError)
+    assert clone.value == original.value
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_invalid_ship_target_error_survives_pickle_round_trip():
+    original = InvalidShipTargetError("bogus")
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, InvalidShipTargetError)
+    assert clone.value == original.value
     assert clone.identifier == original.identifier
     assert clone.message == original.message
