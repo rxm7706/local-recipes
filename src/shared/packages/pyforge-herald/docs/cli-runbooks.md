@@ -7,14 +7,14 @@ codebase today.
 
 **Scope note.** Herald's Moments 2-4 (Progress/Success/Operations) are
 **local-storage, CLI-triggered** — storage is a local SQLite file,
-`.herald/herald.db` (Story 13.3). Every record (a progress entry, a
-claim, a notice) is created either by an operator running an explicit
-`herald` command by hand, or by CI calling the HMAC-verified webhook
-handlers Story 13.4 built (`src/pyforge/herald/webhook.py`'s
-`on-ship`/`on-pr-close` -- see [The webhook
-endpoint](#the-webhook-endpoint-ci-calls-story-134) below). The webhook is
-built, unit-tested in isolation, and not yet mounted anywhere: there is no
-live HTTP listener in this package today, and no hosted scheduler either
+`.herald/herald.db` (Story 13.3). **Today, every record (a progress entry,
+a claim, a notice) is created by an operator running an explicit `herald`
+command by hand.** A second, CI-triggered path exists in the codebase —
+the HMAC-verified webhook handlers Story 13.4 built
+(`src/pyforge/herald/webhook.py`'s `on-ship`/`on-pr-close`, see [The
+webhook endpoint](#the-webhook-endpoint-ci-calls-story-134) below) — but it
+is built and unit-tested in isolation and **not mounted anywhere**: there is
+no live HTTP listener in this package today, and no hosted scheduler either
 except `herald scheduler run`'s derived-state refresh (Story 13.5, see
 [How to run the scheduled
 job](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
@@ -161,10 +161,26 @@ For when it is mounted, the shape:
   `POST /api/herald/webhooks/on-pr-close` (calls the same `claims.create`
   `herald success create` calls, only when the payload's own `merged` and
   `gates_passed` are both `true` — any other combination is a 202 no-op,
-  never an error).
+  never an error). Mounted under a prefix, the routes are served at
+  `<prefix>/api/herald/webhooks/...` — per the ASGI spec `path` includes
+  `root_path`, and the route literals already begin with `/api`, so
+  mounting under `/api` yields `/api/api/herald/webhooks/...`.
+- **`on-ship` REPLACES the day's record; it does not merge into it.**
+  `progress.upsert` is keyed `(station, date)`, and the handler substitutes
+  the CLI's own flag defaults (`[]`/`0.0`/`0`/`0.0`/`""`) for every field
+  the payload omits — so a second delivery for one station on one day
+  resets whatever the first recorded and is answered `201` either way.
+  Send the day's cumulative figures on every delivery, or fire `on-ship`
+  once per day rather than once per push. Note also that `station` is
+  **not** validated against the known-station list (`progress.upsert`
+  accepts any name by design, unlike the CLI, which rejects an
+  unrecognized one): a typo'd or unrendered station records a row that no
+  station-scoped `herald` command or dashboard will ever surface.
+  Surrounding whitespace is stripped, but case is not normalized.
 - **Auth:** every request must carry an `X-Hub-Signature-256: sha256=<hex>`
   header proving the sender holds the shared secret
-  (`hmac.new(secret, raw_body, hashlib.sha256)`) — a missing or mismatched
+  (`hmac.new(secret, raw_body, hashlib.sha256)`; hex in either case) — a
+  missing or mismatched
   signature is a 401 before the body is even parsed as JSON. The secret
   itself comes from the `HERALD_WEBHOOK_SECRET` env var, read once at
   mount time (`webhook.resolve_webhook_secret`) — never a literal or a
@@ -185,11 +201,20 @@ For when it is mounted, the shape:
   it); an unknown path is a 404 and any method but `POST` a 405, both
   before the body is read at all; a malformed or duplicate-keyed JSON
   body, or one whose fields are the wrong type/out of range, is a 400
-  before any storage call. A redelivery of an already-recorded
+  before any storage call. Also 400, and worth knowing when writing the
+  producer: a `shipped_date` that is not an ISO `YYYY-MM-DD` date (it would
+  otherwise be stored verbatim and break `herald success list
+  --date-range` for everyone afterwards), a blank `event_id` (see below),
+  a blank `station`/`project_name`, and any string field carrying a lone
+  surrogate. A redelivery of an already-recorded
   `on-pr-close` event returns the claim already stored rather than
-  creating a second one — supply a per-event `event_id` in the payload
+  creating a second one — **supply a per-event `event_id`** in the payload
   (a PR number, a delivery id) so two different PRs shipping the same
-  project on the same day are told apart.
+  project on the same day are told apart, and so a redelivery that arrives
+  after midnight UTC still dedupes. Without one, the handler falls back to
+  the payload's `evidence` list plus the date, which discriminates less
+  well; with a *blank* one it would discriminate not at all, which is why
+  that is rejected rather than accepted.
 
 ## How to run the scheduled job (evidence revalidation and progress snapshot)
 

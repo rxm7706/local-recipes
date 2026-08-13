@@ -23,11 +23,11 @@ of a PyForge Guild station's work over time:
    closed) and an archive.
 
 **Architecture, in one sentence:** every record in Moments 2-4 is created
-either by an operator running an explicit `herald` command, or by CI
-calling the HMAC-verified webhook handlers Story 13.4 built (see
-[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134))
-— but that webhook is not mounted into any live host yet (Story 13.6), so
-in practice every record today still comes from an operator's command. A
+today by an operator running an explicit `herald` command — a second,
+CI-triggered path exists in the codebase (the HMAC-verified webhook
+handlers Story 13.4 built, see
+[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)),
+but it is not mounted into any live host yet (Story 13.6). A
 local SQLite database (`.herald/herald.db`, Story 13.3) backs storage, and
 `herald scheduler run` (Story 13.5) keeps evidence validation and the
 progress snapshot current — an operator can point an optional local

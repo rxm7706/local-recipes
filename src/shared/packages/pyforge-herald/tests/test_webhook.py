@@ -17,6 +17,7 @@ import asyncio
 import hashlib
 import hmac
 import json
+import time
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -640,9 +641,11 @@ def test_asgi_app_unexpected_exception_is_a_500_not_an_uncaught_propagation(
     """An ASGI app must always send a response. Anything other than the
     deliberately-handled cases (`_BodyTooLarge`, malformed JSON, each
     handler's own `errors.HeraldError` handling) is a bug this module did
-    not anticipate -- `json.loads` raising something outside its own
-    `except (json.JSONDecodeError, UnicodeDecodeError)` clause stands in
-    for one here."""
+    not anticipate -- `json.loads` raising something outside the
+    `except (ValueError, RecursionError)` clause stands in for one here.
+    (`RecursionError` was the original stand-in and is now a real, handled
+    400 -- deep nesting is malformed input, not a bug -- so the stand-in
+    has to be something genuinely unanticipated.)"""
     secret = b"shared-secret"
     app = webhook.create_app(tmp_path, secret)
     body = json.dumps({"station": "warden"}).encode("utf-8")
@@ -652,7 +655,7 @@ def test_asgi_app_unexpected_exception_is_a_500_not_an_uncaught_propagation(
     )
 
     def _boom_loads(*args, **kwargs):
-        raise RecursionError("not a JSONDecodeError or UnicodeDecodeError")
+        raise RuntimeError("neither a ValueError nor a RecursionError")
 
     monkeypatch.setattr(webhook.json, "loads", _boom_loads)
     recorder = _Recorder()
@@ -942,3 +945,326 @@ def test_asgi_app_send_failure_mid_response_does_not_start_a_second_response(
         asyncio.run(app(scope, _receive_once(body), flaky_send))  # must not raise
     assert sent == ["http.response.start", "http.response.body"]
     assert len([r for r in caplog.records if r.levelname == "ERROR"]) == 1
+
+
+# --- third review pass: trust, storability, and routing boundaries -----------
+
+
+def test_verify_signature_accepts_an_uppercase_hex_signature():
+    """`hexdigest()` is lowercase, but `_HEX_DIGITS` admits uppercase
+    through the shape gate -- so an otherwise-correct signature from a
+    producer rendering hex uppercase (Go's `%X`, Java's `%02X`,
+    PowerShell's `[BitConverter]::ToString`) reached `compare_digest` and
+    was guaranteed to fail, answering a bare 401 and sending whoever
+    writes Story 13.6's producer hunting a secret mismatch that never
+    happened."""
+    secret, body = b"shared-secret", b'{"station":"warden"}'
+    lower = _sign(secret, body)
+    upper = "sha256=" + lower[len("sha256=") :].upper()
+    assert webhook.verify_signature(secret, body, upper) is True
+    assert webhook.verify_signature(secret, body, lower) is True
+
+
+@pytest.mark.parametrize(
+    "shipped_date", ["13/08/2026", "yesterday", "", "2026-13-45", "2026-08-13T10:00:00Z"]
+)
+def test_handle_on_pr_close_rejects_a_malformed_shipped_date(
+    tmp_path: Path, shipped_date: str
+):
+    """`claims.create` performs NO date validation, and `claims.list_claims`
+    then calls `date.fromisoformat` on whatever was stored with no guard --
+    so one such delivery made every subsequent `herald success list
+    --date-range ...` raise a bare `ValueError` out of `cli.main`
+    (`cli.dispatch` translates only `HeraldError`). Type-checking the field
+    was never enough."""
+    result = webhook.handle_on_pr_close(
+        tmp_path,
+        {
+            "merged": True,
+            "gates_passed": True,
+            "project_name": "Marshal",
+            "shipped_date": shipped_date,
+        },
+    )
+    assert result.status == 400
+    assert "shipped_date" in result.body["error"]
+    assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
+
+
+def test_handle_on_pr_close_rejects_a_blank_event_id(tmp_path: Path):
+    """A blank `event_id` is strictly WORSE than none: `_claim_id_for`
+    branches on `is not None`, so `""` -- what an unset workflow input or a
+    `${{ github.event.number }}` on a non-PR trigger renders to -- became
+    the CONSTANT discriminator `"event:"` AND suppressed the evidence
+    fallback, collapsing every same-day ship for a project onto one claim,
+    answered 201, with the loser's evidence dropped."""
+    base = {"merged": True, "gates_passed": True, "project_name": "Marshal"}
+    first = webhook.handle_on_pr_close(
+        tmp_path,
+        {
+            **base,
+            "event_id": "",
+            "evidence": [{"type": "other", "url": "https://ci/pr/100", "label": "PR"}],
+        },
+    )
+    second = webhook.handle_on_pr_close(
+        tmp_path,
+        {
+            **base,
+            "event_id": "   ",
+            "evidence": [{"type": "other", "url": "https://ci/pr/101", "label": "PR"}],
+        },
+    )
+    assert (first.status, second.status) == (400, 400)
+    assert "event_id" in first.body["error"]
+    assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"station": "war\ud800den"},
+        {"station": "warden", "unblock_narrative": "\ud800"},
+        {"station": "warden", "shipped_capabilities": ["ok", "\ud800"]},
+    ],
+)
+def test_handle_on_ship_rejects_an_unstorable_string_as_400(
+    tmp_path: Path, payload: Mapping[str, Any], caplog
+):
+    """`json.loads` accepts a lone surrogate escape and hands back a `str`
+    no UTF-8 encoder will take. Left to `progress.upsert`, it arrived as a
+    `HeraldError` indistinguishable from a transient storage fault: 3
+    attempts, ~3s of real blocking, one ERROR alert blaming storage for a
+    payload fault, and the 500 this module's contract invites CI to re-fire
+    forever -- for a request that can never succeed. Same close
+    `_problem_number` already made for the numeric fields."""
+    sleeps: list[float] = []
+    with caplog.at_level("ERROR", logger=webhook.logger.name):
+        result = webhook.handle_on_ship(tmp_path, payload, sleep=sleeps.append)
+    assert result.status == 400
+    assert "UTF-8" in result.body["error"]
+    assert sleeps == []
+    assert [r for r in caplog.records if r.levelname == "ERROR"] == []
+    assert progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH) == []
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"project_name": "ship-\ud800"},
+        {
+            "project_name": "Marshal",
+            "evidence": [{"type": "other", "url": "https://\ud800", "label": "l"}],
+        },
+    ],
+)
+def test_handle_on_pr_close_rejects_an_unstorable_string_as_400(
+    tmp_path: Path, extra: Mapping[str, Any], caplog
+):
+    """The same close on the claim side -- and here it never even reached
+    the retry helper: `_claim_id_for` feeds these values to `uuid.uuid5`,
+    which encodes UTF-8, so the `UnicodeEncodeError` escaped as a plain
+    exception into the catch-all 500 plus one `unexpected_exception` ERROR
+    record per delivery."""
+    sleeps: list[float] = []
+    with caplog.at_level("ERROR", logger=webhook.logger.name):
+        result = webhook.handle_on_pr_close(
+            tmp_path,
+            {"merged": True, "gates_passed": True, **extra},
+            sleep=sleeps.append,
+        )
+    assert result.status == 400
+    assert "UTF-8" in result.body["error"]
+    assert sleeps == []
+    assert [r for r in caplog.records if r.levelname == "ERROR"] == []
+    assert claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH) == []
+
+
+def test_handle_on_ship_stores_the_station_stripped(tmp_path: Path):
+    """The validator already `.strip()`s to reject a blank station, but the
+    raw value was stored -- so `"warden"`, `" warden"` and `"warden\\n"`
+    became three separate rows, and `progress.latest_for_station` matches
+    exactly, making two of those three ships records no station-scoped
+    reader or dashboard can ever find. (Whitespace normalization is not the
+    "Never re-validate against `progress.STATIONS`" constraint: an
+    unrecognized station is still accepted, and case is left alone.)"""
+    for station in ("warden", " warden", "warden\n", "\twarden "):
+        assert webhook.handle_on_ship(tmp_path, {"station": station}).status == 201
+    stored = progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)
+    assert [r.station for r in stored] == ["warden"]
+    assert progress.latest_for_station(
+        tmp_path / progress.DEFAULT_PROGRESS_PATH, "warden"
+    ) is not None
+
+
+def test_create_app_rejects_a_str_secret(tmp_path: Path):
+    """The likelier half of the "resolved some other way" mistake the
+    blank-secret guard exists for: `os.environ["HERALD_WEBHOOK_SECRET"]`
+    passed directly is a `str`, which is truthy, so it built an `app` that
+    then died in `hmac.new` on EVERY request -- a silent 100% outage
+    answered 500, one `unexpected_exception` ERROR record per delivery."""
+    with pytest.raises(HeraldError, match="must be bytes"):
+        webhook.create_app(tmp_path, "shared-secret")  # type: ignore[arg-type]
+
+
+def test_asgi_app_routes_correctly_when_root_path_is_a_bare_slash(tmp_path: Path):
+    """A host started with `--root-path /` reports `root_path == "/"`,
+    which as a bare string prefix matched every path and left
+    `api/herald/...` with no leading slash -- 404ing every delivery under
+    an ordinary configuration. Stripping on segment boundaries, after
+    normalizing the trailing slash away, is what the prefix means."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden"}).encode("utf-8")
+    scope = _scope(
+        webhook.ON_SHIP_PATH,
+        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+    )
+    recorder = _Recorder()
+    asyncio.run(app({**scope, "root_path": "/"}, _receive_once(body), recorder))
+    assert recorder.status == 201
+
+
+def test_asgi_app_declines_a_websocket_scope_instead_of_returning_silently(
+    tmp_path: Path,
+):
+    """ASGI requires a websocket app to answer the handshake; returning
+    without one is an application error the host reports (uvicorn: "ASGI
+    callable returned without sending handshake") once per connection.
+    This HTTP-only leaf app declines the connection instead."""
+    app = webhook.create_app(tmp_path, b"secret")
+    recorder = _Recorder()
+    scope = {"type": "websocket", "path": webhook.ON_SHIP_PATH, "headers": []}
+    asyncio.run(app(scope, _boom_receive, recorder))
+    assert [m["type"] for m in recorder.messages] == ["websocket.close"]
+
+
+def test_asgi_app_deeply_nested_json_is_400_not_a_500_with_an_alert(
+    tmp_path: Path, caplog
+):
+    """`[` x 100_000 is only 200 KB -- well under `MAX_BODY_BYTES`, so it
+    passes the 413 gate and the HMAC check, then blows the stack in
+    `json.loads`. `RecursionError` is not a `ValueError`, so it fell to the
+    last-resort guard as a 500 plus one `unexpected_exception` ERROR record
+    -- for input that is simply malformed, and which this module's contract
+    then invites CI to re-fire forever, one record each time.
+    `progress.py`/`claims.py` already pair the two exceptions when they
+    parse, for exactly this."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = b'{"station":"warden","x":' + b"[" * 100_000 + b"]" * 100_000 + b"}"
+    scope = _scope(
+        webhook.ON_SHIP_PATH,
+        headers=[(b"x-hub-signature-256", _sign(secret, body).encode())],
+    )
+    recorder = _Recorder()
+    with caplog.at_level("ERROR", logger=webhook.logger.name):
+        asyncio.run(app(scope, _receive_once(body), recorder))
+    assert recorder.status == 400
+    assert [r for r in caplog.records if r.levelname == "ERROR"] == []
+
+
+def test_asgi_app_assembles_a_chunked_body_and_stays_linear(tmp_path: Path):
+    """`_read_body` accumulated with `body += chunk` on immutable `bytes`,
+    which copies the whole accumulated body per chunk -- quadratic in the
+    chunk count. `MAX_BODY_BYTES` bounds the memory but not that work, and
+    this is the one part of the request that cannot leave the event-loop
+    thread, so an UNAUTHENTICATED caller could stall every other in-flight
+    request just by streaming a capped-size body in tiny chunks. Asserts
+    both halves: the join reassembles correctly, and the read stays linear.
+    Measured on this body (800_000 one-byte chunks, just under
+    `MAX_BODY_BYTES`): 16.57s before the fix, 0.23s after -- so the bound
+    below discriminates by ~4x against the old behavior while leaving ~8x
+    of headroom for a slow machine."""
+    secret = b"shared-secret"
+    app = webhook.create_app(tmp_path, secret)
+    body = json.dumps({"station": "warden", "unblock_narrative": "x" * 800_000}).encode(
+        "utf-8"
+    )
+    signature = _sign(secret, body).encode()
+
+    def receive_in_single_bytes():
+        remaining = iter(range(len(body)))
+
+        async def receive() -> dict[str, Any]:
+            index = next(remaining)
+            return {
+                "type": "http.request",
+                "body": body[index : index + 1],
+                "more_body": index < len(body) - 1,
+            }
+
+        return receive
+
+    recorder = _Recorder()
+    started = time.monotonic()
+    asyncio.run(
+        app(
+            _scope(
+                webhook.ON_SHIP_PATH, headers=[(b"x-hub-signature-256", signature)]
+            ),
+            receive_in_single_bytes(),
+            recorder,
+        )
+    )
+    elapsed = time.monotonic() - started
+    # The signature only verifies if every chunk was reassembled in order.
+    assert recorder.status == 201
+    (stored,) = progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)
+    assert stored.unblock_narrative == "x" * 800_000
+    assert elapsed < 4.0, f"quadratic body accumulation is back ({elapsed:.1f}s)"
+
+
+def test_claim_id_with_an_event_id_does_not_depend_on_the_date(tmp_path: Path):
+    """A redelivery is by design a LATER call (the non-2xx contract invites
+    CI to re-fire), and `shipped_date` falls back to the SERVER's clock
+    when the payload omits it -- so folding a server-computed date into the
+    name made a redelivery that merely crossed UTC midnight compute a
+    DIFFERENT id and create the duplicate the deterministic id exists to
+    prevent. `event_id` already identifies the event, so the date is left
+    out on that branch; without one, the evidence fallback still needs it."""
+    payload = {
+        "merged": True,
+        "gates_passed": True,
+        "project_name": "Marshal",
+        "event_id": "pr-100",
+    }
+    assert webhook._claim_id_for(payload, "2026-08-13") == webhook._claim_id_for(
+        payload, "2026-08-14"
+    )
+    no_event = {k: v for k, v in payload.items() if k != "event_id"}
+    assert webhook._claim_id_for(no_event, "2026-08-13") != webhook._claim_id_for(
+        no_event, "2026-08-14"
+    )
+
+
+def test_handle_on_pr_close_redelivery_across_utc_midnight_is_idempotent(
+    tmp_path: Path, monkeypatch
+):
+    """The same property end to end: the first delivery lands at 23:59:50Z
+    and the re-fire at 00:00:20Z the next day. Before the fix this stored
+    two claims with two `shipped_date`s for one merged PR."""
+    payload = {
+        "merged": True,
+        "gates_passed": True,
+        "project_name": "Marshal",
+        "event_id": "pr-100",
+    }
+    clock = iter(
+        [
+            datetime(2026, 8, 13, 23, 59, 50, tzinfo=UTC),
+            datetime(2026, 8, 14, 0, 0, 20, tzinfo=UTC),
+        ]
+    )
+
+    class _FakeDatetime:
+        @staticmethod
+        def now(tz=None):
+            return next(clock)
+
+    monkeypatch.setattr(webhook, "datetime", _FakeDatetime)
+    first = webhook.handle_on_pr_close(tmp_path, payload)
+    second = webhook.handle_on_pr_close(tmp_path, dict(payload))
+    assert (first.status, second.status) == (201, 201)
+    assert first.body["claim_id"] == second.body["claim_id"]
+    assert len(claims.read_all(tmp_path / claims.DEFAULT_CLAIMS_PATH)) == 1

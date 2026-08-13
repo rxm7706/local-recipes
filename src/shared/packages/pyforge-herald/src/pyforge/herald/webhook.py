@@ -80,13 +80,26 @@ a non-2xx response) is a fresh top-level call with its own fresh
 ``uuid.uuid4()`` id, and would sail straight past the ``read_one`` guard
 into a second ``claims.create``. So the claim id is instead derived
 DETERMINISTICALLY, by ``_claim_id_for``, from what identifies the event:
-the project, the shipped date, and a per-event discriminator (the
-payload's own ``event_id`` when it carries one, else its ``evidence``
-list). A genuine redelivery of the same logical event computes the SAME
-id, and the existing idempotency guard catches it across the HTTP boundary
-too -- while two DIFFERENT ships for one project on one day still compute
-two ids, which keying on project+date alone did not, silently swallowing
-the second ship behind a ``201``.
+the project plus either the payload's own ``event_id`` (the precise
+answer, and what Story 13.6's workflow step should send) or, failing
+that, the shipped date and the ``evidence`` list. A genuine redelivery of
+the same logical event computes the SAME id, and the existing idempotency
+guard catches it across the HTTP boundary too -- while two DIFFERENT
+ships for one project on one day still compute two ids, which keying on
+project+date alone did not, silently swallowing the second ship behind a
+``201``.
+
+**Same-day ``on-ship`` deliveries REPLACE, they do not merge.**
+``handle_on_ship`` mirrors ``cli._run_progress_update`` exactly, as
+Boundaries & Constraints requires -- including its flag defaults -- and
+``progress.upsert``'s ``(station, date)`` key makes a second delivery for
+one station on one day an in-place replace. So a second delivery that
+OMITS a field resets that field to its default rather than preserving
+what the first delivery recorded. That is the specified behavior, not an
+oversight, but it makes the payload the whole truth for the day: whoever
+wires the workflow step (Story 13.6) must send the day's cumulative
+figures on every delivery, or fire ``on-ship`` once per day rather than
+once per push.
 
 **Alerting.** No email/Slack/other operator-alert channel exists anywhere
 in this repo to build against, so retries-exhausted is reported the one
@@ -127,7 +140,7 @@ import time
 import uuid
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -198,6 +211,17 @@ def verify_signature(secret: bytes, body: bytes, signature_header: str | None) -
     raising, so the ASGI boundary has one uniform "was this call proven?"
     answer to act on.
 
+    The ``<hex>`` half is case-folded before comparison: ``hexdigest()``
+    is lowercase, so an otherwise-correct signature from a producer that
+    renders hex uppercase (Go's ``%X``, Java's ``String.format("%02X")``,
+    PowerShell's ``[BitConverter]::ToString``) would fail with a bare 401
+    and send whoever writes Story 13.6's producer hunting a secret
+    mismatch that never happened. ``_HEX_DIGITS`` already admits uppercase
+    through the shape gate, so accepting it here is what that set implies;
+    the fold runs on the caller's own input only, so it is not
+    secret-dependent and does not affect ``compare_digest``'s
+    constant-time property.
+
     The ``<hex>`` half is shape-checked (exactly ``_SIGNATURE_HEX_LEN``
     hex digits) BEFORE ``compare_digest`` sees it, because
     ``compare_digest`` on two ``str``s RAISES ``TypeError`` for a
@@ -216,7 +240,7 @@ def verify_signature(secret: bytes, body: bytes, signature_header: str | None) -
     if len(provided) != _SIGNATURE_HEX_LEN or not _HEX_DIGITS.issuperset(provided):
         return False
     expected = hmac.new(secret, body, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, provided)
+    return hmac.compare_digest(expected, provided.lower())
 
 
 def resolve_webhook_secret(env: Mapping[str, str] | None = None) -> bytes:
@@ -323,6 +347,34 @@ def _log_unexpected_exception(event: str, exc: BaseException) -> None:
     )
 
 
+def _problem_text(field: str, value: object) -> str | None:
+    """The shared type/storability check for one string payload field, or
+    ``None`` when it is acceptable.
+
+    Storability matters as much as type. ``json.loads`` accepts a lone
+    surrogate escape (``"\\ud800"``) and hands back a ``str`` no UTF-8
+    encoder will take; ``progress.py`` documents that it surfaces from
+    SQLite's TEXT binding as a ``UnicodeEncodeError`` wrapped into a
+    ``HeraldError`` -- indistinguishable from a transient storage fault.
+    Left to that layer, the caller burns all 3 retry attempts (~3s of real
+    blocking), raises one ERROR alert blaming storage for a fault that is
+    really the payload's, and returns the 500 this module's own contract
+    invites CI to re-fire forever, for a request that can never succeed.
+    That is verbatim the anti-pattern ``_problem_number``'s docstring says
+    its range/sign checks exist to close -- this is the same close for the
+    string fields. ``_claim_id_for`` has its own stake in it too: it feeds
+    these values to ``uuid.uuid5``, which encodes UTF-8 and would raise
+    outside ``HeraldError`` entirely, escaping even the retry helper's
+    translation into an opaque 500."""
+    if not isinstance(value, str):
+        return f"field {field!r} must be a string"
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return f"field {field!r} must be valid UTF-8"
+    return None
+
+
 # --- on-ship -----------------------------------------------------------------
 
 
@@ -373,8 +425,9 @@ def _problem_on_ship(payload: object) -> str | None:
         return "payload is not a JSON object"
     if "station" not in payload:
         return "field 'station' is required"
-    if not isinstance(payload["station"], str):
-        return "field 'station' must be a string"
+    problem = _problem_text("station", payload["station"])
+    if problem is not None:
+        return problem
     # NOT re-validated against `progress.STATIONS` (Boundaries &
     # Constraints' explicit "Never"): `progress.upsert` accepts any
     # station name by design. A blank one is a different question -- it is
@@ -385,8 +438,14 @@ def _problem_on_ship(payload: object) -> str | None:
         return "field 'station' must not be blank"
     if "shipped_capabilities" in payload:
         caps = payload["shipped_capabilities"]
-        if not isinstance(caps, list) or not all(isinstance(c, str) for c in caps):
+        if not isinstance(caps, list):
             return "field 'shipped_capabilities' must be an array of strings"
+        for cap in caps:
+            if not isinstance(cap, str):
+                return "field 'shipped_capabilities' must be an array of strings"
+            problem = _problem_text("shipped_capabilities entry", cap)
+            if problem is not None:
+                return problem
     for field, integer in (
         ("compute_hours", False),
         ("token_spend", True),
@@ -396,8 +455,10 @@ def _problem_on_ship(payload: object) -> str | None:
             problem = _problem_number(field, payload[field], integer=integer)
             if problem is not None:
                 return problem
-    if "unblock_narrative" in payload and not isinstance(payload["unblock_narrative"], str):
-        return "field 'unblock_narrative' must be a string"
+    if "unblock_narrative" in payload:
+        problem = _problem_text("unblock_narrative", payload["unblock_narrative"])
+        if problem is not None:
+            return problem
     return None
 
 
@@ -412,18 +473,37 @@ def handle_on_ship(
     ``herald progress <station> --update`` makes, with the same flag
     defaults (``[]``/``0.0``/``0``/``0.0``/``""``) and a server-computed
     ``date`` (never caller-supplied, mirroring ``cli._run_progress_update``
-    exactly)."""
+    exactly).
+
+    That parity is over the ``upsert`` CALL, not over the whole CLI path.
+    Two deliberate divergences: the CLI calls ``_validate_station`` first
+    and rejects anything outside ``progress.STATIONS``, which Boundaries &
+    Constraints names an explicit "Never" here (``progress.upsert`` accepts
+    any station by design; the "did you mean" hint is CLI-only sugar) -- so
+    an unrecognized station is accepted and recorded, and an operator
+    reading it back through a station-scoped CLI surface will not find it.
+    And a same-day second delivery REPLACES rather than merges (see the
+    module docstring's "Same-day ``on-ship`` deliveries" section)."""
     problem = _problem_on_ship(payload)
     if problem is not None:
         return WebhookResponse(400, {"error": problem})
     assert isinstance(payload, Mapping)
     progress_path = repo_root / progress.DEFAULT_PROGRESS_PATH
     on_date = datetime.now(UTC).date().isoformat()
+    # Stored stripped, not raw. The validator above already calls `.strip()`
+    # to reject a blank station, so storing the unstripped value made
+    # `"warden"`, `" warden"` and `"warden\n"` three separate rows -- and
+    # `progress.latest_for_station` matches exactly, so two of those three
+    # ships become records no station-scoped reader or dashboard can ever
+    # find. Whitespace normalization is NOT the "Never re-validate against
+    # `progress.STATIONS`" constraint: an unrecognized station is still
+    # accepted, and case is deliberately left alone.
+    station = payload["station"].strip()
 
     def attempt() -> progress.Progress:
         return progress.upsert(
             progress_path,
-            station=payload["station"],
+            station=station,
             date=on_date,
             shipped_capabilities=list(payload.get("shipped_capabilities", [])),
             compute_hours=payload.get("compute_hours", 0.0),
@@ -471,21 +551,49 @@ def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
     function could catch up front."""
     if "project_name" not in payload:
         return "field 'project_name' is required"
-    if not isinstance(payload["project_name"], str):
-        return "field 'project_name' must be a string"
+    problem = _problem_text("project_name", payload["project_name"])
+    if problem is not None:
+        return problem
     if not payload["project_name"].strip():
         return "field 'project_name' must not be blank"
-    if payload.get("shipped_date") is not None and not isinstance(
-        payload["shipped_date"], str
-    ):
-        return "field 'shipped_date' must be a string"
+    if payload.get("shipped_date") is not None:
+        problem = _problem_text("shipped_date", payload["shipped_date"])
+        if problem is not None:
+            return problem
+        # Format-checked, not merely type-checked. `claims.create` performs
+        # NO date validation (it validates only `project_name` and evidence
+        # `type`), so whatever arrives here is stored verbatim -- and
+        # `claims.list_claims` then calls `date.fromisoformat` on it with no
+        # guard, so a single `"13/08/2026"` delivery makes every subsequent
+        # `herald success list --date-range ...` raise a bare `ValueError`
+        # out of `cli.main` (`cli.dispatch` translates only `HeraldError`).
+        # One poisoned row breaks the surface for every operator afterwards,
+        # which is exactly the "catch it here rather than let it sail past
+        # into storage" rule the blank-`project_name` check below follows.
+        try:
+            date.fromisoformat(payload["shipped_date"])
+        except ValueError:
+            return "field 'shipped_date' must be an ISO 8601 date (YYYY-MM-DD)"
     # Optional, and the caller's own identifier for this event (see
     # `_claim_id_for`) -- it only has to be stable across a redelivery and
     # distinct between events, so any string will do, but it must BE a
     # string: a mutable/unordered JSON value would not render into a
     # stable uuid5 name.
-    if payload.get("event_id") is not None and not isinstance(payload["event_id"], str):
-        return "field 'event_id' must be a string"
+    if payload.get("event_id") is not None:
+        problem = _problem_text("event_id", payload["event_id"])
+        if problem is not None:
+            return problem
+        # A BLANK one is worse than none at all. `_claim_id_for` branches on
+        # `event_id is not None`, so `""` -- what an unset workflow input or
+        # a `${{ github.event.number }}` on a non-PR trigger renders to --
+        # becomes the CONSTANT discriminator `"event:"` for every delivery
+        # AND suppresses the evidence fallback, collapsing every same-day
+        # ship for a project onto one claim, answered 201, with the loser's
+        # evidence dropped. That is the "an unrecorded ship is
+        # indistinguishable from no ship" failure this story exists to
+        # close, so it is a 400 rather than a silent merge.
+        if not payload["event_id"].strip():
+            return "field 'event_id' must not be blank"
     if "evidence" in payload:
         entries = payload["evidence"]
         if not isinstance(entries, list):
@@ -498,6 +606,9 @@ def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
                 return f"each 'evidence' entry is missing field(s) {sorted(missing)}"
             if not all(isinstance(entry[key], str) for key in _EVIDENCE_FIELDS):
                 return "each 'evidence' entry's type/url/label must be strings"
+            for key in sorted(_EVIDENCE_FIELDS):
+                if _problem_text(f"evidence {key}", entry[key]) is not None:
+                    return f"each 'evidence' entry's {key} must be valid UTF-8"
             if entry["type"] not in claims.EVIDENCE_TYPES:
                 return (
                     f"each 'evidence' entry's type must be one of "
@@ -528,27 +639,40 @@ def _claim_id_for(payload: Mapping[str, Any], shipped_date: str) -> str:
 
     - ``event_id`` when the payload carries one -- the caller's own
       identifier for the event (a PR number, a delivery id). This is the
-      precise answer, and what Story 13.6's workflow step should send.
-    - otherwise the ``evidence`` list, canonically encoded -- CI's PR-close
-      payload carries the PR's own URL there, so distinct PRs differ here
-      even with no ``event_id``, while a redelivery of the identical body
-      still computes the identical id.
+      precise answer, and what Story 13.6's workflow step should send. It
+      already identifies the event on its own, so the date is deliberately
+      left OUT of the name on this branch: ``shipped_date`` falls back to
+      the SERVER's clock when the payload omits it, and a redelivery is by
+      design a LATER call (the module's own non-2xx contract invites CI to
+      re-fire), so folding a server-computed date in made a redelivery that
+      merely crossed UTC midnight compute a different id and create the
+      duplicate this whole mechanism exists to prevent.
+    - otherwise the ``evidence`` list, canonically encoded, keyed with the
+      date -- CI's PR-close payload carries the PR's own URL there, so
+      distinct PRs differ here even with no ``event_id``, while a
+      redelivery of the identical body still computes the identical id.
+      This branch keeps the date because evidence alone is a weaker
+      identity: without it, two genuinely separate ships that happen to
+      cite the same evidence on different days would collapse into one.
+      A midnight-crossing redelivery is still a duplicate here, which is
+      one more reason Story 13.6's workflow step should send ``event_id``.
 
     Two same-day ships for one project that supply neither an ``event_id``
     nor any distinguishing evidence remain indistinguishable by
     construction -- nothing in such a payload tells them apart."""
     event_id = payload.get("event_id")
     if event_id is not None:
-        discriminator = f"event:{event_id}"
+        key = f"event:{event_id}"
     else:
-        discriminator = "evidence:" + json.dumps(
+        evidence = json.dumps(
             [
                 [entry["type"], entry["url"], entry["label"]]
                 for entry in payload.get("evidence", [])
             ],
             separators=(",", ":"),
         )
-    name = f"herald-claim:{payload['project_name']}|{shipped_date}|{discriminator}"
+        key = f"{shipped_date}|evidence:{evidence}"
+    name = f"herald-claim:{payload['project_name']}|{key}"
     return str(uuid.uuid5(uuid.NAMESPACE_URL, name))
 
 
@@ -659,8 +783,22 @@ async def _read_body(receive: Receive) -> bytes:
     ``_BodyTooLarge`` once the accumulated size exceeds ``MAX_BODY_BYTES``,
     checked on every chunk so a caller cannot stream past the cap one
     ``more_body: true`` message at a time, and ``_ClientDisconnected`` if
-    the peer disconnects before the body is complete."""
-    body = b""
+    the peer disconnects before the body is complete.
+
+    Chunks are collected and joined ONCE rather than accumulated with
+    ``body += chunk``: ``bytes`` is immutable, so repeated concatenation
+    copies the whole accumulated body per chunk, which is quadratic in the
+    number of chunks. ``MAX_BODY_BYTES`` bounds the memory but not that
+    work, and this coroutine is awaited directly on the event-loop thread
+    (it is the one part of the request that cannot go through
+    ``asyncio.to_thread``, since it IS the receive side) -- so an
+    UNAUTHENTICATED caller, before any signature is checked, could stall
+    every other in-flight request just by streaming a capped-size body in
+    tiny chunks. Measured before this fix: 1 MB delivered as 1-byte chunks
+    burned ~29s of event-loop CPU before the 413. Joining once makes the
+    same request linear."""
+    chunks: list[bytes] = []
+    size = 0
     more_body = True
     while more_body:
         message = await receive()
@@ -668,11 +806,13 @@ async def _read_body(receive: Receive) -> bytes:
             raise _ClientDisconnected(
                 "client disconnected before the body was complete"
             )
-        body += message.get("body", b"")
-        if len(body) > MAX_BODY_BYTES:
+        chunk = message.get("body", b"")
+        size += len(chunk)
+        if size > MAX_BODY_BYTES:
             raise _BodyTooLarge(f"request body exceeds {MAX_BODY_BYTES} bytes")
+        chunks.append(chunk)
         more_body = message.get("more_body", False)
-    return body
+    return b"".join(chunks)
 
 
 def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -732,6 +872,16 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
     still a valid HMAC), exactly the forgery the module docstring's "HMAC,
     not ingress" section warns about.
 
+    Refuses a non-``bytes`` ``secret`` for the same reason, and it is the
+    likelier half of that mistake: a caller who bypasses
+    ``resolve_webhook_secret`` most plausibly passes
+    ``os.environ["HERALD_WEBHOOK_SECRET"]`` directly, which is a ``str``.
+    That is truthy, so the emptiness guard alone let it through, returning
+    an ``app`` that then died in ``hmac.new`` on EVERY request -- a silent
+    100% outage answered 500, with one ``unexpected_exception`` ERROR
+    record per delivery flooding this module's only alert channel. Failing
+    at construction turns that into one loud error at mount time.
+
     Route/method/signature/body-shape checks run in the I/O matrix's own
     order: unknown path -> 404, wrong method on a known path -> 405 (both
     before the body is read at all); then the body is read (-> 413 if it
@@ -741,6 +891,13 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
     further structural validation -> 400, or the real storage work ->
     201/202/500). Any other exception on that path is a 500 (see the
     module docstring's "Uncaught exceptions" section)."""
+    if not isinstance(secret, (bytes, bytearray)):
+        raise errors.HeraldError(
+            f"create_app was given a {type(secret).__name__} webhook secret -- "
+            f"it must be bytes (hmac.new rejects anything else, so every "
+            f"request would 500); use resolve_webhook_secret, or encode it "
+            f"yourself"
+        )
     if not secret:
         raise errors.HeraldError(
             "create_app was given a blank webhook secret -- verify_signature "
@@ -750,15 +907,41 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
         )
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
-        if scope.get("type") != "http":
+        scope_type = scope.get("type")
+        if scope_type == "websocket":
+            # ASGI requires a websocket app to answer the handshake, with
+            # an accept or a close; returning without one is an application
+            # error the host reports (uvicorn: "ASGI callable returned
+            # without sending handshake") once per connection. This is an
+            # HTTP-only leaf app, so it declines the connection outright
+            # rather than leaving the host to raise -- the same "always
+            # answer" reasoning as the HTTP guard further down.
+            await send({"type": "websocket.close", "code": 1000})
+            return
+        if scope_type != "http":
             return  # e.g. an ASGI "lifespan" scope -- nothing for a leaf app to do
         # `scope["path"]` includes the prefix the host mounted this app
         # under, so an exact match against the route literals 404s every
         # delivery the moment Story 13.6 mounts it anywhere but the root.
         # `root_path` is that prefix; strip it before routing.
+        #
+        # Stripped on SEGMENT boundaries, and with a trailing slash
+        # normalized away first. A host started with `--root-path /`
+        # reports `root_path == "/"`, which as a bare string prefix matches
+        # every path and left `api/herald/...` with no leading slash --
+        # 404ing every delivery under a perfectly ordinary configuration.
+        # A non-boundary prefix (mounted at `/her`, request for `/herald`)
+        # was likewise mangled into a bogus route rather than declined.
+        #
+        # Note for Story 13.6: per the ASGI spec `path` INCLUDES
+        # `root_path`, so mounting under a prefix serves these routes at
+        # `<prefix>/api/herald/webhooks/...` -- the route literals already
+        # begin with `/api`, so mounting under `/api` yields
+        # `/api/api/herald/webhooks/...`. That is correct, not a bug, but
+        # it is worth knowing before choosing the mount point.
         path = scope.get("path") or ""
-        root_path = scope.get("root_path") or ""
-        if root_path and path.startswith(root_path):
+        root_path = (scope.get("root_path") or "").rstrip("/")
+        if root_path and (path == root_path or path.startswith(root_path + "/")):
             path = path[len(root_path) :] or "/"
         if path == ON_SHIP_PATH:
             handler: Callable[..., WebhookResponse] = handle_on_ship
@@ -815,9 +998,18 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
             try:
                 # `ValueError` covers both `json.JSONDecodeError` and the
                 # `UnicodeDecodeError` of a non-UTF-8 body, and also the
-                # duplicate-key rejection from the hook.
+                # duplicate-key rejection from the hook. `RecursionError`
+                # joins it for the same reason `progress.py` and
+                # `claims.py` already pair the two when they parse: deeply
+                # nested JSON (`[` x 100_000 is only 200 KB, well under
+                # `MAX_BODY_BYTES`) blows the stack instead of raising a
+                # decode error, and without this it fell through to the
+                # last-resort guard as a 500 plus one `unexpected_exception`
+                # ERROR record -- for input that is simply malformed, and
+                # which this module's own contract then invites CI to
+                # re-fire forever, one alert record each time.
                 payload = json.loads(body, object_pairs_hook=_reject_duplicate_keys)
-            except ValueError:
+            except (ValueError, RecursionError):
                 await fail(400, {"error": "malformed JSON payload"})
                 return
 
