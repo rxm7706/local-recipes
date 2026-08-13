@@ -29,6 +29,7 @@ import re
 from typing import Any, Callable, Sequence
 
 import duckdb
+from pyforge.core.errors import PyforgeError
 
 from .embedding import Embedder, HashingEmbedder
 
@@ -55,10 +56,13 @@ def _valid_identifier(value: str, what: str) -> str:
     return value
 
 
-class VssNotProvisionedError(RuntimeError):
+class VssNotProvisionedError(PyforgeError, RuntimeError):
     """Raised when ``vss`` cannot be LOADed offline — the extension is not provisioned in the
     local cache and the consumer path must NOT reach for the network (AD-13). The message names
-    the one-time provisioning step (:func:`provision_vss`, DW-F3-2)."""
+    the one-time provisioning step (:func:`provision_vss`, DW-F3-2).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def load_vss_offline(con: "duckdb.DuckDBPyConnection") -> None:

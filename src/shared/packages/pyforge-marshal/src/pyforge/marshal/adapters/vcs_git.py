@@ -76,11 +76,16 @@ import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 
+from pyforge.core.errors import PyforgeError
+
 from ..ports.vcs import WorktreeEntry
 
 
-class VcsCommandError(Exception):
-    """Raised when a ``git`` invocation fails: a non-zero exit (locked
+class VcsCommandError(PyforgeError, Exception):
+    """Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO.
+
+    Raised when a ``git`` invocation fails: a non-zero exit (locked
     index, a permission error, an ambiguous ref, ``start``/``repo_root`` not
     being inside a git repository, a worktree conflict), a missing ``git``
     executable, or a hung process exceeding its timeout tier

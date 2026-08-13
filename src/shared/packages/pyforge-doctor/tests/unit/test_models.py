@@ -12,6 +12,7 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.doctor.models import (
     DoctorReport,
@@ -405,6 +406,17 @@ def test_minimal_check_report_fixture_validates_against_schema():
 
 def test_minimal_diagnose_report_fixture_validates_against_schema():
     jsonschema.validate(_fixture("minimal_diagnose_report.json"), _schema())
+
+
+def test_sample_report_with_finding_fixture_validates_against_composed_schema():
+    """Story 14.3, SPEC-pyforge-core CAP-4: a real captured report (with a
+    real finding, not the empty-findings minimal fixtures above) validates
+    against the packaged schema COMPOSED with the shared base envelope
+    schema -- proving the composed schema still admits every payload that
+    validated against the station schema alone."""
+    jsonschema.validate(
+        _fixture("sample_report_with_finding.json"), compose(BASE_ENVELOPE_SCHEMA, _schema())
+    )
 
 
 def test_check_report_json_dict_validates_against_schema():

@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 import jsonschema
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.marshal.cli.main import __version__, main
 from pyforge.marshal.core.verdict import EXIT_SIGINT, EXIT_USAGE
@@ -670,7 +671,7 @@ def test_config_json_envelope_validates_against_envelope_schema(tmp_path, capsys
     envelope_schema = json.loads(
         (_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8")
     )
-    jsonschema.validate(instance=payload, schema=envelope_schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, envelope_schema))
     written = next(target_dir.glob("policy-*.json"))
     assert payload["data"]["materialized_path"] == str(written)
 
@@ -1596,7 +1597,7 @@ def test_gate_evaluate_json_envelope_validates_against_envelope_schema(
     envelope_schema = json.loads(
         (_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8")
     )
-    jsonschema.validate(instance=payload, schema=envelope_schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, envelope_schema))
     assert payload["command"] == "gate evaluate"
 
 
