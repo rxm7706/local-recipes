@@ -613,12 +613,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "30/33",
+            "32/33",
             "stories complete",
             "var(--done)"
           ],
           [
-            "3",
+            "1",
             "remaining",
             ""
           ]
@@ -837,7 +837,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.11",
-              "pending",
+              "done",
               "The classifier recognizes a spike report *(added 2026-08-11 — FR-16)*"
             ]
           ]
@@ -858,7 +858,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "7.3",
-              "pending",
+              "done",
               "The detector sees anonymous Tier-3 entries"
             ],
             [
@@ -1534,12 +1534,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "79/126",
+            "78/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "47",
+            "48",
             "remaining",
             ""
           ]
@@ -1775,7 +1775,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.11",
-              "done",
+              "pending",
               "A story's declared difficulty actually picks its model *(added 2026-08-11 — FR-182)*"
             ],
             [
@@ -4773,7 +4773,7 @@ window.DASHBOARD_DATA = {
       "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
       "caps": 9,
       "companions": 1,
-      "updated": "2026-08-10",
+      "updated": "2026-08-13",
       "dream": "pyforge-doctor",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
@@ -6036,7 +6036,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 30,
+          "done": 32,
           "total": 33
         },
         {
@@ -6082,7 +6082,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 79,
+          "done": 78,
           "total": 126
         },
         {
@@ -6318,7 +6318,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-10",
           "sprint": "2026-08-11",
-          "tea": "2026-08-10",
+          "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-09",
           "verify": "2026-08-09",
@@ -6397,11 +6397,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-11",
-        "age": 2,
+        "updated": "2026-08-13",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "30/33",
+        "progress": "32/33",
         "complete": 14,
         "of": 14
       },
@@ -6562,7 +6562,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-13T12:00",
+          "spec": "2026-08-13T11:45",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-11",
@@ -6646,7 +6646,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "79/126",
+        "progress": "78/126",
         "complete": 13,
         "of": 13
       },
@@ -7894,8 +7894,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-11",
-        "age": 2,
+        "updated": "2026-08-13",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8000,8 +8000,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-11",
-        "age": 2,
+        "updated": "2026-08-13",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8106,8 +8106,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-11",
-        "age": 2,
+        "updated": "2026-08-13",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8992,7 +8992,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-11",
           "deck": "",
-          "spec": "2026-08-13T12:00",
+          "spec": "2026-08-13T10:40",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -17198,7 +17198,7 @@ window.DASHBOARD_DATA = {
     },
     "runningAvailable": true,
     "generatedAt": "2026-08-13 16:19 UTC",
-    "generatedEpoch": 1786637978
+    "generatedEpoch": 1786637972
   },
   "storySpecs": [
     {
@@ -17209,9 +17209,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 30,
+      "done": 32,
       "tracked": 28,
-      "gap": 2
+      "gap": 4
     },
     {
       "station": "pyforge-herald",
@@ -17221,9 +17221,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 79,
+      "done": 78,
       "tracked": 56,
-      "gap": 23
+      "gap": 22
     },
     {
       "station": "pyforge-mason",
@@ -17330,8 +17330,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 79,
-        "backlog": 44,
+        "done": 78,
+        "backlog": 45,
         "blocked": 3,
         "total": 126,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -17384,37 +17384,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-bmad-drift-new-artifact-shape",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape/SPEC.md"
-          },
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          }
-        ],
-        "done": 30,
-        "backlog": 3,
-        "blocked": 0,
-        "total": 33,
-        "next": "6-11-the-classifier-recognizes-a-spike-report",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "6-11-the-classifier-recognizes-a-spike-report",
-          "7-3-the-detector-sees-anonymous-tier-3-entries",
-          "7-4-one-severity-both-sides"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "herald",
         "project": "pyforge-herald",
         "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
@@ -17439,6 +17408,35 @@ window.DASHBOARD_DATA = {
           "13-3-db-backed-storage-behind-the-existing-seam-with-migrations",
           "13-5-the-scheduler-enforces-what-was-displayed",
           "13-6-a-ship-records-itself-end-to-end"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-bmad-drift-new-artifact-shape",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape/SPEC.md"
+          },
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          }
+        ],
+        "done": 32,
+        "backlog": 1,
+        "blocked": 0,
+        "total": 33,
+        "next": "7-4-one-severity-both-sides",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "7-4-one-severity-both-sides"
         ],
         "state": "ready"
       },
@@ -17529,8 +17527,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 299,
-      "backlog": 75,
+      "done": 300,
+      "backlog": 74,
       "blocked": 6,
       "total": 380
     }
@@ -17551,10 +17549,10 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 33,
-        "done": 30,
+        "done": 32,
         "blocked": 0,
         "epics": 7,
-        "epicsDone": 5,
+        "epicsDone": 6,
         "complete": false,
         "running": true,
         "projected": 33
@@ -17573,10 +17571,10 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 126,
-        "done": 79,
+        "done": 78,
         "blocked": 3,
         "epics": 19,
-        "epicsDone": 6,
+        "epicsDone": 5,
         "complete": false,
         "running": true,
         "projected": 123
@@ -17628,7 +17626,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 380,
-      "done": 299,
+      "done": 300,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 51

@@ -1313,9 +1313,22 @@ def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
 # Ported from scripts/deferred_work_check.py -- see that script's own module
 # docstring for the full "why this exists" rationale (bmad-loop's damping
 # safety valve writes only to gitignored Tier-3 scratch by default).
+#
+# Story 7.3 extends the port beyond the original: `_anonymous()` used to run
+# only against the TRACKED ledger. It now also runs against the Tier-3 file
+# itself, sliced against the grandfather baseline `scripts/deferred_work_
+# baseline.py` stamps (Story 7.2) so the pre-existing backlog does not red
+# every landing pass on day one -- see spec-deferred-work-visibility's CAP-2/
+# CAP-3 and this story's own Design Notes.
 
 TIER3_REL = Path("implementation-artifacts") / "deferred-work.md"
 TRACKED_REL = Path("planning-artifacts") / "deferred-work-ledger.md"
+
+#: The committed anonymous-Tier-3-entry grandfather baseline (Story 7.2,
+#: ``scripts/deferred_work_baseline.py --write-baseline``) -- a flat
+#: ``{project_slug: count}`` JSON sibling of ``BASELINE_REL`` above, read-only
+#: here (Boundaries: this story consumes it, never stamps or rewrites it).
+DEFERRED_WORK_BASELINE_REL = Path("scripts") / ".deferred-work-baseline.json"
 
 #: A Tier-3 ledger below this is boilerplate -- verbatim from the original.
 _SUBSTANTIVE_BYTES = 2048
@@ -1373,7 +1386,64 @@ def _anonymous(path: Path) -> list[int]:
     return out
 
 
-def _check_project_deferred_work(target: Path, proj: Path, findings: list[dict]) -> None:
+def _load_deferred_work_baseline(
+    target: Path,
+) -> tuple[dict[str, int] | None, dict | None]:
+    """The committed anonymous-Tier-3-entry grandfather baseline (Story 7.2),
+    or ``(None, <finding>)`` when it is missing, unreadable, or not the
+    expected ``{project_slug: count}`` shape -- mirrors ``_drift_findings``'s
+    own load-and-degrade shape (chain.py:985-1000, Design Notes): loaded ONCE
+    here, before ``_deferred_work_findings``'s per-project loop, degrading to
+    exactly ONE named finding on failure rather than raising.
+
+    Silently treating a missing/malformed baseline as "every project's count
+    is 0" would flood every pre-existing anonymous Tier-3 entry across the
+    fleet as a fresh FAIL on the very next landing pass -- the exact
+    regression Story 7.2's baseline exists to prevent (Boundaries), so a
+    caller that gets ``None`` back here must skip the Tier-3-anonymous check
+    entirely, not guess."""
+    baseline_path = target / DEFERRED_WORK_BASELINE_REL
+    rel = DEFERRED_WORK_BASELINE_REL.as_posix()
+    try:
+        found = _is_file(baseline_path)
+    except Exception:  # noqa: BLE001 -- an unreadable ancestor directory
+        # (`_is_file` raises rather than lying, per this module's own
+        # `_probe` convention) must degrade the same as a missing file, not
+        # propagate past this function and discard every project's
+        # already-computed findings via the outer `degrade_on_exception`.
+        found = None
+    if not found:
+        return None, {
+            "kind": "no-deferred-work-baseline",
+            "detail": (f"{rel} missing: run "
+                       f"scripts/deferred_work_baseline.py --write-baseline"),
+        }
+    try:
+        data = json.loads(baseline_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 -- an unreadable/malformed baseline is
+        # "no baseline to compare against", not a crash (Boundaries).
+        return None, {
+            "kind": "no-deferred-work-baseline",
+            "detail": (f"{rel} is unreadable: run "
+                       f"scripts/deferred_work_baseline.py --write-baseline"),
+        }
+    if not isinstance(data, dict) or not all(
+        isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool)
+        and v >= 0
+        for k, v in data.items()
+    ):
+        return None, {
+            "kind": "no-deferred-work-baseline",
+            "detail": (f"{rel} is not the expected {{project: count}} shape: "
+                       f"run scripts/deferred_work_baseline.py "
+                       f"--write-baseline"),
+        }
+    return data, None
+
+
+def _check_project_deferred_work(
+    target: Path, proj: Path, findings: list[dict], baseline: dict[str, int] | None,
+) -> None:
     """Append one project's deferred-work findings to the CALLER's
     ``findings`` list -- verbatim logic from the original's own ``scan()``
     body, split out so its caller can isolate one project's failure from the
@@ -1387,7 +1457,14 @@ def _check_project_deferred_work(target: Path, proj: Path, findings: list[dict])
     reproduced live during review) and an unreadable ``planning-artifacts/``
     read as "the tracked ledger does not exist", asserting the WHOLE record
     was gitignored about a project whose ledger is right there. The caller's
-    per-project try/except turns both into a named WARN."""
+    per-project try/except turns both into a named WARN.
+
+    ``baseline`` is the anonymous-Tier-3-entry grandfather baseline (Story
+    7.3), already loaded ONCE by ``_deferred_work_findings`` before its
+    per-project loop -- ``None`` when it could not be loaded, in which case
+    that caller already appended its own ``no-deferred-work-baseline``
+    finding and this function's job is simply to skip the Tier-3-anonymous
+    check for this project (never to guess count 0)."""
     t3_path = proj / TIER3_REL
     tracked_path = proj / TRACKED_REL
     if not _is_file(t3_path):
@@ -1422,6 +1499,23 @@ def _check_project_deferred_work(target: Path, proj: Path, findings: list[dict])
             "generic_id": False,
         })
 
+    # Tier-3-anonymous check (Story 7.3, CAP-2/CAP-3): a POSITIONAL slice,
+    # not a lookup -- `_anonymous()` returns Tier-3 anonymous entries' line
+    # numbers in file order, and the file's append-only discipline makes
+    # "beyond the stamped count" equivalent to "new" (Design Notes). Skipped
+    # entirely when the baseline could not be loaded, never treated as
+    # count 0.
+    if baseline is not None:
+        count = baseline.get(proj.name, 0)
+        for n in _anonymous(t3_path)[count:]:
+            findings.append({
+                "kind": "tier3-entry-unidentified", "project": proj.name,
+                "id": f"line {n}",
+                "tier3": str(t3_path.relative_to(target)),
+                "tracked": str(tracked_path.relative_to(target)),
+                "generic_id": False,
+            })
+
     t3 = _ids(t3_path)
     if not t3:
         return
@@ -1440,14 +1534,24 @@ def _deferred_work_findings(target: Path) -> list[dict]:
     inside its own try/except: one project's unreadable Tier-3/tracked
     ledger must not discard another, ALREADY-COMPUTED project's real
     findings -- the same isolation discipline as ``_sharded_findings`` above,
-    structured in from the first draft (Design Notes)."""
+    structured in from the first draft (Design Notes).
+
+    The Tier-3-anonymous grandfather baseline (Story 7.3) is loaded ONCE
+    here, before the per-project loop, mirroring ``_drift_findings``'s own
+    shape (Design Notes): a missing/malformed baseline appends exactly ONE
+    ``no-deferred-work-baseline`` finding and every project below is then
+    passed ``baseline=None``, which skips its own Tier-3-anonymous check
+    rather than guessing count 0."""
     findings: list[dict] = []
     projects_dir = target / "_bmad-output" / "projects"
     if not _is_dir(projects_dir):
         return findings
+    baseline, baseline_finding = _load_deferred_work_baseline(target)
+    if baseline_finding is not None:
+        findings.append(baseline_finding)
     for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
         try:
-            _check_project_deferred_work(target, proj, findings)
+            _check_project_deferred_work(target, proj, findings, baseline)
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # ledger must not discard findings already appended for a
             # different project.
@@ -1462,7 +1566,9 @@ def _deferred_work_findings(target: Path) -> list[dict]:
 
 def _deferred_work_message(item: dict) -> str:
     """Human-readable message text per finding kind -- verbatim from the
-    original's own ``main()`` print branches."""
+    original's own ``main()`` print branches (plus the two Story 7.3
+    branches, ``tier3-entry-unidentified``/``no-deferred-work-baseline``,
+    which have no origin script to be verbatim from)."""
     kind = item["kind"]
     if kind == "no-tracked-ledger":
         return (f"{item['project']}: {item['tier3']} holds "
@@ -1475,6 +1581,11 @@ def _deferred_work_message(item: dict) -> str:
         return (f"{item['project']} {item['id']} of {item['tracked']}: an entry "
                 f"with no `## DW-<scope>-<n>` heading — it cannot be cited, "
                 f"deduped, or individually closed.")
+    if kind == "tier3-entry-unidentified":
+        return (f"{item['project']} {item['id']} of {item['tier3']}: an entry "
+                f"with no `## DW-<scope>-<n>` heading, beyond the grandfathered "
+                f"baseline count — it cannot be cited, deduped, or individually "
+                f"closed.")
     if kind == "tier3-only-deferral":
         hint = ""
         if item.get("generic_id"):
@@ -1483,6 +1594,8 @@ def _deferred_work_message(item: dict) -> str:
                     "the next damped story collides with it.")
         return (f"{item['project']}/{item['id']}: present in {item['tier3']} "
                 f"but NOT in {item['tracked']}{hint}")
+    if kind == "no-deferred-work-baseline":
+        return item["detail"]
     return item.get("detail", f"{item['project']}: {kind}")
 
 
