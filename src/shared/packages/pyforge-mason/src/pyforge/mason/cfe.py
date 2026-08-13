@@ -36,7 +36,55 @@ table (AD-3: "every CFE script Mason uses is declared once in a module-level
 table in this file"), a private CAPTURE-mode invocation helper
 (`_invoke_captured`), tolerant JSON-from-stdout extraction (`_extract_json`),
 and two public named adapters (`validate_recipe`, `submit_pr`) that each
-return the new `CfeResult` (`models.py`).
+return the new `CfeResult` (`models.py`). Story 2.7 adds a third named
+adapter, `diagnose_failure`, mirroring the same shape exactly against
+`failure_analyzer.py`.
+
+Story 2.8 adds two more named adapters, `optimize_recipe` and
+`scan_for_vulnerabilities`, against `recipe_optimizer.py`/
+`vulnerability_scanner.py` -- otherwise identical in shape to the three
+above (CAPTURE mode via `_invoke_captured`, a per-operation default timeout,
+`args` passed straight through). Unlike every prior adapter, both of these
+wrapped scripts are NOT stdlib-only (`recipe_optimizer.py` needs
+`ruamel.yaml`; `vulnerability_scanner.py` needs `requests`+`pyyaml`), so
+their own use-case caller (`recipe.py`'s `optimize()`/`scan()`) probes
+`probe_import_floor` itself and raises `CfeImportFloorError` before reaching
+either adapter, scoped to only the operation-relevant subset of `.missing`
+-- this file's two new functions do not gate on the floor themselves,
+because their caller has already done so.
+
+Story 2.9 adds a keyword-only `env: Mapping[str, str] | None = None`
+parameter to `_invoke_captured` (and threads it through `submit_pr`, the one
+adapter that uses it): `recipe.py::submit()` is the one caller in this whole
+package that ever passes a non-`None` value, to inject `CFE_RECIPES_ROOT`
+into the child's environment so an out-of-tree recipe (Story 2.4) still
+resolves under CFE's own `_path_guard.py` confinement (epic-2-context.md
+Technical Decisions, correct-course 2026-08-10). It mirrors `run_streamed`'s
+already-established `env=` contract exactly -- forwarded to `subprocess.run`
+as `env=dict(env) if env is not None else None`, the EXACT expression text
+`tests/meta/test_credential_isolation.py`'s `_SANCTIONED_PASS_THROUGH_ENV_
+EXPR` names, so that file's Guard 3a allowlist (generalized the same story,
+from one sanctioned call site to two) recognizes this call structurally,
+the same way it already recognizes `run_streamed`'s own `Popen` call: a
+*replacement*, never a merge -- the caller builds the whole dict. Every
+other existing caller (`validate_recipe`, `diagnose_failure`,
+`optimize_recipe`, `scan_for_vulnerabilities`) passes no `env`, so `None`
+reaches `subprocess.run` exactly as before this story and their behavior is
+byte-for-byte unchanged.
+
+Story 2.10 adds two more named adapters, `update_recipe` and
+`update_recipe_from_github`, against `recipe_updater.py`/`github_updater.py`
+-- otherwise identical in shape to `diagnose_failure` above (CAPTURE mode via
+`_invoke_captured`, a per-operation default timeout of 120.0s matching the
+real MCP server's own `_run_script` default for both, `args` passed straight
+through, no `env=` parameter). Neither adapter gates on CFE's import floor
+itself, and neither needs a caller-side scoped probe the way `optimize()`/
+`scan()` do: reading both wrapped scripts confirms every import-floor-
+dependent call is already wrapped in a blanket `try/except (ImportError,
+ValueError, FileNotFoundError)` (plus a catch-all `except Exception`) that
+degrades a missing dependency to `{"success": false, "error": ...}` JSON
+data, never a raw traceback -- the same "already handles it" case
+`diagnose_failure`'s own caller (`recipe.py::diagnose()`) established.
 
 `_CFE_SCRIPTS` maps an adapter's own key (e.g. `"validate_recipe"`) to the
 script's filename relative to a resolved CFE root's
@@ -61,6 +109,21 @@ Consistency Conventions forbid a shared `utils`/`helpers` module, and
 A non-zero return code is data on the returned `CfeResult`, never raised as
 an exception (AD-4) -- only timeout expiry raises, as the new, distinct
 `CfeTimeoutError`.
+
+Story 2.6 adds the first two STREAM-mode named adapters, `build_native` and
+`build_docker` (FR-9), returning `models.BuildResult` rather than
+`CfeResult`: a build is expected to run for minutes, so it belongs on
+`run_streamed`, not `_invoke_captured`. Both translate `subprocess.
+TimeoutExpired` to `CfeTimeoutError` themselves, exactly like
+`_invoke_captured` does above -- `run_streamed` itself only re-raises the
+bare stdlib exception (its own kill-and-reap already ran before doing so).
+`build_native` resolves its script under the standard CFE-root subdirectory
+and runs it through `bash` -- a disclosed, isolated exception to this
+file's Python-only invocation convention, since it is a bash script, not a
+Python one. `build_docker` resolves its script at the CFE root's own top
+level instead -- the one `_CFE_SCRIPTS` entry outside the standard
+subdirectory -- and runs it under the resolved CFE interpreter like every
+other adapter in this file.
 
 `CFE_IMPORT_FLOOR` maps each floor dependency's pip/conda *distribution*
 name to its Python *import* name -- the two differ for `pyyaml` (imports as
@@ -102,8 +165,8 @@ from pathlib import Path
 from typing import TextIO
 
 from .errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
-from .models import CfeResult
-from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND
+from .models import BuildResult, CfeResult
+from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND, detect_native_build_config
 
 CFE_IMPORT_FLOOR: dict[str, str] = {
     "pyyaml": "yaml",
@@ -607,16 +670,39 @@ def run_streamed(
 _CFE_SCRIPTS: dict[str, str] = {
     "validate_recipe": "validate_recipe.py",
     "submit_pr": "submit_pr.py",
+    "build_native": "native-build.sh",
+    "build_docker": "build-locally.py",
+    "diagnose_failure": "failure_analyzer.py",
+    "optimize_recipe": "recipe_optimizer.py",
+    "scan_for_vulnerabilities": "vulnerability_scanner.py",
+    "update_recipe": "recipe_updater.py",
+    "update_recipe_from_github": "github_updater.py",
 }
 """Every CFE script Mason invokes, declared exactly once (AD-3): adapter key
--> script filename, relative to a resolved CFE root's
-`.claude/scripts/conda-forge-expert/`. A named adapter function below (e.g.
-`validate_recipe`) looks up its own key here; no caller anywhere passes a
-script name or path directly. Two entries only -- `validate_recipe.py` and
-`submit_pr.py` -- because Story 1.9's fixture stubs exactly these two
-scripts and which specific script backs each of Stories 2.4-2.10 is still
-open (epic context); adding a table entry ahead of that decision would be
-unfalsifiable against this story's own fixtures (spec Never boundary)."""
+-> script filename. A named adapter function below (e.g. `validate_recipe`)
+looks up its own key here; no caller anywhere passes a script name or path
+directly.
+
+Every entry's filename is relative to a resolved CFE root's
+`.claude/scripts/conda-forge-expert/`, EXCEPT `build_docker`, the one entry
+outside that standard subdirectory -- its script lives at the CFE root's
+own top level (spec Always boundary), so `build_docker` below builds that
+path itself rather than reusing `_invoke_captured`'s standard-subdirectory
+join.
+
+`validate_recipe.py` and `submit_pr.py` were Story 1.9's fixture-stubbed
+pair. Story 2.6 adds `build_native` -> `native-build.sh` and `build_docker`
+-> `build-locally.py`, the first two STREAM-mode entries. Story 2.7 adds
+`diagnose_failure` -> `failure_analyzer.py` (OQ-A1's answer for FR-10,
+resolved by reading the real script). Story 2.8 adds `optimize_recipe` ->
+`recipe_optimizer.py` and `scan_for_vulnerabilities` ->
+`vulnerability_scanner.py` (OQ-A1's answer for FR-11/FR-12), each with a
+matching stub added to the fixture tree in the same story. Story 2.10 adds
+`update_recipe` -> `recipe_updater.py` and `update_recipe_from_github` ->
+`github_updater.py` (OQ-A1's answer for FR-14), each with a matching stub
+added to the fixture tree in the same story -- resolving the earlier "still
+open" note this docstring carried for Stories 2.9-2.10 (2.9 turned out to
+reuse the existing `submit_pr` entry rather than add a new one)."""
 
 _JSON_LINE_START_PATTERN = re.compile(r"^[ \t]*[{\[]", re.MULTILINE)
 """Matches the first `{` or `[` that starts a line (optionally indented),
@@ -675,12 +761,23 @@ def _invoke_captured(
     root: Path,
     interpreter: str,
     timeout: float,
+    env: Mapping[str, str] | None = None,
 ) -> CfeResult:
     """Run `_CFE_SCRIPTS[script_key]` under `interpreter` as a CAPTURE-mode
     subprocess and return a `CfeResult` (AD-3, AD-4, AD-25). Private: every
     public caller is a named adapter function below that supplies its own
     `script_key` -- this function is never called with a caller-supplied
     script name (spec Always boundary).
+
+    `env`, when given, *replaces* the child's environment wholesale --
+    mirrors `run_streamed`'s own established `env=` contract exactly (Story
+    2.9): passed to `subprocess.run` as `dict(env) if env is not None else
+    None`, never merged with the caller's own. `None` (the default) is
+    `subprocess.run`'s own "inherit the parent environment" behavior,
+    unchanged for every caller that omits this parameter -- `submit_pr` is
+    the only adapter below that forwards a caller-supplied `env`; every
+    other adapter (`validate_recipe`, `diagnose_failure`, `optimize_recipe`,
+    `scan_for_vulnerabilities`) never passes one.
 
     `args` must not be a bare `str`/`bytes` or `None` -- the same
     `run_streamed`-established guard (review pass, 2026-08-11): passed as
@@ -739,6 +836,7 @@ def _invoke_captured(
             stdin=subprocess.DEVNULL,
             timeout=timeout,
             check=False,
+            env=dict(env) if env is not None else None,
         )
     except subprocess.TimeoutExpired:
         # subprocess.run's own timeout handling has already killed and
@@ -797,6 +895,7 @@ def submit_pr(
     root: Path,
     interpreter: str,
     timeout: float | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> CfeResult:
     """Invoke CFE's `submit_pr.py` (AD-3's `submit_pr` adapter, FR-1, FR-13)
     and return a `CfeResult`.
@@ -809,6 +908,14 @@ def submit_pr(
     this operation (see that constant's docstring) -- longer than
     `validate_recipe`'s, since this operation clones and pushes a git
     branch before opening a pull request.
+
+    `env`, when given, replaces the subprocess's inherited environment
+    wholesale (see `_invoke_captured`'s own docstring for the exact
+    contract) -- `recipe.py::submit()` is the one caller that supplies it,
+    to inject `CFE_RECIPES_ROOT` for an out-of-tree recipe (module
+    docstring, Story 2.9); every other caller of this adapter passes none,
+    and `_invoke_captured`'s own default (`None` -> inherit unmodified)
+    applies.
     """
     return _invoke_captured(
         "submit_pr",
@@ -816,4 +923,374 @@ def submit_pr(
         root=root,
         interpreter=interpreter,
         timeout=timeout if timeout is not None else _SUBMIT_PR_TIMEOUT_SECONDS,
+        env=env,
+    )
+
+
+_DIAGNOSE_FAILURE_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `analyze_build_failure` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `analyze_build_failure`'s tool wrapper never overrides)."""
+
+
+def diagnose_failure(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `failure_analyzer.py` (AD-3's `diagnose_failure` adapter,
+    FR-1, FR-10) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no failure-log interpretation of its own (AD-1):
+    the script's own `{"success": ..., "diagnosis": ..., "all_matches":
+    ...}` (or, for no match, `{"success": false, "error": ..., "hint":
+    ...}`) JSON body is `CfeResult.json_body` verbatim (spec Always
+    boundary). `timeout` defaults to `_DIAGNOSE_FAILURE_TIMEOUT_SECONDS`
+    when `None`, matching the real MCP server's own per-operation default
+    for this operation (see that constant's docstring) -- the same value as
+    `validate_recipe`'s, since both are short, single-pass CAPTURE-mode
+    operations.
+    """
+    return _invoke_captured(
+        "diagnose_failure",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _DIAGNOSE_FAILURE_TIMEOUT_SECONDS,
+    )
+
+
+_OPTIMIZE_RECIPE_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `optimize_recipe` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `optimize_recipe`'s tool wrapper never overrides)."""
+
+
+def optimize_recipe(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `recipe_optimizer.py` (AD-3's `optimize_recipe` adapter,
+    FR-1, FR-11) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no check-code filtering of its own (AD-1): the
+    script's own `{"success": ..., "suggestions_found": ..., "suggestions":
+    [...]}` JSON body is `CfeResult.json_body` verbatim (spec Always
+    boundary). Unlike `validate_recipe`/`diagnose_failure`, the real script
+    takes no `--json` flag -- it always emits JSON -- so a caller's `args`
+    is just `[recipe_path]` (spec Always boundary, mirrors the real MCP
+    server's own `optimize_recipe` tool wrapper). `timeout` defaults to
+    `_OPTIMIZE_RECIPE_TIMEOUT_SECONDS` when `None`, matching the real MCP
+    server's own per-operation default for this operation (see that
+    constant's docstring).
+
+    This adapter does NOT itself gate on CFE's import floor -- its caller,
+    `recipe.py::optimize`, probes `probe_import_floor` and raises
+    `CfeImportFloorError` itself, scoped to just `ruamel.yaml`, before
+    reaching this function (module docstring): the wrapped script degrades
+    to a lone `OPT-000` suggestion at maximum confidence (1.0), rather than
+    crashing, when `ruamel.yaml` is missing from `interpreter`.
+    """
+    return _invoke_captured(
+        "optimize_recipe",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _OPTIMIZE_RECIPE_TIMEOUT_SECONDS,
+    )
+
+
+_SCAN_FOR_VULNERABILITIES_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `scan_for_vulnerabilities` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `scan_for_vulnerabilities`'s tool wrapper never overrides)."""
+
+
+def scan_for_vulnerabilities(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `vulnerability_scanner.py` (AD-3's
+    `scan_for_vulnerabilities` adapter, FR-1, FR-12) and return a
+    `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no severity policy or threshold filtering of its
+    own (AD-1): the script's own `{"success": ..., "scanned": ...,
+    "vulnerable_packages": ..., "total_vulnerabilities": ..., "results":
+    [...]}` JSON body is `CfeResult.json_body` verbatim (spec Always
+    boundary). The real script defaults to human-readable text and needs an
+    explicit `--json` flag to emit JSON at all -- so a caller's `args` is
+    `["--json", recipe_path]` (spec Always boundary, mirrors the real MCP
+    server's own `scan_for_vulnerabilities` tool wrapper). `timeout`
+    defaults to `_SCAN_FOR_VULNERABILITIES_TIMEOUT_SECONDS` when `None`,
+    matching the real MCP server's own per-operation default for this
+    operation (see that constant's docstring).
+
+    This adapter does NOT itself gate on CFE's import floor -- its caller,
+    `recipe.py::scan`, probes `probe_import_floor` and raises
+    `CfeImportFloorError` itself, scoped to `requests`/`pyyaml`, before
+    reaching this function (module docstring): the wrapped script degrades
+    when either is missing from `interpreter`, but not identically -- a
+    missing `pyyaml` is **false-clean** (`{"success": true, "mode":
+    "skipped", "scanned": 0, "unpinned_skipped": [...]}`, no `results` key,
+    indistinguishable from a genuinely clean scan), while a missing
+    `requests` instead raises inside the script's own API call and -- when no
+    local CVE database exists yet at the path `pixi run update-cve-db`
+    populates -- is reported honestly (`{"success": false, "error": ...,
+    "hint": ...}`). Moot in practice: this adapter's own caller gates on
+    `requests` before either path is ever reached, so this distinction never
+    surfaces through Mason today; noted here only for an accurate account of
+    the wrapped script's own behavior.
+    """
+    return _invoke_captured(
+        "scan_for_vulnerabilities",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _SCAN_FOR_VULNERABILITIES_TIMEOUT_SECONDS,
+    )
+
+
+_UPDATE_RECIPE_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `update_recipe` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `update_recipe`'s tool wrapper never overrides)."""
+
+_UPDATE_RECIPE_FROM_GITHUB_TIMEOUT_SECONDS = 120.0
+"""Mirrors the real MCP server's own `update_recipe_from_github` default
+(`.claude/tools/conda_forge_server.py::_run_script`'s `timeout: int = 120`
+default, which `update_recipe_from_github`'s tool wrapper never overrides)."""
+
+
+def update_recipe(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `recipe_updater.py` (AD-3's `update_recipe` adapter,
+    FR-14) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no upstream-version-check logic of its own (AD-1):
+    the script's own JSON body -- `{"success": true, "updated": true,
+    "new_version": ..., "message": "Recipe updated successfully."}` on a real
+    write, `{"success": true, "updated": true, "dry_run": true, "actions":
+    [...], "message": ...}` under `--dry-run`, `{"success": true, "updated":
+    false, "message": "Recipe is already up-to-date."}` when nothing changed,
+    or `{"success": false, "error": ...}` on failure -- is `CfeResult.
+    json_body` verbatim (spec Always boundary). `timeout` defaults to
+    `_UPDATE_RECIPE_TIMEOUT_SECONDS` when `None`, matching the real MCP
+    server's own per-operation default for this operation (see that
+    constant's docstring) -- the same value as `validate_recipe`'s/
+    `diagnose_failure`'s, since this is likewise a short, single-pass
+    CAPTURE-mode operation.
+    """
+    return _invoke_captured(
+        "update_recipe",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _UPDATE_RECIPE_TIMEOUT_SECONDS,
+    )
+
+
+def update_recipe_from_github(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `github_updater.py` (AD-3's `update_recipe_from_github`
+    adapter, FR-14) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    this adapter applies no GitHub-repo-detection or version-comparison logic
+    of its own (AD-1): the script's own JSON body -- the same
+    success/dry-run/already-current/failure shapes `update_recipe` above
+    documents, plus `current_version`/`latest_tag`/`github_url` fields and a
+    pre-release-skip shape (`{"success": true, "updated": false, ...,
+    "message": "Latest release ... is a pre-release ..."}`) neither the PyPI
+    script nor its own callers have -- is `CfeResult.json_body` verbatim
+    (spec Always boundary). `timeout` defaults to
+    `_UPDATE_RECIPE_FROM_GITHUB_TIMEOUT_SECONDS` when `None`, matching the
+    real MCP server's own per-operation default for this operation (see that
+    constant's docstring).
+    """
+    return _invoke_captured(
+        "update_recipe_from_github",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _UPDATE_RECIPE_FROM_GITHUB_TIMEOUT_SECONDS,
+    )
+
+
+# --- Story 2.6: STREAM-mode build adapters (AD-3, AD-25, FR-9) --------------
+
+_BUILD_NATIVE_TIMEOUT_SECONDS = 3600.0
+"""One hour: a native build can compile from source (the whole reason a
+build adapter exists, unlike a `validate_recipe`/`submit_pr` metadata-only
+operation) -- generously longer than either CAPTURE-mode adapter's timeout
+above."""
+
+_BUILD_DOCKER_TIMEOUT_SECONDS = 7200.0
+"""Two hours: the Docker/CI-parity path additionally pulls a build image and
+runs the same compile the native path performs inside it (per SKILL.md's
+own description of `build-locally.py`'s "alma9 sysroot, isolated build
+env"), so it is expected to run longer than the native path above; not
+benchmarked against a logged run of this specific project's own CI (review
+pass -- the prior wording overclaimed "this project's own CI experience")."""
+
+
+def build_native(
+    recipe_path: str,
+    *,
+    root: Path,
+    timeout: float | None = None,
+    stderr_sink: TextIO | None = None,
+) -> BuildResult:
+    """Invoke CFE's native build script (AD-3's `build_native` adapter,
+    FR-9, AD-25) and return a `BuildResult`.
+
+    Runs `["bash", str(script_path), recipe_path]` through `run_streamed`
+    -- STREAM mode, not CAPTURE: the script's stderr forwards live to
+    `stderr_sink` as it is produced (a native build is exactly the
+    multi-minute operation AD-25 exists for), and its stdout is captured
+    whole and returned unparsed (spec Never boundary: no Mason-side
+    interpretation of the script's own output, no scraping a filename out
+    of it, no pre-validation of `recipe_path`'s existence). Invoked through
+    `bash`, never the resolved CFE interpreter (spec Always boundary) -- it
+    is a bash script, not a Python one, the one disclosed exception to this
+    file's Python-only invocation convention.
+
+    `config` comes from `resolve.detect_native_build_config()`'s own
+    outcome for the CURRENT host -- never a caller-supplied override (spec
+    Never boundary: there is no `--platform`/config flag for this mode,
+    since the wrapped script has none either, and exposing one would let
+    Mason report a directory the script never actually used). `artifact_dir`
+    is `build_artifacts/<config>` when a config was detected, else `None` --
+    an unrecognized host still runs the script and lets it report its own
+    failure via `returncode`, never a Mason-level error.
+
+    `timeout` defaults to `_BUILD_NATIVE_TIMEOUT_SECONDS` when `None`.
+    `subprocess.TimeoutExpired` (from `run_streamed`, which re-raises the
+    bare stdlib exception -- its own kill-and-reap already ran before doing
+    so) is translated here to `CfeTimeoutError`, mirroring `_invoke_
+    captured`'s translation (spec Always boundary).
+
+    The script's own `"${@:2}"` passthrough (extra rattler-build flags like
+    `--test skip`/`--target-platform`) is a deliberate scope cut, not an
+    oversight (review pass): the spec's CLI surface is `recipe_path`/
+    `--docker`/`--config` only, and no story task calls for exposing it.
+    """
+    resolved_timeout = timeout if timeout is not None else _BUILD_NATIVE_TIMEOUT_SECONDS
+    script_path = (
+        root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS["build_native"]
+    )
+    config = detect_native_build_config()
+
+    try:
+        returncode, stdout = run_streamed(
+            ["bash", str(script_path), recipe_path],
+            timeout=resolved_timeout,
+            stderr_sink=stderr_sink,
+        )
+    except subprocess.TimeoutExpired:
+        raise CfeTimeoutError(script="build_native", timeout=resolved_timeout) from None
+
+    return BuildResult(
+        mode="native",
+        config=config,
+        returncode=returncode,
+        stdout=stdout,
+        artifact_dir=f"build_artifacts/{config}" if config is not None else None,
+    )
+
+
+def build_docker(
+    config: str,
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+    stderr_sink: TextIO | None = None,
+) -> BuildResult:
+    """Invoke CFE's Docker/CI-parity build script (AD-3's `build_docker`
+    adapter, FR-9, AD-25) and return a `BuildResult`.
+
+    Runs `[interpreter, str(script_path), config]` through `run_streamed`,
+    the same STREAM-mode shape `build_native` uses above. `script_path`
+    resolves at the CFE root's own top level (`root / <script filename>`),
+    NOT the standard `.claude/scripts/conda-forge-expert/` subdirectory
+    (spec Always boundary) -- the one `_CFE_SCRIPTS` entry outside it.
+    `interpreter` is the caller's already-resolved CFE interpreter
+    (`resolve.resolve_cfe_interpreter`'s outcome) -- unlike `build_native`,
+    this script IS a Python script, so it runs under it like every
+    CAPTURE-mode adapter above.
+
+    `config` is the caller-supplied `--config` value, required by `cli.py`'s
+    own usage check before this adapter is ever reached: the wrapped script
+    prompts interactively (reads stdin) when its own config argument is
+    omitted and more than one platform variant is discoverable, which would
+    hang against `run_streamed`'s `stdin=subprocess.DEVNULL` (spec Design
+    Notes). `artifact_dir` is always `build_artifacts/<config>` here --
+    never `None`, since `config` is never `None` on this path. This
+    function re-validates that itself (review pass) rather than trusting
+    `cli.py`'s gate alone: a blank/`None` `config` raises `ValueError` here,
+    before any subprocess spawns, mirroring `_invoke_captured`'s/
+    `run_streamed`'s own established "validate this function's own
+    arguments defensively" convention above -- `recipe.build()` is a public
+    use-case a future direct caller (e.g. `package.py`'s conda-forge ship
+    target, AD-11) could reach without going through `cli.py`'s parser at
+    all, and a caller-supplied `None` reaching `run_streamed`'s argv list
+    unvalidated would otherwise surface as a raw `TypeError` deep inside
+    `subprocess.Popen`, not a clean, actionable error. Not validated against
+    a fixed platform-name set, though: `build-locally.py` discovers valid
+    configs dynamically (`.ci_support/*.yaml`, `verify_config`), so a
+    hardcoded allowlist here would duplicate -- and could disagree with --
+    that judgment (spec Never boundary); an invalid-but-non-blank `config`
+    is still forwarded, and the wrapped script's own non-zero exit plus its
+    stdout enumerating valid configs is the real diagnostic.
+
+    `timeout` defaults to `_BUILD_DOCKER_TIMEOUT_SECONDS` when `None`. Same
+    `subprocess.TimeoutExpired` -> `CfeTimeoutError` translation as
+    `build_native` above.
+    """
+    if not config or not config.strip():
+        raise ValueError(
+            "build_docker(config=...) must be a non-blank platform-variant name "
+            "(e.g. 'linux64') -- the Docker/CI-parity script has no auto-detection"
+        )
+    resolved_timeout = timeout if timeout is not None else _BUILD_DOCKER_TIMEOUT_SECONDS
+    script_path = root / _CFE_SCRIPTS["build_docker"]
+
+    try:
+        returncode, stdout = run_streamed(
+            [interpreter, str(script_path), config],
+            timeout=resolved_timeout,
+            stderr_sink=stderr_sink,
+        )
+    except subprocess.TimeoutExpired:
+        raise CfeTimeoutError(script="build_docker", timeout=resolved_timeout) from None
+
+    return BuildResult(
+        mode="docker",
+        config=config,
+        returncode=returncode,
+        stdout=stdout,
+        artifact_dir=f"build_artifacts/{config}",
     )

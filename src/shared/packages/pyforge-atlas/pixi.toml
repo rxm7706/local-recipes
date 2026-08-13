@@ -85,3 +85,6 @@ a2a-sdk = ">=1.1.2"                   # imported as `a2a`; brings the `google` n
 # parse the GitHub-trending HTML scrape (stdlib `html.parser` backend — no lxml). Kept
 # byte-for-byte in step with the pyproject.toml [project].dependencies entry (AUD-ATLAS-010).
 beautifulsoup4 = ">=4.15.0"           # imported as `bs4`
+# Story 14.2 (CAP-2): admission.py/factory/lasuite.py/datasets/{basilisk,migration_status,refresh}.py's
+# mandatory run-dep (atomic_write/atomic_write_text).
+pyforge-core = { path = "../pyforge-core" }

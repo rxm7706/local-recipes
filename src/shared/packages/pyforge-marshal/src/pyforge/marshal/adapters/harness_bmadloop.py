@@ -180,6 +180,18 @@ guard: this reuses the identical widened exception tuple and the identical
 lazy ``bmad_loop.journal.load_state`` seam Story 3.7 already established.
 ``commit_sha`` carries no redaction (a commit hash is never session-derived
 free text).
+
+Story 3.12 (retry escalation, AD-26) widens ``run_status_snapshot`` a third
+time, in the SAME per-task loop that already builds ``deferred``/``tasks``:
+each ``DeferredStory`` now also carries ``review_cycle=task.review_cycle``,
+read the identical way ``attempt`` is one line above it (``StoryTask``'s own
+same-named field, no new import, no new guard). This is the fact
+``core.supervise.evaluate_retry_escalation`` needs to tell a story stuck on
+review cycles apart from one stuck on dev attempts. This story ALSO adds
+``write_policy_document`` below (see that function's own docstring) --
+``cli/spin.py::run_resume``'s narrow, single-key floor-raise write, sharing
+``write_policy_toml``'s atomic-write mechanics via the new private
+``_atomic_write_policy_text`` helper both now call.
 """
 
 from __future__ import annotations
@@ -189,11 +201,11 @@ import os
 import re
 import shutil
 import subprocess
-import threading
 import time
 from pathlib import Path
 
 import tomlkit
+from pyforge.core.atomic_write import atomic_write_bytes
 
 from ..core import policy
 from ..core.egress import to_redacted
@@ -480,15 +492,16 @@ def write_policy_toml(
     adapter: str | None = None,
 ) -> Path:
     """The I/O boundary: render via ``render_policy_toml`` and atomically
-    write ``<loop_home>/.bmad-loop/policy.toml`` whole, mirroring
-    ``cli/config.py::materialize``'s temp-file-then-``os.replace`` mechanics
-    -- MINUS its write-once/content-hash/no-op logic, since this artifact is
-    a fresh projection on every call, never content-addressed, never skipped.
-    Never reads an existing file at that path first: every call fully
-    replaces any prior content, including hand-edited or unrelated bytes.
-    Creates ``<loop_home>/.bmad-loop`` if it does not already exist. Any
-    ``OSError`` during the sequence is wrapped in ``HarnessPolicyWriteError``
-    rather than propagating raw.
+    write ``<loop_home>/.bmad-loop/policy.toml`` whole via
+    ``pyforge.core.atomic_write_bytes`` (Story 14.2, CAP-2 -- the one shared
+    temp-file-then-``os.replace`` primitive, mkstemp-based) -- MINUS
+    ``cli/config.py::materialize``'s write-once/content-hash/no-op logic,
+    since this artifact is a fresh projection on every call, never
+    content-addressed, never skipped. Never reads an existing file at that
+    path first: every call fully replaces any prior content, including
+    hand-edited or unrelated bytes. Creates ``<loop_home>/.bmad-loop`` if it
+    does not already exist. Any ``OSError`` during the sequence is wrapped
+    in ``HarnessPolicyWriteError`` rather than propagating raw.
 
     Like ``cli/config.py::materialize``, THE CALLER owns the gate deciding
     whether a given composition may be persisted at all (e.g. only
@@ -500,29 +513,95 @@ def write_policy_toml(
     ``render_policy_toml``.
     """
     text = render_policy_toml(effective, difficulty=difficulty, adapter=adapter)
+    return _atomic_write_policy_text(text, loop_home)
+
+
+def _atomic_write_policy_text(text: str, loop_home: Path) -> Path:
+    """The shared temp-file-then-``os.replace`` mechanics ``write_policy_toml``
+    (Story 1.10, a fresh whole render) and ``write_policy_document`` (Story
+    3.12, a single-key patch of an already-on-disk document) both need to
+    persist ``<loop_home>/.bmad-loop/policy.toml`` -- factored out of
+    ``write_policy_toml``'s own prior body (its sole caller until this
+    story) so the two writers cannot drift out of agreement over how the
+    write is made durable or how a failure is wrapped. Creates
+    ``<loop_home>/.bmad-loop`` if it does not already exist; any ``OSError``
+    during the sequence is wrapped in ``HarnessPolicyWriteError`` rather than
+    propagating raw. Mirrors ``cli/config.py::materialize``'s temp-file-
+    then-``os.replace`` mechanics -- MINUS its write-once/content-hash/no-op
+    logic, since this artifact is a fresh projection on every call, never
+    content-addressed, never skipped."""
     bmad_loop_dir = Path(loop_home) / ".bmad-loop"
+    target_path = bmad_loop_dir / "policy.toml"
     try:
-        bmad_loop_dir.mkdir(parents=True, exist_ok=True)
-        target_path = bmad_loop_dir / "policy.toml"
-        # pid+thread-id suffixed, O_EXCL-guarded, no pre-unlink -- the same
-        # collision-safety reasoning as cli/config.py::materialize's own temp
-        # file (see that function's comment for the full rationale).
-        tmp_path = bmad_loop_dir / (
-            f".policy.toml.pid{os.getpid()}.t{threading.get_native_id()}.tmp"
-        )
-        fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
-        try:
-            with os.fdopen(fd, "wb") as handle:
-                handle.write(text.encode("utf-8"))
-            os.replace(tmp_path, target_path)
-        except BaseException:
-            tmp_path.unlink(missing_ok=True)
-            raise
+        atomic_write_bytes(target_path, text.encode("utf-8"))
         return target_path
     except OSError as exc:
         raise HarnessPolicyWriteError(
             f"cannot write policy.toml to {bmad_loop_dir}: {exc}"
         ) from exc
+
+
+# Story 3.12 (retry escalation, AD-26) -- _POLICY_TEMPLATE's own baseline
+# [adapter.review].model value (see that constant's [adapter.review] block
+# above), exposed here so cli/spin.py::run_resume can fall back to it on the
+# rare on-disk policy.toml that is somehow missing [adapter.review]/its
+# model key entirely. Never expected in practice: every rendered
+# policy.toml carries [adapter.review].model unconditionally (the template's
+# own static baseline, only ever OVERWRITTEN by FR-51 tier-batching, never
+# removed) -- but a hand-edited or pre-this-story file is not a case this
+# story's own read-back may crash on. Named without a leading underscore
+# (unlike _POLICY_TEMPLATE itself) because it is consumed cross-module,
+# mirroring HARNESS_VERSION_RANGE_TEXT's identical "a constant this module
+# owns, exported for a cross-module caller" convention.
+#
+# DERIVED from _POLICY_TEMPLATE itself, never hand-duplicated (review
+# finding): this baseline has already changed once in this project's
+# history (see _POLICY_TEMPLATE's own "[adapter.review]" comment,
+# "2026-08-02: ..."), and a second, independent literal here would silently
+# desync on the next such change. Parsed once at import time -- a malformed
+# _POLICY_TEMPLATE is a module-load-time failure everywhere else in this
+# file already assumes cannot happen (it is a hardcoded source constant,
+# never user input).
+ADAPTER_REVIEW_MODEL_STOCK_DEFAULT: str = tomlkit.parse(_POLICY_TEMPLATE)["adapter"]["review"][
+    "model"
+]
+
+
+def write_policy_document(doc: tomlkit.TOMLDocument, loop_home: Path) -> Path:
+    """Story 3.12's own narrow sibling to ``write_policy_toml`` (retry
+    escalation, AD-26): atomically writes an ALREADY-MUTATED ``tomlkit``
+    document -- ``cli/spin.py::run_resume``'s own ``tomlkit.parse()`` of the
+    loop home's EXISTING ``.bmad-loop/policy.toml``, with exactly one key
+    patched in place (``[adapter].model``, floor-raised to
+    ``[adapter.review].model``) -- rather than a document this module
+    freshly rendered end to end from an ``EffectivePolicy``.
+
+    ``write_policy_toml``'s own signature does not fit this shape: it always
+    calls ``render_policy_toml`` first, which re-derives the WHOLE file from
+    Marshal's own composed policy and would silently discard any
+    instance-local content the running harness itself persisted into the
+    on-disk file since the last render (the ``[tui]`` pane-geometry keys,
+    the ``[mux].backend`` line -- see this module's own docstring). A caller
+    that already holds the on-disk document (read via ``tomlkit.parse``,
+    preserving every comment and every harness-owned key untouched) and has
+    mutated only the one key it means to change needs a WRITE primitive that
+    re-derives nothing else -- this is that primitive, reusing the exact
+    same temp-file-then-``os.replace`` mechanics and the exact same
+    ``HarnessPolicyWriteError``-wrapping contract ``write_policy_toml``
+    already has (``_atomic_write_policy_text`` above, so the two writers
+    cannot drift out of agreement over how a policy.toml write is made
+    durable).
+
+    This is a narrow, deliberate exception to this module's own "always
+    rendered whole, never patched or hand-edited" derived-artifact
+    discipline (AD-12): Story 3.12's floor-raise touches exactly one
+    already-existing key, never introduces a new one, and the caller is
+    responsible for reading the SAME file this writes back to, never
+    composing a divergent view of it (see that story's own spec Design
+    Notes for why a resume's own floor-raise reads and rewrites the SAME
+    on-disk file rather than re-composing from ``EffectivePolicy``)."""
+    text = tomlkit.dumps(doc)
+    return _atomic_write_policy_text(text, loop_home)
 
 
 # =====================================================================
@@ -1448,6 +1527,7 @@ class BmadLoopHarness:
                         branch=task.branch,
                         worktree_path=task.worktree_path,
                         spec_file=task.spec_file,
+                        review_cycle=task.review_cycle,
                     )
                 )
         except (

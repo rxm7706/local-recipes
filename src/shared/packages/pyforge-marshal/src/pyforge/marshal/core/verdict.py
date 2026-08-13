@@ -360,6 +360,14 @@ is a configuration fact Marshal cannot determine, not a real precondition
 that was checked and failed (the spec's own explicit "never a crash"
 wording for this exact scenario).
 
+Story 3.13 (the parallel-fan-out clamp is surfaced, not silent, FR-184)
+adds ``MRS-POLICY-007`` (a composed ``max_parallel`` above 1 -- ``bmad_loop``
+0.9.0's own Phase 5 fan-out scheduler is unbuilt and clamps every run to 1
+regardless of what is requested) at ``Verdict.WARN``, the same tier as
+``MRS-POLICY-005``: the request is reported, never rejected -- a project
+declaring ``max_parallel > 1`` today is a legitimate, forward-looking
+setting for whenever the upstream scheduler ships, not a malformed value.
+
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -715,6 +723,40 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Boundaries forbid this signal from changing marshal status's exit code.
 # Both mirror MRS-STATUS-009's identical "the read failed, degrade every
 # affected value to unknown, never a hard failure" reasoning.
+# Story 5.9 (a story finished by hand is not invisible to the ledger,
+# AD-5/AD-6/AD-29/AD-33) adds four more MRS-DEPLOY-* codes for `marshal
+# deploy reconcile-completions`. MRS-DEPLOY-024 (the tracked sprint-status-
+# ledger.yaml could not be safely read/locked -- the primary HarnessPort.
+# ledger_story_statuses classification read, the secondary FsPort.
+# read_text re-read performed to apply the rewrite, or the advisory lock
+# guarding that whole sequence) classifies WARN, mirroring MRS-STATUS-005's
+# identical "a clean, reportable gap, never itself a failure" tier: either
+# the whole run degrades to report-only (a totally unreadable ledger) or
+# only the ledger-advance half does (lock contention, a dirty worktree --
+# spec promotion for other keys still proceeds). MRS-DEPLOY-025 (the
+# ledger's own durable write -- FsPort.write_text_atomic or VcsPort.
+# commit_paths -- failed, AFTER this run already computed which keys to
+# advance) classifies ERROR, the same tier as MRS-DEPLOY-008/011: a real
+# write was attempted against an already-decided action and did not
+# complete; unlike 024, the SEPARATE spec-promotion commit for the same
+# run's advanced keys is still attempted regardless (this story's own "two
+# dedicated commits, one per concern" Always bullet). MRS-DEPLOY-026 (a key
+# corroborated as durably merged via a route Marshal did not drive --
+# not-loop-native -- carries no row at all in the tracked ledger, or its
+# raw key has no matching line in the ledger's own re-read text) classifies
+# WARN, the same "reported, never blocks progression" tier as
+# MRS-DEPLOY-001/004/009/012: this story's own Boundaries forbid ever
+# inventing a new ledger row, so the gap is named per key and every OTHER
+# eligible key still advances. MRS-DEPLOY-027 (the post-commit Tier-3 feed
+# repair-write failed) classifies WARN: the ledger commit already landed
+# and stands regardless -- a best-effort closing step, not a precondition.
+#
+# Story 3.12 (retry escalation, AD-26, the spec-adaptive-model-tiering
+# Spec's own CAP-2) adds a thirteenth MRS-SPIN-* code, MRS-SPIN-016 (the
+# atomic write of the resumed run's floor-raised [adapter].model failed) at
+# WARN, mirroring MRS-SPIN-015's identical "a best-effort policy-toml
+# persistence step failed, an already-viable resume is never aborted over
+# it" tier.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -724,6 +766,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-POLICY-004": Verdict.UNEVALUABLE,
     "MRS-POLICY-005": Verdict.WARN,
     "MRS-POLICY-006": Verdict.UNEVALUABLE,
+    "MRS-POLICY-007": Verdict.WARN,
     "MRS-INIT-001": Verdict.UNEVALUABLE,
     "MRS-INIT-002": Verdict.UNEVALUABLE,
     "MRS-INIT-003": Verdict.ERROR,
@@ -891,6 +934,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-010": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
+    "MRS-DEPLOY-024": Verdict.WARN,
+    "MRS-DEPLOY-025": Verdict.ERROR,
+    "MRS-DEPLOY-026": Verdict.WARN,
+    "MRS-DEPLOY-027": Verdict.WARN,
+    "MRS-SPIN-016": Verdict.WARN,
 }
 
 

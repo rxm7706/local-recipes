@@ -550,6 +550,10 @@ Django stack (LTS-pinned):
 - **django** (5.2 LTS) — the web framework.
 - **channels** (4.x) + **daphne** (4.x) — WebSockets/async protocol layer + ASGI
   server for Django.
+- **asgiref** (>=3.5.2) + **channels_redis** (4.x) — **pyforge-steward env only**:
+  daphne's WSGI->ASGI adapter (`asgiref`, incl. `database_sync_to_async`) and the
+  cross-worker channel-layer backend for `channels` (`channels_redis`, needed once
+  workers > 1), Story 9.5.
 - **wagtail** (7.4 LTS) — Django CMS.
 - **coderedcms** (6.x) — CRX/CodeRed CMS built on Wagtail (marketing-site batteries).
 - **django-lasuite** (>=0.0.27) — common library for La Suite numérique Django

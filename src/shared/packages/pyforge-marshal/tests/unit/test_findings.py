@@ -47,7 +47,16 @@ def test_registered_codes_contains_the_real_codes():
     Story 4.3's cli/deploy.py::run_land_story adds MRS-DEPLOY-006/007/008/
     009. Story 4.8's cli/land.py adds a NEW area, MRS-LAND-001..007. Story
     4.9's cli/deploy.py::run_promote adds MRS-DEPLOY-023 (the new specs_dir
-    advisory lock, AD-42). This asserts the registry's exact real
+    advisory lock, AD-42). Story 5.9's cli/deploy.py::run_reconcile_
+    completions adds MRS-DEPLOY-024/025/026/027 (the tracked ledger
+    unreadable/unlockable, its write path failed, a corroborated
+    not-loop-native key absent/unmatched in the ledger, and the post-
+    commit Tier-3 feed repair-write failed). Story 3.12's
+    cli/spin.py::run_resume adds MRS-SPIN-016 (the retry-escalation
+    floor-raise's own policy.toml write failure, AD-26). Story 3.13's
+    core/policy.py::compose adds MRS-POLICY-007 (a composed max_parallel
+    above 1 -- bmad_loop 0.9.0's own Phase 5 fan-out scheduler is unbuilt
+    and clamps every run to 1). This asserts the registry's exact real
     contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -59,6 +68,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-POLICY-004",
             "MRS-POLICY-005",
             "MRS-POLICY-006",
+            "MRS-POLICY-007",
             "MRS-INIT-001",
             "MRS-INIT-002",
             "MRS-INIT-003",
@@ -203,6 +213,11 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-LAND-010",
             "MRS-STATUS-010",
             "MRS-STATUS-011",
+            "MRS-DEPLOY-024",
+            "MRS-DEPLOY-025",
+            "MRS-DEPLOY-026",
+            "MRS-DEPLOY-027",
+            "MRS-SPIN-016",
         }
     )
 

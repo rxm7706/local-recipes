@@ -22,11 +22,48 @@ boundary it would have to cross. (It is not the ONLY such place, as this
 paragraph originally claimed -- `test_doctor.py::test_build_report_never_
 raises_against_a_real_unresolved_environment` and Story 2.3's own
 `test_cli.py` sentinel test both reach the real probe too; fourth review
-pass, Blind Hunter.)"""
+pass, Blind Hunter.)
+
+Story 2.6 extends this file with `build_native`/`build_docker` coverage:
+mocked argv-shape/timeout/default-timeout tests (mirroring `_invoke_
+captured`'s own mocked I/O-matrix style, patching `pyforge.mason.cfe.
+run_streamed` rather than `subprocess.run`, since both new adapters are
+STREAM mode), plus a real end-to-end round-trip against Story 1.9's
+`fake_cfe_root` fixture (real `bash`/`sys.executable` subprocess, no
+mocking) mirroring `validate_recipe`/`submit_pr`'s own fixture-round-trip
+style above.
+
+Story 2.7 extends this file with `diagnose_failure` coverage, mirroring
+`validate_recipe`'s own test shapes exactly: the `_CFE_SCRIPTS`
+table-shape assertion grows a third entry, the AD-14 sentinel test grows a
+third call site, and `diagnose_failure` gets its own per-operation-default,
+table-entry-identity, and real-fixture round-trip tests.
+
+Story 2.8 extends this file with `optimize_recipe`/`scan_for_vulnerabilities`
+coverage, mirroring `diagnose_failure`'s own test shapes exactly: the
+`_CFE_SCRIPTS` table-shape assertion grows to five entries, the AD-14
+sentinel test grows two more call sites, and both new adapters get their own
+per-operation-default, table-entry-identity, and real-fixture round-trip
+tests. Neither adapter itself calls `ensure_import_floor` (that gate lives
+in `recipe.py`'s `optimize()`/`scan()`, one layer up -- see `test_recipe.py`
+and this story's Design Notes), so their real-fixture round-trip tests here
+need no floor faking: the fixture stubs are stdlib-only, canned scripts,
+never the real `ruamel.yaml`/`requests`-dependent ones.
+
+Story 2.9 extends this file with `env=` passthrough coverage for
+`_invoke_captured`/`submit_pr` -- the new keyword-only parameter both
+functions gain to let `recipe.py::submit()` inject `CFE_RECIPES_ROOT` into
+the child's environment (AD-14's second sanctioned pass-through site, see
+`tests/meta/test_credential_isolation.py`) -- and extends the AD-14
+sentinel test with one more `submit_pr` call site, this one passing an
+explicit `env={**os.environ, ...}` mapping, proving the new pass-through
+neither drops an inherited credential nor leaks one back into the returned
+`CfeResult`."""
 
 from __future__ import annotations
 
 import contextlib
+import io
 import json
 import os
 import signal
@@ -42,11 +79,13 @@ import pytest
 from pyforge.mason import cfe as cfe_module
 from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, _CFE_SCRIPTS, ImportFloorResult, _build_probe_script,
-    _extract_json, _invoke_captured, ensure_cfe_root, ensure_import_floor,
-    probe_import_floor, run_streamed, submit_pr, validate_recipe,
+    _extract_json, _invoke_captured, build_docker, build_native, diagnose_failure,
+    ensure_cfe_root, ensure_import_floor, optimize_recipe, probe_import_floor,
+    run_streamed, scan_for_vulnerabilities, submit_pr, update_recipe,
+    update_recipe_from_github, validate_recipe,
 )
 from pyforge.mason.errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
-from pyforge.mason.models import CfeResult
+from pyforge.mason.models import BuildResult, CfeResult
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot,
 )
@@ -1067,13 +1106,25 @@ def test_extract_json_returns_none_for_empty_stdout():
 
 # --- Story 2.1: _CFE_SCRIPTS table -------------------------------------------
 
-def test_cfe_scripts_table_has_exactly_the_two_story_1_9_fixture_entries():
-    """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr` --
-    Story 1.9's fixture only stubs these two, and which script backs each of
-    Stories 2.4-2.10 is still open."""
+def test_cfe_scripts_table_has_exactly_the_nine_stubbed_fixture_entries():
+    """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr`/
+    `build_native`/`build_docker`/`diagnose_failure`/`optimize_recipe`/
+    `scan_for_vulnerabilities`/`update_recipe`/`update_recipe_from_github`
+    -- the fixture tree only stubs these nine (Story 1.9's original pair,
+    Story 2.6's `native-build.sh`/`build-locally.py`, Story 2.7's
+    `failure_analyzer.py`, Story 2.8's `recipe_optimizer.py`/
+    `vulnerability_scanner.py`, and Story 2.10's `recipe_updater.py`/
+    `github_updater.py`)."""
     assert _CFE_SCRIPTS == {
         "validate_recipe": "validate_recipe.py",
         "submit_pr": "submit_pr.py",
+        "build_native": "native-build.sh",
+        "build_docker": "build-locally.py",
+        "diagnose_failure": "failure_analyzer.py",
+        "optimize_recipe": "recipe_optimizer.py",
+        "scan_for_vulnerabilities": "vulnerability_scanner.py",
+        "update_recipe": "recipe_updater.py",
+        "update_recipe_from_github": "github_updater.py",
     }
 
 
@@ -1291,6 +1342,706 @@ def test_submit_pr_invokes_its_own_table_entry_not_validate_recipes():
     assert argv[1].endswith("submit_pr.py")
 
 
+# --- Story 2.9: env= passthrough (_invoke_captured, submit_pr) -------------
+
+def test_invoke_captured_forwards_an_explicit_env_to_subprocess_run():
+    """`env=`, when given, reaches `subprocess.run` as `dict(env) if env is
+    not None else None` -- the exact expression
+    `tests/meta/test_credential_isolation.py`'s
+    `_SANCTIONED_PASS_THROUGH_ENV_EXPR` names, mirroring `run_streamed`'s
+    own established `env=` contract exactly."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        _invoke_captured(
+            "validate_recipe", [],
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            env={"A": "b"},
+        )
+
+    assert mock_run.call_args.kwargs["env"] == {"A": "b"}
+
+
+def test_invoke_captured_env_defaults_to_none_when_omitted():
+    """Every existing adapter caller (`validate_recipe`, `diagnose_failure`,
+    `optimize_recipe`, `scan_for_vulnerabilities`) passes no `env` -- this
+    pins that omitting it still reaches `subprocess.run` as a bare `None`
+    (inherit unmodified), not an empty dict or anything else."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        _invoke_captured(
+            "validate_recipe", [],
+            root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert mock_run.call_args.kwargs["env"] is None
+
+
+def test_submit_pr_forwards_an_explicit_env_to_invoke_captured():
+    """`submit_pr` is the one adapter that forwards a caller-supplied `env`
+    -- `recipe.py::submit()`'s `CFE_RECIPES_ROOT` injection reaches
+    `subprocess.run` through this exact path."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        submit_pr(
+            [], root=Path("/fake/root"), interpreter="/fake/python",
+            env={"CFE_RECIPES_ROOT": "/tmp/out-of-tree"},
+        )
+
+    assert mock_run.call_args.kwargs["env"] == {"CFE_RECIPES_ROOT": "/tmp/out-of-tree"}
+
+
+# --- Story 2.7: diagnose_failure -- per-operation default timeout, table
+# --- entry identity (mocked I/O-matrix coverage, mirroring validate_recipe) -
+
+def test_diagnose_failure_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_diagnose_failure_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_diagnose_failure_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("failure_analyzer.py")
+
+
+def test_diagnose_failure_passes_the_log_path_straight_through_as_args():
+    """No pre-validation of `log_path` (spec Always boundary): the adapter
+    passes `args` straight through, exactly like `validate_recipe`/
+    `submit_pr` do."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        diagnose_failure(
+            ["build.log"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[-1] == "build.log"
+
+
+def test_diagnose_failure_reports_a_no_match_body_as_data_not_raised():
+    """The real script exits 1 with a `{"success": false, "error": ...}`
+    body when no pattern matched (spec I/O matrix) -- a non-zero return code
+    is data on the returned `CfeResult`, never raised (AD-4)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "No known error pattern matched. '
+            'Manual inspection required.", "hint": "..."}',
+        ),
+    ):
+        result = diagnose_failure(
+            ["build.log"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["success"] is False
+    assert "No known error pattern matched" in result.json_body["error"]
+
+
+def test_diagnose_failure_reports_a_log_file_not_found_body_as_data_not_raised():
+    """`log_path` is never pre-validated for existence (spec Always
+    boundary) -- a missing file surfaces as CFE's own `{"success": false,
+    "error": "Log file not found: ..."}` body, exit 1, not a Mason-side
+    exception."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "Log file not found: /no/such/build.log"}',
+        ),
+    ):
+        result = diagnose_failure(
+            ["/no/such/build.log"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body == {
+        "success": False, "error": "Log file not found: /no/such/build.log",
+    }
+
+
+# --- Story 2.7: diagnose_failure -- real end-to-end against fake_cfe_root --
+
+def test_diagnose_failure_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = diagnose_failure(
+        ["build.log"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body["success"] is True
+    assert result.json_body["error_class"] == "MODULE_NOT_FOUND_AT_TEST"
+    assert "all_matches" in result.json_body
+
+
+# --- Story 2.8: optimize_recipe -- per-operation default timeout, table
+# --- entry identity (mocked I/O-matrix coverage, mirroring diagnose_failure)
+
+def test_optimize_recipe_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        optimize_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_optimize_recipe_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        optimize_recipe(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_optimize_recipe_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        optimize_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("recipe_optimizer.py")
+
+
+def test_optimize_recipe_passes_the_recipe_path_straight_through_as_args():
+    """No pre-validation of `recipe_path` (spec Always boundary): the
+    adapter passes `args` straight through, exactly like `validate_recipe`/
+    `diagnose_failure` do. No `--json` flag -- the real script always emits
+    JSON (spec Always boundary)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        optimize_recipe(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[2:] == ["recipes/foo"]
+
+
+def test_optimize_recipe_reports_suggestions_found_as_data_not_raised():
+    """The real script exits 1 with a `{"success": true, "suggestions_found":
+    N, "suggestions": [...]}` body when it finds quality issues (spec I/O
+    matrix) -- a non-zero return code is data on the returned `CfeResult`,
+    never raised (AD-4)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": true, "suggestions_found": 1, "suggestions": '
+            '[{"code": "ABT-001", "message": "Missing license_file.", '
+            '"suggestion": "Add license_file.", "confidence": 0.95}]}',
+        ),
+    ):
+        result = optimize_recipe(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["suggestions_found"] == 1
+    assert result.json_body["suggestions"][0]["code"] == "ABT-001"
+
+
+def test_optimize_recipe_reports_a_path_not_found_body_as_data_not_raised():
+    """`recipe_path` is never pre-validated for existence (spec Always
+    boundary) -- a missing path surfaces as CFE's own `{"success": false,
+    "error": "Path not found: ..."}` body, exit 1, not a Mason-side
+    exception."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "Path not found: /no/such/recipe"}',
+        ),
+    ):
+        result = optimize_recipe(
+            ["/no/such/recipe"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body == {"success": False, "error": "Path not found: /no/such/recipe"}
+
+
+# --- Story 2.8: optimize_recipe -- real end-to-end against fake_cfe_root ---
+
+def test_optimize_recipe_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = optimize_recipe(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 1
+    assert result.json_body["success"] is True
+    assert result.json_body["suggestions_found"] == 1
+    assert result.json_body["suggestions"][0]["code"] == "ABT-001"
+
+
+# --- Story 2.8: scan_for_vulnerabilities -- per-operation default timeout,
+# --- table entry identity (mocked I/O-matrix coverage, mirroring
+# --- diagnose_failure) ------------------------------------------------------
+
+def test_scan_for_vulnerabilities_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        scan_for_vulnerabilities([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_scan_for_vulnerabilities_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        scan_for_vulnerabilities(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_scan_for_vulnerabilities_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        scan_for_vulnerabilities([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("vulnerability_scanner.py")
+
+
+def test_scan_for_vulnerabilities_passes_json_flag_then_recipe_path_as_args():
+    """Unlike `optimize_recipe`, the real script defaults to human text and
+    needs an explicit `--json` flag (spec Always boundary) -- the adapter's
+    `args` is passed straight through, exactly like every other adapter."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        scan_for_vulnerabilities(
+            ["--json", "recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[2:] == ["--json", "recipes/foo"]
+
+
+def test_scan_for_vulnerabilities_reports_vulnerabilities_found_as_data_not_raised():
+    """The real script exits 1 when vulnerabilities are found (spec I/O
+    matrix) -- a non-zero return code is data on the returned `CfeResult`,
+    never raised (AD-4), with no Mason-side severity filtering."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": true, "mode": "osv-api", "scanned": 1, '
+            '"vulnerable_packages": 1, "total_vulnerabilities": 1, "results": '
+            '[{"package": "example-pkg", "version": "1.0.0", "vulns": '
+            '[{"id": "OSV-2024-1", "aliases": ["CVE-2024-0001"], "summary": '
+            '"example vuln"}]}]}',
+        ),
+    ):
+        result = scan_for_vulnerabilities(
+            ["--json", "recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["total_vulnerabilities"] == 1
+    assert result.json_body["results"][0]["package"] == "example-pkg"
+
+
+def test_scan_for_vulnerabilities_reports_a_scan_error_body_as_data_not_raised():
+    """`recipe_path` is never pre-validated for existence (spec Always
+    boundary) -- a scan error surfaces as CFE's own `{"success": false,
+    "error": ...}` body, exit 1, not a Mason-side exception."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "connection refused"}',
+        ),
+    ):
+        result = scan_for_vulnerabilities(
+            ["--json", "/no/such/recipe"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body == {"success": False, "error": "connection refused"}
+
+
+def test_scan_for_vulnerabilities_reports_a_missing_path_body_on_stderr_with_no_json_body():
+    """Unlike `optimize_recipe`'s missing-path body (stdout, parsed above), the
+    real wrapped scanner prints its `{"success": false, "error": ...}` body to
+    *stderr* on `FileNotFoundError` -- `_invoke_captured` only parses JSON
+    from `stdout` (`_extract_json(completed.stdout)`), so `json_body` is
+    `None` here even though the raw error text is present on `.stderr`
+    verbatim. Pins the asymmetry `recipe.py`'s module docstring documents
+    (unlike `test_scan_for_vulnerabilities_reports_a_scan_error_body_as_data_not_raised`
+    above, which puts its error on stdout and so cannot exercise this path)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout="",
+            stderr='{"success": false, "error": "Path not found: /no/such/recipe"}',
+        ),
+    ):
+        result = scan_for_vulnerabilities(
+            ["--json", "/no/such/recipe"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body is None
+    assert result.stderr == '{"success": false, "error": "Path not found: /no/such/recipe"}'
+
+
+# --- Story 2.8: scan_for_vulnerabilities -- real end-to-end against
+# --- fake_cfe_root -----------------------------------------------------------
+
+def test_scan_for_vulnerabilities_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = scan_for_vulnerabilities(
+        ["--json", "recipes/example"],
+        root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body["success"] is True
+    assert result.json_body["total_vulnerabilities"] == 0
+    assert result.json_body["results"] == []
+
+
+# --- Story 2.10: update_recipe -- per-operation default timeout, table
+# --- entry identity (mocked I/O-matrix coverage, mirroring diagnose_failure)
+
+def test_update_recipe_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_update_recipe_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_update_recipe_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("recipe_updater.py")
+
+
+def test_update_recipe_passes_the_recipe_path_and_dry_run_straight_through_as_args():
+    """No pre-validation of `recipe_path` (spec Always boundary): the
+    adapter passes `args` straight through, exactly like `optimize_recipe`/
+    `diagnose_failure` do."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe(
+            ["recipes/foo", "--dry-run"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[2:] == ["recipes/foo", "--dry-run"]
+
+
+def test_update_recipe_reports_an_already_up_to_date_body_as_data_not_raised():
+    """The real script exits 0 with `{"success": true, "updated": false,
+    "message": "Recipe is already up-to-date."}` when nothing changed (spec
+    I/O matrix) -- returned as data, never raised."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=0,
+            stdout='{"success": true, "updated": false, "message": '
+            '"Recipe is already up-to-date."}',
+        ),
+    ):
+        result = update_recipe(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True, "updated": False, "message": "Recipe is already up-to-date.",
+    }
+
+
+def test_update_recipe_reports_a_dry_run_plan_body_as_data_not_raised():
+    """`--dry-run` computes and returns the plan without writing (spec I/O
+    matrix): the real script's `actions` list is `json_body["actions"]`
+    verbatim, never re-authored (AD-1)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=0,
+            stdout='{"success": true, "updated": true, "dry_run": true, "actions": '
+            '[{"action": "update", "path": "context.version", "value": "9.9.9"}], '
+            '"message": "Dry run: Would update recipe to version 9.9.9."}',
+        ),
+    ):
+        result = update_recipe(
+            ["recipes/foo", "--dry-run"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 0
+    assert result.json_body["dry_run"] is True
+    assert result.json_body["actions"][0]["path"] == "context.version"
+
+
+def test_update_recipe_reports_an_upstream_lookup_failure_body_as_data_not_raised():
+    """The real script exits 1 with `{"success": false, "message": ...}`
+    when the package isn't found on PyPI (spec I/O matrix) -- a non-zero
+    return code is data on the returned `CfeResult`, never raised (AD-4)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "message": '
+            '"Could not fetch latest version for \'no-such-pkg\' from PyPI."}',
+        ),
+    ):
+        result = update_recipe(
+            ["recipes/no-such-pkg"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["success"] is False
+
+
+# --- Story 2.10: update_recipe -- real end-to-end against fake_cfe_root ----
+
+def test_update_recipe_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = update_recipe(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True, "updated": True, "new_version": "9.9.9",
+        "message": "Recipe updated successfully.",
+    }
+
+
+def test_update_recipe_against_fake_cfe_root_tolerates_a_leading_progress_line(
+    fake_cfe_root, monkeypatch,
+):
+    """Reading the real `recipe_updater.py` confirms it prints progress
+    narration ("Checking for updates...", "New version found: ...") to
+    stdout before its final JSON body (spec Design Notes) -- the same
+    tolerant-parsing shape `submit_pr` already exercises."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_PROGRESS_LINE",
+        "Checking for updates to 'example' (current version: 1.0.0)...",
+    )
+
+    result = update_recipe(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True, "updated": True, "new_version": "9.9.9",
+        "message": "Recipe updated successfully.",
+    }
+
+
+# --- Story 2.10: update_recipe_from_github -- per-operation default
+# --- timeout, table entry identity (mocked I/O-matrix coverage, mirroring
+# --- diagnose_failure) -------------------------------------------------------
+
+def test_update_recipe_from_github_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_update_recipe_from_github_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_update_recipe_from_github_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("github_updater.py")
+
+
+def test_update_recipe_from_github_passes_recipe_path_repo_and_pre_straight_through_as_args():
+    """No pre-validation or interpretation of `args` (spec Always boundary):
+    the adapter passes them straight through, exactly like every other
+    adapter."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github(
+            ["recipes/foo", "--dry-run", "--repo", "owner/repo", "--pre"],
+            root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[2:] == ["recipes/foo", "--dry-run", "--repo", "owner/repo", "--pre"]
+
+
+def test_update_recipe_from_github_reports_a_prerelease_skip_body_as_data_not_raised():
+    """The real script exits 0 with `{"success": true, "updated": false,
+    ...}` when the latest release is a pre-release and `--pre` was not
+    given (spec I/O matrix) -- returned as data, never raised."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=0,
+            stdout='{"success": true, "updated": false, "current_version": "1.0.0", '
+            '"latest_version": "2.0.0rc1", "latest_tag": "v2.0.0rc1", "message": '
+            '"Latest release 2.0.0rc1 is a pre-release \\u2014 skipping. Pass --pre '
+            'to include pre-releases."}',
+        ),
+    ):
+        result = update_recipe_from_github(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 0
+    assert result.json_body["updated"] is False
+    assert "pre-release" in result.json_body["message"]
+
+
+def test_update_recipe_from_github_reports_a_no_repo_detected_body_as_data_not_raised():
+    """The real script exits 1 with `{"success": false, "error": ...}` when
+    no GitHub repo can be auto-detected and `--repo` was not given (spec I/O
+    matrix's "Upstream lookup fails" row) -- a non-zero return code is data,
+    never raised (AD-4)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "No GitHub URL detected in this '
+            'recipe. Pass --repo owner/repo to specify it manually, or use '
+            'update_recipe (PyPI autotick) instead.", "recipe": '
+            '"recipes/foo/recipe.yaml"}',
+        ),
+    ):
+        result = update_recipe_from_github(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["success"] is False
+
+
+# --- Story 2.10: update_recipe_from_github -- real end-to-end against
+# --- fake_cfe_root ------------------------------------------------------------
+
+def test_update_recipe_from_github_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = update_recipe_from_github(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True,
+        "updated": True,
+        "current_version": "1.0.0",
+        "new_version": "9.9.9",
+        "latest_tag": "v9.9.9",
+        "github_url": "https://github.com/example/example/releases/tag/v9.9.9",
+        "message": "Updated example 1.0.0 → 9.9.9.",
+    }
+
+
+def test_update_recipe_from_github_against_fake_cfe_root_tolerates_a_leading_progress_line(
+    fake_cfe_root, monkeypatch,
+):
+    """Reading the real `github_updater.py` confirms it prints progress
+    narration ("Checking GitHub releases for ...", "New version found:
+    ...") to stdout before its final JSON body (spec Design Notes) -- the
+    same tolerant-parsing shape `submit_pr` already exercises."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_PROGRESS_LINE",
+        "Checking GitHub releases for example/example (current: example 1.0.0)…",
+    )
+
+    result = update_recipe_from_github(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body["success"] is True
+
+
 # --- Story 2.1: real end-to-end against Story 1.9's fake_cfe_root fixture --
 # --- (no mocking -- mirrors test_fake_cfe_root_fixture.py's own style) -----
 
@@ -1392,11 +2143,12 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     """AD-14: Mason never reads a JFROG_* variable, and a credential reaches
     CFE only through the inherited process environment -- never surfaced
     back into a returned result's own fields. A sentinel value set via
-    `monkeypatch.setenv` proves this for the three call sites the spec
-    names: `probe_import_floor` and `validate_recipe`/`submit_pr` (all three
-    against Story 1.9's `fake_cfe_root` fixture where applicable, real
-    subprocess, no mocking -- mirroring this file's existing fake-root
-    tests).
+    `monkeypatch.setenv` proves this for the call sites the spec names:
+    `probe_import_floor` and `validate_recipe`/`submit_pr` (Story 2.3), plus
+    `diagnose_failure` (Story 2.7, same shape), plus `optimize_recipe`/
+    `scan_for_vulnerabilities` (Story 2.8, same shape) -- all against Story
+    1.9's `fake_cfe_root` fixture where applicable, real subprocess, no
+    mocking -- mirroring this file's existing fake-root tests).
 
     **The POSITIVE control is what gives this test teeth** (third review
     pass, both reviewers, reproduced). Without it the test could not fail:
@@ -1431,7 +2183,15 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     which the positive control proves is live. Giving the stub a
     `MASON_FIXTURE_STDERR` knob purely to make the assertion bite would
     expand Story 1.9's shared fixture to re-prove, on a second stream, the
-    same inheritance the first stream already establishes."""
+    same inheritance the first stream already establishes.
+
+    Story 2.9 adds one more `submit_pr` call, this one with an EXPLICIT
+    `env={**os.environ, "CFE_RECIPES_ROOT": ...}` -- `recipe.py::submit()`'s
+    own shape exactly. Proves the new pass-through doesn't accidentally drop
+    the inherited sentinel/marker pair (a caller building `{**environ, ...}`
+    still carries everything `environ` held) and that the sentinel still
+    never surfaces in the returned `CfeResult`'s own fields, the same as
+    every bare-`env=None` call above."""
     _clear_fixture_env(monkeypatch)
     sentinel = "JFROG-SENTINEL-9f3e7a1c"
     monkeypatch.setenv("JFROG_API_KEY", sentinel)
@@ -1449,11 +2209,333 @@ def test_jfrog_credential_sentinel_never_appears_in_cfe_results(fake_cfe_root, m
     submit_result = submit_pr(
         [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
     )
+    submit_result_with_explicit_env = submit_pr(
+        [], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+        env={**os.environ, "CFE_RECIPES_ROOT": str(fake_cfe_root / "recipes")},
+    )
+    diagnose_result = diagnose_failure(
+        ["build.log"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+    optimize_result = optimize_recipe(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+    scan_result = scan_for_vulnerabilities(
+        ["--json", "recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
 
-    for result in (validate_result, submit_result):
+    for result in (
+        validate_result, submit_result, submit_result_with_explicit_env,
+        diagnose_result, optimize_result, scan_result,
+    ):
         # Positive: the child really did inherit the parent's environment.
         assert result.json_body == {"inherited": inheritance_marker}
         # Negative: and the credential sitting beside it never came back.
         assert sentinel not in result.stdout
         assert sentinel not in result.stderr
         assert sentinel not in str(result.json_body)
+
+
+# --- Story 2.6: build_native / build_docker -- mocked I/O-matrix coverage --
+
+def test_build_native_invokes_bash_not_the_resolved_interpreter():
+    """spec Always boundary: `native-build.sh` is invoked through `bash`,
+    never a Python interpreter -- the one disclosed exception to this
+    file's Python-only convention."""
+    with patch(
+        "pyforge.mason.cfe.run_streamed", return_value=(0, "stdout"),
+    ) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value="linux64"):
+            build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    args, kwargs = mock_run_streamed.call_args
+    argv = args[0]
+    expected_script = str(
+        Path("/fake/root") / ".claude" / "scripts" / "conda-forge-expert" / "native-build.sh"
+    )
+    assert argv == ["bash", expected_script, "recipes/foo"]
+    assert kwargs["timeout"] == 5.0
+
+
+def test_build_native_reports_the_detected_config_and_artifact_dir():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "ok")):
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value="osxarm64"):
+            result = build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    assert result == BuildResult(
+        mode="native", config="osxarm64", returncode=0, stdout="ok",
+        artifact_dir="build_artifacts/osxarm64",
+    )
+
+
+def test_build_native_reports_none_config_and_artifact_dir_on_an_unsupported_host():
+    """spec I/O matrix: an unmapped host still runs the script, which
+    reports its own failure via `returncode` -- no Mason-level error, and
+    no guessed `artifact_dir`."""
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(1, "unsupported host")):
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            result = build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    assert result.config is None
+    assert result.artifact_dir is None
+    assert result.returncode == 1
+
+
+def test_build_native_defaults_to_a_3600_second_timeout():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            build_native("recipes/foo", root=Path("/fake/root"))
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 3600.0
+
+
+def test_build_native_honors_an_explicit_timeout_override():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            build_native("recipes/foo", root=Path("/fake/root"), timeout=42.0)
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 42.0
+
+
+def test_build_native_translates_timeout_expired_to_cfe_timeout_error():
+    with patch(
+        "pyforge.mason.cfe.run_streamed",
+        side_effect=subprocess.TimeoutExpired(cmd=["bash"], timeout=5.0),
+    ):
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            with pytest.raises(CfeTimeoutError) as excinfo:
+                build_native("recipes/foo", root=Path("/fake/root"), timeout=5.0)
+
+    assert excinfo.value.script == "build_native"
+    assert excinfo.value.timeout == 5.0
+
+
+def test_build_native_forwards_stderr_sink_to_run_streamed():
+    sink = object()
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        with patch("pyforge.mason.cfe.detect_native_build_config", return_value=None):
+            build_native(
+                "recipes/foo", root=Path("/fake/root"), timeout=5.0, stderr_sink=sink,
+            )
+
+    assert mock_run_streamed.call_args.kwargs["stderr_sink"] is sink
+
+
+def test_build_docker_invokes_the_resolved_interpreter_against_the_root_level_script():
+    """spec Always boundary: `build-locally.py` resolves at the CFE root's
+    OWN TOP LEVEL, not the standard `.claude/scripts/conda-forge-expert/`
+    subdirectory."""
+    with patch(
+        "pyforge.mason.cfe.run_streamed", return_value=(0, "stdout"),
+    ) as mock_run_streamed:
+        build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    args, kwargs = mock_run_streamed.call_args
+    argv = args[0]
+    expected_script = str(Path("/fake/root") / "build-locally.py")
+    assert argv == ["/fake/python", expected_script, "linux64"]
+    assert kwargs["timeout"] == 5.0
+
+
+def test_build_docker_reports_the_given_config_and_artifact_dir():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "ok")):
+        result = build_docker(
+            "osx64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result == BuildResult(
+        mode="docker", config="osx64", returncode=0, stdout="ok",
+        artifact_dir="build_artifacts/osx64",
+    )
+
+
+def test_build_docker_defaults_to_a_7200_second_timeout():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        build_docker("linux64", root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 7200.0
+
+
+def test_build_docker_honors_an_explicit_timeout_override():
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=99.0,
+        )
+
+    assert mock_run_streamed.call_args.kwargs["timeout"] == 99.0
+
+
+def test_build_docker_translates_timeout_expired_to_cfe_timeout_error():
+    with patch(
+        "pyforge.mason.cfe.run_streamed",
+        side_effect=subprocess.TimeoutExpired(cmd=["python"], timeout=5.0),
+    ):
+        with pytest.raises(CfeTimeoutError) as excinfo:
+            build_docker(
+                "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            )
+
+    assert excinfo.value.script == "build_docker"
+    assert excinfo.value.timeout == 5.0
+
+
+def test_build_docker_reports_a_nonzero_returncode_as_data_not_raised():
+    """AD-4: a failed delegated build is data, never an exception."""
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(1, "build failed")):
+        result = build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+        )
+
+    assert result.returncode == 1
+    assert result.stdout == "build failed"
+
+
+def test_build_docker_forwards_stderr_sink_to_run_streamed():
+    sink = object()
+    with patch("pyforge.mason.cfe.run_streamed", return_value=(0, "")) as mock_run_streamed:
+        build_docker(
+            "linux64", root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0,
+            stderr_sink=sink,
+        )
+
+    assert mock_run_streamed.call_args.kwargs["stderr_sink"] is sink
+
+
+# --- Story 2.6: build_native / build_docker -- real fixture round-trip -----
+# --- (no mocking -- mirrors validate_recipe/submit_pr's own style above) ---
+
+def test_build_native_against_fake_cfe_root_streams_stderr_and_reports_stdout(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: "linux64")
+    sink = io.StringIO()
+
+    result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0, stderr_sink=sink)
+
+    assert result.mode == "native"
+    assert result.config == "linux64"
+    assert result.artifact_dir == "build_artifacts/linux64"
+    assert result.returncode == 0
+    assert "native-build-stub" in sink.getvalue()
+    assert "native build stub ok" in result.stdout
+
+
+def test_build_native_against_fake_cfe_root_with_nonzero_exit_returns_data_not_raise(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: None)
+
+    result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0)
+
+    assert result.returncode == 1
+    assert result.config is None
+    assert result.artifact_dir is None
+
+
+def test_build_native_reports_artifact_dir_even_when_the_build_itself_fails(
+    fake_cfe_root, monkeypatch,
+):
+    """Review pass: the other nonzero-exit test above pairs `returncode=1`
+    with an UNRECOGNIZED host (`config=None`), so it never proves
+    `artifact_dir` survives a failed build on a RECOGNIZED one -- the
+    routine "compile failed on a supported platform" case AD-4's own "a
+    failed build is data" philosophy exists for. `config`/`artifact_dir`
+    must not get suppressed just because `returncode != 0`."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: "linux64")
+
+    result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0)
+
+    assert result.returncode == 1
+    assert result.config == "linux64"
+    assert result.artifact_dir == "build_artifacts/linux64"
+
+
+def test_build_docker_against_fake_cfe_root_matches_the_fixtures_canned_stdout(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = build_docker(
+        "linux64", root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert "build-locally stub ok" in result.stdout
+    assert result.artifact_dir == "build_artifacts/linux64"
+    assert result.mode == "docker"
+
+
+def test_build_docker_against_fake_cfe_root_with_nonzero_exit_returns_data_not_raise(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv("MASON_FIXTURE_EXIT_CODE", "1")
+
+    result = build_docker(
+        "linux64", root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 1
+
+
+@pytest.mark.parametrize("bad_config", [None, "", "   "])
+def test_build_docker_rejects_a_blank_config_before_spawning_a_child(bad_config, monkeypatch):
+    """Review pass: `cli.py`'s own usage check is the only thing that kept a
+    blank `config` from ever reaching this function -- a direct caller of
+    the public `recipe.build()`/`cfe.build_docker()` API (e.g. a future
+    `package.py` conda-forge ship target, AD-11) could reach it unvalidated
+    and hit a raw `TypeError` deep inside `subprocess.Popen` instead of a
+    clean, actionable error. Asserts no subprocess spawns at all by
+    replacing `run_streamed` with a call that fails the test if reached."""
+    def _boom(*args, **kwargs):
+        raise AssertionError("run_streamed must not be called for a blank config")
+
+    monkeypatch.setattr("pyforge.mason.cfe.run_streamed", _boom)
+
+    with pytest.raises(ValueError):
+        build_docker(bad_config, root=Path("/fake/root"), interpreter="/fake/python", timeout=5.0)
+
+
+# --- Story 2.6: AD-14 credential-isolation sentinel test, build adapters ---
+
+
+def test_jfrog_credential_sentinel_never_appears_in_build_results(fake_cfe_root, monkeypatch):
+    """Mirrors `test_jfrog_credential_sentinel_never_appears_in_cfe_results`
+    above (Story 2.3) for the two new STREAM-mode adapters this story adds
+    -- `build_native`/`build_docker` are new CFE-invoking, environment-
+    inheriting, stdout-capturing call sites, and the existing sentinel test
+    is explicitly scoped (by its own docstring) to the three call sites
+    Story 2.3's spec named, none of which are these (review pass).
+
+    Same positive-control shape as the existing test: both new fixture
+    stubs (`native-build.sh`, `build-locally.py`) honor `MASON_FIXTURE_
+    STDOUT`, so setting it to a value that can only have come from the
+    inherited environment proves inheritance, while asserting the sentinel
+    stays out of `result.stdout` proves it never leaks back out -- the same
+    two-sided shape the AD-14 guard's own docstring requires (Guard 3's AST
+    scan already proves neither adapter passes `env=` at all; this test is
+    the runtime round-trip on top of that structural proof)."""
+    _clear_fixture_env(monkeypatch)
+    sentinel = "JFROG-SENTINEL-2c8f61ab"
+    monkeypatch.setenv("JFROG_API_KEY", sentinel)
+
+    inheritance_marker = "INHERITED-BUILD-ENV-7a4e93d0"
+    monkeypatch.setenv("MASON_FIXTURE_STDOUT", inheritance_marker)
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: "linux64")
+
+    native_result = build_native("recipes/foo", root=fake_cfe_root, timeout=15.0)
+    docker_result = build_docker(
+        "linux64", root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    for result in (native_result, docker_result):
+        # Positive: the child really did inherit the parent's environment.
+        assert inheritance_marker in result.stdout
+        # Negative: and the credential sitting beside it never came back.
+        assert sentinel not in result.stdout

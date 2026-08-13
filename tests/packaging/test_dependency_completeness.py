@@ -161,6 +161,20 @@ BASELINE_UNDECLARED_IMPORTS: dict[str, dict[str, str]] = {
             "it needs either promoting _http.py into a proper shared package or "
             "making the import lazy, not a manifest line."
         ),
+        "django": (
+            "OPEN. Story 9.1 (AD-1/AD-13): pyforge.steward.dashboard ships ONLY "
+            "behind the [dashboard] extra, never a base dependency -- see "
+            "dashboard/__init__.py's docstring. apps.py (a Django AppConfig) and "
+            "cache.py (a Django cache backend) import django unconditionally at "
+            "module level because that IS their contract; what actually gates "
+            "whether either module is ever reached by an extras-less install is "
+            "tests/meta/test_invariants.py::"
+            "test_no_module_outside_dashboard_imports_dashboard_django_or_channels, "
+            "not this scanner. Declaring django as a hard [project.dependencies] "
+            "entry would defeat the extra and force it onto every steward "
+            "install. Closing this needs the scanner to recognize "
+            "framework-plugin modules, not a manifest line."
+        ),
     },
 }
 
@@ -211,11 +225,31 @@ def _project_extras(package: str) -> set[str]:
     return {_requirement_name(s) for specs in optional.values() for s in specs}
 
 
+def _run_dep_spec_str(spec: object) -> str:
+    """A pixi run-dependency value as a comparable pin string.
+
+    Most values are plain version-constraint strings. A workspace member
+    (Story 14.2's `pyforge-core = { path = "../pyforge-core" }`) expresses
+    itself instead as a path-dependency TABLE, which pyproject.toml's
+    matching entry states as a bare, unversioned name -- so a path-shaped
+    dict normalizes to the same empty spec a bare name parses to. Any OTHER
+    dict-shaped value is left as its `str()` form rather than assumed
+    unversioned, so it still gets compared -- and fails loudly on drift --
+    instead of being silently exempted.
+    """
+    if isinstance(spec, dict):
+        return "" if "path" in spec else str(spec)
+    return str(spec)
+
+
 def _run_dependencies(package: str) -> dict[str, frozenset[str]]:
     run_deps = _load(package, "pixi.toml").get("package", {}).get(
         "run-dependencies", {}
     )
-    return {_normalize(name): _pin_set(str(spec)) for name, spec in run_deps.items()}
+    return {
+        _normalize(name): _pin_set(_run_dep_spec_str(spec))
+        for name, spec in run_deps.items()
+    }
 
 
 def _conda_only(package: str) -> frozenset[str]:

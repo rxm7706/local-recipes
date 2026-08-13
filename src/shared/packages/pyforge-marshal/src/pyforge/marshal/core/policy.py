@@ -2,10 +2,11 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 22-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 23-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
-and AD-40's 4 landing keys (Story 4.7)) -- not a mirror of the harness's much
+AD-40's 4 landing keys (Story 4.7), and FR-184's ``max_parallel`` (Story
+3.13)) -- not a mirror of the harness's much
 larger ``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
 rendering concern). Every field is wrapped in a ``PolicyField{value, layer,
 raw_source}`` so an operator can always answer "why is this value what it
@@ -38,15 +39,22 @@ on by later stories (4.5, 4.8, 4.10), never narrowed by a journal entry, plus
 STATIC for the identical reason ``epic_surfaces``/``model_tier_map`` are:
 declared and validated here, rendered by ``cli/init.py::run_init`` into a
 loop home's ``.mcp.json`` and probed for resolvability by ``run_preflight``,
-never narrowed by a journal entry. 10
+never narrowed by a journal entry. 11
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
-(Story 3.5) ``idle_threshold_minutes``, and (Story 3.6) the 4 budget
+(Story 3.5) ``idle_threshold_minutes``, (Story 3.6) the 4 budget
 ceilings ``max_tokens_per_story``, ``max_tokens_per_run``,
 ``max_wall_clock_minutes_per_story``, ``max_wall_clock_minutes_per_run`` --
 each the closest existing analog to that same "operator-tunable numeric
-ceiling" shape. Seed fields live ONLY in a private ``_seed`` mapping;
+ceiling" shape -- and (Story 3.13) ``max_parallel``: ``bmad_loop`` 0.9.0's
+own Phase 5 parallel-fan-out scheduler is unbuilt and clamps every run to 1
+regardless of what is requested, so this key exists to let a requested
+value compose cleanly instead of tripping the generic "unknown key" finding
+(``MRS-POLICY-001``), never to make the fan-out real; a resolved value above
+1 raises a dedicated WARN advisory naming the clamp and its cause
+(``_max_parallel_clamp_finding``). Seed fields live ONLY in a private
+``_seed`` mapping;
 ``seed_view()`` is the sole whitelisted
 accessor (closing F-8: it is what lets ``marshal config``/FR-54 and FR-53
 validation range over every key without contradicting "reading a seed
@@ -136,7 +144,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 22-key vocabulary -------------------------------------------
+# --- the closed 23-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -202,6 +210,14 @@ _SEED_KEYS: frozenset[str] = frozenset(
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        # Story 3.13's 11th key (FR-184): `bmad_loop` 0.9.0's own Phase 5
+        # parallel-fan-out scheduler is unbuilt and clamps every run to 1
+        # regardless of what is requested (see this module's own docstring)
+        # -- schema-blessed here so a project requesting `max_parallel > 1`
+        # composes cleanly instead of tripping MRS-POLICY-001, and
+        # `_max_parallel_clamp_finding` names the clamp whenever the
+        # resolved value exceeds 1.
+        "max_parallel",
     }
 )
 _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
@@ -321,6 +337,14 @@ DEFAULT_POLICY: Mapping[str, object] = {
     "max_tokens_per_run": 500_000_000,
     "max_wall_clock_minutes_per_story": 1_440,
     "max_wall_clock_minutes_per_run": 2_880,
+    # Story 3.13's `max_parallel` (FR-184): 1, matching both `bmad_loop`
+    # 0.9.0's own `ScmPolicy.max_parallel` default and Marshal's rendered
+    # `.bmad-loop/policy.toml` (`adapters/harness_bmadloop.py`'s hardcoded
+    # `max_parallel = 1`) -- Phase 5 parallel fan-out is not built in the
+    # vendored harness, so every run is clamped to 1 regardless of what is
+    # requested. See `_valid_parallel_count`/`_max_parallel_clamp_finding`
+    # for the composed value and the advisory naming the clamp.
+    "max_parallel": 1,
     # Story 2.3's `epic_surfaces` (AD-27): no epic has a declared allowlist
     # until a project's own policy says otherwise -- an empty mapping, the
     # same "nothing declared yet" posture `model_tier_map`'s own empty-dict
@@ -773,6 +797,39 @@ def _valid_attempt_count(value: object) -> int | None:
     return None
 
 
+def _valid_parallel_count(value: object) -> int | None:
+    """``max_parallel`` (Story 3.13, FR-184): a plain ``int``, not ``bool``,
+    ``>= 1`` -- mirrors ``_valid_attempt_count``'s shape but floored at 1,
+    not 0: a fan-out width of zero has no coherent meaning (mirrors
+    ``bmad_loop`` 0.9.0's own vendored ``PolicyError`` floor for this exact
+    field, ``scm.max_parallel must be >= 1``), unlike an attempt-count
+    ceiling of zero (a legitimate "never retry" policy). The composed value
+    is preserved as requested -- Marshal never floors it to 1 itself; only
+    the vendored harness's own ``loads()`` does that, silently, which is
+    exactly what ``_max_parallel_clamp_finding`` exists to surface.
+
+    Magnitude-bounded the same way ``_valid_positive_number`` bounds its own
+    (review finding): an arbitrary-precision ``int`` built by non-string
+    arithmetic (e.g. ``10**5000``) would compose cleanly here and then blow
+    up ``_max_parallel_clamp_finding``'s own f-string formatting against
+    Python's int-to-str digit limit, breaking ``compose()``'s "never raises
+    on malformed content" contract for a direct caller. ``float(value)``
+    raises ``OverflowError`` on a too-large int -- never the digit-limit
+    error a ``str()``/f-string conversion would hit -- so probing magnitude
+    this way rejects the value before any later formatting ever could. Not
+    reachable via a real ``marshal-policy.toml`` today (``tomllib``'s own
+    parser is gated by the identical digit limit and fails first), only via
+    a direct programmatic ``compose()`` call -- but the function's own
+    contract holds regardless of caller."""
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        return None
+    try:
+        float(value)
+    except OverflowError:
+        return None
+    return value
+
+
 def _valid_positive_number(value: object) -> int | float | None:
     """Shared by ``idle_threshold_minutes`` (Story 3.5) and Story 3.6's four
     budget ceilings -- every operator-tunable numeric ceiling with no
@@ -936,6 +993,27 @@ def _project_slug_finding(slug: str) -> Finding:
     )
 
 
+def _max_parallel_clamp_finding(value: int) -> Finding:
+    """A resolved ``max_parallel`` above 1 (Story 3.13, FR-184): ``warn``,
+    never ``error`` -- the request composes and is reported, never rejected,
+    the same "advisory, not a refusal" posture ``MRS-POLICY-005`` already
+    carries. Names both the requested value and the upstream cause so an
+    operator does not have to independently rediscover that ``bmad_loop``
+    0.9.0's own Phase 5 fan-out scheduler is unbuilt -- see this module's
+    own docstring for the exact vendored citations (``policy.py:448-451``
+    names it "not built yet"; ``policy.py:815-817,841-842`` clamp every
+    requested value to 1 with no diagnostic of their own)."""
+    return Finding(
+        code="MRS-POLICY-007",
+        severity=Severity.WARN,
+        message=(
+            f"max_parallel={value} requested, but bmad_loop 0.9.0's own "
+            "Phase 5 parallel-fan-out scheduler is unbuilt and clamps "
+            "every run to 1 -- the request has no effect"
+        ),
+    )
+
+
 def _merge_field(
     key: str,
     validator: _Validator,
@@ -1053,7 +1131,7 @@ def _compose_worktree_seed_paths(
 class EffectivePolicy:
     """The composed, immutable policy value (AD-10): 4 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
-    10 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
+    11 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
     fails the build if any other module IN THE INSTALLED PACKAGE accesses
     the ``_seed`` attribute directly (its scan surface; test code and
@@ -1160,7 +1238,7 @@ class EffectivePolicy:
     def content_hash(self) -> str:
         """``sha256`` hex digest over a canonical sorted-key JSON
         serialization of every field's FULL ``{value, layer, raw_source}``
-        (5 static + 10 seed) -- AD-35's naming primitive. Hashing only
+        (5 static + 11 seed) -- AD-35's naming primitive. Hashing only
         ``value`` would let two compositions with identical values but
         DIFFERENT winning layers collide on the same hash, so
         ``materialize()``'s write-once check would silently keep stale
@@ -1204,7 +1282,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 22-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 23-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -1426,7 +1504,25 @@ def compose(
             findings,
             "MRS-POLICY-003",
         ),
+        "max_parallel": _merge_field(
+            "max_parallel",
+            _valid_parallel_count,
+            DEFAULT_POLICY["max_parallel"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
     }
+
+    # Story 3.13 (FR-184): the request itself always composes -- it is never
+    # floored here (that would just move the silence Marshal's side, the
+    # exact thing this story exists to stop). Only a resolved value ABOVE 1
+    # gets the advisory; exactly 1 (the default, or an explicit request)
+    # matches the harness's own effective behavior, so nothing is reported.
+    max_parallel_value = seed["max_parallel"].value
+    if max_parallel_value > 1:
+        findings.append(_max_parallel_clamp_finding(max_parallel_value))
 
     effective = EffectivePolicy(
         verify_commands=verify_commands,

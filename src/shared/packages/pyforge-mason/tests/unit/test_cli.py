@@ -24,6 +24,53 @@ through the `doctor` module object (`doctor.build_report(...)`, not an
 imported bare name), so patching the function on its owning module reaches
 the call site with no gotcha, unlike `doctor.py`'s own patch targets (see
 `test_doctor.py`'s module docstring).
+
+Story 2.6 registers the first real verb, `recipe build`, and extends this
+file with its end-to-end dispatch coverage: `recipe.build` is mocked the
+same way (`patch("pyforge.mason.cli.recipe.build", ...)`) to return a fixed
+`BuildResult`, text/JSON happy paths, the two `--docker`/`--config`
+usage-error cases (a manual post-parse cross-check, not argparse-
+declarative -- see `main()`'s own comment), and a failed-child-still-
+renders-"ok" case mirroring `doctor`'s established "the gap is data"
+precedent above.
+
+Story 2.7 adds a second registered verb, `recipe diagnose`, and its own
+test block below mirrors the doctor pattern exactly: `recipe.diagnose` is
+mocked via `patch("pyforge.mason.cli.recipe.diagnose", ...)` for the
+dispatch/rendering/error-projection tests, plus one real, unmocked
+end-to-end test against Story 1.9's `fake_cfe_root` fixture (AD-16).
+
+Story 2.8 adds two more registered verbs, `recipe optimize`/`recipe scan`,
+mirroring `recipe diagnose`'s own test block exactly, plus one new
+error-projection test each: `CfeImportFloorError` -> `EXIT_FAILED` (via
+`main()`'s existing generic `MasonError` branch -- no dedicated branch, spec
+I/O matrix) -- these two verbs are the first to reach it, since
+`recipe.optimize`/`recipe.scan` are the first `recipe.py` use-cases that
+probe `cfe.probe_import_floor` and raise `CfeImportFloorError` themselves,
+scoped to their own operation-relevant subset. Their real end-to-end
+fixture tests therefore also fake the import floor via `cfe.
+probe_import_floor` (`monkeypatch.setattr`), not `subprocess.run` wholesale
+-- mirrors `test_recipe.py`'s identical Design Notes rationale.
+
+Story 2.9 adds a fourth registered verb, `recipe submit`, mirroring the same
+mocked-dispatch + real-fixture-end-to-end pattern, plus coverage the prior
+three verbs don't need: `--yes`'s presence/absence inverts whether
+`confirm=True`/`confirm=False` reaches `recipe.submit` (and therefore
+whether `--dry-run` reaches CFE, per that function's own contract),
+`--prepare-only` passes straight through, and the JSON-mode test asserts
+the `ShipTargetResult.state` field (a `StrEnum`) serializes as a plain
+string (`"pending"`), not `"ShipState.PENDING"` or a `TypeError` -- pinning
+`models.py`'s own Design Notes claim about `dataclasses.asdict` +
+`json.dumps` interaction.
+
+Story 2.10 adds a fifth registered verb, `recipe update`, mirroring the same
+mocked-dispatch + real-fixture-end-to-end pattern as `recipe diagnose`
+(returns the raw `CfeResult`, like diagnose/optimize/scan -- not a
+`ShipTargetResult`, unlike submit). Coverage the prior four verbs don't
+need: `--dry-run`/`--github`/`--repo`/`--pre` all forward straight through
+to `recipe.update` unresolved (no inversion, unlike submit's `--yes`), and
+one real-fixture test exercises the `--github` dispatch path against the
+new `github_updater.py` stub.
 """
 
 from __future__ import annotations
@@ -32,6 +79,7 @@ import dataclasses
 import json
 import logging
 import os
+import sys
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
@@ -46,10 +94,14 @@ from pyforge.mason.cli import (
 )
 from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
-from pyforge.mason.errors import CfeUnresolvedError, MasonError
+from pyforge.mason.cfe import ImportFloorResult
+from pyforge.mason.errors import (
+    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, MasonError,
+)
 from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
+from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
 
 _FIXED_REPORT = DoctorReport(
     mason_version="1.2.3+test",
@@ -243,6 +295,1074 @@ def test_recipe_help_works(capsys):
         build_parser().parse_args(["recipe", "--help"])
     assert exc.value.code == 0
     assert "recipe" in capsys.readouterr().out
+
+
+# --- Story 2.7: `mason recipe diagnose <log_path>` --------------------------
+
+_FIXED_DIAGNOSE_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"success": true, "error_class": "MODULE_NOT_FOUND_AT_TEST"}',
+    stderr="",
+    json_body={"success": True, "error_class": "MODULE_NOT_FOUND_AT_TEST"},
+)
+
+
+def test_recipe_diagnose_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "diagnose", "--help"])
+    assert exc.value.code == 0
+    assert "diagnose" in capsys.readouterr().out
+
+
+def test_recipe_diagnose_requires_the_log_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "diagnose"])
+    assert exc.value.code == 2
+    assert "log_path" in capsys.readouterr().err
+
+
+def test_recipe_diagnose_parses_the_log_path_positional():
+    ns = build_parser().parse_args(["recipe", "diagnose", "build.log"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "diagnose"
+    assert ns.log_path == "build.log"
+
+
+def test_recipe_bare_noun_still_a_usage_error_after_diagnose_is_registered(capsys):
+    """AC: verb-subparsers restructuring is behavior-preserving for
+    `package`/`environment` -- and, symmetrically, `recipe` itself with no
+    verb still hits the bare-noun usage-error path, not `diagnose`'s own
+    dispatch branch."""
+    assert main(["recipe"]) == EXIT_USAGE
+    out = capsys.readouterr()
+    assert "recipe" in out.err
+    assert out.out == ""
+
+
+def test_recipe_diagnose_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+    ) as mock_diagnose:
+        assert main(["recipe", "diagnose", "build.log"]) == EXIT_OK
+
+    mock_diagnose.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe diagnose: ok" in out.out
+    assert "MODULE_NOT_FOUND_AT_TEST" in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_diagnose_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT):
+        assert main(["recipe", "diagnose", "build.log", "--format", "json"]) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe diagnose"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_DIAGNOSE_RESULT)))
+
+
+def test_recipe_diagnose_passes_log_path_and_resolved_flags_through(monkeypatch):
+    """`cli.py` must pass the raw `log_path` positional plus the unresolved
+    `--cfe-root`/`--cfe-python` flag values, the real `os.environ`, and
+    `Path.cwd()` -- `recipe.diagnose` does its own resolution, mirroring
+    `doctor`'s established contract (`test_doctor_calls_build_report_with_
+    flags_environ_and_cwd` above)."""
+    with patch(
+        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+    ) as mock_diagnose:
+        assert main([
+            "recipe", "diagnose", "build.log",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_diagnose.assert_called_once()
+    args, kwargs = mock_diagnose.call_args
+    assert args == ("build.log",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_diagnose_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    """`--cfe-timeout` is resolved via `_resolve_optional_float` (the spec's
+    own claim: "first real caller of that helper") and passed through as
+    `cfe_timeout_arg`."""
+    with patch(
+        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+    ) as mock_diagnose:
+        assert main([
+            "recipe", "diagnose", "build.log", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_diagnose.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_diagnose_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+    ) as mock_diagnose:
+        assert main(["recipe", "diagnose", "build.log"]) == EXIT_OK
+
+    assert mock_diagnose.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_diagnose_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.diagnose", return_value=_FIXED_DIAGNOSE_RESULT,
+    ) as mock_diagnose:
+        assert main(["recipe", "diagnose", "build.log"]) == EXIT_OK
+
+    assert mock_diagnose.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_diagnose_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.diagnose",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "diagnose", "build.log"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_diagnose_cfe_timeout_error_returns_exit_failed(capsys):
+    """Review pass: parity with the existing `CfeUnresolvedError` test above
+    -- `CfeTimeoutError` is a `MasonError` subclass, so it must degrade the
+    same clean way (message on stderr, no traceback, `EXIT_FAILED`), and
+    `--cfe-timeout` is this story's first real wiring of that knob."""
+    with patch(
+        "pyforge.mason.cli.recipe.diagnose",
+        side_effect=CfeTimeoutError(script="diagnose_failure", timeout=5.0),
+    ):
+        rc = main(["recipe", "diagnose", "build.log", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="diagnose_failure", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_diagnose_rejects_the_stdin_sentinel_as_a_usage_error(capsys):
+    """Review pass: `_invoke_captured` fixes the child's stdin to `DEVNULL`,
+    so `-` -- which the real `failure_analyzer.py` documents as its stdin
+    sentinel -- would silently read an empty log and report a confident
+    "no known error pattern matched" rather than piped content. Rejected as
+    a usage error before `recipe.diagnose` (and therefore any subprocess)
+    is ever reached."""
+    with patch("pyforge.mason.cli.recipe.diagnose") as mock_diagnose:
+        rc = main(["recipe", "diagnose", "-"])
+
+    assert rc == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert "stdin" in out.err
+    mock_diagnose.assert_not_called()
+
+
+def test_recipe_diagnose_verb_metavar_reflects_the_registered_verb(capsys):
+    """Review pass: `metavar="{}"` was never updated once a verb was
+    actually registered, so `mason recipe <bad-verb>` printed the literal
+    token `{}` in its usage/error text instead of
+    `{build,diagnose,optimize,scan,submit,update}`. Story 2.6 registered the
+    first verb, `build`; Story 2.8 widened this to four registered verbs;
+    Story 2.9 widened it to five; Story 2.10 widens it again to all six, in
+    registration order."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "bogus-verb"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "{build,diagnose,optimize,scan,submit,update}" in err
+    assert "argument {}:" not in err
+
+
+def test_recipe_diagnose_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking: the whole `recipe diagnose` path runs against Story 1.9's
+    fixture CFE root (AD-16)."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    rc = main([
+        "recipe", "diagnose", "build.log",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe diagnose"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["error_class"] == "MODULE_NOT_FOUND_AT_TEST"
+
+
+# --- Story 2.8: `mason recipe optimize <recipe_path>` -----------------------
+
+_FIXED_OPTIMIZE_RESULT = CfeResult(
+    returncode=1,
+    stdout='{"success": true, "suggestions_found": 1, "suggestions": '
+    '[{"code": "ABT-001", "message": "Missing license_file.", '
+    '"suggestion": "Add license_file.", "confidence": 0.95}]}',
+    stderr="",
+    json_body={
+        "success": True, "suggestions_found": 1,
+        "suggestions": [{
+            "code": "ABT-001", "message": "Missing license_file.",
+            "suggestion": "Add license_file.", "confidence": 0.95,
+        }],
+    },
+)
+
+
+def test_recipe_optimize_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "optimize", "--help"])
+    assert exc.value.code == 0
+    assert "optimize" in capsys.readouterr().out
+
+
+def test_recipe_optimize_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "optimize"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_optimize_parses_the_recipe_path_positional():
+    ns = build_parser().parse_args(["recipe", "optimize", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "optimize"
+    assert ns.recipe_path == "recipes/foo"
+
+
+def test_recipe_optimize_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+
+    mock_optimize.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe optimize: ok" in out.out
+    assert "ABT-001" in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_optimize_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT):
+        assert main(["recipe", "optimize", "recipes/foo", "--format", "json"]) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe optimize"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_OPTIMIZE_RESULT)))
+
+
+def test_recipe_optimize_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    """Mirrors `test_recipe_diagnose_passes_log_path_and_resolved_flags_
+    through`: `cli.py` passes the raw `recipe_path` positional plus the
+    unresolved `--cfe-root`/`--cfe-python` flag values, the real
+    `os.environ`, and `Path.cwd()` -- `recipe.optimize` does its own
+    resolution."""
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main([
+            "recipe", "optimize", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_optimize.assert_called_once()
+    args, kwargs = mock_optimize.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_optimize_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main([
+            "recipe", "optimize", "recipes/foo", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_optimize_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+
+    assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_optimize_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.optimize", return_value=_FIXED_OPTIMIZE_RESULT,
+    ) as mock_optimize:
+        assert main(["recipe", "optimize", "recipes/foo"]) == EXIT_OK
+
+    assert mock_optimize.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_optimize_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.optimize",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "optimize", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_optimize_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.optimize",
+        side_effect=CfeTimeoutError(script="optimize_recipe", timeout=5.0),
+    ):
+        rc = main(["recipe", "optimize", "recipes/foo", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="optimize_recipe", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_optimize_cfe_import_floor_error_returns_exit_failed(capsys):
+    """`recipe optimize` is the first verb whose dispatch can reach
+    `CfeImportFloorError` (spec I/O matrix): unlike `CfeUnresolvedError`,
+    it has no dedicated exit-code branch -- it is a `MasonError` subclass,
+    so it degrades via that generic branch to `EXIT_FAILED` (spec I/O
+    matrix row: "Interpreter missing import floor ... EXIT_FAILED")."""
+    with patch(
+        "pyforge.mason.cli.recipe.optimize",
+        side_effect=CfeImportFloorError(missing=["ruamel.yaml"], interpreter="/fake/python"),
+    ):
+        rc = main(["recipe", "optimize", "recipes/foo"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(
+        CfeImportFloorError(missing=["ruamel.yaml"], interpreter="/fake/python")
+    )
+    assert "Traceback" not in err
+
+
+def test_recipe_optimize_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking of the subprocess boundary: the whole `recipe optimize`
+    path runs against Story 1.9's fixture CFE root (AD-16). The import
+    floor is faked via `cfe.probe_import_floor` (spec Design Notes), not
+    `subprocess.run` wholesale, which would also intercept the real
+    invocation against the fixture stub."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(
+        "pyforge.mason.cfe.probe_import_floor",
+        lambda interpreter: ImportFloorResult(interpreter=interpreter, missing=()),
+    )
+
+    rc = main([
+        "recipe", "optimize", "recipes/example",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe optimize"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["suggestions_found"] == 1
+
+
+# --- Story 2.8: `mason recipe scan <recipe_path>` ---------------------------
+
+_FIXED_SCAN_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"success": true, "mode": "osv-api", "total_vulnerabilities": 0, "results": []}',
+    stderr="",
+    json_body={"success": True, "mode": "osv-api", "total_vulnerabilities": 0, "results": []},
+)
+
+
+def test_recipe_scan_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "scan", "--help"])
+    assert exc.value.code == 0
+    assert "scan" in capsys.readouterr().out
+
+
+def test_recipe_scan_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "scan"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_scan_parses_the_recipe_path_positional():
+    ns = build_parser().parse_args(["recipe", "scan", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "scan"
+    assert ns.recipe_path == "recipes/foo"
+
+
+def test_recipe_scan_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
+
+    mock_scan.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe scan: ok" in out.out
+    assert "osv-api" in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_scan_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT):
+        assert main(["recipe", "scan", "recipes/foo", "--format", "json"]) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe scan"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_SCAN_RESULT)))
+
+
+def test_recipe_scan_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main([
+            "recipe", "scan", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_scan.assert_called_once()
+    args, kwargs = mock_scan.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_scan_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main([
+            "recipe", "scan", "recipes/foo", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_scan.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_scan_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
+
+    assert mock_scan.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_scan_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.scan", return_value=_FIXED_SCAN_RESULT,
+    ) as mock_scan:
+        assert main(["recipe", "scan", "recipes/foo"]) == EXIT_OK
+
+    assert mock_scan.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_scan_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.scan",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "scan", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_scan_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.scan",
+        side_effect=CfeTimeoutError(script="scan_for_vulnerabilities", timeout=5.0),
+    ):
+        rc = main(["recipe", "scan", "recipes/foo", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="scan_for_vulnerabilities", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_scan_cfe_import_floor_error_returns_exit_failed(capsys):
+    """Mirrors `recipe optimize`'s own version of this test -- `scan` is the
+    second verb whose dispatch can reach `CfeImportFloorError`, degrading
+    via the generic `MasonError` branch to `EXIT_FAILED`."""
+    with patch(
+        "pyforge.mason.cli.recipe.scan",
+        side_effect=CfeImportFloorError(
+            missing=["requests", "pyyaml"], interpreter="/fake/python",
+        ),
+    ):
+        rc = main(["recipe", "scan", "recipes/foo"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(
+        CfeImportFloorError(missing=["requests", "pyyaml"], interpreter="/fake/python")
+    )
+    assert "Traceback" not in err
+
+
+def test_recipe_scan_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """Mirrors `recipe optimize`'s own real-fixture end-to-end test: no
+    mocking of the subprocess boundary, import floor faked via
+    `cfe.probe_import_floor`."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(
+        "pyforge.mason.cfe.probe_import_floor",
+        lambda interpreter: ImportFloorResult(interpreter=interpreter, missing=()),
+    )
+
+    rc = main([
+        "recipe", "scan", "recipes/example",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe scan"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["total_vulnerabilities"] == 0
+
+
+# --- Story 2.9: `mason recipe submit <recipe_path>` -------------------------
+
+_FIXED_SUBMIT_RESULT = ShipTargetResult(
+    target="conda-forge",
+    state=ShipState.PENDING,
+    reference="https://github.com/example/example/pull/1",
+    message="PR created: https://github.com/example/example/pull/1",
+)
+
+
+def test_recipe_submit_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "submit", "--help"])
+    assert exc.value.code == 0
+    assert "submit" in capsys.readouterr().out
+
+
+def test_recipe_submit_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "submit"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_submit_parses_the_recipe_path_positional_and_defaults():
+    """`--yes`/`--prepare-only` default to `False` when omitted -- these are
+    plain per-verb flags, not part of the `argparse.SUPPRESS`-defaulted
+    global set (registration comment in `cli.py`)."""
+    ns = build_parser().parse_args(["recipe", "submit", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "submit"
+    assert ns.recipe_path == "recipes/foo"
+    assert ns.yes is False
+    assert ns.prepare_only is False
+
+
+def test_recipe_submit_parses_yes_and_prepare_only_flags():
+    ns = build_parser().parse_args(
+        ["recipe", "submit", "recipes/foo", "--yes", "--prepare-only"],
+    )
+    assert ns.yes is True
+    assert ns.prepare_only is True
+
+
+def test_recipe_submit_text_mode_renders_the_ship_target_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main(["recipe", "submit", "recipes/foo", "--yes"]) == EXIT_OK
+
+    mock_submit.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe submit: ok" in out.out
+    # The StrEnum field renders as its plain value ("pending"), never
+    # "ShipState.PENDING" (models.py's own Design Notes claim) -- render_text
+    # formats the ORIGINAL dataclasses.asdict() dict, not a JSON round-trip,
+    # so this is the one assertion that actually exercises StrEnum.__str__
+    # rather than json.dumps's native str-subclass handling.
+    assert "state: pending" in out.out
+    assert "ShipState" not in out.out
+    assert "pull/1" in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_submit_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT):
+        assert main(
+            ["recipe", "submit", "recipes/foo", "--yes", "--format", "json"],
+        ) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe submit"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_SUBMIT_RESULT)))
+    # The StrEnum `state` field must serialize as a plain JSON string, not
+    # raise (a bare `Enum` would not be JSON-serializable at all -- see
+    # models.py's ShipState Design Notes) and not round-trip as the member's
+    # repr.
+    assert doc["data"]["state"] == "pending"
+
+
+def test_recipe_submit_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    """Mirrors `test_recipe_scan_passes_recipe_path_and_resolved_flags_
+    through`: `cli.py` passes the raw `recipe_path` positional plus the
+    unresolved `--cfe-root`/`--cfe-python` flag values, the real
+    `os.environ`, and `Path.cwd()` -- `recipe.submit` does its own
+    resolution."""
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main([
+            "recipe", "submit", "recipes/foo", "--yes",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_submit.assert_called_once()
+    args, kwargs = mock_submit.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_submit_no_yes_flag_passes_confirm_false():
+    """Dry run is the default (spec Always boundary, PRD "--dry-run is the
+    default"): `confirm=False` reaches `recipe.submit` when `--yes` is
+    absent."""
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main(["recipe", "submit", "recipes/foo"]) == EXIT_OK
+
+    assert mock_submit.call_args.kwargs["confirm"] is False
+
+
+def test_recipe_submit_yes_flag_passes_confirm_true():
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main(["recipe", "submit", "recipes/foo", "--yes"]) == EXIT_OK
+
+    assert mock_submit.call_args.kwargs["confirm"] is True
+
+
+def test_recipe_submit_prepare_only_flag_passes_through():
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main(
+            ["recipe", "submit", "recipes/foo", "--yes", "--prepare-only"],
+        ) == EXIT_OK
+
+    assert mock_submit.call_args.kwargs["prepare_only"] is True
+
+
+def test_recipe_submit_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main([
+            "recipe", "submit", "recipes/foo", "--yes", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_submit.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_submit_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main(["recipe", "submit", "recipes/foo"]) == EXIT_OK
+
+    assert mock_submit.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_submit_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.submit", return_value=_FIXED_SUBMIT_RESULT,
+    ) as mock_submit:
+        assert main(["recipe", "submit", "recipes/foo"]) == EXIT_OK
+
+    assert mock_submit.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_submit_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.submit",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "submit", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_submit_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.submit",
+        side_effect=CfeTimeoutError(script="submit_pr", timeout=5.0),
+    ):
+        rc = main(["recipe", "submit", "recipes/foo", "--yes", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="submit_pr", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_submit_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking: the whole `recipe submit` path runs against Story 1.9's
+    fixture CFE root (AD-16). `--yes` (confirm=True, prepare_only=False) is
+    the interesting real-fixture case -- the stub's static canned JSON
+    already includes `pr_url`, matching the full-flow-success shape exactly
+    (spec Code Map), so `state` maps to `PENDING` with the PR URL as
+    `reference`."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    rc = main([
+        "recipe", "submit", str(fake_cfe_root / "recipes" / "example"), "--yes",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe submit"
+    assert doc["status"] == "ok"
+    assert doc["data"]["target"] == "conda-forge"
+    assert doc["data"]["state"] == "pending"
+    assert doc["data"]["reference"] == "https://github.com/example/example/pull/1"
+
+
+# --- Story 2.10: `mason recipe update <recipe_path>` ------------------------
+
+_FIXED_UPDATE_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"success": true, "updated": true, "new_version": "9.9.9", '
+    '"message": "Recipe updated successfully."}',
+    stderr="",
+    json_body={
+        "success": True, "updated": True, "new_version": "9.9.9",
+        "message": "Recipe updated successfully.",
+    },
+)
+
+
+def test_recipe_update_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "update", "--help"])
+    assert exc.value.code == 0
+    assert "update" in capsys.readouterr().out
+
+
+def test_recipe_update_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "update"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_update_parses_the_recipe_path_positional_and_defaults():
+    """`--dry-run`/`--github`/`--pre` default to `False`, `--repo` to `None`
+    -- these are plain per-verb flags, not part of the `argparse.SUPPRESS`-
+    defaulted global set (registration comment in `cli.py`)."""
+    ns = build_parser().parse_args(["recipe", "update", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "update"
+    assert ns.recipe_path == "recipes/foo"
+    assert ns.dry_run is False
+    assert ns.github is False
+    assert ns.repo is None
+    assert ns.pre is False
+
+
+def test_recipe_update_parses_dry_run_github_repo_and_pre_flags():
+    ns = build_parser().parse_args([
+        "recipe", "update", "recipes/foo",
+        "--dry-run", "--github", "--repo", "owner/repo", "--pre",
+    ])
+    assert ns.dry_run is True
+    assert ns.github is True
+    assert ns.repo == "owner/repo"
+    assert ns.pre is True
+
+
+def test_recipe_update_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    mock_update.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe update: ok" in out.out
+    assert "Recipe updated successfully." in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_update_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main(
+            ["recipe", "update", "recipes/foo", "--format", "json"],
+        ) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe update"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_UPDATE_RESULT)))
+
+
+def test_recipe_update_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    """`cli.py` must pass the raw `recipe_path` positional plus the
+    unresolved `--cfe-root`/`--cfe-python` flag values, the real
+    `os.environ`, and `Path.cwd()` -- `recipe.update` does its own
+    resolution, mirroring `diagnose`'s established contract."""
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main([
+            "recipe", "update", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_update.assert_called_once()
+    args, kwargs = mock_update.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_update_no_dry_run_flag_passes_dry_run_false():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["dry_run"] is False
+
+
+def test_recipe_update_dry_run_flag_passes_dry_run_true():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo", "--dry-run"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["dry_run"] is True
+
+
+def test_recipe_update_github_repo_and_pre_flags_pass_straight_through():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main([
+            "recipe", "update", "recipes/foo",
+            "--github", "--repo", "owner/repo", "--pre",
+        ]) == EXIT_OK
+
+    kwargs = mock_update.call_args.kwargs
+    assert kwargs["github"] is True
+    assert kwargs["github_repo"] == "owner/repo"
+    assert kwargs["allow_prerelease"] is True
+
+
+def test_recipe_update_repo_and_pre_default_to_inert_values_without_github():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    kwargs = mock_update.call_args.kwargs
+    assert kwargs["github"] is False
+    assert kwargs["github_repo"] is None
+    assert kwargs["allow_prerelease"] is False
+
+
+def test_recipe_update_warns_on_stderr_when_repo_given_without_github(capsys):
+    """Review pass (2026-08-12): `--repo`/`--pre` stay inert without
+    `--github` (unchanged contract), but the user now gets a stderr signal
+    instead of silent divergence between what they asked for and what ran."""
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main(["recipe", "update", "recipes/foo", "--repo", "owner/repo"]) == EXIT_OK
+
+    err = capsys.readouterr().err
+    assert "--repo/--pre have no effect without --github" in err
+
+
+def test_recipe_update_warns_on_stderr_when_pre_given_without_github(capsys):
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main(["recipe", "update", "recipes/foo", "--pre"]) == EXIT_OK
+
+    err = capsys.readouterr().err
+    assert "--repo/--pre have no effect without --github" in err
+
+
+def test_recipe_update_does_not_warn_when_repo_and_pre_given_with_github(capsys):
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main([
+            "recipe", "update", "recipes/foo", "--github", "--repo", "owner/repo", "--pre",
+        ]) == EXIT_OK
+
+    err = capsys.readouterr().err
+    assert "have no effect" not in err
+
+
+def test_recipe_update_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main([
+            "recipe", "update", "recipes/foo", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_update_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_update_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_update_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.update",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "update", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_update_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.update",
+        side_effect=CfeTimeoutError(script="update_recipe", timeout=5.0),
+    ):
+        rc = main(["recipe", "update", "recipes/foo", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="update_recipe", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_update_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking: the whole `recipe update` path (default, PyPI) runs
+    against Story 1.9's fixture CFE root (AD-16), using Story 2.10's new
+    `recipe_updater.py` stub."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    rc = main([
+        "recipe", "update", "recipes/example",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe update"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["new_version"] == "9.9.9"
+
+
+def test_recipe_update_github_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking: the `--github` dispatch path runs against Story 2.10's
+    new `github_updater.py` stub."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    rc = main([
+        "recipe", "update", "recipes/example", "--github", "--repo", "owner/repo", "--pre",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe update"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["latest_tag"] == "v9.9.9"
 
 
 @pytest.mark.parametrize("argv", [
@@ -834,3 +1954,172 @@ def test_jfrog_credential_sentinel_never_appears_in_doctor_output(monkeypatch, c
     assert "mason_version" in out.out
     assert sentinel not in out.out
     assert sentinel not in out.err
+
+
+# --- Story 2.6: `recipe build` verb dispatch --------------------------------
+
+_FIXED_BUILD_RESULT = BuildResult(
+    mode="native", config="linux64", returncode=0, stdout="built ok",
+    artifact_dir="build_artifacts/linux64",
+)
+
+
+def test_recipe_build_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "build", "--help"])
+    assert exc.value.code == 0
+    assert "build" in capsys.readouterr().out
+
+
+def test_recipe_build_happy_path_text_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe build: ok" in out.out
+    assert "artifact_dir: build_artifacts/linux64" in out.out
+    assert "returncode: 0" in out.out
+
+    mock_build.assert_called_once()
+    args, kwargs = mock_build.call_args
+    assert args[0] == "recipes/foo"
+    assert kwargs["docker"] is False
+    assert kwargs["config"] is None
+
+
+def test_recipe_build_happy_path_json_mode(capsys):
+    with patch("pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT):
+        assert main(["recipe", "build", "recipes/foo", "--format", "json"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert doc["command"] == "recipe build"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == dataclasses.asdict(_FIXED_BUILD_RESULT)
+
+
+def test_recipe_build_docker_flag_dispatches_with_config(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main(
+            ["recipe", "build", "recipes/foo", "--docker", "--config", "linux64"],
+        ) == EXIT_OK
+
+    kwargs = mock_build.call_args.kwargs
+    assert kwargs["docker"] is True
+    assert kwargs["config"] == "linux64"
+
+
+def test_recipe_build_docker_without_config_is_a_usage_error(capsys):
+    """spec I/O matrix: `--docker` without `--config` is a usage error
+    BEFORE any CFE resolution -- `recipe.build` must never even be called."""
+    with patch("pyforge.mason.cli.recipe.build") as mock_build:
+        rc = main(["recipe", "build", "recipes/foo", "--docker"])
+
+    assert rc == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert "--docker" in out.err
+    assert "--config" in out.err
+    mock_build.assert_not_called()
+
+
+def test_recipe_build_config_without_docker_is_a_usage_error(capsys):
+    with patch("pyforge.mason.cli.recipe.build") as mock_build:
+        rc = main(["recipe", "build", "recipes/foo", "--config", "linux64"])
+
+    assert rc == EXIT_USAGE
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert "--config" in out.err
+    assert "--docker" in out.err
+    mock_build.assert_not_called()
+
+
+def test_recipe_build_docker_with_a_blank_config_is_treated_as_missing(capsys):
+    """Review pass: a whitespace-only `--config` must report the same
+    "requires --config" usage error as omitting the flag entirely, matching
+    `_resolve_str`'s established "whitespace-only counts as not supplied"
+    convention -- not silently pass the pairing check and hand `cfe.
+    build_docker` a blank value."""
+    with patch("pyforge.mason.cli.recipe.build") as mock_build:
+        rc = main(["recipe", "build", "recipes/foo", "--docker", "--config", "   "])
+
+    assert rc == EXIT_USAGE
+    out = capsys.readouterr()
+    assert "--docker" in out.err
+    assert "--config" in out.err
+    mock_build.assert_not_called()
+
+
+def test_recipe_build_failed_child_still_renders_ok(capsys):
+    """A non-zero delegated build returncode is DATA, never raised (AD-4) --
+    `recipe build` itself still reports EXIT_OK, mirroring `doctor`'s
+    established "the gap is data" precedent."""
+    failed_result = BuildResult(
+        mode="native", config="linux64", returncode=1, stdout="build failed",
+        artifact_dir="build_artifacts/linux64",
+    )
+    with patch("pyforge.mason.cli.recipe.build", return_value=failed_result):
+        assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe build: ok" in out.out
+    assert "returncode: 1" in out.out
+
+
+def test_recipe_build_passes_cfe_flags_environ_and_cwd_through():
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main([
+            "recipe", "build", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+            "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    kwargs = mock_build.call_args.kwargs
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["cfe_timeout_arg"] == 30.0
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_build_cfe_timeout_and_flags_absent_pass_none_through():
+    with patch(
+        "pyforge.mason.cli.recipe.build", return_value=_FIXED_BUILD_RESULT,
+    ) as mock_build:
+        assert main(["recipe", "build", "recipes/foo"]) == EXIT_OK
+
+    kwargs = mock_build.call_args.kwargs
+    assert kwargs["cfe_root_arg"] is None
+    assert kwargs["cfe_python_arg"] is None
+    assert kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_build_cfe_unresolved_error_projects_to_exit_cfe_unavailable(capsys):
+    with patch("pyforge.mason.cli.recipe.build", side_effect=CfeUnresolvedError()):
+        rc = main(["recipe", "build", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+
+
+def test_recipe_build_global_flag_parses_after_the_verb_and_its_positional():
+    """`mason recipe build <path> --format json` -- a global flag given
+    AFTER the verb and its positional must still parse, since the `build`
+    verb parser also carries `global_flags` as a parent."""
+    ns = build_parser().parse_args(["recipe", "build", "recipes/foo", "--format", "json"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "build"
+    assert ns.recipe_path == "recipes/foo"
+    assert ns.format == "json"
