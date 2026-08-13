@@ -94,6 +94,39 @@ epic makes (AD-9's own designed shape, not a recipe-knowledge violation of
 AD-1: interpreting `success`/`pr_url`/`fork_branch_url` into
 `state`/`reference` is what AD-9 exists to standardize across every ship
 target, conda-forge included).
+
+Story 2.10 adds `update()`, backing `mason recipe update <recipe_path>`
+(FR-14) -- a diff-before-apply upstream version bump for either a PyPI- or
+GitHub-Releases-sourced package. It mirrors `diagnose()`'s composition shape
+exactly (resolve root -> `ensure_cfe_root` -> resolve interpreter, no
+import-floor gate: both wrapped autotick scripts already degrade a missing
+dependency to `{"success": false, "error": ...}` JSON data on their own,
+confirmed by reading them, the same "already handles it" exemption
+`diagnose()` established -- not `optimize()`/`scan()`'s scoped-probe
+pattern) and returns the raw `CfeResult` (spec Never boundary: `update` is
+not a ship target, so no `ShipTargetResult`/new dataclass is introduced,
+unlike `submit()`).
+
+`github` is a Mason-only dispatch flag (AD-1): it selects which of the two
+CFE adapters is called and is never itself forwarded as CFE argv -- Mason
+never inspects `recipe_path`'s own content to choose a source type, since
+that would require parsing recipe YAML the same way the wrapped scripts
+already do. `recipe_path` is passed straight through with no existence
+check or interpretation, mirroring `log_path`/`optimize()`'s and `scan()`'s
+`recipe_path` (AD-1, spec Always boundary) -- not `submit()`'s one disclosed
+exception, since neither wrapped script here takes a bare recipe name.
+
+`args` is built as `[recipe_path]`, then `"--dry-run"` appended when
+`dry_run` is true -- forwarded to the invoked script's own `--dry-run` flag
+verbatim, no inversion (unlike `submit()`'s `confirm` inversion): omitting
+it is the confirmed/apply path, since `update`'s local file write is
+git-reversible, unlike `submit`'s externally-visible PR (spec Design Notes).
+When `github` is true, `"--repo", github_repo` is appended when
+`github_repo` is truthy, then `"--pre"` when `allow_prerelease` is true, and
+`cfe.update_recipe_from_github` is called; otherwise `cfe.update_recipe` is
+called and `github_repo`/`allow_prerelease` never reach CFE argv at all --
+inert, not rejected, since neither flag is meaningful to the PyPI script
+(spec Always boundary, I/O matrix).
 """
 
 from __future__ import annotations
@@ -427,4 +460,75 @@ def _ship_target_result_from_cfe_result(
     reference = pr_url if pr_url else (body.get("fork_branch_url") if body else None)
     return ShipTargetResult(
         target="conda-forge", state=ShipState.PENDING, reference=reference, message=message,
+    )
+
+
+def update(
+    recipe_path: str,
+    *,
+    dry_run: bool,
+    github: bool,
+    github_repo: str | None,
+    allow_prerelease: bool,
+    cfe_root_arg: str | None,
+    cfe_python_arg: str | None,
+    cfe_timeout_arg: float | None,
+    environ: Mapping[str, str],
+    start_directory: Path,
+) -> CfeResult:
+    """Bump a recipe to its latest upstream version via CFE's autotick
+    scripts (FR-14) and return the resulting `CfeResult` directly -- no
+    Mason-side reinterpretation of its `json_body` (spec Never boundary).
+
+    Resolves the CFE root (`resolve_cfe_root`) and raises
+    `CfeUnresolvedError` via `cfe.ensure_cfe_root` before any subprocess
+    spawns if it is unresolved (spec Always boundary), mirroring
+    `diagnose()`/`optimize()`/`scan()`/`submit()`. Resolves the interpreter
+    (`resolve_cfe_interpreter`) with NO import-floor gate (module docstring):
+    both wrapped scripts already degrade a missing dependency to JSON error
+    data on their own, the same exemption `diagnose()` established.
+
+    `github` is a Mason-only dispatch flag (module docstring, AD-1): it
+    selects which adapter is called and is never itself forwarded as CFE
+    argv. `recipe_path` is passed straight through with no existence check
+    or interpretation, mirroring `optimize()`/`scan()`'s own `recipe_path`.
+
+    `args` is `[recipe_path]`, then `"--dry-run"` appended when `dry_run` is
+    true -- forwarded verbatim to the invoked script's own `--dry-run` flag,
+    no inversion (unlike `submit()`'s `confirm` inversion). When `github` is
+    true, `"--repo", github_repo` is appended when `github_repo` is truthy,
+    then `"--pre"` when `allow_prerelease` is true, and `cfe.
+    update_recipe_from_github` is called; otherwise `cfe.update_recipe` is
+    called and `github_repo`/`allow_prerelease` never reach CFE argv at all
+    (spec Always boundary: inert, not rejected, when `github` is false).
+    `cfe_timeout_arg` is passed straight through as the chosen adapter's own
+    `timeout`; that adapter's own per-operation default applies only when
+    this resolves to `None`.
+    """
+    resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
+    cfe.ensure_cfe_root(resolved_root)
+
+    resolved_interpreter = resolve_cfe_interpreter(cfe_python_arg, environ)
+
+    args = [recipe_path]
+    if dry_run:
+        args.append("--dry-run")
+
+    if github:
+        if github_repo:
+            args.extend(["--repo", github_repo])
+        if allow_prerelease:
+            args.append("--pre")
+        return cfe.update_recipe_from_github(
+            args,
+            root=resolved_root.root,
+            interpreter=resolved_interpreter.path,
+            timeout=cfe_timeout_arg,
+        )
+
+    return cfe.update_recipe(
+        args,
+        root=resolved_root.root,
+        interpreter=resolved_interpreter.path,
+        timeout=cfe_timeout_arg,
     )
