@@ -51,7 +51,7 @@ import pyforge.mason.recipe as recipe_module
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
 from pyforge.mason.models import CfeResult, ShipState, ShipTargetResult
-from pyforge.mason.recipe import diagnose, optimize, scan, submit
+from pyforge.mason.recipe import diagnose, optimize, scan, submit, update
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_NOT_FOUND, STEP_RUNNING_INTERPRETER,
     ResolvedCfeInterpreter, ResolvedCfeRoot,
@@ -1286,3 +1286,298 @@ def test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success(
         reference="https://github.com/example/example/pull/1",
         message="PR created: https://github.com/example/example/pull/1",
     )
+
+
+# =============================================================================
+# Story 2.10: update() -- mirrors diagnose()'s composition shape exactly
+# (resolve root -> ensure_cfe_root -> resolve interpreter, no import-floor
+# gate); dispatches between cfe.update_recipe and cfe.update_recipe_from_
+# github based on the Mason-only `github` flag, and returns the raw
+# CfeResult -- no ShipTargetResult, unlike submit() (module docstring, spec
+# Never boundary).
+# =============================================================================
+
+_UPDATE_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"success": true, "updated": true, "new_version": "9.9.9"}',
+    stderr="",
+    json_body={"success": True, "updated": True, "new_version": "9.9.9"},
+)
+
+
+def test_update_default_apply_calls_update_recipe_with_recipe_path_only():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
+         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update, \
+         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh:
+        result = update(
+            "recipes/foo",
+            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure.assert_called_once_with(_ROOT)
+    mock_update.assert_called_once_with(
+        ["recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+    mock_update_gh.assert_not_called()
+    assert result is _UPDATE_RESULT
+
+
+def test_update_dry_run_appends_the_dry_run_flag():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update:
+        update(
+            "recipes/foo",
+            dry_run=True, github=False, github_repo=None, allow_prerelease=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_update.assert_called_once_with(
+        ["recipes/foo", "--dry-run"],
+        root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+
+
+def test_update_github_flag_dispatches_to_update_recipe_from_github():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.update_recipe") as mock_update, \
+         patch(
+             "pyforge.mason.cfe.update_recipe_from_github", return_value=_UPDATE_RESULT,
+         ) as mock_update_gh:
+        result = update(
+            "recipes/foo",
+            dry_run=True, github=True, github_repo=None, allow_prerelease=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_update.assert_not_called()
+    mock_update_gh.assert_called_once_with(
+        ["recipes/foo", "--dry-run"],
+        root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+    assert result is _UPDATE_RESULT
+
+
+def test_update_github_repo_and_pre_are_forwarded_only_with_github():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.update_recipe_from_github", return_value=_UPDATE_RESULT,
+         ) as mock_update_gh:
+        update(
+            "recipes/foo",
+            dry_run=False, github=True, github_repo="owner/repo", allow_prerelease=True,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_update_gh.assert_called_once_with(
+        ["recipes/foo", "--repo", "owner/repo", "--pre"],
+        root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+
+
+def test_update_github_repo_falsy_is_not_forwarded():
+    """`github_repo=""` (falsy but not `None`) must not append a bare
+    `--repo` with no value -- mirrors the spec's "if truthy" wording."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.update_recipe_from_github", return_value=_UPDATE_RESULT,
+         ) as mock_update_gh:
+        update(
+            "recipes/foo",
+            dry_run=False, github=True, github_repo="", allow_prerelease=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_update_gh.assert_called_once_with(
+        ["recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+
+
+def test_update_repo_and_pre_are_inert_without_github():
+    """`--repo`/`--pre` given without `--github` never reach CFE argv at all
+    (spec I/O matrix: "inert, not rejected") -- `update_recipe` (PyPI) is
+    still called."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update, \
+         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh:
+        result = update(
+            "recipes/foo",
+            dry_run=False, github=False, github_repo="owner/repo", allow_prerelease=True,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_update.assert_called_once_with(
+        ["recipes/foo"], root=_ROOT.root, interpreter=_INTERPRETER.path, timeout=None,
+    )
+    mock_update_gh.assert_not_called()
+    assert result is _UPDATE_RESULT
+
+
+def test_update_passes_an_explicit_cfe_timeout_arg_straight_through():
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT) as mock_update:
+        update(
+            "recipes/foo",
+            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=42.0,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert mock_update.call_args.kwargs["timeout"] == 42.0
+
+
+def test_update_returns_the_cfe_result_verbatim_no_reinterpretation():
+    """Spec Never boundary: `update()` returns `cfe.update_recipe`'s
+    `CfeResult` directly -- no new model, no field renaming, no wrapping,
+    unlike `submit()`'s `ShipTargetResult`."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT):
+        result = update(
+            "recipes/foo",
+            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result is _UPDATE_RESULT
+    assert isinstance(result, CfeResult)
+
+
+def test_update_never_calls_ensure_import_floor():
+    """Mirrors `test_diagnose_never_calls_ensure_import_floor`: both wrapped
+    autotick scripts already degrade a missing dependency to JSON error data
+    on their own (module docstring), so `update()` gates on neither the
+    whole floor nor a scoped subset."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.update_recipe", return_value=_UPDATE_RESULT), \
+         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor, \
+         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor:
+        update(
+            "recipes/foo",
+            dry_run=False, github=False, github_repo=None, allow_prerelease=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure_floor.assert_not_called()
+    mock_probe_floor.assert_not_called()
+
+
+# --- CFE-unresolved propagation: raises before any subprocess spawns -------
+
+def test_update_raises_cfe_unresolved_error_when_root_is_not_found():
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+        with pytest.raises(CfeUnresolvedError):
+            update(
+                "recipes/foo",
+                dry_run=False, github=False, github_repo=None, allow_prerelease=False,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+
+def test_update_never_calls_either_adapter_when_root_is_unresolved():
+    """The `CfeUnresolvedError` path must short-circuit before either
+    `cfe.update_recipe`/`cfe.update_recipe_from_github` is ever reached --
+    checked with `github=True` so both adapters are proven unreachable."""
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.update_recipe") as mock_update, \
+         patch("pyforge.mason.cfe.update_recipe_from_github") as mock_update_gh:
+        with pytest.raises(CfeUnresolvedError):
+            update(
+                "recipes/foo",
+                dry_run=False, github=True, github_repo=None, allow_prerelease=False,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+    mock_update.assert_not_called()
+    mock_update_gh.assert_not_called()
+
+
+def test_update_raises_before_any_subprocess_spawns_against_a_real_unresolved_root(
+    tmp_path,
+):
+    """End-to-end, nothing mocked but the subprocess boundary itself --
+    mirrors `diagnose()`'s own version of this test (AD-16: no real CFE
+    installation required)."""
+    with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            update(
+                "recipes/foo",
+                dry_run=False, github=False, github_repo=None, allow_prerelease=False,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=tmp_path,
+            )
+
+    mock_run.assert_not_called()
+
+
+# --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
+
+def test_update_against_fake_cfe_root_returns_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    result = update(
+        "recipes/example",
+        dry_run=False, github=False, github_repo=None, allow_prerelease=False,
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert isinstance(result, CfeResult)
+    assert result.returncode == 0
+    assert result.json_body["success"] is True
+    assert result.json_body["new_version"] == "9.9.9"
+
+
+def test_update_github_against_fake_cfe_root_returns_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    result = update(
+        "recipes/example",
+        dry_run=True, github=True, github_repo="owner/repo", allow_prerelease=True,
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert isinstance(result, CfeResult)
+    assert result.returncode == 0
+    assert result.json_body["success"] is True
+    assert result.json_body["latest_tag"] == "v9.9.9"

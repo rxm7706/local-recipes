@@ -71,7 +71,8 @@ from pyforge.mason.cfe import (
     CFE_IMPORT_FLOOR, _CFE_SCRIPTS, ImportFloorResult, _build_probe_script,
     _extract_json, _invoke_captured, diagnose_failure, ensure_cfe_root,
     ensure_import_floor, optimize_recipe, probe_import_floor, run_streamed,
-    scan_for_vulnerabilities, submit_pr, validate_recipe,
+    scan_for_vulnerabilities, submit_pr, update_recipe, update_recipe_from_github,
+    validate_recipe,
 )
 from pyforge.mason.errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
 from pyforge.mason.models import CfeResult
@@ -1095,19 +1096,22 @@ def test_extract_json_returns_none_for_empty_stdout():
 
 # --- Story 2.1: _CFE_SCRIPTS table -------------------------------------------
 
-def test_cfe_scripts_table_has_exactly_the_five_stubbed_fixture_entries():
+def test_cfe_scripts_table_has_exactly_the_seven_stubbed_fixture_entries():
     """Spec Never boundary: no entry beyond `validate_recipe`/`submit_pr`/
-    `diagnose_failure`/`optimize_recipe`/`scan_for_vulnerabilities` -- the
-    fixture tree only stubs these five (Story 1.9's original pair, Story
-    2.7's `failure_analyzer.py`, and Story 2.8's `recipe_optimizer.py`/
-    `vulnerability_scanner.py`), and which script backs each of Stories
-    2.9-2.10 is still open."""
+    `diagnose_failure`/`optimize_recipe`/`scan_for_vulnerabilities`/
+    `update_recipe`/`update_recipe_from_github` -- the fixture tree only
+    stubs these seven (Story 1.9's original pair, Story 2.7's
+    `failure_analyzer.py`, Story 2.8's `recipe_optimizer.py`/
+    `vulnerability_scanner.py`, and Story 2.10's `recipe_updater.py`/
+    `github_updater.py`)."""
     assert _CFE_SCRIPTS == {
         "validate_recipe": "validate_recipe.py",
         "submit_pr": "submit_pr.py",
         "diagnose_failure": "failure_analyzer.py",
         "optimize_recipe": "recipe_optimizer.py",
         "scan_for_vulnerabilities": "vulnerability_scanner.py",
+        "update_recipe": "recipe_updater.py",
+        "update_recipe_from_github": "github_updater.py",
     }
 
 
@@ -1728,6 +1732,301 @@ def test_scan_for_vulnerabilities_against_fake_cfe_root_matches_the_fixtures_can
     assert result.json_body["success"] is True
     assert result.json_body["total_vulnerabilities"] == 0
     assert result.json_body["results"] == []
+
+
+# --- Story 2.10: update_recipe -- per-operation default timeout, table
+# --- entry identity (mocked I/O-matrix coverage, mirroring diagnose_failure)
+
+def test_update_recipe_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_update_recipe_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_update_recipe_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("recipe_updater.py")
+
+
+def test_update_recipe_passes_the_recipe_path_and_dry_run_straight_through_as_args():
+    """No pre-validation of `recipe_path` (spec Always boundary): the
+    adapter passes `args` straight through, exactly like `optimize_recipe`/
+    `diagnose_failure` do."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe(
+            ["recipes/foo", "--dry-run"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[2:] == ["recipes/foo", "--dry-run"]
+
+
+def test_update_recipe_reports_an_already_up_to_date_body_as_data_not_raised():
+    """The real script exits 0 with `{"success": true, "updated": false,
+    "message": "Recipe is already up-to-date."}` when nothing changed (spec
+    I/O matrix) -- returned as data, never raised."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=0,
+            stdout='{"success": true, "updated": false, "message": '
+            '"Recipe is already up-to-date."}',
+        ),
+    ):
+        result = update_recipe(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True, "updated": False, "message": "Recipe is already up-to-date.",
+    }
+
+
+def test_update_recipe_reports_a_dry_run_plan_body_as_data_not_raised():
+    """`--dry-run` computes and returns the plan without writing (spec I/O
+    matrix): the real script's `actions` list is `json_body["actions"]`
+    verbatim, never re-authored (AD-1)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=0,
+            stdout='{"success": true, "updated": true, "dry_run": true, "actions": '
+            '[{"action": "update", "path": "context.version", "value": "9.9.9"}], '
+            '"message": "Dry run: Would update recipe to version 9.9.9."}',
+        ),
+    ):
+        result = update_recipe(
+            ["recipes/foo", "--dry-run"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 0
+    assert result.json_body["dry_run"] is True
+    assert result.json_body["actions"][0]["path"] == "context.version"
+
+
+def test_update_recipe_reports_an_upstream_lookup_failure_body_as_data_not_raised():
+    """The real script exits 1 with `{"success": false, "message": ...}`
+    when the package isn't found on PyPI (spec I/O matrix) -- a non-zero
+    return code is data on the returned `CfeResult`, never raised (AD-4)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "message": '
+            '"Could not fetch latest version for \'no-such-pkg\' from PyPI."}',
+        ),
+    ):
+        result = update_recipe(
+            ["recipes/no-such-pkg"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["success"] is False
+
+
+# --- Story 2.10: update_recipe -- real end-to-end against fake_cfe_root ----
+
+def test_update_recipe_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = update_recipe(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True, "updated": True, "new_version": "9.9.9",
+        "message": "Recipe updated successfully.",
+    }
+
+
+def test_update_recipe_against_fake_cfe_root_tolerates_a_leading_progress_line(
+    fake_cfe_root, monkeypatch,
+):
+    """Reading the real `recipe_updater.py` confirms it prints progress
+    narration ("Checking for updates...", "New version found: ...") to
+    stdout before its final JSON body (spec Design Notes) -- the same
+    tolerant-parsing shape `submit_pr` already exercises."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_PROGRESS_LINE",
+        "Checking for updates to 'example' (current version: 1.0.0)...",
+    )
+
+    result = update_recipe(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True, "updated": True, "new_version": "9.9.9",
+        "message": "Recipe updated successfully.",
+    }
+
+
+# --- Story 2.10: update_recipe_from_github -- per-operation default
+# --- timeout, table entry identity (mocked I/O-matrix coverage, mirroring
+# --- diagnose_failure) -------------------------------------------------------
+
+def test_update_recipe_from_github_defaults_to_a_120_second_timeout():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    assert mock_run.call_args.kwargs["timeout"] == 120.0
+
+
+def test_update_recipe_from_github_honors_an_explicit_timeout_override():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github(
+            [], root=Path("/fake/root"), interpreter="/fake/python", timeout=3.5,
+        )
+
+    assert mock_run.call_args.kwargs["timeout"] == 3.5
+
+
+def test_update_recipe_from_github_invokes_its_own_table_entry_not_the_others():
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github([], root=Path("/fake/root"), interpreter="/fake/python")
+
+    argv = mock_run.call_args.args[0]
+    assert argv[1].endswith("github_updater.py")
+
+
+def test_update_recipe_from_github_passes_recipe_path_repo_and_pre_straight_through_as_args():
+    """No pre-validation or interpretation of `args` (spec Always boundary):
+    the adapter passes them straight through, exactly like every other
+    adapter."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run", return_value=_completed(stdout="{}"),
+    ) as mock_run:
+        update_recipe_from_github(
+            ["recipes/foo", "--dry-run", "--repo", "owner/repo", "--pre"],
+            root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    argv = mock_run.call_args.args[0]
+    assert argv[2:] == ["recipes/foo", "--dry-run", "--repo", "owner/repo", "--pre"]
+
+
+def test_update_recipe_from_github_reports_a_prerelease_skip_body_as_data_not_raised():
+    """The real script exits 0 with `{"success": true, "updated": false,
+    ...}` when the latest release is a pre-release and `--pre` was not
+    given (spec I/O matrix) -- returned as data, never raised."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=0,
+            stdout='{"success": true, "updated": false, "current_version": "1.0.0", '
+            '"latest_version": "2.0.0rc1", "latest_tag": "v2.0.0rc1", "message": '
+            '"Latest release 2.0.0rc1 is a pre-release \\u2014 skipping. Pass --pre '
+            'to include pre-releases."}',
+        ),
+    ):
+        result = update_recipe_from_github(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 0
+    assert result.json_body["updated"] is False
+    assert "pre-release" in result.json_body["message"]
+
+
+def test_update_recipe_from_github_reports_a_no_repo_detected_body_as_data_not_raised():
+    """The real script exits 1 with `{"success": false, "error": ...}` when
+    no GitHub repo can be auto-detected and `--repo` was not given (spec I/O
+    matrix's "Upstream lookup fails" row) -- a non-zero return code is data,
+    never raised (AD-4)."""
+    with patch(
+        "pyforge.mason.cfe.subprocess.run",
+        return_value=_completed(
+            returncode=1,
+            stdout='{"success": false, "error": "No GitHub URL detected in this '
+            'recipe. Pass --repo owner/repo to specify it manually, or use '
+            'update_recipe (PyPI autotick) instead.", "recipe": '
+            '"recipes/foo/recipe.yaml"}',
+        ),
+    ):
+        result = update_recipe_from_github(
+            ["recipes/foo"], root=Path("/fake/root"), interpreter="/fake/python",
+        )
+
+    assert result.returncode == 1
+    assert result.json_body["success"] is False
+
+
+# --- Story 2.10: update_recipe_from_github -- real end-to-end against
+# --- fake_cfe_root ------------------------------------------------------------
+
+def test_update_recipe_from_github_against_fake_cfe_root_matches_the_fixtures_canned_json(
+    fake_cfe_root, monkeypatch,
+):
+    _clear_fixture_env(monkeypatch)
+
+    result = update_recipe_from_github(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body == {
+        "success": True,
+        "updated": True,
+        "current_version": "1.0.0",
+        "new_version": "9.9.9",
+        "latest_tag": "v9.9.9",
+        "github_url": "https://github.com/example/example/releases/tag/v9.9.9",
+        "message": "Updated example 1.0.0 → 9.9.9.",
+    }
+
+
+def test_update_recipe_from_github_against_fake_cfe_root_tolerates_a_leading_progress_line(
+    fake_cfe_root, monkeypatch,
+):
+    """Reading the real `github_updater.py` confirms it prints progress
+    narration ("Checking GitHub releases for ...", "New version found:
+    ...") to stdout before its final JSON body (spec Design Notes) -- the
+    same tolerant-parsing shape `submit_pr` already exercises."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setenv(
+        "MASON_FIXTURE_PROGRESS_LINE",
+        "Checking GitHub releases for example/example (current: example 1.0.0)…",
+    )
+
+    result = update_recipe_from_github(
+        ["recipes/example"], root=fake_cfe_root, interpreter=sys.executable, timeout=15.0,
+    )
+
+    assert result.returncode == 0
+    assert result.json_body["success"] is True
 
 
 # --- Story 2.1: real end-to-end against Story 1.9's fake_cfe_root fixture --
