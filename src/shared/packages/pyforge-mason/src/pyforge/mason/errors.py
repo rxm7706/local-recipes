@@ -19,6 +19,8 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from pyforge.core.errors import PyforgeError
+
 # Two lowercase, hyphen-delimited segments joined by a single colon, e.g.
 # "cfe:unresolved" or "ship:credential-missing". Neither segment may be
 # empty, start/end with a hyphen, or contain a double hyphen. `\Z` (not `$`)
@@ -27,8 +29,14 @@ from collections.abc import Sequence
 _IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*\Z")
 
 
-class MasonError(Exception):
+class MasonError(PyforgeError):
     """Base class for every anticipated Mason failure.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: re-parented to the shared
+    ``PyforgeError`` marker (no ``__init__`` override on either side, so
+    this changes nothing observable, including for subclasses like
+    ``CfeUnresolvedError``/``CfeTimeoutError`` with their own custom
+    ``__init__``/``__reduce__``) -- they re-parent transitively.
 
     `identifier` must be a string matching `_IDENTIFIER_PATTERN`, and
     `message` must be a string with non-whitespace content that states what

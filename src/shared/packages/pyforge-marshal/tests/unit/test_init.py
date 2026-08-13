@@ -18,6 +18,7 @@ import jsonschema
 import subprocess
 
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
@@ -858,7 +859,7 @@ def test_json_format_emits_a_schema_valid_envelope(repo_root):
     assert exit_code == EXIT_OK
     payload = json.loads(captured.getvalue())
     schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
-    jsonschema.validate(instance=payload, schema=schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, schema))
     assert payload["command"] == "init"
     assert payload["status"] == "ok"
     assert payload["data"]["launch_line"] == (
@@ -1482,7 +1483,7 @@ def test_homes_json_format_emits_a_schema_valid_envelope(repo_root, tmp_path):
     assert exit_code == EXIT_OK
     payload = json.loads(captured.getvalue())
     schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
-    jsonschema.validate(instance=payload, schema=schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, schema))
     assert payload["command"] == "homes"
     assert payload["status"] == "ok"
 
@@ -1867,7 +1868,7 @@ def test_preflight_fully_converged_json_matches_schema(repo_root, tmp_path):
     assert exit_code == EXIT_OK
     payload = json.loads(captured.getvalue())
     schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
-    jsonschema.validate(instance=payload, schema=schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, schema))
     assert payload["command"] == "preflight"
     assert payload["status"] == "ok"
     assert payload["findings"] == []
@@ -2894,7 +2895,7 @@ def test_teardown_clean_merged_home_json_matches_schema(repo_root, tmp_path):
     assert exit_code == EXIT_OK
     payload = json.loads(captured.getvalue())
     schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
-    jsonschema.validate(instance=payload, schema=schema)
+    jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, schema))
     assert payload["command"] == "teardown"
     assert payload["status"] == "ok"
     assert payload["data"]["removed"] is True

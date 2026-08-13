@@ -71,6 +71,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from pyforge.core.errors import PyforgeError
 
 from .version import InvalidVersionError, ModelVersion, in_range
 
@@ -96,8 +97,11 @@ class AppliesTo(StrEnum):
     BOTH = "both"
 
 
-class ManifestError(Exception):
-    """Raised by ``load_manifest`` for any schema violation. The message is
+class ManifestError(PyforgeError, Exception):
+    """Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO.
+
+    Raised by ``load_manifest`` for any schema violation. The message is
     always prefixed with exactly one of three mutually exclusive locators:
     ``"<id>: "`` (the offending entry's id), ``"artifacts[N]: "`` (an entry
     whose own ``id`` could not be read, so it is addressed by position), or

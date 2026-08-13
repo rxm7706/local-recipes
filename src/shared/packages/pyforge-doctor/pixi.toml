@@ -29,3 +29,4 @@ python = ">=3.14"
 jsonschema = "*"
 pyyaml = ">=6.0"           # Story 6.6: sources/chain.py imports `yaml` at module scope -- without this the built .conda installs without PyYAML and the import raises ModuleNotFoundError (matches pyproject.toml's own `PyYAML>=6.0` and the root pixi.toml pin)
 mcp = ">=1.28.1"                         # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py); matches pyproject.toml's own floor (root pixi.toml's [feature.pyforge-doctor.dependencies] pins the dev env tighter at >=2.0.0, mirrors pyforge-herald's identical split)
+pyforge-core = { path = "../pyforge-core" }  # Story 14.3, CAP-3/CAP-4: verdict.py's Lattice + __main__.py's compose(BASE_ENVELOPE_SCHEMA, ...)
