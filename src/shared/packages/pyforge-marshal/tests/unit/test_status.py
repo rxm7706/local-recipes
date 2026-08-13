@@ -15,6 +15,7 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
@@ -3142,7 +3143,7 @@ class TestReconcileLedgerCli:
         status_schema = json.loads(_STATUS_SCHEMA_PATH.read_text(encoding="utf-8"))
         jsonschema.validate(instance=payload["data"], schema=status_schema)
         envelope_schema = json.loads(_ENVELOPE_SCHEMA_PATH.read_text(encoding="utf-8"))
-        jsonschema.validate(instance=payload, schema=envelope_schema)
+        jsonschema.validate(instance=payload, schema=compose(BASE_ENVELOPE_SCHEMA, envelope_schema))
 
     def test_text_format_renders_without_crashing(self, tmp_path, capsys, monkeypatch):
         monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)

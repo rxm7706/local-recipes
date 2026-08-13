@@ -95,6 +95,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import yaml
+from pyforge.core.errors import PyforgeError
 
 from .models import EMPTY_EXTRACTION_DRIVER_ID, Status, StatusDriver
 
@@ -133,10 +134,13 @@ _NON_BLOCKING_STATUSES = frozenset(
 )
 
 
-class WaiverError(ValueError):
+class WaiverError(PyforgeError, ValueError):
     """Base for this module's typed errors (mirrors ``config.py``'s
     ``_ConfigError`` shape: one common base, two subclasses splitting a
-    syntax failure from a shape/schema failure)."""
+    syntax failure from a shape/schema failure).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
 class WaiverParseError(WaiverError):
@@ -151,10 +155,13 @@ class WaiverValidationError(WaiverError):
     CONFIG_VALIDATION``, ``owner="waiver"``."""
 
 
-class BaselineError(ValueError):
+class BaselineError(PyforgeError, ValueError):
     """Base for this module's baseline-shaped typed errors (Story 6.8) --
     mirrors ``WaiverError``'s shape: one common base, two subclasses
-    splitting a syntax failure from a shape/schema failure."""
+    splitting a syntax failure from a shape/schema failure.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
 class BaselineParseError(BaselineError):

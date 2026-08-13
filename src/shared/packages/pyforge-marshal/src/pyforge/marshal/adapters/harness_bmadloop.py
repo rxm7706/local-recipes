@@ -206,6 +206,7 @@ from pathlib import Path
 
 import tomlkit
 from pyforge.core.atomic_write import atomic_write_bytes
+from pyforge.core.errors import PyforgeError
 
 from ..core import policy
 from ..core.egress import to_redacted
@@ -473,7 +474,7 @@ def render_policy_toml(
     return tomlkit.dumps(doc)
 
 
-class HarnessPolicyWriteError(Exception):
+class HarnessPolicyWriteError(PyforgeError, Exception):
     """Raised by ``write_policy_toml`` when the atomic write to
     ``<loop_home>/.bmad-loop/policy.toml`` fails (an unwritable loop home, a
     non-directory occupying ``.bmad-loop``, or any other ``OSError`` during
@@ -481,6 +482,9 @@ class HarnessPolicyWriteError(Exception):
     registered for this -- there is no CLI caller yet to convert an I/O
     failure into a ``Finding`` (that is a later story's concern); a plain
     exception is sufficient until one exists.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO.
     """
 
 
@@ -747,7 +751,7 @@ def _profile_capabilities(profile: object) -> dict[str, object]:
     }
 
 
-class HarnessError(Exception):
+class HarnessError(PyforgeError, Exception):
     """Raised by ``BmadLoopHarness`` methods that are documented to raise
     (``multiplexer_backend_available``, ``adapter_binary``,
     ``adapter_seed_files``, ``adapter_first_run_note``) when the lazy
@@ -756,7 +760,10 @@ class HarnessError(Exception):
     is raised. Never a raw ``ImportError``/harness-internal exception type --
     ``cli/init.py`` only ever needs to catch this ONE class (AD-3's own
     seam: nothing outside this module names a ``bmad_loop`` exception
-    type)."""
+    type).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO."""
 
 
 def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> subprocess.CompletedProcess[str] | None:

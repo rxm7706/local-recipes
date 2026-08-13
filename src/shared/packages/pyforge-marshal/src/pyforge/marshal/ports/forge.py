@@ -49,6 +49,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from pyforge.core.errors import PyforgeError
+
 from ..core.egress import Redacted
 
 
@@ -100,14 +102,17 @@ class PrInfo:
             raise ValueError(f"base must be a non-empty str, got {self.base!r}")
 
 
-class ForgeCommandError(Exception):
+class ForgeCommandError(PyforgeError, Exception):
     """Raised when a ``gh`` invocation fails: a non-zero exit (not
     authenticated, a rejected request, an unknown repo/PR), a missing ``gh``
     executable, a hung process exceeding its timeout, or a response that
     could not be parsed as the JSON this port's own callers expect. Mirrors
     ``adapters/vcs_git.py::VcsCommandError``'s identical shape -- never lets
     a raw ``subprocess`` exception or a JSON-decode error escape this port's
-    adapter."""
+    adapter.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO."""
 
 
 class ForgePort(Protocol):
