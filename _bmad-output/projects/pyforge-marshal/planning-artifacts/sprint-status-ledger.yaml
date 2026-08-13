@@ -75,7 +75,7 @@ development_status:
   2-5-gate-mode-ladder-with-autonomy-labels: done
   2-6-gate-evidence-record-with-redaction-at-egress: done
   2-7-a-gate-binds-to-the-specs-success-signal: done
-  2-8-a-low-risk-storys-review-runs-lighter-never-absent: backlog
+  2-8-a-low-risk-storys-review-runs-lighter-never-absent: done
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: backlog
