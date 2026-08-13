@@ -50,8 +50,8 @@ import pyforge.mason.cfe as cfe_module
 import pyforge.mason.recipe as recipe_module
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
-from pyforge.mason.models import CfeResult
-from pyforge.mason.recipe import diagnose, optimize, scan
+from pyforge.mason.models import CfeResult, ShipState, ShipTargetResult
+from pyforge.mason.recipe import diagnose, optimize, scan, submit
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_NOT_FOUND, STEP_RUNNING_INTERPRETER,
     ResolvedCfeInterpreter, ResolvedCfeRoot,
@@ -796,3 +796,493 @@ def test_scan_against_fake_cfe_root_returns_the_fixtures_canned_clean_scan(
     assert result.json_body["success"] is True
     assert result.json_body["total_vulnerabilities"] == 0
     assert result.json_body["results"] == []
+
+
+# =============================================================================
+# Story 2.9: submit() -- resolve root/interpreter like diagnose() (no
+# import-floor gate), plus the two additions unique to this verb: `recipe_
+# path` IS interpreted (into a slug + CFE_RECIPES_ROOT), and the returned
+# CfeResult is reinterpreted into a ShipTargetResult (module docstring,
+# spec Always boundary).
+# =============================================================================
+
+_SUBMIT_DRY_RUN_RESULT = CfeResult(
+    returncode=0,
+    stdout=(
+        '{"success": true, "dry_run": true, "recipe": "foo", '
+        '"branch": "add-recipe-foo", "github_user": "example-user", '
+        '"fork_branch_url": '
+        '"https://github.com/example-user/staged-recipes/tree/add-recipe-foo", '
+        '"message": "Dry run OK -- would push branch \'add-recipe-foo\' to '
+        'example-user/staged-recipes."}'
+    ),
+    stderr="",
+    json_body={
+        "success": True, "dry_run": True, "recipe": "foo",
+        "branch": "add-recipe-foo", "github_user": "example-user",
+        "fork_branch_url": (
+            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
+        ),
+        "message": (
+            "Dry run OK -- would push branch 'add-recipe-foo' to "
+            "example-user/staged-recipes."
+        ),
+    },
+)
+
+_SUBMIT_FULL_SUCCESS_RESULT = CfeResult(
+    returncode=0,
+    stdout="{...}",
+    stderr="",
+    json_body={
+        "success": True, "recipe": "foo", "branch": "add-recipe-foo",
+        "github_user": "example-user",
+        "pr_url": "https://github.com/conda-forge/staged-recipes/pull/123",
+        "message": "PR created: https://github.com/conda-forge/staged-recipes/pull/123",
+    },
+)
+
+_SUBMIT_PREPARE_ONLY_RESULT = CfeResult(
+    returncode=0,
+    stdout="{...}",
+    stderr="",
+    json_body={
+        "success": True, "recipe": "foo", "branch": "add-recipe-foo",
+        "github_user": "example-user",
+        "fork_branch_url": (
+            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
+        ),
+        "head_sha": "abc123", "synced_commits": 0, "pushed": True, "force": True,
+        "message": (
+            "Branch 'add-recipe-foo' is ready on example-user/staged-recipes "
+            "(pushed=True, fork-was-behind=0 commits). Inspect: "
+            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
+        ),
+    },
+)
+
+_SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT = CfeResult(
+    returncode=1,
+    stdout="{...}",
+    stderr="",
+    json_body={
+        "success": False, "error": "PR creation failed: some gh error",
+        "branch": "add-recipe-foo",
+        "fork_branch_url": (
+            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
+        ),
+        "hint": "Run open_pr separately to retry the PR step.",
+    },
+)
+
+
+# --- I/O matrix: the five state-mapping branches (mocked cfe.submit_pr) ----
+
+def test_submit_dry_run_appends_dry_run_flag_and_returns_not_attempted():
+    """Dry run (default): no `--yes` -> `confirm=False` -> `--dry-run`
+    forwarded; `ShipTargetResult(state=NOT_ATTEMPTED, reference=None)` even
+    though the stub's own JSON carries a `fork_branch_url` -- a dry run's
+    branch URL is hypothetical and never rendered as if real (spec Always
+    boundary)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root") as mock_ensure, \
+         patch(
+             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
+         ) as mock_submit_pr:
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=False, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_ensure.assert_called_once_with(_ROOT)
+    args, kwargs = mock_submit_pr.call_args
+    assert args[0] == ["foo", "--dry-run"]
+    assert kwargs["root"] == _ROOT.root
+    assert kwargs["interpreter"] == _INTERPRETER.path
+    assert kwargs["timeout"] is None
+    assert result == ShipTargetResult(
+        target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None,
+        message=_SUBMIT_DRY_RUN_RESULT.json_body["message"],
+    )
+
+
+def test_submit_confirmed_full_flow_returns_pending_with_pr_url():
+    """Confirmed, full flow: `--yes` -> `confirm=True` -> no `--dry-run`;
+    CFE reports `pr_url` -> `ShipTargetResult(state=PENDING,
+    reference=pr_url)` -- never `TERMINAL` (AD-9/AD-10)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_FULL_SUCCESS_RESULT,
+         ) as mock_submit_pr:
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=True, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert mock_submit_pr.call_args.args[0] == ["foo"]
+    assert result == ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING,
+        reference="https://github.com/conda-forge/staged-recipes/pull/123",
+        message=_SUBMIT_FULL_SUCCESS_RESULT.json_body["message"],
+    )
+
+
+def test_submit_confirmed_prepare_only_appends_the_flag_and_returns_pending_with_branch_url():
+    """Confirmed, prepare-only: `--yes --prepare-only` -> both `confirm=
+    True` (no `--dry-run`) and `--prepare-only` forwarded; no `pr_url` in
+    the body -> `ShipTargetResult(state=PENDING, reference=fork_branch_url)`
+    (AD-10: "if a target cannot be interrogated, the result is pending with
+    the reason")."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_PREPARE_ONLY_RESULT,
+         ) as mock_submit_pr:
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=True, prepare_only=True,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert mock_submit_pr.call_args.args[0] == ["foo", "--prepare-only"]
+    assert result == ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING,
+        reference=(
+            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
+        ),
+        message=_SUBMIT_PREPARE_ONLY_RESULT.json_body["message"],
+    )
+
+
+def test_submit_confirmed_push_succeeded_pr_failed_returns_failed_with_branch_url():
+    """Confirmed, push succeeds but PR creation fails: CFE JSON `success=
+    false` with `fork_branch_url` present (the push happened; only `open_pr`
+    failed afterward) -> `ShipTargetResult(state=FAILED,
+    reference=fork_branch_url)` -- data, not raised (AD-4)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr",
+             return_value=_SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT,
+         ):
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=True, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result == ShipTargetResult(
+        target="conda-forge", state=ShipState.FAILED,
+        reference=(
+            "https://github.com/example-user/staged-recipes/tree/add-recipe-foo"
+        ),
+        message=_SUBMIT_PUSH_SUCCEEDED_PR_FAILED_RESULT.json_body["error"],
+    )
+
+
+def test_submit_computes_cfe_recipes_root_from_the_recipe_paths_parent_for_an_out_of_tree_path():
+    """Out-of-tree recipe (S-2.4): `CFE_RECIPES_ROOT` is set to the recipe
+    path's parent directory in the child's environment, regardless of
+    whether that parent happens to be the real `recipes/` root -- no
+    branching (spec Always boundary). Asserted on the `env=` argv reaching
+    the mocked `cfe.submit_pr` call, mirroring `run_streamed`'s own
+    documented contract that the caller builds the whole dict."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
+         ) as mock_submit_pr:
+        submit(
+            "/tmp/out-of-tree-gen/my-package",
+            confirm=False, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={"PATH": "/usr/bin"}, start_directory=Path("/start"),
+        )
+
+    env = mock_submit_pr.call_args.kwargs["env"]
+    assert env["CFE_RECIPES_ROOT"] == "/tmp/out-of-tree-gen"
+    # The caller-supplied environ is passed through in full, plus the one
+    # added key -- no credential is read, filtered, or added (AD-14).
+    assert env["PATH"] == "/usr/bin"
+    assert mock_submit_pr.call_args.args[0][0] == "my-package"
+
+
+def test_submit_overrides_a_pre_existing_cfe_recipes_root_in_environ():
+    """Review pass (2026-08-12): the prior out-of-tree test's `environ` never
+    already carried a `CFE_RECIPES_ROOT` key, so it never proved OVERRIDE --
+    only ADDITION. `{**environ, KEY: value}` always lets the later key win
+    (Python dict-literal semantics), but a stale/wrong value already present
+    in the real inherited `environ` (e.g. leaked from a parent shell) must
+    still be replaced by the one `submit()` computes from `recipe_path`'s own
+    parent, never merged or left alone."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
+         ) as mock_submit_pr:
+        submit(
+            "/tmp/out-of-tree-gen/my-package",
+            confirm=False, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={"CFE_RECIPES_ROOT": "/totally/wrong/stale/root", "PATH": "/usr/bin"},
+            start_directory=Path("/start"),
+        )
+
+    env = mock_submit_pr.call_args.kwargs["env"]
+    assert env["CFE_RECIPES_ROOT"] == "/tmp/out-of-tree-gen"
+    assert env["PATH"] == "/usr/bin"
+
+
+def test_submit_dry_run_prepare_only_composes_both_flags():
+    """`--prepare-only` composes with the dry-run default (module docstring:
+    "composing with --dry-run exactly as the wrapped script's own argparse
+    already allows") -- confirm=False, prepare_only=True must forward BOTH
+    `--dry-run` and `--prepare-only`, not just one. Every other
+    `--prepare-only` test in this file pairs it with `confirm=True`; this
+    pins the confirm=False pairing specifically (review pass, 2026-08-12)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT,
+         ) as mock_submit_pr:
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=False, prepare_only=True,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert mock_submit_pr.call_args.args[0] == ["foo", "--dry-run", "--prepare-only"]
+    assert result.state == ShipState.NOT_ATTEMPTED
+
+
+@pytest.mark.parametrize("returncode,expected_state", [(0, ShipState.PENDING), (1, ShipState.FAILED)])
+def test_submit_confirmed_unparseable_body_falls_back_to_returncode(returncode, expected_state):
+    """Review pass (2026-08-12): `_ship_target_result_from_cfe_result`'s own
+    docstring calls out the unparseable/non-dict `json_body` fallback
+    (`result.returncode == 0` standing in for "success") by name, but no
+    prior test constructed one -- every fixture above carries a populated
+    dict body. Pins both outcomes of that fallback: `returncode == 0` ->
+    PENDING (an edge case CFE's real script cannot produce today -- it
+    always prints its JSON body before exiting 0 -- but the fallback exists
+    and must not crash), `returncode != 0` -> FAILED. Both leave `reference`
+    and `message` as `None` -- there is no body to read either from."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr",
+             return_value=CfeResult(
+                 returncode=returncode, stdout="not json", stderr="", json_body=None,
+             ),
+         ):
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=True, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result == ShipTargetResult(
+        target="conda-forge", state=expected_state, reference=None, message=None,
+    )
+
+
+def test_submit_treats_a_missing_success_key_as_failure():
+    """Review pass (2026-08-12): a `dict` body that simply omits `"success"`
+    entirely (as opposed to setting it explicitly `false`) must still be
+    treated as failure -- `dict.get("success")` returns `None` (falsy) for
+    an absent key, the same fail-closed outcome as an explicit `false`, but
+    no prior test constructed a body with the key missing altogether."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr",
+             return_value=CfeResult(
+                 returncode=1, stdout="{...}", stderr="",
+                 json_body={"error": "some unexpected shape"},
+             ),
+         ):
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=True, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result.state == ShipState.FAILED
+    assert result.message == "some unexpected shape"
+
+
+def test_submit_preserves_an_explicit_empty_string_message_instead_of_falling_back_to_error():
+    """Review pass (2026-08-12): the state-mapping helper used to compute
+    `message` via `body.get("message") or body.get("error")` -- an `or`
+    chain that silently discards a PRESENT-but-falsy `"message"` (e.g. an
+    explicit empty string) in favor of `"error"`. `dict.get(key, default)`
+    only substitutes `default` when `key` is absent, so a present empty
+    string now survives as `""`, not `"error"`'s text."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.submit_pr",
+             return_value=CfeResult(
+                 returncode=1, stdout="{...}", stderr="",
+                 json_body={"success": False, "message": "", "error": "should not win"},
+             ),
+         ):
+        result = submit(
+            "/fake/cfe/recipes/foo",
+            confirm=True, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    assert result.message == ""
+
+
+def test_submit_recovers_from_an_unresolvable_recipe_path_as_a_failed_result():
+    """Review pass (2026-08-12): `Path.resolve()` can raise `OSError` (e.g. a
+    symlink loop) or `ValueError` (e.g. an embedded NUL byte) for a
+    genuinely malformed path -- distinct from a merely NONEXISTENT one,
+    which resolves cleanly and surfaces as CFE's own "Recipe not found"
+    data. `submit()` must catch that and return a `FAILED` `ShipTargetResult`
+    itself (AD-4: an anticipated failure is data, never a raised exception)
+    rather than let a raw `OSError`/`ValueError` escape to `cli.py`'s
+    generic `except Exception` handler. No subprocess may spawn afterward."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch.object(
+             recipe_module.Path, "resolve",
+             side_effect=OSError("symlink loop detected"),
+         ), \
+         patch("pyforge.mason.cfe.submit_pr") as mock_submit_pr:
+        result = submit(
+            "/fake/cfe/recipes/loopy",
+            confirm=True, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_submit_pr.assert_not_called()
+    assert result == ShipTargetResult(
+        target="conda-forge", state=ShipState.FAILED,
+        reference=None, message="symlink loop detected",
+    )
+
+
+def test_submit_never_calls_probe_import_floor():
+    """Mirrors `test_diagnose_never_calls_ensure_import_floor`: `submit_pr.py`
+    is stdlib-only (confirmed by reading it), the same exemption
+    `diagnose()` established -- `submit()` has no scoped-probe gate either
+    (module docstring; unlike `optimize()`/`scan()`)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch("pyforge.mason.cfe.submit_pr", return_value=_SUBMIT_DRY_RUN_RESULT), \
+         patch("pyforge.mason.cfe.probe_import_floor") as mock_probe_floor, \
+         patch("pyforge.mason.cfe.ensure_import_floor") as mock_ensure_floor:
+        submit(
+            "/fake/cfe/recipes/foo",
+            confirm=False, prepare_only=False,
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            environ={}, start_directory=Path("/start"),
+        )
+
+    mock_probe_floor.assert_not_called()
+    mock_ensure_floor.assert_not_called()
+
+
+# --- CFE-unresolved propagation: raises before any subprocess spawns -------
+
+def test_submit_raises_cfe_unresolved_error_when_root_is_not_found():
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER):
+        with pytest.raises(CfeUnresolvedError):
+            submit(
+                "/fake/cfe/recipes/foo",
+                confirm=False, prepare_only=False,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+
+def test_submit_never_calls_submit_pr_when_root_is_unresolved():
+    """The `CfeUnresolvedError` path must short-circuit before `cfe.
+    submit_pr` is ever reached."""
+    with patch.object(
+        recipe_module, "resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ), patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.submit_pr") as mock_submit_pr:
+        with pytest.raises(CfeUnresolvedError):
+            submit(
+                "/fake/cfe/recipes/foo",
+                confirm=False, prepare_only=False,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
+            )
+
+    mock_submit_pr.assert_not_called()
+
+
+def test_submit_raises_before_any_subprocess_spawns_against_a_real_unresolved_root(
+    tmp_path,
+):
+    """End-to-end, nothing mocked but the subprocess boundary itself --
+    mirrors `diagnose()`'s own version of this test (AD-16: no real CFE
+    installation required)."""
+    with patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            submit(
+                "/fake/cfe/recipes/foo",
+                confirm=False, prepare_only=False,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=tmp_path,
+            )
+
+    mock_run.assert_not_called()
+
+
+# --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
+
+def test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success(
+    fake_cfe_root, monkeypatch,
+):
+    """`confirm=True, prepare_only=False` -- the stub's static canned JSON
+    already includes `pr_url`, matching the full-flow-success shape exactly
+    (spec Code Map), so no fixture changes are needed."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    result = submit(
+        str(fake_cfe_root / "recipes" / "example-recipe"),
+        confirm=True, prepare_only=False,
+        cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0, environ={}, start_directory=fake_cfe_root,
+    )
+
+    assert result == ShipTargetResult(
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="https://github.com/example/example/pull/1",
+        message="PR created: https://github.com/example/example/pull/1",
+    )
