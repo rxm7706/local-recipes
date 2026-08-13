@@ -71,6 +71,19 @@ need: `--dry-run`/`--github`/`--repo`/`--pre` all forward straight through
 to `recipe.update` unresolved (no inversion, unlike submit's `--yes`), and
 one real-fixture test exercises the `--github` dispatch path against the
 new `github_updater.py` stub.
+
+Story 3.2 registers the first verb under a DIFFERENT noun, `package build`,
+mirroring `recipe build`'s own mocked-dispatch test block shape
+(`patch("pyforge.mason.cli.package.build", ...)`, text/JSON happy paths, a
+failed-child-still-renders-"ok" case) but with two differences: `--target`'s
+`choices=("library",)` gives this verb its own argparse usage-error case
+(mirroring `--format`'s existing choices pattern, spec Always boundary), and
+there is no CFE-flags-pass-through coverage at all -- `package.build()`
+takes no `cfe_root_arg`/`cfe_python_arg`/`cfe_timeout_arg` parameters, so
+this verb's dispatch branch reads none of those three flags (spec Always
+boundary: zero CFE involvement). `EngineAbsentError`/`PackageVersionMismatchError`
+both project through `main()`'s existing generic `MasonError` branch to
+`EXIT_FAILED` -- no dedicated branch, same as `CfeImportFloorError` above.
 """
 
 from __future__ import annotations
@@ -96,12 +109,15 @@ from pyforge.mason.doctor import DoctorReport
 from pyforge.mason.engines import EngineStatus
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import (
-    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, MasonError,
+    CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, EngineAbsentError,
+    MasonError, PackageVersionMismatchError,
 )
 from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
-from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
+from pyforge.mason.models import (
+    BuildResult, CfeResult, PackageBuildResult, ShipState, ShipTargetResult,
+)
 
 _FIXED_REPORT = DoctorReport(
     mason_version="1.2.3+test",
@@ -2123,3 +2139,178 @@ def test_recipe_build_global_flag_parses_after_the_verb_and_its_positional():
     assert ns.verb == "build"
     assert ns.recipe_path == "recipes/foo"
     assert ns.format == "json"
+
+
+# --- Story 3.2: `package build` verb dispatch --------------------------------
+
+_FIXED_PACKAGE_BUILD_RESULT = PackageBuildResult(
+    target="library",
+    project_path="/proj",
+    wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+    sdist_path="/proj/dist/pkg-0.1.0.tar.gz",
+    conda_path="/proj/dist-conda/pkg-0.1.0-abc123_0.conda",
+    wheel_version="0.1.0",
+    conda_version="0.1.0",
+    pep517_returncode=0,
+    pixi_returncode=0,
+    pep517_stdout="Successfully built pkg\n",
+    pixi_stdout="Building pkg\n",
+)
+
+
+def test_package_build_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["package", "build", "--help"])
+    assert exc.value.code == 0
+    assert "build" in capsys.readouterr().out
+
+
+def test_package_build_happy_path_text_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+    ) as mock_build:
+        assert main(["package", "build", "myproj"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "package build: ok" in out.out
+    assert "wheel_version: 0.1.0" in out.out
+    assert "conda_version: 0.1.0" in out.out
+
+    mock_build.assert_called_once()
+    args, kwargs = mock_build.call_args
+    assert args[0] == "myproj"
+    assert kwargs["target"] == "library"
+
+
+def test_package_build_happy_path_json_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+    ):
+        assert main(["package", "build", "myproj", "--format", "json"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert doc["command"] == "package build"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == dataclasses.asdict(_FIXED_PACKAGE_BUILD_RESULT)
+
+
+def test_package_build_invalid_target_is_a_usage_error(capsys):
+    """`--target`'s `choices=("library",)` -- an argparse usage error,
+    naming `library` as the v1 set (spec I/O matrix), never reaching
+    `package.build` at all."""
+    with patch("pyforge.mason.cli.package.build") as mock_build:
+        rc = main(["package", "build", "myproj", "--target", "application"])
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "library" in err
+    mock_build.assert_not_called()
+
+
+def test_package_build_failed_child_still_renders_ok(capsys):
+    """A non-zero delegated engine returncode is DATA, never raised (AD-4)
+    -- mirrors `recipe build`'s own established "the gap is data"
+    precedent."""
+    failed_result = PackageBuildResult(
+        target="library",
+        project_path="/proj",
+        wheel_path=None,
+        sdist_path=None,
+        conda_path=None,
+        wheel_version=None,
+        conda_version=None,
+        pep517_returncode=1,
+        pixi_returncode=0,
+        pep517_stdout="error: build backend failed\n",
+        pixi_stdout="Building pkg\n",
+    )
+    with patch("pyforge.mason.cli.package.build", return_value=failed_result):
+        assert main(["package", "build", "myproj"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "package build: ok" in out.out
+    assert "pep517_returncode: 1" in out.out
+
+
+def test_package_build_version_mismatch_error_projects_to_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.package.build",
+        side_effect=PackageVersionMismatchError(
+            wheel_version="0.1.0",
+            conda_version="0.2.0",
+            wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+            conda_path="/proj/dist-conda/pkg-0.2.0-abc123_0.conda",
+        ),
+    ):
+        rc = main(["package", "build", "myproj"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "0.1.0" in err
+    assert "0.2.0" in err
+
+
+def test_package_build_engine_absent_error_projects_to_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.package.build", side_effect=EngineAbsentError("pixi", "pixi"),
+    ):
+        rc = main(["package", "build", "myproj"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "pixi" in err
+
+
+def test_package_build_default_target_is_library():
+    with patch(
+        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+    ) as mock_build:
+        assert main(["package", "build", "myproj"]) == EXIT_OK
+
+    assert mock_build.call_args.kwargs["target"] == "library"
+
+
+def test_package_build_never_reads_cfe_flags():
+    """spec Always boundary: `package.build()` has no `cfe_root_arg`/
+    `cfe_python_arg`/`cfe_timeout_arg` parameters -- passing the shared
+    `--cfe-root`/`--cfe-python`/`--cfe-timeout` global flags must still
+    parse (they are on `global_flags`, shared by every noun) but never
+    reach `package.build`'s call."""
+    with patch(
+        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+    ) as mock_build:
+        assert main([
+            "package", "build", "myproj",
+            "--cfe-root", "/explicit/root", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    kwargs = mock_build.call_args.kwargs
+    assert "cfe_root_arg" not in kwargs
+    assert "cfe_python_arg" not in kwargs
+    assert "cfe_timeout_arg" not in kwargs
+
+
+def test_package_build_global_flag_parses_after_the_verb_and_its_positional():
+    ns = build_parser().parse_args(["package", "build", "myproj", "--format", "json"])
+    assert ns.noun == "package"
+    assert ns.verb == "build"
+    assert ns.project_path == "myproj"
+    assert ns.format == "json"
+
+
+def test_package_noun_metavar_reflects_the_registered_build_verb(capsys):
+    """Mirrors `test_recipe_diagnose_verb_metavar_reflects_the_registered_
+    verb` above: `package` previously registered no verb at all, so its own
+    bad-verb usage error must now name `build`, not the stale literal
+    `{}`."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["package", "bogus-verb"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "{build}" in err
+    assert "argument {}:" not in err
