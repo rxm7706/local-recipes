@@ -1506,12 +1506,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "71/126",
+            "75/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "55",
+            "51",
             "remaining",
             ""
           ]
@@ -1749,12 +1749,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.12",
-              "pending",
+              "done",
               "A struggling retry runs under a stronger model *(added 2026-08-11 — FR-183)*"
             ],
             [
               "3.13",
-              "pending",
+              "done",
               "The parallel-fan-out clamp is surfaced, not silent *(added 2026-08-11 — FR-184)*"
             ]
           ]
@@ -1881,12 +1881,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "5.8",
-              "pending",
+              "done",
               "A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — FR-181)*"
             ],
             [
               "5.9",
-              "pending",
+              "done",
               "A story finished by hand isn't invisible to the ledger *(added 2026-08-11 — FR-186)*"
             ],
             [
@@ -3884,7 +3884,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-12 23:56 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 00:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4890,7 +4890,7 @@ window.DASHBOARD_DATA = {
       "title": "Fleet status wants a fallback liveness check when the supervisor sidecar is gone",
       "caps": 2,
       "companions": 0,
-      "updated": "2026-08-11",
+      "updated": "2026-08-12",
       "dream": "fleet-status-supervisor-fallback",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-status-supervisor-fallback"
     },
@@ -4980,7 +4980,7 @@ window.DASHBOARD_DATA = {
       "title": "marshal CLI — graduated autonomy, productized",
       "caps": 18,
       "companions": 7,
-      "updated": "2026-08-11",
+      "updated": "2026-08-12",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
     },
@@ -5010,7 +5010,7 @@ window.DASHBOARD_DATA = {
       "title": "Two ways to finish a story, and Marshal has only ever heard of one",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-11",
+      "updated": "2026-08-12",
       "dream": "quick-dev-reconciliation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-quick-dev-reconciliation"
     },
@@ -5040,7 +5040,7 @@ window.DASHBOARD_DATA = {
       "title": "sprint-status auto-promote",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-10",
+      "updated": "2026-08-12",
       "dream": "sprint-status-auto-promote",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
     },
@@ -5999,7 +5999,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 71,
+          "done": 75,
           "total": 125
         },
         {
@@ -6481,7 +6481,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-06-20",
           "epics": "2026-08-12",
           "sprint": "2026-08-11",
-          "tea": "2026-08-11",
+          "tea": "2026-08-12",
           "gates": "2026-08-10",
           "code": "2026-08-10",
           "verify": "2026-08-10",
@@ -6556,7 +6556,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "71/126",
+        "progress": "75/126",
         "complete": 13,
         "of": 13
       },
@@ -16612,8 +16612,8 @@ window.DASHBOARD_DATA = {
       "subject": "sequence marshal-land-merge-subject spec as Story 5.10; sync .idea metadata"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-12 23:56 UTC",
-    "generatedEpoch": 1786579016
+    "generatedAt": "2026-08-13 00:15 UTC",
+    "generatedEpoch": 1786580129
   },
   "storySpecs": [
     {
@@ -16636,9 +16636,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 71,
+      "done": 75,
       "tracked": 56,
-      "gap": 15
+      "gap": 19
     },
     {
       "station": "pyforge-mason",
@@ -16745,8 +16745,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 71,
-        "backlog": 51,
+        "done": 75,
+        "backlog": 47,
         "blocked": 3,
         "total": 125,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -16947,8 +16947,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 286,
-      "backlog": 87,
+      "done": 290,
+      "backlog": 83,
       "blocked": 6,
       "total": 379
     }
@@ -16985,10 +16985,10 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 125,
-        "done": 71,
+        "done": 75,
         "blocked": 3,
         "epics": 19,
-        "epicsDone": 4,
+        "epicsDone": 5,
         "complete": false
       },
       {
@@ -17030,10 +17030,10 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 379,
-      "done": 286,
+      "done": 290,
       "blocked": 6,
       "epics": 74,
-      "epicsDone": 49
+      "epicsDone": 50
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`)."
   }
