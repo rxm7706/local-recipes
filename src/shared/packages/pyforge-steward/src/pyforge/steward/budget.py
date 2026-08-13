@@ -48,12 +48,12 @@ import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
-import os
 import re
-import threading
 from pathlib import Path
 
 import yaml
+
+from pyforge.core.atomic_write import atomic_write
 
 from .interfaces import DutyResult
 
@@ -209,15 +209,14 @@ def load_budget(path: str | Path) -> tuple[Ceiling, ...]:
 def save_budget(path: str | Path, ceilings: tuple[Ceiling, ...]) -> None:
     """Write `ceilings` to `path` as `.steward/budget.yaml`-shaped YAML.
 
-    Creates parent directories as needed. `yaml.safe_dump` only. Writes via
-    a pid+thread-id-suffixed temp file then `os.replace` (never a direct
-    `open("w")` on the real path) — mirrors `keys.py::save_inventory`'s
-    identical rationale: a concurrent reader (e.g. `steward budget show`
-    running at the same moment as a `set`) must never observe a partially
-    written file.
+    Creates parent directories as needed. `yaml.safe_dump` only. Writes
+    atomically via `pyforge.core.atomic_write` (Story 14.2, CAP-2 -- the one
+    shared temp-file-then-`os.replace` primitive, mkstemp-based) — mirrors
+    `keys.py::save_inventory`'s identical rationale: a concurrent reader
+    (e.g. `steward budget show` running at the same moment as a `set`) must
+    never observe a partially written file.
     """
     path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
     document = {
         "ceilings": [
             {
@@ -229,10 +228,12 @@ def save_budget(path: str | Path, ceilings: tuple[Ceiling, ...]) -> None:
             for c in ceilings
         ]
     }
-    tmp_path = path.parent / f".{path.name}.pid{os.getpid()}.t{threading.get_native_id()}.tmp"
-    with tmp_path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(document, f, sort_keys=False)
-    os.replace(tmp_path, path)
+
+    def _write(tmp: Path) -> None:
+        with tmp.open("w", encoding="utf-8") as f:
+            yaml.safe_dump(document, f, sort_keys=False)
+
+    atomic_write(path, _write)
 
 
 def set_ceiling(path: str | Path, cap: str) -> Ceiling:

@@ -56,7 +56,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -64,6 +63,8 @@ from typing import Any, Callable
 
 import pandas as pd
 from kedro.io import AbstractDataset
+
+from pyforge.core.atomic_write import atomic_write
 
 from .vdb_boundary import coerce_cvss_score
 
@@ -329,18 +330,13 @@ class ExternalRefreshDataset(AbstractDataset):
 
     @staticmethod
     def _atomic_write(target: Path, write_fn: Callable[[Path], None]) -> None:
-        """Write via a sibling ``.tmp`` then ``os.replace`` — an interrupted/failed write
-        leaves the last-good file untouched (AD-13 never-clobber)."""
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(target.name + ".tmp")
-        try:
-            write_fn(tmp)
-            os.replace(tmp, target)
-        finally:
-            try:
-                tmp.unlink(missing_ok=True)
-            except OSError:  # pragma: no cover - best-effort cleanup
-                pass
+        """Delegates to ``pyforge.core.atomic_write`` (Story 14.2, CAP-2 --
+        the one shared temp-file-then-``os.replace`` primitive,
+        mkstemp-based; this method's own ``write_fn: Callable[[Path], None]``
+        callback shape maps directly onto the primitive's own): an
+        interrupted/failed write leaves the last-good file untouched (AD-13
+        never-clobber)."""
+        atomic_write(target, write_fn)
 
     # -- subclass hooks ----------------------------------------------------
 

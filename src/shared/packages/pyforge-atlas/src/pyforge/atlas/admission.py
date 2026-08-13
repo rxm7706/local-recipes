@@ -89,9 +89,10 @@ Boundaries — write them down rather than overclaim
   break. ``PYFORGE_ATLAS_LOCK_ROOT`` remains the override, and is REFUSED when it would put
   the store back inside the data tree.
 
-Imports are stdlib + ``filelock`` + ``kedro.framework.hooks`` only — no ``pandas``, no
-``dashboard.*``, no ``dagster``, and (the file is scanned by
-``tests/catalog/test_no_inline_io.py``) never ``subprocess``: the lock must not shell out.
+Imports are stdlib + ``filelock`` + ``kedro.framework.hooks`` + ``pyforge.core`` (Story 14.2,
+CAP-2's pure-stdlib atomic-write leaf) only — no ``pandas``, no ``dashboard.*``, no
+``dagster``, and (the file is scanned by ``tests/catalog/test_no_inline_io.py``) never
+``subprocess``: the lock must not shell out.
 """
 
 from __future__ import annotations
@@ -106,6 +107,8 @@ from typing import Any
 
 import filelock
 from kedro.framework.hooks import hook_impl
+
+from pyforge.core.atomic_write import atomic_write_text
 
 logger = logging.getLogger(__name__)
 
@@ -477,24 +480,17 @@ def _write_holder(path: Path, run_id: str) -> None:
     """Write this run's holder record. Written AFTER the lock is taken, so it only ever
     describes a real holder.
 
-    ATOMIC (temp file + ``os.replace``), because a contender reads this file WITHOUT holding
-    the lock. ``Path.write_text`` opens with ``O_TRUNC``, so the record is zero bytes between
-    open and write — and that window sits immediately after the winner takes the flock, i.e.
-    exactly when a contender is most likely to be reading it. Measured: a read in that window
-    degrades every field to ``None``, which is the "torn sidecar" state :func:`_read_holder`
-    and :class:`RunAdmissionRejected` go to such lengths to survive. Better not to author it.
+    ATOMIC (delegates to ``pyforge.core.atomic_write_text``, Story 14.2/CAP-2's shared
+    temp-file-then-``os.replace`` primitive), because a contender reads this file WITHOUT
+    holding the lock. A plain ``Path.write_text`` opens with ``O_TRUNC``, so the record would
+    be zero bytes between open and write — and that window sits immediately after the winner
+    takes the flock, i.e. exactly when a contender is most likely to be reading it. Measured: a
+    read in that window degrades every field to ``None``, which is the "torn sidecar" state
+    :func:`_read_holder` and :class:`RunAdmissionRejected` go to such lengths to survive.
+    Better not to author it.
     """
     payload = json.dumps({"run_id": run_id, "pid": os.getpid(), "started_at": time.time()})
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
-    try:
-        tmp.write_text(payload, encoding="utf-8")
-        os.replace(tmp, path)
-    except BaseException:
-        try:
-            tmp.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise
+    atomic_write_text(path, payload)
 
 
 def _release_one(lock: Any) -> bool:
