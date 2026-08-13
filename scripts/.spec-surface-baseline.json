@@ -2103,13 +2103,13 @@
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {
-   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "26b9baa7887ae39d55bb75aebeac31b849183a1b",
+   "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml": "02838875d3d3b3fa1f3dbd8697e7c616f9cfad50",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "2f0c19d19f5d522567dc6f6d030a69ebe51e51f5",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "e43c7563c480bb4d1c2a21e37d8ec26f2b69852c",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py": "0d9d7136b8467931dd9809836fac4278b5b26e64",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/spec_difficulty.py": "27c83322339aac081499fa5162a25c73885d2e6c"
   },
-  "memlog": "dc8d4a9443d0a59d2435a67183bdd343a53d4f19"
+  "memlog": "2037594033ff2f32606a04eb29dae377a985b938"
  },
  "pyforge-marshal/spec-agent-portability": {
   "files": {},
@@ -2609,7 +2609,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_spec_binding.py": "870ad8bb825a5a8c55d238e731cb024f2984655f",
    "src/shared/packages/pyforge-marshal/tests/unit/test_spec_difficulty.py": "64830f37b08b8325d2a9dfbbb3fad0c3585066b8",
    "src/shared/packages/pyforge-marshal/tests/unit/test_spec_surface.py": "c1363fd68561e5bc35af8711935cdb0d9fa24b0d",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_spin.py": "daac825087c66883c3ebf45267f980e5131edba8",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_spin.py": "8ccf5457219d894cc1f3d32d1ecfbb84222dffc6",
    "src/shared/packages/pyforge-marshal/tests/unit/test_status.py": "ddea3dd4cbc2da24f898523abe6b796445f4432d",
    "src/shared/packages/pyforge-marshal/tests/unit/test_supervise.py": "15a4506092b2eea43014a3025ed1fba35a8ef613",
    "src/shared/packages/pyforge-marshal/tests/unit/test_supervisor.py": "800151ddad44b91ea51609c667ecc4a47e97de7d",
@@ -2618,7 +2618,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "c1d548b6f116e4fcda5124f30dab9b6cd891cb32",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "18457557624771e5365d39d2c0c0df03b1ebc9e1"
   },
-  "memlog": "bc912bfecbaa1f44e1cb737bc1f0e345ee2de92a"
+  "memlog": "753f41e868e762633611181d7ecf4ea4afc585e1"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
