@@ -25,7 +25,7 @@ development_status:
   1-8-mason-doctor: done
   1-9-fake-cfe-root-fixture-and-test-harness: done
   2-1-the-cfe-port: done
-  2-10-mason-recipe-update: backlog
+  2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
   2-3-credential-isolation: done
   2-4-mason-recipe-new: backlog
