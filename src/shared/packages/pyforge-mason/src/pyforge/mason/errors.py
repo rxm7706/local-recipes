@@ -216,3 +216,62 @@ class CfeTimeoutError(MasonError):
         # message string, corrupting every deepcopy/pickle round-trip
         # instead of failing loudly.
         return (self.__class__, (self.script, self.timeout))
+
+
+class EngineAbsentError(MasonError):
+    """The named engine is not on `PATH` (Story 3.1, NFR-14).
+
+    Raised by `engines/__init__.py::require_engine` when `probe_engine`
+    reports `available=False` -- the ONE typed error every future engine
+    invocation raises for "not installed" (Design Notes: Stories 3.2's build
+    engines, 3.4/3.5's upload engines, and 4.1's lock engine all call
+    `require_engine` at the top of their own operation methods rather than
+    re-implementing absence handling), never a raw `FileNotFoundError`
+    leaking a subprocess implementation detail past `engines/__init__.py`'s
+    boundary.
+
+    `name` is the engine's display name -- an `engines/__init__.py::
+    _KNOWN_ENGINES` key (e.g. `"pixi"`, or `"build"` for the `build` engine),
+    the same name a caller passed to `require_engine`, NOT its `PATH` binary
+    name (`build`'s binary is `pyproject-build`; see that module's docstring
+    for why). `conda_package` is the conda package name that provisions it
+    (e.g. `"python-build"` for the `build` engine -- matching `pixi.toml`'s
+    `[package.run-dependencies]` key, not the display name), so the message
+    names exactly what a user would `pixi add`/`conda install`. Construction
+    raises `ValueError` for an empty `name` or `conda_package`, matching
+    `CfeImportFloorError`'s validation rigor: an absence error naming no
+    engine, or naming one with no provisioning hint, is exactly the
+    incoherent state this class exists to rule out.
+    """
+
+    def __init__(self, name: str, conda_package: str) -> None:
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(
+                "EngineAbsentError requires a non-empty `name`: an absence "
+                "error naming no engine is incoherent"
+            )
+        if not isinstance(conda_package, str) or not conda_package.strip():
+            raise ValueError(
+                "EngineAbsentError requires a non-empty `conda_package`: an "
+                "absence error with no provisioning hint is incoherent"
+            )
+        self.name = name
+        self.conda_package = conda_package
+        message = (
+            f"engine {name!r} was not found on PATH; provision it via the "
+            f"{conda_package!r} conda package (e.g. `pixi add {conda_package}`)"
+        )
+        super().__init__("engine:absent", message)
+
+    def __reduce__(self):
+        # Mirrors `CfeTimeoutError.__reduce__` (review pass, 2026-08-13):
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = (identifier, message)` --
+        # two items, coincidentally the same count this class's own
+        # constructor takes, but the WRONG two values (`"engine:absent"` and
+        # the built message string, not `name` and `conda_package`).
+        # `copy.deepcopy`/`pickle` restore `__dict__` state on top of that
+        # reconstruction, so `.name`/`.conda_package`/`.message`/`str(exc)`
+        # end up correct anyway -- but `.args` itself, and therefore
+        # `repr(exc)`, stays permanently garbled without this override.
+        return (self.__class__, (self.name, self.conda_package))
