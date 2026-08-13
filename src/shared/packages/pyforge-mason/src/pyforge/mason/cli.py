@@ -27,17 +27,24 @@ builds the three verb-bearing nouns, capturing each one's verb-subparsers
 action into a local ``_noun_verbs`` dict; ``doctor`` has no verb level by
 design (OQ-A4) and is built separately, immediately after that loop.
 
-Story 2.6 registers the first real verb, ``recipe build``, on
+Story 2.4 registers the first real verb, ``recipe new`` (FR-7), on
 ``_noun_verbs["recipe"]`` right after the loop -- the pattern the paragraph
-above describes, now exercised for real. Story 2.7 is the next to use that
-seam, registering ``recipe diagnose`` on ``_noun_verbs["recipe"]``
-— ``package``/``environment`` stay behavior-identical (their own captured
-actions are never given a verb). Story 2.8 registers two more verbs on
-that same noun, ``recipe optimize`` and ``recipe scan``, each a single
-required ``recipe_path`` positional mirroring ``diagnose``'s own
+above describes, now exercised for real. Its own required, mutually
+exclusive ``--from-pypi``/``--from-github``/``--from-cran``/``--from-npm``
+group plus required ``--output``/``-o`` land there too. ``main()``'s
+dispatch replaces the ``# Unreachable in Story 1.2`` block below with the
+first real branch, guarded by both ``ns.noun == "recipe"`` and ``ns.verb ==
+"new"`` so a future second recipe verb does not fall into it by noun alone.
+
+Story 2.6 is the next to use that seam, registering ``recipe build`` on
+``_noun_verbs["recipe"]``. Story 2.7 registers ``recipe diagnose`` on the
+same noun — ``package``/``environment`` stay behavior-identical (their own
+captured actions are never given a verb). Story 2.8 registers two more
+verbs on that same noun, ``recipe optimize`` and ``recipe scan``, each a
+single required ``recipe_path`` positional mirroring ``diagnose``'s own
 ``log_path`` shape.
 
-Story 2.9 registers a fourth verb, ``recipe submit``: the same
+Story 2.9 registers a fifth verb, ``recipe submit``: the same
 ``recipe_path`` positional, plus two verb-own boolean flags, ``--yes`` and
 ``--prepare-only`` -- both live only on ``submit_parser`` itself, never on
 the shared ``global_flags`` parent (that parent is AD-13's closed six-flag
@@ -45,7 +52,7 @@ set only), so they need none of ``_build_global_flags_parser``'s
 ``argparse.SUPPRESS``/``getattr`` dance and read back as plain ``bool``s
 off the namespace.
 
-Story 2.10 registers a fifth verb, ``recipe update``: the same
+Story 2.10 registers a sixth verb, ``recipe update``: the same
 ``recipe_path`` positional, plus three verb-own flags -- ``--dry-run``/
 ``--github`` (``action="store_true"``) and ``--repo`` (an optional string,
 ``metavar="OWNER/REPO"``) -- and a fourth, ``--pre`` (``action=
@@ -84,6 +91,7 @@ _NOUNS = {
     "environment": "resolve conflicting worlds into one lockfile",
 }
 _DOCTOR_HELP = "diagnose the installed Mason: version, CFE resolution, engine presence"
+_RECIPE_NEW_HELP = "generate a recipe from PyPI/GitHub/CRAN/npm via conda-forge-expert"
 _RECIPE_BUILD_HELP = (
     "build a recipe (native by default; --docker + --config for CI-parity)"
 )
@@ -412,8 +420,42 @@ def build_parser() -> argparse.ArgumentParser:
     )
     doctor_parser.set_defaults(_noun_parser=doctor_parser)
 
+    # Story 2.4: mason recipe new --from-{pypi,github,cran,npm} <pkg> --output
+    # <path> — the first verb registered under any noun in epic order (FR-7).
+    # Required, mutually exclusive `--from-*` group (spec Always boundary):
+    # exactly one source must be named, so `recipe.py::new` never has to
+    # guess which the caller meant. A plain string per flag — no secondary
+    # per-source flags (GitHub's --version, npm's various modes, ...) are in
+    # this story's AC scope (spec Never boundary).
+    new_parser = _noun_verbs["recipe"].add_parser(
+        "new", help=_RECIPE_NEW_HELP, description=_RECIPE_NEW_HELP, parents=[global_flags],
+    )
+    source_group = new_parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument(
+        "--from-pypi", metavar="PACKAGE",
+        help="generate from a PyPI package, optionally with an embedded version spec",
+    )
+    source_group.add_argument(
+        "--from-github", metavar="OWNER/REPO", help="generate from a GitHub repository",
+    )
+    source_group.add_argument(
+        "--from-cran", metavar="PACKAGE", help="generate from a CRAN package",
+    )
+    source_group.add_argument(
+        "--from-npm", metavar="PACKAGE", help="generate from an npm package",
+    )
+    # Required, not defaulted to CFE's own omitted-`--output` behavior (spec
+    # Design Notes): FR-7 frames this feature as output "at a user-specified
+    # path", and letting it fall through to a CFE-side naming convention
+    # would make Mason's CLI contract depend on a policy that could change
+    # independently.
+    new_parser.add_argument(
+        "--output", "-o", required=True, metavar="PATH",
+        help="path to write the generated recipe to (required)",
+    )
+
     # Story 2.6: mason recipe build <recipe_path> [--docker --config] — the
-    # first verb registered under any noun (FR-9). package/environment stay
+    # second verb registered under any noun (FR-9). package/environment stay
     # behavior-identical to Story 1.2: their verb-subparsers actions above
     # are captured but never given a verb, so they remain usage errors.
     # `parents=[global_flags]` here too, mirroring every other parser level
@@ -607,6 +649,36 @@ def main(argv: Sequence[str] | None = None) -> int:
             # stderr so both exit-2 paths agree on stream.
             ns._noun_parser.print_help(file=sys.stderr)
             return EXIT_USAGE
+
+        if ns.noun == "recipe" and ns.verb == "new":
+            # FR-7: `--from-pypi`/`--from-github`/`--from-cran`/`--from-npm`
+            # is a required mutually exclusive group, so exactly one of the
+            # four is non-None here -- argparse itself guarantees that before
+            # this line is ever reached. `source` is CFE's own subcommand
+            # name (spec Always boundary: command routing, not recipe
+            # knowledge, AD-1 Design Notes) selected 1:1 from which flag the
+            # user gave.
+            sources = (
+                ("pypi", getattr(ns, "from_pypi", None)),
+                ("github", getattr(ns, "from_github", None)),
+                ("cran", getattr(ns, "from_cran", None)),
+                ("npm", getattr(ns, "from_npm", None)),
+            )
+            source, package = next((s, p) for s, p in sources if p is not None)
+
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.new(
+                source, package, ns.output,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(fmt, sys.stdout, "recipe new", "ok", dataclasses.asdict(result), [])
+            return EXIT_OK
 
         if ns.noun == "recipe" and ns.verb == "build":
             # A manual post-parse cross-check, not argparse-declarative
@@ -812,14 +884,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_OK
 
-        # Unreachable now for every verb-noun pair except `recipe build`/
-        # `recipe diagnose`/`recipe optimize`/`recipe scan`/`recipe submit`/
-        # `recipe update` above, each handled by its own branch: `package`/
-        # `environment` still register no verbs at all, and `recipe`
-        # registers no verb beyond those six, so argparse itself rejects
-        # any other token here as an invalid choice before `ns.verb` could
-        # ever hold it. Kept only so a later story that populates another
-        # verb has somewhere to land its dispatch.
+        # Unreachable now for every verb-noun pair except `recipe new`/
+        # `recipe build`/`recipe diagnose`/`recipe optimize`/`recipe scan`/
+        # `recipe submit`/`recipe update` above, each handled by its own
+        # branch: `package`/`environment` still register no verbs at all,
+        # and `recipe` registers no verb beyond those seven, so argparse
+        # itself rejects any other token here as an invalid choice before
+        # `ns.verb` could ever hold it. Kept only so a later story that
+        # populates another verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
