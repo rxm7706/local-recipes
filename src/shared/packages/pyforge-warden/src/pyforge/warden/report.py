@@ -160,6 +160,8 @@ from types import MappingProxyType
 from typing import Any, cast
 
 import jsonschema
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA
+from pyforge.core.report import compose as compose_envelope_schema
 
 from . import __version__
 from .interfaces import EngineResult
@@ -481,9 +483,16 @@ def render_json(report: ComplianceReport) -> str:
     """Render the report as ONE deterministic, schema-valid JSON document.
 
     Self-validates against the packaged schema before emit — an invalid
-    document raises here (fail-loud) instead of contaminating stdout."""
+    document raises here (fail-loud) instead of contaminating stdout.
+    Story 14.3, SPEC-pyforge-core CAP-4: validates against the packaged
+    schema COMPOSED with the shared base envelope schema (an `allOf` merge
+    -- the packaged schema is embedded verbatim, unmodified); every payload
+    that validated before still validates, since the base only adds
+    already-satisfied presence checks."""
     document = report.to_json_dict()
-    jsonschema.Draft202012Validator(_packaged_schema()).validate(document)
+    jsonschema.Draft202012Validator(
+        compose_envelope_schema(BASE_ENVELOPE_SCHEMA, _packaged_schema())
+    ).validate(document)
     return json.dumps(
         document,
         sort_keys=True,
