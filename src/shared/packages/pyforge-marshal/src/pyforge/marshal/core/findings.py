@@ -843,6 +843,8 @@ from __future__ import annotations
 
 import re
 
+from pyforge.core.errors import PyforgeError
+
 # No ^/$ anchors -- matched with .fullmatch(), not .match(), so a trailing
 # newline can never sneak a malformed code past the check (a known Python
 # `re` pitfall: `$` alone matches immediately before a trailing "\n"; see
@@ -1455,9 +1457,12 @@ REGISTERED_CODES: frozenset[str] = frozenset(
 )
 
 
-class UnregisteredFindingCodeError(ValueError):
+class UnregisteredFindingCodeError(PyforgeError, ValueError):
     """Raised when a ``Finding`` is constructed with a code that either does
-    not match ``CODE_PATTERN`` or is not a member of ``REGISTERED_CODES``."""
+    not match ``CODE_PATTERN`` or is not a member of ``REGISTERED_CODES``.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
 def require_registered(code: str) -> str:

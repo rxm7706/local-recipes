@@ -22,6 +22,8 @@ extractor; the kind vocabulary is Story 1.9's — 1.2 knows exactly one kind.
 
 from __future__ import annotations
 
+from pyforge.core.errors import PyforgeError
+
 from ..discovery import (
     CONDA_LOCK_KIND,
     ENVIRONMENT_YAML_KIND,
@@ -35,12 +37,15 @@ from ..discovery import (
 from ..interfaces import Extractor, Router
 
 
-class UnparsableManifestError(ValueError):
+class UnparsableManifestError(PyforgeError, ValueError):
     """A genuine manifest problem: the manifest exists but cannot be parsed
     into components (malformed TOML, structurally-corrupt tables). The CLI
     maps EXACTLY this class to ``ErrorRecord(kind=unparsable-manifest)``;
     every other ``ValueError`` is an internal error — misdiagnosing an
-    internal bug as a broken user manifest is a lie in the report."""
+    internal bug as a broken user manifest is a lie in the report.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
 # Imported AFTER UnparsableManifestError so extractor modules can import the

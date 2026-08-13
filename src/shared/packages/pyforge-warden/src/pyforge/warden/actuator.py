@@ -38,6 +38,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 
+from pyforge.core.errors import PyforgeError
+
 if TYPE_CHECKING:
     from .models import Finding
 
@@ -115,20 +117,29 @@ class Actuation:
         }
 
 
-class ForgeResolutionError(RuntimeError):
-    """The forge token/repo could not be resolved from the environment."""
+class ForgeResolutionError(PyforgeError, RuntimeError):
+    """The forge token/repo could not be resolved from the environment.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
-class ForgeResponseError(RuntimeError):
+class ForgeResponseError(PyforgeError, RuntimeError):
     """A forge API call returned an unusable response (e.g. a 2xx PR-open with
-    no url) -- captured as a ``failed`` outcome, never a silent ``opened``."""
+    no url) -- captured as a ``failed`` outcome, never a silent ``opened``.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
-class _BranchExistsError(RuntimeError):
+class _BranchExistsError(PyforgeError, RuntimeError):
     """The remediation branch already exists on the forge -- a prior actuation
     (its PR may now be closed) or a mid-sequence orphan from an earlier failed
     open. ``run_actuator`` maps this to ``skipped``, so such a finding is never
-    wedged into a permanent ``failed`` (with noisy stderr) on every later run."""
+    wedged into a permanent ``failed`` (with noisy stderr) on every later run.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 @runtime_checkable

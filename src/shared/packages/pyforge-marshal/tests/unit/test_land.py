@@ -15,17 +15,20 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.core.process import ProcessResult
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
 from pyforge.marshal.cli import land as land_module
 from pyforge.marshal.cli import spin as spin_module
+from pyforge.marshal.core.identity import StoryKey, render_merge_subject
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+from pyforge.marshal.core.policy import DEFAULT_POLICY
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 from pyforge.marshal.ports.harness import RunStatusSnapshot, TaskPhaseSnapshot
-from pyforge.marshal.ports.process import ProcessResult
 
 _BMADLOOP_WAVE_SUBJECT = "Merge bmad-loop/run-1/4-4-batch into loop/acme (bmad-loop)"
+_DEFAULT_MERGE_SUBJECT_TEMPLATE = str(DEFAULT_POLICY["merge_subject_template"])
 
 
 class _FakeVcs:
@@ -207,9 +210,16 @@ class _FakeForge:
             raise ForgeCommandError("gh api check-runs failed")
         return self.check_status_map.get(check_name.value)
 
-    def merge_pr(self, repo, number, strategy, *, expected_head_sha, delete_branch):
+    def merge_pr(self, repo, number, strategy, *, expected_head_sha, delete_branch, subject=None):
         self.merge_calls.append(
-            (repo, number, strategy.value, expected_head_sha.value, delete_branch)
+            (
+                repo,
+                number,
+                strategy.value,
+                expected_head_sha.value,
+                delete_branch,
+                subject.value if subject is not None else None,
+            )
         )
         if self.merge_raises:
             raise ForgeCommandError("gh pr merge failed")
@@ -342,6 +352,9 @@ def test_already_landed_wave_branch_still_open_reports_warn(tmp_path, capsys, mo
     assert exit_code == 0
     assert forge.create_calls == []
     assert forge.merge_calls == []
+    # Story 5.10: the already-landed shortcut never calls `merge_pr`, so no
+    # subject is ever rendered -- byte-identical to before this story.
+    assert "subject" not in payload["data"]
 
 
 def test_already_landed_wave_branch_gone_is_clean(tmp_path, capsys, monkeypatch):
@@ -362,6 +375,7 @@ def test_already_landed_wave_branch_gone_is_clean(tmp_path, capsys, monkeypatch)
     assert payload["verdict"] == "clean"
     assert exit_code == 0
     assert forge.merge_calls == []
+    assert "subject" not in payload["data"]
 
 
 # --- happy path: opens a PR, all checks green, merges --------------------
@@ -405,11 +419,38 @@ def test_happy_path_opens_pr_polls_checks_and_merges(tmp_path, capsys, monkeypat
     assert payload["verdict"] == "clean"
     assert exit_code == 0
     assert len(forge.merge_calls) == 1
-    repo, number, strategy, expected_head_sha, delete_branch = forge.merge_calls[0]
+    repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
     assert number == 1
     assert strategy == "merge"
     assert expected_head_sha
     assert delete_branch is True
+    # Story 5.10: the single-key wave's rendered merge subject (AD-24),
+    # threaded to `forge.merge_pr` and surfaced in `data["subject"]`.
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    assert subject == expected_subject
+    assert payload["data"]["subject"] == expected_subject
+
+
+def test_render_text_land_reports_subject_line_on_a_full_merge(tmp_path, capsys, monkeypatch):
+    """Story 5.10: `_render_text_land` gains one `subject: ...` line, gated
+    on `"subject" in data`, mirroring `cli/deploy.py::_render_text_land_
+    story`'s own precedent -- untested by every JSON-envelope assertion
+    above, which never exercises the text renderer."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy())
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("pixi.toml",),
+    )
+    forge = _FakeForge(existing=None, check_status_map={"environment-yaml-sync": "success"})
+
+    exit_code = land_module.run_land(_args(format="text"), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    rendered = capsys.readouterr().out
+    assert exit_code == 0
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    assert f"subject: {expected_subject!r}" in rendered
 
 
 def test_zero_applicable_required_check_rules_makes_no_check_calls(tmp_path, capsys, monkeypatch):
@@ -644,7 +685,7 @@ def test_branch_retirement_false_merges_without_deleting_branch(tmp_path, capsys
     payload = _payload(capsys)
     assert exit_code == 0
     assert payload["data"]["branch_retired"] is False
-    repo, number, strategy, expected_head_sha, delete_branch = forge.merge_calls[0]
+    repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
     assert delete_branch is False
 
 
@@ -1226,7 +1267,7 @@ def test_live_run_refuses_branch_retirement_but_merge_still_proceeds(
     assert payload["data"]["branch_retired"] is False
     assert exit_code == 0  # MRS-LAND-008 is WARN-tier -- reported, never blocking
     assert len(forge.merge_calls) == 1
-    repo, number, strategy, expected_head_sha, delete_branch = forge.merge_calls[0]
+    repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
     assert delete_branch is False
 
 
@@ -1279,7 +1320,7 @@ def test_live_run_with_override_flag_retires_normally_no_finding(tmp_path, capsy
     assert payload["data"]["merged"] is True
     assert payload["data"]["branch_retired"] is True
     assert exit_code == 0
-    repo, number, strategy, expected_head_sha, delete_branch = forge.merge_calls[0]
+    repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
     assert delete_branch is True
 
 
@@ -1444,7 +1485,7 @@ def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(
     assert payload["data"]["merged"] is True
     assert payload["data"]["branch_retired"] is True
     assert exit_code == 0
-    repo, number, strategy, expected_head_sha, delete_branch = forge.merge_calls[0]
+    repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
     assert delete_branch is True
 
 
@@ -2172,3 +2213,10 @@ def test_promote_deferred_work_multiple_stories_in_one_wave(tmp_path, capsys, mo
     _called_root, _called_paths, called_message = vcs.commit_paths_calls[0]
     assert "entries" in called_message
     assert "2 deferred-work" in called_message
+    # Story 5.10: a multi-key wave (`4-4`, `4-5`, sorted) renders its
+    # subject from `wave_keys[0]` ONLY -- the wave's primary (lowest-sorted)
+    # key -- never all wave keys.
+    assert len(forge.merge_calls) == 1
+    expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
+    assert forge.merge_calls[0][-1] == expected_subject
+    assert payload["data"]["subject"] == expected_subject

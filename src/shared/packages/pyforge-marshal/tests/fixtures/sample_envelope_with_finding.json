@@ -1,0 +1,20 @@
+{
+  "assumptions": [
+    "no active project resolved"
+  ],
+  "command": "config",
+  "data": {
+    "defaults_shown": true
+  },
+  "data_version": 1,
+  "findings": [
+    {
+      "code": "MRS-POLICY-005",
+      "message": "no --project supplied; showing defaults",
+      "severity": "warn"
+    }
+  ],
+  "schema_version": 1,
+  "status": "ok",
+  "verdict": "warn"
+}

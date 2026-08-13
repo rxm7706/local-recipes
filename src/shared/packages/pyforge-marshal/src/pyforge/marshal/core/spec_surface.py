@@ -50,11 +50,13 @@ from __future__ import annotations
 
 import ast
 
+from pyforge.core.errors import PyforgeError
+
 _FRONTMATTER_DELIMITER = "---"
 _SURFACE_KEY = "surface:"
 
 
-class SurfaceParseError(ValueError):
+class SurfaceParseError(PyforgeError, ValueError):
     """Raised by ``parse_declared_surface`` when the frontmatter's
     ``surface:`` key is PRESENT but carries no inline value on its own
     line -- the multi-line YAML block form (``surface:`` alone, followed by
@@ -63,7 +65,10 @@ class SurfaceParseError(ValueError):
     contract): a present-but-unsupported-FORM key is neither "declared" nor
     "absent", and must not be silently treated as the latter (AD-27) --
     callers must catch this and report it, never swallow it into a bare
-    ``None``."""
+    ``None``.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO."""
 
 
 def parse_declared_surface(text: str) -> tuple[str, ...] | None:
