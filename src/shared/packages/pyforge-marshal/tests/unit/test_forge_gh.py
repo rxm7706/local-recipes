@@ -1,6 +1,6 @@
 """Unit tests for ``pyforge.marshal.adapters.forge_gh`` (Story 4.4, NFR-2,
 AD-4/AD-34) -- ``GhForge`` against a FAKE ``subprocess.run`` (mirrors
-``tests/unit/test_process_posix.py``/``test_harness_bmadloop_spin.py``'s own
+``pyforge-core``'s ``tests/unit/test_process.py``/``test_harness_bmadloop_spin.py``'s own
 ``monkeypatch.setattr(module.subprocess, "run", ...)`` convention): never a
 real network call, per the story's own Manual Checks note.
 """

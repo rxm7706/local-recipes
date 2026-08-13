@@ -882,7 +882,7 @@ window.DASHBOARD_DATA = {
         "median": 199,
         "lo": 29,
         "hi": 539,
-        "phaseAsOf": "2026-08-13 20:10 UTC"
+        "phaseAsOf": "2026-08-13 20:17 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1341,15 +1341,15 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "14.4",
-        "title": "The subprocess seam is reconciled and sole ownership is gated",
+        "key": "8.1",
+        "title": "Marker grammar and the per-format registry",
         "phase": "dev",
-        "attempt": "2",
-        "startEpoch": 1786645817,
+        "attempt": "1",
+        "startEpoch": 1786651951,
         "median": 97,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 20:10 UTC"
+        "phaseAsOf": "2026-08-13 20:17 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1521,12 +1521,12 @@ window.DASHBOARD_DATA = {
           ],
           [
             "14.4",
-            78
+            101
           ]
         ],
         "foot": [
           [
-            "~97 min",
+            "~99 min",
             "median / story",
             "var(--done)"
           ],
@@ -1536,12 +1536,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "81/126",
+            "82/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "45",
+            "44",
             "remaining",
             ""
           ]
@@ -1550,8 +1550,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 5826,
-        "totalLabel": "~97.1 h active compute",
+        "total": 5849,
+        "totalLabel": "~97.5 h active compute",
         "note": "Derived from 42 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
@@ -1595,7 +1595,7 @@ window.DASHBOARD_DATA = {
           "14.1": 36,
           "14.2": 223,
           "14.3": 97,
-          "14.4": 78
+          "14.4": 101
         },
         "epicMin": {
           "E1": 1343,
@@ -1604,12 +1604,12 @@ window.DASHBOARD_DATA = {
           "E4": 485,
           "E5": 297,
           "E7": 326,
-          "E14": 434
+          "E14": 457
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "14.4"
+        "at": "8.1"
       },
       "epics": [
         {
@@ -2025,7 +2025,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "8.1",
-              "pending",
+              "active",
               "Marker grammar and the per-format registry"
             ],
             [
@@ -2261,7 +2261,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "14.4",
-              "active",
+              "done",
               "The subprocess seam is reconciled and sole ownership is gated"
             ]
           ]
@@ -2381,7 +2381,7 @@ window.DASHBOARD_DATA = {
         "median": 82,
         "lo": 16,
         "hi": 402,
-        "phaseAsOf": "2026-08-13 20:10 UTC"
+        "phaseAsOf": "2026-08-13 20:17 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3881,7 +3881,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 20:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 20:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4919,7 +4919,7 @@ window.DASHBOARD_DATA = {
       "title": "Fleet status wants a fallback liveness check when the supervisor sidecar is gone",
       "caps": 2,
       "companions": 0,
-      "updated": "2026-08-12",
+      "updated": "2026-08-13",
       "dream": "fleet-status-supervisor-fallback",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-status-supervisor-fallback"
     },
@@ -5039,7 +5039,7 @@ window.DASHBOARD_DATA = {
       "title": "Two ways to finish a story, and Marshal has only ever heard of one",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-12",
+      "updated": "2026-08-13",
       "dream": "quick-dev-reconciliation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-quick-dev-reconciliation"
     },
@@ -6028,7 +6028,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 81,
+          "done": 82,
           "total": 126
         },
         {
@@ -6599,7 +6599,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "81/126",
+        "progress": "82/126",
         "complete": 13,
         "of": 13
       },
@@ -14707,7 +14707,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "in flight 14.4",
+        "line": "in flight 8.1",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -17125,9 +17125,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "Marshal",
-        "story": "14.4",
+        "story": "8.1",
         "phase": "dev",
-        "startEpoch": 1786645817
+        "startEpoch": 1786651951
       },
       {
         "station": "Mason",
@@ -17144,8 +17144,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260813-094918-551b/13-5-the-scheduler-enforces-what-was-displayed into loop/pyforge-herald (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 20:11 UTC",
-    "generatedEpoch": 1786651863
+    "generatedAt": "2026-08-13 20:17 UTC",
+    "generatedEpoch": 1786652235
   },
   "storySpecs": [
     {
@@ -17168,9 +17168,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 81,
+      "done": 82,
       "tracked": 56,
-      "gap": 25
+      "gap": 26
     },
     {
       "station": "pyforge-mason",
@@ -17277,8 +17277,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 81,
-        "backlog": 42,
+        "done": 82,
+        "backlog": 41,
         "blocked": 3,
         "total": 126,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -17467,8 +17467,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 308,
-      "backlog": 67,
+      "done": 309,
+      "backlog": 66,
       "blocked": 5,
       "total": 380
     }
@@ -17511,10 +17511,10 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 126,
-        "done": 81,
+        "done": 82,
         "blocked": 3,
         "epics": 19,
-        "epicsDone": 7,
+        "epicsDone": 8,
         "complete": false,
         "running": true,
         "projected": 123
@@ -17566,10 +17566,10 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 380,
-      "done": 308,
+      "done": 309,
       "blocked": 5,
       "epics": 74,
-      "epicsDone": 55
+      "epicsDone": 56
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {

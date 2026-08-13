@@ -11,19 +11,28 @@ atomic-write primitive" precedent ``ports/record.py``'s own docstring
 already establishes for the durable-write half of AD-34's egress boundary.
 
 ``notify_desktop`` shells out to ``notify-send`` (the packaged default
-desktop notifier on every Linux loop home this project targets), mirroring
-``adapters/observer_mux.py``'s own direct-``subprocess`` convention for a
-best-effort, short-timeout external call: catches every exception (a
-missing binary, a hung process, an embedded-NUL ``ValueError``) and returns
-``bool``, never raising -- an unavailable notifier degrades to ``False``,
-the same "unavailable is this port's own documented answer, never a
-failure" shape ``MultiplexerObserver``'s methods already establish.
+desktop notifier on every Linux loop home this project targets) via
+``pyforge.core.process.PosixProcess`` (Story 14.4, SPEC-pyforge-core CAP-6 --
+previously a direct ``subprocess.run`` call, mirroring
+``adapters/observer_mux.py``'s own pre-migration convention): catches the
+ONE ``ProcessError`` that primitive folds every launch failure into (a
+missing binary, a hung process, an embedded-NUL byte) and returns ``bool``,
+never raising -- an unavailable notifier degrades to ``False``, the same
+"unavailable is this port's own documented answer, never a failure" shape
+``MultiplexerObserver``'s methods already establish.
 """
 
 from __future__ import annotations
 
-import subprocess
+# `subprocess` is imported for this module's own tests' monkeypatch anchor
+# (`monkeypatch.setattr(module.subprocess, "run", ...)` -- the same physical
+# stdlib module object `PosixProcess.run` itself calls, so patching it here
+# still reaches the real launch below) -- the production code never calls
+# `subprocess.*` directly.
+import subprocess  # noqa: F401
 from pathlib import Path
+
+from pyforge.core.process import PosixProcess, ProcessError
 
 from ..core.egress import Redacted
 from ..ports.record import RecordPort
@@ -61,17 +70,15 @@ class FileDesktopNotifier:
                 f"payload must be a Redacted instance, got {type(payload).__name__}"
             )
         try:
-            result = subprocess.run(
+            result = PosixProcess().run(
                 [_DESKTOP_NOTIFY_BINARY, _DESKTOP_NOTIFY_TITLE, payload.text],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=_DESKTOP_NOTIFY_TIMEOUT_S,
+                cwd=Path.cwd(),
+                timeout_s=_DESKTOP_NOTIFY_TIMEOUT_S,
             )
-        except (OSError, subprocess.TimeoutExpired, ValueError):
-            # Missing binary, a hung notifier, or an embedded NUL byte in the
-            # payload text (a plain `ValueError` from `subprocess.run`) --
-            # this port's own documented `False`, never raise.
+        except ProcessError:
+            # Story 14.4, SPEC-pyforge-core CAP-6: `PosixProcess.run` folds
+            # every launch failure (missing binary, a hung notifier, an
+            # embedded NUL byte in the payload text) into one `ProcessError`
+            # -- this port's own documented `False`, never raise.
             return False
         return result.returncode == 0

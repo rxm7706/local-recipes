@@ -101,11 +101,12 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pyforge.core.process import PosixProcess, ProcessPort
+
 from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness
-from ..adapters.process_posix import PosixProcess
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import deferred_work, identity, policy, promotion
 from ..core.identity import StoryKey
@@ -118,7 +119,6 @@ from ..ports.clock import ClockPort
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
-from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .config import (
     PolicyIOError,

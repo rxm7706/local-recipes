@@ -235,10 +235,11 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
+
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
-from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
 from ..core.egress import Redacted, to_redacted
@@ -260,7 +261,6 @@ from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.forge import ForgeCommandError, ForgePort, ForgeRef
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
-from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
@@ -3192,7 +3192,7 @@ def _gather_claimed_commits(
 
 # Code review (2026-08-06, P6, Blind Hunter): `cli/gate.py`'s own
 # `verify_commands` execution deliberately passes NO `timeout_s`
-# (`adapters/process_posix.py`'s own docstring: a verify command's own
+# (`pyforge.core.process`'s own docstring, Story 14.4: a verify command's own
 # duration is entirely project-defined, and Marshal has no policy field for
 # a per-command timeout budget) -- so there is no verify_commands timeout
 # precedent to reuse here. `landing_resync_commands` is a materially
