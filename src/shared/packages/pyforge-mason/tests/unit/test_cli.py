@@ -33,9 +33,22 @@ matrix (no `--from-*`, two `--from-*`, no `--output`) asserting `EXIT_USAGE`
 before any CFE resolution is attempted, and a `RecipeGenerationError`-raising
 mock asserting `EXIT_FAILED` via `main()`'s generic `MasonError` branch.
 
-Story 2.6 adds a second registered verb, `recipe build`, and extends this
-file with its end-to-end dispatch coverage: `recipe.build` is mocked the
-same way (`patch("pyforge.mason.cli.recipe.build", ...)`) to return a fixed
+Story 2.5 registers the second real verb, `recipe validate`, and its own
+test block below mirrors `recipe diagnose`'s established pattern:
+`recipe.validate` is mocked (`patch("pyforge.mason.cli.recipe.validate",
+...)`) to return a fixed `CfeResult`, text/JSON happy paths, flags/environ/
+cwd passthrough, `--cfe-timeout` resolution, and the two dedicated
+error-projection tests (`CfeUnresolvedError`/`CfeTimeoutError`). Unlike
+every other verb in this file, `validate` also gets a differentiating pair
+proving `main()`'s one non-`EXIT_OK`-always dispatch branch: a passing
+canned result projects to `EXIT_OK`, a failing one to `EXIT_FAILED`, in
+both text and `--format json` modes -- the JSON envelope's own `status`
+field stays `"ok"` regardless (spec I/O matrix), only the process exit code
+carries the signal.
+
+Story 2.6 registers the next verb, `recipe build`, and extends this file
+with its end-to-end dispatch coverage: `recipe.build` is mocked the same
+way (`patch("pyforge.mason.cli.recipe.build", ...)`) to return a fixed
 `BuildResult`, text/JSON happy paths, the two `--docker`/`--config`
 usage-error cases (a manual post-parse cross-check, not argparse-
 declarative -- see `main()`'s own comment), and a failed-child-still-
@@ -409,6 +422,232 @@ def test_recipe_new_generation_failure_projects_to_exit_failed_with_message_on_s
     assert "Traceback" not in err
 
 
+# --- Story 2.5: `mason recipe validate <recipe_path>` -----------------------
+
+_FIXED_VALIDATE_PASSING_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"passed": true, "errors": [], "warnings": [], "info": [], '
+           '"rattler_lint_ran": true}',
+    stderr="",
+    json_body={
+        "passed": True, "errors": [], "warnings": [], "info": [], "rattler_lint_ran": True,
+    },
+)
+
+_FIXED_VALIDATE_FAILING_RESULT = CfeResult(
+    returncode=1,
+    stdout='{"passed": false, "errors": ["missing license"], "warnings": [], "info": [], '
+           '"rattler_lint_ran": true}',
+    stderr="",
+    json_body={
+        "passed": False, "errors": ["missing license"], "warnings": [], "info": [],
+        "rattler_lint_ran": True,
+    },
+)
+
+
+def test_recipe_validate_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "validate", "--help"])
+    assert exc.value.code == 0
+    assert "validate" in capsys.readouterr().out
+
+
+def test_recipe_validate_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "validate"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_validate_parses_the_recipe_path_positional():
+    ns = build_parser().parse_args(["recipe", "validate", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "validate"
+    assert ns.recipe_path == "recipes/foo"
+
+
+def test_recipe_validate_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ) as mock_validate:
+        assert main(["recipe", "validate", "recipes/foo"]) == EXIT_OK
+
+    mock_validate.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe validate: ok" in out.out
+    assert "missing license" not in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_validate_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ):
+        assert main(["recipe", "validate", "recipes/foo", "--format", "json"]) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe validate"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_VALIDATE_PASSING_RESULT)))
+
+
+def test_recipe_validate_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    """`cli.py` must pass the raw `recipe_path` positional plus the
+    unresolved `--cfe-root`/`--cfe-python` flag values, the real
+    `os.environ`, and `Path.cwd()` -- `recipe.validate` does its own
+    resolution, mirroring `recipe diagnose`'s established contract."""
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ) as mock_validate:
+        assert main([
+            "recipe", "validate", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_validate.assert_called_once()
+    args, kwargs = mock_validate.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_validate_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ) as mock_validate:
+        assert main([
+            "recipe", "validate", "recipes/foo", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_validate.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_validate_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ) as mock_validate:
+        assert main(["recipe", "validate", "recipes/foo"]) == EXIT_OK
+
+    assert mock_validate.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_validate_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ) as mock_validate:
+        assert main(["recipe", "validate", "recipes/foo"]) == EXIT_OK
+
+    assert mock_validate.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_validate_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.validate",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "validate", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_validate_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.validate",
+        side_effect=CfeTimeoutError(script="validate_recipe", timeout=5.0),
+    ):
+        rc = main(["recipe", "validate", "recipes/foo", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="validate_recipe", timeout=5.0))
+    assert "Traceback" not in err
+
+
+# --- The exit-code projection itself (spec Intent/FR-8): the one verb whose
+# process exit code reflects the wrapped tool's own pass/fail outcome, not
+# a blanket EXIT_OK -- proven in both text and --format json modes, and
+# that the JSON envelope's own "status" field stays "ok" regardless. -------
+
+def test_recipe_validate_passing_canned_result_returns_exit_ok_text_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ):
+        rc = main(["recipe", "validate", "recipes/foo"])
+
+    assert rc == EXIT_OK
+    assert "recipe validate: ok" in capsys.readouterr().out
+
+
+def test_recipe_validate_passing_canned_result_returns_exit_ok_json_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_PASSING_RESULT,
+    ):
+        rc = main(["recipe", "validate", "recipes/foo", "--format", "json"])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["passed"] is True
+
+
+def test_recipe_validate_failing_canned_result_returns_exit_failed_text_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_FAILING_RESULT,
+    ):
+        rc = main(["recipe", "validate", "recipes/foo"])
+
+    assert rc == EXIT_FAILED
+    out = capsys.readouterr()
+    assert "recipe validate: ok" in out.out
+    assert "missing license" in out.out
+
+
+def test_recipe_validate_failing_canned_result_returns_exit_failed_json_mode(capsys):
+    """The JSON envelope's own `status` field stays `"ok"` regardless of the
+    recipe's pass/fail outcome (spec I/O matrix) -- only the process exit
+    code carries the validation signal."""
+    with patch(
+        "pyforge.mason.cli.recipe.validate", return_value=_FIXED_VALIDATE_FAILING_RESULT,
+    ):
+        rc = main(["recipe", "validate", "recipes/foo", "--format", "json"])
+
+    assert rc == EXIT_FAILED
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["passed"] is False
+    assert doc["data"]["json_body"]["errors"] == ["missing license"]
+
+
+def test_recipe_validate_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking: the whole `recipe validate` path runs against Story 1.9's
+    fixture CFE root (AD-16) -- the fixture's own canned body is passing, so
+    this also proves the real subprocess round trip reaches `EXIT_OK`."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    rc = main([
+        "recipe", "validate", "recipes/example",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe validate"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["passed"] is True
+
+
 # --- Story 2.7: `mason recipe diagnose <log_path>` --------------------------
 
 _FIXED_DIAGNOSE_RESULT = CfeResult(
@@ -584,15 +823,16 @@ def test_recipe_diagnose_verb_metavar_reflects_the_registered_verb(capsys):
     """Review pass: `metavar="{}"` was never updated once a verb was
     actually registered, so `mason recipe <bad-verb>` printed the literal
     token `{}` in its usage/error text instead of
-    `{new,build,diagnose,optimize,scan,submit,update}`. Story 2.4 registered
-    the first verb, `new`; Story 2.8 widened this to five registered verbs;
-    Story 2.9 widened it to six; Story 2.10 widens it again to all seven, in
+    `{new,validate,build,diagnose,optimize,scan,submit,update}`. Story 2.4
+    registered the first verb, `new`; Story 2.5 registers the second,
+    `validate`; Story 2.8 widened this to six registered verbs; Story 2.9
+    widened it to seven; Story 2.10 widens it again to all eight, in
     registration order."""
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["recipe", "bogus-verb"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "{new,build,diagnose,optimize,scan,submit,update}" in err
+    assert "{new,validate,build,diagnose,optimize,scan,submit,update}" in err
     assert "argument {}:" not in err
 
 
