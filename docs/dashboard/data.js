@@ -873,17 +873,7 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": {
-        "key": "13.5",
-        "title": "The scheduler enforces what was displayed",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786643305,
-        "median": 199,
-        "lo": 29,
-        "hi": 505,
-        "phaseAsOf": "2026-08-13 17:49 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 10 of 53 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -922,11 +912,11 @@ window.DASHBOARD_DATA = {
           ],
           [
             "13.5",
-            360
+            409
           ],
           [
             "13.6",
-            263
+            266
           ]
         ],
         "foot": [
@@ -955,8 +945,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2272,
-        "totalLabel": "~37.9 h active compute",
+        "total": 2324,
+        "totalLabel": "~38.7 h active compute",
         "note": "Derived from 10 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 60,
@@ -967,17 +957,17 @@ window.DASHBOARD_DATA = {
           "13.1": 229,
           "13.2": 169,
           "13.3": 539,
-          "13.5": 360,
-          "13.6": 263
+          "13.5": 409,
+          "13.6": 266
         },
         "epicMin": {
           "E1": 712,
-          "E13": 1560
+          "E13": 1612
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "13.5"
+        "state": "paused",
+        "at": "13.4"
       },
       "epics": [
         {
@@ -1313,7 +1303,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "13.5",
-              "active",
+              "pending",
               "The scheduler enforces what was displayed"
             ],
             [
@@ -1341,19 +1331,19 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "14.3",
-        "title": "One lattice, one envelope, one exception root",
+        "key": "14.4",
+        "title": "The subprocess seam is reconciled and sole ownership is gated",
         "phase": "dev",
         "attempt": "1",
-        "startEpoch": 1786639915,
+        "startEpoch": 1786645817,
         "median": 102,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 17:49 UTC"
+        "phaseAsOf": "2026-08-13 18:43 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 40 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 41 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1514,11 +1504,15 @@ window.DASHBOARD_DATA = {
           [
             "14.2",
             223
+          ],
+          [
+            "14.3",
+            97
           ]
         ],
         "foot": [
           [
-            "~102 min",
+            "~97 min",
             "median / story",
             "var(--done)"
           ],
@@ -1528,12 +1522,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "80/126",
+            "81/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "46",
+            "45",
             "remaining",
             ""
           ]
@@ -1542,9 +1536,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 5651,
-        "totalLabel": "~94.2 h active compute",
-        "note": "Derived from 40 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 5748,
+        "totalLabel": "~95.8 h active compute",
+        "note": "Derived from 41 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -1585,7 +1579,8 @@ window.DASHBOARD_DATA = {
           "7.5": 107,
           "7.6": 37,
           "14.1": 36,
-          "14.2": 223
+          "14.2": 223,
+          "14.3": 97
         },
         "epicMin": {
           "E1": 1343,
@@ -1594,12 +1589,12 @@ window.DASHBOARD_DATA = {
           "E4": 485,
           "E5": 297,
           "E7": 326,
-          "E14": 259
+          "E14": 356
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "14.3"
+        "at": "14.4"
       },
       "epics": [
         {
@@ -2246,12 +2241,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "14.3",
-              "active",
+              "done",
               "One lattice, one envelope, one exception root"
             ],
             [
               "14.4",
-              "pending",
+              "active",
               "The subprocess seam is reconciled and sole ownership is gated"
             ]
           ]
@@ -2906,17 +2901,17 @@ window.DASHBOARD_DATA = {
       "inflight": {
         "key": "9.7",
         "title": "Hosted or static, no fork",
-        "phase": "dev",
-        "attempt": "1",
+        "phase": "review",
+        "attempt": "2",
         "startEpoch": 1786635159,
         "median": 79,
         "lo": 37,
         "hi": 468,
-        "phaseAsOf": "2026-08-13 17:49 UTC"
+        "phaseAsOf": "2026-08-13 18:43 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 21 of 40 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 40 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -3001,11 +2996,15 @@ window.DASHBOARD_DATA = {
           [
             "9.6",
             47
+          ],
+          [
+            "9.7",
+            183
           ]
         ],
         "foot": [
           [
-            "~79 min",
+            "~80 min",
             "median / story",
             "var(--done)"
           ],
@@ -3029,9 +3028,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 3067,
-        "totalLabel": "~51.1 h active compute",
-        "note": "Derived from 21 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 3250,
+        "totalLabel": "~54.2 h active compute",
+        "note": "Derived from 22 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 69,
           "1.3": 79,
@@ -3053,7 +3052,8 @@ window.DASHBOARD_DATA = {
           "9.3": 468,
           "9.4": 296,
           "9.5": 80,
-          "9.6": 47
+          "9.6": 47,
+          "9.7": 183
         },
         "epicMin": {
           "E1": 508,
@@ -3061,7 +3061,7 @@ window.DASHBOARD_DATA = {
           "E6": 141,
           "E7": 546,
           "E8": 392,
-          "E9": 1438
+          "E9": 1621
         }
       },
       "lineState": {
@@ -3930,7 +3930,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 17:49 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 18:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6020,7 +6020,7 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-herald",
           "pkey": "herald",
           "stories": 17,
-          "state": "running",
+          "state": "in-progress",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
           "done": 50,
           "total": 53
@@ -6077,7 +6077,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 80,
+          "done": 81,
           "total": 126
         },
         {
@@ -6145,7 +6145,7 @@ window.DASHBOARD_DATA = {
     "live": 41,
     "reached": 12,
     "gaps": 35,
-    "findings": 22,
+    "findings": 23,
     "rows": [
       {
         "label": "atlas",
@@ -6269,8 +6269,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-12",
-        "age": 1,
+        "updated": "2026-08-13",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "46/46",
@@ -6304,7 +6304,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-10T19:15",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
@@ -6315,8 +6315,8 @@ window.DASHBOARD_DATA = {
           "sprint": "2026-08-13",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
-          "code": "2026-08-09",
-          "verify": "2026-08-09",
+          "code": "2026-08-13",
+          "verify": "2026-08-13",
           "retro": "2026-08-08"
         },
         "sub": {
@@ -6387,8 +6387,15 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-10T19:15",
+            "at": "2026-08-13T18:21",
             "other": "2026-08-02"
+          },
+          {
+            "kind": "feeds",
+            "stage": "code",
+            "than": "retro",
+            "at": "2026-08-13",
+            "other": "2026-08-08"
           }
         ],
         "furthest": "retro",
@@ -6427,7 +6434,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T12:40",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-02",
@@ -6435,7 +6442,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-02",
           "epics": "2026-08-10",
-          "sprint": "2026-08-11",
+          "sprint": "2026-08-13",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-12",
@@ -6510,7 +6517,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T12:40",
+            "at": "2026-08-13T18:21",
             "other": "2026-08-02"
           },
           {
@@ -6557,7 +6564,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-13T12:00",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-11",
@@ -6641,7 +6648,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "80/126",
+        "progress": "81/126",
         "complete": 13,
         "of": 13
       },
@@ -6672,7 +6679,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T17:10",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6683,8 +6690,8 @@ window.DASHBOARD_DATA = {
           "sprint": "2026-08-13",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
-          "code": "2026-08-09",
-          "verify": "2026-08-09",
+          "code": "2026-08-13",
+          "verify": "2026-08-13",
           "retro": ""
         },
         "sub": {
@@ -6754,20 +6761,20 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T17:10",
+            "at": "2026-08-13T18:21",
             "other": "2026-08-01"
           },
           {
             "kind": "behind-code",
             "stage": "prd",
             "at": "2026-08-01",
-            "other": "2026-08-09"
+            "other": "2026-08-13"
           },
           {
             "kind": "behind-code",
             "stage": "arch",
             "at": "2026-08-02",
-            "other": "2026-08-09"
+            "other": "2026-08-13"
           }
         ],
         "furthest": "verify",
@@ -7075,7 +7082,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-02",
           "sprint": "2026-08-02",
-          "tea": "2026-07-24",
+          "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-12",
           "verify": "2026-08-12",
@@ -7161,8 +7168,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-12",
-        "age": 1,
+        "updated": "2026-08-13",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
@@ -8668,7 +8675,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-13T12:40",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8987,7 +8994,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-11",
           "deck": "",
-          "spec": "2026-08-13T12:00",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10896,7 +10903,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-11",
           "deck": "",
-          "spec": "2026-08-13T10:40",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11532,7 +11539,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-13T09:56",
+          "spec": "2026-08-13T18:21",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -11541,7 +11548,7 @@ window.DASHBOARD_DATA = {
           "context": "",
           "epics": "",
           "sprint": "",
-          "tea": "2026-08-12",
+          "tea": "2026-08-13",
           "gates": "",
           "code": "2026-08-12",
           "verify": "2026-08-12",
@@ -14704,7 +14711,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "in flight 13.5",
+        "line": "paused 13.4",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -14749,7 +14756,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "in flight 14.3",
+        "line": "in flight 14.4",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -17160,34 +17167,28 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [
       {
-        "station": "Herald",
-        "story": "13.5",
-        "phase": "dev",
-        "startEpoch": 1786643305
-      },
-      {
         "station": "Marshal",
-        "story": "14.3",
+        "story": "14.4",
         "phase": "dev",
-        "startEpoch": 1786639915
+        "startEpoch": 1786645817
       },
       {
         "station": "Steward",
         "story": "9.7",
-        "phase": "dev",
+        "phase": "review",
         "startEpoch": 1786635159
       }
     ],
     "lastShipped": {
-      "station": "mason",
-      "story": "2.4",
-      "epoch": 1786642301,
-      "sha": "9f51b2bed",
-      "subject": "mason story 2.4 hand-landed via PR #465 — Route-3 evidence record"
+      "station": "herald",
+      "story": "13.3",
+      "epoch": 1786643304,
+      "sha": "488105bdc",
+      "subject": "Merge bmad-loop/20260813-094918-551b/13-3-db-backed-storage-behind-the-existing-seam-with-migrations into loop/pyforge-h"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 17:49 UTC",
-    "generatedEpoch": 1786643352
+    "generatedAt": "2026-08-13 18:43 UTC",
+    "generatedEpoch": 1786646630
   },
   "storySpecs": [
     {
@@ -17210,9 +17211,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 80,
+      "done": 81,
       "tracked": 56,
-      "gap": 24
+      "gap": 25
     },
     {
       "station": "pyforge-mason",
@@ -17319,8 +17320,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 80,
-        "backlog": 43,
+        "done": 81,
+        "backlog": 42,
         "blocked": 3,
         "total": 126,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -17513,8 +17514,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 305,
-      "backlog": 69,
+      "done": 306,
+      "backlog": 68,
       "blocked": 6,
       "total": 380
     }
@@ -17551,13 +17552,13 @@ window.DASHBOARD_DATA = {
         "epics": 13,
         "epicsDone": 12,
         "complete": false,
-        "running": true,
-        "projected": 52
+        "running": false,
+        "projected": 50
       },
       {
         "key": "marshal",
         "stories": 126,
-        "done": 80,
+        "done": 81,
         "blocked": 3,
         "epics": 19,
         "epicsDone": 7,
@@ -17612,7 +17613,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 380,
-      "done": 305,
+      "done": 306,
       "blocked": 6,
       "epics": 74,
       "epicsDone": 54
@@ -17620,11 +17621,10 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [
-        "herald",
         "marshal",
         "steward"
       ],
-      "projected": 351
+      "projected": 349
     }
   }
 };
