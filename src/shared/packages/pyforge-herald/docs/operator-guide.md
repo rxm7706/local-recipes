@@ -175,7 +175,11 @@ Because the webhook that would do this (Story 13.4, see
 is built and fully unit-tested but not mounted into any live host or wired
 into a real GitHub Actions workflow yet — that's Story 13.6. Run
 `herald progress <station> --update` (or `herald success create`) by hand
-instead until it is. The fuller live-backend version this is working
+instead until it is. Two things to know for when it is mounted: a webhook
+`on-ship` delivery *replaces* the whole day's record for that station, so
+it will overwrite figures you entered by hand that day; and holding the
+webhook secret grants progress-write access that the CLI grants only to a
+verified operator. The fuller live-backend version this is working
 toward is captured in `docs/dreams/herald-moments-2-4-live-backend.md`.
 
 **Q: I ran `herald success publish`, but the web dashboard still shows the

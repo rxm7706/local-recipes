@@ -171,7 +171,10 @@ For when it is mounted, the shape:
   the payload omits — so a second delivery for one station on one day
   resets whatever the first recorded and is answered `201` either way.
   Send the day's cumulative figures on every delivery, or fire `on-ship`
-  once per day rather than once per push. Note also that `station` is
+  once per day rather than once per push. The replace is across *sources*,
+  not just across deliveries: one `on-ship` call also overwrites whatever
+  an operator entered by hand with `herald progress <station> --update`
+  earlier that day. Note also that `station` is
   **not** validated against the known-station list (`progress.upsert`
   accepts any name by design, unlike the CLI, which rejects an
   unrecognized one): a typo'd or unrendered station records a row that no
@@ -186,6 +189,13 @@ For when it is mounted, the shape:
   mount time (`webhook.resolve_webhook_secret`) — never a literal or a
   default fallback, and never provisioned by this package (Steward's
   `keys` surface is a deployment concern, out of this story's Surface).
+  **That secret is a privilege boundary, not just a spam filter.** The
+  CLI's `herald progress --update` runs behind
+  `auth.require_operator_role` (AD-16); the webhook deliberately does not,
+  because AD-9's point is that a machine caller authenticates by proof
+  rather than by an operator identity it does not have. So anything
+  holding `HERALD_WEBHOOK_SECRET` gets progress-write access the CLI
+  grants only to a verified operator — scope it accordingly.
 - **Reliability:** a storage-layer failure (`errors.HeraldError` from
   `progress.upsert`/`claims.create`) is retried up to 3 times, sleeping 1s
   then 2s between them — never after the last attempt, so the retry budget
@@ -196,22 +206,39 @@ For when it is mounted, the shape:
   later. Sizing a CI step timeout off that 3s alone is not safe, though:
   each attempt can additionally wait up to SQLite's 30s busy timeout for
   the write lock.
-- **Other responses:** a body over 1 MB is a 413 (checked before the
-  signature, so an unauthenticated caller cannot make the process buffer
-  it); an unknown path is a 404 and any method but `POST` a 405, both
-  before the body is read at all; a malformed or duplicate-keyed JSON
-  body, or one whose fields are the wrong type/out of range, is a 400
-  before any storage call. Also 400, and worth knowing when writing the
-  producer: a `shipped_date` that is not an ISO `YYYY-MM-DD` date (it would
-  otherwise be stored verbatim and break `herald success list
-  --date-range` for everyone afterwards), a blank `event_id` (see below),
-  a blank `station`/`project_name`, and any string field carrying a lone
-  surrogate. A redelivery of an already-recorded
-  `on-pr-close` event returns the claim already stored rather than
-  creating a second one — **supply a per-event `event_id`** in the payload
-  (a PR number, a delivery id) so two different PRs shipping the same
-  project on the same day are told apart, and so a redelivery that arrives
-  after midnight UTC still dedupes. Without one, the handler falls back to
+- **Other responses:** a body over 1 MB, or one arriving in more than
+  10,000 chunks, is a 413 (both checked before the signature, so an
+  unauthenticated caller can neither make the process buffer an oversized
+  body nor hold a request open forever by trickling empty chunks); an
+  unknown path is a 404 and any method but `POST` a 405, both before the
+  body is read at all; a malformed or duplicate-keyed JSON body, or one
+  whose fields are the wrong type/out of range, is a 400 before any
+  storage call. The request path is forgiving about a trailing or doubled
+  slash, and about the prefix it is mounted under, but nothing else.
+- **Also 400 — the full list worth knowing when writing the producer:**
+  **any field the route does not recognize** (both routes reject unknown
+  fields outright rather than ignoring them — on `on-ship` a silently
+  ignored `token_spends` typo would not just fail to record the figure, it
+  would *wipe* the one already there, and the producer is a hand-written
+  YAML with no schema to catch it); a `shipped_date` that is not exactly
+  `YYYY-MM-DD` (other ISO forms like `20260813` parse but sort wrong in
+  the dashboard's date filter and would be stored verbatim); a blank
+  `event_id`; a blank `station`/`project_name`; any string field carrying
+  a lone surrogate; and an `evidence` entry of type `notice` whose `url`
+  does not name a notice that actually exists (that field is a Notice
+  component name, and both publish and revalidate treat a notice entry as
+  trivially valid, so an unchecked one would sail through the entire
+  evidence gate — the CLI makes the same check).
+- **Deduplication:** a redelivery of an already-recorded `on-pr-close`
+  event returns the claim already stored rather than creating a second one
+  — **supply a per-event `event_id`** in the payload so two different PRs
+  shipping the same project on the same day are told apart, and so a
+  redelivery that arrives after midnight UTC still dedupes. Make it
+  **globally** unique, not merely unique to one repo: a bare PR number
+  collides across repositories, and because the `event_id` branch
+  deliberately ignores the date, such a collision is permanent rather than
+  same-day. `${{ github.repository }}#${{ github.event.number }}` or the
+  delivery GUID both work. Without an `event_id` the handler falls back to
   the payload's `evidence` list plus the date, which discriminates less
   well; with a *blank* one it would discriminate not at all, which is why
   that is rejected rather than accepted.

@@ -9,10 +9,24 @@ convention, not GitHub's native ``pull_request closed+merged`` event,
 which no existing workflow here uses). ``on-pr-close`` fires from a
 ``pull_request: types: [closed]`` step; this module never trusts the HTTP
 event alone -- ``handle_on_pr_close`` gates on the payload's own
-``merged``/``gates_passed`` booleans. Writing the actual
-``.github/workflows/*.yml`` step, mounting this module into a live ASGI
-host, and wiring Steward's identity/trust boundary around it are all
-Story 13.6's job -- this module is built and fully tested in isolation.
+``merged``/``gates_passed`` booleans. Note that a per-push ``on-ship``
+needs the producer to send the day's CUMULATIVE figures on every
+delivery, because a same-day second delivery replaces rather than merges
+-- see "Same-day ``on-ship`` deliveries REPLACE" below before wiring the
+step. Writing the actual ``.github/workflows/*.yml`` step, mounting this
+module into a live ASGI host, and wiring Steward's identity/trust
+boundary around it are all Story 13.6's job -- this module is built and
+fully tested in isolation.
+
+**What holding the secret buys.** The CLI's own ``herald progress
+--update`` runs behind ``auth.require_operator_role`` (AD-16); this
+module deliberately does not, because AD-9's whole point is that a
+machine caller authenticates by PROOF rather than by an operator
+identity it does not have, and the HMAC signature is that proof. The
+consequence is worth stating plainly for whoever mounts this: anything
+holding ``HERALD_WEBHOOK_SECRET`` gets progress-write access the CLI
+grants only to a verified operator. Scope that secret accordingly --
+it is a privilege boundary, not just a spam filter.
 
 **Shape: sync core + one ASGI3 boundary.** Mirrors
 ``transport/mcp_transport.py``'s "one ``asyncio.run()`` per call"
@@ -99,22 +113,33 @@ what the first delivery recorded. That is the specified behavior, not an
 oversight, but it makes the payload the whole truth for the day: whoever
 wires the workflow step (Story 13.6) must send the day's cumulative
 figures on every delivery, or fire ``on-ship`` once per day rather than
-once per push.
+once per push. The same replace applies across sources, not just across
+deliveries -- one ``on-ship`` call also overwrites whatever an operator
+entered by hand with ``herald progress <station> --update`` that day.
+Relatedly, and for the same "the payload is the whole truth" reason,
+BOTH routes reject unknown payload fields outright (400) instead of
+ignoring them: a mistyped ``token_spends`` that answered ``201`` would
+not merely fail to record a figure, it would wipe the one already there.
 
 **Alerting.** No email/Slack/other operator-alert channel exists anywhere
 in this repo to build against, so retries-exhausted is reported the one
 way this codebase already has: one structured (JSON) ``ERROR``-level log
 record via the stdlib ``logging`` module, plus a non-2xx HTTP response so
-CI's own webhook-delivery retry can re-fire the call later.
+CI's own webhook-delivery retry can re-fire the call later. Because that
+log IS the alert channel, everything caller-controlled that reaches it is
+bounded: the payload it embeds is capped at
+``_MAX_ALERT_PAYLOAD_CHARS``, so no one delivery can flood it.
 
 **Body size cap.** ``_read_body`` enforces ``MAX_BODY_BYTES`` and aborts
 early once the accumulated body exceeds it -- checked BEFORE
 ``verify_signature`` runs, because the signature check has nothing to
 check until the whole body is read: without this cap, an unauthenticated
 caller (anyone who can reach the route, no secret required) could force
-unbounded memory buffering just by streaming an oversized body. A
-too-large request gets a 413, before HMAC verification or JSON parsing
-ever run.
+unbounded memory buffering just by streaming an oversized body. It
+enforces ``MAX_BODY_MESSAGES`` alongside it, because a byte cap alone
+does not bound a stream of ZERO-length chunks -- those never advance the
+byte counter, so the request would never end. A request that exceeds
+either cap gets a 413, before HMAC verification or JSON parsing ever run.
 
 **Uncaught exceptions.** ``app()`` wraps the body-read-through-response-
 send flow in a broad exception guard. A well-behaved ASGI application must
@@ -144,7 +169,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
-from . import claims, errors, progress
+from . import claims, errors, notices, progress
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +190,28 @@ MAX_BODY_BYTES = 1_000_000
 size cap" section) -- generous for this payload shape, small JSON with at
 most a handful of evidence entries."""
 
+MAX_BODY_MESSAGES = 10_000
+"""Upper bound on the number of ASGI ``http.request`` messages one body may
+arrive in. ``MAX_BODY_BYTES`` alone does not bound the read: a stream of
+ZERO-length chunks (legal -- an HTTP/2 empty ``DATA`` frame without
+``END_STREAM`` forwards as one, and ~160 fit in a single packet) adds
+nothing to the byte counter, so the cap can never fire, the loop never
+terminates, and the chunk list grows one slot per message forever. Measured
+before this bound: 3,000,001 empty chunks drained in 0.6s and never tripped
+``MAX_BODY_BYTES``, with the request still unfinished. Like the byte cap
+this is enforced BEFORE ``verify_signature``, so an UNAUTHENTICATED caller
+cannot hold a request open indefinitely."""
+
+_MAX_ALERT_PAYLOAD_CHARS = 2_000
+"""Cap on the serialized ``payload`` inside one retries-exhausted alert
+record. The record is this module's ONLY operator-alert channel, and the
+payload is caller-controlled up to ``MAX_BODY_BYTES`` -- embedding it whole
+let one signed 1 MB delivery write a ~1 MB log line per exhausted delivery
+(measured: a 200 KB field produced a 200,141-byte record), and the module's
+own contract then invites CI to re-fire it. That drowns the real alerts
+exactly the way ``verify_signature``'s and ``create_app``'s docstrings each
+argue their own guards exist to prevent."""
+
 RETRY_ATTEMPTS = 3
 RETRY_BACKOFFS: tuple[float, ...] = (1.0, 2.0, 4.0)
 """Boundaries & Constraints: "max 3 attempts, 1s/2s/4s backoff". Only the
@@ -173,6 +220,22 @@ LAST attempt of a 3-attempt budget -- the third entry documents where the
 schedule would continue if ``RETRY_ATTEMPTS`` ever grew."""
 
 _EVIDENCE_FIELDS = frozenset(("type", "url", "label"))
+
+_ON_SHIP_FIELDS = frozenset(
+    (
+        "station",
+        "shipped_capabilities",
+        "compute_hours",
+        "token_spend",
+        "wall_clock_hours",
+        "unblock_narrative",
+    )
+)
+_ON_PR_CLOSE_FIELDS = frozenset(
+    ("merged", "gates_passed", "project_name", "shipped_date", "event_id", "evidence")
+)
+"""The complete field set each route accepts. Anything else is a 400 --
+see ``_problem_unknown_fields``."""
 
 _MIN_SQLITE_INT = -(2**63)
 _MAX_SQLITE_INT = 2**63 - 1
@@ -312,6 +375,25 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+def _alert_payload_summary(payload: Mapping[str, Any]) -> Any:
+    """``payload``, JSON-safe, and bounded to ``_MAX_ALERT_PAYLOAD_CHARS``.
+
+    "Payload summary", as Boundaries & Constraints puts it -- not the
+    payload whole. Small payloads (every real one) are embedded verbatim;
+    an oversized one is replaced by a truncated rendering plus its real
+    size, so the record stays a bounded, greppable line instead of the
+    caller-sized flood ``_MAX_ALERT_PAYLOAD_CHARS`` describes."""
+    safe = _json_safe(dict(payload))
+    rendered = json.dumps(safe, allow_nan=False, separators=(",", ":"))
+    if len(rendered) <= _MAX_ALERT_PAYLOAD_CHARS:
+        return safe
+    return {
+        "truncated": True,
+        "serialized_chars": len(rendered),
+        "head": rendered[:_MAX_ALERT_PAYLOAD_CHARS],
+    }
+
+
 def _log_retry_exhausted(event: str, payload: Mapping[str, Any], exc: BaseException) -> None:
     """The sole operator-alert mechanism (Boundaries & Constraints): one
     structured JSON ERROR-level log record -- event type, payload summary,
@@ -322,7 +404,7 @@ def _log_retry_exhausted(event: str, payload: Mapping[str, Any], exc: BaseExcept
             {
                 "event": "herald.webhook.retries_exhausted",
                 "webhook": event,
-                "payload": _json_safe(dict(payload)),
+                "payload": _alert_payload_summary(payload),
                 "error": f"{type(exc).__name__}: {exc}",
             },
             allow_nan=False,
@@ -345,6 +427,26 @@ def _log_unexpected_exception(event: str, exc: BaseException) -> None:
             }
         )
     )
+
+
+def _problem_unknown_fields(payload: Mapping[str, Any], known: frozenset[str]) -> str | None:
+    """Reject any field this route does not know, or ``None``.
+
+    The same AD-6 convention the rest of the package already applies to
+    every document it reads: ``progress._fields_problem`` and
+    ``claims._claim_from_dict``/``_evidence_from_dict`` each refuse unknown
+    fields with this exact message shape. Accepting them here would make
+    the one hand-written, un-linted, schema-less producer surface -- a
+    workflow YAML nobody is watching -- the single place a typo is silent:
+    ``{"token_spends": 250000}`` would answer 201 while storing 0, and
+    because a same-day ``on-ship`` delivery REPLACES rather than merges,
+    that typo does not merely fail to record the figure, it wipes whatever
+    was recorded for the day. Better one loud 400 at the first delivery
+    than a day of quietly zeroed records."""
+    unknown = sorted(set(payload) - known)
+    if unknown:
+        return f"unknown field(s) {', '.join(map(repr, unknown))}"
+    return None
 
 
 def _problem_text(field: str, value: object) -> str | None:
@@ -423,6 +525,9 @@ def _problem_on_ship(payload: object) -> str | None:
     maps to 400 (Boundaries & Constraints)."""
     if not isinstance(payload, Mapping):
         return "payload is not a JSON object"
+    problem = _problem_unknown_fields(payload, _ON_SHIP_FIELDS)
+    if problem is not None:
+        return problem
     if "station" not in payload:
         return "field 'station' is required"
     problem = _problem_text("station", payload["station"])
@@ -526,9 +631,17 @@ def handle_on_ship(
 def _problem_on_pr_close_gate(payload: object) -> str | None:
     """Structural validation of the two gating fields only -- required,
     and must actually be JSON booleans (a string ``"true"`` is not a
-    boolean and must not silently pass the gate below)."""
+    boolean and must not silently pass the gate below).
+
+    The unknown-field check lives here rather than in
+    ``_problem_on_pr_close_shipped`` so it also runs for a not-shipped
+    (202) delivery: a typo is a producer bug worth one loud 400 whichever
+    way the gate happens to fall that day."""
     if not isinstance(payload, Mapping):
         return "payload is not a JSON object"
+    problem = _problem_unknown_fields(payload, _ON_PR_CLOSE_FIELDS)
+    if problem is not None:
+        return problem
     for field in ("merged", "gates_passed"):
         if field not in payload:
             return f"field {field!r} is required"
@@ -537,7 +650,7 @@ def _problem_on_pr_close_gate(payload: object) -> str | None:
     return None
 
 
-def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
+def _problem_on_pr_close_shipped(repo_root: Path, payload: Mapping[str, Any]) -> str | None:
     """Structural validation of the fields only needed once the gate
     passes and a Claim is actually about to be created -- never run for a
     not-shipped (202, no-op) payload, which may omit all of these.
@@ -570,9 +683,25 @@ def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
         # One poisoned row breaks the surface for every operator afterwards,
         # which is exactly the "catch it here rather than let it sail past
         # into storage" rule the blank-`project_name` check below follows.
+        #
+        # Round-tripped, not merely parsed. `date.fromisoformat` accepts
+        # every ISO 8601 date form on Python 3.11+ -- `"20260813"`
+        # (compact) and `"2026-W33-4"` (week-date) both parse -- so a
+        # parse-only check keeps the promise its own error message makes
+        # ("YYYY-MM-DD") for exactly the shapes it rejects and breaks it
+        # for the ones it accepts. The value is stored verbatim, and
+        # `web/src/panels/SuccessPanel.jsx` filters `shipped_date` by raw
+        # STRING comparison, where `"20260813" > "2026-12-31"` is true
+        # (`"0"` sorts after `"-"`): a non-canonical date is dropped from
+        # every date-filtered dashboard view -- an unrecorded ship being
+        # indistinguishable from no ship, arriving through the field this
+        # check was added to protect. Two forms of one date also compute
+        # two different `_claim_id_for` ids on the evidence branch.
         try:
-            date.fromisoformat(payload["shipped_date"])
+            parsed = date.fromisoformat(payload["shipped_date"])
         except ValueError:
+            return "field 'shipped_date' must be an ISO 8601 date (YYYY-MM-DD)"
+        if parsed.isoformat() != payload["shipped_date"]:
             return "field 'shipped_date' must be an ISO 8601 date (YYYY-MM-DD)"
     # Optional, and the caller's own identifier for this event (see
     # `_claim_id_for`) -- it only has to be stable across a redelivery and
@@ -604,6 +733,9 @@ def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
             missing = _EVIDENCE_FIELDS - set(entry)
             if missing:
                 return f"each 'evidence' entry is missing field(s) {sorted(missing)}"
+            problem = _problem_unknown_fields(entry, _EVIDENCE_FIELDS)
+            if problem is not None:
+                return f"each 'evidence' entry has {problem}"
             if not all(isinstance(entry[key], str) for key in _EVIDENCE_FIELDS):
                 return "each 'evidence' entry's type/url/label must be strings"
             for key in sorted(_EVIDENCE_FIELDS):
@@ -614,6 +746,23 @@ def _problem_on_pr_close_shipped(payload: Mapping[str, Any]) -> str | None:
                     f"each 'evidence' entry's type must be one of "
                     f"{claims.EVIDENCE_TYPES}; got {entry['type']!r}"
                 )
+            if entry["type"] == "notice":
+                # A `notice` entry's `url` holds a Notice COMPONENT NAME,
+                # not an HTTP URL, and both `claims.publish` and
+                # `claims._revalidated_entry` short-circuit it as trivially
+                # valid -- never HEAD'd, stamped `validated=True` without a
+                # single check. The compensating check lives in the CLI:
+                # `herald success create --evidence-notice` calls
+                # `notices.get_notice` first, "rather than letting a claim
+                # silently cite a notice that was never authored (or was
+                # mistyped)". Without the same check here, this route is a
+                # way to attach evidence that passes Story 9.5's entire
+                # evidence gate while referring to nothing -- so it runs
+                # here too, as the 400 it is.
+                try:
+                    notices.get_notice(repo_root, entry["url"])
+                except errors.HeraldError as exc:
+                    return f"each 'evidence' entry of type 'notice' must name an existing notice: {exc}"
     return None
 
 
@@ -638,8 +787,16 @@ def _claim_id_for(payload: Mapping[str, Any], shipped_date: str) -> str:
     name:
 
     - ``event_id`` when the payload carries one -- the caller's own
-      identifier for the event (a PR number, a delivery id). This is the
-      precise answer, and what Story 13.6's workflow step should send. It
+      identifier for the event. This is the precise answer, and what
+      Story 13.6's workflow step should send, but it must be GLOBALLY
+      unique, not merely unique to its producer: a bare PR number is
+      unique only within one repository, so if this endpoint is ever fed
+      by two of them, repo A's PR 42 and repo B's PR 42 compute one id
+      and the second real ship is swallowed at ``201``. This branch
+      deliberately omits the date (see below), which makes such a
+      collision permanent rather than same-day. Send something
+      repo-qualified (``${{ github.repository }}#${{ github.event.number }}``)
+      or globally unique by construction (the delivery GUID). It
       already identifies the event on its own, so the date is deliberately
       left OUT of the name on this branch: ``shipped_date`` falls back to
       the SERVER's clock when the payload omits it, and a redelivery is by
@@ -659,20 +816,36 @@ def _claim_id_for(payload: Mapping[str, Any], shipped_date: str) -> str:
 
     Two same-day ships for one project that supply neither an ``event_id``
     nor any distinguishing evidence remain indistinguishable by
-    construction -- nothing in such a payload tells them apart."""
+    construction -- nothing in such a payload tells them apart.
+
+    The uuid5 name is built by JSON-encoding the parts as a LIST, never by
+    joining them with a separator. Caller-controlled strings around a bare
+    ``|`` are ambiguous: ``{"project_name": "A|event:B", "event_id": "C"}``
+    and ``{"project_name": "A", "event_id": "B|event:C"}`` rendered the
+    identical name, so two distinct events computed one id and the second
+    was swallowed by the idempotency guard at ``201`` -- the very
+    silent-swallow this function exists to prevent. ``project_name`` is
+    stripped for the same reason ``handle_on_ship`` stores ``station``
+    stripped: a trailing newline off a ``${{ }}`` expansion is the ordinary
+    YAML artifact, and here it would compute a different id and create the
+    duplicate claim -- on the one surface with no dedupe key to recover
+    with."""
     event_id = payload.get("event_id")
     if event_id is not None:
-        key = f"event:{event_id}"
+        key = ["event", event_id]
     else:
-        evidence = json.dumps(
+        key = [
+            "evidence",
+            shipped_date,
             [
                 [entry["type"], entry["url"], entry["label"]]
                 for entry in payload.get("evidence", [])
             ],
-            separators=(",", ":"),
-        )
-        key = f"{shipped_date}|evidence:{evidence}"
-    name = f"herald-claim:{payload['project_name']}|{key}"
+        ]
+    name = json.dumps(
+        ["herald-claim", payload["project_name"].strip(), key],
+        separators=(",", ":"),
+    )
     return str(uuid.uuid5(uuid.NAMESPACE_URL, name))
 
 
@@ -701,7 +874,7 @@ def handle_on_pr_close(
     if not (payload["merged"] and payload["gates_passed"]):
         return WebhookResponse(202, {"status": "not-shipped"})
 
-    shipped_problem = _problem_on_pr_close_shipped(payload)
+    shipped_problem = _problem_on_pr_close_shipped(repo_root, payload)
     if shipped_problem is not None:
         return WebhookResponse(400, {"error": shipped_problem})
 
@@ -723,6 +896,10 @@ def handle_on_pr_close(
     # section) -- a genuine redelivery of this same logical event, arriving
     # as a separate top-level call, computes this same id.
     claim_id = _claim_id_for(payload, shipped_date)
+    # Stored stripped, matching what `_claim_id_for` hashes and what
+    # `handle_on_ship` already does for `station` -- otherwise `"Marshal"`
+    # and `"Marshal\n"` are two projects to every reader downstream.
+    project_name = payload["project_name"].strip()
     evidence = tuple(
         claims.Evidence(type=e["type"], url=e["url"], label=e["label"])
         for e in payload.get("evidence", [])
@@ -739,7 +916,7 @@ def handle_on_pr_close(
             pass
         return claims.create(
             claims_path,
-            project_name=payload["project_name"],
+            project_name=project_name,
             shipped_date=shipped_date,
             evidence=evidence,
             id_factory=lambda: claim_id,
@@ -782,8 +959,15 @@ async def _read_body(receive: Receive) -> bytes:
     the ASGI3 contract for a (possibly chunked) request body. Raises
     ``_BodyTooLarge`` once the accumulated size exceeds ``MAX_BODY_BYTES``,
     checked on every chunk so a caller cannot stream past the cap one
-    ``more_body: true`` message at a time, and ``_ClientDisconnected`` if
-    the peer disconnects before the body is complete.
+    ``more_body: true`` message at a time, or once more than
+    ``MAX_BODY_MESSAGES`` messages have arrived, and ``_ClientDisconnected``
+    if the peer disconnects before the body is complete.
+
+    The message bound is not redundant with the byte bound: a ZERO-length
+    chunk adds nothing to ``size``, so a stream of them never trips the
+    byte cap, never satisfies ``more_body``, and never ends -- an
+    unauthenticated caller holding one request open forever while the chunk
+    list grows a slot per message (see ``MAX_BODY_MESSAGES``).
 
     Chunks are collected and joined ONCE rather than accumulated with
     ``body += chunk``: ``bytes`` is immutable, so repeated concatenation
@@ -799,6 +983,7 @@ async def _read_body(receive: Receive) -> bytes:
     same request linear."""
     chunks: list[bytes] = []
     size = 0
+    messages = 0
     more_body = True
     while more_body:
         message = await receive()
@@ -806,11 +991,17 @@ async def _read_body(receive: Receive) -> bytes:
             raise _ClientDisconnected(
                 "client disconnected before the body was complete"
             )
+        messages += 1
+        if messages > MAX_BODY_MESSAGES:
+            raise _BodyTooLarge(
+                f"request body arrived in more than {MAX_BODY_MESSAGES} chunks"
+            )
         chunk = message.get("body", b"")
         size += len(chunk)
         if size > MAX_BODY_BYTES:
             raise _BodyTooLarge(f"request body exceeds {MAX_BODY_BYTES} bytes")
-        chunks.append(chunk)
+        if chunk:
+            chunks.append(chunk)
         more_body = message.get("more_body", False)
     return b"".join(chunks)
 
@@ -916,47 +1107,23 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
             # HTTP-only leaf app, so it declines the connection outright
             # rather than leaving the host to raise -- the same "always
             # answer" reasoning as the HTTP guard further down.
-            await send({"type": "websocket.close", "code": 1000})
+            #
+            # Guarded, because this send is exactly the one that can fail:
+            # uvicorn's websocket `send` RAISES `ClientDisconnected` up
+            # front when the peer is already gone, so a client that
+            # vanishes during the handshake would otherwise propagate an
+            # exception out of `app` -- the uncaught escape the HTTP guard
+            # below exists to prevent, on the one path that was outside it.
+            try:
+                await send({"type": "websocket.close", "code": 1000})
+            except Exception as exc:  # noqa: BLE001 -- nothing left to answer with
+                _log_unexpected_exception("websocket", exc)
             return
         if scope_type != "http":
             return  # e.g. an ASGI "lifespan" scope -- nothing for a leaf app to do
-        # `scope["path"]` includes the prefix the host mounted this app
-        # under, so an exact match against the route literals 404s every
-        # delivery the moment Story 13.6 mounts it anywhere but the root.
-        # `root_path` is that prefix; strip it before routing.
-        #
-        # Stripped on SEGMENT boundaries, and with a trailing slash
-        # normalized away first. A host started with `--root-path /`
-        # reports `root_path == "/"`, which as a bare string prefix matches
-        # every path and left `api/herald/...` with no leading slash --
-        # 404ing every delivery under a perfectly ordinary configuration.
-        # A non-boundary prefix (mounted at `/her`, request for `/herald`)
-        # was likewise mangled into a bogus route rather than declined.
-        #
-        # Note for Story 13.6: per the ASGI spec `path` INCLUDES
-        # `root_path`, so mounting under a prefix serves these routes at
-        # `<prefix>/api/herald/webhooks/...` -- the route literals already
-        # begin with `/api`, so mounting under `/api` yields
-        # `/api/api/herald/webhooks/...`. That is correct, not a bug, but
-        # it is worth knowing before choosing the mount point.
-        path = scope.get("path") or ""
-        root_path = (scope.get("root_path") or "").rstrip("/")
-        if root_path and (path == root_path or path.startswith(root_path + "/")):
-            path = path[len(root_path) :] or "/"
-        if path == ON_SHIP_PATH:
-            handler: Callable[..., WebhookResponse] = handle_on_ship
-            event_name = "on-ship"
-        elif path == ON_PR_CLOSE_PATH:
-            handler = handle_on_pr_close
-            event_name = "on-pr-close"
-        else:
-            await _send_json(send, 404, {"error": f"no such webhook route: {path!r}"})
-            return
-        if scope.get("method") != "POST":
-            await _send_json(send, 405, {"error": "method not allowed; use POST"})
-            return
 
         response_started = False
+        event_name = "unrouted"
 
         async def tracking_send(message: Mapping[str, Any]) -> None:
             """``send``, remembering whether the response has begun -- the
@@ -984,11 +1151,69 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
             except Exception as exc:  # noqa: BLE001 -- nothing left to answer with
                 _log_unexpected_exception(event_name, exc)
 
-        # Everything from here through the final response send is wrapped
-        # in a broad exception guard -- see the module docstring's
-        # "Uncaught exceptions" section: an ASGI app must always answer,
-        # never let a bug hang whatever host mounts this callable.
+        # Everything from routing through the final response send is wrapped
+        # in a broad exception guard -- see the module docstring's "Uncaught
+        # exceptions" section: an ASGI app must always answer, never let a
+        # bug hang whatever host mounts this callable. Routing (and its own
+        # 404/405 sends) is INSIDE the guard for the same reason the
+        # websocket close above is guarded: a `send` that raises there is
+        # still an exception escaping `app`.
         try:
+            # `scope["path"]` includes the prefix the host mounted this app
+            # under, so an exact match against the route literals 404s every
+            # delivery the moment Story 13.6 mounts it anywhere but the root.
+            # `root_path` is that prefix; strip it before routing.
+            #
+            # Stripped on SEGMENT boundaries, and with a trailing slash
+            # normalized away first. A host started with `--root-path /`
+            # reports `root_path == "/"`, which as a bare string prefix
+            # matches every path and left `api/herald/...` with no leading
+            # slash -- 404ing every delivery under a perfectly ordinary
+            # configuration. A non-boundary prefix (mounted at `/her`,
+            # request for `/herald`) was likewise mangled into a bogus route
+            # rather than declined.
+            #
+            # The REQUEST path is normalized the same way, for the same
+            # reason the prefix is: a routing 404 is indistinguishable from
+            # "the endpoint isn't deployed", so a correctly-signed delivery
+            # should not be lost to a producer's trailing slash
+            # (`.../on-ship/`) or to the doubled slash an nginx
+            # `location`/`proxy_pass` pair routinely emits
+            # (`//api/herald/...`). Collapsing repeats and dropping a
+            # trailing slash cannot merge two real routes -- these two
+            # literals differ in a segment, not in punctuation.
+            #
+            # Note for Story 13.6: per the ASGI spec `path` INCLUDES
+            # `root_path`, so mounting under a prefix serves these routes at
+            # `<prefix>/api/herald/webhooks/...` -- the route literals
+            # already begin with `/api`, so mounting under `/api` yields
+            # `/api/api/herald/webhooks/...`. That is correct, not a bug,
+            # but it is worth knowing before choosing the mount point.
+            path = scope.get("path") or ""
+            while "//" in path:
+                path = path.replace("//", "/")
+            if len(path) > 1:
+                path = path.rstrip("/") or "/"
+            root_path = (scope.get("root_path") or "").rstrip("/")
+            if root_path and (path == root_path or path.startswith(root_path + "/")):
+                path = path[len(root_path) :] or "/"
+            if path == ON_SHIP_PATH:
+                handler: Callable[..., WebhookResponse] = handle_on_ship
+                event_name = "on-ship"
+            elif path == ON_PR_CLOSE_PATH:
+                handler = handle_on_pr_close
+                event_name = "on-pr-close"
+            else:
+                await _send_json(
+                    tracking_send, 404, {"error": f"no such webhook route: {path!r}"}
+                )
+                return
+            if scope.get("method") != "POST":
+                await _send_json(
+                    tracking_send, 405, {"error": "method not allowed; use POST"}
+                )
+                return
+
             body = await _read_body(receive)
             signature = _header_value(scope, _SIGNATURE_HEADER)
             if not verify_signature(secret, body, signature):
@@ -1022,8 +1247,11 @@ def create_app(repo_root: Path, secret: bytes) -> ASGIApp:
             await _send_json(tracking_send, result.status, result.body)
         except _ClientDisconnected:
             return  # nobody left to answer -- see `_ClientDisconnected`
-        except _BodyTooLarge:
-            await fail(413, {"error": f"request body exceeds {MAX_BODY_BYTES} bytes"})
+        except _BodyTooLarge as exc:
+            # The exception's own message, because there are now two ways
+            # to exceed the cap -- too many bytes, or too many chunks --
+            # and an operator debugging a 413 needs to know which.
+            await fail(413, {"error": str(exc)})
         except Exception as exc:  # noqa: BLE001 -- last-resort ASGI contract guard
             _log_unexpected_exception(event_name, exc)
             await fail(500, {"error": "internal error"})
