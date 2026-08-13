@@ -522,7 +522,7 @@ window.DASHBOARD_DATA = {
         "median": 112,
         "lo": 34,
         "hi": 427,
-        "phaseAsOf": "2026-08-13 16:19 UTC"
+        "phaseAsOf": "2026-08-13 16:26 UTC"
       },
       "velocity": {
         "derived": true,
@@ -891,8 +891,8 @@ window.DASHBOARD_DATA = {
         "startEpoch": 1786632558,
         "median": 199,
         "lo": 29,
-        "hi": 417,
-        "phaseAsOf": "2026-08-13 16:19 UTC"
+        "hi": 441,
+        "phaseAsOf": "2026-08-13 16:26 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1359,7 +1359,7 @@ window.DASHBOARD_DATA = {
         "median": 107,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 16:19 UTC"
+        "phaseAsOf": "2026-08-13 16:26 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1534,12 +1534,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "78/126",
+            "79/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "48",
+            "47",
             "remaining",
             ""
           ]
@@ -1775,7 +1775,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.11",
-              "pending",
+              "done",
               "A story's declared difficulty actually picks its model *(added 2026-08-11 — FR-182)*"
             ],
             [
@@ -2917,7 +2917,7 @@ window.DASHBOARD_DATA = {
         "median": 79,
         "lo": 37,
         "hi": 468,
-        "phaseAsOf": "2026-08-13 16:19 UTC"
+        "phaseAsOf": "2026-08-13 16:26 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3935,7 +3935,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 16:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 16:26 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6082,7 +6082,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 78,
+          "done": 79,
           "total": 126
         },
         {
@@ -6317,7 +6317,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-10",
-          "sprint": "2026-08-11",
+          "sprint": "2026-08-13",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-09",
@@ -6562,7 +6562,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-13T11:45",
+          "spec": "2026-08-13T12:00",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-11",
@@ -6646,7 +6646,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "78/126",
+        "progress": "79/126",
         "complete": 13,
         "of": 13
       },
@@ -8992,7 +8992,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-11",
           "deck": "",
-          "spec": "2026-08-13T10:40",
+          "spec": "2026-08-13T12:00",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -17197,8 +17197,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260813-094921-d779/9-6-isolation-proven-by-tests-that-cannot-pass-vacuously into loop/pyforge-steward "
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 16:19 UTC",
-    "generatedEpoch": 1786637972
+    "generatedAt": "2026-08-13 16:26 UTC",
+    "generatedEpoch": 1786638386
   },
   "storySpecs": [
     {
@@ -17221,9 +17221,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 78,
+      "done": 79,
       "tracked": 56,
-      "gap": 22
+      "gap": 23
     },
     {
       "station": "pyforge-mason",
@@ -17330,8 +17330,8 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 78,
-        "backlog": 45,
+        "done": 79,
+        "backlog": 44,
         "blocked": 3,
         "total": 126,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
@@ -17527,8 +17527,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 300,
-      "backlog": 74,
+      "done": 301,
+      "backlog": 73,
       "blocked": 6,
       "total": 380
     }
@@ -17571,10 +17571,10 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 126,
-        "done": 78,
+        "done": 79,
         "blocked": 3,
         "epics": 19,
-        "epicsDone": 5,
+        "epicsDone": 6,
         "complete": false,
         "running": true,
         "projected": 123
@@ -17626,10 +17626,10 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 380,
-      "done": 300,
+      "done": 301,
       "blocked": 6,
       "epics": 74,
-      "epicsDone": 51
+      "epicsDone": 52
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
