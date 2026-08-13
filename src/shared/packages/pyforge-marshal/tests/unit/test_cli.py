@@ -963,7 +963,8 @@ def test_init_dispatches_to_run_init_with_parsed_args(monkeypatch):
 # None`) exists for callers that need a fake, but the CLI-wiring layer here
 # proves the real PosixProcess integration. The pure per-command
 # classification is separately, exhaustively covered by `test_gate.py` with
-# synthetic ProcessResults, and PosixProcess itself by `test_process_posix.py`.
+# synthetic ProcessResults, and PosixProcess itself by pyforge-core's own
+# `tests/unit/test_process.py`.
 #
 # Every policy fixture below goes through `_conventional_policy`, because the
 # CONVENTIONAL path is the only policy source `gate evaluate` reads: unlike
@@ -1058,8 +1059,8 @@ def test_check_subcommand_is_wired(capsys, monkeypatch):
     TypeError for the one handler that DOES accept it)."""
     import json as json_module
 
+    from pyforge.core.process import ProcessResult
     from pyforge.marshal.cli import check as check_module
-    from pyforge.marshal.ports.process import ProcessResult
 
     class _FakeProcess:
         def run(self, argv, *, cwd, timeout_s=None):
@@ -1427,8 +1428,8 @@ def test_run_evaluate_uses_the_injected_process_port(tmp_path, capsys, monkeypat
     PosixProcess would raise ProcessError -> MRS-GATE-002 -> exit 1, so a
     clean exit 0 carrying the fake's own stdout can only mean the injected
     port was the one actually used."""
+    from pyforge.core.process import ProcessResult
     from pyforge.marshal.cli import gate as gate_module
-    from pyforge.marshal.ports.process import ProcessResult
 
     calls: list[tuple[list[str], object]] = []
 
@@ -1478,14 +1479,14 @@ def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(
     catch, so the run died on a traceback and returned 1 for a gate that had
     really failed with 3. pytest's own capsys is a UTF-8 buffer, so no
     existing test could reach this; an ascii TextIOWrapper stands in."""
+    from pyforge.core.process import ProcessResult
     from pyforge.marshal.cli import gate as gate_module
-    from pyforge.marshal.ports.process import ProcessResult
 
     class _NonAsciiProcess:
         def run(self, argv, *, cwd, timeout_s=None):
             # U+FFFD is exactly what the adapter's errors="replace" produces
-            # from an undecodable byte -- see test_process_posix.py's
-            # test_run_replaces_undecodable_output.
+            # from an undecodable byte -- see pyforge-core's
+            # tests/unit/test_process.py::test_run_replaces_undecodable_output.
             return ProcessResult(returncode=1, stdout="caf\ufffd", stderr="")
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)

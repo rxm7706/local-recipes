@@ -74,8 +74,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+from pyforge.core.process import ProcessResult
+
 from ..ports.harness import DeferredStory, TaskPhaseSnapshot
-from ..ports.process import ProcessResult
 from .identity import StoryKey, normalize, render_feed_key
 from .model import Finding, Severity
 

@@ -77,6 +77,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
+from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from ..ports.vcs import WorktreeEntry
 
@@ -121,36 +122,38 @@ _GIT_PUSH_TIMEOUT_S = 120.0
 _GIT_FETCH_TIMEOUT_S = 120.0
 
 
-def _run(
-    args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S
-) -> subprocess.CompletedProcess[str]:
+def _run(args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S) -> ProcessResult:
+    """Story 14.4, SPEC-pyforge-core CAP-6: delegates the actual launch to
+    ``pyforge.core.process.PosixProcess().run(...)`` -- ``cwd=Path.cwd()``
+    since every ``args`` list already carries its own ``-C <repo_root>``
+    (git argument, never relying on the process's own working directory,
+    exactly as this module's calls always have). ``PosixProcess.run`` wraps
+    every launch failure (missing executable, timeout, other ``OSError``) in
+    ONE ``ProcessError``, carrying the original exception as its own
+    ``__cause__`` -- re-derives the SAME three ``VcsCommandError`` messages
+    this method has always raised (``__cause__`` set to the ORIGINAL stdlib
+    exception, not the intermediate ``ProcessError``, so
+    ``add_worktree``'s own ``isinstance(exc.__cause__,
+    subprocess.TimeoutExpired)`` branch keeps working unchanged -- this
+    story's own I/O matrix)."""
     try:
-        # encoding="utf-8" pins the decode: git emits paths as raw bytes,
-        # and decoding with the process LOCALE would mangle a valid UTF-8
-        # path under a non-UTF-8 locale (cron/systemd -- Marshal's own
-        # unattended context), corrupting the reconcile comparison (review
-        # finding). errors="replace": output undecodable even as UTF-8 must
-        # degrade to replacement characters, not escape as a raw
-        # UnicodeDecodeError (review finding).
-        return subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_s,
-        )
-    except FileNotFoundError as exc:
-        raise VcsCommandError(f"git executable not found: {exc}") from exc
-    except subprocess.TimeoutExpired as exc:
-        raise VcsCommandError(
-            f"git command timed out after {timeout_s}s: {' '.join(args)}"
-        ) from exc
-    except OSError as exc:
+        return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s)
+    except ProcessError as exc:
+        cause = exc.__cause__
+        if isinstance(cause, FileNotFoundError):
+            raise VcsCommandError(f"git executable not found: {cause}") from cause
+        if isinstance(cause, subprocess.TimeoutExpired):
+            raise VcsCommandError(
+                f"git command timed out after {timeout_s}s: {' '.join(args)}"
+            ) from cause
         # Launching git can fail with more than absence: EACCES on a
-        # non-executable shim, ENOEXEC on a corrupt binary -- all must land
-        # in the envelope, not escape raw (review finding).
-        raise VcsCommandError(f"cannot launch git: {exc}") from exc
+        # non-executable shim, ENOEXEC on a corrupt binary, an embedded NUL
+        # byte -- all must land in the envelope, not escape raw (review
+        # finding, pre-Story-14.4). `cause` is `None` for `PosixProcess`'s own
+        # empty-argv guard (it raises with no `from` clause) -- `exc` itself
+        # already carries that message, so fall back to it rather than
+        # stringifying/chaining from a bare `None` (Story 14.4 review finding).
+        raise VcsCommandError(f"cannot launch git: {cause or exc}") from (cause or exc)
 
 
 def _iter_worktree_blocks(stdout: str) -> Iterator[dict[str, str]]:
