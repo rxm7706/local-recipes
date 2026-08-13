@@ -195,8 +195,10 @@ class FsPort(Protocol):
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
         """AD-30's one serialized append protocol: a single ``os.write()``
         of ``(line + "\\n").encode("utf-8")`` on a descriptor opened
-        ``O_WRONLY | O_APPEND | O_CREAT`` (mode ``0o666``, matching
-        ``_tmp_sibling``'s existing mode), ``fsync``ed only when
+        ``O_WRONLY | O_APPEND | O_CREAT`` (mode ``0o666``, umask-applied by
+        the kernel at open time -- the same umask-respecting outcome
+        ``pyforge.core.atomic_write``'s own default now produces for
+        ``write_text_atomic``, Story 14.2, CAP-2), ``fsync``ed only when
         ``fsync=True``, then closed -- no buffered stream (``open()``/
         ``fdopen()``) is ever held open across appends, so two uncoordinated
         writers can never interleave a partial line. Does **not** create

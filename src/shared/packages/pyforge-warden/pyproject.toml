@@ -21,6 +21,7 @@ dependencies = [
     "jsonschema",
     "packageurl-python",
     "license-expression",
+    "pyforge-core",
 ]
 
 [project.scripts]

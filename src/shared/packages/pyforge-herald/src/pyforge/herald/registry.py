@@ -62,11 +62,11 @@ the file, not just the owned span.
 
 from __future__ import annotations
 
-import os
 import re
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+from pyforge.core.atomic_write import atomic_write_text
 
 from . import errors
 
@@ -231,39 +231,20 @@ def register(
     new_text = "\n".join(new_lines) + "\n"
 
     try:
-        handle, tmp_name = tempfile.mkstemp(
-            dir=readme_path.parent, prefix=f".{readme_path.name}-", suffix=".tmp"
-        )
-    except OSError as exc:
+        # `mode=original_mode & 0o7777` (Story 14.2, CAP-2): the shared
+        # `pyforge.core.atomic_write_text` primitive's mkstemp-created temp
+        # file is private (0600) by default; carrying that onto a
+        # pre-existing, tracked README via `os.replace` would silently strip
+        # group/other read from a file this module did not create, so the
+        # `mode` chmod-before-replace preserves the ORIGINAL file's
+        # permission bits instead.
+        atomic_write_text(readme_path, new_text, mode=original_mode & 0o7777)
+    except (OSError, ValueError) as exc:
+        # The up-front UTF-8 validation makes a UnicodeEncodeError (a
+        # ValueError) from the write unreachable -- wrapped anyway,
+        # mirroring state.write's rationale: a raw leak through the
+        # AD-6 contract is worse than a redundant guard.
         raise errors.HeraldError(f"{could_not}: {exc}") from exc
-    try:
-        try:
-            fh = os.fdopen(handle, "w", encoding="utf-8")
-        except BaseException:
-            # fdopen raised before taking ownership of the raw fd, so this
-            # is the only branch that may close it -- mirrors state.write's
-            # identical fd-ownership handoff.
-            os.close(handle)
-            raise
-        with fh:
-            fh.write(new_text)
-        # mkstemp creates the temp file private (0600); carrying that onto a
-        # pre-existing, tracked README via os.replace would silently strip
-        # group/other read from a file this module did not create.
-        os.chmod(tmp_name, original_mode & 0o7777)
-        os.replace(tmp_name, readme_path)
-    except BaseException as exc:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        if isinstance(exc, (OSError, ValueError)):
-            # The up-front UTF-8 validation makes a UnicodeEncodeError (a
-            # ValueError) from fh.write unreachable -- wrapped anyway,
-            # mirroring state.write's rationale: a raw leak through the
-            # AD-6 contract is worse than a redundant guard.
-            raise errors.HeraldError(f"{could_not}: {exc}") from exc
-        raise
 
 
 def read(readme_path: Path) -> DesignProject | None:

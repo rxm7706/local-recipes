@@ -51,17 +51,31 @@ def test_package_pixi_version_matches_pyproject():
 def test_package_run_dependencies_match_project_dependencies():
     """Same deps, same pins, both manifests -- ``python`` excluded (a
     conda-side interpreter pin with no pyproject counterpart; pyproject's
-    ``requires-python`` covers it)."""
+    ``requires-python`` covers it).
+
+    A path dependency (Story 14.2, CAP-2: ``pyforge-core = { path = "..."
+    }``) has no version specifier in EITHER manifest -- pyproject.toml
+    spells it as a bare, unversioned name (a workspace member has no PyPI
+    version), so it normalizes to the same empty spec ``""`` a bare name
+    parses to via ``_REQUIREMENT_RE`` above. This is gated on the dict
+    actually carrying a ``path`` key (review pass 2), not on it merely being
+    a dict -- a hypothetical future dict-shaped dependency that instead
+    carries a real ``version =`` key must still fall through to the plain
+    ``spec.replace(" ", "")`` comparison below rather than being silently
+    treated as versionless."""
     pyproject_deps: dict[str, str] = {}
     for requirement in _load("pyproject.toml")["project"]["dependencies"]:
         match = _REQUIREMENT_RE.match(requirement)
         assert match is not None, f"unparseable requirement {requirement!r}"
         pyproject_deps[match.group(1).lower()] = match.group(2).replace(" ", "")
-    pixi_deps = {
-        name.lower(): spec.replace(" ", "")
-        for name, spec in _load("pixi.toml")["package"]["run-dependencies"].items()
-        if name != "python"
-    }
+    pixi_deps: dict[str, str] = {}
+    for name, spec in _load("pixi.toml")["package"]["run-dependencies"].items():
+        if name == "python":
+            continue
+        if isinstance(spec, dict) and "path" in spec:
+            pixi_deps[name.lower()] = ""
+        else:
+            pixi_deps[name.lower()] = spec.replace(" ", "")
     assert pixi_deps == pyproject_deps
 
 

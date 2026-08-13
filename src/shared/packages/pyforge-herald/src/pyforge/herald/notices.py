@@ -95,12 +95,12 @@ this module does not attempt to close.
 from __future__ import annotations
 
 import json
-import os
 import re
-import tempfile
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
+
+from pyforge.core.atomic_write import atomic_write_text
 
 from . import errors, locking
 
@@ -262,35 +262,15 @@ def _require_existing_index(index_path: Path, missing: str) -> None:
 
 
 def _write_index_document(index_path: Path, document: dict[str, object]) -> None:
-    """Atomic write (temp file in the same directory, then ``os.replace``)
+    """Atomic write via `pyforge.core.atomic_write_text` (Story 14.2, CAP-2
+    -- the one shared temp-file-then-`os.replace` primitive, mkstemp-based)
     -- mirrors ``state.write``'s crash-safety, including its limit: neither
     fsyncs, so surviving power loss is the filesystem's business."""
     could_not_write = f"notices index {index_path} could not be written"
     try:
-        index_path.parent.mkdir(parents=True, exist_ok=True)
-        handle, tmp_name = tempfile.mkstemp(
-            dir=index_path.parent, prefix=f".{index_path.name}-", suffix=".tmp"
-        )
-    except OSError as exc:
+        atomic_write_text(index_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+    except (OSError, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-    try:
-        try:
-            fh = os.fdopen(handle, "w", encoding="utf-8")
-        except BaseException:
-            os.close(handle)
-            raise
-        with fh:
-            json.dump(document, fh, indent=2, sort_keys=True)
-            fh.write("\n")
-        os.replace(tmp_name, index_path)
-    except BaseException as exc:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        if isinstance(exc, (OSError, TypeError, ValueError, RecursionError)):
-            raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-        raise
 
 
 _REQUIRED_NOTICE_FIELDS = frozenset(

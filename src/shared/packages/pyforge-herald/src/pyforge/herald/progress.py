@@ -49,13 +49,13 @@ public entry point there would self-deadlock.
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from datetime import date as date_cls
 from pathlib import Path
+
+from pyforge.core.atomic_write import atomic_write_text
 
 from . import errors, locking
 
@@ -229,38 +229,18 @@ def write_all(progress_path: Path, records: list[Progress]) -> None:
 def _write_all_unlocked(progress_path: Path, records: list[Progress]) -> None:
     """``write_all``'s body, without taking the lock -- for callers that
     already hold it (``upsert``). Never call this from outside a
-    ``locking.locked`` block."""
+    ``locking.locked`` block.
+
+    Delegates to `pyforge.core.atomic_write_text` (Story 14.2, CAP-2 -- the
+    one shared temp-file-then-`os.replace` primitive, mkstemp-based)."""
     ordered = sorted(records, key=lambda r: (r.station, r.date))
     document = [asdict(r) for r in ordered]
     try:
-        progress_path.parent.mkdir(parents=True, exist_ok=True)
-        handle, tmp_name = tempfile.mkstemp(
-            dir=progress_path.parent, prefix=f".{progress_path.name}-", suffix=".tmp"
-        )
-    except OSError as exc:
+        atomic_write_text(progress_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+    except (OSError, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(
             f"progress file {progress_path} could not be written: {exc}"
         ) from exc
-    try:
-        try:
-            fh = os.fdopen(handle, "w", encoding="utf-8")
-        except BaseException:
-            os.close(handle)
-            raise
-        with fh:
-            json.dump(document, fh, indent=2, sort_keys=True)
-            fh.write("\n")
-        os.replace(tmp_name, progress_path)
-    except BaseException as exc:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        if isinstance(exc, (OSError, TypeError, ValueError, RecursionError)):
-            raise errors.HeraldError(
-                f"progress file {progress_path} could not be written: {exc}"
-            ) from exc
-        raise
 
 
 def upsert(

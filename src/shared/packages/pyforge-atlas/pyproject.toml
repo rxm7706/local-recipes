@@ -60,6 +60,9 @@ dependencies = [
     # (the GitHub-trending HTML scrape, stdlib `html.parser` backend — no lxml). Kept
     # byte-for-byte in step with the member pixi.toml run-dependencies (AUD-ATLAS-010).
     "beautifulsoup4>=4.15.0",         # imported as `bs4`
+    # Story 14.2 (CAP-2): admission.py/factory/lasuite.py/datasets/{basilisk,
+    # migration_status,refresh}.py's mandatory run-dep (atomic_write/atomic_write_text).
+    "pyforge-core",
 ]
 
 [project.optional-dependencies]

@@ -2369,12 +2369,14 @@ def run_supervisor(
         # was widened for exactly this CPython split one pass earlier, and
         # the WRITE side -- the one that runs every 60s for this process's
         # whole life -- was left narrow. `LocalFs.append_line` and
-        # `LocalFs.write_text_atomic` both translate only `OSError`, and
-        # `fs_local.py`'s own `write_redacted_atomic` docstring records a
-        # bare `ValueError` from `_tmp_sibling` escaping that very clause.
-        # An uncaught one here kills the sidecar with a raw traceback AFTER
-        # `supervisor-attach` is journaled -- the dangling attach with no
-        # matching detach AD-9 says must never happen.
+        # `LocalFs.write_text_atomic` both translate only `OSError` into
+        # `FsError` (Story 14.2, CAP-2 pass 3 finding: confirmed still true
+        # of `pyforge.core.atomic_write`, which `write_text_atomic` now
+        # delegates to -- `UnicodeEncodeError`, a `ValueError` subclass, can
+        # escape a `write_fn` unwrapped). An uncaught one here kills the
+        # sidecar with a raw traceback AFTER `supervisor-attach` is
+        # journaled -- the dangling attach with no matching detach AD-9
+        # says must never happen.
         print(f"supervisor: cannot append to journal {journal_path}: {exc}", file=sys.stderr)
         return 1
 
