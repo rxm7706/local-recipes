@@ -5,6 +5,7 @@ plain string or value.
 
 from __future__ import annotations
 
+from pyforge.marshal.core import gate
 from pyforge.marshal.core.identity import StoryKey
 from pyforge.marshal.core.deferred_work import (
     DeferralCandidate,
@@ -284,3 +285,95 @@ def test_deferrals_to_promote_dedupes_two_candidates_for_the_same_story_in_one_b
     result = deferrals_to_promote((first, second), landing_keys, tracked_text="")
 
     assert result == (first,)
+
+
+# --- Story 2.8: review tier never changes deferred-work capture (AC4) ------
+# Defense-in-depth proof for the by-construction guarantee: this story
+# ships no CLI/journal wiring (see `core/gate.py`'s own module docstring
+# addition), so nothing here is wired to vary by tier at all -- neither
+# `parse_followup_deferrals` nor `deferrals_to_promote` imports, reads, or
+# is otherwise aware `classify_review_tier`/`resolve_review_cycles` exist.
+# This test reproduces the `review-budget-followup` Tier-3 block shape (the
+# `DW-AD23-3` incident shape, per `_CLEAN_BLOCK`'s own fixture above) for a
+# story classified into EACH defined tier -- the block's own `reason:` text
+# is built FROM `classify_review_tier`'s real returned report (not just
+# labeled to match it), so the tier value genuinely drives what gets parsed,
+# and proves both are captured -- and promoted -- identically regardless.
+
+
+def _review_budget_followup_block(
+    *, tier3_id: str, story: str, story_key: StoryKey, report: dict[str, object]
+) -> str:
+    return (
+        f"### {tier3_id}: Follow-up review still recommended for {story} "
+        "after the damping cap was spent\n"
+        "origin: review-budget-followup\n"
+        f"source_spec: `spec-{story}.md`\n"
+        "severity: low\n"
+        "reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) "
+        f"was spent for a story classified into the {report['tier']!r} review tier "
+        f"(declared_low_risk={report['declared_low_risk']!r}, "
+        f"changed_files={report['changed_files']!r}) -- tier must never change "
+        "deferred-work capture.\n"
+        "status: open\n"
+    )
+
+
+def test_review_budget_followup_capture_is_identical_regardless_of_review_tier():
+    low_tier_report = gate.classify_review_tier(
+        declared_low_risk=True, changed_files=("a.py", "b.py")
+    )
+    standard_tier_report = gate.classify_review_tier(
+        declared_low_risk=False, changed_files=("a.py", "b.py", "c.py", "d.py")
+    )
+    assert low_tier_report["tier"] == "low"
+    assert standard_tier_report["tier"] == "standard"
+
+    # The block text is built FROM each report above -- if `classify_review_
+    # tier` ever produced a different tier for these inputs, the parsed
+    # `reason` text below would change with it, so this is a real causal
+    # link, not two facts asserted side by side.
+    low_block = _review_budget_followup_block(
+        tier3_id="DW-30",
+        story="9-1-a-low-tier-story",
+        story_key=StoryKey(9, 1),
+        report=low_tier_report,
+    )
+    standard_block = _review_budget_followup_block(
+        tier3_id="DW-31",
+        story="9-2-a-standard-tier-story",
+        story_key=StoryKey(9, 2),
+        report=standard_tier_report,
+    )
+
+    low_candidates = parse_followup_deferrals(low_block)
+    standard_candidates = parse_followup_deferrals(standard_block)
+
+    assert len(low_candidates) == 1
+    assert len(standard_candidates) == 1
+    assert low_candidates[0].tier3_id == "DW-30"
+    assert low_candidates[0].story_key == StoryKey(9, 1)
+    assert (
+        f"classified into the {low_tier_report['tier']!r} review tier"
+        in low_candidates[0].reason
+    )
+    assert standard_candidates[0].tier3_id == "DW-31"
+    assert standard_candidates[0].story_key == StoryKey(9, 2)
+    assert (
+        f"classified into the {standard_tier_report['tier']!r} review tier"
+        in standard_candidates[0].reason
+    )
+
+    low_promoted = deferrals_to_promote(
+        low_candidates, frozenset({low_candidates[0].story_key}), tracked_text=""
+    )
+    standard_promoted = deferrals_to_promote(
+        standard_candidates,
+        frozenset({standard_candidates[0].story_key}),
+        tracked_text="",
+    )
+
+    # Both tiers survive parsing AND promotion with the same completeness
+    # guarantee -- never silently dropped for either.
+    assert low_promoted == low_candidates
+    assert standard_promoted == standard_candidates
