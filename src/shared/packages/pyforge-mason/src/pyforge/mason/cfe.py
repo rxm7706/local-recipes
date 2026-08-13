@@ -110,6 +110,21 @@ A non-zero return code is data on the returned `CfeResult`, never raised as
 an exception (AD-4) -- only timeout expiry raises, as the new, distinct
 `CfeTimeoutError`.
 
+Story 2.6 adds the first two STREAM-mode named adapters, `build_native` and
+`build_docker` (FR-9), returning `models.BuildResult` rather than
+`CfeResult`: a build is expected to run for minutes, so it belongs on
+`run_streamed`, not `_invoke_captured`. Both translate `subprocess.
+TimeoutExpired` to `CfeTimeoutError` themselves, exactly like
+`_invoke_captured` does above -- `run_streamed` itself only re-raises the
+bare stdlib exception (its own kill-and-reap already ran before doing so).
+`build_native` resolves its script under the standard CFE-root subdirectory
+and runs it through `bash` -- a disclosed, isolated exception to this
+file's Python-only invocation convention, since it is a bash script, not a
+Python one. `build_docker` resolves its script at the CFE root's own top
+level instead -- the one `_CFE_SCRIPTS` entry outside the standard
+subdirectory -- and runs it under the resolved CFE interpreter like every
+other adapter in this file.
+
 `CFE_IMPORT_FLOOR` maps each floor dependency's pip/conda *distribution*
 name to its Python *import* name -- the two differ for `pyyaml` (imports as
 `yaml`) and `conda-forge-metadata` (imports as `conda_forge_metadata`), and
@@ -150,8 +165,8 @@ from pathlib import Path
 from typing import TextIO
 
 from .errors import CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError
-from .models import CfeResult
-from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND
+from .models import BuildResult, CfeResult
+from .resolve import ResolvedCfeRoot, STEP_NOT_FOUND, detect_native_build_config
 
 CFE_IMPORT_FLOOR: dict[str, str] = {
     "pyyaml": "yaml",
@@ -655,6 +670,8 @@ def run_streamed(
 _CFE_SCRIPTS: dict[str, str] = {
     "validate_recipe": "validate_recipe.py",
     "submit_pr": "submit_pr.py",
+    "build_native": "native-build.sh",
+    "build_docker": "build-locally.py",
     "diagnose_failure": "failure_analyzer.py",
     "optimize_recipe": "recipe_optimizer.py",
     "scan_for_vulnerabilities": "vulnerability_scanner.py",
@@ -662,22 +679,30 @@ _CFE_SCRIPTS: dict[str, str] = {
     "update_recipe_from_github": "github_updater.py",
 }
 """Every CFE script Mason invokes, declared exactly once (AD-3): adapter key
--> script filename, relative to a resolved CFE root's
-`.claude/scripts/conda-forge-expert/`. A named adapter function below (e.g.
-`validate_recipe`) looks up its own key here; no caller anywhere passes a
-script name or path directly. `validate_recipe.py` and `submit_pr.py` were
-Story 1.9's fixture-stubbed pair; Story 2.7 adds a third entry,
+-> script filename. A named adapter function below (e.g. `validate_recipe`)
+looks up its own key here; no caller anywhere passes a script name or path
+directly.
+
+Every entry's filename is relative to a resolved CFE root's
+`.claude/scripts/conda-forge-expert/`, EXCEPT `build_docker`, the one entry
+outside that standard subdirectory -- its script lives at the CFE root's
+own top level (spec Always boundary), so `build_docker` below builds that
+path itself rather than reusing `_invoke_captured`'s standard-subdirectory
+join.
+
+`validate_recipe.py` and `submit_pr.py` were Story 1.9's fixture-stubbed
+pair. Story 2.6 adds `build_native` -> `native-build.sh` and `build_docker`
+-> `build-locally.py`, the first two STREAM-mode entries. Story 2.7 adds
 `diagnose_failure` -> `failure_analyzer.py` (OQ-A1's answer for FR-10,
-resolved by reading the real script). Story 2.8 adds the fourth and fifth
-entries, `optimize_recipe` -> `recipe_optimizer.py` and
-`scan_for_vulnerabilities` -> `vulnerability_scanner.py` (OQ-A1's answer for
-FR-11/FR-12), each with a matching stub added to the fixture tree in the
-same story. Story 2.10 adds the sixth and seventh entries, `update_recipe`
--> `recipe_updater.py` and `update_recipe_from_github` -> `github_updater.py`
-(OQ-A1's answer for FR-14), each with a matching stub added to the fixture
-tree in the same story -- resolving the earlier "still open" note this
-docstring carried for Stories 2.9-2.10 (2.9 turned out to reuse the existing
-`submit_pr` entry rather than add a new one)."""
+resolved by reading the real script). Story 2.8 adds `optimize_recipe` ->
+`recipe_optimizer.py` and `scan_for_vulnerabilities` ->
+`vulnerability_scanner.py` (OQ-A1's answer for FR-11/FR-12), each with a
+matching stub added to the fixture tree in the same story. Story 2.10 adds
+`update_recipe` -> `recipe_updater.py` and `update_recipe_from_github` ->
+`github_updater.py` (OQ-A1's answer for FR-14), each with a matching stub
+added to the fixture tree in the same story -- resolving the earlier "still
+open" note this docstring carried for Stories 2.9-2.10 (2.9 turned out to
+reuse the existing `submit_pr` entry rather than add a new one)."""
 
 _JSON_LINE_START_PATTERN = re.compile(r"^[ \t]*[{\[]", re.MULTILINE)
 """Matches the first `{` or `[` that starts a line (optionally indented),
@@ -1111,4 +1136,161 @@ def update_recipe_from_github(
         root=root,
         interpreter=interpreter,
         timeout=timeout if timeout is not None else _UPDATE_RECIPE_FROM_GITHUB_TIMEOUT_SECONDS,
+    )
+
+
+# --- Story 2.6: STREAM-mode build adapters (AD-3, AD-25, FR-9) --------------
+
+_BUILD_NATIVE_TIMEOUT_SECONDS = 3600.0
+"""One hour: a native build can compile from source (the whole reason a
+build adapter exists, unlike a `validate_recipe`/`submit_pr` metadata-only
+operation) -- generously longer than either CAPTURE-mode adapter's timeout
+above."""
+
+_BUILD_DOCKER_TIMEOUT_SECONDS = 7200.0
+"""Two hours: the Docker/CI-parity path additionally pulls a build image and
+runs the same compile the native path performs inside it (per SKILL.md's
+own description of `build-locally.py`'s "alma9 sysroot, isolated build
+env"), so it is expected to run longer than the native path above; not
+benchmarked against a logged run of this specific project's own CI (review
+pass -- the prior wording overclaimed "this project's own CI experience")."""
+
+
+def build_native(
+    recipe_path: str,
+    *,
+    root: Path,
+    timeout: float | None = None,
+    stderr_sink: TextIO | None = None,
+) -> BuildResult:
+    """Invoke CFE's native build script (AD-3's `build_native` adapter,
+    FR-9, AD-25) and return a `BuildResult`.
+
+    Runs `["bash", str(script_path), recipe_path]` through `run_streamed`
+    -- STREAM mode, not CAPTURE: the script's stderr forwards live to
+    `stderr_sink` as it is produced (a native build is exactly the
+    multi-minute operation AD-25 exists for), and its stdout is captured
+    whole and returned unparsed (spec Never boundary: no Mason-side
+    interpretation of the script's own output, no scraping a filename out
+    of it, no pre-validation of `recipe_path`'s existence). Invoked through
+    `bash`, never the resolved CFE interpreter (spec Always boundary) -- it
+    is a bash script, not a Python one, the one disclosed exception to this
+    file's Python-only invocation convention.
+
+    `config` comes from `resolve.detect_native_build_config()`'s own
+    outcome for the CURRENT host -- never a caller-supplied override (spec
+    Never boundary: there is no `--platform`/config flag for this mode,
+    since the wrapped script has none either, and exposing one would let
+    Mason report a directory the script never actually used). `artifact_dir`
+    is `build_artifacts/<config>` when a config was detected, else `None` --
+    an unrecognized host still runs the script and lets it report its own
+    failure via `returncode`, never a Mason-level error.
+
+    `timeout` defaults to `_BUILD_NATIVE_TIMEOUT_SECONDS` when `None`.
+    `subprocess.TimeoutExpired` (from `run_streamed`, which re-raises the
+    bare stdlib exception -- its own kill-and-reap already ran before doing
+    so) is translated here to `CfeTimeoutError`, mirroring `_invoke_
+    captured`'s translation (spec Always boundary).
+
+    The script's own `"${@:2}"` passthrough (extra rattler-build flags like
+    `--test skip`/`--target-platform`) is a deliberate scope cut, not an
+    oversight (review pass): the spec's CLI surface is `recipe_path`/
+    `--docker`/`--config` only, and no story task calls for exposing it.
+    """
+    resolved_timeout = timeout if timeout is not None else _BUILD_NATIVE_TIMEOUT_SECONDS
+    script_path = (
+        root / ".claude" / "scripts" / "conda-forge-expert" / _CFE_SCRIPTS["build_native"]
+    )
+    config = detect_native_build_config()
+
+    try:
+        returncode, stdout = run_streamed(
+            ["bash", str(script_path), recipe_path],
+            timeout=resolved_timeout,
+            stderr_sink=stderr_sink,
+        )
+    except subprocess.TimeoutExpired:
+        raise CfeTimeoutError(script="build_native", timeout=resolved_timeout) from None
+
+    return BuildResult(
+        mode="native",
+        config=config,
+        returncode=returncode,
+        stdout=stdout,
+        artifact_dir=f"build_artifacts/{config}" if config is not None else None,
+    )
+
+
+def build_docker(
+    config: str,
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+    stderr_sink: TextIO | None = None,
+) -> BuildResult:
+    """Invoke CFE's Docker/CI-parity build script (AD-3's `build_docker`
+    adapter, FR-9, AD-25) and return a `BuildResult`.
+
+    Runs `[interpreter, str(script_path), config]` through `run_streamed`,
+    the same STREAM-mode shape `build_native` uses above. `script_path`
+    resolves at the CFE root's own top level (`root / <script filename>`),
+    NOT the standard `.claude/scripts/conda-forge-expert/` subdirectory
+    (spec Always boundary) -- the one `_CFE_SCRIPTS` entry outside it.
+    `interpreter` is the caller's already-resolved CFE interpreter
+    (`resolve.resolve_cfe_interpreter`'s outcome) -- unlike `build_native`,
+    this script IS a Python script, so it runs under it like every
+    CAPTURE-mode adapter above.
+
+    `config` is the caller-supplied `--config` value, required by `cli.py`'s
+    own usage check before this adapter is ever reached: the wrapped script
+    prompts interactively (reads stdin) when its own config argument is
+    omitted and more than one platform variant is discoverable, which would
+    hang against `run_streamed`'s `stdin=subprocess.DEVNULL` (spec Design
+    Notes). `artifact_dir` is always `build_artifacts/<config>` here --
+    never `None`, since `config` is never `None` on this path. This
+    function re-validates that itself (review pass) rather than trusting
+    `cli.py`'s gate alone: a blank/`None` `config` raises `ValueError` here,
+    before any subprocess spawns, mirroring `_invoke_captured`'s/
+    `run_streamed`'s own established "validate this function's own
+    arguments defensively" convention above -- `recipe.build()` is a public
+    use-case a future direct caller (e.g. `package.py`'s conda-forge ship
+    target, AD-11) could reach without going through `cli.py`'s parser at
+    all, and a caller-supplied `None` reaching `run_streamed`'s argv list
+    unvalidated would otherwise surface as a raw `TypeError` deep inside
+    `subprocess.Popen`, not a clean, actionable error. Not validated against
+    a fixed platform-name set, though: `build-locally.py` discovers valid
+    configs dynamically (`.ci_support/*.yaml`, `verify_config`), so a
+    hardcoded allowlist here would duplicate -- and could disagree with --
+    that judgment (spec Never boundary); an invalid-but-non-blank `config`
+    is still forwarded, and the wrapped script's own non-zero exit plus its
+    stdout enumerating valid configs is the real diagnostic.
+
+    `timeout` defaults to `_BUILD_DOCKER_TIMEOUT_SECONDS` when `None`. Same
+    `subprocess.TimeoutExpired` -> `CfeTimeoutError` translation as
+    `build_native` above.
+    """
+    if not config or not config.strip():
+        raise ValueError(
+            "build_docker(config=...) must be a non-blank platform-variant name "
+            "(e.g. 'linux64') -- the Docker/CI-parity script has no auto-detection"
+        )
+    resolved_timeout = timeout if timeout is not None else _BUILD_DOCKER_TIMEOUT_SECONDS
+    script_path = root / _CFE_SCRIPTS["build_docker"]
+
+    try:
+        returncode, stdout = run_streamed(
+            [interpreter, str(script_path), config],
+            timeout=resolved_timeout,
+            stderr_sink=stderr_sink,
+        )
+    except subprocess.TimeoutExpired:
+        raise CfeTimeoutError(script="build_docker", timeout=resolved_timeout) from None
+
+    return BuildResult(
+        mode="docker",
+        config=config,
+        returncode=returncode,
+        stdout=stdout,
+        artifact_dir=f"build_artifacts/{config}",
     )

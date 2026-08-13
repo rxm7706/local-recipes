@@ -129,18 +129,24 @@ class CfeUnresolvedError(MasonError):
 
 
 class CfeTimeoutError(MasonError):
-    """A CAPTURE-mode CFE invocation (`cfe.py::_invoke_captured`) exceeded
-    its mandatory timeout (FR-4, AD-4, NFR-14).
+    """A CFE invocation exceeded its mandatory timeout (FR-4, AD-4, AD-25,
+    NFR-14) -- either a CAPTURE-mode one (`cfe.py::_invoke_captured`) or a
+    STREAM-mode one (`cfe.py::build_native`/`build_docker`, Story 2.6),
+    which translate `run_streamed`'s bare `subprocess.TimeoutExpired` to
+    this same typed error themselves (`run_streamed` only re-raises the
+    stdlib exception; it does not know about Mason's error taxonomy).
 
     `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
-    is what guarantees "no orphaned process" here (spec Always boundary) --
-    this class only names the failure; it does not itself do any process
-    cleanup. `script` is the `_CFE_SCRIPTS` table key (e.g.
-    `"validate_recipe"`), not a filesystem path -- the same key a caller
-    passed to a named adapter function, so the message points at something a
-    user or a future `--cfe-timeout` override can act on. `timeout` is the
-    number of seconds that elapsed before the child was killed, echoed
-    verbatim into the message so a user can decide whether to raise it.
+    (CAPTURE mode), or `run_streamed`'s equivalent explicit kill-and-reap on
+    `BaseException` (STREAM mode), is what guarantees "no orphaned process"
+    here (spec Always boundary) -- this class only names the failure; it
+    does not itself do any process cleanup. `script` is the `_CFE_SCRIPTS`
+    table key (e.g. `"validate_recipe"`, `"build_native"`), not a filesystem
+    path -- the same key a caller passed to a named adapter function, so the
+    message points at something a user or a future `--cfe-timeout` override
+    can act on. `timeout` is the number of seconds that elapsed before the
+    child was killed, echoed verbatim into the message so a user can decide
+    whether to raise it.
     """
 
     def __init__(self, script: str, timeout: float) -> None:

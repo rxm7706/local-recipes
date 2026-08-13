@@ -4,7 +4,14 @@ all against synthetic `tmp_path` trees (AD-5).
 
 Story 1.6 extends this file with `resolve_cfe_interpreter`'s coverage: the
 same flag -> environment -> fallback precedence, but with no not-found
-terminal state -- `sys.executable` is a guaranteed match."""
+terminal state -- `sys.executable` is a guaranteed match.
+
+Story 2.6 extends this file with `detect_native_build_config`'s coverage:
+the five known `platform.system()`/`platform.machine()` host pairs (plus
+alternate machine spellings for the same architecture) and one unrecognized
+pair -> `None`, via `monkeypatch` on `platform.system`/`platform.machine`
+(never a real `uname` invocation -- the function itself never spawns a
+process)."""
 
 from __future__ import annotations
 
@@ -16,7 +23,7 @@ import pytest
 from pyforge.mason.resolve import (
     STEP_CWD_WALK, STEP_ENVIRONMENT, STEP_FLAG, STEP_NOT_FOUND,
     STEP_RUNNING_INTERPRETER, ResolvedCfeInterpreter, ResolvedCfeRoot,
-    resolve_cfe_interpreter, resolve_cfe_root,
+    detect_native_build_config, resolve_cfe_interpreter, resolve_cfe_root,
 )
 
 _ENV_KEY = "MASON_CFE_ROOT"
@@ -234,3 +241,75 @@ def test_resolved_cfe_interpreter_is_frozen():
     result = ResolvedCfeInterpreter(path=sys.executable, step=STEP_RUNNING_INTERPRETER)
     with pytest.raises(AttributeError):
         result.step = STEP_FLAG  # type: ignore[misc]
+
+
+# --- Story 2.6: detect_native_build_config -- I/O & Edge-Case Matrix -------
+
+@pytest.mark.parametrize(
+    ("system", "machine", "expected"),
+    [
+        ("Linux", "x86_64", "linux64"),
+        ("Linux", "amd64", "linux64"),
+        ("Linux", "aarch64", "linux_aarch64"),
+        ("Linux", "arm64", "linux_aarch64"),
+        ("Darwin", "arm64", "osxarm64"),
+        ("Darwin", "aarch64", "osxarm64"),
+        ("Darwin", "x86_64", "osx64"),
+        ("Windows", "AMD64", "win64"),
+        ("Windows", "ARM64", "win64"),
+    ],
+)
+def test_detect_native_build_config_maps_every_known_host_pair(
+    monkeypatch, system, machine, expected,
+):
+    monkeypatch.setattr("pyforge.mason.resolve.platform.system", lambda: system)
+    monkeypatch.setattr("pyforge.mason.resolve.platform.machine", lambda: machine)
+
+    assert detect_native_build_config() == expected
+
+
+@pytest.mark.parametrize(
+    ("system", "machine"),
+    [
+        ("SunOS", "sparc64"),
+        ("Linux", "sparc64"),
+        ("Darwin", "sparc64"),
+        ("FreeBSD", "amd64"),
+    ],
+)
+def test_detect_native_build_config_returns_none_for_an_unrecognized_host(
+    monkeypatch, system, machine,
+):
+    """Never a guess (spec Never boundary): an unmapped `platform.system()`/
+    `platform.machine()` pair returns `None` rather than a default config --
+    the native build script still runs and reports its own failure via exit
+    code."""
+    monkeypatch.setattr("pyforge.mason.resolve.platform.system", lambda: system)
+    monkeypatch.setattr("pyforge.mason.resolve.platform.machine", lambda: machine)
+
+    assert detect_native_build_config() is None
+
+
+def test_detect_native_build_config_never_raises(monkeypatch):
+    monkeypatch.setattr("pyforge.mason.resolve.platform.system", lambda: "PlanNine")
+    monkeypatch.setattr("pyforge.mason.resolve.platform.machine", lambda: "mips")
+
+    assert detect_native_build_config() is None
+
+
+def test_detect_native_build_config_spawns_no_process(monkeypatch):
+    """AD-5: this function must never shell out to `uname` itself -- proven
+    by making `platform.system`/`platform.machine` the only two calls
+    permitted to answer, with no `subprocess` import anywhere in
+    `resolve.py` (also enforced structurally by
+    `tests/meta/test_dependency_direction.py`)."""
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "pyforge.mason.resolve.platform.system", lambda: calls.append("system") or "Linux",
+    )
+    monkeypatch.setattr(
+        "pyforge.mason.resolve.platform.machine", lambda: calls.append("machine") or "x86_64",
+    )
+
+    assert detect_native_build_config() == "linux64"
+    assert calls == ["system", "machine"]
