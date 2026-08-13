@@ -55,7 +55,7 @@ development_status:
   14-1-the-leaf-exists-and-is-provably-a-leaf: done
   14-2-atomic-write-has-one-implementation: done
   14-3-one-lattice-one-envelope-one-exception-root: done
-  14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated: backlog
+  14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated: done
   15-1-one-command-refreshes-the-fleets-homes: backlog
   15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check: backlog
   16-1-one-resolver-derived-sources-loud-failures: backlog
