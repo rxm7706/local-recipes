@@ -41,6 +41,13 @@ set only), so they need none of ``_build_global_flags_parser``'s
 ``argparse.SUPPRESS``/``getattr`` dance and read back as plain ``bool``s
 off the namespace.
 
+Story 2.10 registers a fifth verb, ``recipe update``: the same
+``recipe_path`` positional, plus three verb-own flags -- ``--dry-run``/
+``--github`` (``action="store_true"``) and ``--repo`` (an optional string,
+``metavar="OWNER/REPO"``) -- and a fourth, ``--pre`` (``action=
+"store_true"``), none part of the shared ``global_flags`` parent, same
+reasoning as ``submit``'s own two flags above.
+
 argparse, not click/typer: FR-41 forbids a CLI-framework dependency, and the
 sibling stations dispatch the same way.
 """
@@ -83,6 +90,11 @@ _RECIPE_SCAN_HELP = (
 _RECIPE_SUBMIT_HELP = (
     "submit a recipe to conda-forge/staged-recipes via CFE's two-phase flow (dry run by "
     "default; --yes to confirm a real push/PR, --prepare-only to stop after pushing the branch)"
+)
+_RECIPE_UPDATE_HELP = (
+    "bump a recipe to its latest upstream version via CFE's autotick scripts (PyPI by "
+    "default; --github for GitHub Releases; shows the plan before writing, in both the "
+    "default and --dry-run paths)"
 )
 
 # AD-13: every global setting has a flag and an environment-variable form,
@@ -458,6 +470,46 @@ def build_parser() -> argparse.ArgumentParser:
         "dry run unless --yes is also given)",
     )
 
+    # Story 2.10: mason recipe update <recipe_path> [--dry-run] [--github]
+    # [--repo OWNER/REPO] [--pre] -- `recipe_path` is passed straight through
+    # with no Mason-side existence check or interpretation (spec Always
+    # boundary), mirroring diagnose/optimize/scan's own recipe_path, not
+    # submit's one disclosed exception. `--dry-run`/`--github`/`--repo`/
+    # `--pre` are per-verb flags, not part of the shared `global_flags`
+    # parent (AD-13's closed six-knob set), so they need no
+    # `argparse.SUPPRESS`/`getattr` dance -- `ns.dry_run`/`ns.github`/
+    # `ns.pre` default to plain `False`, `ns.repo` to `None`.
+    update_parser = _noun_verbs["recipe"].add_parser(
+        "update",
+        help=_RECIPE_UPDATE_HELP,
+        description=_RECIPE_UPDATE_HELP,
+        parents=[global_flags],
+    )
+    update_parser.add_argument(
+        "recipe_path",
+        help="path to a v1 recipe.yaml file (CFE's autotick scripts parse its context "
+        "block -- a Jinja-templated v0 meta.yaml is not valid YAML on its own and will "
+        "not parse); with --github, a directory is also accepted",
+    )
+    update_parser.add_argument(
+        "--dry-run", action="store_true",
+        help="compute and show the plan without writing (default: writes the "
+        "field-scoped update for real)",
+    )
+    update_parser.add_argument(
+        "--github", action="store_true",
+        help="use CFE's GitHub Releases autotick bot instead of the default PyPI one",
+    )
+    update_parser.add_argument(
+        "--repo", default=None, metavar="OWNER/REPO",
+        help="GitHub repo override (only forwarded to CFE with --github; inert otherwise)",
+    )
+    update_parser.add_argument(
+        "--pre", action="store_true",
+        help="include pre-release versions (only forwarded to CFE with --github; inert "
+        "otherwise)",
+    )
+
     # Review pass (2026-08-12): `metavar="{}"` was never updated once a verb
     # was actually registered, so `mason recipe <bad-verb>` printed the
     # literal token `{}` in its usage/error text instead of `{diagnose}`.
@@ -641,14 +693,58 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_OK
 
+        if ns.noun == "recipe" and ns.verb == "update":
+            # FR-14: delegates to CFE's autotick scripts via recipe.py.
+            # `recipe.update` raises `CfeUnresolvedError` before any
+            # subprocess spawns if the CFE root is unresolved (spec Always
+            # boundary) -- caught by the dedicated branch below, same as
+            # every other CFE-dependent path. `ns.dry_run`/`ns.github`/
+            # `ns.repo`/`ns.pre` are plain values (not `getattr`-guarded:
+            # these four flags live only on this verb's own parser, never on
+            # the shared `global_flags` parent -- see their registration
+            # comment above), passed straight through; `recipe.update` does
+            # its own dispatch/argv composition.
+            #
+            # Review pass (2026-08-12): `--repo`/`--pre` are silently inert
+            # without `--github` (spec Always boundary -- intentional, not a
+            # bug), but a user who forgets `--github` gets no signal that
+            # their flag was ignored and the PyPI path ran instead. A
+            # `logging.warning` (stderr, same channel every other diagnostic
+            # uses) makes that silence loud rather than changing the
+            # underlying inert-not-rejected contract.
+            if (ns.repo or ns.pre) and not ns.github:
+                logging.warning(
+                    "mason recipe update: --repo/--pre have no effect without --github "
+                    "-- ignored"
+                )
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = recipe.update(
+                ns.recipe_path,
+                dry_run=ns.dry_run,
+                github=ns.github,
+                github_repo=ns.repo,
+                allow_prerelease=ns.pre,
+                cfe_root_arg=getattr(ns, "cfe_root", None),
+                cfe_python_arg=getattr(ns, "cfe_python", None),
+                cfe_timeout_arg=_resolve_optional_float(
+                    getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT
+                ),
+                environ=os.environ,
+                start_directory=Path.cwd(),
+            )
+            render.write(
+                fmt, sys.stdout, "recipe update", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK
+
         # Unreachable now for every verb-noun pair except `recipe
-        # diagnose`/`recipe optimize`/`recipe scan`/`recipe submit` above,
-        # each handled by its own branch: `package`/`environment` still
-        # register no verbs at all, and `recipe` registers no verb beyond
-        # those four, so argparse itself rejects any other token here as an
-        # invalid choice before `ns.verb` could ever hold it. Kept only so a
-        # later story that populates another verb has somewhere to land its
-        # dispatch.
+        # diagnose`/`recipe optimize`/`recipe scan`/`recipe submit`/`recipe
+        # update` above, each handled by its own branch: `package`/
+        # `environment` still register no verbs at all, and `recipe`
+        # registers no verb beyond those five, so argparse itself rejects
+        # any other token here as an invalid choice before `ns.verb` could
+        # ever hold it. Kept only so a later story that populates another
+        # verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

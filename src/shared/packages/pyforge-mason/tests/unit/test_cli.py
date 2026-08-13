@@ -53,6 +53,15 @@ the `ShipTargetResult.state` field (a `StrEnum`) serializes as a plain
 string (`"pending"`), not `"ShipState.PENDING"` or a `TypeError` -- pinning
 `models.py`'s own Design Notes claim about `dataclasses.asdict` +
 `json.dumps` interaction.
+
+Story 2.10 adds a fifth registered verb, `recipe update`, mirroring the same
+mocked-dispatch + real-fixture-end-to-end pattern as `recipe diagnose`
+(returns the raw `CfeResult`, like diagnose/optimize/scan -- not a
+`ShipTargetResult`, unlike submit). Coverage the prior four verbs don't
+need: `--dry-run`/`--github`/`--repo`/`--pre` all forward straight through
+to `recipe.update` unresolved (no inversion, unlike submit's `--yes`), and
+one real-fixture test exercises the `--github` dispatch path against the
+new `github_updater.py` stub.
 """
 
 from __future__ import annotations
@@ -454,14 +463,14 @@ def test_recipe_diagnose_verb_metavar_reflects_the_registered_verb(capsys):
     """Review pass: `metavar="{}"` was never updated once a verb was
     actually registered, so `mason recipe <bad-verb>` printed the literal
     token `{}` in its usage/error text instead of
-    `{diagnose,optimize,scan,submit}`. Story 2.8 widened this from
-    `{diagnose}` to three registered verbs; Story 2.9 widens it again to
-    all four, in registration order."""
+    `{diagnose,optimize,scan,submit,update}`. Story 2.8 widened this from
+    `{diagnose}` to three registered verbs; Story 2.9 widened it to four;
+    Story 2.10 widens it again to all five, in registration order."""
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["recipe", "bogus-verb"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "{diagnose,optimize,scan,submit}" in err
+    assert "{diagnose,optimize,scan,submit,update}" in err
     assert "argument {}:" not in err
 
 
@@ -1070,6 +1079,280 @@ def test_recipe_submit_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypat
     assert doc["data"]["target"] == "conda-forge"
     assert doc["data"]["state"] == "pending"
     assert doc["data"]["reference"] == "https://github.com/example/example/pull/1"
+
+
+# --- Story 2.10: `mason recipe update <recipe_path>` ------------------------
+
+_FIXED_UPDATE_RESULT = CfeResult(
+    returncode=0,
+    stdout='{"success": true, "updated": true, "new_version": "9.9.9", '
+    '"message": "Recipe updated successfully."}',
+    stderr="",
+    json_body={
+        "success": True, "updated": True, "new_version": "9.9.9",
+        "message": "Recipe updated successfully.",
+    },
+)
+
+
+def test_recipe_update_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "update", "--help"])
+    assert exc.value.code == 0
+    assert "update" in capsys.readouterr().out
+
+
+def test_recipe_update_requires_the_recipe_path_positional(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["recipe", "update"])
+    assert exc.value.code == 2
+    assert "recipe_path" in capsys.readouterr().err
+
+
+def test_recipe_update_parses_the_recipe_path_positional_and_defaults():
+    """`--dry-run`/`--github`/`--pre` default to `False`, `--repo` to `None`
+    -- these are plain per-verb flags, not part of the `argparse.SUPPRESS`-
+    defaulted global set (registration comment in `cli.py`)."""
+    ns = build_parser().parse_args(["recipe", "update", "recipes/foo"])
+    assert ns.noun == "recipe"
+    assert ns.verb == "update"
+    assert ns.recipe_path == "recipes/foo"
+    assert ns.dry_run is False
+    assert ns.github is False
+    assert ns.repo is None
+    assert ns.pre is False
+
+
+def test_recipe_update_parses_dry_run_github_repo_and_pre_flags():
+    ns = build_parser().parse_args([
+        "recipe", "update", "recipes/foo",
+        "--dry-run", "--github", "--repo", "owner/repo", "--pre",
+    ])
+    assert ns.dry_run is True
+    assert ns.github is True
+    assert ns.repo == "owner/repo"
+    assert ns.pre is True
+
+
+def test_recipe_update_text_mode_renders_the_cfe_result_fields(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    mock_update.assert_called_once()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "recipe update: ok" in out.out
+    assert "Recipe updated successfully." in out.out
+    assert not out.out.lstrip().startswith("{")
+
+
+def test_recipe_update_json_mode_data_matches_dataclasses_asdict_of_the_result(capsys):
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main(
+            ["recipe", "update", "recipes/foo", "--format", "json"],
+        ) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "recipe update"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == json.loads(json.dumps(dataclasses.asdict(_FIXED_UPDATE_RESULT)))
+
+
+def test_recipe_update_passes_recipe_path_and_resolved_flags_through(monkeypatch):
+    """`cli.py` must pass the raw `recipe_path` positional plus the
+    unresolved `--cfe-root`/`--cfe-python` flag values, the real
+    `os.environ`, and `Path.cwd()` -- `recipe.update` does its own
+    resolution, mirroring `diagnose`'s established contract."""
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main([
+            "recipe", "update", "recipes/foo",
+            "--cfe-root", "/explicit/root", "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    mock_update.assert_called_once()
+    args, kwargs = mock_update.call_args
+    assert args == ("recipes/foo",)
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_python_arg"] == "/explicit/python"
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+
+
+def test_recipe_update_no_dry_run_flag_passes_dry_run_false():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["dry_run"] is False
+
+
+def test_recipe_update_dry_run_flag_passes_dry_run_true():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo", "--dry-run"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["dry_run"] is True
+
+
+def test_recipe_update_github_repo_and_pre_flags_pass_straight_through():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main([
+            "recipe", "update", "recipes/foo",
+            "--github", "--repo", "owner/repo", "--pre",
+        ]) == EXIT_OK
+
+    kwargs = mock_update.call_args.kwargs
+    assert kwargs["github"] is True
+    assert kwargs["github_repo"] == "owner/repo"
+    assert kwargs["allow_prerelease"] is True
+
+
+def test_recipe_update_repo_and_pre_default_to_inert_values_without_github():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    kwargs = mock_update.call_args.kwargs
+    assert kwargs["github"] is False
+    assert kwargs["github_repo"] is None
+    assert kwargs["allow_prerelease"] is False
+
+
+def test_recipe_update_warns_on_stderr_when_repo_given_without_github(capsys):
+    """Review pass (2026-08-12): `--repo`/`--pre` stay inert without
+    `--github` (unchanged contract), but the user now gets a stderr signal
+    instead of silent divergence between what they asked for and what ran."""
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main(["recipe", "update", "recipes/foo", "--repo", "owner/repo"]) == EXIT_OK
+
+    err = capsys.readouterr().err
+    assert "--repo/--pre have no effect without --github" in err
+
+
+def test_recipe_update_warns_on_stderr_when_pre_given_without_github(capsys):
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main(["recipe", "update", "recipes/foo", "--pre"]) == EXIT_OK
+
+    err = capsys.readouterr().err
+    assert "--repo/--pre have no effect without --github" in err
+
+
+def test_recipe_update_does_not_warn_when_repo_and_pre_given_with_github(capsys):
+    with patch("pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT):
+        assert main([
+            "recipe", "update", "recipes/foo", "--github", "--repo", "owner/repo", "--pre",
+        ]) == EXIT_OK
+
+    err = capsys.readouterr().err
+    assert "have no effect" not in err
+
+
+def test_recipe_update_resolves_cfe_timeout_flag_via_the_shared_resolver():
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main([
+            "recipe", "update", "recipes/foo", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_recipe_update_cfe_timeout_env_var_applies_without_the_flag(monkeypatch):
+    monkeypatch.setenv("MASON_CFE_TIMEOUT", "45")
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["cfe_timeout_arg"] == 45.0
+
+
+def test_recipe_update_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.recipe.update", return_value=_FIXED_UPDATE_RESULT,
+    ) as mock_update:
+        assert main(["recipe", "update", "recipes/foo"]) == EXIT_OK
+
+    assert mock_update.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_recipe_update_cfe_unresolved_error_returns_exit_cfe_unavailable(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.update",
+        side_effect=CfeUnresolvedError(),
+    ):
+        rc = main(["recipe", "update", "recipes/foo"])
+
+    assert rc == EXIT_CFE_UNAVAILABLE
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeUnresolvedError())
+    assert "Traceback" not in err
+
+
+def test_recipe_update_cfe_timeout_error_returns_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.recipe.update",
+        side_effect=CfeTimeoutError(script="update_recipe", timeout=5.0),
+    ):
+        rc = main(["recipe", "update", "recipes/foo", "--cfe-timeout", "5"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == str(CfeTimeoutError(script="update_recipe", timeout=5.0))
+    assert "Traceback" not in err
+
+
+def test_recipe_update_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking: the whole `recipe update` path (default, PyPI) runs
+    against Story 1.9's fixture CFE root (AD-16), using Story 2.10's new
+    `recipe_updater.py` stub."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    rc = main([
+        "recipe", "update", "recipes/example",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe update"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["new_version"] == "9.9.9"
+
+
+def test_recipe_update_github_against_fake_cfe_root_end_to_end(fake_cfe_root, monkeypatch, capsys):
+    """No mocking: the `--github` dispatch path runs against Story 2.10's
+    new `github_updater.py` stub."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    rc = main([
+        "recipe", "update", "recipes/example", "--github", "--repo", "owner/repo", "--pre",
+        "--cfe-root", str(fake_cfe_root), "--cfe-python", sys.executable,
+        "--format", "json",
+    ])
+
+    assert rc == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["command"] == "recipe update"
+    assert doc["status"] == "ok"
+    assert doc["data"]["json_body"]["success"] is True
+    assert doc["data"]["json_body"]["latest_tag"] == "v9.9.9"
 
 
 @pytest.mark.parametrize("argv", [
