@@ -14,7 +14,6 @@ import time
 from pathlib import Path
 
 import pytest
-
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 

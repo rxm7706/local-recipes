@@ -1072,9 +1072,18 @@ class BmadLoopHarness:
             pid = PosixProcess().spawn_detached(argv, cwd=project, log_path=log_path)
         except ProcessError as exc:
             cause = exc.__cause__
+            # `cause` is `None` for `PosixProcess`'s own empty-argv guard (it
+            # raises with no `from` clause) -- `exc` itself already carries
+            # that message, so fall back to it rather than stringifying/
+            # chaining from a bare `None` (Story 14.4 review finding, mirrors
+            # vcs_git.py/forge_gh.py's own `_run`).
             if str(exc).startswith("cannot open log"):
-                raise HarnessError(f"cannot open spin log {log_path}: {cause}") from cause
-            raise HarnessError(f"cannot launch bmad-loop run: {cause}") from cause
+                raise HarnessError(
+                    f"cannot open spin log {log_path}: {cause or exc}"
+                ) from (cause or exc)
+            raise HarnessError(
+                f"cannot launch bmad-loop run: {cause or exc}"
+            ) from (cause or exc)
 
         harness_run_id = self._poll_for_harness_run_id(log_path)
         return SpinResult(pid=pid, harness_run_id=harness_run_id)
