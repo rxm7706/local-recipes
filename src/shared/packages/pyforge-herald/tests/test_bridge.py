@@ -29,6 +29,7 @@ from pyforge.herald import (
     notices,
     progress,
     registry,
+    scheduler,
     state,
     watch,
 )
@@ -143,6 +144,7 @@ _BRIDGE_CORE_MODULES = (
     notices,
     locking,
     db,
+    scheduler,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -176,7 +178,10 @@ read-modify-write spans (Story 13.3 moved the other three modules onto
 connection/migration/transaction module that replaced ``locking.py`` as
 ``progress.py``/``claims.py``/``notices.py``'s concurrency primitive --
 same local-storage concern, no transport call, no inference SDK, no argv
-parsing."""
+parsing. ``scheduler.py`` (Story 13.5) joins for the same reason once
+more: it only composes ``claims.revalidate_all``/``progress.write_snapshot``
+into ``herald scheduler run``'s cron-facing job -- no transport call, no
+inference SDK, no argv parsing (that's ``cli.py``'s own job)."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name

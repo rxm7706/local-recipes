@@ -23,9 +23,13 @@ of a PyForge Guild station's work over time:
    closed) and an archive.
 
 **Architecture, in one sentence:** every record in Moments 2-4 is created
-by an operator running an explicit `herald` command; there is no webhook,
-database, or scheduled job anywhere in this package. See
-`docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
+by an operator running an explicit `herald` command; there is no webhook
+or hosted service anywhere in this package. A local SQLite database
+(`.herald/herald.db`, Story 13.3) backs storage, and `herald scheduler
+run` (Story 13.5) keeps evidence validation and the progress snapshot
+current — an operator can point an optional local `cron` entry at it
+(see [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)).
+See `docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
 live-backend version of this system that hasn't been built yet, and why.
 
 Two surfaces exist side by side:
@@ -195,10 +199,11 @@ drop it and re-`create` the claim) and try again.
 **Q: How do I know if a published claim's evidence is still good weeks
 later?**
 
-There's no weekly job doing this automatically (the original spec's
-async re-validation cron is part of the deferred live-backend Dream).
 Run `herald success validate <claim-id>` or `herald success validate
---all` by hand — see
+--all` by hand, or install `herald scheduler run` (Story 13.5) as a
+weekly `crontab` entry so it happens without remembering — see [How to
+run the scheduled job](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
+in `cli-runbooks.md` and
 [`automation-troubleshooting.md`](automation-troubleshooting.md).
 
 **Q: Where's the REST API / database?**

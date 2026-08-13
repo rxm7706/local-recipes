@@ -6,11 +6,16 @@ troubleshooting section for the failure modes that actually exist in this
 codebase today.
 
 **Scope note.** Herald's Moments 2-4 (Progress/Success/Operations) are
-**local-storage, CLI-triggered** — there is no webhook server, no database,
-no cron scheduler anywhere in this package. Every record (a progress entry,
+**local-storage, CLI-triggered** — there is no webhook server and no
+hosted scheduler anywhere in this package. Storage is a local SQLite
+file, `.herald/herald.db` (Story 13.3). Every record (a progress entry,
 a claim, a notice) is created by an operator running an explicit `herald`
-command by hand. See `docs/dreams/herald-moments-2-4-live-backend.md` for
-the deferred live-backend version and why the scope was cut down. This
+command by hand; the one automated exception is `herald scheduler run`'s
+derived-state refresh (Story 13.5, see [How to run the scheduled
+job](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
+below), which an operator can point an optional local `cron` entry at.
+See `docs/dreams/herald-moments-2-4-live-backend.md` for the deferred
+live-backend version and why the rest of the scope was cut down. This
 runbook documents the system as it exists, not that Dream.
 
 All examples below were captured by actually running `herald` (built via
@@ -128,6 +133,72 @@ no thesis yet). Evidence links are optional per-type flags on `create`:
 
 Other read commands: `herald success list [--status draft|published|closed]`
 and `herald success get <claim-id>` (full detail, including edit history).
+
+## How to run the scheduled job (evidence revalidation and progress snapshot)
+
+`herald scheduler run` (Story 13.5) composes the two operations above that
+otherwise need remembering by hand into one invocation: it revalidates
+every claim's evidence (the same `claims.revalidate_all` call `herald
+success validate --all` makes) and rewrites the Progress tab's
+`progress.json` snapshot (the same `progress.write_snapshot` call
+`scripts/export_progress_snapshot.py` makes). Never requires the operator
+role — like `success validate`, it only refreshes derived state, never
+claim/progress content.
+
+```
+$ herald scheduler run --repo-root /path/to/repo
+progress: 1 record(s) aggregated -> /path/to/repo/web/public/progress.json
+evidence: 1 claim(s) revalidated, 1 with broken evidence: 8e90b277-0190-4742-bda3-713ccc0bd486
+```
+
+A claim with broken evidence is named, never raised — the same
+never-raise contract `success validate` has (exit code 0 either way). With
+`--json`:
+
+```
+$ herald scheduler run --repo-root /path/to/repo --json
+{"claims_checked": 1, "broken_evidence_claim_ids": ["8e90b277-0190-4742-bda3-713ccc0bd486"], "records_aggregated": 1, "snapshot_path": "/path/to/repo/web/public/progress.json"}
+```
+
+`--out-dir` overrides where `progress.json` is written (default:
+`<repo-root>/web/public`, matching `export_progress_snapshot.py`'s own
+default for a normal checkout).
+
+### Installing the weekly trigger
+
+Both jobs run unconditionally on every invocation — the ~weekly
+evidence-staleness window (`evidence.STALE_AFTER`) is enforced by how
+often you run this command, not by anything inside it. Install a local
+`crontab` entry (never a GitHub Actions workflow: `.herald/` is
+gitignored, per-operator state, so a GitHub-hosted runner would run this
+against an empty database every time — see this story's spec Design
+Notes for the full reasoning). `cd` into `pyforge-herald`'s own package
+directory first, not an arbitrary checkout: unlike `deck`'s `--repo-root`
+(any `presentations/<slug>/`-holding project), `scheduler`/`progress`/
+`success`/`notice` treat `--repo-root` as *this package's own* checkout
+by convention — it is where `.herald/herald.db` lives AND (via
+`--out-dir`'s default) where the web dashboard's `web/public/` actually
+is; pointing it elsewhere silently refreshes an unrelated `web/public`
+instead of the one `npm run dev` serves. The `flock -n` wrapper skips a
+run outright rather than overlapping with one still in progress (evidence
+revalidation makes one real HTTP request per link, unbounded by claim
+count, so a slow run and the next week's firing could otherwise overlap):
+
+```cron
+# Weekly Sunday 03:00 -- evidence revalidation + progress snapshot
+# refresh (Story 13.5). Runs from the same checkout an operator actually
+# uses `herald` from -- .herald/herald.db is gitignored, so a different
+# checkout (or a CI runner) has nothing real to revalidate. flock -n
+# skips this firing outright if the previous run is still going, rather
+# than overlapping two writers against the same .herald/herald.db.
+0 3 * * 0  cd /path/to/repo/src/shared/packages/pyforge-herald && \
+    flock -n /tmp/herald-scheduler.lock \
+    pixi run -e pyforge-herald herald scheduler run \
+        >> ~/.cache/herald-scheduler.log 2>&1
+```
+
+Install with `crontab -e`. Adjust the path for your own checkout; there
+is no packaged default location this can assume.
 
 ## Satisfying the operator-role gate
 
@@ -271,7 +342,7 @@ Argparse-level usage errors, exit code 2:
 ```
 $ herald bogus
 usage: herald [-h] [--version] command ...
-herald: error: unknown command 'bogus'; valid subcommands: 'deck', 'progress', 'success', 'notice'
+herald: error: unknown command 'bogus'; valid subcommands: 'deck', 'progress', 'success', 'notice', 'scheduler'
 See --help for available options.
 ```
 
@@ -281,16 +352,22 @@ not an argparse usage error, exit code 1:
 ```
 $ herald
 usage: herald [-h] [--version] command ...
-herald: error: no command given; valid subcommands: deck, progress, success, notice
+herald: error: no command given; valid subcommands: deck, progress, success, notice, scheduler
 ```
 
 ### What is *not* a failure mode here
 
-There is no webhook to "not fire," no cron job to "miss," and no
-async re-validation job to fail silently — none of that infrastructure
-exists in this codebase. If you find yourself debugging why a PR merge
-didn't automatically create a progress record or a claim, stop: it can't,
-by design, today. Run the CLI command yourself (see
+There is no webhook to "not fire," and no async re-validation job to fail
+silently — neither exists in this codebase. `herald scheduler run`
+(Story 13.5, [above](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot))
+is the one piece of periodic infrastructure that does exist, and it is
+opt-in and operator-installed (a local `crontab` entry) — a *missed* run
+of that cron entry (the machine was off, the entry was never installed)
+is a real, if narrow, failure mode, distinct from "there is no automation
+to miss" for everything else in this guide. If you find yourself
+debugging why a PR merge didn't automatically create a progress record or
+a claim, stop: it can't, by design, today — that part is still entirely
+CLI-triggered. Run the CLI command yourself (see
 [`operator-guide.md`](operator-guide.md)'s FAQ). The live-automation
 version is tracked as a Dream, not a bug:
 `docs/dreams/herald-moments-2-4-live-backend.md`.

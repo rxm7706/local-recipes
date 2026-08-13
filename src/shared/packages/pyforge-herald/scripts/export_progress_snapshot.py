@@ -13,6 +13,12 @@ hard failure) once this story stopped writing that file at all. This
 script goes through ``progress.py``'s own public read function instead, so
 it can never drift from what the CLI itself reports.
 
+``export_progress_snapshot`` itself is a thin ``--repo-root``-resolving
+wrapper around ``progress.write_snapshot`` (Story 13.5, which also uses
+that function from ``scheduler.py``'s cron-facing ``herald scheduler
+run``) -- the actual write logic lives in exactly one place, not
+duplicated here a third time.
+
 Usage:
     python scripts/export_progress_snapshot.py [--repo-root PATH] [--out-dir PATH]
 """
@@ -20,9 +26,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-from dataclasses import asdict
 from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
@@ -41,13 +45,13 @@ DEFAULT_OUT_DIR = _PACKAGE_ROOT / "web" / "public"
 def export_progress_snapshot(*, repo_root: Path, out_dir: Path) -> Path:
     """Write ``out_dir/progress.json`` -- every recorded progress entry
     under ``repo_root/.herald/herald.db``, newest first (``list_records``'s
-    own default order). Returns the written path."""
+    own default order). Returns the written path.
+
+    Delegates to ``progress.write_snapshot`` (Story 13.5) -- this
+    function's whole job is resolving ``repo_root`` to the actual database
+    path the same way every other ``herald`` entry point does."""
     progress_path = repo_root / progress.DEFAULT_PROGRESS_PATH
-    payload = [asdict(record) for record in progress.list_records(progress_path)]
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "progress.json"
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    return out_path
+    return progress.write_snapshot(progress_path, out_dir)
 
 
 def main(argv: list[str] | None = None) -> int:
