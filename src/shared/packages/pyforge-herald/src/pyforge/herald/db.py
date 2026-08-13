@@ -193,7 +193,34 @@ def _has_legacy_data(db_path: Path) -> bool:
     return any((db_path.parent / name).exists() for name in _LEGACY_FILENAMES)
 
 
-def _empty_read_connection() -> sqlite3.Connection:
+def _is_definitely_absent(db_path: Path) -> bool:
+    """Whether ``db_path`` is DEFINITIVELY not there, as opposed to merely
+    un-``stat``-able.
+
+    Deliberately NOT ``db_path.exists()``, for the reason
+    ``notices._require_existing_index`` and ``state.read`` both spell out:
+    ``Path.exists`` returns ``False`` whenever the stat fails for ANY
+    reason (an unsearchable parent, a symlink loop, EACCES, EIO), so a
+    database that exists but cannot be read would be indistinguishable
+    from one that was never created. Routed through ``exists()``, every
+    read of such a store was served from the empty in-memory database
+    below and returned ``[]``/"not found" -- and since all three exporter
+    scripts are pure readers, a transient permissions fault silently
+    rewrote healthy ``web/public/*.json`` snapshots to ``[]`` with exit
+    code 0, while the write path on the identical store correctly raised.
+    Only a definitively absent path (or a non-directory parent component)
+    reads as empty now; every other stat failure falls through to
+    ``_connect``, whose own error handling reports the real fault."""
+    try:
+        db_path.stat()
+    except (FileNotFoundError, NotADirectoryError):
+        return True
+    except OSError:
+        return False
+    return False
+
+
+def _empty_read_connection(db_path: Path) -> sqlite3.Connection:
     """A throwaway in-memory database carrying the current schema and no
     rows -- what ``connection()`` hands a read of a store that does not
     exist yet.
@@ -207,14 +234,35 @@ def _empty_read_connection() -> sqlite3.Connection:
     ``.herald/`` test fixture deeper in the tree keeps working, so any
     ``herald`` read run from a SUBDIRECTORY left an untracked
     ``<subdir>/.herald/herald.db`` behind in ``git status``. The three
-    exporter scripts and every ``--list``-shaped command hit this path."""
+    exporter scripts and every ``--list``-shaped command hit this path.
+
+    The schema comes from ``_SCHEMA_MIGRATIONS`` -- the same ordered set
+    of structural steps every on-disk database is built from -- rather than
+    a second, hand-kept copy of the v1 SQL. Applying that SQL directly and
+    then stamping ``user_version = SCHEMA_VERSION`` claimed to be current
+    while being pinned to v1: the first migration added after this story
+    would have given an on-disk store the v2 shape and this one the v1
+    shape, both stamped v2, so every read of a not-yet-existing store
+    (fresh repo, all three exporters, every ``--list``-shaped command)
+    would fail against columns the rest of the code had every reason to
+    expect.
+
+    Only the STRUCTURAL half runs here, never ``_ensure_schema``/
+    ``_import_legacy_v1``. This connection is a throwaway that must not
+    touch the filesystem at all: routing it through the full migration
+    runner made a pure read of a not-yet-existing store attempt the legacy
+    JSON import, which is both pointless (``connection()`` only takes this
+    path when ``_has_legacy_data`` is false) and wrong under exactly the
+    stat failure ``_is_definitely_absent`` exists to catch."""
     conn = sqlite3.connect(":memory:", isolation_level=None)
     conn.row_factory = sqlite3.Row
-    for statement in _SCHEMA_V1_SQL.split(";"):
-        statement = statement.strip()
-        if statement:
-            conn.execute(statement)
-    conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+    try:
+        for _version, apply_schema in _SCHEMA_MIGRATIONS:
+            apply_schema(conn)
+        conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+    except BaseException:
+        conn.close()
+        raise
     return conn
 
 
@@ -244,8 +292,8 @@ def connection(db_path: Path) -> Iterator[sqlite3.Connection]:
         # translation for the whole critical section, including this read.
         yield ambient
         return
-    if not db_path.exists() and not _has_legacy_data(db_path):
-        conn = _empty_read_connection()
+    if _is_definitely_absent(db_path) and not _has_legacy_data(db_path):
+        conn = _empty_read_connection(db_path)
     else:
         conn = _connect(db_path)
     try:
@@ -332,8 +380,24 @@ def transaction(db_path: Path) -> Iterator[sqlite3.Connection]:
 # the duplicate would fail first, with a raw SQL message instead of
 # `claims`'s own "duplicate claim ids" one) and silently change a
 # documented, tested behavior.
+#
+# `IF NOT EXISTS` on every table: `user_version` and the tables themselves
+# can legitimately disagree, and without it that state is unrecoverable.
+# `sqlite3 .dump` does NOT emit `PRAGMA user_version`, so a database
+# restored from a logical dump -- which is what an operator following the
+# "restore `.herald/herald.db` from a backup" advice in `cli-runbooks.md`
+# and `automation-troubleshooting.md` may well have -- comes back with all
+# four tables populated and `user_version = 0`. `_ensure_schema` then reran
+# this migration and failed on `table progress already exists`, permanently:
+# every subsequent command raised the same error, with no repair path and a
+# message pointing at nothing an operator could act on. Verified before and
+# after. Re-running the migration over already-present tables is now a
+# no-op, and `_import_legacy_v1` stays correct on that path: if legacy JSON
+# is also present the `INSERT`s hit the existing rows' `PRIMARY KEY` and
+# raise `IntegrityError`, which `_connect` already reports as "legacy data
+# could not be imported" -- accurate, and recoverable by moving that file.
 _SCHEMA_V1_SQL = """
-CREATE TABLE progress (
+CREATE TABLE IF NOT EXISTS progress (
   id TEXT PRIMARY KEY,
   station TEXT NOT NULL,
   date TEXT NOT NULL,
@@ -347,7 +411,7 @@ CREATE TABLE progress (
   UNIQUE(station, date)
 ) STRICT;
 
-CREATE TABLE claims (
+CREATE TABLE IF NOT EXISTS claims (
   id TEXT NOT NULL,
   project_name TEXT NOT NULL,
   status TEXT NOT NULL,
@@ -361,7 +425,7 @@ CREATE TABLE claims (
   edit_history TEXT NOT NULL
 ) STRICT;
 
-CREATE TABLE notices_index (
+CREATE TABLE IF NOT EXISTS notices_index (
   component TEXT PRIMARY KEY,
   type TEXT NOT NULL,
   what TEXT NOT NULL,
@@ -379,7 +443,7 @@ CREATE TABLE notices_index (
   revisions TEXT NOT NULL
 ) STRICT;
 
-CREATE TABLE notices_redirects (
+CREATE TABLE IF NOT EXISTS notices_redirects (
   old_component TEXT PRIMARY KEY,
   new_component TEXT NOT NULL
 ) STRICT;
@@ -470,23 +534,39 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
         )
 
 
-def _migrate_v1(conn: sqlite3.Connection, db_path: Path) -> None:
-    # `Connection.executescript` implicitly COMMITs any pending transaction
-    # before running -- exactly the `BEGIN IMMEDIATE` this migration must
-    # stay inside of, so the schema creation and the legacy import below
-    # roll back together on failure. Each statement is run individually
-    # through the ordinary `execute`, which does not touch the open
-    # transaction.
-    #
-    # Split on a bare `;` (not `;\n\n`) so this survives any reformatting of
-    # `_SCHEMA_V1_SQL` -- the blank-line-separated shape is incidental to how
-    # the statements are written, not a delimiter this should depend on.
+def _schema_v1(conn: sqlite3.Connection) -> None:
+    """v1's STRUCTURAL half, with no data migration and no filesystem
+    access -- separated from ``_migrate_v1`` so ``_empty_read_connection``
+    can build the current shape without also running the legacy import.
+
+    `Connection.executescript` implicitly COMMITs any pending transaction
+    before running -- exactly the `BEGIN IMMEDIATE` this migration must
+    stay inside of, so the schema creation and the legacy import roll back
+    together on failure. Each statement is run individually through the
+    ordinary `execute`, which does not touch the open transaction.
+
+    Split on a bare `;` (not `;\\n\\n`) so this survives any reformatting of
+    `_SCHEMA_V1_SQL` -- the blank-line-separated shape is incidental to how
+    the statements are written, not a delimiter this should depend on.
+    """
     for statement in _SCHEMA_V1_SQL.split(";"):
         statement = statement.strip()
         if statement:
             conn.execute(statement)
+
+
+def _migrate_v1(conn: sqlite3.Connection, db_path: Path) -> None:
+    _schema_v1(conn)
     _import_legacy_v1(conn, db_path)
 
+
+_SCHEMA_MIGRATIONS: tuple[tuple[int, Callable[[sqlite3.Connection], None]], ...] = (
+    (1, _schema_v1),
+)
+"""Structure only, in version order -- what a database's shape is built
+from when there is no data to migrate. Every entry here must have a
+matching version in ``_MIGRATIONS`` below; ``_MIGRATIONS`` is the full
+step (structure plus whatever data work that version needs)."""
 
 _MIGRATIONS: tuple[tuple[int, Callable[[sqlite3.Connection, Path], None]], ...] = (
     (1, _migrate_v1),

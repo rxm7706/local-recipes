@@ -302,7 +302,19 @@ def _write_all_unlocked(progress_path: Path, records: list[Progress]) -> None:
             )
     except errors.HeraldError:
         raise
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
+        # The non-`sqlite3` arms are not defensive padding: they are the
+        # exact set the pre-Story-13.3 `write_all` caught, and `_to_params`
+        # -- which still `json.dumps` the `shipped_capabilities` column --
+        # runs inside this `try`. Narrowing to `sqlite3.Error` silently
+        # regressed the error contract this story promised to keep
+        # unchanged. Verified: a non-serializable capability raised a raw
+        # `TypeError` here, and a lone surrogate (what `argv` yields for a
+        # non-UTF-8 byte, via `surrogateescape`) raised a raw
+        # `UnicodeEncodeError` out of SQLite's own TEXT binding -- a
+        # `ValueError` subclass the old `json.dumps(ensure_ascii=True)`
+        # path escaped instead. Both reached `cli.dispatch`, which catches
+        # only `HeraldError`, as tracebacks.
         raise errors.HeraldError(
             f"progress file {progress_path} could not be written: {exc}"
         ) from exc
@@ -398,7 +410,8 @@ def upsert(
             return created
     except errors.HeraldError:
         raise
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
+        # Same set, same reason, as `_write_all_unlocked` above.
         raise errors.HeraldError(
             f"progress file {progress_path} could not be written: {exc}"
         ) from exc

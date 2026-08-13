@@ -325,6 +325,11 @@ def test_legacy_progress_json_is_imported_once(tmp_path):
     assert [r.id for r in records] == ["p1"]
     # Legacy file left in place, inert, not deleted.
     assert (herald_dir / "progress.json").exists()
+    # ...and left in place is exactly why "once" has to be asserted, not
+    # assumed: the file that triggered the import is still sitting there on
+    # every subsequent open. A single read proves the import ran, not that
+    # `user_version` gating stops it running again.
+    assert [r.id for r in progress.read_all(db_path)] == ["p1"]
 
 
 def test_legacy_claims_json_is_imported_once(tmp_path):
@@ -354,6 +359,9 @@ def test_legacy_claims_json_is_imported_once(tmp_path):
     stored = claims.read_all(db_path)
     assert [c.id for c in stored] == ["c1"]
     assert (herald_dir / "claims.json").exists()
+    # Second open with the legacy file still present -- see the "once"
+    # comment in the progress case above.
+    assert [c.id for c in claims.read_all(db_path)] == ["c1"]
 
 
 def test_legacy_notices_index_json_is_imported_once(tmp_path):
@@ -392,6 +400,13 @@ def test_legacy_notices_index_json_is_imported_once(tmp_path):
     resolved = notices.get_notice(herald_dir.parent, "old-name", index_path=db_path)
     assert resolved.component == "auth-api-v1"
     assert (herald_dir / "notices-index.json").exists()
+    # Second open with the legacy file still present -- see the "once"
+    # comment in the progress case above. A re-import would raise here
+    # (`component` is a PRIMARY KEY), so this pins the gating, not just the
+    # row count.
+    assert [n.component for n in notices.list_notices(herald_dir.parent, status="all")] == [
+        "auth-api-v1"
+    ]
 
 
 def test_all_three_legacy_files_import_together(tmp_path):
@@ -628,3 +643,227 @@ def test_a_second_thread_blocks_until_the_first_transaction_commits(tmp_path):
     t1.join(timeout=5)
     t2.join(timeout=5)
     assert second_acquired_at == [1]
+
+
+# --- 2026-08-13 follow-up review pass: regressions ---------------------------
+
+
+def test_unreadable_store_raises_instead_of_reading_as_empty(tmp_path):
+    """A store that EXISTS but cannot be ``stat``'d must not be mistaken for
+    one that was never created.
+
+    ``connection()`` gated on ``Path.exists()``, which returns ``False`` for
+    any stat failure (EACCES here, but equally a symlink loop or EIO), so a
+    populated database behind an unsearchable parent was served from the
+    empty in-memory database: every read returned ``[]``/"not found" with no
+    error, while the write path on the identical store raised correctly.
+    Fails against the ``exists()`` gate.
+    """
+    herald_dir = tmp_path / ".herald"
+    db_path = herald_dir / "herald.db"
+    progress.upsert(
+        db_path,
+        station="warden",
+        date="2026-08-13",
+        shipped_capabilities=["gate"],
+        compute_hours=1.0,
+        token_spend=1,
+        wall_clock_hours=1.0,
+        unblock_narrative="none",
+    )
+    assert len(progress.read_all(db_path)) == 1
+    os.chmod(herald_dir, 0o000)
+    try:
+        if os.geteuid() == 0:
+            pytest.skip("root bypasses the directory permission this asserts on")
+        for read in (
+            lambda: progress.read_all(db_path),
+            lambda: claims.read_all(db_path),
+            lambda: notices.list_notices(tmp_path, status="all"),
+        ):
+            with pytest.raises(HeraldError):
+                read()
+    finally:
+        os.chmod(herald_dir, 0o755)
+
+
+def test_notices_mutations_import_legacy_index_before_refusing(tmp_path):
+    """``publish``/``close``/``archive_rename``'s pre-transaction fail-fast
+    keyed on the database file alone, so on a repo still carrying
+    ``.herald/notices-index.json`` the FIRST command an operator ran decided
+    the outcome: a mutation reported "no notice found" for a notice plainly
+    in the legacy index, while running any read first migrated it and made
+    the identical call succeed. Fails against the bare-stat fast path.
+    """
+    herald_dir = tmp_path / ".herald"
+    herald_dir.mkdir(parents=True)
+    (herald_dir / "notices-index.json").write_text(
+        json.dumps(
+            {
+                "notices": {
+                    "auth-api-v1": {
+                        "type": "deprecation",
+                        "component": "auth-api-v1",
+                        "what": "deprecated",
+                        "why": "superseded",
+                        "migration": "swap it",
+                        "deadline": None,
+                        "reason_link": None,
+                        "status": "draft",
+                        "path": "notices/2026-08/deprecation/auth-api-v1.md",
+                        "created_at": "2026-08-01T00:00:00+00:00",
+                        "published_at": None,
+                        "closed_at": None,
+                        "closed_by": None,
+                        "close_reason": None,
+                        "revisions": [],
+                    }
+                },
+                "redirects": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    # No read first -- publish is the very first command against this repo.
+    published = notices.publish_notice(tmp_path, "auth-api-v1")
+    assert published.status == "published"
+
+
+def test_logical_dump_restore_is_not_permanently_bricked(tmp_path):
+    """``sqlite3 .dump`` does not emit ``PRAGMA user_version``, so a database
+    restored from a logical dump -- what the runbooks' "restore from a
+    backup" advice can well produce -- comes back fully populated at version
+    0. ``_ensure_schema`` then reran the v1 migration and died on "table
+    progress already exists", on that command and every later one, with no
+    repair path. Fails against non-``IF NOT EXISTS`` schema SQL.
+    """
+    db_path = tmp_path / ".herald" / "herald.db"
+    progress.upsert(
+        db_path,
+        station="warden",
+        date="2026-08-13",
+        shipped_capabilities=[],
+        compute_hours=0.0,
+        token_spend=0,
+        wall_clock_hours=0.0,
+        unblock_narrative="none",
+    )
+    source = sqlite3.connect(db_path)
+    dump = "\n".join(source.iterdump())
+    source.close()
+    assert "user_version" not in dump  # the premise this test rests on
+    for path in (db_path, tmp_path / ".herald" / "herald.db-wal", tmp_path / ".herald" / "herald.db-shm"):
+        if path.exists():
+            path.unlink()
+    restored = sqlite3.connect(db_path)
+    restored.executescript(dump)
+    restored.commit()
+    restored.close()
+
+    assert [r.station for r in progress.read_all(db_path)] == ["warden"]
+    # And the store is writable afterwards, not merely readable.
+    progress.upsert(
+        db_path,
+        station="mason",
+        date="2026-08-13",
+        shipped_capabilities=[],
+        compute_hours=0.0,
+        token_spend=0,
+        wall_clock_hours=0.0,
+        unblock_narrative="none",
+    )
+    assert len(progress.read_all(db_path)) == 2
+
+
+def test_claims_create_wraps_a_raw_sqlite_error(tmp_path):
+    """``create``'s only read is the ambient one, which ``db.connection``
+    deliberately leaves untranslated (the writer owns its critical section)
+    -- and ``create`` had no wrapper of its own, making it the single writer
+    that leaked a raw ``sqlite3.Error`` past the AD-6 seam to
+    ``cli.dispatch``, which catches only ``HeraldError``. Fails against an
+    unwrapped ``create``.
+    """
+    db_path = tmp_path / ".herald" / "herald.db"
+    claims.create(db_path, project_name="warden")
+    raw = sqlite3.connect(db_path)
+    raw.execute("DROP TABLE claims")
+    raw.commit()
+    raw.close()
+    with pytest.raises(HeraldError):
+        claims.create(db_path, project_name="mason")
+
+
+def test_write_paths_wrap_non_sqlite_serialization_failures(tmp_path):
+    """The pre-Story-13.3 writers caught ``(OSError, TypeError, ValueError,
+    RecursionError)``; the rewrite narrowed that to ``sqlite3.Error`` even
+    though ``_to_params``'s ``json.dumps`` still runs inside the ``try``.
+    A non-serializable value and a lone surrogate (what ``argv`` yields for
+    a non-UTF-8 byte) both escaped as raw ``TypeError``/``UnicodeEncodeError``.
+    Fails against a ``sqlite3.Error``-only clause.
+    """
+    db_path = tmp_path / ".herald" / "herald.db"
+    record = progress.Progress(
+        id="p1",
+        station="warden",
+        date="2026-08-13",
+        shipped_capabilities=[object()],  # not JSON-serializable
+        compute_hours=0.0,
+        token_spend=0,
+        wall_clock_hours=0.0,
+        unblock_narrative="none",
+        created_at="t",
+        updated_at="t",
+    )
+    with pytest.raises(HeraldError):
+        progress.write_all(db_path, [record])
+
+    with pytest.raises(HeraldError):
+        claims.create(db_path, project_name="proj-\udcff")
+
+
+def test_empty_read_connection_follows_the_migration_set(tmp_path, monkeypatch):
+    """The read-of-a-missing-store path built its schema from
+    ``_SCHEMA_V1_SQL`` directly and then stamped ``SCHEMA_VERSION`` --
+    claiming to be current while pinned to v1. With only one migration in
+    the set the two shapes are identical, so comparing them as-is asserts
+    nothing; the divergence only appears once a v2 exists. A synthetic v2
+    is therefore registered here, which is exactly the state the next
+    schema change puts the module in.
+
+    Fails against a hardcoded ``_SCHEMA_V1_SQL``: the on-disk store gets
+    the v2 column and the in-memory one does not, while both stamp v2.
+    """
+
+    def schema_v2(conn):
+        conn.execute("ALTER TABLE progress ADD COLUMN note TEXT")
+
+    def migrate_v2(conn, db_path):
+        schema_v2(conn)
+
+    monkeypatch.setattr(db, "_SCHEMA_MIGRATIONS", db._SCHEMA_MIGRATIONS + ((2, schema_v2),))
+    monkeypatch.setattr(db, "_MIGRATIONS", db._MIGRATIONS + ((2, migrate_v2),))
+    monkeypatch.setattr(db, "SCHEMA_VERSION", 2)
+
+    def shape(conn):
+        return (
+            conn.execute("PRAGMA user_version").fetchone()[0],
+            {
+                row[0]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            },
+            [r[1] for r in conn.execute("PRAGMA table_info(progress)")],
+        )
+
+    db_path = tmp_path / ".herald" / "herald.db"
+    with db.connection(db_path) as memory_conn:
+        assert not db_path.exists()  # still side-effect-free
+        memory_shape = shape(memory_conn)
+        # The v2 column is reachable, not merely declared.
+        memory_conn.execute("SELECT note FROM progress")
+    with db.transaction(db_path) as disk_conn:
+        disk_shape = shape(disk_conn)
+
+    assert memory_shape == disk_shape
+    assert memory_shape[0] == 2

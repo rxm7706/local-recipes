@@ -254,7 +254,20 @@ def _require_existing_index(index_path: Path, missing: str) -> None:
     the permissions fault they actually have. Only a definitively absent
     path (or a non-directory parent component) fails fast here; every
     other stat failure falls through to the transaction so the
-    authoritative in-transaction read produces its own, accurate error."""
+    authoritative in-transaction read produces its own, accurate error.
+
+    An absent database with pre-Story-13.3 legacy JSON beside it is NOT
+    absent for this purpose: that store's records are real, they are
+    simply still in ``.herald/notices-index.json`` waiting for the first
+    connection to import them. Refusing here on the bare stat would make
+    the very first command an operator runs after upgrading depend on
+    which command it was -- ``herald notice publish`` reported "no notice
+    found" for a notice plainly in the legacy index, while running any
+    read first (which does open a connection, and so does migrate) made
+    the identical call succeed. ``db._has_legacy_data`` is the same
+    predicate ``db.connection`` uses for exactly this distinction."""
+    if db._has_legacy_data(index_path):
+        return
     try:
         index_path.stat()
     except (FileNotFoundError, NotADirectoryError):
@@ -590,12 +603,23 @@ def author_notice(
                 revisions=revisions,
             )
             # Markdown written BEFORE the index (regression fix): a
-            # markdown-write failure here now leaves the index untouched -- no
+            # markdown-write failure here leaves the index untouched -- no
             # phantom "live" entry pointing at a file that was never created.
-            # The reverse order only ever risked an orphaned, harmless
-            # markdown file with no index entry (invisible to every read
-            # path, since get/list/the web export only ever consult the
-            # index).
+            # This order's own downside is the opposite, milder one: an
+            # orphaned markdown file with no index entry, invisible to every
+            # read path, since get/list/the web export only ever consult the
+            # index.
+            #
+            # Story 13.3 widened WHEN that orphan can happen, and the trade
+            # is still the right way round. `_write_markdown` is a
+            # filesystem write inside `db.transaction`, so the index now
+            # rolls back on ANY later failure in this block -- the stale-file
+            # `unlink` below, the `_upsert_notice_row`, the COMMIT itself --
+            # not only on a markdown-write failure. The orphan is therefore
+            # reachable from more paths than before, and it stays the
+            # harmless half: a file with no index entry is inert, whereas
+            # the phantom index entry the ordering avoids is one the CLI
+            # reports as a live notice.
             _write_markdown(repo_root, notice)
             _upsert_notice_row(conn, notice)
             if (
@@ -621,7 +645,7 @@ def author_notice(
             return notice
     except errors.HeraldError:
         raise
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(
             f"notice for {component!r} could not be written: {exc}"
         ) from exc
@@ -672,7 +696,7 @@ def publish_notice(
             return notice
     except errors.HeraldError:
         raise
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(
             f"notice for {component!r} could not be written: {exc}"
         ) from exc
@@ -729,7 +753,7 @@ def close_notice(
             return notice
     except errors.HeraldError:
         raise
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(
             f"notice for {component!r} could not be written: {exc}"
         ) from exc
@@ -873,7 +897,7 @@ def archive_rename(
             )
     except errors.HeraldError:
         raise
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(
             f"redirect {old_component!r} -> {new_component!r} could not be "
             f"written: {exc}"

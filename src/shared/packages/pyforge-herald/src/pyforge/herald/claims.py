@@ -450,7 +450,11 @@ def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
             )
     except errors.HeraldError:
         raise
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, TypeError, ValueError, RecursionError) as exc:
+        # Same set, same reason, as `progress._write_all_unlocked` -- see
+        # the comment there. `_to_params` `json.dumps` the `evidence`/
+        # `edit_history` columns inside this `try`, and the plain TEXT
+        # columns bind through SQLite's UTF-8 encoder.
         raise errors.HeraldError(f"claims could not be written to {claims_path}: {exc}") from exc
 
 
@@ -482,27 +486,45 @@ def create(
             raise errors.HeraldError(
                 f"evidence type {e.type!r} must be one of {EVIDENCE_TYPES}"
             )
-    with db.transaction(claims_path):
-        timestamp = now().isoformat()
-        claim = Claim(
-            id=id_factory(),
-            project_name=project_name,
-            status="draft",
-            thesis=None,
-            shipped_date=(
-                shipped_date if shipped_date is not None else today().isoformat()
-            ),
-            created_at=timestamp,
-            published_at=None,
-            closed_at=None,
-            updated_at=timestamp,
-            evidence=tuple(evidence),
-            edit_history=(),
-        )
-        claims = read_all(claims_path)
-        claims.append(claim)
-        _write_all(claims_path, claims)
-        return claim
+    # Wrapped for the same AD-6 reason `_write_all`/`progress.upsert`/every
+    # `notices` writer are. `db.connection` translates `sqlite3.Error` for
+    # STANDALONE reads only -- inside a transaction it deliberately leaves
+    # translation to the writer that owns the critical section. `publish`/
+    # `revalidate`/`revalidate_all` each take their first `read_all` BEFORE
+    # opening the transaction, so that one is standalone and already
+    # covered; `create`'s only read is the ambient one below, which made it
+    # the single writer with no wrapper on any path. A table-level fault
+    # (verified: `DROP TABLE claims` out of band) reached `cli.dispatch` --
+    # which catches only `HeraldError` -- as an unhandled traceback rather
+    # than the "message plus exit code 1" the runbooks promise.
+    try:
+        with db.transaction(claims_path):
+            timestamp = now().isoformat()
+            claim = Claim(
+                id=id_factory(),
+                project_name=project_name,
+                status="draft",
+                thesis=None,
+                shipped_date=(
+                    shipped_date if shipped_date is not None else today().isoformat()
+                ),
+                created_at=timestamp,
+                published_at=None,
+                closed_at=None,
+                updated_at=timestamp,
+                evidence=tuple(evidence),
+                edit_history=(),
+            )
+            claims = read_all(claims_path)
+            claims.append(claim)
+            _write_all(claims_path, claims)
+            return claim
+    except errors.HeraldError:
+        raise
+    except sqlite3.Error as exc:
+        raise errors.HeraldError(
+            f"claims could not be written to {claims_path}: {exc}"
+        ) from exc
 
 
 def publish(
