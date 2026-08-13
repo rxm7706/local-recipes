@@ -39,7 +39,10 @@ DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget", "sync")
 
 _HELP = {
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
-    "deploy": "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx manifests",
+    "deploy": (
+        "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx "
+        "manifests; static: CAP-8/AD-10 static-export publish"
+    ),
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
     "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
@@ -138,14 +141,19 @@ def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `dashboard` (`--build`/`--dry-run`), `status`, and `perimeter`
-    verbs. `perimeter` is a distinct, unrelated surface from `dashboard`
-    (Story 9.5, CAP-6) — it validates and renders the `pyforge.steward.
-    dashboard` Django app's deployment perimeter (AD-5 shareability +
-    daphne/nginx manifests), never the GitHub-Pages program console
-    `dashboard` builds/reconciles.
+    """Add the `dashboard` (`--build`/`--dry-run`), `status`, `perimeter`,
+    and `static` verbs. `perimeter` is a distinct, unrelated surface from
+    `dashboard` (Story 9.5, CAP-6) — it validates and renders the
+    `pyforge.steward.dashboard` Django app's deployment perimeter (AD-5
+    shareability + daphne/nginx manifests), never the GitHub-Pages program
+    console `dashboard` builds/reconciles. `static` (Story 9.7, CAP-8/
+    AD-10) publishes a board as a self-contained static export to
+    `docs/dashboard/<board>/index.html`, which the pre-existing `dashboard`
+    verb then commits/pushes unchanged — a fourth, also-unrelated surface.
     """
-    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard,status,perimeter}")
+    deploy_subs = deploy_parser.add_subparsers(
+        dest="deploy_verb", metavar="{dashboard,status,perimeter,static}"
+    )
 
     dashboard = deploy_subs.add_parser(
         "dashboard", help="build/reconcile the GitHub Pages program-console dashboard"
@@ -209,6 +217,39 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         "--output-dir",
         metavar="DIR",
         help="write the rendered daphne unit + nginx edge config here (omit for validation-only)",
+    )
+
+    static = deploy_subs.add_parser(
+        "static",
+        help=(
+            "publish a board as a self-contained static export "
+            "(docs/dashboard/<board>/index.html) — CAP-8/AD-10"
+        ),
+    )
+    static.add_argument(
+        "--board",
+        required=True,
+        metavar="SLUG",
+        help=(
+            "the board slug (filesystem-safe: ^[A-Za-z0-9_-]+$; also refused when "
+            "docs/dashboard/<slug>/ is excluded by a .gitignore rule, since such a "
+            "board could never be committed or pushed)"
+        ),
+    )
+    static.add_argument(
+        "--panel",
+        action="append",
+        metavar="LABEL=PATH",
+        help="a pre-rendered HTML panel to embed verbatim (repeatable, in call order)",
+    )
+    static.add_argument(
+        "--access-column",
+        default=None,
+        metavar="NAME",
+        help=(
+            "the board's declared access column, if any — refuses (AD-10) rather than "
+            "publishing, since static export cannot honor row-level access"
+        ),
     )
 
 

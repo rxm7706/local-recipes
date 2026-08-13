@@ -1,15 +1,22 @@
-"""Cross-platform advisory file lock shared by the whole-document
-read-modify-writes in ``state.py``, ``progress.py``, ``claims.py``, and
-``notices.py`` (Story 13.1, closing ``DW-1-4-2``).
+"""Cross-platform advisory file lock for ``state.py``'s whole-document
+read-modify-writes (Story 13.1, closing ``DW-1-4-2``).
 
-Scope is those four modules only. ``registry.register`` and
+Story 13.1 introduced this for four modules; Story 13.3 moved
+``progress.py``/``claims.py``/``notices.py`` onto one shared SQLite
+database, whose own ``BEGIN IMMEDIATE`` transaction (``db.transaction``) is
+their lock now. ``state.py`` -- still a JSON document at
+``.herald/bridge-state.json``, deliberately out of that story's surface --
+is this module's one remaining caller. The reasoning below is unchanged;
+read "the caller" for what used to be a list of four.
+
+Scope is that module only. ``registry.register`` and
 ``deck_pipeline._atomic_write_text`` are whole-document read-modify-writes
 too and are deliberately NOT covered here -- they were outside this story's
 surface, and their own docstrings still record that concurrent writers are
 unaddressed. Do not read this module as a package-wide guarantee.
 
-``state.py``, ``progress.py``, ``claims.py``, and ``notices.py`` each load a
-document, mutate one entry, and atomically replace it via a temp file plus
+A caller loads a document, mutates one entry, and atomically replaces it
+via a temp file plus
 ``os.replace`` -- crash-safe (a reader never observes a half-written file),
 but not concurrency-safe: two callers can each load before either has
 replaced, and the second writer's ``os.replace`` silently discards the

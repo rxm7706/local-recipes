@@ -79,9 +79,14 @@ jobs:
       # library gathers with no `scripts/*_check.py` file left to run directly
       # -- a plain (non-editable) `pip install` of the package is enough
       # (jsonschema/mcp/PyYAML all resolve from PyPI; no conda/pixi needed).
+      # Story 14.3 (pyforge-core CAP-3/CAP-4) added pyforge-core as a real
+      # run-dependency of pyforge-doctor -- a workspace-local path package,
+      # not on PyPI, so it must be pip-installed first (stdlib-only leaf,
+      # same plain-pip treatment) or pip's resolver 404s trying to fetch it.
       - name: Install detector dependencies
         run: |
           python -m pip install --quiet pyyaml playwright
+          python -m pip install --quiet ./src/shared/packages/pyforge-core
           python -m pip install --quiet ./src/shared/packages/pyforge-doctor
 
       # check_layout drives headless Chrome. ubuntu-latest ships google-chrome,

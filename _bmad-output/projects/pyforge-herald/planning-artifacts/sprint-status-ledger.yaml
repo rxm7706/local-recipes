@@ -36,9 +36,9 @@ development_status:
   12-4-automation-troubleshooting-guide: done
   13-1-the-state-layer-survives-a-second-writer: done
   13-2-the-serverless-intermediate-decision-recorded: done
-  13-3-db-backed-storage-behind-the-existing-seam-with-migrations: backlog
-  13-4-the-webhook-endpoint-ci-calls: blocked
-  13-5-the-scheduler-enforces-what-was-displayed: backlog
+  13-3-db-backed-storage-behind-the-existing-seam-with-migrations: done
+  13-4-the-webhook-endpoint-ci-calls: backlog
+  13-5-the-scheduler-enforces-what-was-displayed: done
   13-6-a-ship-records-itself-end-to-end: backlog
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
