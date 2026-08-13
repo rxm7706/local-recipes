@@ -882,7 +882,7 @@ window.DASHBOARD_DATA = {
         "median": 169,
         "lo": 29,
         "hi": 539,
-        "phaseAsOf": "2026-08-13 22:29 UTC"
+        "phaseAsOf": "2026-08-13 22:35 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1354,7 +1354,7 @@ window.DASHBOARD_DATA = {
         "median": 97,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 22:29 UTC"
+        "phaseAsOf": "2026-08-13 22:35 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2397,7 +2397,7 @@ window.DASHBOARD_DATA = {
         "median": 70,
         "lo": 16,
         "hi": 435,
-        "phaseAsOf": "2026-08-13 22:29 UTC"
+        "phaseAsOf": "2026-08-13 22:35 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2954,7 +2954,7 @@ window.DASHBOARD_DATA = {
         "median": 147,
         "lo": 44,
         "hi": 468,
-        "phaseAsOf": "2026-08-13 22:29 UTC"
+        "phaseAsOf": "2026-08-13 22:35 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3017,12 +3017,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "38/41",
+            "39/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "3",
+            "2",
             "remaining",
             ""
           ]
@@ -3260,7 +3260,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.4",
-              "pending",
+              "done",
               "The schedule trigger enumerates real candidates"
             ],
             [
@@ -3923,7 +3923,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 22:29 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 22:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6042,7 +6042,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "running",
           "note": "next free slot",
-          "done": 38,
+          "done": 39,
           "total": 41
         },
         {
@@ -6936,7 +6936,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T13:34",
+          "spec": "2026-08-13T22:40",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -7019,7 +7019,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T13:34",
+            "at": "2026-08-13T22:40",
             "other": "2026-08-01"
           },
           {
@@ -7035,7 +7035,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "38/41",
+        "progress": "39/41",
         "complete": 14,
         "of": 14
       },
@@ -17185,15 +17185,15 @@ window.DASHBOARD_DATA = {
       }
     ],
     "lastShipped": {
-      "station": "marshal",
-      "story": "14.4",
-      "epoch": 1786651944,
-      "sha": "26102ea12",
-      "subject": "Merge bmad-loop/20260813-094919-bfcb/14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated into loop/pyforg"
+      "station": "herald",
+      "story": "13.4",
+      "epoch": 1786659493,
+      "sha": "966476346",
+      "subject": "Merge bmad-loop/20260813-145413-7eb9/13-4-the-webhook-endpoint-ci-calls into loop/pyforge-herald (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 22:29 UTC",
-    "generatedEpoch": 1786660151
+    "generatedAt": "2026-08-13 22:35 UTC",
+    "generatedEpoch": 1786660526
   },
   "storySpecs": [
     {
@@ -17234,9 +17234,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 38,
+      "done": 39,
       "tracked": 18,
-      "gap": 20
+      "gap": 21
     },
     {
       "station": "pyforge-warden",
@@ -17401,14 +17401,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 38,
-        "backlog": 3,
+        "done": 39,
+        "backlog": 2,
         "blocked": 0,
         "total": 41,
-        "next": "8-4-the-schedule-trigger-enumerates-real-candidates",
+        "next": "8-5-fail-loud-fail-alone",
         "blockedKeys": [],
         "backlogKeys": [
-          "8-4-the-schedule-trigger-enumerates-real-candidates",
           "8-5-fail-loud-fail-alone",
           "8-6-explicit-status-vocabulary-translation"
         ],
@@ -17515,8 +17514,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 312,
-      "backlog": 66,
+      "done": 313,
+      "backlog": 65,
       "blocked": 3,
       "total": 381
     }
@@ -17592,7 +17591,7 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 41,
-        "done": 38,
+        "done": 39,
         "blocked": 0,
         "epics": 9,
         "epicsDone": 8,
@@ -17614,7 +17613,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 381,
-      "done": 312,
+      "done": 313,
       "blocked": 3,
       "epics": 74,
       "epicsDone": 57
