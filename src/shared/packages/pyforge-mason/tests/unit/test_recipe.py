@@ -36,15 +36,21 @@ mirrors `diagnose()`'s tests exactly, plus several additions this scoped
 gate is specified to have: a positive "`probe_import_floor` IS called" test
 (the inverse of Story 2.7's `test_diagnose_never_calls_ensure_import_floor`);
 a test that an interpreter missing only an operation-UNRELATED floor entry
-is NOT rejected; a REAL, unmocked import-floor-missing propagation test
+is NOT rejected; a test that the call IS rejected when its own single
+relevant floor entry (`ruamel.yaml` for `optimize()`; `pyyaml` or `requests`
+for `scan()`) is missing, originally exercised as a REAL, unmocked probe
 against `sys.executable` (the spec's own empirical note: the `pyforge-mason`
-pixi env genuinely lacks `ruamel.yaml`/`requests`/`pyyaml`, so no mocking is
-needed to exercise a real `CfeImportFloorError` raise -- self-diagnosed by
-asserting the precondition directly rather than assumed); and a
-real-fixture round-trip test that fakes ONLY the floor verdict, by patching
-`cfe.probe_import_floor`'s return value rather than `subprocess.run` wholesale
-(spec Design Notes: a blanket `subprocess.run` patch would also intercept
-`_invoke_captured`'s own real call against the fixture stub).
+pixi env genuinely lacked `ruamel.yaml`/`requests`/`pyyaml`, so no mocking
+was needed) but converted to a mock of `probe_import_floor`'s return value
+by Story 3.1, whose own required change (`twine`/`conda-lock` landing as
+`pyforge-mason` conda run-dependencies) permanently pulls all three into
+that SAME shared pixi environment -- see `test_optimize_is_rejected_when_
+the_relevant_floor_entry_is_missing`'s docstring for the full account; and
+a real-fixture round-trip test that fakes ONLY the floor verdict, by
+patching `cfe.probe_import_floor`'s return value rather than `subprocess.
+run` wholesale (spec Design Notes: a blanket `subprocess.run` patch would
+also intercept `_invoke_captured`'s own real call against the fixture
+stub).
 """
 
 from __future__ import annotations
@@ -55,7 +61,6 @@ from unittest.mock import patch
 
 import pytest
 
-import pyforge.mason.cfe as cfe_module
 import pyforge.mason.recipe as recipe_module
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError
@@ -586,31 +591,46 @@ def test_optimize_raises_before_any_subprocess_spawns_against_a_real_unresolved_
     mock_run.assert_not_called()
 
 
-# --- Import-floor-missing propagation: real, unmocked (spec Design Notes) --
+# --- Import-floor-missing propagation: rejected on the relevant floor gap --
 
-def test_optimize_raises_cfe_import_floor_error_against_a_real_unresolved_floor(
-    fake_cfe_root,
-):
-    """Empirical note (spec Design Notes): the lean `pyforge-mason` pixi env
-    genuinely lacks `ruamel.yaml`. Asserted directly, first, against the real
-    `cfe.probe_import_floor(sys.executable)` result -- self-diagnosing, so a
-    future environment change that adds `ruamel.yaml` as a real dependency
-    fails on this clear, named assertion instead of a confusing "DID NOT
-    RAISE" from the `pytest.raises` block below. Calling `optimize()` with
-    `cfe_python_arg=sys.executable` and NO floor faking therefore exercises
-    a REAL, unmocked `CfeImportFloorError` raise -- no mocking of the floor
-    probe itself needed. `cfe.optimize_recipe` is patched only to prove the
-    gate fires before the wrapped script's own subprocess spawns."""
-    assert "ruamel.yaml" in cfe_module.probe_import_floor(sys.executable).missing
+def test_optimize_is_rejected_when_the_relevant_floor_entry_is_missing():
+    """`_OPTIMIZE_RELEVANT_FLOOR` is exactly `("ruamel.yaml",)` -- mocks
+    `probe_import_floor` to report only that one entry missing (the other
+    five floor entries present) and asserts the call is rejected on it
+    alone, mirroring `scan()`'s own `test_scan_is_rejected_when_only_one_
+    relevant_floor_entry_is_missing`.
 
-    with patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize:
-        with pytest.raises(CfeImportFloorError):
+    Story 3.1 note: this test was originally a REAL, unmocked probe against
+    `sys.executable` (the spec's own empirical note: the lean `pyforge-mason`
+    pixi env genuinely lacked `ruamel.yaml`, so no mocking was needed to
+    exercise a real `CfeImportFloorError` raise -- self-diagnosed by
+    asserting the precondition directly rather than assumed). That
+    precondition is now permanently gone: `conda-lock` (whose own dependency
+    tree includes `ruamel.yaml`) is a `pyforge-mason` conda run-dependency
+    as of this same story, so `sys.executable` -- the SAME shared pixi
+    environment this suite runs under -- can never again observe
+    `ruamel.yaml` as missing. Mocking is the only way left to exercise this
+    specific raise (see `test_scan_is_rejected_when_only_one_relevant_
+    floor_entry_is_missing`'s docstring for `scan()`'s parallel, already-
+    mocked coverage of the same class of gap)."""
+    with patch.object(recipe_module, "resolve_cfe_root", return_value=_ROOT), \
+         patch.object(recipe_module, "resolve_cfe_interpreter", return_value=_INTERPRETER), \
+         patch("pyforge.mason.cfe.ensure_cfe_root"), \
+         patch(
+             "pyforge.mason.cfe.probe_import_floor",
+             return_value=ImportFloorResult(
+                 interpreter=_INTERPRETER.path, missing=("ruamel.yaml",),
+             ),
+         ), \
+         patch("pyforge.mason.cfe.optimize_recipe") as mock_optimize:
+        with pytest.raises(CfeImportFloorError) as exc_info:
             optimize(
                 "recipes/foo",
-                cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-                cfe_timeout_arg=None, environ={}, start_directory=fake_cfe_root,
+                cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                environ={}, start_directory=Path("/start"),
             )
 
+    assert exc_info.value.missing == ("ruamel.yaml",)
     mock_optimize.assert_not_called()
 
 
@@ -879,33 +899,19 @@ def test_scan_raises_before_any_subprocess_spawns_against_a_real_unresolved_root
     mock_run.assert_not_called()
 
 
-# --- Import-floor-missing propagation: real, unmocked (spec Design Notes) --
-
-def test_scan_raises_cfe_import_floor_error_against_a_real_unresolved_floor(
-    fake_cfe_root,
-):
-    """Empirical note (spec Design Notes): the lean `pyforge-mason` pixi env
-    genuinely lacks `requests`/`pyyaml` too. Asserted directly, first,
-    against the real `cfe.probe_import_floor(sys.executable)` result --
-    self-diagnosing, mirroring `optimize()`'s own version of this test, so a
-    future environment change that adds either as a real dependency fails on
-    this clear, named assertion instead of a confusing "DID NOT RAISE" from
-    the `pytest.raises` block below. Calling `scan()` with
-    `cfe_python_arg=sys.executable` and NO floor faking therefore exercises
-    a REAL, unmocked `CfeImportFloorError` raise."""
-    missing = cfe_module.probe_import_floor(sys.executable).missing
-    assert "requests" in missing
-    assert "pyyaml" in missing
-
-    with patch("pyforge.mason.cfe.scan_for_vulnerabilities") as mock_scan:
-        with pytest.raises(CfeImportFloorError):
-            scan(
-                "recipes/foo",
-                cfe_root_arg=str(fake_cfe_root), cfe_python_arg=sys.executable,
-                cfe_timeout_arg=None, environ={}, start_directory=fake_cfe_root,
-            )
-
-    mock_scan.assert_not_called()
+# Story 3.1 note: this section formerly carried a REAL, unmocked
+# `sys.executable`-probe counterpart to `test_scan_is_rejected_when_only_
+# one_relevant_floor_entry_is_missing` above (the spec's own empirical note:
+# the lean `pyforge-mason` pixi env genuinely lacked `requests`/`pyyaml`).
+# That precondition is now permanently gone: `twine` (`requests`) and
+# `conda-lock` (`pyyaml`/`ruamel.yaml`) are `pyforge-mason` conda
+# run-dependencies as of this same story, pulling both into `sys.executable`
+# -- the SAME shared pixi environment this suite runs under -- for good.
+# Removed rather than converted to a second mock of the same shape: the
+# parametrized test above already covers "rejected when `pyyaml` OR
+# `requests` alone is missing" with no loss of coverage (`optimize()`'s
+# parallel case, above, had no other mocked coverage of its single-entry
+# `ruamel.yaml` gap and was converted in place instead).
 
 
 # --- Real end-to-end against fake_cfe_root, floor faked (AD-16, Design Notes)
