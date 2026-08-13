@@ -67,6 +67,12 @@ lock immediately (SQLite's own transaction rollback-on-disconnect), so
 there is no hang-forever failure mode to avoid the way ``locking.py``'s
 "no timeout at all" choice had to."""
 
+_LEGACY_FILENAMES = ("progress.json", "claims.json", "notices-index.json")
+"""The pre-Story-13.3 per-module JSON stores ``_import_legacy_v1`` adopts,
+named relative to ``db_path.parent``. Also what ``connection()`` consults
+to decide whether a read against a not-yet-existing database has anything
+to migrate."""
+
 _local = threading.local()
 
 
@@ -90,6 +96,17 @@ def _ambient(key: str) -> sqlite3.Connection | None:
     return None
 
 
+def _is_busy(exc: sqlite3.OperationalError) -> bool:
+    """Whether ``exc`` is the transient contention signature ``SQLITE_BUSY``
+    -- the only failure ``_set_wal_mode``'s retry loop can ever resolve by
+    waiting. Matched on the message because ``sqlite3.OperationalError``
+    carries no distinguishing subclass or numeric code across the versions
+    this package supports (``sqlite3_errorcode``/``sqlite3_errorname`` are
+    3.11+ only, and the same text is what every SQLite build emits)."""
+    text = str(exc).lower()
+    return "locked" in text or "busy" in text
+
+
 def _set_wal_mode(conn: sqlite3.Connection) -> None:
     """Switch ``conn`` into WAL journal mode, retrying past the one gap
     ``busy_timeout`` does not cover: converting a database's journal mode
@@ -103,14 +120,24 @@ def _set_wal_mode(conn: sqlite3.Connection) -> None:
     no-op); a short bounded retry loop here closes that startup race the
     same way ``locking._acquire`` retries past ``msvcrt.locking``'s ~10s
     internal timeout on Windows -- the underlying primitive does not honor
-    an indefinite wait on its own, so this module does."""
+    an indefinite wait on its own, so this module does.
+
+    Only ``SQLITE_BUSY`` is retried. Waiting cannot resolve any other
+    ``OperationalError`` here, and retrying one regardless burned the full
+    ``_BUSY_TIMEOUT_MS`` before failing: a read-only ``herald.db`` (whose
+    journal-mode switch is a write, so it raises "attempt to write a
+    readonly database" on every attempt) stalled each command for a
+    measured 30.00s, as did a filesystem without the shared-memory support
+    WAL needs (NFS and friends, which fail with "unable to open database
+    file" on every connection, not just the first). Those now surface
+    immediately."""
     deadline = time.monotonic() + _BUSY_TIMEOUT_MS / 1000
     while True:
         try:
             conn.execute("PRAGMA journal_mode = WAL")
             return
-        except sqlite3.OperationalError:
-            if time.monotonic() >= deadline:
+        except sqlite3.OperationalError as exc:
+            if not _is_busy(exc) or time.monotonic() >= deadline:
                 raise
             time.sleep(0.02)
 
@@ -160,21 +187,71 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
+def _has_legacy_data(db_path: Path) -> bool:
+    """Whether any pre-Story-13.3 JSON store sits next to ``db_path``, i.e.
+    whether a first connection here would have a legacy import to run."""
+    return any((db_path.parent / name).exists() for name in _LEGACY_FILENAMES)
+
+
+def _empty_read_connection() -> sqlite3.Connection:
+    """A throwaway in-memory database carrying the current schema and no
+    rows -- what ``connection()`` hands a read of a store that does not
+    exist yet.
+
+    Going through ``_connect`` instead would create the database file (and
+    its parent directory, and WAL's ``-wal``/``-shm`` sidecars) as a side
+    effect of a pure read, which is both a behavior change from the
+    pre-13.3 JSON modules (``read_all`` on a missing file returned ``[]``
+    and touched nothing) and a visible one: the repo's ``.gitignore`` entry
+    is the root-anchored ``/.herald/``, deliberately so a tracked
+    ``.herald/`` test fixture deeper in the tree keeps working, so any
+    ``herald`` read run from a SUBDIRECTORY left an untracked
+    ``<subdir>/.herald/herald.db`` behind in ``git status``. The three
+    exporter scripts and every ``--list``-shaped command hit this path."""
+    conn = sqlite3.connect(":memory:", isolation_level=None)
+    conn.row_factory = sqlite3.Row
+    for statement in _SCHEMA_V1_SQL.split(";"):
+        statement = statement.strip()
+        if statement:
+            conn.execute(statement)
+    conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+    return conn
+
+
 @contextlib.contextmanager
 def connection(db_path: Path) -> Iterator[sqlite3.Connection]:
     """A connection for reading ``db_path`` -- the ambient transaction's
     connection when called from inside one for the SAME path (so a read
     taken mid-write sees that write's own uncommitted rows), otherwise a
     short-lived standalone connection that never takes a write lock (see
-    module docstring)."""
+    module docstring).
+
+    A read of a store that does not exist yet (and has no legacy JSON
+    beside it to migrate) is served from an empty in-memory database --
+    reads stay side-effect-free, see ``_empty_read_connection``.
+
+    A ``sqlite3`` failure raised while reading is wrapped in
+    ``errors.HeraldError`` here, at the seam, so the read functions match
+    the write functions' existing AD-6 contract without repeating the same
+    ``try``/``except`` in all six of them. ``cli.dispatch`` catches only
+    ``HeraldError``; an unwrapped one exited as a traceback instead of the
+    "message plus exit code 1" this story's own rewritten runbooks
+    promise."""
     key = str(Path(db_path).resolve())
     ambient = _ambient(key)
     if ambient is not None:
+        # Inside a transaction: that writer's own wrapper owns error
+        # translation for the whole critical section, including this read.
         yield ambient
         return
-    conn = _connect(db_path)
+    if not db_path.exists() and not _has_legacy_data(db_path):
+        conn = _empty_read_connection()
+    else:
+        conn = _connect(db_path)
     try:
         yield conn
+    except sqlite3.Error as exc:
+        raise errors.HeraldError(f"{db_path} could not be read: {exc}") from exc
     finally:
         conn.close()
 
@@ -208,16 +285,38 @@ def transaction(db_path: Path) -> Iterator[sqlite3.Connection]:
         conn.close()
         raise errors.HeraldError(f"{db_path} is not a valid database: {exc}") from exc
     stack = _stack()
-    stack.append((key, conn))
+    entry = (key, conn)
+    stack.append(entry)
     try:
-        yield conn
-    except BaseException:
-        conn.rollback()
-        raise
-    else:
-        conn.commit()
+        try:
+            yield conn
+        except BaseException:
+            # Suppressed: a rollback failure here would replace the
+            # exception that actually caused the abort with a far less
+            # useful one, and the connection is closed either way below --
+            # which rolls back any still-open transaction on its own.
+            with contextlib.suppress(sqlite3.Error):
+                conn.rollback()
+            raise
+        else:
+            try:
+                conn.commit()
+            except sqlite3.Error as exc:
+                raise errors.HeraldError(
+                    f"{db_path} could not be written: {exc}"
+                ) from exc
     finally:
-        stack.pop()
+        # Remove THIS frame's own entry, not whatever is on top: an
+        # out-of-LIFO exit (an `ExitStack` holding transactions for two
+        # different paths, a generator-based helper) would otherwise
+        # deregister a different path's still-open transaction, leaving a
+        # closed connection registered as ambient for it. Every call site
+        # today nests with plain `with` statements, so this is latent --
+        # and costs nothing to close off.
+        for index in range(len(stack) - 1, -1, -1):
+            if stack[index] is entry:
+                del stack[index]
+                break
         conn.close()
 
 
@@ -246,7 +345,7 @@ CREATE TABLE progress (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   UNIQUE(station, date)
-);
+) STRICT;
 
 CREATE TABLE claims (
   id TEXT NOT NULL,
@@ -260,7 +359,7 @@ CREATE TABLE claims (
   updated_at TEXT NOT NULL,
   evidence TEXT NOT NULL,
   edit_history TEXT NOT NULL
-);
+) STRICT;
 
 CREATE TABLE notices_index (
   component TEXT PRIMARY KEY,
@@ -278,12 +377,12 @@ CREATE TABLE notices_index (
   closed_by TEXT,
   close_reason TEXT,
   revisions TEXT NOT NULL
-);
+) STRICT;
 
 CREATE TABLE notices_redirects (
   old_component TEXT PRIMARY KEY,
   new_component TEXT NOT NULL
-);
+) STRICT;
 """
 
 
@@ -312,23 +411,48 @@ def _import_legacy_v1(conn: sqlite3.Connection, db_path: Path) -> None:
 
     legacy_dir = db_path.parent
 
-    for record in progress_mod._read_legacy_json(legacy_dir / "progress.json"):
-        conn.execute(
-            "INSERT INTO progress (id, station, date, shipped_capabilities, "
-            "compute_hours, token_spend, wall_clock_hours, unblock_narrative, "
-            "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            progress_mod._to_params(record),
-        )
+    def legacy(name: str) -> Path | None:
+        """``name``'s legacy file, or ``None`` when that name IS the
+        database being migrated.
 
-    for claim in claims_mod._read_legacy_json(legacy_dir / "claims.json"):
-        conn.execute(
-            "INSERT INTO claims (id, project_name, status, thesis, shipped_date, "
-            "created_at, published_at, closed_at, updated_at, evidence, "
-            "edit_history) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            claims_mod._to_params(claim),
-        )
+        ``.herald/progress.json``/``claims.json``/``notices-index.json``
+        were these modules' DOCUMENTED default paths one commit ago, and
+        every public function still accepts an explicit path, so a caller
+        or script that hard-coded one now hands it here as ``db_path``.
+        Without this guard SQLite created the database at that name and
+        the import below then tried to ``json.load`` the file it had just
+        created -- failing permanently, and reporting it as a UTF-8 decode
+        error on a "claims file", which points nowhere near the cause."""
+        candidate = legacy_dir / name
+        if candidate.resolve() == db_path.resolve():
+            return None
+        return candidate
 
-    document = notices_mod._read_legacy_index_document(legacy_dir / "notices-index.json")
+    progress_file, claims_file, notices_file = (
+        legacy(name) for name in _LEGACY_FILENAMES
+    )
+
+    if progress_file is not None:
+        for record in progress_mod._read_legacy_json(progress_file):
+            conn.execute(
+                "INSERT INTO progress (id, station, date, shipped_capabilities, "
+                "compute_hours, token_spend, wall_clock_hours, unblock_narrative, "
+                "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                progress_mod._to_params(record),
+            )
+
+    if claims_file is not None:
+        for claim in claims_mod._read_legacy_json(claims_file):
+            conn.execute(
+                "INSERT INTO claims (id, project_name, status, thesis, shipped_date, "
+                "created_at, published_at, closed_at, updated_at, evidence, "
+                "edit_history) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                claims_mod._to_params(claim),
+            )
+
+    if notices_file is None:
+        return
+    document = notices_mod._read_legacy_index_document(notices_file)
     for entry in document["notices"].values():
         notice = notices_mod._entry_to_notice(entry)
         conn.execute(

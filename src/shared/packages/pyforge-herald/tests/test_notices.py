@@ -331,10 +331,17 @@ def test_two_concurrent_authors_for_different_components_both_land(
     ``author_notice``'s own ``db.transaction``, before its first read)
     gives the other author's whole ``BEGIN IMMEDIATE`` attempt room to
     genuinely block during the pause -- a second author cannot even begin
-    its own transaction until the first has committed. Fails against a
-    version of ``author_notice`` that does not hold the transaction
-    across its read-modify-write span, passes against the real
-    implementation."""
+    its own transaction until the first has committed.
+
+    Scope, stated honestly: this asserts the OUTCOME (both notices land),
+    not the mechanism. Story 13.3 rewrote the index write into a
+    single-row ``ON CONFLICT`` upsert, so two authors of DIFFERENT
+    components cannot clobber each other whatever the locking does --
+    verified: this test still passes against a ``db.transaction`` stripped
+    of its ``BEGIN IMMEDIATE``.
+    ``test_two_concurrent_reauthors_of_the_same_component_do_not_lose_a_revision``
+    just below is the one that genuinely depends on the transaction, and
+    is what holds DW-1-4-2's guarantee for this module."""
     original_now_iso = notices._now_iso
 
     def delayed_now_iso():
@@ -364,6 +371,61 @@ def test_two_concurrent_authors_for_different_components_both_land(
 
     components = {n.component for n in notices.list_notices(tmp_path, status="all")}
     assert components == {"component-a", "component-b"}
+
+
+def test_two_concurrent_reauthors_of_the_same_component_do_not_lose_a_revision(
+    tmp_path, monkeypatch
+):
+    """DW-1-4-2's real guarantee for this module, which the
+    different-components test above cannot hold: two ``author_notice``
+    calls racing on the SAME component each read the current revision
+    list, append to it, and write it back, so without ``db.transaction``
+    holding that read-modify-write together both read the same list and
+    the second write silently drops the first's revision.
+
+    The delay is injected into ``_write_markdown`` -- called after the
+    read and before the index write -- because that is the only point
+    inside the critical section that sits between them; delaying
+    ``_now_iso`` (as the test above does) lands before the read and so
+    leaves no window to lose.
+
+    Verified discriminating: fails (2 revisions, one lost) against a
+    ``db.transaction`` stripped of its ``BEGIN IMMEDIATE``, passes (3)
+    against the real implementation."""
+    _author(tmp_path)  # the initial draft: one "authored" revision
+
+    original_write_markdown = notices._write_markdown
+
+    def delayed_write_markdown(repo_root, notice):
+        original_write_markdown(repo_root, notice)
+        time.sleep(0.2)
+
+    monkeypatch.setattr(notices, "_write_markdown", delayed_write_markdown)
+
+    barrier = threading.Barrier(2)
+    failures: list[BaseException] = []
+
+    def reauthor(what: str) -> None:
+        try:
+            barrier.wait(timeout=5)
+            _author(tmp_path, what=what)
+        except BaseException as exc:  # noqa: BLE001 - surfaced via `failures`
+            failures.append(exc)
+
+    t1 = threading.Thread(target=reauthor, args=("first edit",))
+    t2 = threading.Thread(target=reauthor, args=("second edit",))
+    t1.start()
+    t2.start()
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+    assert not t1.is_alive() and not t2.is_alive(), "a writer deadlocked on the lock"
+    assert not failures, f"a concurrent re-author failed: {failures}"
+
+    notice = notices.get_notice(tmp_path, "auth-api-v1")
+    assert len(notice.revisions) == 3, (
+        "one re-author's revision was lost: the read-modify-write did not "
+        "stay inside a single transaction"
+    )
 
 
 @pytest.mark.parametrize(

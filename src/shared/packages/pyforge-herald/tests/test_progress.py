@@ -325,10 +325,17 @@ def test_two_concurrent_upserts_for_different_stations_both_land(
     ``upsert``'s own ``db.transaction``, right after its read and before
     its write) gives the other writer's whole ``BEGIN IMMEDIATE`` attempt
     room to genuinely block during the pause -- a second writer cannot
-    even begin its own transaction until the first has committed. Fails
-    against a version of ``upsert`` that does not hold the transaction
-    across its read-modify-write span; passes against the real
-    implementation."""
+    even begin its own transaction until the first has committed.
+
+    Scope, stated honestly: this asserts the OUTCOME (both rows land), not
+    the mechanism. Story 13.3 rewrote ``upsert`` to touch only its own
+    ``(station, date)`` row (a targeted SELECT then UPDATE/INSERT) instead
+    of rewriting the whole table, so two writers on DIFFERENT keys cannot
+    clobber each other whatever the locking does -- verified: this test
+    still passes against a ``db.transaction`` stripped of its ``BEGIN
+    IMMEDIATE``. ``test_write_all_is_not_silently_discarded_by_a_concurrent_upsert``
+    is the one that genuinely fails without the transaction, and is what
+    holds DW-1-4-2's guarantee for this module."""
     progress_path = tmp_path / "herald.db"
     original_now_iso = progress_module.now_iso
 

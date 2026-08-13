@@ -8,6 +8,7 @@ convention."""
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -22,23 +23,202 @@ from pyforge.herald.errors import HeraldError
 
 def test_fresh_connection_is_wal_mode(tmp_path):
     db_path = tmp_path / "herald.db"
-    with db.connection(db_path) as conn:
+    # Through `transaction`, not `connection`: a read of a store that does
+    # not exist yet is served from an empty in-memory database (whose
+    # journal mode is "memory", not "wal") precisely so it creates nothing.
+    with db.transaction(db_path) as conn:
         mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
     assert mode.lower() == "wal"
+    # And every later read of the now-existing file is a real WAL connection.
+    with db.connection(db_path) as conn:
+        assert conn.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
 
 
 def test_fresh_connection_has_the_generous_busy_timeout(tmp_path):
     db_path = tmp_path / "herald.db"
-    with db.connection(db_path) as conn:
+    with db.transaction(db_path) as conn:
         timeout_ms = conn.execute("PRAGMA busy_timeout").fetchone()[0]
     assert timeout_ms == db._BUSY_TIMEOUT_MS
+    with db.connection(db_path) as conn:
+        assert conn.execute("PRAGMA busy_timeout").fetchone()[0] == db._BUSY_TIMEOUT_MS
 
 
-def test_first_connection_creates_the_database_file_and_parent_dir(tmp_path):
+def test_first_write_creates_the_database_file_and_parent_dir(tmp_path):
     db_path = tmp_path / "nested" / "dir" / "herald.db"
-    with db.connection(db_path):
+    with db.transaction(db_path):
         pass
     assert db_path.exists()
+
+
+def test_a_read_of_a_store_that_does_not_exist_creates_nothing(tmp_path):
+    """The I/O matrix's "first WRITE creates `.herald/herald.db`" row, held
+    from the other side: a pure read must leave the filesystem untouched,
+    as the pre-13.3 JSON modules did (`read_all` on a missing file returned
+    `[]` and created nothing).
+
+    Not cosmetic. The repo's `.gitignore` entry is the root-anchored
+    `/.herald/` -- deliberately, so a tracked `.herald/` fixture deeper in
+    the tree keeps working -- so a read run from any SUBDIRECTORY left an
+    untracked `<subdir>/.herald/herald.db` (plus WAL's `-wal`/`-shm`
+    sidecars) sitting in `git status`. Every `--list`-shaped command and
+    all three exporter scripts take this path."""
+    db_path = tmp_path / "nested" / "dir" / "herald.db"
+    with db.connection(db_path) as conn:
+        assert conn.execute("SELECT count(*) FROM progress").fetchone()[0] == 0
+    assert not db_path.exists()
+    assert not db_path.parent.exists()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_a_read_still_migrates_when_legacy_json_is_present(tmp_path):
+    """The side-effect-free read above must NOT suppress the legacy import:
+    a store that does not exist yet but has legacy JSON beside it still has
+    something to migrate, so that read goes through the real database."""
+    db_path = tmp_path / "herald.db"
+    (tmp_path / "progress.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "p1",
+                    "station": "herald",
+                    "date": "2026-01-01",
+                    "shipped_capabilities": ["a"],
+                    "compute_hours": 1.0,
+                    "token_spend": 2,
+                    "wall_clock_hours": 3.0,
+                    "unblock_narrative": "n",
+                    "created_at": "t1",
+                    "updated_at": "t2",
+                }
+            ]
+        )
+    )
+    assert [r.id for r in progress.read_all(db_path)] == ["p1"]
+    assert db_path.exists()
+
+
+def test_a_read_error_is_wrapped_in_herald_error(tmp_path):
+    """AD-6 parity between the read and write paths. `cli.dispatch` catches
+    only `HeraldError`; a raw `sqlite3.Error` from a read exited as a
+    traceback instead of the message-plus-exit-code-1 this story's own
+    rewritten runbooks promise."""
+    db_path = tmp_path / "herald.db"
+    with db.transaction(db_path):
+        pass
+    raw = sqlite3.connect(db_path)
+    raw.execute("DROP TABLE progress")
+    raw.commit()
+    raw.close()
+
+    with pytest.raises(HeraldError) as excinfo:
+        progress.read_all(db_path)
+    assert "could not be read" in str(excinfo.value)
+    assert "no such table" in str(excinfo.value)
+
+
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="root bypasses the read-only permission this case depends on",
+)
+def test_a_non_busy_open_failure_is_not_retried_to_the_busy_timeout(tmp_path):
+    """`_set_wal_mode` retries only SQLITE_BUSY. Retrying every
+    `OperationalError` regardless burned the full `_BUSY_TIMEOUT_MS` before
+    failing -- a measured 30.00s per command against a read-only
+    `herald.db` (whose journal-mode switch is itself a write, so it fails
+    identically on every attempt), and the same against a filesystem
+    without the shared-memory support WAL needs. Neither is something
+    waiting can ever resolve."""
+    db_path = tmp_path / "herald.db"
+    with db.transaction(db_path):
+        pass
+
+    read_only = tmp_path / "read-only"
+    read_only.mkdir()
+    target = read_only / "herald.db"
+    target.write_bytes(db_path.read_bytes())
+    target.chmod(0o444)
+    read_only.chmod(0o555)
+    try:
+        started = time.monotonic()
+        with pytest.raises(HeraldError):
+            progress.read_all(target)
+        elapsed = time.monotonic() - started
+    finally:
+        # Restored so pytest's own tmp_path cleanup can remove the tree.
+        read_only.chmod(0o755)
+        target.chmod(0o644)
+
+    assert elapsed < db._BUSY_TIMEOUT_MS / 1000 / 2, (
+        f"a failure waiting cannot resolve stalled for {elapsed:.2f}s; "
+        f"only SQLITE_BUSY may be retried"
+    )
+
+
+def test_wrong_typed_values_are_rejected_by_the_strict_schema(tmp_path):
+    """The tables are `STRICT`, which is what makes `read_all`'s "every
+    other field is a plain, typed SQL column" claim true. Without it
+    SQLite's default type affinity accepts `compute_hours='lots'` from an
+    out-of-band write and `read_all` hands it straight back, losing the
+    per-record type validation the pre-13.3 JSON reader performed."""
+    db_path = tmp_path / "herald.db"
+    progress.upsert(
+        db_path,
+        station="herald",
+        date="2026-01-01",
+        shipped_capabilities=["a"],
+        compute_hours=1.0,
+        token_spend=2,
+        wall_clock_hours=3.0,
+        unblock_narrative="n",
+    )
+    raw = sqlite3.connect(db_path)
+    try:
+        with pytest.raises(sqlite3.IntegrityError, match="cannot store TEXT value"):
+            raw.execute("UPDATE progress SET compute_hours = 'lots'")
+    finally:
+        raw.close()
+
+
+def test_a_legacy_filename_used_as_the_database_path_does_not_self_import(tmp_path):
+    """`.herald/claims.json` was this module's DOCUMENTED default path one
+    commit ago, and every public function still accepts an explicit path.
+    Passing one now made SQLite create the database at that name and the
+    migration then `json.load` the file it had just created -- failing
+    permanently, and reporting it as a UTF-8 decode error on a "claims
+    file", which points nowhere near the cause."""
+    db_path = tmp_path / "claims.json"
+    claim = claims.create(db_path, project_name="proj", evidence=[])
+    assert [c.id for c in claims.read_all(db_path)] == [claim.id]
+
+
+def test_duplicate_station_date_in_legacy_progress_json_reports_an_import_failure(
+    tmp_path,
+):
+    """`_connect`'s `sqlite3.IntegrityError` branch: a legacy file carrying
+    two records for the same `(station, date)` key (which the JSON array
+    tolerated and the new schema does not) must be named as an import
+    failure, not misreported as a corrupt database file."""
+    db_path = tmp_path / "herald.db"
+    record = {
+        "station": "herald",
+        "date": "2026-01-01",
+        "shipped_capabilities": [],
+        "compute_hours": 1.0,
+        "token_spend": 2,
+        "wall_clock_hours": 3.0,
+        "unblock_narrative": "n",
+        "created_at": "t1",
+        "updated_at": "t2",
+    }
+    (tmp_path / "progress.json").write_text(
+        json.dumps([{**record, "id": "p1"}, {**record, "id": "p2"}])
+    )
+
+    with pytest.raises(HeraldError) as excinfo:
+        progress.read_all(db_path)
+    message = str(excinfo.value)
+    assert "legacy data could not be imported" in message
+    assert "is not a valid database" not in message
 
 
 # --- migration: schema creation + versioning --------------------------------

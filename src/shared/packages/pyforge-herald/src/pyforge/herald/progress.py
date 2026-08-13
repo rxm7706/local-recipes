@@ -256,7 +256,12 @@ def read_all(progress_path: Path) -> list[Progress]:
     Raises ``errors.HeraldError`` naming ``progress_path`` when a stored
     record's ``shipped_capabilities`` JSON column is malformed -- the one
     corruption still reachable once the store is a schema-enforced
-    database (every other field is a plain, typed SQL column)."""
+    database: every other field is a plain, typed SQL column in a
+    ``STRICT`` table, so SQLite itself rejects a wrong-typed value at
+    write time rather than handing it back here. (Without ``STRICT``,
+    SQLite's default type affinity accepts e.g. ``compute_hours='lots'``
+    from an out-of-band write and returns it verbatim -- the exact
+    type-validation ``read_all`` performed on every record pre-13.3.)"""
     with db.connection(progress_path) as conn:
         rows = conn.execute(
             "SELECT id, station, date, shipped_capabilities, compute_hours, "
