@@ -515,6 +515,58 @@ def test_surface_changed_reports_warn(tmp_path: Path) -> None:
 # ------------------------------------------------------------------------- coverage
 
 
+def test_spike_report_is_classified_and_not_flagged_uncovered(tmp_path: Path) -> None:
+    """The real 2026-08-11 shape (PR #427, Marshal Story 7.6): a design-spike's
+    PASS/FAIL report at the project's ``planning-artifacts/`` root must be
+    classified rather than falling through to ``UNKNOWN``."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._plan(repo) / "spike-0-copier-api-fit-report.md").write_text(
+        "verdict: PASS\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_a_second_spike_index_is_also_classified(tmp_path: Path) -> None:
+    """Proves the rule generalizes over the spike index and slug -- not
+    hard-coded to ``spike-0`` -- so a future ``spike-1``/``spike-2`` report
+    following the same convention stays covered."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._plan(repo) / "spike-2-some-other-thing-report.md").write_text(
+        "verdict: FAIL\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_spike_report_look_alike_without_a_numeric_index_still_hard_fails(tmp_path: Path) -> None:
+    """The fail-closed default must survive: a look-alike outside the agreed
+    pattern (missing the numeric spike index) is still a hole, not a pass."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (factory._plan(repo) / "spike-copier-api-fit-report.md").write_text(
+        "verdict: PASS\n", encoding="utf-8"
+    )
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "uncovered"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["subject"] == "planning-artifacts/spike-copier-api-fit-report.md"
+
+
 def test_uncovered_file_reports_fail(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)

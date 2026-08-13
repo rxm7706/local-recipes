@@ -1055,6 +1055,17 @@ def classify(path: Path, target: Path) -> str:
         return "tracked:sprint-ledger"
     if re.fullmatch(r"implementation-artifacts/spec-.*\.md", rel):
         return "tracked:spec"
+    # --- the spike-report shape (Story 6.11, added 2026-08-11) ----------------
+    # Same lesson a third time: on 2026-08-11 (PR #427, Marshal Story 7.6) a
+    # design-spike's PASS/FAIL verdict landed at a project's `planning-artifacts/`
+    # root (`spike-0-copier-api-fit-report.md`) and fell through to `UNKNOWN`,
+    # tripping `uncovered`. Generalized over the spike index and the descriptive
+    # slug -- not hard-coded to `spike-0` -- so a future `spike-1`/`spike-2`
+    # report following the same convention stays covered without another
+    # incident. A frozen, dated record of a one-off design decision, so it
+    # archives rather than tracks (no pin gating).
+    if re.fullmatch(r"planning-artifacts/spike-\d+-[a-z0-9-]+-report\.md", rel):
+        return "archive:spike-report"
     return "UNKNOWN"
 
 
