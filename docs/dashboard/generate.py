@@ -661,7 +661,42 @@ def build_fleet_progress(projects: dict) -> dict:
 
 
 
-def enrich_fleet_progress_live(fleet: dict, projects: dict) -> None:
+def live_running_stations() -> tuple[set[str], str | None]:
+    """Bare station keys (no `pyforge-` prefix) with a genuinely live bmad-loop
+    engine right now, per `marshal status --format json` — the SAME authority
+    `scripts/fleet_picture.py` reads, so nothing on this page can disagree with
+    the CLI about who is running. `(set(), error)` if the check itself failed —
+    never let a subprocess failure silently masquerade as "nothing running."
+
+    Computed ONCE per render and threaded into every LOCAL-ONLY panel that
+    needs a live/not-live distinction (`enrich_fleet_progress_live`,
+    `scan_impl_campaign`) — a second definition of "running" is exactly how
+    the build-campaign panel drifted from this one and started calling a
+    stopped station "RUNNING" whenever it merely had `done > 0` (2026-08-13).
+
+    `data.get("data", data)` mirrors `scripts/fleet_picture.py::_live()`'s own
+    unwrap exactly: `marshal status --format json`'s payload is nested under a
+    `data` envelope key (`{assumptions, command, data: {homes: [...]}, ...}`),
+    which this function's own prior version read from the top level and so
+    NEVER found a single running station (caught 2026-08-13 diffing this
+    function's own output against `fleet_picture.py`'s, which unwraps
+    correctly).
+    """
+    try:
+        out = subprocess.run(
+            ["pixi", "run", "-e", "pyforge-marshal", "--", "marshal", "status",
+             "--format", "json"],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=300).stdout
+        parsed = json.loads(out[out.index("{"):out.rindex("}") + 1])
+        rows = parsed.get("data", parsed).get("homes", [])
+        return ({(r.get("slug") or "").replace("pyforge-", "") for r in rows
+                  if r.get("state") == "running"}, None)
+    except Exception as exc:                       # never break a local render
+        return set(), str(exc)
+
+
+def enrich_fleet_progress_live(fleet: dict, projects: dict, running: set[str],
+                                live_error: str | None) -> None:
     """LOCAL-ONLY: add run state and a projection to the fleet roll-up.
 
     The operator asked the right question — the LOCAL board is generated on the
@@ -671,32 +706,17 @@ def enrich_fleet_progress_live(fleet: dict, projects: dict) -> None:
     local branch only, exactly like `apply_loop_inflight` — and their ABSENCE is
     what makes a Pages render honest rather than stale.
 
-    `running` reuses `_live_loop_sessions()`, the same multiplexer reading
-    `apply_loop_inflight` trusts, rather than a second definition of "live" that
-    could disagree with the row directly above it on the same page.
+    `running`/`live_error` come from `live_running_stations()`, called ONCE by
+    the caller and shared with `scan_impl_campaign` — never a second definition
+    of "live" that could disagree with the row directly above it on the same
+    page.
 
     `projected` = done + pending for a RUNNING station, done alone for a stopped
     one. Blocked is excluded by construction: those stories are not pending and
     will not be dispatched.
     """
-    # Authority: `marshal status`, the SAME source `scripts/fleet_picture.py`
-    # reads — so the local board and the CLI can never disagree about who is
-    # running. An earlier cut used `_live_loop_sessions()` (tmux) and was WRONG
-    # on both counts: it reported marshal running because a tmux session lingered
-    # after its engine died, and missed steward/mason entirely. A multiplexer
-    # session is not an engine.
-    running: set[str] = set()
-    try:
-        out = subprocess.run(
-            ["pixi", "run", "-e", "pyforge-marshal", "--", "marshal", "status",
-             "--format", "json"],
-            cwd=REPO_ROOT, capture_output=True, text=True, timeout=300).stdout
-        rows = json.loads(out[out.index("{"):out.rindex("}") + 1]).get("homes", [])
-        for r in rows:
-            if r.get("state") == "running":
-                running.add((r.get("slug") or "").replace("pyforge-", ""))
-    except Exception as exc:                       # never break a local render
-        fleet["liveError"] = f"marshal status unavailable: {exc}"
+    if live_error is not None:                     # never break a local render
+        fleet["liveError"] = f"marshal status unavailable: {live_error}"
     total_proj = 0
     for row in fleet.get("rows", []):
         is_running = row["key"] in running
@@ -1135,9 +1155,19 @@ def _ledger_done_total(rel_path: str, epic_min: int | None, epic_max: int | None
     return done, total
 
 
-def scan_impl_campaign(projects: dict) -> dict:
+def scan_impl_campaign(projects: dict, running_stations: set[str] | None = None) -> dict:
     """Build-campaign roster; wired lines derive done/total live from `projects`,
-    unwired lines derive it from their own sprint-status-ledger.yaml (IMPL_CAMPAIGN_LEDGER)."""
+    unwired lines derive it from their own sprint-status-ledger.yaml (IMPL_CAMPAIGN_LEDGER).
+
+    `running_stations` is the SAME live set `enrich_fleet_progress_live` uses
+    (from `live_running_stations()`) — `None` on a `--source git` render, where
+    no live authority exists at all. A row's `state` is `"running"` ONLY when
+    its own bmad-loop engine is actually live right now; `done > 0` alone earns
+    `"in-progress"`, a distinct, honestly-labeled state — conflating the two
+    is what made a stopped station (`done > 0`, no live engine) render as
+    "RUNNING" (2026-08-13, caught by inspection against `fleet-picture`, which
+    already made this exact distinction for the sibling fleet-roll-up panel).
+    """
     rows: list[dict] = []
     for e in IMPL_CAMPAIGN:
         done, total = 0, e["stories"]
@@ -1146,13 +1176,16 @@ def scan_impl_campaign(projects: dict) -> dict:
             total = len(stories)
             done = sum(1 for s in stories if s[1] == "done")
         elif e["slug"] in IMPL_CAMPAIGN_LEDGER:
-            live = _ledger_done_total(*IMPL_CAMPAIGN_LEDGER[e["slug"]])
-            if live is not None:
-                done, total = live
+            ledger_live = _ledger_done_total(*IMPL_CAMPAIGN_LEDGER[e["slug"]])
+            if ledger_live is not None:
+                done, total = ledger_live
+        is_running = running_stations is not None and e["slug"].removeprefix("pyforge-") in running_stations
         if total and done == total:
             state = "done"
-        elif done > 0:
+        elif is_running:
             state = "running"
+        elif done > 0:
+            state = "in-progress"
         else:
             state = e["state"]
         rows.append({**e, "done": done, "total": total, "state": state})
@@ -2885,14 +2918,24 @@ def main() -> int:
     data.pop("campaign", None)
     data.pop("campaign2", None)
     spec_c = scan_campaign()
-    build_c = scan_impl_campaign(data["projects"])
+    # Computed ONCE, shared by every LOCAL-ONLY panel needing a live/not-live
+    # distinction — see `live_running_stations()`'s own docstring for why a
+    # second definition of "running" is exactly how the build-campaign panel
+    # drifted from the fleet roll-up panel and mislabeled a stopped station.
+    running_stations: set[str] = set()
+    live_error: str | None = None
+    if args.source != "git":
+        running_stations, live_error = live_running_stations()
+    build_c = scan_impl_campaign(data["projects"],
+                                  running_stations if args.source != "git" else None)
     apply_line_state(data["projects"])
     # Fleet roll-up: tracked-only, so it renders the same on Pages as locally.
     data["fleetProgress"] = build_fleet_progress(data["projects"])
     if args.source != "git":
         # Local render only — see the function's own docstring for why
         # Pages must NOT carry these.
-        enrich_fleet_progress_live(data["fleetProgress"], data["projects"])
+        enrich_fleet_progress_live(data["fleetProgress"], data["projects"],
+                                    running_stations, live_error)
     data["health"] = scan_health()
     # Pitch BEFORE fleet: the deck dot is sub-scored against the six-artifact family
     # contract, and scan_pitch already computes exactly that per deck. Recomputing it
