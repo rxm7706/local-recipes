@@ -387,6 +387,10 @@ pyforge-doctor = { features = ["pyforge-doctor"], no-default-feature = true }
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-scribe package + its runtime deps (typer, pydantic) + pytest.
 pyforge-scribe = { features = ["pyforge-scribe"], no-default-feature = true }
+# Lean core env (Story 14.1, pyforge-scribe mirror): no-default-feature
+# excludes the fat default [dependencies], so this env carries only the
+# built pyforge-core package (stdlib only -- no third-party run-dep) + pytest.
+pyforge-core = { features = ["pyforge-core"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
@@ -1640,6 +1644,22 @@ httpx2 = ">=2.5.0"                      # Story 6.4 evidence-link HTTP client (a
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
+# --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --
+# Source + package manifest live in ./src/shared/packages/pyforge-core (its
+# own [package] table, no [workspace]) — same src/shared/packages convention as
+# every sibling station. One hatchling pyproject is the single Python build backend:
+#   * conda pkg  -> pixi-build-python wraps the hatchling wheel  (pyforge-core-build-conda)
+#   * wheel+sdist-> `python -m build` from the same pyproject     (pyforge-core-build-dist)
+# The path dependency below builds the CONDA package and installs it (no
+# third-party run-deps -- pyforge-core is the pure-stdlib leaf, SPEC-pyforge-core
+# CAP-1) into the dedicated lean `pyforge-core` env. No station depends on it
+# yet -- that wiring belongs to the extraction stories (14.2-14.4). Spec:
+# _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.
+[feature.pyforge-core.dependencies]
+pyforge-core = { path = "src/shared/packages/pyforge-core" }  # -> built conda pkg
+hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                       # test runner
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-test]
 description = "Run the pyforge.doctor test suite"
@@ -1697,3 +1717,21 @@ depends-on = ["pyforge-herald-build-conda", "pyforge-herald-build-dist"]
 description = "Export .herald/claims.json -> web/public/success.json for the web dashboard (Story 9.4)"
 cmd = "python scripts/export_web_snapshot.py"
 cwd = "src/shared/packages/pyforge-herald"
+
+[feature.pyforge-core.tasks.pyforge-core-test]
+description = "Run the pyforge.core test suite"
+cmd = "pytest src/shared/packages/pyforge-core/tests -q"
+
+[feature.pyforge-core.tasks.pyforge-core-build-conda]
+description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
+cmd = "pixi build --output-dir dist-conda"
+cwd = "src/shared/packages/pyforge-core"
+
+[feature.pyforge-core.tasks.pyforge-core-build-dist]
+description = "Build the pypi wheel (.whl) + sdist (.tar.gz) via hatchling"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/pyforge-core"
+
+[feature.pyforge-core.tasks.pyforge-core-build]
+description = "Build all three artifacts: conda + wheel + sdist"
+depends-on = ["pyforge-core-build-conda", "pyforge-core-build-dist"]
