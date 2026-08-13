@@ -31,10 +31,10 @@ as corruption one process later.
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+from pyforge.core.atomic_write import atomic_write_text
 
 from . import errors, locking
 
@@ -261,41 +261,16 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
         document = _load_document(state_path)
         document[slug] = asdict(state)
         try:
-            state_path.parent.mkdir(parents=True, exist_ok=True)
-            handle, tmp_name = tempfile.mkstemp(
-                dir=state_path.parent, prefix=f".{state_path.name}-", suffix=".tmp"
-            )
-        except OSError as exc:
+            # Story 14.2, CAP-2: delegates to the one shared
+            # temp-file-then-`os.replace` primitive (mkstemp-based).
+            atomic_write_text(state_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+        except (OSError, TypeError, ValueError, RecursionError) as exc:
+            # The up-front validation makes a json.dump TypeError /
+            # ValueError unreachable for this slug's own entry, and
+            # every other entry came from JSON (serializable by
+            # construction) -- wrapped anyway: a raw leak through the
+            # AD-6 contract is worse than a redundant guard.
+            # RecursionError mirrors the load-side wrap: what
+            # json.load parsed under the limit, json.dump must not
+            # leak raw over it.
             raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-        try:
-            try:
-                fh = os.fdopen(handle, "w", encoding="utf-8")
-            except BaseException:
-                # os.fdopen raised before taking ownership of the raw fd, so
-                # this is the only branch that may close it. Once fdopen
-                # returns, the file object owns the fd and the `with` below
-                # closes it -- closing here as well would hit whatever a
-                # concurrent thread had opened onto the recycled fd number.
-                os.close(handle)
-                raise
-            with fh:
-                json.dump(document, fh, indent=2, sort_keys=True)
-                fh.write("\n")
-            os.replace(tmp_name, state_path)
-        except BaseException as exc:
-            # Unlink the temp file so a failed write never leaks it.
-            try:
-                os.unlink(tmp_name)
-            except OSError:
-                pass
-            if isinstance(exc, (OSError, TypeError, ValueError, RecursionError)):
-                # The up-front validation makes a json.dump TypeError /
-                # ValueError unreachable for this slug's own entry, and
-                # every other entry came from JSON (serializable by
-                # construction) -- wrapped anyway: a raw leak through the
-                # AD-6 contract is worse than a redundant guard.
-                # RecursionError mirrors the load-side wrap: what
-                # json.load parsed under the limit, json.dump must not
-                # leak raw over it.
-                raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-            raise

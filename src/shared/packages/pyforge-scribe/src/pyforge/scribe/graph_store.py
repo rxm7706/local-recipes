@@ -38,14 +38,15 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
-import os
 import sys
 import tempfile
 import time
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator, Protocol
+from typing import Protocol
 
+from pyforge.core.atomic_write import atomic_write_text
 from pyforge.scribe.models import GraphNode
 
 _LOCK_TIMEOUT_S = 10.0
@@ -137,10 +138,12 @@ class FlatFileGraphStore:
     def commit(self) -> None:
         """Atomically persist the full in-memory node set.
 
-        A whole-file rewrite (temp file + `os.replace()`), never an in-place
-        patch -- a reader never observes a half-written file, and two racing
-        `commit()` calls resolve to one clean last-writer-wins swap instead
-        of a corrupted file. The temp file is created and cleaned up on any
+        A whole-file rewrite via `pyforge.core.atomic_write_text` (Story
+        14.2, CAP-2 -- the one shared temp-file-then-`os.replace()`
+        primitive, mkstemp-based), never an in-place patch -- a reader
+        never observes a half-written file, and two racing `commit()`
+        calls resolve to one clean last-writer-wins swap instead of a
+        corrupted file. The temp file is created and cleaned up on any
         exception (a crashed writer never leaves a stray `.tmp` sibling for a
         later `commit()` to trip over).
         """
@@ -150,20 +153,10 @@ class FlatFileGraphStore:
                 for node_id, node in sorted(self._nodes.items())
             }
         }
-        self.store_path.parent.mkdir(parents=True, exist_ok=True)
         with _locked(self.store_path):
-            fd, tmp_name = tempfile.mkstemp(
-                dir=str(self.store_path.parent), prefix=".graph-", suffix=".tmp"
+            atomic_write_text(
+                self.store_path, json.dumps(document, indent=2, sort_keys=True) + "\n"
             )
-            try:
-                with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                    json.dump(document, handle, indent=2, sort_keys=True)
-                    handle.write("\n")
-                os.replace(tmp_name, self.store_path)
-            except BaseException:
-                with contextlib.suppress(OSError):
-                    os.unlink(tmp_name)
-                raise
 
 
 @contextlib.contextmanager

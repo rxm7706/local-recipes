@@ -46,14 +46,14 @@ the story spec's Design Notes:**
 from __future__ import annotations
 
 import hashlib
-import os
 import subprocess
-import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+from pyforge.core.atomic_write import atomic_write_text as core_atomic_write_text
 
 from . import errors, registry, state
 
@@ -387,35 +387,17 @@ def _require_seeded_state(
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
-    """Write ``text`` to ``path`` atomically (temp file in ``path``'s own
-    directory, then ``os.replace``), mirroring ``state.write`` /
-    ``registry.register``'s existing crash-safety convention: a process
-    crash mid-write must never leave a corrupt half-written pulled file."""
+    """Write ``text`` to ``path`` atomically via `pyforge.core.
+    atomic_write_text` (Story 14.2, CAP-2 -- the one shared
+    temp-file-then-`os.replace` primitive, mkstemp-based), mirroring
+    ``state.write`` / ``registry.register``'s existing crash-safety
+    convention: a process crash mid-write must never leave a corrupt
+    half-written pulled file."""
     could_not = f"could not write {path}"
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        handle, tmp_name = tempfile.mkstemp(
-            dir=path.parent, prefix=f".{path.name}-", suffix=".tmp"
-        )
-    except OSError as exc:
+        core_atomic_write_text(path, text)
+    except (OSError, ValueError) as exc:
         raise errors.HeraldError(f"{could_not}: {exc}") from exc
-    try:
-        try:
-            fh = os.fdopen(handle, "w", encoding="utf-8")
-        except BaseException:
-            os.close(handle)
-            raise
-        with fh:
-            fh.write(text)
-        os.replace(tmp_name, path)
-    except BaseException as exc:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        if isinstance(exc, (OSError, ValueError)):
-            raise errors.HeraldError(f"{could_not}: {exc}") from exc
-        raise
 
 
 def _pull_and_land(
