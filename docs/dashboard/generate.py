@@ -416,7 +416,17 @@ def apply_loop_inflight(projects: dict) -> None:
         marked = []
         for epic in proj["epics"]:
             for story in epic["stories"]:
-                if story[0] in active_ids and story[1] == "pending":
+                # `active_ids` is ALREADY the authority (state.json, gated above on
+                # done_phases) — a story landing here is proven non-terminal from the
+                # run's own perspective regardless of what `story[1]` currently reads.
+                # Gating on `== "pending"` broke that precedence: the Tier-3 feed marks
+                # a story `done` at DEV completion, before review (documented above and
+                # in `promote_sprint_status.py`), so a story mid-review still reads
+                # "done" here while state.json correctly still calls it active — the
+                # flip silently never fired, `_set_inflight_card` below populated the
+                # card anyway, and the board showed a live elapsed clock next to a
+                # PAUSED chip for the exact same story (caught 2026-08-13, steward 9.2).
+                if story[0] in active_ids and story[1] != "active":
                     story[1] = "active"
                     marked.append(story[0])
         if marked:
