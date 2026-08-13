@@ -3895,7 +3895,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 11:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 11:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4031,6 +4031,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
       }
+    },
+    {
+      "slug": "db-gpt-django-plugin",
+      "title": "DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane",
+      "status": "dreamt",
+      "owner": "guild",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "db-gpt-packaging",
@@ -4215,6 +4223,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption"
       }
+    },
+    {
+      "slug": "langflow-django-plugin",
+      "title": "Langflow integrates into a cookiecutter-django project without fighting it",
+      "status": "dreamt",
+      "owner": "guild",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "loop-home-fleet-refresh",
@@ -6075,9 +6091,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 37,
+    "live": 39,
     "reached": 8,
-    "gaps": 35,
+    "gaps": 37,
     "findings": 22,
     "rows": [
       {
@@ -6490,7 +6506,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-13T09:56",
+          "spec": "2026-08-13T10:40",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-11",
@@ -8043,6 +8059,220 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "db-gpt-django-plugin",
+        "slug": "db-gpt-django-plugin",
+        "project": "",
+        "dream": "db-gpt-django-plugin",
+        "owner": "guild",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": false,
+              "market": false,
+              "technical": false
+            },
+            "n": 0,
+            "of": 3,
+            "missing": [
+              "domain",
+              "market",
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": true,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream"
+        ],
+        "gaps": [
+          "dream"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "dream",
+        "updated": "2026-08-13",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 0,
+        "of": 1
+      },
+      {
+        "label": "langflow-django-plugin",
+        "slug": "langflow-django-plugin",
+        "project": "",
+        "dream": "langflow-django-plugin",
+        "owner": "guild",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": false,
+              "market": false,
+              "technical": false
+            },
+            "n": 0,
+            "of": 3,
+            "missing": [
+              "domain",
+              "market",
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": true,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream"
+        ],
+        "gaps": [
+          "dream"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "dream",
+        "updated": "2026-08-13",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 0,
+        "of": 1
+      },
+      {
         "label": "charter",
         "slug": "pyforge-charter",
         "project": "docs/governance",
@@ -8500,7 +8730,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-11",
           "deck": "",
-          "spec": "2026-08-13T09:56",
+          "spec": "2026-08-13T10:40",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -10409,7 +10639,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-11",
           "deck": "",
-          "spec": "2026-08-13T09:56",
+          "spec": "2026-08-13T10:40",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -14814,6 +15044,16 @@ window.DASHBOARD_DATA = {
     ],
     "constitutive": [
       {
+        "slug": "db-gpt-django-plugin",
+        "title": "DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane",
+        "status": "dreamt"
+      },
+      {
+        "slug": "langflow-django-plugin",
+        "title": "Langflow integrates into a cookiecutter-django project without fighting it",
+        "status": "dreamt"
+      },
+      {
         "slug": "pyforge-charter",
         "title": "The PyForge Charter",
         "status": "pitched"
@@ -16660,8 +16900,8 @@ window.DASHBOARD_DATA = {
       "subject": "marshal story 14.2 hand-landed via PR #455 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 11:04 UTC",
-    "generatedEpoch": 1786619078
+    "generatedAt": "2026-08-13 11:11 UTC",
+    "generatedEpoch": 1786619485
   },
   "storySpecs": [
     {

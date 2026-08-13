@@ -120,6 +120,35 @@ def test_the_real_register_content_round_trips(capsys):
     assert code == 0
 
 
+def test_the_real_register_content_includes_the_parallel_fan_out_entry(capsys):
+    """Story 3.13 (FR-184): the 9th tracked register entry -- the gap is
+    reused from ``test_the_real_register_content_round_trips``'s own
+    register-path-resolution + FakeFs round-trip shape, but asserted as a
+    single subset check (no count-pinning, matching that test's own
+    2026-08-09 renaming rationale) so a later 10th entry never breaks this
+    one either."""
+    register_path = (
+        Path(__file__).resolve().parents[6]
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+        / "upstream-register.json"
+    )
+    if not register_path.is_file():
+        pytest.skip("tracked register file not present in this checkout")
+    real_text = register_path.read_text(encoding="utf-8")
+    fs = FakeFs(texts={_REGISTER_PATH: real_text})
+    code = upstream_cli.run_upstream(_args(), fs=fs)
+    envelope = _envelope_from(capsys)
+    entries_by_id = {entry["id"]: entry for entry in envelope["data"]["entries"]}
+    assert "parallel-fan-out" in entries_by_id
+    entry = entries_by_id["parallel-fan-out"]
+    assert entry["compensating_fr"] == "FR-184"
+    assert entry["upstream_status"] == "open"
+    assert code == 0
+
+
 def test_landed_entry_reports_flagged_for_removal_and_warn_finding(capsys):
     fs = FakeFs(texts={_REGISTER_PATH: json.dumps({"entries": [_GOOD_ENTRY, _LANDED_ENTRY]})})
     code = upstream_cli.run_upstream(_args(), fs=fs)

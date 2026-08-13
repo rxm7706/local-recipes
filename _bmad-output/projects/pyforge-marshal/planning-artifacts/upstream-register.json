@@ -57,6 +57,13 @@
    "workaround": "Manual per-file naming at landing, under the S-13.2 rule. Marshal FR-174 makes the loop do it as part of the story; the loop is deliberately never handed --write-baseline, since a producer that can stamp its own baseline is the laundering that rule exists to end.",
    "compensating_fr": "FR-174",
    "upstream_status": "open"
+  },
+  {
+   "id": "parallel-fan-out",
+   "gap": "bmad-loop's scm.max_parallel knob exists but is inert: policy.py:448-451 names Phase 5 parallel fan-out \"not built yet,\" and policy.py:815-817,841-842 clamp any requested value to 1 unconditionally in loads(), with no diagnostic surfaced to the caller. Marshal's own rendered .bmad-loop/policy.toml carries the identical hardcoded max_parallel = 1 (adapters/harness_bmadloop.py:320) with no explanation either.",
+   "workaround": "core/policy.py's max_parallel seed key (Story 3.13, FR-184) lets a project's requested value compose and be recorded rather than tripping the generic unknown-key finding; MRS-POLICY-007 (Verdict.WARN) fires whenever the resolved value exceeds 1, naming the value and bmad_loop 0.9.0's own unbuilt Phase 5 scheduler as cause. The rendered policy.toml still writes the harness's own stock max_parallel = 1 -- that remains the only truthful effective value until the upstream scheduler ships.",
+   "compensating_fr": "FR-184",
+   "upstream_status": "open"
   }
  ]
 }
