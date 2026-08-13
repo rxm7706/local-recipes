@@ -735,11 +735,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ("cran", getattr(ns, "from_cran", None)),
                 ("npm", getattr(ns, "from_npm", None)),
             )
-            source, package = next((s, p) for s, p in sources if p is not None)
+            source, package_name = next((s, p) for s, p in sources if p is not None)
 
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             result = recipe.new(
-                source, package, ns.output,
+                source, package_name, ns.output,
                 cfe_root_arg=getattr(ns, "cfe_root", None),
                 cfe_python_arg=getattr(ns, "cfe_python", None),
                 cfe_timeout_arg=_resolve_optional_float(
