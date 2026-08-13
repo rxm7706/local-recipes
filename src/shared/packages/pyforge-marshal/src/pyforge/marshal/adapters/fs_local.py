@@ -54,6 +54,8 @@ import threading
 import time
 from pathlib import Path
 
+from pyforge.core.atomic_write import atomic_write_text
+
 from ..core.egress import Redacted
 from ..ports.fs import AdvisoryLock
 
@@ -91,9 +93,12 @@ def _tmp_sibling(path: Path) -> Path:
     """A pid+thread-id-suffixed temp path beside ``path``: no two LIVE
     writers can ever share this name (same pid + same native thread id is
     the same thread). A stale leftover CAN reuse the name after pid
-    recycling, so ``write_text_atomic`` unlinks any pre-existing file at
-    this path before its ``O_EXCL`` open -- safe precisely because any
-    file already there cannot belong to a live writer."""
+    recycling, so ``repoint_symlink_atomic`` -- the SOLE remaining caller
+    since Story 14.2, CAP-2 -- unlinks any pre-existing file at this path
+    before creating its symlink there. ``write_text_atomic`` no longer uses
+    this naming scheme at all: it delegates to the shared, ``mkstemp``-based
+    ``pyforge.core.atomic_write_text``, whose collision-free temp names make
+    this pid+thread-id/pre-unlink dance unnecessary for content writes."""
     return path.with_name(f".{path.name}.tmp.pid{os.getpid()}.t{threading.get_native_id()}")
 
 
@@ -120,21 +125,13 @@ class LocalFs:
             raise FsError(f"cannot read {path}: {exc}") from exc
 
     def write_text_atomic(self, path: Path, content: str) -> None:
+        # Story 14.2, CAP-2: delegates to the one shared
+        # temp-file-then-`os.replace` primitive (mkstemp-based) --
+        # `_tmp_sibling`'s pid+thread-id naming (below) is used ONLY by
+        # `repoint_symlink_atomic` now, a different primitive (atomic
+        # symlink repoint, not content write) out of this story's scope.
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp_path = _tmp_sibling(path)
-            # A stale leftover from a crashed, pid-recycled run would make
-            # the O_EXCL open below fail forever (review finding) -- any
-            # file already at this name is guaranteed stale, so clear it.
-            tmp_path.unlink(missing_ok=True)
-            fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
-            try:
-                with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                    handle.write(content)
-                os.replace(tmp_path, path)
-            except BaseException:
-                tmp_path.unlink(missing_ok=True)
-                raise
+            atomic_write_text(path, content)
         except OSError as exc:
             raise FsError(f"cannot write {path}: {exc}") from exc
 
@@ -271,12 +268,18 @@ class LocalFs:
         live: the original guarded only one of the two parameters, so a
         ``str`` path still escaped as ``AttributeError: 'str' object has no
         attribute 'parent'``). A ``Path`` with no file name (``Path("/")``,
-        ``Path(".")``) raises ``FsError`` (follow-up review finding, verified
-        live: ``_tmp_sibling`` raised its own ``ValueError: PosixPath('/')
-        has an empty name``, which ``write_text_atomic``'s ``except OSError``
-        does not catch, so it escaped both failure modes this method and
-        ``ports/record.py`` document). Otherwise raises ``FsError`` on
-        failure, identical to ``write_text_atomic``."""
+        ``Path(".")``) raises ``FsError`` explicitly, upfront (follow-up
+        review finding, verified live against the pre-Story-14.2
+        ``_tmp_sibling``-based implementation: an empty name reached the
+        naming logic and escaped as a raw, uncaught exception rather than
+        this method's own ``FsError`` contract). ``write_text_atomic`` now
+        delegates to the shared ``pyforge.core.atomic_write_text`` (Story
+        14.2, CAP-2), whose ``mkstemp``-based naming derives its temp-file
+        prefix from ``path.name`` too -- this guard stays so an empty name
+        is still refused with a clear, on-topic ``FsError`` rather than
+        whatever lower-level failure the primitive's own naming might
+        otherwise surface. Otherwise raises ``FsError`` on failure, identical
+        to ``write_text_atomic``."""
         if not isinstance(path, Path):
             raise TypeError(f"path must be a Path, got {path!r}")
         if not isinstance(payload, Redacted):

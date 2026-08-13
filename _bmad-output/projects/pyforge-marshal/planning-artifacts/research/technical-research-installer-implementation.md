@@ -502,7 +502,7 @@ pixi.toml states engines are "never curl-fetched at runtime"). Consequences:
 - `src/shared/packages/pyforge-warden/pixi.toml` — member-package shape, no
   `[workspace]`, `pixi-build-python`, conda-provisioned engines
 - `pixi.toml` (root) — `[environments]` lean-env pattern, `preview = ["pixi-build"]`,
-  `requires-pixi >=0.72.2`, the no-`members`-key note
+  `requires-pixi >=0.76.2`, the no-`members`-key note
 - `docs/reference/library-llms-full.md` — cookiecutter/cruft/jinja2/typer/rich pins and
   the scaffolding + CLI decision tables
 - `archive/docs/bmad-setup-plan.md` — bmad-method conda provisioning; the

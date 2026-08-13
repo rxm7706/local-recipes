@@ -11,10 +11,15 @@ promoted into once the story merges).
 
 Ships ONLY behind the `pyforge-steward[dashboard]` optional extra, never a
 base dependency. This module deliberately imports nothing from `django` or
-`channels` at package level. Of its submodules only `apps.py` and `cache.py`
-import `django` at all — `declarations.py` and `middleware.py` are plain
-Python (the ASGI3 callable shape is protocol, not framework, per AD-8) and
-import cleanly with or without the extra. No other module in
+`channels` at package level. Its submodules split two ways: `apps.py`,
+`cache.py`, and — since Story 9.3 — `models.py`, `audit.py` and
+`migrations/` import `django`; `declarations.py` and `middleware.py` are
+plain Python (the ASGI3 callable shape is protocol, not framework, per AD-8)
+and import cleanly with or without the extra. Story 9.3's review pass 3
+restated this split: it had been written as "only `apps.py` and `cache.py`",
+which that story's three new django-importing modules made false, and this
+docstring is the package's load-bearing statement of which modules an
+adopter without the extra may touch. No other module in
 `pyforge.steward` may import this package, `django`, or `channels`; pinned by
 `tests/meta/test_invariants.py`, which since review pass 3 also pins the
 narrower claim above — that `middleware.py`, `declarations.py` and this

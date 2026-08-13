@@ -545,7 +545,7 @@ calls), the 19-line wrapper template in `.claude/scripts/conda-forge-expert/`.
 #### Wave B Dev Notes — local live-gate run (2026-07-05; measured, not estimated)
 
 Environment: pixi 0.72.0 (user-level — the env-resident 0.70.2 no longer
-satisfies the manifest's `requires-pixi >=0.71`), atlas `built_at`
+satisfies the manifest's `requires-pixi >=0.76.2`), atlas `built_at`
 2026-07-05 17:49 UTC (fresh; no `--allow-stale`), 16-core / 60 GiB host.
 
 **S3 measured emits** (each run via `pixi run -e local-recipes universe-sbom`;

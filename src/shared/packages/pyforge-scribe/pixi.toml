@@ -28,3 +28,4 @@ hatchling = "*"
 python = ">=3.12"
 typer = ">=0.27.0"
 pydantic = ">=2.13.4"
+pyforge-core = { path = "../pyforge-core" }

@@ -82,10 +82,11 @@ from __future__ import annotations
 import json
 import math
 import os
-import tempfile
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from pyforge.core.atomic_write import atomic_write_text
 
 from .models import FeedProvenance
 
@@ -233,36 +234,16 @@ def load_kev_catalog(path: Path) -> dict[str, str] | None:
 def write_kev_cache(cache_dir: str | Path, document: Mapping[str, object]) -> Path:
     """Atomically write ``document`` (the full CISA KEV JSON payload — the
     SAME on-disk shape ``load_kev_catalog`` reads back, not just the
-    extracted catalog) to ``kev_cache_path(cache_dir)``. Creates the parent
-    directory if needed. Write-to-temp-in-the-same-directory then
-    ``os.replace`` — the replace is atomic on every POSIX/NTFS filesystem,
+    extracted catalog) to ``kev_cache_path(cache_dir)``. Delegates to
+    `pyforge.core.atomic_write_text` (Story 14.2, CAP-2 -- the one shared
+    temp-file-then-`os.replace` primitive, mkstemp-based): creates the
+    parent directory if needed, writes to a temp file in the same
+    directory, then ``os.replace`` — atomic on every POSIX/NTFS filesystem,
     so a concurrent reader never observes a partially-written file. The
     sole writer both ``scripts/refresh_kev_feed.py`` and the test suite's
     ambient fixture share (see module docstring)."""
     target = kev_cache_path(cache_dir)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    handle, tmp_name = tempfile.mkstemp(
-        dir=target.parent, prefix=f".{_KEV_FEED_FILENAME}-", suffix=".tmp"
-    )
-    try:
-        with os.fdopen(handle, "w", encoding="utf-8") as fh:
-            json.dump(document, fh, indent=2, sort_keys=True)
-            fh.write("\n")
-        os.replace(tmp_name, target)
-    except BaseException:
-        # Close the raw fd only if os.fdopen never took ownership of it (it
-        # raised before the `with`); on the common path the `with` already
-        # closed it, so tolerate EBADF rather than double-close. Then unlink
-        # the temp file so a failed write never leaks it.
-        try:
-            os.close(handle)
-        except OSError:
-            pass
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+    atomic_write_text(target, json.dumps(document, indent=2, sort_keys=True) + "\n")
     return target
 
 
@@ -304,30 +285,13 @@ def write_endoflife_cache(cache_dir: str | Path, document: Mapping[str, object])
     """Atomically write ``document`` (the full ``{product_slug: [cycle-
     record, ...]}`` payload — the SAME on-disk shape ``load_endoflife_
     snapshot`` reads back) to ``endoflife_cache_path(cache_dir)`` — the
-    endoflife sibling of ``write_kev_cache``, identical atomic write-to-temp-
-    then-``os.replace`` shape (see that function's docstring for the full
-    rationale; not repeated here). The sole writer both ``scripts/refresh_
-    endoflife_feed.py`` and the test suite's ambient fixture share."""
+    endoflife sibling of ``write_kev_cache``, delegating to the SAME shared
+    `pyforge.core.atomic_write_text` primitive (see that function's
+    docstring for the full rationale; not repeated here). The sole writer
+    both ``scripts/refresh_endoflife_feed.py`` and the test suite's ambient
+    fixture share."""
     target = endoflife_cache_path(cache_dir)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    handle, tmp_name = tempfile.mkstemp(
-        dir=target.parent, prefix=f".{_ENDOFLIFE_FEED_FILENAME}-", suffix=".tmp"
-    )
-    try:
-        with os.fdopen(handle, "w", encoding="utf-8") as fh:
-            json.dump(document, fh, indent=2, sort_keys=True)
-            fh.write("\n")
-        os.replace(tmp_name, target)
-    except BaseException:
-        try:
-            os.close(handle)
-        except OSError:
-            pass
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+    atomic_write_text(target, json.dumps(document, indent=2, sort_keys=True) + "\n")
     return target
 
 
@@ -392,28 +356,10 @@ def write_epss_cache(cache_dir: str | Path, document: Mapping[str, object]) -> P
     """Atomically write ``document`` (the full ``{"scores": [...]}`` payload
     — the SAME on-disk shape ``load_epss_scores`` reads back) to
     ``epss_cache_path(cache_dir)`` — the EPSS sibling of ``write_kev_cache``,
-    identical atomic write-to-temp-then-``os.replace`` shape (see that
-    function's docstring for the full rationale; not repeated here). The
-    sole writer both ``scripts/refresh_epss_feed.py`` and the test suite
-    share."""
+    delegating to the SAME shared `pyforge.core.atomic_write_text` primitive
+    (see that function's docstring for the full rationale; not repeated
+    here). The sole writer both ``scripts/refresh_epss_feed.py`` and the
+    test suite share."""
     target = epss_cache_path(cache_dir)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    handle, tmp_name = tempfile.mkstemp(
-        dir=target.parent, prefix=f".{_EPSS_FEED_FILENAME}-", suffix=".tmp"
-    )
-    try:
-        with os.fdopen(handle, "w", encoding="utf-8") as fh:
-            json.dump(document, fh, indent=2, sort_keys=True)
-            fh.write("\n")
-        os.replace(tmp_name, target)
-    except BaseException:
-        try:
-            os.close(handle)
-        except OSError:
-            pass
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
+    atomic_write_text(target, json.dumps(document, indent=2, sort_keys=True) + "\n")
     return target

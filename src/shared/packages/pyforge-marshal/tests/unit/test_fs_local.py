@@ -16,7 +16,6 @@ from pyforge.marshal.adapters.fs_local import (
     DirectoryAlreadyExistsError,
     FsError,
     LocalFs,
-    _tmp_sibling,
 )
 from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.ports.fs import AdvisoryLock
@@ -84,20 +83,6 @@ def test_write_text_atomic_raises_fs_error_on_unwritable_target(fs, tmp_path):
     blocked.write_text("occupied", encoding="utf-8")
     with pytest.raises(FsError):
         fs.write_text_atomic(blocked / "marker", "x")
-
-
-def test_write_text_atomic_survives_a_stale_temp_file(fs, tmp_path):
-    """Review finding: a stale leftover temp file from a crashed,
-    pid-recycled run made the O_EXCL open fail on EVERY subsequent attempt
-    -- permanent-until-manual-cleanup. Any file at the tmp name cannot
-    belong to a live writer, so it is cleared first."""
-    target = tmp_path / "marker"
-    stale = _tmp_sibling(target)
-    stale.write_text("stale leftover", encoding="utf-8")
-    fs.write_text_atomic(target, "acme\n")
-    assert target.read_text(encoding="utf-8") == "acme\n"
-    leftovers = [p for p in tmp_path.iterdir() if p.name != "marker"]
-    assert leftovers == []
 
 
 # --- read_symlink_target -----------------------------------------------------------

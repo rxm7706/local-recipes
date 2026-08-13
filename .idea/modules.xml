@@ -30,6 +30,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/prefab-ui.iml" filepath="$PROJECT_DIR$/.idea/prefab-ui.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-atlas.iml" filepath="$PROJECT_DIR$/.idea/pyforge-atlas.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-atlas-kedro-viz.iml" filepath="$PROJECT_DIR$/.idea/pyforge-atlas-kedro-viz.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-core.iml" filepath="$PROJECT_DIR$/.idea/pyforge-core.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-doctor.iml" filepath="$PROJECT_DIR$/.idea/pyforge-doctor.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-herald.iml" filepath="$PROJECT_DIR$/.idea/pyforge-herald.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-marshal.iml" filepath="$PROJECT_DIR$/.idea/pyforge-marshal.iml" />
