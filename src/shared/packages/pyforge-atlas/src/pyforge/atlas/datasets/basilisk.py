@@ -45,6 +45,8 @@ from typing import Any, Callable
 import pandas as pd
 from kedro.io import AbstractDataset
 
+from pyforge.core.atomic_write import atomic_write_text
+
 from .rate_limit import (
     RETRY_AFTER_CAP_SECONDS,
     RETRY_AFTER_JITTER,
@@ -172,18 +174,11 @@ class _StaleAwareBasiliskSource(AbstractDataset):
 
     @staticmethod
     def _atomic_write(target: Path, text: str) -> None:
-        """Write via a sibling ``.tmp`` then ``os.replace`` — an interrupted write leaves
-        the last-good file untouched (AD-13 never-clobber)."""
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(target.name + ".tmp")
-        try:
-            tmp.write_text(text, encoding="utf-8")
-            os.replace(tmp, target)
-        finally:
-            try:
-                tmp.unlink(missing_ok=True)
-            except OSError:  # pragma: no cover - best-effort cleanup
-                pass
+        """Delegates to ``pyforge.core.atomic_write_text`` (Story 14.2, CAP-2
+        -- the one shared temp-file-then-``os.replace`` primitive,
+        mkstemp-based): an interrupted write leaves the last-good file
+        untouched (AD-13 never-clobber)."""
+        atomic_write_text(target, text)
 
     def _mark_stale(self, reason: str) -> StalenessMarker:
         """Keep last-good; stamp a staleness marker. Never raises (AD-13 never-fail)."""
