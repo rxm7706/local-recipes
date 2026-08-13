@@ -3895,7 +3895,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 11:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-13 11:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6090,10 +6090,10 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 0,
+    "sound": 2,
     "live": 39,
-    "reached": 8,
-    "gaps": 37,
+    "reached": 10,
+    "gaps": 35,
     "findings": 22,
     "rows": [
       {
@@ -6630,7 +6630,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-02",
           "epics": "2026-08-02",
           "sprint": "2026-08-12",
-          "tea": "2026-08-12",
+          "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-09",
           "verify": "2026-08-09",
@@ -6720,8 +6720,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-08-12",
-        "age": 1,
+        "updated": "2026-08-13",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "18/42",
@@ -6885,7 +6885,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T09:56",
+          "spec": "2026-08-13T11:19",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6894,7 +6894,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-10",
           "sprint": "2026-08-12",
-          "tea": "2026-08-12",
+          "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-12",
           "verify": "2026-08-12",
@@ -6968,7 +6968,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T09:56",
+            "at": "2026-08-13T11:19",
             "other": "2026-08-01"
           },
           {
@@ -8065,7 +8065,7 @@ window.DASHBOARD_DATA = {
         "dream": "db-gpt-django-plugin",
         "owner": "guild",
         "stages": {
-          "dream": "",
+          "dream": "2026-08-13",
           "deck": "",
           "spec": "",
           "research": "",
@@ -8083,7 +8083,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "",
+          "dream": "2026-08-13",
           "deck": "",
           "spec": "",
           "research": "",
@@ -8140,7 +8140,7 @@ window.DASHBOARD_DATA = {
         "archived": false,
         "dreamStatus": "dreamt",
         "ownerDream": "",
-        "noDream": true,
+        "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
@@ -8151,9 +8151,7 @@ window.DASHBOARD_DATA = {
         "required": [
           "dream"
         ],
-        "gaps": [
-          "dream"
-        ],
+        "gaps": [],
         "partial": [],
         "staleBy": [],
         "furthest": "dream",
@@ -8162,7 +8160,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 0,
+        "complete": 1,
         "of": 1
       },
       {
@@ -8172,7 +8170,7 @@ window.DASHBOARD_DATA = {
         "dream": "langflow-django-plugin",
         "owner": "guild",
         "stages": {
-          "dream": "",
+          "dream": "2026-08-13",
           "deck": "",
           "spec": "",
           "research": "",
@@ -8190,7 +8188,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "",
+          "dream": "2026-08-13",
           "deck": "",
           "spec": "",
           "research": "",
@@ -8247,7 +8245,7 @@ window.DASHBOARD_DATA = {
         "archived": false,
         "dreamStatus": "dreamt",
         "ownerDream": "",
-        "noDream": true,
+        "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
@@ -8258,9 +8256,7 @@ window.DASHBOARD_DATA = {
         "required": [
           "dream"
         ],
-        "gaps": [
-          "dream"
-        ],
+        "gaps": [],
         "partial": [],
         "staleBy": [],
         "furthest": "dream",
@@ -8269,7 +8265,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 0,
+        "complete": 1,
         "of": 1
       },
       {
@@ -16900,8 +16896,8 @@ window.DASHBOARD_DATA = {
       "subject": "marshal story 14.2 hand-landed via PR #455 — Route-3 evidence record"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 11:11 UTC",
-    "generatedEpoch": 1786619485
+    "generatedAt": "2026-08-13 11:20 UTC",
+    "generatedEpoch": 1786620042
   },
   "storySpecs": [
     {
