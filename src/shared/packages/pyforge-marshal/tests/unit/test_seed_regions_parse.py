@@ -361,6 +361,41 @@ def test_an_unclosed_fence_at_eof_raises_rather_than_silently_dropping_regions()
         parse_regions(text, RegionFormat.HTML)
 
 
+def test_an_unclosed_fence_at_eof_also_names_an_unrelated_still_open_region():
+    """Review finding: a region opened and never closed BEFORE the fence
+    ever appears is a genuinely separate problem from the fence itself --
+    the fence-priority error must still name it, not silently drop it."""
+    text = _doc(_begin("a"), "body", "```")
+
+    with pytest.raises(
+        RegionParseError,
+        match=r"fenced code block is never closed before end of text \(region 'a', begun at"
+        r" line 1, is also still open\)",
+    ):
+        parse_regions(text, RegionFormat.HTML)
+
+
+def test_an_unclosed_fence_at_eof_with_no_open_region_names_only_the_fence():
+    text = _doc("intro", "```")
+
+    with pytest.raises(RegionParseError, match=r"fenced code block is never closed"):
+        try:
+            parse_regions(text, RegionFormat.HTML)
+        except RegionParseError as exc:
+            assert "is also still open" not in str(exc)
+            raise
+
+
+def test_two_fences_in_one_file_reports_the_second_openers_line():
+    """The first fence closes cleanly; only the second, later fence is
+    left open -- `fence_lineno` must reflect the SECOND opening, not stale
+    state left over from the first."""
+    text = _doc("```", "```", "intro", "~~~", "unclosed")
+
+    with pytest.raises(RegionParseError, match=r"line 4:.*fenced code block is never closed"):
+        parse_regions(text, RegionFormat.HTML)
+
+
 def test_fence_awareness_is_html_only():
     """A ``hash``-format artifact (``.toml``/``.yml``/shell) has no fenced
     code blocks -- a backtick banner line there must never make real markers

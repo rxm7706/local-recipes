@@ -273,11 +273,20 @@ def parse_regions(text: str, fmt: RegionFormat) -> tuple[RegionSpan, ...]:
         # fence silently swallows every line after it (fenced content is
         # never scanned for markers at all), so a region that looks
         # unterminated -- or simply missing -- from here on is very often a
-        # symptom of THIS root cause, not a separate mistake.
+        # symptom of THIS root cause, not a separate mistake. But a region
+        # opened and left unclosed BEFORE the fence ever appeared is a
+        # genuinely separate problem -- name it too, rather than silently
+        # dropping it behind the fence error.
         char, run_length = open_fence
+        detail = ""
+        if open_region is not None:
+            detail = (
+                f" (region {open_region.marker.region!r}, begun at line"
+                f" {open_region.lineno}, is also still open)"
+            )
         raise RegionParseError(
             f"line {fence_lineno}: a {char * run_length!r} fenced code block is never closed"
-            " before end of text"
+            f" before end of text{detail}"
         )
     if open_region is not None:
         raise RegionParseError(
