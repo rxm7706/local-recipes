@@ -34,7 +34,7 @@ development_status:
   2-7-mason-recipe-diagnose: done
   2-8-mason-recipe-optimize-and-mason-recipe-scan: done
   2-9-mason-recipe-submit: done
-  3-1-engine-protocol-and-provisioning: backlog
+  3-1-engine-protocol-and-provisioning: done
   3-2-mason-package-build: backlog
   3-3-ship-target-vocabulary-and-dry-run-default: backlog
   3-4-the-pypi-ship-target: backlog
