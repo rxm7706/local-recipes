@@ -2,12 +2,18 @@
 
 Story 12.4 (honestly scoped). The original epics spec for this story asked
 for "webhook not firing," "cron job missed," "auto-extract failed," and
-"stale link warning" diagnoses. "Webhook not firing" and "cron job
-missed" cannot happen in this codebase, because no webhook or cron
-infrastructure exists — see `docs/dreams/herald-moments-2-4-live-backend.md`
-for the full, unbuilt live-backend design and why the first pass was
-scaled down to a CLI an operator runs by hand. This caveat applies to the
-whole guide; it is not repeated per section below.
+"stale link warning" diagnoses. "Webhook not firing" cannot happen in
+this codebase, because no webhook infrastructure exists — see
+`docs/dreams/herald-moments-2-4-live-backend.md` for the full, unbuilt
+live-backend design and why the first pass was scaled down to a CLI an
+operator runs by hand. "Cron job missed" is now a real, if narrow,
+possibility: Story 13.5 added `herald scheduler run` plus a documented,
+*opt-in* local `crontab` entry (see
+[`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)) —
+an operator who never installed that entry has nothing to miss, but one
+who did and whose machine was off (or whose cron daemon isn't running)
+genuinely misses a scheduled revalidation. Neither caveat is repeated per
+section below.
 
 What *does* exist, and can genuinely misbehave, is the CLI-triggered
 equivalent of each of those automations — including "auto-extract" (see
@@ -19,8 +25,15 @@ covers those real, reproducible failure modes.
 
 **What it replaces:** the original spec's weekly async re-validation
 cron, which would silently re-check every published claim's evidence and
-presumably alert on breakage. There is no cron; instead, an operator runs
-`herald success validate` by hand whenever they want a check.
+presumably alert on breakage. There is still no operator-alert delivery
+(email/Slack/etc. is explicitly out of this story's scope too), but the
+revalidation half is now real: `herald scheduler run` (Story 13.5) makes
+the same `claims.revalidate_all` call this section's `herald success
+validate` does, composed with the progress snapshot export, and can be
+put on a local cron cadence (see
+[`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)).
+An operator can still just run `herald success validate` by hand whenever
+they want a one-off check.
 
 ### Diagnosis
 

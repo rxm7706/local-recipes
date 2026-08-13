@@ -44,7 +44,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from datetime import date as date_cls
 from pathlib import Path
@@ -442,3 +442,24 @@ def list_records(
         start, end = date_range
         records = [r for r in records if start <= date_cls.fromisoformat(r.date) <= end]
     return sorted(records, key=lambda r: (r.date, r.station), reverse=True)
+
+
+def write_snapshot(progress_path: Path, out_dir: Path) -> Path:
+    """Write ``out_dir/progress.json`` -- every record under
+    ``progress_path`` (``list_records``'s own newest-first default order),
+    as the static JSON snapshot the web dashboard's Progress tab reads.
+    Returns the written path.
+
+    Moved here (Story 13.5) from ``scripts/export_progress_snapshot.py``'s
+    ``export_progress_snapshot`` body, which now delegates to this
+    function instead of duplicating the write logic -- ``pyproject.toml``
+    only packages ``src/pyforge``, so ``scripts/`` (an unpackaged dev
+    convenience) cannot be imported back into ``scheduler.py``, but this
+    module can be imported from both. Same output shape either caller
+    uses: newest-first, ``json.dumps(..., indent=2)`` plus a trailing
+    newline."""
+    payload = [asdict(record) for record in list_records(progress_path)]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "progress.json"
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return out_path
