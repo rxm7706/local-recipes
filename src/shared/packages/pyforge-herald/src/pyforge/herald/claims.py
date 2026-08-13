@@ -110,14 +110,14 @@ write carries its own validation, and raises ``errors.ClaimStateError``
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
+
+from pyforge.core.atomic_write import atomic_write_text
 
 from . import errors, locking
 from . import evidence as evidence_mod
@@ -296,9 +296,11 @@ def _claim_from_dict(claims_path: Path, entry: object) -> Claim:
 
 
 def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
-    """Persist the whole claims list atomically -- temp file in the same
-    directory, then ``os.replace`` (mirrors ``state.write``'s crash-safety
-    discipline, including its limit: no ``fsync``)."""
+    """Persist the whole claims list atomically via `pyforge.core.
+    atomic_write_text` (Story 14.2, CAP-2 -- the one shared
+    temp-file-then-`os.replace` primitive, mkstemp-based; mirrors
+    `state.write`'s crash-safety discipline, including its limit: no
+    `fsync`)."""
     document = [
         {
             "id": c.id,
@@ -328,30 +330,9 @@ def _write_all(claims_path: Path, claims: Sequence[Claim]) -> None:
     ]
     could_not_write = f"claims could not be written to {claims_path}"
     try:
-        claims_path.parent.mkdir(parents=True, exist_ok=True)
-        handle, tmp_name = tempfile.mkstemp(
-            dir=claims_path.parent, prefix=f".{claims_path.name}-", suffix=".tmp"
-        )
-    except OSError as exc:
+        atomic_write_text(claims_path, json.dumps(document, indent=2, sort_keys=True) + "\n")
+    except (OSError, TypeError, ValueError, RecursionError) as exc:
         raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-    try:
-        try:
-            fh = os.fdopen(handle, "w", encoding="utf-8")
-        except BaseException:
-            os.close(handle)
-            raise
-        with fh:
-            json.dump(document, fh, indent=2, sort_keys=True)
-            fh.write("\n")
-        os.replace(tmp_name, claims_path)
-    except BaseException as exc:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        if isinstance(exc, (OSError, TypeError, ValueError, RecursionError)):
-            raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
-        raise
 
 
 def read_all(claims_path: Path) -> list[Claim]:

@@ -54,6 +54,8 @@ import threading
 import time
 from pathlib import Path
 
+from pyforge.core.atomic_write import atomic_write_text
+
 from ..core.egress import Redacted
 from ..ports.fs import AdvisoryLock
 
@@ -120,21 +122,13 @@ class LocalFs:
             raise FsError(f"cannot read {path}: {exc}") from exc
 
     def write_text_atomic(self, path: Path, content: str) -> None:
+        # Story 14.2, CAP-2: delegates to the one shared
+        # temp-file-then-`os.replace` primitive (mkstemp-based) --
+        # `_tmp_sibling`'s pid+thread-id naming (below) is used ONLY by
+        # `repoint_symlink_atomic` now, a different primitive (atomic
+        # symlink repoint, not content write) out of this story's scope.
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp_path = _tmp_sibling(path)
-            # A stale leftover from a crashed, pid-recycled run would make
-            # the O_EXCL open below fail forever (review finding) -- any
-            # file already at this name is guaranteed stale, so clear it.
-            tmp_path.unlink(missing_ok=True)
-            fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
-            try:
-                with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                    handle.write(content)
-                os.replace(tmp_path, path)
-            except BaseException:
-                tmp_path.unlink(missing_ok=True)
-                raise
+            atomic_write_text(path, content)
         except OSError as exc:
             raise FsError(f"cannot write {path}: {exc}") from exc
 

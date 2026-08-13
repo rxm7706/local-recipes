@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from pyforge.core.atomic_write import atomic_write_text
+
 from .crews import parse_frontmatter
 from .wiki import WikiLayout
 
@@ -182,7 +184,8 @@ class WikiSyncer:
     CMS document id + the last-synced content digest for each file — so re-running against an
     unchanged wiki performs ZERO remote calls (idempotent re-push), a changed file UPDATEs (not a
     duplicate create), and a new file CREATEs. The mapping is the idempotency key: it is persisted
-    ATOMICALLY (tmp + ``os.replace``, mirroring ``datasets/refresh.py``) so a crash/ENOSPC mid-save
+    ATOMICALLY (``pyforge.core.atomic_write_text``, Story 14.2/CAP-2's shared
+    temp-file-then-``os.replace`` primitive) so a crash/ENOSPC mid-save
     can't corrupt it, and only after a successful create so a mid-run failure never records a
     phantom id. A corrupt mapping fails LOUDLY (it must not be blind-deleted — that would
     duplicate-create every page).
@@ -282,10 +285,9 @@ class WikiSyncer:
         return data
 
     def _save_mapping(self) -> None:
-        # Atomic write (mirrors datasets/refresh.py): a crash/ENOSPC mid-save can't corrupt the
-        # idempotency key — write a sibling tmp then os.replace (atomic on POSIX).
-        tmp = self._map_path.with_name(self._map_path.name + ".tmp")
-        tmp.write_text(
-            json.dumps(self._mapping, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        # Atomic write via pyforge.core.atomic_write_text (Story 14.2, CAP-2 --
+        # the one shared temp-file-then-os.replace primitive, mkstemp-based):
+        # a crash/ENOSPC mid-save can't corrupt the idempotency key.
+        atomic_write_text(
+            self._map_path, json.dumps(self._mapping, indent=2, sort_keys=True) + "\n"
         )
-        os.replace(tmp, self._map_path)
