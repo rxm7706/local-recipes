@@ -24,6 +24,7 @@ import time
 from typing import Any
 
 import pandas as pd
+from pyforge.core.errors import PyforgeError
 
 # ── ported primitives (VERBATIM from export_purls.py / inventory_match.py) ────
 
@@ -35,10 +36,13 @@ STALE_AFTER_DAYS_DEFAULT = 14  # universe_sbom.STALE_AFTER_DAYS
 _NUMERIC_RE = re.compile(r"^\d+(\.\d+)*$")
 
 
-class StaleUniverseError(RuntimeError):
+class StaleUniverseError(PyforgeError, RuntimeError):
     """Raised when the universe BOM is older than the freshness contract and
     ``allow_stale`` is not set — the consumer refuses a stale atlas exactly as the
-    legacy ``universe_sbom.check_freshness`` gate (AD-15)."""
+    legacy ``universe_sbom.check_freshness`` gate (AD-15).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def fold_name(name: str) -> str:

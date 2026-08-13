@@ -37,6 +37,7 @@ from typing import Any, Callable
 
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
+from pyforge.core.errors import PyforgeError
 
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
 
@@ -280,11 +281,14 @@ _DEFAULT_MAX_COST_FIRST_PULL_USD = 100.0
 _DEFAULT_JOB_TIMEOUT_MS = 600_000
 
 
-class PhasePCostAbort(RuntimeError):
+class PhasePCostAbort(PyforgeError, RuntimeError):
     """Raised by the free dry-run preflight when the estimated query cost exceeds the
     configured cap (``PHASE_P_MAX_COST_USD`` / ``PHASE_P_MAX_COST_FIRST_PULL_USD``).
     The estimate ALWAYS cites the dry-run's ``total_bytes_processed`` — never a
-    literal (the two-layer cost gate is not a lie; test_no_thirty_gb_lie guards it)."""
+    literal (the two-layer cost gate is not a lie; test_no_thirty_gb_lie guards it).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
     def __init__(self, est_usd: float, cap_usd: float, bytes_processed: int) -> None:
         super().__init__(

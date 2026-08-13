@@ -25,6 +25,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pyforge.core.verdict import Lattice
+
 from .models import EMPTY_EXTRACTION_DRIVER_ID, CveMatchLevel, Status, StatusDriver
 
 _RUNG_ORDER: tuple[Status, ...] = (
@@ -37,8 +39,6 @@ _RUNG_ORDER: tuple[Status, ...] = (
     Status.NOT_APPLICABLE,
 )
 
-_RANK: dict[Status, int] = {status: rank for rank, status in enumerate(_RUNG_ORDER)}
-
 EXIT_SIGINT = 130
 
 _EXIT_BY_STATUS: dict[Status, int] = {
@@ -50,6 +50,18 @@ _EXIT_BY_STATUS: dict[Status, int] = {
     Status.CLEAN: 0,
     Status.NOT_APPLICABLE: 0,
 }
+
+# Story 14.3, SPEC-pyforge-core CAP-3: rank + exit-domain bookkeeping now
+# delegates to the shared Lattice primitive -- same rungs, same exit values,
+# only the `{status: rank for rank, status in enumerate(...)}` bookkeeping
+# moves. `exit_code_for`'s own projection logic below is UNCHANGED. PUBLIC
+# (not `_LATTICE`): `models.py`'s `__post_init__` reads `.exit_codes` off
+# this instance (deferred, function-local import to avoid a
+# verdict<->models circular import -- verdict.py already imports Status/
+# StatusDriver/etc from models at ITS OWN module level), and the
+# sole-ownership guard (`test_verdict_sole_ownership.py`) forbids any
+# OTHER module from dereferencing a `_`-private name off `verdict`.
+LATTICE = Lattice(order=_RUNG_ORDER, exit_by_member=_EXIT_BY_STATUS)
 
 _EXIT_WARN_AS_ERROR = 1
 
@@ -72,9 +84,9 @@ def compose(
     winner: tuple[Status, StatusDriver | None] | None = None
     for raw_status, driver in rungs:
         status = Status(raw_status)
-        if winner is None or _RANK[status] < _RANK[winner[0]]:
+        if winner is None or LATTICE.rank(status) < LATTICE.rank(winner[0]):
             winner = (status, driver)
-        elif _RANK[status] == _RANK[winner[0]] and _driver_beats(driver, winner[1]):
+        elif LATTICE.rank(status) == LATTICE.rank(winner[0]) and _driver_beats(driver, winner[1]):
             winner = (status, driver)
     if winner is None:
         return (Status.NOT_APPLICABLE, None)

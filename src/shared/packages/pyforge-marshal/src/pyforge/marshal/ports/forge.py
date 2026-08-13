@@ -49,6 +49,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from pyforge.core.errors import PyforgeError
+
 from ..core.egress import Redacted
 
 
@@ -100,14 +102,17 @@ class PrInfo:
             raise ValueError(f"base must be a non-empty str, got {self.base!r}")
 
 
-class ForgeCommandError(Exception):
+class ForgeCommandError(PyforgeError, Exception):
     """Raised when a ``gh`` invocation fails: a non-zero exit (not
     authenticated, a rejected request, an unknown repo/PR), a missing ``gh``
     executable, a hung process exceeding its timeout, or a response that
     could not be parsed as the JSON this port's own callers expect. Mirrors
     ``adapters/vcs_git.py::VcsCommandError``'s identical shape -- never lets
     a raw ``subprocess`` exception or a JSON-decode error escape this port's
-    adapter."""
+    adapter.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO."""
 
 
 class ForgePort(Protocol):
@@ -159,6 +164,7 @@ class ForgePort(Protocol):
         *,
         expected_head_sha: ForgeRef,
         delete_branch: bool,
+        subject: ForgeRef | None = None,
     ) -> None:
         """Merges PR ``number`` on ``repo`` using ``strategy`` (one of
         ``"merge"``/``"squash"``/``"rebase"`` -- the closed vocabulary
@@ -188,5 +194,26 @@ class ForgePort(Protocol):
         window it is trying to close) if the PR's current head no longer
         matches. Raises ``ForgeCommandError`` on any ``gh`` failure,
         INCLUDING a head-commit mismatch -- a caller treats that as a hard
-        stop, never a retried or silently-corrected merge."""
+        stop, never a retried or silently-corrected merge.
+
+        ``subject`` (Story 5.10, AD-24) is OPTIONAL and defaults to
+        ``None``, in which case ``gh`` auto-generates the merge commit
+        subject exactly as before this parameter existed. When provided --
+        the caller having already rendered it via
+        ``core.identity.render_merge_subject`` -- it is passed through to
+        ``gh pr merge --subject`` unconditionally, for every ``strategy``,
+        so the merge commit's subject becomes deterministically detectable
+        (``core.promotion.marshal_native_merged_keys``) rather than
+        byte-identical to a human's plain PR merge -- for ``"merge"``/
+        ``"squash"``, both of which produce exactly one new commit on the
+        base branch. ``gh`` accepts the flag without error for
+        ``"rebase"`` too (confirmed via GitHub's own GraphQL schema:
+        ``MergePullRequestInput.commitHeadline`` is unconditional on
+        ``mergeMethod``), but a rebase merge creates NO new merge commit at
+        all -- each original commit is replayed onto the base branch with
+        its own preserved subject -- so ``subject`` is a harmless no-op
+        for that one strategy, not an applied value (``DW-FU-5-10-3``).
+        Wrapped in ``ForgeRef`` for the same egress-registry reason as
+        ``strategy``/``expected_head_sha`` above -- never a bare
+        ``str``/``str | None``."""
         ...

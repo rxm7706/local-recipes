@@ -55,19 +55,23 @@ import time
 from pathlib import Path
 
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.errors import PyforgeError
 
 from ..core.egress import Redacted
 from ..ports.fs import AdvisoryLock
 
 
-class FsError(Exception):
+class FsError(PyforgeError, Exception):
     """Raised by any ``LocalFs`` method on I/O failure -- reads and writes
     alike (review finding: the class began life as ``FsWriteError``, a
     misnomer once ``read_text``/``read_symlink_target`` raised it too): an
     unreadable or undecodable path (other than simple absence), an
     unwritable parent directory, or a ``repoint_symlink_atomic`` target that
     is a real file/directory rather than a symlink. Never lets a raw
-    ``OSError`` or ``UnicodeDecodeError`` escape this module."""
+    ``OSError`` or ``UnicodeDecodeError`` escape this module.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO."""
 
 
 class DirectoryAlreadyExistsError(FsError):

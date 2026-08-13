@@ -19,9 +19,17 @@ package ever carries token material.
 
 from __future__ import annotations
 
+from pyforge.core.errors import PyforgeError
+from pyforge.core.verdict import dispatch_exit_code
 
-class HeraldError(Exception):
-    """Root of every error Herald raises deliberately."""
+
+class HeraldError(PyforgeError):
+    """Root of every error Herald raises deliberately.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: re-parented to the shared
+    ``PyforgeError`` marker (no ``__init__`` override on either side, so
+    this changes nothing observable) -- every existing subclass re-parents
+    transitively, and ``except HeraldError`` sites are unaffected."""
 
 
 class TransportError(HeraldError):
@@ -122,8 +130,8 @@ class EvidenceLinkError(HeraldError):
 
 class ClaimNotFoundError(HeraldError):
     """A ``herald success`` subcommand (``review``, ``publish``, ``get``,
-    ``validate``) named a claim id that does not exist in ``claims.json``
-    (Story 9.1/9.3). Falls through to the default exit code (``1``) -- a
+    ``validate``) named a claim id that does not exist in the claims store
+    (Story 9.1/9.3; ``.herald/herald.db`` since Story 13.3). Falls through to the default exit code (``1``) -- a
     bad claim id is a usage problem for the operator to fix, not a
     transport outage."""
 
@@ -152,14 +160,15 @@ subclass this map has not yet been extended to cover) falls through to
 
 def exit_code_for(error: HeraldError) -> int:
     """Project a ``HeraldError`` to its process exit code -- sole owner of
-    the mapping, mirroring ``pyforge.warden.verdict.exit_code_for``'s shape.
+    the mapping. Story 14.3, SPEC-pyforge-core CAP-3: the most-specific
+    -first ``isinstance`` dispatch itself now delegates to
+    ``pyforge.core.verdict.dispatch_exit_code`` (the generalized form of
+    this exact algorithm); ``_EXIT_BY_ERROR`` (station-specific data) stays
+    here.
 
     Fixed values: ``1`` for any other ``HeraldError`` (the safety net for a
     type this map is not yet extended to cover); ``3`` for the three
     conflict types; ``4`` for ``TransportError`` and everything under it.
     Argparse's own usage-error exit (``2``) is untouched by this map -- it
     never reaches here."""
-    for error_type, code in _EXIT_BY_ERROR:
-        if isinstance(error, error_type):
-            return code
-    return 1
+    return dispatch_exit_code(error, _EXIT_BY_ERROR, default=1)
