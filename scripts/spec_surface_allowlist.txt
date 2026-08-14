@@ -67,7 +67,6 @@ README.md                # repo front page
 CHANGELOG.md             # historical record
 LICENSE*                 # license
 pixi.lock                # lockfile (derived from pixi.toml)
-environment.yaml         # derived export of pixi.toml (CI sync check governs)
 .gitignore               # repo plumbing
 .gitattributes           # repo plumbing
 .azure-pipelines/**      # inherited staged-recipes CI legs (upstream-owned)
