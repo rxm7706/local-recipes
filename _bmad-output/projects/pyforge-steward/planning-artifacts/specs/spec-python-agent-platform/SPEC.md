@@ -1,6 +1,6 @@
 ---
 spec: python-agent-platform
-status: draft
+status: ready
 owner-dream: docs/dreams/python-agent-platform.md
 surface:
   - src/platform/
