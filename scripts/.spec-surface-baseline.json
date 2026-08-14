@@ -2451,6 +2451,14 @@
   },
   "memlog": "6e8be3ab45e8bdb77e85d6a5b9bdae8333d265f6"
  },
+ "pyforge-marshal/spec-landing-evidence-grammar": {
+  "files": {
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "ff2b2b81f6adf6ab6e49690c200af7bb1f1f98d3",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "68aef73f13c3e7ad0d81e43da3e27d263c171da4",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "86d6d93a7c7c615c67ed56160626714b783c6688"
+  },
+  "memlog": "e871e0cefec150c2157217d1bbfdbe1a9c4c4c61"
+ },
  "pyforge-marshal/spec-loop-home-fleet-refresh": {
   "files": {},
   "memlog": ""
@@ -3738,7 +3746,7 @@
    "src/platform/docs/conf.py": "614b5fbfe49ea50b9c4bd7d90dd0714a848e0a01",
    "src/platform/docs/howto.rst": "1b3a914d2565451e40c6e5d1bf31b344532df303",
    "src/platform/docs/index.rst": "38c9bc9b7de512856fc2b3aa2b3bc7219e866589",
-   "src/platform/docs/make.bat": "6a946df1447c0bc9330cd10963fe72e3af464bee",
+   "src/platform/docs/make.bat": "2d4b4a05d6d89aaf8ba844340148e76c32dcda1e",
    "src/platform/docs/users.rst": "754b0d83892444ed52f4b9a6de831e07883f686a",
    "src/platform/locale/README.md": "628296bfb7f3f4ec4009c512964b252cc2add5ca",
    "src/platform/locale/en_US/LC_MESSAGES/django.po": "a1398d8ce1a7c9c249658e8dc010c718f428c0e2",
@@ -3822,7 +3830,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "b91661cb4060077f649b3d815a36a3f15e7d39e3"
+  "memlog": "ab27e82fb2e8e3a29a0b745ed746825a6423337e"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {

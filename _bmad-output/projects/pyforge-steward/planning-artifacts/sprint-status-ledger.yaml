@@ -21,7 +21,7 @@ development_status:
   1-5-the-operator-can-see-every-credential-steward-knows-about-never-a-secret-value: done
   1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: done
   1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: done
-  10-1-the-host-renders-into-src-platform: backlog
+  10-1-the-host-renders-into-src-platform: done
   10-2-one-factory-sourced-environment: backlog
   10-3-one-image-both-engines: backlog
   10-4-the-bcrypt-pin-stops-blocking-3-14: backlog
