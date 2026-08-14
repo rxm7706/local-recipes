@@ -1,0 +1,514 @@
+"""Unit tests for ``pyforge.marshal.seed.plan.build`` (Story 9.6) -- covers
+the spec's I/O & Edge-Case Matrix for ``build_plan``/``write_plan``/
+``load_plan``/``default_plan_path``: every classification -> ``Action``
+mapping rule, chosen-anchor resolution (absent-hybrid, present-divergent
+partial, unparseable-degrades-to-empty), the empty-plan case, the
+non-git-target repo fingerprint fallback, two-runs determinism, the
+write/load round trip, and a real-packaged-manifest regression test
+(mirrors S-9.5's own real-manifest regression-test convention against
+``templates/manifest.yaml``).
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from importlib import resources
+from pathlib import Path
+
+import pytest
+from pyforge.marshal.seed.detect.hashes import hash_content
+from pyforge.marshal.seed.detect.inventory import ArtifactState, classify
+from pyforge.marshal.seed.model.manifest import (
+    AppliesTo,
+    ArtifactClass,
+    Manifest,
+    ManifestEntry,
+    Region,
+    load_manifest,
+)
+from pyforge.marshal.seed.model.version import ModelVersion
+from pyforge.marshal.seed.plan.build import (
+    build_plan,
+    default_plan_path,
+    load_plan,
+    write_plan,
+)
+from pyforge.marshal.seed.plan.types import Plan
+from pyforge.marshal.seed.regions.markers import (
+    RegionFormat,
+    region_sha,
+    render_begin,
+    render_end,
+)
+
+_VERSION = ModelVersion.parse("1.0.0")
+
+
+def _manifest(*entries: ManifestEntry, never_write: tuple[str, ...] = ()) -> Manifest:
+    return Manifest(model_version=_VERSION, never_write=never_write, entries=tuple(entries))
+
+
+def _referenced(entry_id: str, path: str = "unused") -> ManifestEntry:
+    return ManifestEntry(
+        id=entry_id,
+        artifact_class=ArtifactClass.REFERENCED,
+        path=path,
+        applies_to=AppliesTo.BOTH,
+        rationale="test",
+        pin=">=1.0",
+    )
+
+
+def _whole_file(
+    entry_id: str, path: str, artifact_class: ArtifactClass, *, legacy_of: str | None = None
+) -> ManifestEntry:
+    return ManifestEntry(
+        id=entry_id,
+        artifact_class=artifact_class,
+        path=path,
+        applies_to=AppliesTo.BOTH,
+        rationale="test",
+        legacy_of=legacy_of,
+    )
+
+
+def _hybrid(
+    entry_id: str,
+    path: str,
+    *region_names: str,
+    fmt: RegionFormat = RegionFormat.HTML,
+    anchors: dict[str, tuple[str, ...]] | None = None,
+) -> ManifestEntry:
+    anchors = anchors or {}
+    return ManifestEntry(
+        id=entry_id,
+        artifact_class=ArtifactClass.HYBRID_MANAGED_REGION,
+        path=path,
+        applies_to=AppliesTo.BOTH,
+        rationale="test",
+        format=fmt,
+        regions=tuple(
+            Region(name=name, anchor=anchors.get(name, ("# anchor",))) for name in region_names
+        ),
+    )
+
+
+def _doc(*lines: str) -> str:
+    return "".join(f"{line}\n" for line in lines)
+
+
+def _hybrid_text(name: str, fmt: RegionFormat = RegionFormat.HTML) -> str:
+    body = "line1\n"
+    sha = region_sha(body)
+    return _doc(
+        "intro", render_begin(fmt, name, _VERSION, sha), "line1", render_end(fmt, name), "outro"
+    )
+
+
+def _sample_plan(tmp_path) -> Plan:
+    manifest = _manifest(_whole_file("a", "missing.txt", ArtifactClass.COPIED_MANAGED))
+    inventory = classify(manifest, tmp_path)
+    return build_plan(manifest, inventory)
+
+
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """Mirrors ``test_vcs_git.py``'s own real-git-repo test convention:
+    real ``git`` I/O against a ``tmp_path``, never mocked."""
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+    return result
+
+
+def _init_git_repo(repo: Path) -> None:
+    _git(repo, "init", "-b", "main")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    (repo / "README.md").write_text("hello\n", encoding="utf-8")
+    _git(repo, "add", "README.md")
+    _git(repo, "commit", "-m", "initial")
+
+
+# --- classification -> Action mapping rules --------------------------------
+
+
+def test_absent_whole_file_entry_produces_one_action_naming_materialization(tmp_path):
+    manifest = _manifest(_whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    (action,) = plan.actions
+    assert action.artifact_id == "a"
+    assert action.artifact_class == ArtifactClass.COPIED_SEEDED
+    assert action.current_state == ArtifactState.ABSENT
+    assert action.target_state == ArtifactState.PRESENT_CONFORMANT
+    assert action.target_path == "seeded.txt"
+    assert action.chosen_anchor == ()
+    assert "materialize" in action.rationale
+
+
+def test_absent_hybrid_entry_with_two_declared_regions_gets_one_pair_per_region(tmp_path):
+    manifest = _manifest(
+        _hybrid(
+            "h",
+            "CLAUDE.md",
+            "tiers",
+            "model-badge",
+            anchors={"tiers": ("### Spec-driven",), "model-badge": ("<top>",)},
+        )
+    )
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    (action,) = plan.actions
+    assert action.current_state == ArtifactState.ABSENT
+    # Resolved against "" (nothing on disk): "tiers"'s anchor text matches
+    # no line in empty text -> EOF fallback (matched=None); "<top>" always
+    # resolves regardless of content.
+    assert action.chosen_anchor == (("tiers", None), ("model-badge", "<top>"))
+
+
+def test_present_divergent_hybrid_with_one_of_two_regions_missing_gets_exactly_one_pair(
+    tmp_path,
+):
+    (tmp_path / "CLAUDE.md").write_text(_hybrid_text("tiers"))
+    manifest = _manifest(
+        _hybrid("h", "CLAUDE.md", "tiers", "model-badge", anchors={"model-badge": ("<top>",)})
+    )
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    (action,) = plan.actions
+    assert action.current_state == ArtifactState.PRESENT_DIVERGENT
+    assert action.chosen_anchor == (("model-badge", "<top>"),)
+
+
+def test_present_conformant_entry_produces_no_action(tmp_path):
+    (tmp_path / "seeded.txt").write_text("hello\n")
+    manifest = _manifest(_whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert plan.actions == ()
+
+
+def test_present_legacy_entry_produces_no_action_regardless_of_manifest_state(tmp_path):
+    (tmp_path / "old.txt").write_text("hand-authored\n")
+    manifest = _manifest(
+        _whole_file("a", "old.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ")
+    )
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert plan.actions == ()
+
+
+def test_referenced_entry_never_gets_an_action_even_when_its_path_is_absent(tmp_path):
+    manifest = _manifest(_referenced("dep", "does-not-exist"))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert plan.actions == ()
+
+
+def test_unparseable_hybrid_file_gets_an_action_with_chosen_anchor_best_effort_skipped(tmp_path):
+    (tmp_path / "CLAUDE.md").write_text(
+        _doc("intro", render_end(RegionFormat.HTML, "tiers"), "outro")
+    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    (action,) = plan.actions
+    assert action.current_state == ArtifactState.PRESENT_DIVERGENT
+    assert action.chosen_anchor == ()
+
+
+def test_empty_plan_when_every_entry_is_present_conformant_or_present_legacy(tmp_path):
+    (tmp_path / "seeded.txt").write_text("hello\n")
+    (tmp_path / "old.txt").write_text("hand\n")
+    manifest = _manifest(
+        _whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED),
+        _whole_file("b", "old.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ"),
+        _referenced("dep"),
+    )
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    assert plan.actions == ()
+    assert isinstance(plan, Plan)
+    restored = Plan.from_json_dict(json.loads(json.dumps(plan.to_json_dict())))
+    assert restored == plan
+
+
+# --- ordering / determinism -------------------------------------------------
+
+
+def test_actions_are_sorted_by_artifact_id_regardless_of_manifest_authoring_order(tmp_path):
+    manifest = _manifest(
+        _whole_file("zeta", "z.txt", ArtifactClass.COPIED_MANAGED),
+        _whole_file("alpha", "a.txt", ArtifactClass.COPIED_MANAGED),
+        _whole_file("mid", "m.txt", ArtifactClass.COPIED_MANAGED),
+    )
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert [action.artifact_id for action in plan.actions] == ["alpha", "mid", "zeta"]
+
+
+def test_artifact_hashes_are_sorted_by_artifact_id(tmp_path):
+    manifest = _manifest(
+        _whole_file("zeta", "z.txt", ArtifactClass.COPIED_MANAGED),
+        _whole_file("alpha", "a.txt", ArtifactClass.COPIED_MANAGED),
+    )
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert [pair[0] for pair in plan.repo_fingerprint.artifact_hashes] == ["alpha", "zeta"]
+
+
+def test_two_build_plan_calls_against_identical_repo_state_produce_byte_identical_json(tmp_path):
+    manifest = _manifest(
+        _whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED),
+        _whole_file("b", "another.txt", ArtifactClass.COPIED_MANAGED),
+    )
+    inventory = classify(manifest, tmp_path)
+
+    plan_one = build_plan(manifest, inventory)
+    plan_two = build_plan(manifest, inventory)
+
+    assert plan_one.actions == plan_two.actions
+    assert plan_one.repo_fingerprint.artifact_hashes == plan_two.repo_fingerprint.artifact_hashes
+    assert json.dumps(plan_one.to_json_dict()) == json.dumps(plan_two.to_json_dict())
+
+
+# --- artifact_hashes content -------------------------------------------------
+
+
+def test_artifact_hashes_for_an_absent_artifact_hashes_the_empty_string(tmp_path):
+    manifest = _manifest(_whole_file("a", "missing.txt", ArtifactClass.COPIED_MANAGED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    ((artifact_id, sha),) = plan.repo_fingerprint.artifact_hashes
+    assert artifact_id == "a"
+    assert sha == hash_content("")
+
+
+def test_artifact_hashes_for_a_present_divergent_hybrid_entry_hashes_its_real_content(tmp_path):
+    text = _doc("no markers in this file at all")
+    (tmp_path / "CLAUDE.md").write_text(text)
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    ((artifact_id, sha),) = plan.repo_fingerprint.artifact_hashes
+    assert artifact_id == "h"
+    assert sha == hash_content(text)
+
+
+def test_artifact_hashes_only_covers_actioned_artifacts_not_the_whole_manifest(tmp_path):
+    (tmp_path / "seeded.txt").write_text("hello\n")
+    manifest = _manifest(
+        _whole_file("present", "seeded.txt", ArtifactClass.COPIED_SEEDED),
+        _whole_file("absent", "missing.txt", ArtifactClass.COPIED_MANAGED),
+        _referenced("dep"),
+    )
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert [pair[0] for pair in plan.repo_fingerprint.artifact_hashes] == ["absent"]
+
+
+# --- repo_fingerprint: non-git target repo ----------------------------------
+
+
+def test_non_git_target_repo_reports_none_head_and_dirty_true(tmp_path):
+    manifest = _manifest()
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert plan.repo_fingerprint.git_head is None
+    assert plan.repo_fingerprint.dirty is True
+
+
+def test_real_git_repo_reports_the_actual_head_sha_and_dirty_false_when_clean(tmp_path):
+    # AD-57's own reason `RepoFingerprint` exists: a real, committed HEAD
+    # and a clean worktree must report a real 40-hex-char sha and
+    # `dirty=False` -- the positive path the non-git test above cannot
+    # exercise (review finding: only the "not a git repo" branch was
+    # covered; the branch that is the whole point of this field was not).
+    _init_git_repo(tmp_path)
+    expected_head = _git(tmp_path, "rev-parse", "HEAD").stdout.strip()
+
+    manifest = _manifest()
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    assert plan.repo_fingerprint.git_head == expected_head
+    assert len(plan.repo_fingerprint.git_head) == 40
+    assert plan.repo_fingerprint.dirty is False
+
+
+def test_real_git_repo_reports_dirty_true_once_a_tracked_file_is_edited(tmp_path):
+    _init_git_repo(tmp_path)
+    (tmp_path / "README.md").write_text("changed\n", encoding="utf-8")
+
+    manifest = _manifest()
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    assert plan.repo_fingerprint.dirty is True
+
+
+def test_real_git_repo_reports_dirty_true_for_an_untracked_file(tmp_path):
+    _init_git_repo(tmp_path)
+    (tmp_path / "untracked.txt").write_text("new\n", encoding="utf-8")
+
+    manifest = _manifest()
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    assert plan.repo_fingerprint.dirty is True
+
+
+# --- manifest / inventory mismatch ------------------------------------------
+
+
+def test_build_plan_raises_value_error_when_inventory_was_not_built_from_this_manifest(tmp_path):
+    # `classify(manifest_one, ...)` produces one `Classification` per
+    # `manifest_one.entries`; handing that `Inventory` to `build_plan`
+    # alongside an unrelated `manifest_two` means every `entry_id` it
+    # carries is unknown to `manifest_two.entries` (review finding: this
+    # previously raised a bare, unnamed `KeyError`).
+    manifest_one = _manifest(_whole_file("a", "a.txt", ArtifactClass.COPIED_MANAGED))
+    manifest_two = _manifest(_whole_file("b", "b.txt", ArtifactClass.COPIED_MANAGED))
+    inventory = classify(manifest_one, tmp_path)
+
+    with pytest.raises(ValueError, match="not built from this manifest"):
+        build_plan(manifest_two, inventory)
+
+
+# --- write_plan / load_plan / default_plan_path -----------------------------
+
+
+def test_write_plan_then_load_plan_round_trips_field_for_field(tmp_path):
+    plan = _sample_plan(tmp_path)
+
+    plan_path = tmp_path / "out" / "plan.json"  # parent does not exist yet
+    write_plan(plan, plan_path)
+    restored = load_plan(plan_path)
+
+    assert restored == plan
+    assert plan_path.is_file()
+
+
+def test_default_plan_path_is_dot_marshal_plan_json_under_repo_root(tmp_path):
+    assert default_plan_path(tmp_path) == tmp_path / ".marshal" / "plan.json"
+
+
+def test_write_plan_at_default_plan_path_lands_under_dot_marshal(tmp_path):
+    plan = _sample_plan(tmp_path)
+    path = default_plan_path(tmp_path)
+
+    write_plan(plan, path)
+
+    assert path == tmp_path / ".marshal" / "plan.json"
+    assert path.is_file()
+    assert load_plan(path) == plan
+
+
+def test_load_plan_raises_value_error_naming_a_missing_key(tmp_path):
+    path = tmp_path / "plan.json"
+    path.write_text(json.dumps({"actions": []}))  # missing "repo_fingerprint"
+    with pytest.raises(ValueError, match="repo_fingerprint"):
+        load_plan(path)
+
+
+def test_load_plan_raises_value_error_for_syntactically_invalid_json(tmp_path):
+    path = tmp_path / "plan.json"
+    path.write_text("{not valid json")
+    with pytest.raises(ValueError):
+        load_plan(path)
+
+
+def test_write_plan_does_not_escape_non_ascii_characters(tmp_path):
+    # `Plan` is "the single artifact a human reviews before Genesis writes
+    # anything" (P-04) -- a non-ASCII path should read as itself in
+    # `plan.json`, not as `\uXXXX` escapes (review finding: the stdlib
+    # `json.dumps` default escapes every non-ASCII code point).
+    manifest = _manifest(_whole_file("a", "café/déjà-vu.txt", ArtifactClass.COPIED_MANAGED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    path = tmp_path / "plan.json"
+    write_plan(plan, path)
+
+    raw = path.read_text(encoding="utf-8")
+    assert "café/déjà-vu.txt" in raw
+    assert "\\u" not in raw
+    assert load_plan(path) == plan
+
+
+def test_load_plan_raises_value_error_for_a_bad_enum_value_inside_an_action(tmp_path):
+    plan = _sample_plan(tmp_path)
+    data = plan.to_json_dict()
+    data["actions"][0]["current_state"] = "not-a-real-state"
+    path = tmp_path / "plan.json"
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError):
+        load_plan(path)
+
+
+# --- real packaged manifest regression (mirrors S-9.5's own convention) ----
+
+# templates/manifest.yaml (Story 7.5): 43 entries, 16 referenced -- so
+# exactly 27 non-referenced entries, each ABSENT against a repo missing
+# every materialized artifact. Region counts per hybrid entry, pinned like
+# test_seed_templates_manifest.py's own EXPECTED_* constants.
+EXPECTED_NON_REFERENCED_ENTRY_COUNT = 27
+EXPECTED_HYBRID_REGION_COUNTS = {
+    "agents-md": 3,
+    "claude-md": 2,
+    "gitignore": 1,
+    "readme-badge": 1,
+}
+
+
+@pytest.fixture(scope="module")
+def real_manifest():
+    manifest_ref = resources.files("pyforge.marshal.seed.templates") / "manifest.yaml"
+    with resources.as_file(manifest_ref) as manifest_path:
+        return load_manifest(manifest_path)
+
+
+def test_real_manifest_over_a_repo_missing_every_artifact_gives_one_absent_action_per_non_referenced_entry(
+    real_manifest, tmp_path
+):
+    inventory = classify(real_manifest, tmp_path)
+    plan = build_plan(real_manifest, inventory)
+
+    expected_ids = sorted(
+        entry.id
+        for entry in real_manifest.entries
+        if entry.artifact_class is not ArtifactClass.REFERENCED
+    )
+    assert len(expected_ids) == EXPECTED_NON_REFERENCED_ENTRY_COUNT
+    assert [action.artifact_id for action in plan.actions] == expected_ids
+    assert all(action.current_state == ArtifactState.ABSENT for action in plan.actions)
+    assert all(action.target_state == ArtifactState.PRESENT_CONFORMANT for action in plan.actions)
+
+    by_id = {action.artifact_id: action for action in plan.actions}
+    for entry_id, expected_region_count in EXPECTED_HYBRID_REGION_COUNTS.items():
+        assert len(by_id[entry_id].chosen_anchor) == expected_region_count, entry_id
+
+    for action in plan.actions:
+        if action.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
+            assert action.chosen_anchor == ()
+
+
+def test_real_manifest_plan_over_an_empty_repo_round_trips_through_write_and_load(
+    real_manifest, tmp_path
+):
+    inventory = classify(real_manifest, tmp_path)
+    plan = build_plan(real_manifest, inventory)
+
+    path = default_plan_path(tmp_path)
+    write_plan(plan, path)
+
+    assert load_plan(path) == plan
