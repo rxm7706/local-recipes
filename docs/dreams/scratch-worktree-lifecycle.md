@@ -2,7 +2,7 @@
 title: A scratch worktree for one story's work is one command, not five
 type: dream
 owner: steward
-status: dreamt
+status: specified
 ---
 
 # A scratch worktree for one story's work is one command, not five
@@ -157,3 +157,7 @@ than by default)
   initial capture, found `workspace status` and JSON output silently undersold rather than
   deliberately excluded; both folded in above. Every other source feature now carries an explicit
   disposition in "Full feature audit" rather than living only in a conversation transcript.
+
+- **2026-08-14** — Spec authored (spec-scratch-worktree-lifecycle, pyforge-steward) by the
+  2026-08-14 dream-backlog audit: workspace start/ls/status/clean over git worktree,
+  own-worktrees-only bookkeeping, archive-not-delete clean.

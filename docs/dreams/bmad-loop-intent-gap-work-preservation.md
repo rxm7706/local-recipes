@@ -2,7 +2,7 @@
 title: An intent-gap revert can never discard real work without a recoverable trace
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # An intent-gap revert can never discard real work without a recoverable trace
@@ -89,3 +89,4 @@ handles an attempt that doesn't cleanly land; likely share an upstream-report pa
   transcript reconstruction (`_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
   spec-pyforge-marshal/.memlog.md` has the full recovery narrative), per the operator's explicit
   request to fix marshal/bmad-loop to prevent this class of loss going forward.
+- **2026-08-14** — Spec authored (spec-bmad-loop-intent-gap-work-preservation, pyforge-marshal) by the 2026-08-14 dream-backlog audit: Marshal-side preservation symmetry at the adapter seam; upstream evidence rides spec-bmad-loop-baseline-drift's gated report track.
