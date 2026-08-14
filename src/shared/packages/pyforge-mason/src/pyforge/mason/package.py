@@ -87,6 +87,27 @@ Zero `cfe` reference anywhere in this file (spec Always boundary,
 a CFE root or interpreter, unlike every `recipe.py` verb, and Story 3.3's
 two new functions -- and Story 3.4's `ship_pypi()`, and Story 3.5's `ship_
 channel()` -- are pure and CFE-independent too.
+
+Story 3.7 adds idempotence-by-interrogation to both `ship_pypi()` and `ship_
+channel()` (FR-18, AD-10), plus `build_ship_receipt()` (AD-9). Neither ship
+function previously asked its target "is this already shipped?" before
+uploading -- a retry of an already-successful ship either crashed on PyPI's
+own duplicate-file rejection or silently re-uploaded. Both functions now
+interrogate their target strictly AFTER `build()` (the interrogation needs
+the just-built version) and strictly BEFORE the upload call, never before
+the existing credential check (AD-14 precedent, unchanged) -- `ship_pypi`
+calls the new `pypi_index.version_exists()`; `ship_channel` calls the new
+`engines.pixi.search()`. Both follow the identical three-way outcome: found
+-> skip the upload, return `TERMINAL` with the pre-existing reference;
+not-found -> the upload proceeds exactly as before this story; undeterminable
+(network error, timeout, absent tool) -> return `PENDING` naming the reason,
+the mutating upload call is never made (AD-10: "never an assumption in
+either direction"). `build_ship_receipt()` aggregates however many
+`ShipTargetResult`s a caller already produced into one `models.ShipReceipt`
+-- no `ship()` multi-target dispatcher and no CLI wiring land with this
+story either (spec Never boundary); this function is the tested, ready-to-
+call primitive for whichever future caller (Story 3.9's `cli.py` `ship`
+verb) reaches it after that story's own scope lands.
 """
 
 from __future__ import annotations
@@ -94,15 +115,17 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
+from packaging.utils import parse_wheel_filename
 from packaging.version import InvalidVersion, Version
 
+from . import pypi_index
 from .engines import pep517, pixi, twine
 from .errors import (
     InvalidShipTargetError, PackageProjectPathError, PackageVersionMismatchError,
     ShipChannelCredentialMissingError, ShipCredentialMissingError,
 )
 from .models import (
-    PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+    PackageBuildResult, ShipReceipt, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
 )
 
 
@@ -348,17 +371,35 @@ def ship_pypi(
     sequence itself rather than accepting an already-built
     `PackageBuildResult`). Only when the returned `PackageBuildResult`
     carries a non-`None` `wheel_path` AND a non-`None` `sdist_path` does
-    this function go on to call `engines.twine.upload((wheel_path,
-    sdist_path))`; otherwise -- one or both engines failed to produce an
-    artifact -- it returns a `FAILED` result directly, without `twine.
-    upload` ever being called (spec I/O matrix). That "nothing built" case's
-    `message` is `build_result.pep517_stdout` -- the wrapped `build` engine
-    is the one responsible for the wheel/sdist this ship target needs, so
-    its own stdout is the wrapped tool's own field, verbatim (AD-1,
-    `models.ShipTargetResult.message`'s own docstring contract).
+    this function proceed at all; otherwise -- one or both engines failed to
+    produce an artifact -- it returns a `FAILED` result directly, without
+    `twine.upload` ever being called (spec I/O matrix). That "nothing built"
+    case's `message` is `build_result.pep517_stdout` -- the wrapped `build`
+    engine is the one responsible for the wheel/sdist this ship target
+    needs, so its own stdout is the wrapped tool's own field, verbatim
+    (AD-1, `models.ShipTargetResult.message`'s own docstring contract).
 
-    On a zero `upload()` returncode, returns `ShipTargetResult(target=
-    "pypi", state=ShipState.TERMINAL, reference=upload_result.url,
+    Story 3.7 (FR-18, AD-10): once a wheel+sdist exist, BEFORE calling
+    `engines.twine.upload`, this function re-derives the PyPI project name
+    from `build_result.wheel_path`'s own filename via `packaging.utils.
+    parse_wheel_filename` (the same parse `engines.pep517` already trusts --
+    `PackageBuildResult` itself carries no separate name field) and calls
+    `pypi_index.version_exists(name, build_result.wheel_version)`. Three-way
+    outcome: `True` (PyPI already has this exact name/version) -> the upload
+    is SKIPPED and this function returns `TERMINAL` with `reference=
+    f"https://pypi.org/project/{name}/{version}/"` (mirrors the shape
+    `twine`'s own "View at:" URL already produces); `False` (PyPI does not
+    have it) -> `twine.upload` runs exactly as before this story; `None`
+    (the interrogation itself could not be completed -- a timeout, a DNS
+    failure, an unexpected HTTP status) -> this function returns `PENDING`
+    naming the reason, and `twine.upload` is NEVER called (AD-10: "never an
+    assumption in either direction" -- an undeterminable interrogation must
+    not be treated as "not shipped yet").
+
+    Once past that interrogation with a `False` (not yet shipped) result,
+    calls `engines.twine.upload((wheel_path, sdist_path))`. On a zero
+    `upload()` returncode, returns `ShipTargetResult(target="pypi",
+    state=ShipState.TERMINAL, reference=upload_result.url,
     message=upload_result.stdout)`. On a nonzero `upload()` returncode,
     returns `ShipTargetResult(state=ShipState.FAILED, reference=None,
     message=upload_result.stdout)` -- AD-4: a tool that RAN but failed is
@@ -371,7 +412,9 @@ def ship_pypi(
     `PackageProjectPathError`) all propagate un-caught out of this function
     -- these are structural preconditions, not this call's own execution
     outcome (spec Always boundary, same split `build()` already established
-    for its own two engines).
+    for its own two engines). `pypi_index.version_exists` itself never
+    raises (its own docstring), so no new exception surface is introduced by
+    this story's interrogation step.
     """
     missing = [
         name
@@ -389,6 +432,30 @@ def ship_pypi(
             state=ShipState.FAILED,
             reference=None,
             message=build_result.pep517_stdout,
+        )
+
+    pypi_name, _, _, _ = parse_wheel_filename(Path(build_result.wheel_path).name)
+    exists = pypi_index.version_exists(str(pypi_name), build_result.wheel_version)
+    if exists is True:
+        return ShipTargetResult(
+            target="pypi",
+            state=ShipState.TERMINAL,
+            reference=f"https://pypi.org/project/{pypi_name}/{build_result.wheel_version}/",
+            message=(
+                f"pypi already has {pypi_name} {build_result.wheel_version}; "
+                "upload was not attempted"
+            ),
+        )
+    if exists is None:
+        return ShipTargetResult(
+            target="pypi",
+            state=ShipState.PENDING,
+            reference=None,
+            message=(
+                f"could not determine whether pypi already has {pypi_name} "
+                f"{build_result.wheel_version} (network error, timeout, or an "
+                "unexpected response); upload was not attempted"
+            ),
         )
 
     upload_result = twine.upload((build_result.wheel_path, build_result.sdist_path))
@@ -433,17 +500,35 @@ def ship_channel(
     `PackageBuildResult`). The canonical target string is `f"channel:
     {channel_name}"` (matches `plan_ship`'s own canonical reconstruction).
     Only when the returned `PackageBuildResult` carries a non-`None`
-    `conda_path` does this function go on to call `engines.pixi.upload(
-    conda_path, channel_name)`; otherwise -- the `.conda` engine failed or
-    produced nothing -- it returns a `FAILED` result directly, without
-    `pixi.upload` ever being called (spec I/O matrix). That "nothing built"
-    case's `message` is `build_result.pixi_stdout` -- the wrapped `pixi`
-    build engine is the one responsible for the `.conda` artifact this ship
-    target needs, so its own stdout is the wrapped tool's own field,
-    verbatim (AD-1, `models.ShipTargetResult.message`'s own docstring
-    contract).
+    `conda_path` does this function proceed at all; otherwise -- the
+    `.conda` engine failed or produced nothing -- it returns a `FAILED`
+    result directly, without `pixi.upload` ever being called (spec I/O
+    matrix). That "nothing built" case's `message` is `build_result.
+    pixi_stdout` -- the wrapped `pixi` build engine is the one responsible
+    for the `.conda` artifact this ship target needs, so its own stdout is
+    the wrapped tool's own field, verbatim (AD-1, `models.ShipTargetResult.
+    message`'s own docstring contract).
 
-    On a zero `upload()` returncode, returns `ShipTargetResult(target=
+    Story 3.7 (FR-18, AD-10): once a `.conda` artifact exists, BEFORE
+    calling `engines.pixi.upload`, this function re-derives the package name
+    from `build_result.conda_path`'s own filename via the same `stem.
+    rsplit("-", 2)` technique `engines.pixi.build` already uses (module
+    docstring; `PackageBuildResult` carries no separate name field) and
+    calls `engines.pixi.search(name, build_result.conda_version,
+    channel_name)`. Three-way outcome: `True` (the channel already has this
+    exact name/version) -> the upload is SKIPPED and this function returns
+    `TERMINAL` with `reference=channel_name` -- the bare channel name, never
+    a constructed URL, matching this function's own existing non-
+    interrogation `TERMINAL` precedent below (Story 3.5); `False` (the
+    channel does not have it) -> `pixi.upload` runs exactly as before this
+    story; `None` (the interrogation itself could not be completed -- `pixi`
+    absent, a timeout, an unrecognized failure) -> this function returns
+    `PENDING` naming the reason, and `pixi.upload` is NEVER called (AD-10:
+    "never an assumption in either direction").
+
+    Once past that interrogation with a `False` (not yet shipped) result,
+    calls `engines.pixi.upload(conda_path, channel_name)`. On a zero
+    `upload()` returncode, returns `ShipTargetResult(target=
     f"channel:{channel_name}", state=ShipState.TERMINAL,
     reference=channel_name, message=upload_result.stdout)` -- `reference`
     is the bare `channel_name`, never a constructed URL (spec Always
@@ -462,6 +547,8 @@ def ship_channel(
     propagate un-caught out of this function -- these are structural
     preconditions, not this call's own execution outcome (spec Always
     boundary, same split `build()`/`ship_pypi()` already established).
+    `engines.pixi.search` itself never raises (its own docstring), so no new
+    exception surface is introduced by this story's interrogation step.
     """
     missing = [
         name
@@ -483,6 +570,31 @@ def ship_channel(
             message=build_result.pixi_stdout,
         )
 
+    conda_name, _, _ = Path(build_result.conda_path).name.removesuffix(".conda").rsplit("-", 2)
+    exists = pixi.search(conda_name, build_result.conda_version, channel_name)
+    if exists is True:
+        return ShipTargetResult(
+            target=canonical,
+            state=ShipState.TERMINAL,
+            reference=channel_name,
+            message=(
+                f"channel {channel_name!r} already has {conda_name} "
+                f"{build_result.conda_version}; upload was not attempted"
+            ),
+        )
+    if exists is None:
+        return ShipTargetResult(
+            target=canonical,
+            state=ShipState.PENDING,
+            reference=None,
+            message=(
+                f"could not determine whether channel {channel_name!r} already "
+                f"has {conda_name} {build_result.conda_version} (pixi absent, "
+                "network error, timeout, or an unexpected response); upload "
+                "was not attempted"
+            ),
+        )
+
     upload_result = pixi.upload(build_result.conda_path, channel_name)
 
     if upload_result.returncode != 0:
@@ -496,3 +608,27 @@ def ship_channel(
         reference=channel_name,
         message=upload_result.stdout,
     )
+
+
+def build_ship_receipt(results: Sequence[ShipTargetResult]) -> ShipReceipt:
+    """Aggregate `results` -- however many `ShipTargetResult`s a caller
+    already produced across one or more ship targets -- into one
+    `models.ShipReceipt` (Story 3.7, AD-9).
+
+    `targets` is `results` as given, converted to a `tuple`, in the same
+    order and with no deduplication (mirrors `ShipReceipt.targets`'s own
+    docstring). `ok` is computed exactly once, here: `not any(r.state is
+    ShipState.FAILED for r in results)` -- `NOT_ATTEMPTED`/`PENDING`/
+    `TERMINAL` all count as success for this aggregate (AD-9); only an
+    actual `FAILED` target flips it to `False`. An empty `results` produces
+    `ShipReceipt(targets=(), ok=True)` -- vacuously true, mirroring Python's
+    own `not any(())` -- this function performs no minimum-length validation
+    of its own (a future `ship()` dispatcher's own zero-target input is not
+    this function's business to reject).
+
+    This function is CFE-independent and calls no engine adapter of its own
+    (module docstring): it reads the `state` field off each already-built
+    `ShipTargetResult` and nothing else.
+    """
+    targets = tuple(results)
+    return ShipReceipt(targets=targets, ok=not any(r.state is ShipState.FAILED for r in targets))

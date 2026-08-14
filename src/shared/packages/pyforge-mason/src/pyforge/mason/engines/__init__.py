@@ -63,7 +63,17 @@ three things Story 1.8 deliberately left out, per its own docstring above:
 3. `require_engine`, the ONE new raising entry point this story adds --
    `probe_engine`/`probe_known_engines` above stay exactly as Story 1.8 left
    them (never raising, never parsed), per the spec's Always boundary.
-"""
+
+Story 3.7 registers a fifth engine, `gh` (FR-18, AD-10): `engines/gh.py`'s
+own adapter (`name`, `probe()`, `find_open_pr()`) searches the CFE fork for
+an open conda-forge/staged-recipes pull request, one of `ship_pypi`/
+`ship_channel`'s three interrogation-based idempotence mechanisms (the other
+two are `pypi_index.version_exists`/`engines.pixi.search`, both added by the
+same story). `GH_VERSION_RANGE` below is constructed via `_minor_range`
+exactly like the existing four (evidence: `gh` 2.97.0, live-verified in this
+environment) -- `mason doctor` picks `gh` up automatically through this
+module's existing `probe_known_engines()` call, with no `doctor.py` source
+change (spec Always boundary)."""
 
 from __future__ import annotations
 
@@ -87,6 +97,7 @@ _KNOWN_ENGINES: dict[str, str] = {
     "twine": "twine",
     "conda-lock": "conda-lock",
     "build": "pyproject-build",
+    "gh": "gh",
 }
 """Display name -> PATH binary name, in probe order. See module docstring
 for why `build`'s binary is `pyproject-build`."""
@@ -179,6 +190,7 @@ _ENGINE_CONDA_PACKAGES: dict[str, str] = {
     "twine": "twine",
     "conda-lock": "conda-lock",
     "build": "python-build",
+    "gh": "gh",
 }
 """Display name -> conda package name that provisions it, consulted only by
 `require_engine`'s `EngineAbsentError` (the provisioning hint). Distinct
@@ -218,13 +230,15 @@ def _minor_range(floor: str, ceiling: str) -> SpecifierSet:
 # `[package.run-dependencies]` entry for the same engine -- enforced by
 # `tests/meta/test_engine_version_range_sync.py`. Evidence, live-verified in
 # this environment: pixi 0.76.2, twine 7.0.0, conda-lock 4.0.2, build
-# (`pyproject-build` binary, conda package `python-build`) 1.5.0. These
-# constants exist for that sync guard alone -- `require_engine` below does
-# NOT consult them; see its own docstring for why.
+# (`pyproject-build` binary, conda package `python-build`) 1.5.0, gh 2.97.0
+# (Story 3.7). These constants exist for that sync guard alone --
+# `require_engine` below does NOT consult them; see its own docstring for
+# why.
 PIXI_VERSION_RANGE = _minor_range("0.76.2", "0.77")
 TWINE_VERSION_RANGE = _minor_range("7.0.0", "7.1")
 CONDA_LOCK_VERSION_RANGE = _minor_range("4.0.2", "4.1")
 PYTHON_BUILD_VERSION_RANGE = _minor_range("1.5.0", "1.6")
+GH_VERSION_RANGE = _minor_range("2.97.0", "2.98")
 
 
 def require_engine(name: str) -> str | None:

@@ -175,5 +175,5 @@ def test_build_report_never_raises_against_a_real_unresolved_environment(tmp_pat
     assert report.cfe_root is None
     assert report.cfe_root_step == STEP_NOT_FOUND
     assert report.unavailable_verbs == ("recipe",)
-    assert len(report.engines) == 4
+    assert len(report.engines) == 5  # pixi, twine, conda-lock, build, gh (Story 3.7)
     assert all(not status.available for status in report.engines)
